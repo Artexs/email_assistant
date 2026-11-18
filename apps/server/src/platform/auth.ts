@@ -108,7 +108,7 @@ export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   ...TWO_FACTOR_ALLOWED_PATHS,
 ]);
 
-// L22: the paths that end sessions, and the audit event of each.
+// The paths that end sessions, and the audit event of each.
 const REVOKE_EVENTS: Readonly<Record<string, AuthEventKind | undefined>> = {
   "/revoke-sessions": "sessions_revoked",
   "/revoke-other-sessions": "other_sessions_revoked",
@@ -122,7 +122,7 @@ export const RESET_REQUEST_ANSWER = {
   message: "If this email exists in our system, check your email for the reset link",
 } as const;
 
-// L9: the reset request is open only when the caller says so (the auth-mail sender is on).
+// The reset request is open only when the caller says so (the auth-mail sender is on).
 export function isAllowedAuthPath(method: string, path: string, opts?: { resetRequest: boolean }): boolean {
   if (path === RESET_REQUEST_PATH) return method === "POST" && opts?.resetRequest === true;
   if (isAllowedSsoPath(method, path)) return true;
@@ -195,7 +195,7 @@ const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/ch
 const MIN_PASSWORD_LENGTH = 12;
 const MAX_PASSWORD_LENGTH = 128;
 
-// L13: a locked user gets the answer and the time of a wrong password, also for a request that the endpoint refuses before it checks the password
+// A locked user gets the answer and the time of a wrong password, also for a request that the endpoint refuses before it checks the password
 // (the form-CSRF middleware, the e-mail and length checks). The hook does not throw: the endpoint runs all its own checks,
 // and its password check always fails. An error of `isLocked` is not caught (fail closed).
 async function lockSignIn(
@@ -210,7 +210,7 @@ async function lockSignIn(
   return failingPasswordVerify(ctx);
 }
 
-// L16: no password is set without the current terms. This check runs before the leaked-password check: no outside call without the terms.
+// No password is set without the current terms. This check runs before the leaked-password check: no outside call without the terms.
 function rejectMissingTerms(ctx: HookContext): void {
   const version = (ctx.body as { termsVersion?: unknown } | undefined)?.termsVersion;
   if (version !== TERMS_VERSION) {
@@ -232,7 +232,7 @@ async function mayChangePassword(ctx: HookContext): Promise<boolean> {
   return verification !== null && verification.expiresAt >= new Date();
 }
 
-// L14: a leaked or unchecked password is never stored. Other lengths are refused by Better Auth itself.
+// A leaked or unchecked password is never stored. Other lengths are refused by Better Auth itself.
 // A check that is down fails closed: no password changes.
 async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<AuthDeps["pwnedCheck"]>): Promise<void> {
   const password = (ctx.body as { newPassword?: unknown } | undefined)?.newPassword;
@@ -294,7 +294,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     now,
   });
 
-  // The plugin's verify endpoints, for the F128 check in `hooks.before`. Set below; a request cannot arrive before it.
+  // The plugin's verify endpoints, for the second-factor check in `hooks.before`. Set below; a request cannot arrive before it.
   let codeApi: CodeApi | null = null;
 
   const instance = betterAuth({
@@ -450,7 +450,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
               message: "The break-glass owner keeps two-factor sign-in.",
             });
           }
-          // F128 (replaces F105 D28): the password is not enough, the second factor must prove itself too.
+          // The password is not enough, the second factor must prove itself too.
           if (twoFactorOn(session.user)) {
             await requireSecondFactorCode(ctx, {
               userId: session.user.id,

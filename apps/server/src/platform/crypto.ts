@@ -84,7 +84,7 @@ export function tombstoneKeyHash(dedupKey: string): string {
 const DSR_HASH_INFO = "ea/dsr-address/v1";
 const SENDER_KEY_INFO = "ea/sender-profile/v1";
 
-// The hash of a DSR address for the audit row (F106 account data ticket): HMAC-SHA256 hex over the normalized address. The key is the
+// The hash of a DSR address for the audit row: HMAC-SHA256 hex over the normalized address. The key is the
 // HKDF-SHA256 of the credentials key (empty salt, info `ea/dsr-address/v1`, 32 bytes), so a person who reads the audit
 // table without the credentials key cannot test guessed addresses against it. A change of the credentials key makes
 // old hashes unmatchable. The caller normalizes the address first; this module cannot import the privacy module.

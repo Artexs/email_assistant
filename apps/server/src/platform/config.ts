@@ -20,11 +20,11 @@ import { decodeBase64Url, PUBLIC_KEY_BYTES, vapidPublicKeyOf } from "./vapid-key
 const isCredentialsKey = (value: string): boolean =>
   /^[A-Za-z0-9+/]+={0,2}$/.test(value) && Buffer.from(value, "base64").length === 32;
 
-// Step 0.2 (AI Studio, free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12. The RPD is not known, so the cap stays 300.
+// Measured on AI Studio (free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12. The RPD is not known, so the cap stays 300.
 const defaultGeminiRpm = 12;
 const defaultLlmDailyCap = 300;
 
-// Accepted values of `reasoning.effort` (stage 0 note, case F).
+// Accepted values of `reasoning.effort`.
 export const openAiReasoningEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
 const emptyAsUndefined = (v: unknown): unknown => (v === "" ? undefined : v);
@@ -104,7 +104,7 @@ const baseSchema = z.object({
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   // json = one JSON object per line (the VPS); text = "[module] event key=value" (dev). ADR 0024.
   LOG_FORMAT: z.preprocess(emptyAsUndefined, z.enum(["json", "text"]).default("json")),
-  // The release name: the image build sets it (deploy/Dockerfile ARG EA_RELEASE); every JSON log line carries it. F114 D10.
+  // The release name: the image build sets it (deploy/Dockerfile ARG EA_RELEASE); every JSON log line carries it.
   EA_RELEASE: z.preprocess(
     emptyAsUndefined,
     z
@@ -169,7 +169,7 @@ const baseSchema = z.object({
   SEND_SCOPE: z.enum(["off", "self", "all"]).default("off"),
   // Comma-separated; needed with SEND_SCOPE=self.
   SEND_TEST_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Comma-separated sender addresses whose mail counts as test mail (D1 of F097). Empty = none.
+  // Comma-separated sender addresses whose mail counts as test mail. Empty = none.
   TEST_SENDER_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Send limits per mailbox; a send over a limit waits. Integers 1 to 10 000; empty = the default.
   SEND_LIMIT_MAILBOX_HOUR: z.preprocess(
@@ -187,7 +187,7 @@ const baseSchema = z.object({
   // Comma list of authserv-ids (hosts) whose `Authentication-Results` header the suspicious-mail rules trust, besides the
   // registrable domain of the mailbox IMAP host. Empty = none.
   MAIL_TRUSTED_AUTHSERV_IDS: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // Minutes between two mail syncs (D7 of F100): 2, 3 or 5. Empty = 2.
+  // Minutes between two mail syncs: 2, 3 or 5. Empty = 2.
   MAIL_SYNC_EVERY_MIN: z.preprocess(emptyAsUndefined, z.enum(["2", "3", "5"]).default("2")),
   // Empty = the web is off.
   WEB_BASE_URL: z.preprocess(
@@ -206,7 +206,7 @@ const baseSchema = z.object({
   ),
   // The language of the operator alert texts: `en` or `pl`. Empty = `en`.
   OPERATOR_LOCALE: z.preprocess(emptyAsUndefined, z.enum(["en", "pl"]).default("en")),
-  // F114 service levels of the operator alerts. Empty = the default. Whole numbers, except SLO_DISK_FREE_GB (decimals).
+  // Service levels of the operator alerts. Empty = the default. Whole numbers, except SLO_DISK_FREE_GB (decimals).
   // Minutes since the last sync before a mailbox counts as late.
   SLO_SYNC_LAG_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(5).max(1440).default(15)),
   // Minutes (outside quiet hours) that an urgent mail may wait for its notice.

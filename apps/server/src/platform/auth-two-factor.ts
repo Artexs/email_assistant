@@ -256,7 +256,7 @@ async function endOlderAccess(ctx: AuditContext, userId: string, keepSessionId: 
   if (others.length > 0) await ctx.context.internalAdapter.deleteSessions(others);
 }
 
-// D9, fail closed: the plugin has stored the enrolment before this hook runs. When the purge fails,
+// Fail closed: the plugin has stored the enrolment before this hook runs. When the purge fails,
 // the hook takes the enrolment back (one transaction), so the user is not enrolled, the old access is
 // unchanged and a retry works. It then rethrows: the answer stays a 500. Trusted-device rows stay:
 // they are old access, and the retry purges them.

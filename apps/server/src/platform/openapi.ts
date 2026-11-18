@@ -27,7 +27,7 @@ export const SESSION_SCHEME = "session";
 
 const DOCUMENT: NonNullable<Parameters<typeof generateSpecs>[1]>["documentation"] = {
   openapi: "3.1.0",
-  // ADR 0023: no API version before E12.
+  // ADR 0023: no API version before a second client ships.
   info: { title: "Email assistant API", version: "0", description: "The API of the web panel." },
   security: [{ [SESSION_SCHEME]: [] }],
   components: {
@@ -42,7 +42,7 @@ const DOCUMENT: NonNullable<Parameters<typeof generateSpecs>[1]>["documentation"
   },
 };
 
-// Operator routes (E10: the docs site publishes the file) and Better Auth routes never enter the file, also when a
+// Operator routes (the docs site publishes the file) and Better Auth routes never enter the file, also when a
 // route carries an `apiDoc` by mistake.
 const EXCLUDED_PATHS: RegExp[] = [/^\/api\/operator(\/|$)/, /^\/api\/auth(\/|$)/, /^\/api\/openapi\.json$/];
 

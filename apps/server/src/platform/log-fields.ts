@@ -103,7 +103,7 @@ export const numberFieldNames = [
   "regranted",
   "paused",
 ] as const;
-/** Code fields: the F089 D7 rule. Values come from closed sets, never from mail, users or outside text. */
+/** Code fields: the closed-set rule. Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [
   "job",
   "code",
@@ -209,7 +209,7 @@ export function logFieldKind(name: string): LogFieldKind | undefined {
   return fieldNameSet.has(name) ? "code" : undefined;
 }
 
-/** Uuid → lower-case UUID string or null; number → finite number or null; code → the D7 rule. */
+/** Uuid → lower-case UUID string or null; number → finite number or null; code → the closed-set rule. */
 export function isLogValueOfKind(kind: LogFieldKind, value: unknown): boolean {
   if (kind === "code") {
     return isLogValue(value);

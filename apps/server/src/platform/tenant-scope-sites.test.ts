@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
-// Plan D16, D18 (RLS safety net, ADR 0011): only these places call the scope functions, and only the driver writes
+// (RLS safety net, ADR 0011): only these places call the scope functions, and only the driver writes
 // app.org_id. A new call site fails here until the plan names it.
 const SERVER_SRC = join(import.meta.dir, "..");
 

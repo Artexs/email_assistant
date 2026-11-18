@@ -25,7 +25,7 @@ export interface WebSession {
   sessionId: string; // the id of the session row, not the cookie token
   twoFactorEnabled: boolean; // the session user has TOTP on (users.two_factor_enabled, read by Better Auth)
   signInMethod: "password" | "sso"; // an SSO session never passed a TOTP code step (ADR 0026)
-  setCookie?: string[]; // refreshed cookies from Better Auth (W17)
+  setCookie?: string[]; // refreshed cookies from Better Auth
 }
 
 // Only the exact value "password" is a password session. A missing or unknown value is SSO: the stricter operator rule (fail closed).
@@ -205,7 +205,7 @@ function parseWith<T>(schema: z.ZodType<T>, input: unknown): T {
   return result.data;
 }
 
-// One getSession call per request: the result is cached in the context; refreshed cookies go to the response (W17).
+// One getSession call per request: the result is cached in the context; refreshed cookies go to the response.
 export async function readSession(c: Context): Promise<WebSession | null> {
   const ctx = c as Context<ApiEnv>;
   const cached = ctx.get("session");
@@ -257,8 +257,7 @@ export const SUSPENDED_WRITE_ALLOW: readonly { method: string; path: RegExp }[] 
   { method: "POST", path: /^\/api\/operator\// },
 ];
 
-// The operator console page (ADR 0027): non-operators get the 404 page, as for a path that does not exist. Probe P1 of
-// spec/features/active/F099-e7-t2-platform-controls-send-limits-feature-flags-operator-console-security-log/plan.md:
+// The operator console page (ADR 0027): non-operators get the 404 page, as for a path that does not exist.
 // c.req.path is decoded and normalized, so this covers every served form.
 export const OPERATOR_PAGE = /^\/operator(\/|$)/i;
 
