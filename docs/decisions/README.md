@@ -37,13 +37,13 @@ Template:
 | 0019 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
 | 0020 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
 | 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram          | accepted                                            |
-| 0022 | Report mail goes into the user's own INBOX by IMAP APPEND                        | proposed                                            |
+| 0022 | Report mail goes into the user's own INBOX by IMAP APPEND                        | accepted (F110)                                     |
 | 0023 | Every user action is a typed HTTP command described in OpenAPI                   | accepted (PD-035, F102)                             |
 | 0024 | Structured logs, tailnet log store, operator alerts checked by the app           | proposed                                            |
 | 0025 | Not used                                                                         | not used                                            |
 | 0026 | Identity tier 1: OIDC per organization, TOTP, break-glass owner                  | point 1 accepted (F105); points 2–7 proposed        |
 | 0027 | Operator role in the panel and per-organization feature flags                    | proposed                                            |
-| 0028 | Autonomy earned from global evidence and a history check, not labels             | proposed                                            |
+| 0028 | Autonomy earned from global evidence and a history check, not labels             | accepted (F110)                                     |
 | 0029 | The sync reads the Sent folder, read-only                                        | accepted                                            |
 | 0030 | Public docs site: static Starlight on GitHub Pages, synthetic content            | proposed                                            |
 | 0031 | Mailbox OAuth through the existing IMAP adapter; Microsoft sends by Graph        | proposed                                            |

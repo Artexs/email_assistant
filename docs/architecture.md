@@ -132,6 +132,7 @@ Pipeline rules:
 1. **Hard rules before AI.** Blocklisted sender → spam, no LLM call. Whitelisted or VIP sender → the classifier gets the category list without `spam`.
    The system reads INBOX and the synced folders of `mailbox_folders` (ADR 0014; at Interia `Oferty`, `Społeczności`, `Rachunki` and the spam folder `Wiadomości-śmieci`).
    It never reads `AI/*`, Drafts, Trash or the user's own folders, so that mail is never touched.
+   The only mail that the system writes into INBOX is the report mail of a member who chose the channel `mail` or `both` (IMAP APPEND, flag `report_mail`, ADR 0022, §6.1); the sync skips it as own mail.
    It reads the Sent folder (`folder_map.sent`) only read-only, into its own table, and only when the organization flag `sent_sync` and the mailbox switch are on (ADR 0029; [capabilities/sent-mail.md](capabilities/sent-mail.md)).
 2. **The LLM returns data only:** category, confidence, reason code + short reason, extracted fields, a delegate id from a given list,
    and the summary for `info` mail. It never names a free-form recipient.
@@ -201,7 +202,7 @@ Actions that the scope holds back stay `ready` and wait (they expire after 24 h,
 `SEND_SCOPE` (env, S4) is a third gate, for the send only. `off` (default) = no send goes out: an approved send waits and ends as `held_timeout` 48 h after the tap; `self` = only a send whose every recipient is in `SEND_TEST_ADDRESSES`; `all` = every send of every active mailbox of an organization that is not `suspended` (delegations, reminders and clarification questions to the original sender); a send still needs the owner's tap. The server refuses `self` without a valid address list. A draft is made under `ACTIONS_SCOPE`: with `off`, no draft is made, so no approval request goes out. A tap on 📤 Send is the approval; the scope still decides whether the mail goes out.
 The mode, the `auto` flags and the switches change only through `bun run mailbox:settings` (audit rows `mailbox.mode_changed`, `mailbox.policy_changed`, `mailbox.switch_changed`).
 A change that closes a gate (`mode shadow`, `auto … off`, `switch … off`, and `mode assist` without `--keep-switches` for each switch it turns off) also expires the `ready` rows it closes, in the same transaction. `mode shadow` also expires every `awaiting_approval` send (`policy_changed`); `switch create_draft off` expires the sends of every kind except the reply sends, and `switch reply_drafts off` expires only the reply sends (a reply draft has its own switch, PD-082). `saveTriage` share-locks the settings row and compares the settings version: a triage batch planned under old settings writes nothing and releases its mails.
-A category gets automatic moves only after it passes the go/no-go bar of the S1b report (default: precision ≥ 98%).
+A category gets automatic moves only when the evidence rule of ADR 0028 allows it. With the flag `trust_ladder` on, global holdout evidence for the running model, prompt and endpoint decides; the history check of the mailbox and the real labels (30 or more) can only block; a tripwire pauses a category that the user corrects; and every `auto` stores the key it was earned under, so a model or endpoint switch ends it until the re-gate re-grants it ([trust.md](capabilities/trust.md) rules 1, 5, 9, 10). With the flag off the old bar of the S1b report applies (default: precision ≥ 98% on at least 30 labels).
 The policy returns one of three values per action: `apply`, `await_approval`, `log_only`.
 The rescue move of spam folder mail into INBOX (§4.2) follows the same go/no-go rule: the category needs `auto` ON. `delegation` has no `auto` flag, so its rescue is always `log_only`.
 The urgent notice skips mail from the spam folder (D23): an injected "urgent" text must not push such mail to the phone. The digest still shows it with its folder.
@@ -373,6 +374,7 @@ Tenancy:
   The re-queue sets `backfilled_at` = now, so re-queued mail skips the 7-day rule.
   Pilot exception (user, 2026-11-06): a window above 30 days keeps mail bodies longer than the 30-day retention (§7).
   The retention cleanup clears them when it exists.
+- **History backfill (F110, flag `trust_ladder`):** at connect, and again for a `model_switch` check, the job `trust.history` reads INBOX mail of the last 30 days with the purpose `history` of the same backfill function. It stores new mail as `skipped` / `history_check` (inserts only, mail at or below the INBOX cursor only, no digest line, no action), reads the flags `\Seen`, `\Answered` and `\Flagged` of the window, and classifies a capped sample for the history check ([capabilities/trust.md](capabilities/trust.md) rules 7 and 8). Other folders are not read (F060).
 - **UIDVALIDITY change:** per folder: rescan that folder's mail of the last 7 days; the dedup key stops duplicates; known mail only gets its new `uid`.
 - **Threads:** `thread_key` = the first `Message-ID` in `References`, else `In-Reply-To`, else the mail's own `Message-ID`.
   The LLM gets the last 3 mails with the same `thread_key` from the DB as context.
@@ -553,21 +555,25 @@ Tenancy:
 
 - **Scheduler** (in the server process, `croner`, one tick never overlaps the next). Every job of `apps/server/src/main.ts`; the detail of a job is on its page:
 
-  | Job                  | Schedule                                                                                   | Page                                                        |
-  | -------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-  | `mail.sync`          | `*/N * * * *` (every `MAIL_SYNC_EVERY_MIN` min; default 2)                                 | [sync.md](capabilities/sync.md)                             |
-  | `platform.heartbeat` | `*/5 * * * *` (every 5 min)                                                                | Liveness, below                                             |
-  | `channels.operator`  | `0 13 * * * *` (hourly at minute 13)                                                       | [digest-and-notices.md](capabilities/digest-and-notices.md) |
-  | `triage.worker`      | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)                     | [triage.md](capabilities/triage.md)                         |
-  | `actions.committer`  | `*/15 * * * * *` (every 15 s)                                                              | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
-  | `actions.expiry`     | `0 7 * * * *` (hourly at minute 7)                                                         | [drafts-and-send.md](capabilities/drafts-and-send.md)       |
-  | `loops.chaser`       | `20 */15 * * * *` (every 15 min; acts from 07:30 local time; replaced `delegation.chaser`) | [open-loops.md](capabilities/open-loops.md) rule 6          |
-  | `loops.analyze`      | `35 * * * * *` (every minute at second 35; only when the triage scope is not `off`)        | [open-loops.md](capabilities/open-loops.md) rule 2          |
-  | `loops.match`        | `50 */2 * * * *` (every 2 min; needs no model, runs with the scope `off`)                  | [open-loops.md](capabilities/open-loops.md) rule 3          |
-  | `triage.returned`    | `*/15 * * * * *` (every 15 s)                                                              | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
-  | `platform.retention` | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron)              | [retention.md](capabilities/retention.md)                   |
-  | `channels.notifier`  | `*/15 * * * * *` (every 15 s; only when Telegram is on)                                    | [digest-and-notices.md](capabilities/digest-and-notices.md) |
-  | `channels.digest`    | `5 * * * * *` (every minute at second 5; only when Telegram is on)                         | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | Job                    | Schedule                                                                                   | Page                                                        |
+  | ---------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+  | `mail.sync`            | `*/N * * * *` (every `MAIL_SYNC_EVERY_MIN` min; default 2)                                 | [sync.md](capabilities/sync.md)                             |
+  | `platform.heartbeat`   | `*/5 * * * *` (every 5 min)                                                                | Liveness, below                                             |
+  | `channels.operator`    | `0 13 * * * *` (hourly at minute 13)                                                       | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | `triage.worker`        | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)                     | [triage.md](capabilities/triage.md)                         |
+  | `actions.committer`    | `*/15 * * * * *` (every 15 s)                                                              | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
+  | `actions.expiry`       | `0 7 * * * *` (hourly at minute 7)                                                         | [drafts-and-send.md](capabilities/drafts-and-send.md)       |
+  | `loops.chaser`         | `20 */15 * * * *` (every 15 min; acts from 07:30 local time; replaced `delegation.chaser`) | [open-loops.md](capabilities/open-loops.md) rule 6          |
+  | `loops.analyze`        | `35 * * * * *` (every minute at second 35; only when the triage scope is not `off`)        | [open-loops.md](capabilities/open-loops.md) rule 2          |
+  | `loops.match`          | `50 */2 * * * *` (every 2 min; needs no model, runs with the scope `off`)                  | [open-loops.md](capabilities/open-loops.md) rule 3          |
+  | `triage.returned`      | `*/15 * * * * *` (every 15 s)                                                              | [actions-and-undo.md](capabilities/actions-and-undo.md)     |
+  | `trust.history`        | `*/15 * * * * *` (every 15 s; only when the triage scope is not `off`)                     | [trust.md](capabilities/trust.md) rule 7                    |
+  | `trust.regate`         | `20 */5 * * * *` (every 5 min; also once at start, before the triage worker)               | [trust.md](capabilities/trust.md) rule 9                    |
+  | `trust.tripwire`       | `0 * * * * *` (every minute; needs no model, runs with the scope `off`)                    | [trust.md](capabilities/trust.md) rule 10                   |
+  | `channels.report_mail` | `*/15 * * * * *` (every 15 s; needs no Telegram bot)                                       | [trust.md](capabilities/trust.md) rule 19                   |
+  | `platform.retention`   | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron)              | [retention.md](capabilities/retention.md)                   |
+  | `channels.notifier`    | `*/15 * * * * *` (every 15 s; only when Telegram is on)                                    | [digest-and-notices.md](capabilities/digest-and-notices.md) |
+  | `channels.digest`      | `5 * * * * *` (every minute at second 5; only when Telegram is on)                         | [digest-and-notices.md](capabilities/digest-and-notices.md) |
 
 - Moved to [docs/capabilities/actions-and-undo.md](capabilities/actions-and-undo.md) § Rules (F095).
 - Moved to [docs/capabilities/drafts-and-send.md](capabilities/drafts-and-send.md) § Rules (F095).

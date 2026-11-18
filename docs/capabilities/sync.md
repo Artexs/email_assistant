@@ -1,6 +1,6 @@
 # Sync
 
-> Checked against the code at `d497f8a7`, 2026-11-15.
+> Checked against the code at `5ba3e0bc`, 2026-11-18.
 
 ## What it does now
 
@@ -40,41 +40,42 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 
 ## Entry points
 
-| Kind     | Name                                                                     | Where                                            |
-| -------- | ------------------------------------------------------------------------ | ------------------------------------------------ |
-| job      | `mail.sync` (`*/N * * * *`, N = `MAIL_SYNC_EVERY_MIN`, default 2)        | `apps/server/src/modules/mail/jobs.ts`           |
-| route    | `GET /api/mailboxes`                                                     | `apps/server/src/modules/mail/routes.ts`         |
-| route    | `POST /api/mailboxes` (owner)                                            | `apps/server/src/modules/mail/routes.ts`         |
-| route    | `POST /api/mailboxes/:id/password` (owner)                               | `apps/server/src/modules/mail/routes.ts`         |
-| route    | `POST /api/mailboxes/:id/pause`, `POST .../resume` (owner)               | `apps/server/src/modules/mail/routes.ts`         |
-| route    | `DELETE /api/mailboxes/:id` (owner)                                      | `apps/server/src/modules/mail/routes.ts`         |
-| route    | `PATCH /api/settings/:mailboxId/sync-folders/:key` (owner)               | `apps/server/src/modules/config/routes.ts`       |
-| Telegram | `/pause`, `/resume` (owner)                                              | `apps/server/src/modules/channels/commands.ts`   |
-| CLI      | `bun run mailbox:connect`                                                | `apps/server/src/scripts/mailbox-connect.ts`     |
-| CLI      | `bun run mailbox:check`                                                  | `apps/server/src/scripts/mailbox-check.ts`       |
-| CLI      | `bun run mailbox:password`                                               | `apps/server/src/scripts/mailbox-password.ts`    |
-| CLI      | `bun run mailbox:rescan`                                                 | `apps/server/src/scripts/mailbox-rescan.ts`      |
-| CLI      | `bun run mailbox:backfill`                                               | `apps/server/src/scripts/mailbox-backfill.ts`    |
-| CLI      | `bun run trust:history-check`                                            | `apps/server/src/scripts/trust-history-check.ts` |
-| CLI      | `bun run mailbox:seed`                                                   | `apps/server/src/scripts/mailbox-seed.ts`        |
-| CLI      | `bun run mailbox:audit`                                                  | `apps/server/src/scripts/mailbox-audit.ts`       |
-| CLI      | `bun run mailbox:signals`                                                | `apps/server/src/scripts/mailbox-signals.ts`     |
-| CLI      | `bun run mailbox:settings` (`sync-folder`)                               | `apps/server/src/scripts/mailbox-settings.ts`    |
-| function | `syncMailbox`, `backfillInbox`                                           | `apps/server/src/modules/mail/sync.ts`           |
-| function | `refreshFlags`                                                           | `apps/server/src/modules/mail/flags.ts`          |
-| function | `findUserMoves`                                                          | `apps/server/src/modules/mail/moves.ts`          |
-| function | `listMoveCandidates`                                                     | `apps/server/src/modules/mail/repo/copies.ts`    |
-| function | `listFlagTargets`, `writeEmailFlags`, `touchEmailFlags`, `getEmailFlags` | `apps/server/src/modules/mail/repo/flags.ts`     |
-| function | `storeCapture`                                                           | `apps/server/src/modules/mail/capture-store.ts`  |
-| function | `insertEmailHeaders`, `getEmailHeaders`, `clearCapturedHeaders`          | `apps/server/src/modules/mail/repo/headers.ts`   |
-| function | `connectMailbox`, `updateMailboxPassword`, `buildFolderMap`              | `apps/server/src/modules/mail/connect.ts`        |
-| function | `resolveMailHost`, `configureMailHosts`                                  | `apps/server/src/modules/mail/host-guard.ts`     |
-| function | `checkMailbox`, `inspectMailbox`                                         | `apps/server/src/modules/mail/check.ts`          |
-| function | `checkMailboxHosts`, `markHostBlocked`, `recheckBlockedHosts`            | `apps/server/src/modules/mail/host-status.ts`    |
-| function | `removeMailbox`                                                          | `apps/server/src/modules/mail/remove.ts`         |
-| function | `switchMailboxStatus`                                                    | `apps/server/src/modules/mail/status.ts`         |
-| function | `ensureSyncFolders`                                                      | `apps/server/src/modules/mail/folders.ts`        |
-| function | `locateMessage`, `locateByActionId`                                      | `apps/server/src/modules/mail/locate.ts`         |
+| Kind     | Name                                                                                                                   | Where                                            |
+| -------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| job      | `mail.sync` (`*/N * * * *`, N = `MAIL_SYNC_EVERY_MIN`, default 2)                                                      | `apps/server/src/modules/mail/jobs.ts`           |
+| route    | `GET /api/mailboxes`                                                                                                   | `apps/server/src/modules/mail/routes.ts`         |
+| route    | `POST /api/mailboxes` (owner)                                                                                          | `apps/server/src/modules/mail/routes.ts`         |
+| route    | `POST /api/mailboxes/:id/password` (owner)                                                                             | `apps/server/src/modules/mail/routes.ts`         |
+| route    | `POST /api/mailboxes/:id/pause`, `POST .../resume` (owner)                                                             | `apps/server/src/modules/mail/routes.ts`         |
+| route    | `DELETE /api/mailboxes/:id` (owner)                                                                                    | `apps/server/src/modules/mail/routes.ts`         |
+| route    | `PATCH /api/settings/:mailboxId/sync-folders/:key` (owner)                                                             | `apps/server/src/modules/config/routes.ts`       |
+| Telegram | `/pause`, `/resume` (owner)                                                                                            | `apps/server/src/modules/channels/commands.ts`   |
+| CLI      | `bun run mailbox:connect`                                                                                              | `apps/server/src/scripts/mailbox-connect.ts`     |
+| CLI      | `bun run mailbox:check`                                                                                                | `apps/server/src/scripts/mailbox-check.ts`       |
+| CLI      | `bun run mailbox:password`                                                                                             | `apps/server/src/scripts/mailbox-password.ts`    |
+| CLI      | `bun run mailbox:rescan`                                                                                               | `apps/server/src/scripts/mailbox-rescan.ts`      |
+| CLI      | `bun run mailbox:backfill`                                                                                             | `apps/server/src/scripts/mailbox-backfill.ts`    |
+| CLI      | `bun run trust:history-check`                                                                                          | `apps/server/src/scripts/trust-history-check.ts` |
+| CLI      | `bun run mailbox:seed`                                                                                                 | `apps/server/src/scripts/mailbox-seed.ts`        |
+| CLI      | `bun run mailbox:audit`                                                                                                | `apps/server/src/scripts/mailbox-audit.ts`       |
+| CLI      | `bun run mailbox:signals`                                                                                              | `apps/server/src/scripts/mailbox-signals.ts`     |
+| CLI      | `bun run mailbox:settings` (`sync-folder`)                                                                             | `apps/server/src/scripts/mailbox-settings.ts`    |
+| function | `syncMailbox`, `backfillInbox`                                                                                         | `apps/server/src/modules/mail/sync.ts`           |
+| function | `backfillMailbox` (also the purpose `history`), `refreshFlagsOfMailbox` (the history job; [trust.md](trust.md) rule 7) | `apps/server/src/modules/mail/tools.ts`          |
+| function | `refreshFlags`                                                                                                         | `apps/server/src/modules/mail/flags.ts`          |
+| function | `findUserMoves`                                                                                                        | `apps/server/src/modules/mail/moves.ts`          |
+| function | `listMoveCandidates`                                                                                                   | `apps/server/src/modules/mail/repo/copies.ts`    |
+| function | `listFlagTargets`, `writeEmailFlags`, `touchEmailFlags`, `getEmailFlags`                                               | `apps/server/src/modules/mail/repo/flags.ts`     |
+| function | `storeCapture`                                                                                                         | `apps/server/src/modules/mail/capture-store.ts`  |
+| function | `insertEmailHeaders`, `getEmailHeaders`, `clearCapturedHeaders`                                                        | `apps/server/src/modules/mail/repo/headers.ts`   |
+| function | `connectMailbox`, `updateMailboxPassword`, `buildFolderMap`                                                            | `apps/server/src/modules/mail/connect.ts`        |
+| function | `resolveMailHost`, `configureMailHosts`                                                                                | `apps/server/src/modules/mail/host-guard.ts`     |
+| function | `checkMailbox`, `inspectMailbox`                                                                                       | `apps/server/src/modules/mail/check.ts`          |
+| function | `checkMailboxHosts`, `markHostBlocked`, `recheckBlockedHosts`                                                          | `apps/server/src/modules/mail/host-status.ts`    |
+| function | `removeMailbox`                                                                                                        | `apps/server/src/modules/mail/remove.ts`         |
+| function | `switchMailboxStatus`                                                                                                  | `apps/server/src/modules/mail/status.ts`         |
+| function | `ensureSyncFolders`                                                                                                    | `apps/server/src/modules/mail/folders.ts`        |
+| function | `locateMessage`, `locateByActionId`                                                                                    | `apps/server/src/modules/mail/locate.ts`         |
 
 ## Data
 
@@ -86,7 +87,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `email_flags` written by the flag refresh: one row per checked mail (rule 6) with `seen`, `answered`, `flagged`, the first time of each flag, and `checked_at` (the last try; a row of mail that could not be read has all flags false and no first-seen time); the `answered_check` columns are not written by sync (the `/review` answered check writes them, and only on a row whose `answered` flag is true).
 - Audit events: `mailbox.connected`, `mailbox.paused`, `mailbox.resumed`, `mailbox.password_changed`, `mailbox.removed`, `mailbox.host_blocked`, `mailbox.host_allowed`, `mailbox.sync_folder_added`, `mailbox.sync_folder_changed`.
 
-19. **Tombstones (F106).** The trigger `emails_skip_tombstoned` (`BEFORE INSERT` on `emails`) returns NULL for a mail whose dedup key without a `#<n>` suffix has a row in `dsr_tombstones` of the organization. `insertEmail` (`ON CONFLICT DO NOTHING`) then answers `false`, so sync, rescan and backfill store nothing, raise no error and (as for any known mail) store no `email_headers` row. The erase (`org:dsr --erase`) writes the tombstones and takes the `mailbox_folders` row locks that `applyChunk` takes, so a chunk planned before the erase meets the tombstone. A mail that was never stored has no tombstone: run the erase again after a backfill, after the first sync of a newly enabled sync folder and after a newly connected mailbox. Rules: [account-data.md](account-data.md).
+19. **Tombstones (F106).** The trigger `emails_skip_tombstoned` (`BEFORE INSERT` on `emails`) returns NULL for a mail whose dedup key without a `#<n>` suffix has a row in `dsr_tombstones` of the organization. `insertEmail` (`ON CONFLICT DO NOTHING`) then answers `false`, so sync, rescan and backfill store nothing, raise no error and (as for any known mail) store no `email_headers` row. The erase (`org:dsr --erase`) writes the tombstones and takes the `mailbox_folders` row locks that `applyChunk` takes, so a chunk planned before the erase meets the tombstone. A mail that was never stored has no tombstone: run the erase again after a backfill, after the first sync of a newly enabled sync folder and after a newly connected mailbox. With the flag `trust_ladder` on, a newly connected mailbox also gets the automatic history check ([trust.md](trust.md) rule 7), which stores up to 30 days of INBOX mail as `skipped` / `history_check` rows, so the erase must run again after that check too (an `org:dsr --erase` that ran before it holds no tombstone for that mail). Rules: [account-data.md](account-data.md).
 
 ## Limits
 
@@ -95,7 +96,7 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - A mail that no row knows and that lands below a cursor is not seen (for example an Interia re-sort into INBOX). Only a copy of a mail that the system moved in the last 7 days is found.
 - A user move of mail received more than 30 days ago into a synced folder below that folder's cursor is not seen (the flag refresh window); the next refresh looks again at a move that was not found or not written, at most 10 minutes later. For a mailbox with more than 3,000 mails in the 30-day window it can come later in the rotation: the refresh touches the gone mail, which moves it to the back of the queue.
 - `F062-drop-mailbox-cursor-columns`: the INBOX cursor is still written twice (`mailboxes` and `mailbox_folders`).
-- `F060-backfill-per-folder`: `mailbox:backfill` reads INBOX only; a new synced folder gets only the 24 h first sync.
+- `F060-backfill-per-folder`: `mailbox:backfill` reads INBOX only; a new synced folder gets only the 24 h first sync. The history backfill of the trust ladder reads INBOX only too.
 - The mailbox limit is a count only (`tenancy-and-plans.md`).
 - A tombstone covers only mail that was stored when the erase ran (rule 19): the operator repeats the erase after a backfill, a new sync folder or a new mailbox ([account-data.md](account-data.md) § Limits).
 
