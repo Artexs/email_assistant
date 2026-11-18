@@ -54,7 +54,29 @@ describe("astro.config.mjs", () => {
       "ea-public-content",
       "ea-in-place-check",
       "ea-link-check",
+      "ea-shots",
     ]);
+  });
+  test("the shots integration tells <Shot> where the PNG files are and logs the mode once", () => {
+    const saved = { dir: process.env.EA_DOCS_SHOTS_DIR, mode: process.env.DOCS_SHOTS };
+    try {
+      delete process.env.EA_DOCS_SHOTS_DIR;
+      delete process.env.DOCS_SHOTS;
+      const run = hook("ea-shots", "astro:config:done");
+      const off = logger();
+      run({ config: { root: pathToFileURL(`${DOCS_ROOT}/`) }, logger: off.logger });
+      expect(off.lines).toEqual(["shots: off"]);
+      expect(process.env.EA_DOCS_SHOTS_DIR).toBe(join(DOCS_ROOT, "public/shots"));
+      process.env.DOCS_SHOTS = "on";
+      const on = logger();
+      run({ config: { root: pathToFileURL(`${DOCS_ROOT}/`) }, logger: on.logger });
+      expect(on.lines).toEqual(["shots: on"]);
+    } finally {
+      if (saved.dir === undefined) delete process.env.EA_DOCS_SHOTS_DIR;
+      else process.env.EA_DOCS_SHOTS_DIR = saved.dir;
+      if (saved.mode === undefined) delete process.env.DOCS_SHOTS;
+      else process.env.DOCS_SHOTS = saved.mode;
+    }
   });
   test("the content-script check reads the in-place sources", () => {
     const setup = hook("ea-csp-finalize", "astro:config:setup");
