@@ -539,7 +539,7 @@ describe("buildDigestMessage: suspicious mail", () => {
       }
       return emailId;
     };
-    // A flagged mail that got no plan (stage 03), and one that was drafted before the flag went on (it keeps its would-do line).
+    // A flagged mail that got no plan, and one that was drafted before the flag went on (it keeps its would-do line).
     await draft(ctx, a.mailboxId, "SUBJECT-A", ["link_mismatch"], false);
     await draft(ctx, a.mailboxId, "SUBJECT-DRAFTED", ["risky_attachment"]);
     // Organization B has a flagged mail too: it never shows in the digest of A.
@@ -737,7 +737,7 @@ describe("digest why lines (F110 stage 16)", () => {
       // An unsure item keeps its guess percent only.
       expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).toContain("55%");
       expect(on.match(/SUBJECT-UNSURE\n💬 [^\n]*\n/)?.[0]).not.toContain("·");
-      // The tags sit next to the delegate name, before the send state (N1); at most 3.
+      // The tags sit next to the delegate name, before the send state; at most 3.
       expect(on).toContain(
         "will draft a delegation to Anna Nowak (skills: finance, legal, hr); waits for your approval"
       );

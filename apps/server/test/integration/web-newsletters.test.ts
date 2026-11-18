@@ -17,7 +17,7 @@ import {
   type SenderMail,
 } from "./web-newsletters-kit";
 
-// GET /api/newsletters/:mailboxId (F110 stage 23, tests 1 to 3 of the stage file and the rules around them). Committed rows.
+// GET /api/newsletters/:mailboxId (tests 1 to 3 of the stage file and the rules around them). Committed rows.
 const db = testDb();
 let box: NewsletterBox;
 

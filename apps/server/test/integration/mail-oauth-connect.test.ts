@@ -38,7 +38,7 @@ import { insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F117 stage 09: Connect and Reconnect of an OAuth mailbox and the callback route. The token endpoint is the fake of stage 06; the mail
+// Connect and Reconnect of an OAuth mailbox and the callback route. The token endpoint is the fake of stage 06; the mail
 // login runs against GreenMail (auth off: it takes any token), or a stub that refuses. Rows are committed, because the state store and
 // the Reconnect lock run their own transactions. No real provider call.
 const db = testDb();

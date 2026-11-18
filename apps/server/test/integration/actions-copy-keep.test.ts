@@ -21,7 +21,7 @@ import {
 } from "./copy-hash-fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F115 stage 08, step 3: a reverse row (reject, expiry, a new version, a send) deletes only the copy that the system made.
+// A reverse row (reject, expiry, a new version, a send) deletes only the copy that the system made.
 const db = testDb();
 const boxes: CopyBox[] = [];
 let logs: CapturedLogs | null = null;

@@ -32,7 +32,7 @@ import {
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-// F115 stage 08, step 2: the copy check before the SMTP call. GreenMail holds the copies; the test edits them like a mail client.
+// The copy check before the SMTP call. GreenMail holds the copies; the test edits them like a mail client.
 const db = testDb();
 const boxes: CopyBox[] = [];
 let logs: CapturedLogs | null = null;

@@ -13,7 +13,7 @@ import { createDb } from "../../src/platform/db";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F110 stage 22: the unsubscribe request of a sender is in the data request, the erase and the organization export.
+// The unsubscribe request of a sender is in the data request, the erase and the organization export.
 // The seed is committed (the erase runs its own transaction); `afterEach` removes it. The connection is the `app` role.
 const db = testDb();
 const KEY = Buffer.alloc(32, 7).toString("base64");

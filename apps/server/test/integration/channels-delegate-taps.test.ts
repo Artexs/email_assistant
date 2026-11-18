@@ -12,7 +12,7 @@ import { dataOf, deliverDigest, linkOf, MESSAGE_AT, tapDeps } from "./channels-l
 import { insertDelegate, insertTriaged, renderedOf } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F116 stage 19, step 3: the Delegate button and the picker. Every test runs in a transaction that is rolled back.
+// The Delegate button and the picker. Every test runs in a transaction that is rolled back.
 const db = testDb();
 
 afterAll(async () => {

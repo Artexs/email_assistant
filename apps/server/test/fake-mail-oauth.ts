@@ -1,5 +1,5 @@
-// A fake token server for the mailbox OAuth tests (F117 stage 06): `Bun.serve` on `http://127.0.0.1:<random port>`.
-// A TEST DOUBLE ONLY. No production code, config or env key reads its URLs (D6): a test builds a registry with `specs()` and passes it in.
+// A fake token server for the mailbox OAuth tests: `Bun.serve` on `http://127.0.0.1:<random port>`.
+// A TEST DOUBLE ONLY. No production code, config or env key reads its URLs: a test builds a registry with `specs()` and passes it in.
 // It is as strict as the plan needs: client id and secret, single-use codes, the PKCE verifier, refresh token rotation, revoke.
 import { createHash, randomBytes } from "node:crypto";
 

@@ -26,7 +26,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { TEST_ORIGIN, webOrg, type WebOrg } from "./web-helpers";
 
-// F117 stage 08: `finishOAuthCallback` against the fake token server. Rows are committed, because the state store runs its own
+// `finishOAuthCallback` against the fake token server. Rows are committed, because the state store runs its own
 // transactions. Every refusal is one code of the closed set; a refusal stores nothing.
 const db = testDb();
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);

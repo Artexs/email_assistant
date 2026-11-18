@@ -19,7 +19,7 @@ import type { DB } from "../../src/platform/db";
 import { insertAction, insertDelegate, insertDelegation, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F106 stage 06: the address map and `matchSubject`. Every test runs in a transaction that rolls back. The addresses
+// The address map and `matchSubject`. Every test runs in a transaction that rolls back. The addresses
 // carry a random part, because `users.email` and `mailboxes.address` are unique across the database.
 const db = testDb();
 

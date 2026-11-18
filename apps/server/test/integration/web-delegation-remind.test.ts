@@ -12,7 +12,7 @@ import { testDb } from "./helpers";
 import { approvalKit, NOW, post, type Seed } from "./web-approvals-kit";
 import { TEST_ORIGIN } from "./web-helpers";
 
-// F102 stage 16: POST /api/delegations/:id/remind, and the calls of `remindNow` on two connections (the double click, the settings
+// POST /api/delegations/:id/remind, and the calls of `remindNow` on two connections (the double click, the settings
 // lock). The owner of the second organization O2 is the session `other`. The service rules are in `delegation-remind.test.ts`.
 const db = testDb();
 const { cleanup, setup, addSend, insertDelegateNow, send } = approvalKit(db);

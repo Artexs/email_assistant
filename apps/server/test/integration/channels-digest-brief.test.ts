@@ -1,4 +1,4 @@
-// F116 stage 18: the brief in the first digest of the member's local day, the count line in later ones (T6–T10). Rows are inside
+// The brief in the first digest of the member's local day, the count line in later ones. Rows are inside
 // one transaction that rolls back. Other files: -sections (the lines from the database), -consent, -guards, -copies, -race.
 
 import { afterAll, describe, expect, test } from "bun:test";

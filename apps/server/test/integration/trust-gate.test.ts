@@ -27,7 +27,7 @@ import { testDb, withRollback } from "./helpers";
 import { addMailbox, deleteMailboxRow, insertCheckRow, insertTripRow } from "./trust-fixtures";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// The evidence gate behind `trust_ladder` (F110 stage 04) and the grant of both gates. Rows roll back, except the route
+// The evidence gate behind `trust_ladder` and the grant of both gates. Rows roll back, except the route
 // tests (their organizations are committed and removed in `afterEach`).
 const db = testDb();
 const NOW = new Date("2026-11-11T12:00:00Z");

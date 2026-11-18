@@ -12,7 +12,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F110 stage 22: the per-sender newsletter reader (tests 6 and 7 of the stage file, and the rules around them).
+// The per-sender newsletter reader (tests 6 and 7 of the stage file, and the rules around them).
 const db = testDb();
 
 afterAll(async () => {

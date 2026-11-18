@@ -402,7 +402,7 @@ describe("retention_indexes migration", () => {
   });
 });
 
-// Stage 13: actions, delegation, channels.
+// Actions, delegation, channels.
 
 describe("clearActionPayloads", () => {
   test("clears closed payloads and ready summaries over 90 days; keeps the rest; status and updated_at stay; org B is untouched", async () => {

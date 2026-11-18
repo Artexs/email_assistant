@@ -11,7 +11,7 @@ import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F110 stage 22: the migration `20261117140001_unsubscribe_data.sql` (the column `email_headers.list_unsubscribe_post`
+// The migration `20261117140001_unsubscribe_data.sql` (the column `email_headers.list_unsubscribe_post`
 // and the table `unsubscribe_requests`). The connection is the `app` role; the Down and Up sections run as the owner.
 const db = testDb();
 afterAll(async () => {

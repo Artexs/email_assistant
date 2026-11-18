@@ -10,7 +10,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F115 stage 06 step 3: the stored facts of a mail for the reply rules.
+// The stored facts of a mail for the reply rules.
 
 const db = testDb();
 

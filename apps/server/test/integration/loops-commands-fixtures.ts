@@ -11,7 +11,7 @@ import { insertLoopRow, insertSentRow } from "./loops-fixtures";
 import { loopsOrg } from "./loops-match-fixtures";
 import type { Org } from "./mail-sent-fixtures";
 
-// Rows for the tests of the loop commands (F116 stage 14). The clock is Friday 2026-11-20 09:00 in Warsaw (08:00 UTC);
+// Rows for the tests of the loop commands. The clock is Friday 2026-11-20 09:00 in Warsaw (08:00 UTC);
 // the organization time zone is Europe/Warsaw.
 
 export const FRIDAY = new Date("2026-11-20T08:00:00Z");

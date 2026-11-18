@@ -11,7 +11,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F115 stage 10 step 2: GET and PUT /api/mailboxes/:id/profile. Committed rows; the cleanup deletes both organizations.
+// GET and PUT /api/mailboxes/:id/profile. Committed rows; the cleanup deletes both organizations.
 const db = testDb();
 const UNKNOWN = "00000000-0000-4000-8000-000000000000";
 const CANARY = "CANARY-Zofia-Nowak-signature";

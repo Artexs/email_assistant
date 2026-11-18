@@ -18,7 +18,7 @@ import type { Db, TenantContext } from "../../src/platform/db";
 import { addMember, createOrgWithMailbox, insertTriagedWithActions, linkChat, randomChatId } from "./fixtures";
 import { insertCheckRow } from "./trust-fixtures";
 
-// Committed organizations for the tests of the tripwire (F110 stage 09). The job writes in transactions of its own, so these tests
+// Committed organizations for the tests of the tripwire. The job writes in transactions of its own, so these tests
 // cannot run in a rolled-back transaction. Every test removes its organizations and users in `finally`.
 export const RUNNING_KEY: EvidenceKey = {
   provider: "gemini",

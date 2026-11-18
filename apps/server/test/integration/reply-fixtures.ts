@@ -63,7 +63,7 @@ export interface DraftCopyHome {
   folderMap: Record<string, string>;
 }
 
-// A reply send compares its Drafts copy with the baseline hash of its draft (F115 stage 08). A test that sends a reply through
+// A reply send compares its Drafts copy with the baseline hash of its draft. A test that sends a reply through
 // `applySend` or the committer on a fake mailbox needs both: the copy of the applied draft in the fake `Drafts` folder, built as
 // the draft step builds it, and `provider_result.copy_hash`. The send must be claimable (`approved`); every claimed row is released again.
 export async function putDraftCopy(

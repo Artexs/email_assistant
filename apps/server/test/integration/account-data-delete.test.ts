@@ -14,7 +14,7 @@ import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtu
 import { testDb, withRollback } from "./helpers";
 import { fillMailbox } from "./mailbox-rows";
 
-// F106 stage 01: `delete_organization`, the tombstone table and the trigger `emails_skip_tombstoned`.
+// `delete_organization`, the tombstone table and the trigger `emails_skip_tombstoned`.
 // The connection is the `app` role, with no tenant scope unless a test sets one.
 const db = testDb();
 

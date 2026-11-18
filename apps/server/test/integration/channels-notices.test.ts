@@ -1139,7 +1139,7 @@ describe("action_failed notices", () => {
   });
 });
 
-// S4: approval requests, reminder sets, send results and answered notices (D19–D21, D24).
+// Approval requests, reminder sets, send results and answered notices.
 const APPLIED = { folder: "Drafts", uid: 7 };
 const SENDER = "boss@client.test";
 const BODY = "Please prepare the offer for the client.";
@@ -1702,7 +1702,7 @@ describe("send result notices", () => {
         providerResult: { stage: "envelope", response_code: 450, code: "EENVELOPE", cap: "soft_retry" },
       });
       const bad = await ended(trx, o, { status: "failed", reason: "bad_payload", attempts: 1 });
-      // A reply whose text still held a gap at the claim (stage 05): told like a bad payload, nothing was sent.
+      // A reply whose text still held a gap at the claim: told like a bad payload, nothing was sent.
       const gaps = await ended(trx, o, { status: "failed", reason: "has_gaps", attempts: 0 });
 
       await run(trx);

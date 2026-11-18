@@ -9,7 +9,7 @@ import type { LlmClient } from "../../src/platform/llm";
 
 import { advance, RUNNING_KEY, withHistoryBox, type BoxOptions, type HistoryBox } from "./trust-history-helpers";
 
-// Helpers for the tests of the classify step (F110 stage 07): a committed box with a check that waits in `classifying`, mail rows that
+// Helpers for the tests of the classify step: a committed box with a check that waits in `classifying`, mail rows that
 // the test places directly (the backfill is tested in the stage 06 files), and a fake model client with a fixed price.
 
 export const MODEL = RUNNING_KEY.model;

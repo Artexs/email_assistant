@@ -33,7 +33,7 @@ import {
 import { testDb } from "./helpers";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 
-// F113 stage 15: the demo seed export and import. Every test runs on test organizations of the test DB (committed:
+// The demo seed export and import. Every test runs on test organizations of the test DB (committed:
 // the export reads its own snapshot and the replace deletes in its own transaction) and never on a real organization,
 // a real mailbox or a real address: all addresses are `.test`. The organizations of a test are removed in `afterEach`.
 const db = testDb();

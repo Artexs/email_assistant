@@ -17,7 +17,7 @@ import type { LlmClient } from "../../src/platform/llm";
 import { createOrgWithMailbox, insertDelegate, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F109 stage 03: suspicious reasons in triage, the known-sender context and the delegation gate (tests 1-9 of the stage file).
+// Suspicious reasons in triage, the known-sender context and the delegation gate (tests 1-9 of the stage file).
 
 const db = testDb();
 

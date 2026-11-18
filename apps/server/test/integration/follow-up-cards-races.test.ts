@@ -1,4 +1,4 @@
-// F116 stage 11: every rule of the form "exactly one", "once", "never twice", "only" gets a race on two connections with committed
+// Every rule of the form "exactly one", "once", "never twice", "only" gets a race on two connections with committed
 // rows, as the app role and as the table owner (the owner is not filtered by row-level security, so a missing `org_id` filter shows).
 // The organization and its users are deleted after each test.
 import { afterAll, afterEach, describe, expect, test } from "bun:test";

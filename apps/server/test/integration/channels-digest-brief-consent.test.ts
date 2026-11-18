@@ -1,4 +1,4 @@
-// F116 stage 18: the consent of the member (D17) in the brief: counts and one ask for a member whom the consent does not cover.
+// The consent of the member in the brief: counts and one ask for a member whom the consent does not cover.
 
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";

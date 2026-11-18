@@ -12,7 +12,7 @@ import { createOrgWithMailbox, insertDelegate, insertDelegation, insertDraftAndS
 import { testDb, withRollback } from "./helpers";
 import { actionsOfLoop, auditOf, loopOf } from "./loops-commands-fixtures";
 
-// F116 stage 19, step 2: the roles and the answers of the loop taps. Every test runs in a transaction that is rolled back.
+// The roles and the answers of the loop taps. Every test runs in a transaction that is rolled back.
 const db = testDb();
 
 afterAll(async () => {
@@ -144,7 +144,7 @@ describe("the answers of Draft follow-up", () => {
       expect((await tap(trx, pl, loopData("lf", loop.id))).answer).toBe("Przypomnienie gotowe. Sprawdź kartę.");
       expect((await tap(trx, pl, loopData("lc", loop.id))).answer).toBe("Gotowe.");
       expect((await tap(trx, pl, loopData("lc", loop.id))).answer).toBe("Ta sprawa jest już zamknięta.");
-      // Shadow mode is "Tryb podglądu" in every Polish text (review 19 N6).
+      // Shadow mode is "Tryb podglądu" in every Polish text.
       const shadow = await briefLoop(trx, org);
       await trx
         .updateTable("mailbox_settings")

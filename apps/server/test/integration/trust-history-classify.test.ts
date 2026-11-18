@@ -27,7 +27,7 @@ import {
 } from "./trust-history-classify-helpers";
 import { advance, jobOf, MINUTE_MS, RUNNING_KEY, theCheck, type HistoryBox } from "./trust-history-helpers";
 
-// F110 stage 07, step 1: the classify step. The box holds a check in `classifying` and mail rows that the test places; the model is
+// The classify step. The box holds a check in `classifying` and mail rows that the test places; the model is
 // a fake with a fixed price (one cent per 10,000 tokens). The backfill and the flags steps are tested in trust-history-job.test.ts.
 
 const db = testDb();

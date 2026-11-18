@@ -15,7 +15,7 @@ import { randomChatId, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F110 stage 18 step 2: GET/PATCH /api/me/notify (tests 7, 8 and 9 of the stage).
+// GET/PATCH /api/me/notify (tests 7, 8 and 9 of the stage).
 const db = testDb();
 const NOW = new Date("2026-11-11T10:00:00.000Z");
 const orgs: WebOrg[] = [];

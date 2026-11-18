@@ -45,7 +45,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F102 stage 09 (D4): a decision in any channel edits the other Telegram cards of the send, and an old edit never
+// A decision in any channel edits the other Telegram cards of the send, and an old edit never
 // overwrites a newer state. Warsaw is UTC+1 on these dates: 13:05Z is 14:05 local.
 const db = testDb();
 
@@ -132,7 +132,7 @@ async function insertCard(
   return row.id;
 }
 
-// Two owners with a chat each, a waiting send S1 and its two sent cards C1 (U1, message 501) and C2 (U2, message 502).
+// Two owners with a chat each, a waiting send S1 and its two sent cards C1 (message 501) and C2 (message 502).
 async function world(trx: Transaction<DB>): Promise<World> {
   await isolateChannels(trx);
   const { orgId, userId: u1, mailboxId } = await createOrgWithMailbox(trx);

@@ -33,7 +33,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F116 stage 16: the Delegate command. Every test runs in a transaction that is rolled back.
+// The Delegate command. Every test runs in a transaction that is rolled back.
 const db = testDb();
 
 afterAll(async () => {

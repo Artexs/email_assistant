@@ -812,7 +812,7 @@ describe("two-factor events", () => {
   });
 });
 
-// F128: turning TOTP off and new backup codes need a code, not only the password.
+// Turning TOTP off and new backup codes need a code, not only the password.
 describe("F128: a code for turn off and new codes", () => {
   const disable = (user: Enrolment, body: Record<string, unknown>, via?: AuthHandle) =>
     user.client.post("/two-factor/disable", body, via);

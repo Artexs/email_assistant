@@ -23,7 +23,7 @@ import { logFormatFromEnv, setLogFormat, setLogLevel } from "../../src/platform/
 import { createOrgWithMailbox, insertDraftAndSend, insertTriagedWithActions, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F103 stage 08: one test per event of `committer.ts` and `expiry.ts`. Each runs the job with canary values that must
+// One test per event of `committer.ts` and `expiry.ts`. Each runs the job with canary values that must
 // not reach a log line (a recipient, a subject, a draft text, an SMTP reply, an error text with an address).
 
 const db = testDb();

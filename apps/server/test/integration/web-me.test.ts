@@ -312,7 +312,7 @@ describe("real webDeps getSession", () => {
       const me = meSchema.parse(await res.json());
       expect(me.mailboxCount).toBe(2);
       expect(me.mailboxesInAuthError).toBe(1);
-      // The real session: a password sign-in with a credential row (F119 stage 11, step 11.2).
+      // The real session: a password sign-in with a credential row (step 11.2).
       expect(me.signInMethod).toBe("password");
       expect(me.hasPassword).toBe(true);
 

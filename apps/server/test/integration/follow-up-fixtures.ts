@@ -8,7 +8,7 @@ import type { DB, Db } from "../../src/platform/db";
 
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-// Rows for the tests of the follow-up cards, lists and expiry (F116 stage 11). A follow-up is a loop with its sent mail and
+// Rows for the tests of the follow-up cards, lists and expiry. A follow-up is a loop with its sent mail and
 // the draft and the send that depend on it. `conn` is a rolled-back transaction or the committed `db` (the race tests).
 
 export const SENT_AT = "2026-11-10T09:30:00.000Z";

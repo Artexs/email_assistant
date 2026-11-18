@@ -13,7 +13,7 @@ import { apiRouters } from "../../src/web";
 import { testDb } from "./helpers";
 import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F099 stage 09: POST /api/operator/orgs/:orgId/plan and /flags. The operator is the assistant of A; the target is B.
+// POST /api/operator/orgs/:orgId/plan and /flags. The operator is the assistant of A; the target is B.
 const db = testDb();
 const key = randomBytes(32).toString("base64");
 const testConfig = loadConfig({

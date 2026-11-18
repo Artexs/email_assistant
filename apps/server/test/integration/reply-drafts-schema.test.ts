@@ -13,7 +13,7 @@ import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures"
 import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile, insertReplyRequest } from "./reply-fixtures";
 
-// F115 stage 03: the migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the copy of the style text,
+// The migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the copy of the style text,
 // the three notice kinds). The connection is the `app` role; the Down and Up sections run as the owner.
 const db = testDb();
 afterAll(async () => {

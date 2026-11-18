@@ -26,7 +26,7 @@ import { insertDraftAndSend, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { webOrg, type WebOrg } from "./web-helpers";
 
-// F117 stage 13: the committer sends the mail of a Microsoft mailbox through Graph. IMAP is the local GreenMail (auth off: a login with
+// The committer sends the mail of a Microsoft mailbox through Graph. IMAP is the local GreenMail (auth off: a login with
 // a new user makes the mailbox, XOAUTH2 takes any token), the token endpoint is the fake of stage 06, Graph is the fake of this stage.
 // The mail goes to the fake Graph server only; test addresses end in `@x.test`. The job is the real `committerDeps` composition.
 // Rows are committed: the token store runs its own transactions on the pool. The committer finds the mailboxes of the whole database;

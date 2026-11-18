@@ -11,7 +11,7 @@ import { testDb, withRollback } from "./helpers";
 import { insertLoopRow, insertSentRow } from "./loops-fixtures";
 import { ago, newOrg, NOW, siblingMailbox, type Org } from "./mail-sent-fixtures";
 
-// Switching "Track my sent mail" off ends what the Sent mail started (F116 stage 8, step 3).
+// Switching "Track my sent mail" off ends what the Sent mail started (step 3).
 const db = testDb();
 
 afterAll(async () => {

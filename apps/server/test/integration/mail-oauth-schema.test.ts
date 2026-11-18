@@ -9,7 +9,7 @@ import { createRetentionJob } from "../../src/retention";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F117 stage 03: the schema of mailbox OAuth (`secret_kind`, `send_via`, `oauth_provider`, `auth_reason`,
+// The schema of mailbox OAuth (`secret_kind`, `send_via`, `oauth_provider`, `auth_reason`,
 // `mailbox_oauth_states`). The connection is the `app` role. Times are set by SQL, not by the clock of the test.
 const db = testDb();
 

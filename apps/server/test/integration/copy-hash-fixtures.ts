@@ -1,4 +1,4 @@
-// GreenMail and committer helpers for the tests of the copy hash (F115 stage 08): the draft step makes a real copy in a real
+// GreenMail and committer helpers for the tests of the copy hash: the draft step makes a real copy in a real
 // Drafts folder, the test edits that copy like a mail client does, and the committer runs again.
 import { randomBytes, randomUUID } from "node:crypto";
 

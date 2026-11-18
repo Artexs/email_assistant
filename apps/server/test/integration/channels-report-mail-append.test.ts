@@ -33,7 +33,7 @@ import { HardError, SoftError } from "../../src/platform/errors";
 import { createOrgWithMailbox, isolateChannels, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F110 stage 20 (ADR 0022): the report mail sender APPENDs the `mail` rows of the outbox into the INBOX of their mailbox. The mail
+// ADR 0022: the report mail sender APPENDs the `mail` rows of the outbox into the INBOX of their mailbox. The mail
 // server here is the fake provider; `trust-report-mail-greenmail.test.ts` runs the same path against GreenMail.
 const db = testDb();
 const config = loadConfig();
@@ -548,7 +548,7 @@ describe("the port", () => {
   });
 });
 
-// The review of stage 20 (TG1, N1, N2).
+// The review of stage 20 (TG1).
 describe("one login per mailbox per run (review TG1, N2)", () => {
   async function threeRows(trx: Transaction<DB>, b: Box): Promise<string[]> {
     const ids: string[] = [];

@@ -38,7 +38,7 @@ import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 import { putDraftCopy } from "./reply-fixtures";
 
-// F115 stage 05: the lifetime of a reply send, the gap rule, the flag rule, `replaceApproval` and `closeSend`.
+// The lifetime of a reply send, the gap rule, the flag rule, `replaceApproval` and `closeSend`.
 // Every test runs in a transaction that is rolled back.
 const db = testDb();
 

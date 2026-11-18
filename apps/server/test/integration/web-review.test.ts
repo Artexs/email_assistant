@@ -17,7 +17,7 @@ import { testDb } from "./helpers";
 import { addMailbox } from "./trust-fixtures";
 import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// The panel review routes (F110 stage 15): GET /api/review/sample and POST /api/review/label. Committed rows; `afterEach` removes the
+// The panel review routes: GET /api/review/sample and POST /api/review/label. Committed rows; `afterEach` removes the
 // organizations. Mail text of these tests is made up.
 const db = testDb();
 const NOW = new Date("2026-11-20T12:00:00Z");

@@ -10,7 +10,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F102 stage 06: `actions.supersedes_action_id`, `outbox.edit_of_outbox_id` and the kind `approval_edit`.
+// `actions.supersedes_action_id`, `outbox.edit_of_outbox_id` and the kind `approval_edit`.
 const db = testDb();
 
 afterAll(async () => {

@@ -1,8 +1,8 @@
-// F116 stage 18, review 18 (G2, N3): the tests that the review found missing, and the delegation footer rule.
+// The tests that the review found missing, and the delegation footer rule.
 //   G2 r05: an erase deletes a `sending` digest that names the erased loop;
 //   G2 r11: `view.loopIds` holds the ids of ⌛ lines, so a digest with only a ⌛ line is found by the Sent switch and by the erase;
 //   G2 r08: the count line of a later digest counts delegations;
-//   N3: the delegation footer stays in the first digest when no ⏳ line names a delegation, and for a member without consent.
+//   The delegation footer stays in the first digest when no ⏳ line names a delegation, and for a member without consent.
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 

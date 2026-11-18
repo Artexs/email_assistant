@@ -9,7 +9,7 @@ import { setLogLevel } from "../../src/platform/log";
 import { testDb } from "./helpers";
 import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// F119 stage 11 (step 11.1, D14, Q6): GET /api/sign-in-options is public and answers one bit for every caller.
+// F119 stage 11 (step 11.1): GET /api/sign-in-options is public and answers one bit for every caller.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
 
@@ -139,7 +139,7 @@ describe("GET /api/sign-in-options", () => {
     }
     const lines = warns.filter((line) => line.includes("sign_in_options_failed"));
     expect(lines).toHaveLength(1);
-    // The error carries a type name only: no message text reaches the log line (D15).
+    // The error carries a type name only: no message text reaches the log line.
     expect(warns.join("\n")).not.toContain("secret-detail-of-the-failure");
   });
 

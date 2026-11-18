@@ -114,7 +114,7 @@ export async function insertTestEmail(
   return row.id;
 }
 
-// The `email_headers` row of a mail with the captured attachments (F109 stage 06). `count` defaults to the list length.
+// The `email_headers` row of a mail with the captured attachments. `count` defaults to the list length.
 export async function insertAttachmentHeaders(
   trx: Transaction<DB>,
   ctx: { orgId: string },
@@ -406,7 +406,7 @@ export async function insertDelegation(
   return row.id;
 }
 
-// A triaged delegation mail with its `create_draft` and `send` rows, linked by `depends_on_action_id` (D2, D17).
+// A triaged delegation mail with its `create_draft` and `send` rows, linked by `depends_on_action_id`.
 // Default statuses: the draft `applied`, the send `awaiting_approval`.
 export async function insertDraftAndSend(
   trx: Transaction<DB>,
@@ -438,11 +438,11 @@ export async function insertDraftAndSend(
     setId?: string;
     delegationId?: string;
     reminder?: 1 | 2;
-    // Kind `reply` (F115): the Cc of the draft, the Cc of the send when it differs, and the draft body. `to` is the To.
+    // Kind `reply`: the Cc of the draft, the Cc of the send when it differs, and the draft body. `to` is the To.
     cc?: string[];
     sendCc?: string[];
     replyBody?: string;
-    // F079: also insert the `sent` outbox row of the approval request, for the first member of the organization.
+    // Also insert the `sent` outbox row of the approval request, for the first member of the organization.
     requestSent?: boolean;
   }
 ): Promise<{ emailId: string; draftId: string; sendId: string }> {

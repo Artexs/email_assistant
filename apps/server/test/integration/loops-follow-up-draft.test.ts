@@ -21,7 +21,7 @@ import {
   type CommandOrg,
 } from "./loops-commands-fixtures";
 
-// F116 stage 14, step 1: `draftFollowUp`. The races of the same rules are in `loops-commands-race.test.ts`.
+// `draftFollowUp`. The races of the same rules are in `loops-commands-race.test.ts`.
 const db = testDb();
 
 afterAll(async () => {

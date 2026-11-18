@@ -9,8 +9,8 @@ import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertReplyRequest } from "./reply-fixtures";
 
-// F115 stage 03b, step 2: the retention of the reply texts (`reply_requests.instruction`, `sample_body`).
-// The period is `RETENTION_TEXT_DAYS` (90) for every organization, counted from `created_at` (review 3, N6).
+// The retention of the reply texts (`reply_requests.instruction`, `sample_body`).
+// The period is `RETENTION_TEXT_DAYS` (90) for every organization, counted from `created_at` (review 3).
 const db = testDb();
 
 afterAll(async () => {

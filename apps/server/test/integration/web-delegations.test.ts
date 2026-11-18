@@ -18,7 +18,7 @@ import { testDb } from "./helpers";
 import { approvalKit, NOW, post, type Seed } from "./web-approvals-kit";
 import { as } from "./web-helpers";
 
-// F102 stage 15: GET /api/delegations, POST /api/delegations/:id/done and /cancel. Any member reads and marks done; the cancel is owner
+// GET /api/delegations, POST /api/delegations/:id/done and /cancel. Any member reads and marks done; the cancel is owner
 // only. Tenancy is tested with the second organization O2 (its owner is the session `other`).
 const db = testDb();
 const { cleanup, setup, addSend, send, auditOf, editRows } = approvalKit(db);

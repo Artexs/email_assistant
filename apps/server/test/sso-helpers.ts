@@ -1,4 +1,4 @@
-// Helpers of the SSO tests (F119): sign-in at our server, consent at the fake IdP, callback at our server.
+// Helpers of the SSO tests: sign-in at our server, consent at the fake IdP, callback at our server.
 import type { FakeOidc } from "./fake-oidc";
 
 export const SSO_TEST_ORIGIN = "http://127.0.0.1:8080";

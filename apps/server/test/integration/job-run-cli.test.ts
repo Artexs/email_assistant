@@ -41,7 +41,7 @@ describe("job:run CLI", () => {
     expect(result.stderr).not.toContain("ran once");
   });
 
-  // F116 stage 15 review: the chaser branch. The alias line comes after the run; a mailbox that fails gives exit 1.
+  // The chaser branch. The alias line comes after the run; a mailbox that fails gives exit 1.
   test("loops.chaser and its alias print the counts line; only the alias prints the alias line, after the run", async () => {
     const plain = await runJob(["--name", "loops.chaser"]);
     expect(plain.code).toBe(0);

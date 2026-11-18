@@ -251,7 +251,7 @@ describe("the Sent switch off reaches every copy of the Sent mail", () => {
       expect(await tablesHolding(trx, values(open))).toEqual(["actions", "open_loops", "outbox", "sent_emails"]);
       await switchOff(trx, org, org.mailboxId);
       expect(await tablesHolding(trx, values(open))).toEqual([]);
-      // The closed loop: the Sent row, the payloads and the cards are gone; its own row waits for retention (stage 08 rule).
+      // The closed loop: the Sent row, the payloads and the cards are gone; its own row waits for retention.
       expect(await tablesHolding(trx, values(closed))).toEqual(["open_loops"]);
     });
   });

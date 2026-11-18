@@ -34,7 +34,7 @@ import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 import { depsOf as sentDepsOf, newOrg, put, siblingMailbox } from "./mail-sent-fixtures";
 
-// F116 stage 10: the follow-up kind goes through the committer. A follow-up hangs on a loop (`loop_id`), not on a mail.
+// The follow-up kind goes through the committer. A follow-up hangs on a loop (`loop_id`), not on a mail.
 // Every test runs in a transaction that is rolled back: a committed loop row would break the Down guard of the stage 07 test.
 const db = testDb();
 

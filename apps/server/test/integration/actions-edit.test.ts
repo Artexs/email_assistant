@@ -258,7 +258,7 @@ describe("editApproval: the new version", () => {
       expect(reverses).toHaveLength(1);
       expect(reverses[0]?.payload).toMatchObject({ reason: "expired", uid: d1Uid });
 
-      // T2: the committer runs the reverse row; the fake provider deletes the copy of D1 and gets the copy of D2.
+      // The committer runs the reverse row; the fake provider deletes the copy of D1 and gets the copy of D2.
       await s.runCommitter();
       expect((await row(trx, s.p.draftId)).status).toBe("undone");
       expect((await row(trx, reverses[0]?.id as string)).status).toBe("applied");

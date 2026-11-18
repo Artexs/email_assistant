@@ -7,7 +7,7 @@ import { insertDelegate } from "./fixtures";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 import type { SeededWeek } from "./metrics-fixtures";
 
-// Loops for the seeded week of the metric tests (F116 stage 23). The week is 2026-11-16 (Warsaw, UTC+1); the loops are
+// Loops for the seeded week of the metric tests. The week is 2026-11-16 (Warsaw, UTC+1); the loops are
 // due on Wednesday 11-18 at 10:00 local (09:00Z), so the deadline is Thursday 11-19 at 10:00 local (09:00Z).
 
 export const DUE = new Date("2026-11-18T09:00:00Z");

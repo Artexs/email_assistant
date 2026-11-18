@@ -18,7 +18,7 @@ import { groupUsage, modelReportLines } from "../../src/scripts/triage-cost-repo
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F111 stage 03: the endpoint in `llm.call` rows, and the cost readers that price by it.
+// The endpoint in `llm.call` rows, and the cost readers that price by it.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
 

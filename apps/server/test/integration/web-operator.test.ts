@@ -252,7 +252,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
     }
   });
 
-  // F099 stage 09: the same rule for the write routes, with the path forms of /orgs/:orgId/plan and /flags.
+  // The same rule for the write routes, with the path forms of /orgs/:orgId/plan and /flags.
   test("7c. path forms of the POST routes: a non-operator always gets 404, no session 401, no row written", async () => {
     const app = operatorApp();
     const id = org.orgId;

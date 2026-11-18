@@ -9,7 +9,7 @@ import { testDb } from "./helpers";
 import { as } from "./web-helpers";
 import { addRequest, addSenderMail, LINK, newsletterBox, NOW, PASS, type NewsletterBox } from "./web-newsletters-kit";
 
-// POST /api/newsletters/:mailboxId/unsubscribe (F110 stage 24, tests 7 to 10 of the stage file and the rules around them).
+// POST /api/newsletters/:mailboxId/unsubscribe (tests 7 to 10 of the stage file and the rules around them).
 // Committed rows. The client is a fake: no test sends a real request (the guarded client has its own tests in
 // `platform/public-http.test.ts`).
 const db = testDb();

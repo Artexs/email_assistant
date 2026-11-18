@@ -9,7 +9,7 @@ import type { DB } from "../../src/platform/db";
 import { addMember, createOrgWithMailbox, insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F102 stage 06: one `approval_edit` row per sent card of a send.
+// One `approval_edit` row per sent card of a send.
 const db = testDb();
 
 afterAll(async () => {
@@ -190,7 +190,7 @@ describe("queueCardEdits", () => {
       expect((await queueCardEdits(trx, w.ctx, { sendId: w.sendId, outcome: "rejected", at })).queued).toBe(0);
       const rows = await edits(w);
       expect(rows).toHaveLength(4);
-      // The held view keeps Reject for every owner (Q13): it names the send.
+      // The held view keeps Reject for every owner: it names the send.
       const heldRow = rows.find((row) => (row.view as { outcome: string }).outcome === "approved_held");
       expect(heldRow?.view).toMatchObject({ heldBy: "scope", actionId: w.sendId });
     });
