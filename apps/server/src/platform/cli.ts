@@ -4,11 +4,15 @@ export interface CliOutput {
   print(text: string): void;
   /** `[name] text` on stderr. */
   fail(text: string): void;
+}
+
+/** What `createCliOutput` returns: the `CliOutput` of the text paths, and `raw` for the machine output of a script. */
+export interface CliRawOutput extends CliOutput {
   /** `text` on stdout with no prefix: machine output that a person or a test reads line by line (`key value …`). */
   raw(text: string): void;
 }
 
-export function createCliOutput(name: string): CliOutput {
+export function createCliOutput(name: string): CliRawOutput {
   const prefix = `[${name}]`;
   return {
     print(text) {
