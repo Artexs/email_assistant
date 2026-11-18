@@ -45,6 +45,7 @@ export const auditEvents = {
   mailboxModeChanged: "mailbox.mode_changed",
   mailboxPolicyChanged: "mailbox.policy_changed",
   mailboxSwitchChanged: "mailbox.switch_changed",
+  mailboxProfileChanged: "mailbox.profile_changed", // data: mailbox_id, fields (the names of the changed fields in one string, comma between), via; never the text
   mailboxSentSyncChanged: "mailbox.sent_sync_changed", // data: mailbox_id, enabled, count (sent rows deleted)
   settingsUrgencySet: "settings.urgency_set", // data: mailbox_id, topics, deadlines (counts), via
   settingsChanged: "settings.changed", // data: mailbox_id, field (loop_wait_days), from, to, via
@@ -264,6 +265,28 @@ export async function sumLlmCallsByModelSince(
     tokensIn: Number(row.tokens_in),
     tokensOut: Number(row.tokens_out),
   }));
+}
+
+// The `llm.call` rows of the style preview (F115 stage 10): the calls of one mailbox with this prompt version that belong to no mail
+// (`email_id` is null), at or after `since`. A preview makes one row per call, so a retry inside one preview counts twice.
+export async function countMaillessCallsSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date,
+  promptVersion: string
+): Promise<number> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", auditEvents.llmCall)
+    .where("email_id", "is", null)
+    .where(sql<string>`data->>'mailbox_id'`, "=", mailboxId)
+    .where(sql<string>`data->>'prompt_version'`, "=", promptVersion)
+    .where("created_at", ">=", since)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
 }
 
 // One `llm.call` row per LLM call attempt; the mailbox id is in `data`, so no join to `emails`.

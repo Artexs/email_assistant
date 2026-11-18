@@ -54,8 +54,12 @@ import {
   E2E_LOOPS_OWNER_EMAILS,
   e2eLoopsMailbox,
   e2eLoopsOrgName,
+  E2E_TRUST_MEMBER_EMAILS,
+  E2E_TRUST_OWNER_EMAILS,
   E2E_URGENCY_MEMBER_EMAILS,
   E2E_URGENCY_OWNER_EMAILS,
+  e2eTrustMailbox,
+  e2eTrustOrgName,
   E2E_NEWSLETTERS_MEMBER_EMAILS,
   E2E_NEWSLETTERS_OWNER_EMAILS,
   e2eNewslettersMailbox,
@@ -92,6 +96,7 @@ import {
   seedFilePath,
   seedTargetOk,
 } from "./e2e-seed-args";
+import { seedTrustRows } from "./e2e-trust-rows";
 
 const out = createCliOutput("e2e-seed");
 
@@ -157,6 +162,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eDelegationsOrgName),
         ...E2E_PROJECTS.map(e2eOpenLoopsOrgName),
         ...E2E_PROJECTS.map(e2eUrgencyOrgName),
+        ...E2E_PROJECTS.map(e2eTrustOrgName),
         ...E2E_PROJECTS.map(e2eNewslettersOrgName),
         ...E2E_PROJECTS.map(e2eLoopsOrgName),
       ],
@@ -186,6 +192,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_OPEN_LOOPS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_TRUST_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_TRUST_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_OWNER_EMAILS[project]),
@@ -515,6 +523,36 @@ async function main(): Promise<number> {
         };
       }
 
+      // F110 stage 13: one organization per project for the autonomy card spec. The flag `trust_ladder` is on; one mailbox in assist mode
+      // with a done history check and one trip (`e2e-trust-rows.ts`). The gate files come from the fixture folder of the e2e server.
+      const trustIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; mailboxId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const trustOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eTrustOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_TRUST_OWNER_EMAILS[project],
+          displayName: `E2E Trust owner ${project}`,
+        });
+        const ctx = { orgId: trustOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_TRUST_MEMBER_EMAILS[project],
+          displayName: `E2E Trust member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        await upsertOrgFeature(db, ctx, {
+          flag: "trust_ladder",
+          enabled: true,
+          setBy: trustOwner.userId,
+          setAt: new Date(),
+        });
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eTrustMailbox(project));
+        await seedTrustRows(db, ctx, mailboxId, new Date());
+        trustIds[project] = { orgId: trustOwner.orgId, ownerId: trustOwner.userId, memberId: member.id, mailboxId };
+      }
+
       // F110 stage 23: one organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
       // newsletter senders and one request. See `e2e-newsletter-rows.ts`.
       const newsletterIds = {} as Record<
@@ -822,6 +860,21 @@ async function main(): Promise<number> {
         };
       }
 
+      const trustOrgs = {} as SeedFile["trustOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_TRUST_OWNER_EMAILS[project];
+        const memberEmail = E2E_TRUST_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = trustIds[project];
+        trustOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          mailbox: { id: ids.mailboxId, address: e2eTrustMailbox(project) },
+        };
+      }
+
       const newsletterOrgs = {} as SeedFile["newsletterOrgs"];
       for (const project of E2E_PROJECTS) {
         const ownerEmail = E2E_NEWSLETTERS_OWNER_EMAILS[project];
@@ -904,6 +957,7 @@ async function main(): Promise<number> {
         delegationsOrgs,
         openLoopsOrgs,
         urgencyOrgs,
+        trustOrgs,
         newsletterOrgs,
         approvalsOrgs,
         loopsOrgs,

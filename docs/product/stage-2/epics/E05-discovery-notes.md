@@ -152,3 +152,12 @@ E3 owns the metric definitions (E3 notes §2). E5 delivers the rows; they plug i
 | The first brief floods with old loops after connect | Analysis only for the last 14 days; at most 5 lines per section |
 | Mailbox with several users (shared) | Loops belong to the mailbox, like the digest today; Stage 3 EA flow decides per-user loops |
 | Load: one more folder per run every 2 min | Sent is one cursor fetch of new UIDs; usually empty; E8 load test covers it |
+
+## 7. Cross-epic notes after F116 stage 24 (2026-11-18)
+
+- E3: M2 has the split by kind and the loop rows (`docs/capabilities/measurement.md`).
+- E4: the Delegate command exists and `/delegations` is the Open loops page; the history check can read the loop marks.
+- E6: the `follow_up` template, the "Waiting on you" line and the loop anchor are in `docs/capabilities/open-loops.md`; E6 may replace the template if the E2a judge shows a gain.
+- E7: the papers must name "sent mail headers and text" and loop texts as processed data; check the privacy bullet "Sent mail" (a text change needs a TERMS_VERSION bump).
+- E9: the Graph and Gmail adapters must list Sent and give the same header fields.
+- E11: `loop_wait_days` is the default that a wait per contact replaces.

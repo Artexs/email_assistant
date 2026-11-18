@@ -1,10 +1,10 @@
 # Delegation
 
-> Checked against the code at `d0e628aa`, 2026-11-15.
+> Checked against the code at `cb3f73dd`, 2026-11-18.
 
 ## What it does now
 
-An organization keeps a list of delegates: people who get tasks from the user. The owner manages the list with the `delegates:add`, `delegates:list`, `delegates:disable` and `delegates:enable` scripts, or, with the flag `delegation_pages` on, on the Delegates page of the web panel (rule 11). When the classifier calls a mail `delegation` and picks a delegate id from the list, triage plans a draft and a send to that delegate and writes one `delegations` row (`drafted`). After the owner approves the send (`drafts-and-send.md`) the delegation is `sent` and has a due date. A mail from the delegate in the same thread closes the wait: the delegation becomes `answered` and every linked member gets a notice with a ✅ Done button. When no answer comes by the due date, the chaser job marks the delegation `overdue` and plans a reminder for the owner to approve, at most 2 reminders per delegation. `bun run delegations:list` and `delegations:done` read and close delegations from the shell. With the same flag the Delegations page lists them in four tabs, and the owner can remind the delegate now, cancel a delegation or close it (rules 12 to 14).
+An organization keeps a list of delegates: people who get tasks from the user. The owner manages the list with the `delegates:add`, `delegates:list`, `delegates:disable` and `delegates:enable` scripts, or, with the flag `delegation_pages` on, on the Delegates page of the web panel (rule 11). When the classifier calls a mail `delegation` and picks a delegate id from the list, triage plans a draft and a send to that delegate and writes one `delegations` row (`drafted`). After the owner approves the send (`drafts-and-send.md`) the delegation is `sent` and has a due date. A mail from the delegate in the same thread closes the wait: the delegation becomes `answered` and every linked member gets a notice with a ✅ Done button. When no answer comes by the due date, the chaser job marks the delegation `overdue` and plans a reminder for the owner to approve, at most 2 reminders per delegation. `bun run delegations:list` and `delegations:done` read and close delegations from the shell. With the same flag the Delegations page lists them in four tabs, and the owner can remind the delegate now, cancel a delegation or close it (rules 12 to 14). An owner can also pick a delegate for any mail with the Delegate button (Telegram and the panel, flag `delegate_button`): that makes a delegation draft in the same path, with `source = button` (rule 10). A mail that the user forwards to an active delegate by hand is tracked as a `delegated` open loop, not as a `delegations` row ([open-loops.md](open-loops.md)); the one chaser `loops.chaser` runs the delegation reminders (rule 8) and the loop follow-ups together (F116, ADR 0036).
 
 ## Rules
 
@@ -48,34 +48,34 @@ An organization keeps a list of delegates: people who get tasks from the user. T
 
 ## Entry points
 
-| Kind     | Name                                                                                           | Where                                                                                |
-| -------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| job      | `loops.chaser` (replaces `delegation.chaser`; `20 */15 * * * *`: second 20 of every 15th minute; acts from 07:30 local) | `apps/server/src/modules/loops/chaser.ts` (the delegation part: `delegation/chaser.ts`) |
-| CLI      | `bun run delegates:add`, `delegates:list`, `delegates:disable`, `delegates:enable`             | `apps/server/src/scripts/delegates.ts`                                               |
-| CLI      | `bun run delegations:list`, `delegations:done`                                                 | `apps/server/src/scripts/delegations.ts`                                             |
-| CLI      | `bun run job:run --name loops.chaser [--force]` (`delegation.chaser` is an alias)              | `apps/server/src/scripts/job-run.ts`                                                 |
-| Telegram | callback `dd:<delegation id>` (the ✅ Done button); `as:` and `rs:` for a reminder set         | `apps/server/src/modules/channels/approval-taps.ts`                                  |
-| function | `addDelegate`, `setDelegateState`, `updateDelegate`                                            | `apps/server/src/modules/delegation/service.ts`                                      |
-| function | `cancelByUser`                                                                                 | `apps/server/src/modules/delegation/service.ts`                                      |
-| function | `remindNow`                                                                                    | `apps/server/src/modules/delegation/remind.ts`                                       |
-| function | `listDelegationItems`, `encodeDelegationCursor`, `decodeDelegationCursor`                      | `apps/server/src/modules/delegation/list.ts`                                         |
-| route    | `/api/delegates*`, `/api/delegations*` (`delegateRoutes`, `delegationRoutes`; rules 11 to 14)  | `apps/server/src/modules/delegation/routes.ts`                                       |
-| page     | `/delegations` and `/delegates`                                                                | `apps/web/src/islands/DelegationsPage.tsx`, `apps/web/src/islands/DelegatesPage.tsx` |
-| function | `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`       | `apps/server/src/modules/delegation/service.ts`                                      |
-| function | `delegateMail` (the Delegate command, rule 10)                                                 | `apps/server/src/modules/loops/delegate.ts`                                          |
-| function | `delegationHooks`                                                                              | `apps/server/src/modules/delegation/service.ts`                                      |
-| function | `listDelegates`, `listDelegations`, `countOpenDelegations`, `listDueDelegations`               | `apps/server/src/modules/delegation/repo.ts`                                         |
-| function | `createChaserJob`, `runChaserForMailbox`, `reminderDecision`                                   | `apps/server/src/modules/delegation/chaser.ts`                                       |
-| function | `saveTriage`                                                                                   | `apps/server/src/modules/triage/service.ts`                                          |
-| function | `delegationAnsweredDetector`                                                                   | `apps/server/src/modules/channels/notices/delegation-answered.ts`                    |
-| function | `delegationInputOf`, `planActions`                                                             | `packages/core/src/triage/planners.ts`                                               |
-| function | `renderApprovalSetRequest`, `renderDelegationAnswered`                                         | `packages/core/src/digest/approvals.ts`                                              |
+| Kind     | Name                                                                                                                                                     | Where                                                                                   |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| job      | `loops.chaser` (replaces `delegation.chaser`; `20 */15 * * * *`: second 20 of every 15th minute; acts from 07:30 local)                                  | `apps/server/src/modules/loops/chaser.ts` (the delegation part: `delegation/chaser.ts`) |
+| CLI      | `bun run delegates:add`, `delegates:list`, `delegates:disable`, `delegates:enable`                                                                       | `apps/server/src/scripts/delegates.ts`                                                  |
+| CLI      | `bun run delegations:list`, `delegations:done`                                                                                                           | `apps/server/src/scripts/delegations.ts`                                                |
+| CLI      | `bun run job:run --name loops.chaser [--force]` (`delegation.chaser` is an alias)                                                                        | `apps/server/src/scripts/job-run.ts`                                                    |
+| Telegram | callback `dd:<delegation id>` (the ✅ Done button); `as:` and `rs:` for a reminder set                                                                   | `apps/server/src/modules/channels/approval-taps.ts`                                     |
+| function | `addDelegate`, `setDelegateState`, `updateDelegate`                                                                                                      | `apps/server/src/modules/delegation/service.ts`                                         |
+| function | `cancelByUser`                                                                                                                                           | `apps/server/src/modules/delegation/service.ts`                                         |
+| function | `remindNow`                                                                                                                                              | `apps/server/src/modules/delegation/remind.ts`                                          |
+| function | `listDelegationItems`, `encodeDelegationCursor`, `decodeDelegationCursor`                                                                                | `apps/server/src/modules/delegation/list.ts`                                            |
+| route    | `/api/delegates*`, `/api/delegations*` (`delegateRoutes`, `delegationRoutes`; rules 11 to 14)                                                            | `apps/server/src/modules/delegation/routes.ts`                                          |
+| page     | `/delegations` and `/delegates`                                                                                                                          | `apps/web/src/islands/DelegationsPage.tsx`, `apps/web/src/islands/DelegatesPage.tsx`    |
+| function | `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`                                                                 | `apps/server/src/modules/delegation/service.ts`                                         |
+| function | `delegateMail` (the Delegate command, rule 10)                                                                                                           | `apps/server/src/modules/loops/delegate.ts`                                             |
+| function | `delegationHooks`                                                                                                                                        | `apps/server/src/modules/delegation/service.ts`                                         |
+| function | `listDelegates`, `listDelegations`, `countOpenDelegations`, `listDueDelegations`                                                                         | `apps/server/src/modules/delegation/repo.ts`                                            |
+| function | `planDelegationReminders`, `createReminderSet`, `recordDelegationRun`, `runChaserForMailbox`, `reminderDecision` (the delegation part of the one chaser) | `apps/server/src/modules/delegation/chaser.ts`                                          |
+| function | `saveTriage`                                                                                                                                             | `apps/server/src/modules/triage/service.ts`                                             |
+| function | `delegationAnsweredDetector`                                                                                                                             | `apps/server/src/modules/channels/notices/delegation-answered.ts`                       |
+| function | `delegationInputOf`, `planActions`                                                                                                                       | `packages/core/src/triage/planners.ts`                                                  |
+| function | `renderApprovalSetRequest`, `renderDelegationAnswered`                                                                                                   | `packages/core/src/digest/approvals.ts`                                                 |
 
 ## Data
 
 `delegates`: `id`, `org_id`, `name`, `email` (lower case; unique per organization), `competence_tags` (text array), `active`, `created_at`, `updated_at`.
 
-`delegations`: `id`, `org_id`, `mailbox_id`, `email_id`, `delegate_id`, `draft_action_id`, `send_action_id` (unique), `task_summary`, `due_at`, `status`, `status_reason`, `sent_message_id`, `sent_at`, `last_reminder_at`, `reminders_sent`, `answered_email_id`, `answered_at`, `answered_notified_at`, `created_at`, `updated_at`. A status `sent`, `answered` or `overdue` needs `sent_message_id` and `sent_at` (a check).
+`delegations`: `id`, `org_id`, `mailbox_id`, `email_id`, `delegate_id`, `draft_action_id`, `send_action_id` (unique), `task_summary`, `due_at`, `status`, `status_reason`, `sent_message_id`, `sent_at`, `last_reminder_at`, `reminders_sent`, `answered_email_id`, `answered_at`, `answered_notified_at`, `source` (`triage` by default, `button` for a Delegate tap; F116), `created_at`, `updated_at`. A status `sent`, `answered` or `overdue` needs `sent_message_id` and `sent_at` (a check).
 
 Audit events: `delegate.added`, `delegate.changed`, `delegation.created`, `delegation.sent`, `delegation.answered`, `delegation.overdue`, `delegation.cancelled`, `delegation.done`, `delegation.remind_requested` (F102: `delegation_id`, `reminder`, `via`), `delegation.chaser_run`. A panel edit of a draft writes `action.edited` on the new send ([drafts-and-send.md](drafts-and-send.md) rule 12), not a delegation event.
 
@@ -94,7 +94,7 @@ delegations.status: drafted → sent                                    (the del
 
 ## Limits
 
-- The Delegate button exists in Telegram ([digest-and-notices.md](digest-and-notices.md) rule 14) but not yet in the panel (stage 22 of F116 adds it), no sent mail that becomes a delegation, and no reply from another address of the delegate: E5b (F116; PD-121, PD-124).
+- The Delegate button (Telegram, [digest-and-notices.md](digest-and-notices.md) rule 14, and the panel) and the tracking of a hand forward ([open-loops.md](open-loops.md)) are built. A reply in the thread from any address that is not the user's closes a `delegated` loop (open-loops.md rule 3, PD-121); a `delegations` row still closes only on a mail from the delegate (`detectReply` is unchanged). The panel action needs the flags `delegate_button` and `delegation_pages`.
 - The pages and routes are behind the flag `delegation_pages` (off by default). Remind now and Cancel have no CLI: only the panel calls `remindNow` and `cancelByUser`. A cancel from the panel is final (`user_cancelled`), and a reminder that is already being sent still goes out.
 - No delegate import: a delegate is added one by one.
 - At most 2 reminders per delegation, also with Remind now (`DELEGATION_REMINDER_LIMIT`). After that the delegation stays `overdue` until the owner closes it.
@@ -103,13 +103,15 @@ delegations.status: drafted → sent                                    (the del
 ## Decisions
 
 - ADR 0003 (plan, policy, commit; the send and the approval of a delegation; Remind now never sends without a tap), ADR 0023 (the panel routes are typed commands with `via`).
-- PD-124 (Limits only: manual delegation).
+- ADR 0036 (the one chaser `loops.chaser` replaced `delegation.chaser`; hand forwards are `delegated` loops).
+- PD-124 (manual delegation: the Delegate button and the tracked hand forward).
 - `docs/architecture.md` keeps the flow of §4.1 with the branch "reply in a delegation thread".
 
 ## Tests
 
 - `apps/server/test/integration/delegation-service.test.ts`
 - `apps/server/test/integration/delegation-chaser.test.ts`
+- `apps/server/test/integration/loops-chaser.test.ts`, `loops-delegate.test.ts`, `loops-delegate-race.test.ts`
 - `apps/server/test/integration/delegation-repo.test.ts`
 - `apps/server/test/integration/delegation-remind.test.ts`
 - `apps/server/test/integration/web-delegates.test.ts`, `web-delegations.test.ts`, `web-delegation-remind.test.ts`

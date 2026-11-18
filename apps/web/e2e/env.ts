@@ -1,7 +1,13 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { E2E_AUTHSERV_ID, E2E_SEND_TEST_ADDRESS, seedTargetOk } from "../../server/src/scripts/e2e-seed-args";
+import {
+  E2E_AUTHSERV_ID,
+  E2E_GATE_FIXTURE_DIR,
+  E2E_LLM_PIN,
+  E2E_SEND_TEST_ADDRESS,
+  seedTargetOk,
+} from "../../server/src/scripts/e2e-seed-args";
 import { FAKE_TOKEN } from "../../../tools/fake-telegram/src/state";
 
 // The one place that knows the e2e environment: the port, the base URL, the fixed secret and the server env.
@@ -65,6 +71,10 @@ export function e2eEnv(): Record<string, string> {
     WEB_TRUSTED_PROXIES: "127.0.0.1",
     DATABASE_URL: appUrl,
     MIGRATOR_DATABASE_URL: migratorUrl,
+    // F110 stage 13: a pinned classifier setup and a fixture folder of gate files (not the committed ones), so the autonomy card
+    // spec sees the same proof in every checkout. `e2e-gate-fixture.test.ts` ties the two.
+    ...E2E_LLM_PIN,
+    GATE_EVIDENCE_DIR: `${repoRoot}/${E2E_GATE_FIXTURE_DIR}`,
     ACTIONS_SCOPE: "synthetic",
     TRIAGE_LLM_SCOPE: "off",
     // F102 stage 12: only the first delegate of the approvals organizations passes, so one approved send goes out (to the GreenMail of

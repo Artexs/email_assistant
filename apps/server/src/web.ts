@@ -37,6 +37,7 @@ import {
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
+import { replyRoutes, type StylePreview } from "./modules/replies";
 import { activityRoutes, statsRoutes, type StatsRouteDeps } from "./modules/reports";
 import {
   anySsoUsable,
@@ -331,6 +332,8 @@ export interface WebExtras {
   onAuthMailFailed?: (ctx: TenantContext, userId: string, kind: AuthMailKind, code: string) => void;
   /** The global evidence of the running classifier, built once at start. Default: none (a closed gate; tests). */
   gate?: GateEvidenceDeps;
+  /** The style preview of the reply drafts (F115): one drafter call on a fixed sample mail. Absent or null: no model client runs, and a preview answers `failed`. */
+  stylePreview?: StylePreview | null;
 }
 
 export function apiRouters(
@@ -397,6 +400,7 @@ export function apiRouters(
     );
     api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
+    api.route("/", replyRoutes({ db, preview: extras.stylePreview ?? null }));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));

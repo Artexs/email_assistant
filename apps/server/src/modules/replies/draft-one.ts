@@ -1,4 +1,4 @@
-import { replyEligibility, type DrafterInput, type ReplyLanguage } from "@ea/core";
+import { profileFallbacks, replyEligibility, resolveReplyStyle, type DrafterInput, type ReplyLanguage } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
@@ -61,20 +61,17 @@ export interface MailboxEnv {
 
 export type DraftOutcome = "done" | "no_draft" | "failed" | "cancelled" | "superseded" | "waiting" | "retry" | "lost";
 
-function nonBlank(text: string | null | undefined): string | null {
-  return text === null || text === undefined || text.trim() === "" ? null : text;
-}
-
 // The style that the prompt gets: the same name and signature that the message builder uses at send time (profile, then the
 // organization text, then the owner name), so the texts that the checks allow are the texts that go out.
 function styleOf(env: MailboxEnv): DrafterInput["style"] {
-  const ownerName = env.owner?.displayName ?? env.address;
-  const orgText = nonBlank(env.orgStyleText)?.trim() ?? null;
-  return {
-    displayName: nonBlank(env.profile?.displayName)?.trim() ?? ownerName,
-    signature: nonBlank(env.profile?.signature)?.trim() ?? orgText ?? ownerName,
-    writingStyle: nonBlank(env.profile?.writingStyle)?.trim() ?? null,
-  };
+  return resolveReplyStyle(
+    env.profile,
+    profileFallbacks({
+      ownerName: env.owner?.displayName ?? null,
+      address: env.address,
+      orgStyleText: env.orgStyleText,
+    })
+  );
 }
 
 // Drafts one claimed request, or ends or releases it. The request is `drafting` with `row.locked_at` (the token) when this runs;

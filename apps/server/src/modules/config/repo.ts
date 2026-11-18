@@ -54,6 +54,22 @@ export async function listAssistPolicies(
   return rows.map((row) => ({ mailboxId: row.mailbox_id, categoryPolicy: row.category_policy }));
 }
 
+// The OAuth provider of the mailbox: null for a password mailbox, undefined when the mailbox is not of the organization. The column is
+// set at insert and never changes, so a read before the settings lock is enough (F115 D19).
+export async function getMailboxOauthProvider(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<string | null | undefined> {
+  const row = await db
+    .selectFrom("mailboxes")
+    .select("oauth_provider")
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", mailboxId)
+    .executeTakeFirst();
+  return row === undefined ? undefined : row.oauth_provider;
+}
+
 // Locks the row until the end of the transaction: one setter at a time.
 export async function lockMailboxSettings(
   trx: Transaction<DB>,

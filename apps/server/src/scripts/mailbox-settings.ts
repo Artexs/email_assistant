@@ -8,7 +8,14 @@ import {
 
 import { autoSetter, gateEvidenceOf, sentSwitchHooks, settingsDeps } from "../composition";
 import { countReadyOriginals, expireReady } from "../modules/actions";
-import { getSettingsView, setMode, setToolSwitch, setUrgencyProfile, type SettingsChange } from "../modules/config";
+import {
+  getSettingsView,
+  OauthMailboxError,
+  setMode,
+  setToolSwitch,
+  setUrgencyProfile,
+  type SettingsChange,
+} from "../modules/config";
 import {
   configureMailHosts,
   getSentSyncView,
@@ -154,13 +161,20 @@ async function run(
       return 0;
     }
     case "switch": {
-      const result = await setToolSwitch(deps, ctx, mailboxId, {
-        name: command.name,
-        value: command.value,
-        actor: ACTOR,
-      });
-      printChange(result);
-      return 0;
+      try {
+        const result = await setToolSwitch(deps, ctx, mailboxId, {
+          name: command.name,
+          value: command.value,
+          actor: ACTOR,
+        });
+        printChange(result);
+        return 0;
+      } catch (error) {
+        // D19: reply drafts are for password IMAP mailboxes until Graph and Gmail get them.
+        if (!(error instanceof OauthMailboxError)) throw error;
+        out.fail("refused: oauth_mailbox (reply drafts are not available for an OAuth mailbox); nothing stored");
+        return 1;
+      }
     }
     case "auto": {
       const result = await autoSetter(deps, testMail)(ctx, mailboxId, {
