@@ -32,4 +32,8 @@ export const approvalViewSchema = z.strictObject({
   // and the Reply-To addresses of the original when they differ from its From address. Optional: the other kinds and old views have none.
   gaps: z.array(z.string().max(80)).max(20).optional(),
   replyTo: z.array(z.string().max(320)).min(1).max(5).optional(),
+  // A reply only: the buttons that change the recipients show. `canReplyAll`: the mail has other recipients (1 to 10) and the draft
+  // does not go to them yet. `canUseReplyTo`: the mail has a Reply-To address that is not the sender and the draft does not go to it.
+  canReplyAll: z.literal(true).optional(),
+  canUseReplyTo: z.literal(true).optional(),
 });

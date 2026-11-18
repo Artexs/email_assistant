@@ -4,6 +4,7 @@ import { enSettings } from "./texts/en-settings";
 import { enActivity } from "./texts/en-activity";
 import { enApprovals } from "./texts/en-approvals";
 import { enReply } from "./texts/en-reply";
+import { enPhone } from "./texts/en-phone";
 
 // The texts are in `texts/en-<group>.ts`, one group per page area; the keys of two groups never repeat (`texts/groups.test.ts`).
 export const en = {
@@ -13,6 +14,7 @@ export const en = {
   ...enActivity,
   ...enApprovals,
   ...enReply,
+  ...enPhone,
 } as const;
 
 export type TextKey = keyof typeof en;
@@ -30,6 +32,8 @@ export const enPlurals = {
   lset_wait_days: { one: "1 working day", other: "{count} working days" },
   // Mails of a newsletter sender
   nl_count: { one: "1 mail in 30 days", other: "{count} mails in 30 days" },
+  // The push device card: the test notice
+  push_test_sent: { one: "Test notice sent to 1 device.", other: "Test notice sent to {count} devices." },
 } as const;
 
 export type PluralKey = keyof typeof enPlurals;

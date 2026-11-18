@@ -9,7 +9,7 @@ import type { TestMailRule } from "../mail";
 import { buildDigest, digestPeriodStart, insertDigest, lastDigestSlotKey, type DigestLoops } from "../reports";
 import { getMembership, getOrganization, isFeatureOn } from "../tenancy";
 
-import { loopConsentOf } from "./consent";
+import { loopConsentOf, replyConsentOf } from "./consent";
 import { queueNotice } from "./notice-queue";
 import type { LinkedChat } from "./port";
 import { listReviewableReplies, REVIEW_SCAN_MAX } from "./reply-review";
@@ -162,6 +162,10 @@ export async function queueDigest(
       role: link.role,
       testMail,
       ...(repliesReady > 0 ? { repliesReady } : {}),
+      // The Draft reply button of a row: the owner's consent covers reply data.
+      ...(telegram && link.role === "owner" && (await replyConsentOf(trx, ctx, [userId])).has(userId)
+        ? { replyDrafts: true }
+        : {}),
       // The spam review line is part of the text: it needs the panel link, and both rows carry it.
       ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }),
     };

@@ -10,7 +10,16 @@ import { LlmSoftError } from "../../src/platform/llm";
 
 import { pauseOtherMailboxes, suspendOrg } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { analysisOf, ASK, fakeExtractor, loopsOf, loopsOrg, RUN_AT, sentMail } from "./loops-analyze-fixtures";
+import {
+  analysisOf,
+  ASK,
+  fakeExtractor,
+  LOOPS_KEY,
+  loopsOf,
+  loopsOrg,
+  RUN_AT,
+  sentMail,
+} from "./loops-analyze-fixtures";
 import type { Org } from "./mail-sent-fixtures";
 
 // The job loops.analyze (step 3): the runner, `job:run`, and the lock order with the switch.
@@ -31,7 +40,14 @@ describe("createLoopJobs", () => {
       await sentMail(trx, a);
       await sentMail(trx, b);
       const fake = fakeExtractor(ASK);
-      const jobs = createLoopJobs({ db: trx, llm: fake.llm, dailyCap: 300, scope: { kind: "all" }, now: () => RUN_AT });
+      const jobs = createLoopJobs({
+        db: trx,
+        llm: fake.llm,
+        dailyCap: 300,
+        credentialsKey: LOOPS_KEY,
+        scope: { kind: "all" },
+        now: () => RUN_AT,
+      });
       const out = await jobs.analyze.run();
       expect(out).toMatchObject({ mailboxes: 2, analysed: 2, opened: 2, mailboxErrors: 0, stopped: false });
       expect(fake.requests).toHaveLength(2);
@@ -50,6 +66,7 @@ describe("createLoopJobs", () => {
         db: trx,
         llm: fake.llm,
         dailyCap: 300,
+        credentialsKey: LOOPS_KEY,
         scope: { kind: "all" },
         now: () => RUN_AT,
         analyze: async (deps, ctx, mailboxId, opts) => {
@@ -73,7 +90,14 @@ describe("createLoopJobs", () => {
       const fake = fakeExtractor(() => {
         throw new LlmSoftError("http_503", "fake-extractor");
       });
-      const jobs = createLoopJobs({ db: trx, llm: fake.llm, dailyCap: 300, scope: { kind: "all" }, now: () => RUN_AT });
+      const jobs = createLoopJobs({
+        db: trx,
+        llm: fake.llm,
+        dailyCap: 300,
+        credentialsKey: LOOPS_KEY,
+        scope: { kind: "all" },
+        now: () => RUN_AT,
+      });
       const out = await jobs.analyze.run();
       expect(out.stopped).toBe(true);
       expect(fake.requests).toHaveLength(1);
@@ -90,7 +114,14 @@ describe("createLoopJobs", () => {
       await sentMail(trx, suspended);
       await suspendOrg(trx, suspended.ctx.orgId);
       const fake = fakeExtractor(ASK);
-      const jobs = createLoopJobs({ db: trx, llm: fake.llm, dailyCap: 300, scope: { kind: "all" }, now: () => RUN_AT });
+      const jobs = createLoopJobs({
+        db: trx,
+        llm: fake.llm,
+        dailyCap: 300,
+        credentialsKey: LOOPS_KEY,
+        scope: { kind: "all" },
+        now: () => RUN_AT,
+      });
       expect(await jobs.analyze.run()).toMatchObject({ mailboxes: 0, analysed: 0 });
       expect(fake.requests).toHaveLength(0);
     });
@@ -108,6 +139,7 @@ describe("createLoopJobs", () => {
         db: trx,
         llm: fake.llm,
         dailyCap: 300,
+        credentialsKey: LOOPS_KEY,
         scope: { kind: "synthetic", testMail: { senders: ["tester@x.test"] } },
         now: () => RUN_AT,
       });
@@ -131,6 +163,7 @@ describe("the synthetic scope and sender case", () => {
         db: trx,
         llm: fake.llm,
         dailyCap: 300,
+        credentialsKey: LOOPS_KEY,
         scope: { kind: "synthetic", testMail: { senders: ["tester@x.test"] } },
         now: () => RUN_AT,
       });
@@ -346,7 +379,14 @@ describe("the lock order with the switch (Track my sent mail)", () => {
       await startedSignal;
       const fake = fakeExtractor(ASK);
       const analysing = analyzeSent(
-        { db, llm: fake.llm, dailyCap: 300, scope: { kind: "all" }, pause: createLlmPause() },
+        {
+          db,
+          llm: fake.llm,
+          dailyCap: 300,
+          credentialsKey: LOOPS_KEY,
+          scope: { kind: "all" },
+          pause: createLlmPause(),
+        },
         org.ctx,
         org.mailboxId,
         { now: RUN_AT, limit: 20 }

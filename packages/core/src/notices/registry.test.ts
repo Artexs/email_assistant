@@ -301,7 +301,7 @@ const cases: Case[] = [
   {
     kind: "reply_result",
     view: { emailId: id1, reason: "answered" },
-    direct: (texts) => renderReplyResultNotice(texts),
+    direct: (texts) => renderReplyResultNotice({ reason: "answered" }, texts),
   },
   {
     kind: "trust_report_ready",

@@ -18,6 +18,7 @@ import { AccountCard } from "../components/settings/AccountCard";
 import { CategoriesCard } from "../components/settings/CategoriesCard";
 import { DigestTimesCard } from "../components/settings/DigestTimesCard";
 import { NotifySection } from "../components/settings/NotifyCards";
+import { PushDevicesCard } from "../components/settings/PushDevicesCard";
 import { LoopSettingsCard } from "../components/settings/LoopSettingsCard";
 import { ModeCard } from "../components/settings/ModeCard";
 import { ReplyStyleCard } from "../components/settings/ReplyStyleCard";
@@ -161,6 +162,7 @@ function GeneralSection({
       {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
       {me !== null && <NotifySection features={me.features} timeZone={me.organization.timezone} />}
       {organizationCards}
+      {me?.features.includes("web_push") === true && <PushDevicesCard />}
       <AccountCard />
     </section>
   );

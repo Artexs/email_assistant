@@ -15,11 +15,17 @@ const { titleKey } = Astro.props;
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="theme-color" content="#000832" />
     <title>{en[titleKey]} · {en.brand}</title>
     <slot name="head" />
   </head>
   <body class="min-h-screen bg-background text-foreground">
     <noscript>{en.noscript}</noscript>
     <slot />
+    <script>
+      import "../lib/register-sw";
+    </script>
   </body>
 </html>

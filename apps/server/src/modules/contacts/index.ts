@@ -15,6 +15,7 @@ export {
   senderContextRowsOf,
   type SenderContextRows,
 } from "./privacy";
+export { readSenderLines, senderLineOf, type SenderLineDeps, type SenderMail } from "./lines";
 export { readProfiles } from "./profiles";
 export {
   profileLockKey,
@@ -23,3 +24,4 @@ export {
   type RefreshDeps,
   type RefreshResult,
 } from "./refresh";
+export { contactWaitFor, type ContactWait } from "./wait";

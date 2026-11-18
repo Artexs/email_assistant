@@ -21,7 +21,7 @@ export interface WouldDoTexts {
   // `skills` (flag `why_lines`): the competence label of the delegate of a delegation draft, put next to the name.
   draft: (tense: ActionTense, kind: DraftKind, name: string | null, skills?: string | null) => string;
   send: Record<SendPhraseStatus, string>;
-  sendChanged: string; // a send that ended `expired` / `superseded`: a panel edit replaced it
+  sendChanged: string; // a send that ended `expired` / `superseded`: a new version replaced it
   sendLimitWait: string; // an approved send held by the send limit
   staysIn: (folder: string) => string;
 }
@@ -55,7 +55,7 @@ export const wouldDoTexts = {
       expired: "not sent (approval expired)",
       failed: "not sent (failed)",
     },
-    sendChanged: "changed in the panel (new version)",
+    sendChanged: "changed (new version)",
     sendLimitWait: "approved, waiting: send limit",
     staysIn: (folder) => `stays in ${folder}`,
   },
@@ -83,7 +83,7 @@ export const wouldDoTexts = {
       expired: "niewysłane (zatwierdzenie wygasło)",
       failed: "niewysłane (błąd)",
     },
-    sendChanged: "zmieniono w panelu (nowa wersja)",
+    sendChanged: "zmieniono (nowa wersja)",
     sendLimitWait: "zatwierdzone, czeka (limit wysyłki)",
     staysIn: (folder) => `zostaje w ${folder}`,
   },

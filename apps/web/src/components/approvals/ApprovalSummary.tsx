@@ -1,7 +1,8 @@
-import type { ApprovalDetail } from "@ea/core/web";
+import type { ApprovalDetail, SenderLine } from "@ea/core/web";
 import { TriangleAlert } from "lucide-react";
 
 import { t } from "../../i18n";
+import { senderLineText } from "../../lib/activity-text";
 import {
   durationText,
   HELD_TEXTS,
@@ -22,6 +23,8 @@ export interface SummaryItem {
   heldBy: ApprovalDetail["heldBy"];
   expiresAt: string | null;
   view: View;
+  // The line about the sender of the original mail. Absent or null: no line.
+  sender?: SenderLine | null;
 }
 
 export interface ApprovalSummaryProps {
@@ -61,6 +64,7 @@ export function ApprovalSummary({ item, now, titleAs: Title = "p" }: ApprovalSum
           )}
         </p>
       )}
+      {item.sender && <p className="break-words text-sm">{senderLineText(item.sender)}</p>}
       {view.to !== undefined && <p className="break-words text-sm">{`${t("appr_to")}: ${view.to.join(", ")}`}</p>}
       {view.cc !== undefined && view.cc.length > 0 && (
         <p className="break-words text-sm">{`${t("appr_cc")}: ${view.cc.join(", ")}`}</p>

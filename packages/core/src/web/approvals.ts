@@ -2,6 +2,7 @@ import type { HeldBy } from "../digest/approvals";
 import { approvalViewSchema } from "../outgoing/view-schema";
 import { draftKinds } from "../triage/payloads";
 
+import { senderLineSchema } from "./sender-context";
 import { z } from "./zod";
 
 // GET /api/approvals and GET /api/approvals/:id. Every object is strict: the page gets exactly these facts.
@@ -47,6 +48,9 @@ const itemFields = {
   setId: z.uuid().nullable(),
   // Only a follow-up has it: the open loop that the send is about (the loop page of the panel links here).
   loopId: z.uuid().optional(),
+  // The count-only line about the sender of the original mail (ADR 0034). The key is absent while the flag `sender_context` is off;
+  // null when the send has no original mail (a follow-up), the sender has no profile or retention cleared the address.
+  sender: senderLineSchema.nullable().optional(),
 };
 
 export const approvalItemSchema = z.strictObject({

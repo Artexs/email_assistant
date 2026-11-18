@@ -57,6 +57,7 @@ export async function loadLoopBrief(
     text: row.text,
     dueAt: row.due_at,
     sinceAt: row.wait_from_at,
+    usualReplyDays: row.usual_reply_days,
     autoReplyOnly: row.auto_reply_at !== null,
     laterCount: row.later_count,
     canDraft:

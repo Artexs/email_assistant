@@ -5,6 +5,7 @@ import { plSettings } from "./texts/pl-settings";
 import { plActivity } from "./texts/pl-activity";
 import { plApprovals } from "./texts/pl-approvals";
 import { plReply } from "./texts/pl-reply";
+import { plPhone } from "./texts/pl-phone";
 
 // Polish texts. The key order and the section comments follow `en.ts` and `texts/en-*.ts`, so the files read side by side.
 // Register and glossary: `docs/code-patterns.md` (Polish texts).
@@ -15,6 +16,7 @@ export const pl: Record<TextKey, string> = {
   ...plActivity,
   ...plApprovals,
   ...plReply,
+  ...plPhone,
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).
@@ -49,5 +51,11 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
     one: "1 e-mail w ciągu 30 dni",
     few: "{count} e-maile w ciągu 30 dni",
     many: "{count} e-maili w ciągu 30 dni",
+  },
+  // The push device card: the test notice
+  push_test_sent: {
+    one: "Wysłano powiadomienie testowe na 1 urządzenie.",
+    few: "Wysłano powiadomienie testowe na {count} urządzenia.",
+    many: "Wysłano powiadomienie testowe na {count} urządzeń.",
   },
 };

@@ -95,7 +95,7 @@ describe("the follow-up card (T1, T2, T3)", () => {
   });
 
   test("a later edit version shows its line under the title", () => {
-    expect(card(followUp({ version: 3 })).text.split("\n")[1]).toBe("✏️ Version 3, edited in the panel.");
+    expect(card(followUp({ version: 3 })).text.split("\n")[1]).toBe("✏️ Version 3.");
   });
 
   test("the remains of an escape sequence in the subject and the quote do not show; the body stays the exact mail (review 12, N6)", () => {

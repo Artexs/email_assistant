@@ -45,6 +45,26 @@ export async function listOpenReplySendsOfThread(
   }));
 }
 
+// The mails (of `emailIds`) that have an open reply send: the "Draft reply" button is not shown for them. Filters `org_id`.
+export async function listOpenReplyEmailIds(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Set<string>> {
+  if (emailIds.length === 0) return new Set();
+  const rows = await db
+    .selectFrom("actions")
+    .select("email_id")
+    .distinct()
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "in", OPEN_REPLY_STATUSES)
+    .where(sql<string>`payload->>'kind'`, "=", "reply")
+    .where("email_id", "in", [...emailIds])
+    .execute();
+  return new Set(rows.flatMap((row) => (row.email_id === null ? [] : [row.email_id])));
+}
+
 // An open reply send that the sweep may close.
 export interface SweepReplySend {
   sendId: string;

@@ -657,3 +657,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the old wording is false once Redraft works from Telegram.
 - Undo: restore the strings in `texts/approvals.ts` and `texts/bot.ts` and their tests.
 - Source: F115 stage 13 worker notes.
+
+### 2026-11-19 · F118 stages 06 and later build before checkpoint A (F118) · scope · new
+- Choice: stage 06 and the stages after it build with fakes before your phone test (checkpoint A) runs, because the VPS is unreachable. The flag `web_push` stays off by default. The gate moves: no deploy of F118 code to the VPS and no use of `web_push` in production before checkpoint A passes. If checkpoint A fails, F118 stops as the plan says (Q1); the Telegram channel is not affected.
+- Why: your rule says owner checkpoints are not a stop, and waiting would idle the whole F118 chain for days.
+- Undo: stop the F118 stages after 06; the code that landed stays off behind the flag.
+- Source: your instruction "no limits, just proceed", F118 plan Q1 and G-A.

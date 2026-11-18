@@ -108,6 +108,7 @@ export const noticeRenderers = {
             confidence: view.confidence,
             rule: view.rule,
             ...(view.delegable === true ? { delegable: true } : {}),
+            ...(view.draftable === true ? { draftable: true } : {}),
             now: view.now,
             timeZone: view.timeZone,
           },
@@ -218,7 +219,7 @@ export const noticeRenderers = {
   }),
   reply_result: defineRenderer({
     schema: noticeViewSchemas.reply_result,
-    telegram: { full: (_view, opts) => renderReplyResultNotice(textsFor(opts.locale)) },
+    telegram: { full: (view, opts) => renderReplyResultNotice(view, textsFor(opts.locale)) },
   }),
   trust_report_ready: defineRenderer({
     schema: noticeViewSchemas.trust_report_ready,

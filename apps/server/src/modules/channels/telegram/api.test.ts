@@ -41,6 +41,17 @@ async function caught(run: () => Promise<unknown>): Promise<ChannelError> {
 }
 
 describe("telegram channel", () => {
+  test("send: a message with forceReply asks the client for a reply (force_reply) and carries no keyboard", async () => {
+    const { api, calls } = setup({ ok: true, result: { message_id: 78 } });
+    const result = await createTelegramChannel(api).send(42, { text: "Write one line", buttons: [], forceReply: true });
+    expect(result).toEqual({ messageId: 78 });
+    expect(calls[0]?.payload.reply_markup).toEqual({ force_reply: true });
+    // A plain message has no reply markup at all.
+    const plain = setup({ ok: true, result: { message_id: 79 } });
+    await createTelegramChannel(plain.api).send(42, { text: "hi", buttons: [] });
+    expect(plain.calls[0]?.payload.reply_markup).toBeUndefined();
+  });
+
   test("send: payload and result", async () => {
     const { api, calls } = setup({ ok: true, result: { message_id: 77 } });
     const result = await createTelegramChannel(api).send(42, {

@@ -91,8 +91,10 @@ describe("renderApprovalRequest, a reply (F115)", () => {
       const gapLine = lines.findIndex((line) => line.includes("the price; the date"));
       expect(gapLine).toBeGreaterThan(0);
       expect(gapLine).toBeLessThan(lines.indexOf(texts.approvals.draft));
-      const data = message.buttons.flat().map((button) => parseCallback(button.data)?.kind);
+      const data = message.buttons[0]?.map((button) => parseCallback(button.data)?.kind);
       expect(data).toEqual(["reject", "reply_skip"]);
+      // Redraft stays: a new text is the way to fill a gap.
+      expect(message.buttons[1]?.map((button) => parseCallback(button.data)?.kind)).toEqual(["reply_redraft"]);
     }
   });
 
@@ -115,8 +117,31 @@ describe("renderApprovalRequest, a reply (F115)", () => {
         { text: "✖️ Reject", data: `ar:${ID}` },
         { text: "⏭ Skip", data: `rk:${ID}` },
       ],
+      [{ text: "✍️ Redraft", data: `rd:${ID}` }],
     ]);
     expect(request(reply()).buttons[0]?.map((button) => button.data)).toEqual([`ap:${ID}`, `ar:${ID}`, `rk:${ID}`]);
+  });
+
+  test("Reply all and Use Reply-To show only when the view says so; the texts are fixed (en and pl)", () => {
+    const rows = (over: Parameters<typeof reply>[0], texts = textTables.en) =>
+      renderApprovalRequest({ actionId: ID, view: reply(over), now: NOW, timeZone: TZ }, texts).buttons[1];
+    expect(rows({})?.map((button) => button.data)).toEqual([`rd:${ID}`]);
+    expect(rows({ canReplyAll: true })?.map((button) => button.data)).toEqual([`rd:${ID}`, `ra:${ID}`]);
+    expect(rows({ canUseReplyTo: true })?.map((button) => button.data)).toEqual([`rd:${ID}`, `ru:${ID}`]);
+    expect(rows({ canReplyAll: true, canUseReplyTo: true })?.map((button) => button.text)).toEqual([
+      "✍️ Redraft",
+      "👥 Reply all",
+      "↩️ Use Reply-To",
+    ]);
+    expect(rows({ canReplyAll: true, canUseReplyTo: true }, textTables.pl)?.map((button) => button.text)).toEqual([
+      "✍️ Napisz inaczej",
+      "👥 Odpowiedz wszystkim",
+      "↩️ Użyj Reply-To",
+    ]);
+  });
+
+  test("a kind other than a reply has no change row", () => {
+    expect(request(view()).buttons).toHaveLength(1);
   });
 
   test("a reply says that the Sent mail is not read only when the view says so (en and pl)", () => {
@@ -464,7 +489,7 @@ const SEND_LINE_EN = "The system sends it after your tap. Do not send the draft 
 describe("renderApprovalRequest version line and panel link", () => {
   test("T1 a view without the new fields has no version line and no panel line", () => {
     const en = request(view()).text;
-    expect(en).not.toContain("edited in the panel");
+    expect(en).not.toContain("Version");
     expect(en).not.toContain("Open in panel");
     expect(en.split("\n")[1]).toBe("From: boss@client.test · ⚠️ external sender");
     expect(en.endsWith(`\n\n${SEND_LINE_EN}`)).toBe(true);
@@ -480,13 +505,13 @@ describe("renderApprovalRequest version line and panel link", () => {
   test("T2 version 2 adds the version line as the second line", () => {
     const lines = request(view({ version: 2 })).text.split("\n");
     expect(lines[0]).toBe("📤 Send? Delegation to Anna Nowak anna@example.com");
-    expect(lines[1]).toBe("✏️ Version 2, edited in the panel.");
+    expect(lines[1]).toBe("✏️ Version 2.");
     expect(lines[2]).toBe("From: boss@client.test · ⚠️ external sender");
     const pl = renderApprovalRequest(
       { actionId: ID, view: view({ version: 3 }), now: NOW, timeZone: TZ },
       textTables.pl
     );
-    expect(pl.text.split("\n")[1]).toBe("✏️ Wersja 3, zmieniona w panelu.");
+    expect(pl.text.split("\n")[1]).toBe("✏️ Wersja 3.");
   });
 
   test("T3 the panel link stands directly above the send line", () => {
@@ -520,7 +545,7 @@ describe("renderApprovalRequest version line and panel link", () => {
     const long = view({ body: "x".repeat(5000), quote: null, version: 2, panelUrl: PANEL_URL });
     const message = request(long);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
-    expect(message.text).toContain("✏️ Version 2, edited in the panel.");
+    expect(message.text).toContain("✏️ Version 2.");
     expect(message.text).toContain(`Open in panel: ${PANEL_URL}`);
   });
 });
@@ -1063,18 +1088,16 @@ describe("approvalEdit changed", () => {
 
   test("T6 the line is appended and the card has no buttons", () => {
     const message = approvalEdit({ original, outcome: "changed", at, timeZone: TZ, actionId: ID }, textTables.en);
-    expect(message.text).toBe(`${original}\n\n✏️ Changed in the panel 14:05. The new version comes as a new message.`);
+    expect(message.text).toBe(`${original}\n\n✏️ Changed 14:05. The new version comes as a new message.`);
     expect(message.buttons).toEqual([]);
   });
 
   test("T7 the Polish edit line and the tap answer", () => {
     const message = approvalEdit({ original, outcome: "changed", at, timeZone: TZ, actionId: ID }, textTables.pl);
-    expect(message.text).toBe(
-      `${original}\n\n✏️ Zmieniono w panelu 14:05. Nowa wersja przyjdzie w osobnej wiadomości.`
-    );
+    expect(message.text).toBe(`${original}\n\n✏️ Zmieniono 14:05. Nowa wersja przyjdzie w osobnej wiadomości.`);
     expect(message.buttons).toEqual([]);
-    expect(textTables.pl.bot.taps.changed).toBe("Ten szkic zmieniono w panelu. Użyj najnowszej wiadomości.");
-    expect(textTables.en.bot.taps.changed).toBe("This draft was changed in the panel. Use the newest message.");
+    expect(textTables.pl.bot.taps.changed).toBe("Ten szkic został zmieniony. Użyj najnowszej wiadomości.");
+    expect(textTables.en.bot.taps.changed).toBe("This draft was changed. Use the newest message.");
   });
 });
 

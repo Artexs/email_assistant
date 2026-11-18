@@ -5,6 +5,7 @@ import { categories, feedbackSources, feedbackVerdicts } from "../triage/categor
 import { senderRuleKinds } from "../triage/rules";
 import { suspiciousReasons } from "../triage/suspicious";
 
+import { senderLineSchema } from "./sender-context";
 import { z } from "./zod";
 
 export { categories, type Category, type FeedbackSource, type FeedbackVerdict } from "../triage/categories";
@@ -95,6 +96,9 @@ export const activityItemSchema = z.object({
   suspicious: z.array(z.enum(suspiciousReasons)),
   // The sender rule that shaped the result; always null while the flag `why_lines` is off and on an old row.
   rule: z.enum(senderRuleKinds).nullable(),
+  // The count-only line about the sender (ADR 0034). The key is absent while the flag `sender_context` is off, so the answer is
+  // the one of before; null when there is no profile of the sender in the mail's mailbox or retention cleared the address.
+  sender: senderLineSchema.nullable().optional(),
 });
 export type ActivityItem = z.infer<typeof activityItemSchema>;
 

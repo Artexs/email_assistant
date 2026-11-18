@@ -9,6 +9,7 @@ import {
   textTables,
   userLocales,
   type ActivityItem,
+  type SenderLine,
 } from "@ea/core/web";
 
 import { setLocaleForTest } from "../i18n";
@@ -21,6 +22,7 @@ import {
   feedbackToast,
   ruleLine,
   ruleName,
+  senderLineText,
   senderText,
   subjectText,
   undoToast,
@@ -121,5 +123,56 @@ describe("the rule hit (F110 stage 16)", () => {
       "Reguła: nadawca z listy dozwolonych",
       "Reguła: nadawca z listy blokowanych",
     ]);
+  });
+});
+
+describe("the sender line", () => {
+  const line = (patch: Partial<SenderLine> = {}): SenderLine => ({
+    relation: "known",
+    received: 8,
+    answered: 6,
+    userMailsTo: 3,
+    lastSeenDaysAgo: 2,
+    days: 90,
+    ...patch,
+  });
+
+  test("en: the full line, with no wrote part at 0 and the new sender", () => {
+    setLocaleForTest("en");
+    expect(senderLineText(line())).toBe(
+      "Known · you answered 6 of 8 mails in 90 days · you wrote to them 3 times · last mail 2 days ago"
+    );
+    expect(senderLineText(line({ userMailsTo: 0 }))).toBe(
+      "Known · you answered 6 of 8 mails in 90 days · last mail 2 days ago"
+    );
+    expect(
+      senderLineText(line({ relation: "new", received: 1, answered: 0, userMailsTo: 0, lastSeenDaysAgo: null }))
+    ).toBe("New · you answered 0 of 1 mails in 90 days");
+  });
+
+  test("en: today, the other relation words, and no answered part without a received mail", () => {
+    setLocaleForTest("en");
+    expect(senderLineText(line({ lastSeenDaysAgo: 0 }))).toEndWith(" · last mail today");
+    const words = (["delegate", "vip", "bulk", "known", "new"] as const).map((relation) =>
+      senderLineText(line({ relation, received: 0, answered: 0, userMailsTo: 0, lastSeenDaysAgo: null }))
+    );
+    expect(words).toEqual(["Delegate", "VIP", "Bulk sender", "Known", "New"]);
+  });
+
+  test("pl: the same cases", () => {
+    setLocaleForTest("pl");
+    expect(senderLineText(line())).toBe(
+      "Znany · odpowiedź na 6 z 8 wiadomości w 90 dni · Twoje wiadomości do nadawcy: 3 · ostatnia wiadomość 2 dni temu"
+    );
+    expect(senderLineText(line({ userMailsTo: 0, lastSeenDaysAgo: 0 }))).toBe(
+      "Znany · odpowiedź na 6 z 8 wiadomości w 90 dni · ostatnia wiadomość dzisiaj"
+    );
+    expect(
+      senderLineText(line({ relation: "new", received: 1, answered: 0, userMailsTo: 0, lastSeenDaysAgo: null }))
+    ).toBe("Nowy · odpowiedź na 0 z 1 wiadomości w 90 dni");
+    const words = (["delegate", "vip", "bulk", "known", "new"] as const).map((relation) =>
+      senderLineText(line({ relation, received: 0, answered: 0, userMailsTo: 0, lastSeenDaysAgo: null }))
+    );
+    expect(words).toEqual(["Delegat", "VIP", "Nadawca masowy", "Znany", "Nowy"]);
   });
 });

@@ -1,6 +1,9 @@
 import { cleanUserText, defaultDue } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
+import { errorFields } from "../../platform/errors";
+import { createLog } from "../../platform/log";
+import { type ContactWait, contactWaitFor } from "../contacts";
 
 import { type SentCandidate, writeAnalysis } from "./analysis-repo";
 import { type MailboxEnv, inTransaction, lockSentTracking } from "./analyze-rules";
@@ -8,6 +11,8 @@ import type { Extraction } from "./extractor";
 import { type DbOrTrx, insertLoop, type NewLoop } from "./repo";
 
 const SUBJECT_MAX = 300;
+
+const log = createLog("loops");
 
 // One line of at most 300 characters; null when nothing is left. The subject is the header of a mail that goes out
 // again in a follow-up: it never holds a line break.
@@ -25,14 +30,37 @@ export type WriteOutcome =
   | { kind: "exists" }
   | { kind: "off" };
 
+// The usual reply time of one contact (`contactWaitFor` with its dependencies bound), or null.
+export type ContactWaitReader = (counterpart: string) => Promise<ContactWait | null>;
+
+// The counterpart whose wait the answer needs, or null: no ask, or a stated date (it always wins).
+export function counterpartOf(row: SentCandidate, extraction: Extraction, env: MailboxEnv): string | null {
+  if (!extraction.expectsReply || extraction.due !== null) return null;
+  return askOf(row, env).counterpart;
+}
+
+// The address that the ask is about: the delegate that owns a To address, else the first To, else the first Cc.
+function askOf(
+  row: SentCandidate,
+  env: MailboxEnv
+): { counterpart: string | null; delegate: MailboxEnv["delegates"][number] | undefined } {
+  const to = row.to.map((address) => address.toLowerCase());
+  const delegate = to
+    .map((address) => ({ address, delegate: env.delegates.find((candidate) => candidate.email === address) }))
+    .find((match) => match.delegate !== undefined);
+  const first = to[0] ?? row.cc[0]?.toLowerCase() ?? null;
+  return { counterpart: delegate?.address ?? first, delegate: delegate?.delegate };
+}
+
 // The loops that one answer opens. Every address, the subject and the message ids come from the Sent row, never from
-// the model. A mail with an ask and a promise opens two loops.
+// the model. A mail with an ask and a promise opens two loops. `contact`: the wait of the counterpart of the ask
+// (`counterpartOf`), read by the caller.
 export function loopsOf(
   row: SentCandidate,
   extraction: Extraction,
-  env: MailboxEnv
+  env: MailboxEnv,
+  contact: ContactWait | null = null
 ): { loops: NewLoop[]; hasPromise: boolean } {
-  const to = row.to.map((address) => address.toLowerCase());
   const base = {
     mailboxId: env.mailboxId,
     sentEmailId: row.id,
@@ -46,22 +74,23 @@ export function loopsOf(
     waitFromAt: row.sentAt,
     at: env.now,
   };
-  const first = to[0] ?? row.cc[0]?.toLowerCase() ?? null;
+  const first = row.to[0]?.toLowerCase() ?? row.cc[0]?.toLowerCase() ?? null;
   const loops: NewLoop[] = [];
   if (extraction.expectsReply) {
     // The first To address that an active delegate owns: a hand forward to the delegate.
-    const delegate = to
-      .map((address) => ({ address, delegate: env.delegates.find((candidate) => candidate.email === address) }))
-      .find((match) => match.delegate !== undefined);
+    const { counterpart, delegate } = askOf(row, env);
     const stated = extraction.due !== null;
+    // A stated date always wins; then the usual reply time of the contact; then the wait of the owner.
+    const use = !stated && contact !== null;
     loops.push({
       ...base,
       kind: delegate === undefined ? "waiting" : "delegated",
-      counterpart: delegate?.address ?? first,
-      delegateId: delegate?.delegate?.id ?? null,
+      counterpart,
+      delegateId: delegate?.id ?? null,
       text: extraction.ask,
-      dueAt: extraction.due ?? defaultDue(row.sentAt, env.waitDays, env.timeZone),
-      dueSource: stated ? "stated" : "default",
+      dueAt: extraction.due ?? defaultDue(row.sentAt, use ? contact.waitDays : env.waitDays, env.timeZone),
+      dueSource: stated ? "stated" : use ? "contact" : "default",
+      usualReplyDays: use ? contact.usualReplyDays : null,
     });
   }
   // An undated promise opens nothing.
@@ -75,9 +104,31 @@ export function loopsOf(
       text: extraction.promise,
       dueAt: extraction.promiseDue,
       dueSource: "stated",
+      usualReplyDays: null,
     });
   }
   return { loops, hasPromise };
+}
+
+// The wait of the contact that the new `waiting` or `delegated` loop is about. A plain read of a derived table, done before
+// the write transaction (no lock order changes); a profile that changes before the write is accepted. A failed read gives
+// null: the loop gets the default wait.
+async function readContactWait(
+  ctx: TenantContext,
+  env: MailboxEnv,
+  row: SentCandidate,
+  extraction: Extraction,
+  read: ContactWaitReader | undefined
+): Promise<ContactWait | null> {
+  const counterpart = counterpartOf(row, extraction, env);
+  if (read === undefined || counterpart === null) return null;
+  try {
+    return await read(counterpart);
+  } catch (error) {
+    // No address in the log: the error name and code only.
+    log.with({ org_id: ctx.orgId, mailbox_id: env.mailboxId }).warn("contact_wait_failed", errorFields(error));
+    return null;
+  }
 }
 
 // One transaction: the analysis row and the loops. A crash before the commit writes nothing, so a repeat costs a call
@@ -88,11 +139,14 @@ export async function writeExtraction(
   env: MailboxEnv,
   row: SentCandidate,
   extraction: Extraction,
-  promptVersion: string
+  promptVersion: string,
+  contactWait?: ContactWaitReader
 ): Promise<WriteOutcome> {
+  // The read of the contact wait runs before the transaction: no lock order changes.
+  const contact = await readContactWait(ctx, env, row, extraction, contactWait);
   return inTransaction(db, async (trx) => {
     if (!(await lockSentTracking(trx, ctx, env.mailboxId))) return { kind: "off" };
-    const { loops, hasPromise } = loopsOf(row, extraction, env);
+    const { loops, hasPromise } = loopsOf(row, extraction, env, contact);
     const wrote = await writeAnalysis(trx, ctx, {
       mailboxId: env.mailboxId,
       sentEmailId: row.id,

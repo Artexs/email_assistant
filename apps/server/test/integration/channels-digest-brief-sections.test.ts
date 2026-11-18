@@ -225,6 +225,34 @@ describe("language, shadow, links", () => {
     });
   });
 
+  test("⏳ a loop whose due date comes from the contact ends with the usual reply time; a default loop does not", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      await waitingLoop(trx, org, { due_source: "contact", usual_reply_days: 2 });
+      await waitingLoop(trx, org, { counterpart: "tom@example.test", text: "plain wait" });
+      await runDigests(trx, EIGHT);
+      const [en = ""] = await digestTexts(trx, org.ctx.orgId);
+      expect(en).toContain(
+        "⏳ No answer from anna@example.test since Tue 10.11 · send the offer · usual reply: 2 days"
+      );
+      expect(en).toContain("plain wait\n");
+      expect(en.split("\n").filter((line) => line.includes("usual reply"))).toHaveLength(1);
+    });
+  });
+
+  test("⏳ the usual reply time of a contact loop reads in Polish for a Polish member", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await ready(trx);
+      await trx.updateTable("users").set({ locale: "pl" }).where("id", "=", org.userId).execute();
+      await waitingLoop(trx, org, { due_source: "contact", usual_reply_days: 2 });
+      await runDigests(trx, EIGHT);
+      const [pl = ""] = await digestTexts(trx, org.ctx.orgId);
+      expect(pl).toContain(
+        "⏳ anna@example.test nie odpowiada od wt. 10.11 · send the offer · zwykle odpowiada w 2 dni"
+      );
+    });
+  });
+
   test("T5 a shadow mailbox: a past due delegated loop says 'would draft a follow-up'", async () => {
     await withRollback(db, async (trx) => {
       const org = await ready(trx);

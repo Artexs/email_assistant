@@ -140,7 +140,7 @@ export function createRetentionJob(deps: RetentionJobDeps): RetentionJob {
     // The loop texts go 90 days after the loop closed; an open loop keeps them.
     const loops = await clearers.clearLoopTexts(db, ctx, { before: textsBefore, now });
     // The reply instruction and the sample text go after the text period (not the organization's), counted from `created_at`.
-    const replyTexts = await clearers.clearReplyTexts(db, ctx, { before: textsBefore, now });
+    const replyTexts = await clearers.clearReplyTexts(db, ctx, { before: textsBefore });
     // The `tokens` count holds the link tokens and the OAuth sign-in states.
     const tokens =
       (await clearers.deleteOldLinkTokens(db, ctx, { before: new Date(now.getTime() - LINK_TOKEN_GRACE_MS) })) +

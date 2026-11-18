@@ -42,9 +42,11 @@ flowchart BT
   channels --> actions
   channels --> audit
   channels --> config
+  channels --> contacts
   channels --> delegation
   channels --> loops
   channels --> mail
+  channels --> replies
   channels --> reports
   channels --> tenancy
   channels --> triage
@@ -72,6 +74,7 @@ flowchart BT
   loops --> actions
   loops --> audit
   loops --> config
+  loops --> contacts
   loops --> delegation
   loops --> mail
   loops --> tenancy
@@ -99,9 +102,11 @@ flowchart BT
   reports --> actions
   reports --> audit
   reports --> config
+  reports --> contacts
   reports --> delegation
   reports --> loops
   reports --> mail
+  reports --> replies
   reports --> tenancy
   reports --> triage
   tenancy --> audit

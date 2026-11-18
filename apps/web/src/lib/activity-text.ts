@@ -1,4 +1,4 @@
-import type { ActivityItem, Category, FeedbackResult, UndoWebResult } from "@ea/core/web";
+import type { ActivityItem, Category, FeedbackResult, SenderLine, UndoWebResult } from "@ea/core/web";
 
 import { t } from "../i18n";
 
@@ -56,4 +56,21 @@ export function ruleName(rule: NonNullable<ActivityItem["rule"]>): string {
 
 export function ruleLine(rule: NonNullable<ActivityItem["rule"]>): string {
   return t(`act_rule_hit_${rule}`);
+}
+
+// The sender line under the From line, in Activity and in Approvals: the relation, then the parts that have a number to show,
+// joined by " · ". The answered part shows when the sender sent mail at all (also with 0 answered), the wrote part when the user wrote to them,
+// the last-mail part when the date is known (0 days reads "today").
+export function senderLineText(line: SenderLine): string {
+  const parts = [t(`sender_rel_${line.relation}`)];
+  if (line.received > 0) {
+    parts.push(t("sender_answered", { answered: line.answered, received: line.received, days: line.days }));
+  }
+  if (line.userMailsTo > 0) parts.push(t("sender_wrote", { userMailsTo: line.userMailsTo }));
+  if (line.lastSeenDaysAgo !== null) {
+    parts.push(
+      line.lastSeenDaysAgo === 0 ? t("sender_last_seen_today") : t("sender_last_seen", { n: line.lastSeenDaysAgo })
+    );
+  }
+  return parts.join(" · ");
 }

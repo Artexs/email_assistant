@@ -226,7 +226,12 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 **Built in S4** (same folder; the draft and send rules and the approval flow are in `docs/capabilities/drafts-and-send.md`, the status flows in `docs/capabilities/actions-and-undo.md` § Data and `docs/capabilities/delegation.md` § Data):
 
 - `drafts.ts`: `applyDraft` (`applying`, build, locate by action id, APPEND, recovery, `send_closed`), `buildDraftMessage`, `removeDraft` (the reverse `create_draft` row: locate, delete, original `undone`).
-- `send.ts`: `applySend` (`applying` in its own commit, one SMTP call, `applied` at once, the Sent copy, the recovery by the Sent search), `sendOutcomeOf` (the table in `docs/capabilities/drafts-and-send.md` § Rules).
+- `send.ts`: `applySend` (`applying` in its own commit, one SMTP call, `applied` at once, the recovery by the Sent search); it calls the parts below and re-exports the names of `send-outcome.ts`.
+- `send-outcome.ts`: `sendOutcomeOf` (the table in `docs/capabilities/drafts-and-send.md` § Rules) and the constants `SEND_RETRY_WAIT_MS`, `SEND_HARD_TRIES`, `SOFT_CAP_MARK`, `SENT_COPY_PENDING_MAX_AGE_MS`.
+- `send-prepare.ts`: `prepare` (the payloads, the draft and the message of a send) and `replyHasGaps`.
+- `send-failure.ts`: `failSend` and the failure paths of a send (payload, compose, SMTP, copy check, recovery).
+- `send-finish.ts`: `finishApplied` (the `applied` commit) and `saveSentCopy` (step 5, the Sent copy).
+- `send-close.ts`: `closeForReason` and `closeSendOfClosedLoop` (a claimed send that ends `expired` before the SMTP call).
 - `transitions.ts`: the map of `actions.status` as data (statuses, edges, the guard of each writer function, entry writers, pair rules). No runtime code reads it; `actions-transitions.test.ts` compares it with the guards and the CHECK lists in Postgres.
 - `approvals.ts`: `approve`, `reject`, `approveSet`, `rejectSet`, `sendAgain`. Each locks the send row first and changes the status with a conditional update. The role check is the caller's (the Telegram handler).
 - `expiry.ts`: `expireSend` (the cascade: send, draft, delegation), `closeDraftOfSend`, `expireReminderActions`, and `createExpiryJob` (`actions.expiry`, hourly). It sits beside the S3 `expire.ts`.

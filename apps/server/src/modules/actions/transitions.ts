@@ -113,7 +113,7 @@ export const ACTION_ENTRIES: readonly ActionEntry[] = [
     status: "ready",
     types: [...MAILBOX, "create_draft"],
     writer: "insertReverse",
-    callers: ["undo.ts", "expiry.ts", "send.ts"],
+    callers: ["undo.ts", "expiry.ts", "send-finish.ts"],
   },
   // "Send again" on a failed send: a new `approved` send row (key `<id>:again`) with `approved_at`.
   { status: "approved", types: ["send"], writer: "insertSendAgain", callers: ["approvals.ts"] },
@@ -159,7 +159,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     types: ["create_draft", "send"],
     writer: "finishAction",
     reasons: ["recovered"], // send recovery: `recovered` in `provider_result`
-    callers: ["drafts.ts", "send.ts"],
+    callers: ["drafts.ts", "send-finish.ts"],
   },
   {
     id: "E5",
@@ -177,7 +177,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     types: ["create_draft", "send"],
     writer: "finishAction",
     reasons: ["hard_error", "bad_payload", "smtp_rejected", "smtp_error", "outcome_unknown"],
-    callers: ["drafts.ts", "send.ts"],
+    callers: ["drafts.ts", "send-failure.ts"],
   },
   {
     id: "E7",
@@ -186,7 +186,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     types: ["send"],
     writer: "finishAction",
     reasons: ["bad_payload", "has_gaps", "smtp_error", "copy_check_error"], // `smtp_error`: the third compose error; `has_gaps`: a reply text with a gap; `copy_check_error`: the Drafts copy could not be read (6 h of soft errors, or the third hard error)
-    callers: ["send.ts"],
+    callers: ["send-failure.ts"],
   },
   {
     id: "E8",
@@ -205,7 +205,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     writer: "finishAction",
     // The loop of a follow-up closed after the tap and before the SMTP call: the claimed send ends here.
     reasons: ["loop_closed"],
-    callers: ["send.ts"],
+    callers: ["send-close.ts"],
   },
   {
     id: "E22",
@@ -245,7 +245,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     writer: "releaseAction",
     reasons: ["draft: error at the APPEND", "send: error in the recovery", "no provider"],
     retry: true,
-    callers: ["apply.ts", "drafts.ts", "send.ts"],
+    callers: ["apply.ts", "drafts.ts", "send-failure.ts"],
   },
   {
     id: "E12",
@@ -255,7 +255,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     writer: "releaseAction",
     reasons: ["no sender", "draft not applied", "compose error", "no provider", "send limit"],
     retry: true,
-    callers: ["apply.ts", "send.ts", "send-limit.ts"],
+    callers: ["apply.ts", "send.ts", "send-failure.ts", "send-limit.ts"],
   },
   {
     id: "E13",
@@ -265,7 +265,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
     writer: "releaseAction",
     reasons: ["login error (auth_error)", "known stage before the content"],
     retry: true,
-    callers: ["send.ts"],
+    callers: ["send-failure.ts"],
   },
   {
     id: "E14a",
@@ -335,7 +335,7 @@ export const ACTION_EDGES: readonly ActionEdge[] = [
       "policy_changed",
       "delegation_closed",
       "superseded",
-      // `closeSend` (close.ts) for every kind: the reasons of the reply drafts. Callers: the pass and the copy check of `applySend` (`send.ts`) and the sweep (`replies/sweep.ts`).
+      // `closeSend` (close.ts) for every kind: the reasons of the reply drafts. Callers: the pass and the copy check of `applySend` (`send.ts`, `send-close.ts`) and the sweep (`replies/sweep.ts`).
       "answered",
       "newer_mail",
       "original_moved",
@@ -638,7 +638,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     id: "P4",
     when: "a send ends (`applied`, `rejected`, `expired`)",
     then: "its draft: `ready` -> `expired`; `applied` with UIDPLUS -> a reverse row; the applied reverse row -> the draft `undone`",
-    enforcedBy: ["closeDraftOfSend (expiry.ts)", "send.ts", "drafts.ts"],
+    enforcedBy: ["closeDraftOfSend (expiry.ts)", "send-close.ts", "send-finish.ts", "drafts.ts"],
     test: "actions-send.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts.test.ts › the reverse row removes the draft and marks the original undone with the reason; actions-drafts.test.ts › a reverse row with the reason expired marks the original undone with that reason",
   },
   {
@@ -659,7 +659,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     id: "P7",
     when: "delegation hooks run (`DelegationHooks`)",
     then: "send applied: delegation `sent`; send failed or expired: delegation `cancelled`; delegation closed: its reminder sends expire",
-    enforcedBy: ["send.ts", "expiry.ts", "expireReminderActions"],
+    enforcedBy: ["send-finish.ts", "send-failure.ts", "send-close.ts", "expiry.ts", "expireReminderActions"],
     test: "actions-send.test.ts › (14) triage, draft, approval, send, the delegation is sent; actions-expiry.test.ts › (1)",
   },
 ];
