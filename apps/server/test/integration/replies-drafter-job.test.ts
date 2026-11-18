@@ -8,6 +8,7 @@ import {
   createCommitterJob,
   createPlanned,
   reject,
+  replaceApproval,
   noApprovalHooks,
   noDelegationHooks,
 } from "../../src/modules/actions";
@@ -597,6 +598,86 @@ describe("the drafter job (F115 stage 07)", () => {
     });
   });
 
+  test("11c. another version replaces the send while the model works: cancelled / changed, no pair of this request", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setupBox(trx);
+      const clock = fresh();
+      const emailId = await addReplyMail(trx, s);
+      await createReplyJobs(jobDeps(trx, fakeLlm(() => CLEAN_ANSWER).llm, clock)).drafter.run({
+        mailboxId: s.mailboxId,
+      });
+      const [first] = await openReplySends(trx, s);
+      const redraft = await queueRequest(trx, s, emailId, "redraft", { previousSendId: first?.id ?? null });
+      const { llm } = fakeLlm(async () => {
+        // The user edits the text in the panel: version 2 replaces the send that the redraft was asked for.
+        await replaceApproval(trx, s.ctx, {
+          sendId: first?.id ?? "",
+          payload: { body_text: "Tekst od użytkownika." },
+          userId: s.userId,
+          via: "web",
+          now: clock.now,
+          deps: { hooks: noDelegationHooks, approvalHooks: noApprovalHooks, uidplus: async () => true },
+        });
+        return CLEAN_ANSWER;
+      });
+
+      await createReplyJobs(jobDeps(trx, llm, clock)).drafter.run({ mailboxId: s.mailboxId });
+
+      expect(await requestOf(trx, redraft)).toMatchObject({ status: "cancelled", reason_code: "changed" });
+      const open = await openReplySends(trx, s);
+      expect(open).toHaveLength(1);
+      expect(open[0]?.id).not.toBe(first?.id);
+    });
+  });
+
+  test("a tap on mail that the rules block, and a tap on an OAuth mailbox: cancelled with the reason, no model call", async () => {
+    await withRollback(db, async (trx) => {
+      const flagged = await setupBox(trx);
+      const flaggedMail = await addReplyMail(trx, flagged);
+      await trx
+        .updateTable("triage_results")
+        .set({ suspicious_reasons: ["reply_to_mismatch"] })
+        .where("email_id", "=", flaggedMail)
+        .execute();
+      const answered = await setupBox(trx);
+      const answeredMail = await addReplyMail(trx, answered);
+      await trx
+        .insertInto("email_flags")
+        .values({
+          email_id: answeredMail,
+          org_id: answered.ctx.orgId,
+          answered: true,
+          checked_at: NOW,
+          seen: true,
+          flagged: false,
+        })
+        .execute();
+      const unchecked = await setupBox(trx);
+      const uncheckedMail = await addReplyMail(trx, unchecked, { headers: false });
+      const oauth = await setupBox(trx);
+      const oauthMail = await addReplyMail(trx, oauth);
+      await trx.updateTable("mailboxes").set({ oauth_provider: "google" }).where("id", "=", oauth.mailboxId).execute();
+
+      for (const [box, mail, reason] of [
+        [flagged, flaggedMail, "suspicious"],
+        [answered, answeredMail, "answered"],
+        [unchecked, uncheckedMail, "not_checked"],
+        [oauth, oauthMail, "oauth_mailbox"],
+      ] as const) {
+        const { llm, requests } = fakeLlm(() => CLEAN_ANSWER);
+        const id = await queueRequest(trx, box, mail, "tap");
+        await runJob(jobDeps(trx, llm, fresh()), box);
+        expect([reason, (await requestOf(trx, id)).status, (await requestOf(trx, id)).reason_code]).toEqual([
+          reason,
+          "cancelled",
+          reason,
+        ]);
+        expect(requests).toHaveLength(0);
+        expect(await pairRows(trx, box)).toEqual([]);
+      }
+    });
+  });
+
   test("11b. the send is rejected while the model works: no new version, cancelled / closed", async () => {
     await withRollback(db, async (trx) => {
       const s = await setupBox(trx);
@@ -630,9 +711,15 @@ describe("the drafter job (F115 stage 07)", () => {
       const mail = await addReplyMail(trx, s, { category: "info" });
       const { llm, requests } = fakeLlm(() => new LlmSoftError("http_503", "fake-drafter"));
       const id = await queueRequest(trx, s, mail, "tap", { nextAttemptAt: NOW });
+      const secondMail = await addReplyMail(trx, s, { category: "info" });
+      const second = await queueRequest(trx, s, secondMail, "tap", { at: new Date(NOW.getTime() + 1) });
       const jobs = createReplyJobs(jobDeps(trx, llm, clock));
 
       await jobs.drafter.run({ mailboxId: s.mailboxId });
+      // The soft error paused the job: the second request of the batch made no call and is back with its time and no try counted.
+      expect(requests).toHaveLength(1);
+      expect(await requestOf(trx, second)).toMatchObject({ status: "pending", attempts: 0 });
+      expect((await requestOf(trx, second)).next_attempt_at.getTime()).toBe(NOW.getTime() + 1);
       expect(await requestOf(trx, id)).toMatchObject({ status: "pending", attempts: 0 });
       expect((await requestOf(trx, id)).next_attempt_at.getTime()).toBe(NOW.getTime() + 5 * MINUTE);
       expect((await llmCallRows(trx, s)).map((row) => row.reason_code)).toEqual(["http_503"]);
@@ -642,10 +729,10 @@ describe("the drafter job (F115 stage 07)", () => {
       expect(await requestOf(trx, id)).toMatchObject({ status: "pending", attempts: 0 });
       expect(requests).toHaveLength(2);
 
-      // The pause of the soft error is still on: no run takes the request, and it ends in time.
+      // The pause of the soft error is still on: no run takes the requests, and they end in time.
       clock.now = new Date(NOW.getTime() + 11 * MINUTE);
       const last = await jobs.drafter.run({ mailboxId: s.mailboxId });
-      expect(last.timedOut).toBe(1);
+      expect(last.timedOut).toBe(2);
       expect(await requestOf(trx, id)).toMatchObject({ status: "failed", reason_code: "timeout" });
       expect(requests).toHaveLength(2);
     });
@@ -1141,6 +1228,13 @@ describe("the drafter job: one draft per request, exactly once", () => {
       expect(run).toMatchObject({ requested: 50, claimed: 5 });
       expect(await requestsOf(trx, s)).toHaveLength(50);
       expect((await requestsOf(trx, s)).filter((row) => row.status === "done")).toHaveLength(5);
+      // Different threads: the five drafts are five open replies, none closes another.
+      expect(await openReplySends(trx, s)).toHaveLength(5);
+
+      // The scan skips mail that has a request, so the next run reaches the two mails that the limit left out.
+      const again = await runJob(jobDeps(trx, llm, fresh()), s);
+      expect(again.requested).toBe(2);
+      expect(await requestsOf(trx, s)).toHaveLength(52);
     });
   });
 

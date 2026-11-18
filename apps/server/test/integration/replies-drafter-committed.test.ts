@@ -16,6 +16,7 @@ import {
   queueRequest,
   requestOf,
   requestsOf,
+  setSwitch,
   setupBox,
   type Clock,
   type JobBox,
@@ -244,6 +245,57 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
         reason_code: "open_newer",
         send_action_id: openAfter[0]?.id,
       });
+    } finally {
+      await dropBox(box);
+    }
+  });
+
+  test("the write waits for a setter that turns the switch off and then sees its commit: cancelled / switch_off, no pair", async () => {
+    const box = await committedBox();
+    try {
+      const mail = await db.transaction().execute((trx) => addReplyMail(trx, box));
+      const request = await queueRequest(db, box, mail, "auto");
+      let locked!: () => void;
+      const hasLock = new Promise<void>((resolve) => {
+        locked = resolve;
+      });
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      // The setter holds the settings row (FOR UPDATE) and has changed the switch, but has not committed.
+      const setter = db.transaction().execute(async (trx) => {
+        await trx
+          .selectFrom("mailbox_settings")
+          .select("mailbox_id")
+          .where("mailbox_id", "=", box.mailboxId)
+          .forUpdate()
+          .execute();
+        await setSwitch(trx, box.mailboxId, false);
+        locked();
+        await gate;
+      });
+      await hasLock;
+      const { llm } = fakeLlm(() => CLEAN_ANSWER);
+      const run = createReplyJobs(jobDeps(db, llm, fresh())).drafter.run({ mailboxId: box.mailboxId });
+      const waiting = async (): Promise<"blocked"> => {
+        const deadline = Date.now() + 5000;
+        while (Date.now() < deadline) {
+          const { rows } = await sql<{ count: number }>`
+            select count(*)::int as count from pg_locks where not granted and locktype in ('transactionid', 'tuple')`.execute(
+            db
+          );
+          if ((rows[0]?.count ?? 0) > 0) return "blocked";
+          await Bun.sleep(20);
+        }
+        throw new Error("the write neither waited nor finished");
+      };
+      await Promise.race([waiting(), run.then(() => "finished")]);
+      release();
+      await Promise.all([setter, run]);
+
+      expect(await requestOf(db, request)).toMatchObject({ status: "cancelled", reason_code: "switch_off" });
+      expect(await pairRows(db, box)).toEqual([]);
     } finally {
       await dropBox(box);
     }
