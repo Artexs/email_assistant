@@ -4,7 +4,7 @@ import type { DemoRow } from "./tables";
 // is the sim GreenMail (a loopback name) or a `.test` name. The scan reads every string of every row, so an address in
 // a subject, a body, a header, a JSON payload or an audit row is found. Findings name the table and column only.
 //
-// The scan keys on each `@` and the run of domain characters after it, not on the word before it (review B1: a quoted
+// The scan keys on each `@` and the run of domain characters after it, not on the word before it (a quoted
 // local part `"john"@gmail.com` and an address literal `john@[10.0.0.1]` have no plain word before the `@`). Every `@`
 // must be followed by a domain of letters, digits, hyphens and dots that ends in `.test`; an empty run, a `[`, a
 // non-ASCII letter or any other domain refuses. So a bare `@` in a text is refused too: lab text has none.

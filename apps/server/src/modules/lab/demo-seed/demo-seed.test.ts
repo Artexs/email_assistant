@@ -179,7 +179,7 @@ describe("the address and host scan", () => {
     }
   });
 
-  // Review B1: the old scan needed a plain word before the `@`.
+  // The old scan needed a plain word before the `@`.
   test("B1: a quoted local part and an address literal are refused (the scan keys on the @, not on the word before it)", () => {
     for (const bad of [
       'write to "john"@gmail.com today',
