@@ -117,7 +117,7 @@ test("T2: the organization signature is read-only and links to the card of each 
   });
   expect(set.ok()).toBe(true);
   await page.reload();
-  // With no signature of the mailbox, the text in use is the old text of the organization (the fallback of D13).
+  // With no signature of the mailbox, the text in use is the old text of the organization (the fallback).
   await expect(card(page).getByText(t("rs_in_use", { text: "E2E old organization text" }))).toBeVisible();
   const signature = page.locator("[data-card=signature]");
   await expect(signature.locator("[data-old-text]")).toHaveText("E2E old organization text");

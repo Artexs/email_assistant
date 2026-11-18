@@ -9,7 +9,7 @@ test.describe.configure({ mode: "serial" });
 
 let errors: string[] = [];
 
-// The S5a blocks are 10 and 110; this spec uses 40 and 140.
+// The earlier blocks are 10 and 110; this spec uses 40 and 140.
 test.beforeEach(async ({ context, page }, testInfo) => {
   const base = testInfo.project.name === "mobile" ? 40 : 140;
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(base) });

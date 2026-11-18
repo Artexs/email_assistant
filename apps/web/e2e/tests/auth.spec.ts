@@ -51,7 +51,7 @@ test("a login opens the shell", async ({ page }) => {
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByRole("heading", { level: 1, name: en.title_onboarding })).toBeVisible();
   await expect(page.getByRole("heading", { level: 2, name: en.ob_mailbox_title })).toBeVisible();
-  // W20 case 6: the seeded organization has no mailbox, so there is no banner.
+  // The seeded organization has no mailbox, so there is no banner.
   await expect(page.getByRole("status")).toHaveCount(0);
 
   const nav = page.getByRole("navigation", { name: en.nav_main });
