@@ -23,6 +23,9 @@ export default defineConfig({
         "form-action 'self'",
         "base-uri 'self'",
         "object-src 'none'",
+        // The service worker (`/sw.js`) and the manifest. `worker-src` would fall back to `script-src`, which Astro fills with hashes.
+        "worker-src 'self'",
+        "manifest-src 'self'",
       ],
     },
   },

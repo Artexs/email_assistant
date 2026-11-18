@@ -198,6 +198,52 @@ describe("upsertPushSubscription", () => {
     });
   });
 
+  test("3b: a full list drops a device without a live session first (null session, then an expired one), a live one last", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const live = await session(trx, o.userId, new Date(NOW.getTime() + 24 * HOUR));
+      const expired = await session(trx, o.userId, new Date(NOW.getTime() - HOUR));
+      const ids: string[] = [];
+      for (let n = 0; n < MAX_DEVICES_PER_USER; n += 1) {
+        const made = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + n * 1000) });
+        ids.push(made?.id ?? "");
+      }
+      // Device 0 is the oldest and live. Device 5 has an expired session, device 3 has none (its session ended).
+      await trx
+        .updateTable("push_subscriptions")
+        .set({ session_id: expired })
+        .where("id", "=", ids[5] ?? "")
+        .execute();
+      await trx
+        .updateTable("push_subscriptions")
+        .set({ session_id: null })
+        .where("id", "=", ids[3] ?? "")
+        .execute();
+      const idsOf = async () =>
+        (
+          await trx
+            .selectFrom("push_subscriptions")
+            .select("id")
+            .where("org_id", "=", o.orgId)
+            .orderBy("created_at")
+            .execute()
+        ).map((row) => row.id);
+
+      const a = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + 60_000) });
+      expect(await idsOf()).toEqual([...ids.filter((id) => id !== ids[3]), a?.id ?? ""]);
+      const b = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + 61_000) });
+      expect(await idsOf()).toEqual([...ids.filter((id) => id !== ids[3] && id !== ids[5]), a?.id ?? "", b?.id ?? ""]);
+      // No dead device is left: the next one removes the oldest live device.
+      const c = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + 62_000) });
+      expect(await idsOf()).toEqual([
+        ...ids.filter((id) => id !== ids[3] && id !== ids[5] && id !== ids[0]),
+        a?.id ?? "",
+        b?.id ?? "",
+        c?.id ?? "",
+      ]);
+    });
+  });
+
   test("4: the cap counts one user: another user's devices and another organization's devices stay", async () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);

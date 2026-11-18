@@ -35,3 +35,11 @@ export function checkPushEndpoint(endpoint: string): PushEndpointCheck {
   if (!hostAllowed(url.hostname)) return { ok: false, code: "push_host_not_allowed" };
   return { ok: true };
 }
+
+/**
+ * The one form of an endpoint that the server stores and hashes: the WHATWG serialization (no leading or trailing space, lower case host,
+ * no `:443`). Without it one browser could register as several devices. Call it only after `checkPushEndpoint` returned ok.
+ */
+export function canonicalEndpoint(endpoint: string): string {
+  return new URL(endpoint).href;
+}
