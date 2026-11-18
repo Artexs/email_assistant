@@ -36,6 +36,7 @@ import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
+import { putDraftCopy } from "./reply-fixtures";
 
 // F115 stage 05: the lifetime of a reply send, the gap rule, the flag rule, `replaceApproval` and `closeSend`.
 // Every test runs in a transaction that is rolled back.
@@ -394,6 +395,7 @@ describe("step 2: gaps and the flag", () => {
         sendStatus: "approved",
         approved: { userId: w.userId, at: ago(MINUTE) },
       });
+      await putDraftCopy(trx, w, heldReply, NOW);
       const delegation = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
         draftStatus: "applied",
         draftProviderResult: { folder: "Drafts", uid: 9 },
