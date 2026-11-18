@@ -559,6 +559,18 @@ describe("the cache of the Sent domains", () => {
     });
   });
 
+  test("a swap of Sent mail with the same count still ends the entry", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      await sentTwice(trx, s, ["a@erste.pl"]);
+      expect((await contextOf(trx, s)).sentDomains).toEqual(["erste.pl"]);
+      await trx.deleteFrom("sent_emails").where("mailbox_id", "=", s.mailboxId).execute();
+      await sentTwice(trx, s, ["a@zweite.pl"]);
+      expect((await contextOf(trx, s)).sentDomains).toEqual(["zweite.pl"]);
+    });
+  });
+
   test("with a flag off nothing is read and nothing is cached", async () => {
     await withRollback(db, async (trx) => {
       const s = await scene(trx);
