@@ -125,7 +125,7 @@ export async function approvalViewFor(
   // A reply is stopped when the mail is answered, but only `\Answered` on the original shows that while the Sent mail is not read
   // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail".
   if (draft.kind === "reply" && !(await isSentVisible(db, ctx, mailbox.id))) view.sentVisible = false;
-  // A reply goes to the stored From. The card also shows the Reply-To of the original when it names other addresses 
+  // A reply goes to the stored From. The card also shows the Reply-To of the original when it names other addresses
   if (draft.kind === "reply" && email !== null && send.email_id !== null) {
     const emailId = send.email_id;
     const from = email.from_address?.toLowerCase() ?? null;

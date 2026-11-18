@@ -61,7 +61,7 @@ export type ReviewCardResult = "queued" | "waiting" | "exists";
 
 // One review card of one send for one owner. A card of that send that no sender took yet (`pending`, `sending`) is not doubled
 // ("waiting"). Else the key is `approval:<send>:r<n>`: `n` counts the review cards that this owner got of the send, so a send that the
-// owner skipped shows again at the next review. The view is the one the committer sends The card goes out at once (the sender
+// owner skipped shows again at the next review. The view is the one the committer sends. The card goes out at once (the sender
 // does not hold review cards in quiet hours).
 export async function queueReviewCard(
   db: DbOrTrx,

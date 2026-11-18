@@ -801,7 +801,7 @@ describe("renderSendResult", () => {
     for (const draftRemoved of [true, false]) {
       const draft = draftRemoved ? "The draft was removed." : "The draft stays in Drafts.";
       for (const [reason, firstOfKind, second] of expired) {
-        // A reply lives 7 days: its `timeout` line names no 48 h 
+        // A reply lives 7 days: its `timeout` line names no 48 h
         const first =
           sendKind === "reply" && reason === "timeout"
             ? "⌛ Not sent: nobody approved the draft in 7 days · Fwd: Offer"

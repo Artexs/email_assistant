@@ -36,7 +36,7 @@ export interface ApprovalTexts {
       string
     >;
   };
-  // The review card of a reply draft the lines that only a reply has, and its Skip button.
+  // The review card of a reply draft: the lines that only a reply has, and its Skip button.
   reply: {
     to: string; // "To:"
     cc: string; // "Cc:"
@@ -107,7 +107,7 @@ export interface ApprovalTexts {
     unknownRest: string;
     expired: {
       timeout: (subject: string) => string;
-      // A reply lives 7 days, another send 48 h the `timeout` of a reply names no hours of the other rule.
+      // A reply lives 7 days, another send 48 h: the `timeout` of a reply names no hours of the other rule.
       timeoutReply: (subject: string) => string;
       draft_missing: (subject: string) => string;
       not_notified: (subject: string) => string;
@@ -139,7 +139,7 @@ export interface ApprovalTexts {
     rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
     markedMistake: (time: string) => string;
     changed: (time: string) => string; // a panel edit replaced the draft; the new version is a new message
-    skipped: (time: string) => string; // a reply card that the owner skipped in the review 
+    skipped: (time: string) => string; // a reply card that the owner skipped in the review
   };
   answered: {
     title: (name: string, subject: string) => string;

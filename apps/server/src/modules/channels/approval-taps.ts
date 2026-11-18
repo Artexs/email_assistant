@@ -148,7 +148,7 @@ export async function handleApprovalCallback(
               heldBy === undefined ? "approved" : "approved_held",
               heldBy === undefined ? {} : { heldBy, actionId: callback.actionId }
             ),
-            // A reply in the review: the next one follows the decision 
+            // A reply in the review: the next one follows the decision
             ...(await nextAfterReplyDecision(deps, ctx, link, callback.actionId, texts, now)),
           };
         }

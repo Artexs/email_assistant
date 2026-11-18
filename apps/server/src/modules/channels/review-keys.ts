@@ -1,5 +1,5 @@
 // The dedup keys of the approval cards (outbox kind `approval`). The card that the approval detector queues for a send has the key
-// `approval:<send id>`. A review card of a reply draft  has `approval:<send id>:r<n>`: `n` is 1 plus the review cards of
+// `approval:<send id>`. A review card of a reply draft has `approval:<send id>:r<n>`: `n` is 1 plus the review cards of
 // that send that the user got before, so a card that the owner skipped shows again later. No heavy imports: the sender uses this file.
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const REVIEW_KEY = new RegExp(`^approval:(${UUID}):r[1-9][0-9]*$`);

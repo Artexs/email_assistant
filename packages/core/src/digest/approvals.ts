@@ -123,7 +123,7 @@ export function renderApprovalRequest(
   const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
   if (view.version !== undefined && view.version >= 2) head.push(t.versionLine(view.version));
   if (followUp) head.push(...followUpRecipientLines(view, texts));
-  // A reply card names every recipient To, Cc and the Reply-To of the original when it differs from its From. The
+  // A reply card names every recipient: To, Cc and the Reply-To of the original when it differs from its From. The
   // addresses are never cut (the owner decides on them), as in a follow-up; a list that cannot fit one message is refused.
   if (view.kind === "reply") head.push(...replyRecipientLines(view, texts));
   if (view.sender !== null) {
@@ -193,7 +193,7 @@ export function renderApprovalRequest(
   // The recipients never shrink (the owner decides on them), so a card that cannot hold them does not render at all.
   if (text.length > MESSAGE_MAX_CHARS) throw new RangeError("the approval card does not fit one message");
   if (view.kind === "reply") {
-    // A reply card has no Send button while a gap is open ), and a Skip button 
+    // A reply card has no Send button while a gap is open, and a Skip button
     const row: OutMessage["buttons"][number] = [];
     if ((view.gaps ?? []).length === 0)
       row.push({ text: t.buttons.send, data: encodeCallback({ kind: "approve", actionId }) });

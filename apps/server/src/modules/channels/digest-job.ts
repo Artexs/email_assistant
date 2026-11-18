@@ -147,7 +147,7 @@ export async function queueDigest(
       const loopConsent = (await loopConsentOf(trx, ctx, [userId])).has(userId);
       loops = { firstOfDay, loopConsent, ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }) };
     }
-    // The reply drafts that wait for a review (a count for an owner while the flag is on. No text, no button.
+    // The reply drafts that wait for a review: a count for an owner while the flag is on. No text, no button.
     const repliesReady =
       link.role === "owner" && (await isFeatureOn(trx, ctx, "reply_drafts"))
         ? (await listReviewableReplies(trx, ctx, { max: REVIEW_SCAN_MAX })).length

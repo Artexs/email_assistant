@@ -45,7 +45,7 @@ export async function nextReviewResult(
 }
 
 // `reply_review` (the Review button of the notice) and `reply_skip` (the Skip button of a card). Owners only, flag `reply_drafts` on and
-// the Telegram consent of the user must cover reply data The card itself goes out through the outbox (kind `approval`, so the
+// the Telegram consent of the user must cover reply data. The card itself goes out through the outbox (kind `approval`, so the
 // card sync finds it), not as the answer of the tap.
 export async function handleReplyCallback(
   deps: CallbackDeps,

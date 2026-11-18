@@ -12,7 +12,7 @@ import type { TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
-// Readers of the outbox rows of the reply review 
+// Readers of the outbox rows of the reply review.
 
 // The review cards (`approval:<send>:r<n>`) that this user got of one send, oldest first. Tenant and user filter the rows.
 export async function findReviewCards(
@@ -79,7 +79,7 @@ export async function findApprovalCardOfTap(
   };
 }
 
-// The newest `replies_ready` row of one user, in any state: the 2-hour gap counts from its queue time 
+// The newest `replies_ready` row of one user, in any state: the 2-hour gap counts from its queue time
 export async function lastRepliesReady(
   db: DbOrTrx,
   ctx: TenantContext,

@@ -28,7 +28,7 @@ export interface DigestTexts {
   notProcessedBacklog: (count: number) => string;
   waiting: (count: number) => string;
   delegations: (open: number, overdue: number) => string;
-  // The footer line of the reply drafts that wait for a review a count only, no button.
+  // The footer line of the reply drafts that wait for a review: a count only, no button.
   repliesReady: (count: number) => string;
   shadow: string;
   // The spam review line of the footer (flag `spam_review_line`). `url` null: the panel text instead of the link.
