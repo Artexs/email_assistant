@@ -13,6 +13,7 @@ import { z } from "zod";
 
 import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
 import { DEFAULT_OPENAI_BASE_URL, type LlmEndpoint, parseLlmBaseUrl } from "./llm/endpoint";
+import { decodeBase64Url, PUBLIC_KEY_BYTES, vapidPublicKeyOf } from "./vapid-keys";
 
 // 32 bytes for AES-256-GCM (platform/crypto)
 const isCredentialsKey = (value: string): boolean =>
@@ -113,6 +114,10 @@ const baseSchema = z.object({
   CREDENTIALS_KEY: z.string().refine(isCredentialsKey, "must be base64 of 32 bytes"),
   CREDENTIALS_KEY_VERSION: z.coerce.number().int().positive().default(1),
   HEARTBEAT_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
+  // Web Push (F118, RFC 8292): the VAPID key pair (raw P-256, base64url) and the contact URI. All three or none. Secret: never print or log.
+  VAPID_PUBLIC_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
+  VAPID_PRIVATE_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
+  VAPID_SUBJECT: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Not `z.email()`: the GreenMail test address is `user@localhost`, with no dot in the domain.
   TEST_MAILBOX_ADDRESS: z.preprocess(
     (v) => (v === "" ? undefined : v),
@@ -419,7 +424,33 @@ export const configSchema = baseSchema.superRefine((config, ctx) => {
   if (!parseList(config.OPERATOR_USER_IDS).every((id) => z.uuid().safeParse(id).success)) {
     ctx.addIssue({ code: "custom", path: ["OPERATOR_USER_IDS"], message: "each entry must be a user id (UUID)" });
   }
+  checkVapid(config, ctx);
 });
+
+const vapidKeyNames = ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"] as const;
+const VAPID_SUBJECT = /^(mailto:[^\s@]+@[^\s@]+|https:\/\/[^\s/]+(\/\S*)?)$/;
+
+// All three or none. A message names the key or a fixed code, never a value (the keys are secrets).
+function checkVapid(config: z.infer<typeof baseSchema>, ctx: z.RefinementCtx): void {
+  const missing = vapidKeyNames.filter((key) => config[key] === undefined);
+  if (missing.length === vapidKeyNames.length) return;
+  for (const key of missing)
+    ctx.addIssue({ code: "custom", path: [key], message: "needed when another VAPID_* key is set" });
+  const { VAPID_PUBLIC_KEY: publicKey, VAPID_PRIVATE_KEY: privateKey, VAPID_SUBJECT: subject } = config;
+  if (subject !== undefined && !VAPID_SUBJECT.test(subject)) {
+    ctx.addIssue({ code: "custom", path: ["VAPID_SUBJECT"], message: "must be a mailto: or https: URI" });
+  }
+  if (publicKey !== undefined && decodeBase64Url(publicKey)?.length !== PUBLIC_KEY_BYTES) {
+    ctx.addIssue({ code: "custom", path: ["VAPID_PUBLIC_KEY"], message: "must be base64url of a 65-byte P-256 point" });
+  }
+  if (privateKey === undefined) return;
+  const derived = vapidPublicKeyOf(privateKey);
+  if (derived === null) {
+    ctx.addIssue({ code: "custom", path: ["VAPID_PRIVATE_KEY"], message: "must be base64url of a 32-byte P-256 key" });
+  } else if (publicKey !== undefined && publicKey !== derived) {
+    ctx.addIssue({ code: "custom", path: ["VAPID_PUBLIC_KEY"], message: "vapid_key_mismatch" });
+  }
+}
 
 export type Config = z.infer<typeof configSchema>;
 
@@ -595,6 +626,13 @@ export function operatorChatId(config: Config): number | null {
   return config.OPERATOR_TELEGRAM_CHAT_ID === undefined ? null : Number(config.OPERATOR_TELEGRAM_CHAT_ID);
 }
 
+/** The VAPID keys for Web Push, or null when none is set (`configSchema` has checked that all three are set, or none). */
+export function pushConfigOf(config: Config): { publicKey: string; privateKey: string; subject: string } | null {
+  const { VAPID_PUBLIC_KEY: publicKey, VAPID_PRIVATE_KEY: privateKey, VAPID_SUBJECT: subject } = config;
+  if (publicKey === undefined || privateKey === undefined || subject === undefined) return null;
+  return { publicKey, privateKey, subject };
+}
+
 export function webTrustedOrigins(config: Config): string[] {
   return parseList(config.WEB_TRUSTED_ORIGINS);
 }
@@ -631,18 +669,26 @@ export function mailAllowLocalFromEnv(env: Record<string, string | undefined>): 
   return (pick("MAIL_ALLOW_LOCAL_HOSTS") ?? pick("WEB_MAIL_ALLOW_LOCAL")) === "true";
 }
 
+// `codes` are fixed reason codes of the config schema (`vapid_key_mismatch`), never a value.
 export class ConfigError extends Error {
-  constructor(readonly keys: string[]) {
-    super(`Missing or bad config keys: ${keys.join(", ")}`);
+  constructor(
+    readonly keys: string[],
+    readonly codes: string[] = []
+  ) {
+    super(`Missing or bad config keys: ${keys.join(", ")}${codes.length === 0 ? "" : ` (${codes.join(", ")})`}`);
     this.name = "ConfigError";
   }
 }
+
+// A reason code is a lower-case word with underscores: only our own custom issues have this shape.
+const REASON_CODE = /^[a-z]+(_[a-z]+)+$/;
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
   const result = configSchema.safeParse(env);
   if (!result.success) {
     const keys = [...new Set(result.error.issues.map((issue) => issue.path.join(".")))];
-    throw new ConfigError(keys);
+    const codes = [...new Set(result.error.issues.map((issue) => issue.message).filter((m) => REASON_CODE.test(m)))];
+    throw new ConfigError(keys, codes);
   }
   return result.data;
 }
