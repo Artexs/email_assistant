@@ -679,7 +679,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `send_copy_failed` (fields `action_id`, `error`, `error_code`; before F103: `action <id>: sent copy failed: <Class code>`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Source:** `apps/server/src/modules/actions/send-finish.ts` (`[actions]`, level `warn`).
 - **Cause:** The mail went out (the send is `applied`), but the copy to `Wysłane` failed: the locate or the APPEND gave an error. `provider_result.sent_copy` is `failed`, and the audit row `action.sent_copy_failed` holds the error label. The line has the error name and code only. The owners read "No copy in Sent".
 - **Fix:** No action for the mail: it was sent. Add the copy by hand if you need it. If it repeats, check the `Sent` folder with `bun run mailbox:check`.
 - **Status:** investigating
@@ -687,7 +687,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `send_failed` with `reason=outcome_unknown` (fields `action_id`, `reason`, `send_stage`, `code`; before F103: `action <id>: failed outcome_unknown (stage <s>, code <c>)`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Source:** `apps/server/src/modules/actions/send-failure.ts` (`[actions]`, level `warn`).
 - **Cause:** The system cannot tell if the mail went out. Either the SMTP error had stage `unknown` (a connection that broke during or after the content, or an error that is not a typed SMTP error), or the process stopped while the send was `applying` and the recovery found no copy in `Wysłane`. The row is `failed`, the delegation is `cancelled` (`outcome_unknown`), and the system does not send again by itself.
 - **Fix:** Look in `Wysłane` and ask the recipient. If the mail did not go out, tap 📤 Send again in the result notice. If it went out, do nothing (the delegation stays `cancelled`: follow-up `spec/features/planned/F041-delegation-went-out-button/plan.md`).
 - **Status:** investigating
@@ -695,7 +695,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `send_failed` with `reason=smtp_error` (fields `action_id`, `reason`, `send_stage`, `code`; before F103: `action <id>: failed smtp_error (stage <s>, code <c>)`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Source:** `apps/server/src/modules/actions/send-failure.ts` (`[actions]`, level `warn`).
 - **Cause:** One of four: a soft error before the content (`connect`, `login` or `envelope`) that comes 6 h or more after the tap (the soft cap, F044; `provider_result.cap` is `soft_retry`, the notice says "did not accept the mail for 6 hours", the mail was not sent); a hard error before the content (`connect`, `login` or `envelope`) three times; a 4xx or another non-5xx error after the content (`content`: the server may have the mail, so the system does not retry); or the mail could not be built three times (`compose`). The row is `failed` and the owners get a notice with 📤 Send again.
 - **Fix:** For `content`, look in `Wysłane` and ask the recipient before you tap Send again. Otherwise check `/status` and `bun run mailbox:check`, fix the cause, then tap Send again. The line `send_retry` (level `warn`; fields `action_id`, `send_stage`, `code`) is a try that will repeat in 5 minutes; a soft error does not count, but the retries stop 6 hours after the tap. For the soft cap, check the mail server and the network first, then tap Send again.
 - **Status:** investigating
@@ -703,7 +703,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `send_failed` with `reason=smtp_rejected` (fields `action_id`, `reason`, `send_stage`, `code`; before F103: `action <id>: failed smtp_rejected (stage <s>, code <n>)`)
 
 - **First seen:** 2026-11-07 (S4 code; not seen live)
-- **Source:** `apps/server/src/modules/actions/send.ts` (`[actions]`, level `warn`).
+- **Source:** `apps/server/src/modules/actions/send-failure.ts` (`[actions]`, level `warn`).
 - **Cause:** The mail server refused the mail with a 5xx reply, at the envelope (`MAIL FROM`, `RCPT TO`) or after the content. `send_stage` is `envelope` or `content`, `code` is the reply number (never the reply text). The row is `failed`. The draft stays in Drafts and the delegation is `cancelled`. There is no Send again button, because the address or the mail is wrong.
 - **Fix:** Check the delegate address (`delegates:list`). Replace it with `delegates:disable` and `delegates:add`. The system does not plan the mail again; send it by hand from the draft if you need it.
 - **Status:** investigating
