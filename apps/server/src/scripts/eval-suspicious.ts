@@ -11,7 +11,7 @@ import { corpusDir, readScenario } from "../platform/sim-files";
 import type { EvalOptions } from "./eval-args";
 import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
 
-// `eval --suspicious`: the suspicious-mail rules on a sim corpus part . No LLM, no key, no spend.
+// `eval --suspicious`: the suspicious-mail rules on a sim corpus part. No LLM, no key, no spend.
 
 const log = createLog("eval");
 

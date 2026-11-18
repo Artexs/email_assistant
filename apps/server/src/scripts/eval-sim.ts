@@ -109,7 +109,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
 
   const { endpoint, host } = llmEndpointFields(table, "classifier");
   // An own server costs nothing and has no price row: the run takes no budget. The judge is a paid provider
-  // , so an own run with `--judge` would send paid calls with no cap: it is refused.
+  // here, so an own run with `--judge` would send paid calls with no cap: it is refused.
   const own = endpoint === "own";
   if (own && options.judge) {
     cli.fail("an own endpoint run has no USD budget, so it cannot use --judge (the judge is a paid provider)");

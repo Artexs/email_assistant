@@ -20,8 +20,8 @@ export type OrgDeleteResult =
 export type OrgDeleteScopedResult = OrgDeleteResult | { kind: "scope_mismatch" };
 
 /**
- * What the caller says the organization holds, checked INSIDE the delete transaction after the organization lock
- *. A mailbox or a member that is outside these lists makes the delete return
+ * What the caller says the organization holds, checked INSIDE the delete transaction after the organization lock.
+ * A mailbox or a member that is outside these lists makes the delete return
  * `scope_mismatch` with nothing changed. The lock makes the check safe against a late insert: a mailbox row or a
  * membership that commits before the lock is seen by the check; one that starts later waits for the delete and then
  * fails its foreign key. Addresses and emails compare in lower case.

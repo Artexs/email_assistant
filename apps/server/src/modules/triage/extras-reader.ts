@@ -80,7 +80,7 @@ export async function readSenderHistory(
   return received === 0 ? null : { days: SENDER_HISTORY_DAYS, received, corrections };
 }
 
-// The `ClassifierExtras` of one real or test mail . It reads only what `parts` needs: no
+// The `ClassifierExtras` of one real or test mail. It reads only what `parts` needs: no
 // `history` part, no history query. Attachments are always on; a mail with no `email_headers` row, or with cleared
 // texts, has none. Nothing here logs or returns mail text.
 export async function loadClassifierExtras(

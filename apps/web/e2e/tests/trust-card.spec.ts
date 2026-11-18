@@ -122,7 +122,7 @@ test("T3: a refused switch opens the dialog with the block lines; cancel keeps i
   await expect(dialog.getByText(en.trust_anyway_intro)).toBeVisible();
   await expect(dialog.getByText(en.trust_block_history_fail)).toBeVisible();
   await expect(dialog.getByText(/would hide mail you needed/)).toBeVisible();
-  // The gate text of the real labels is not shown next to the blocks .
+  // The gate text of the real labels is not shown next to the blocks.
   await expect(dialog.getByText(/Passed|Not passed|Not enough rated mails/)).toHaveCount(0);
   await expectNoA11yViolations(page);
 

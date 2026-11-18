@@ -12,7 +12,7 @@ import { createFixedLlmClient } from "../../src/platform/llm/testing";
 
 import { createOrgWithMailbox, insertTriaged } from "./fixtures";
 
-// Shared by the drafter job tests : an organization with a mailbox that has every gate open, mail that needs a reply,
+// Shared by the drafter job tests: an organization with a mailbox that has every gate open, mail that needs a reply,
 // a fake model and the job deps with a clock that the test moves.
 
 export const NOW = new Date("2026-11-18T10:00:00Z");
