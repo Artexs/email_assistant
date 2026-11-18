@@ -597,3 +597,39 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: found by the F110 docs stage while it wrote the trust page. Today no one is affected: the flag is off for every organization.
 - Undo: leave the flag off.
 - Source: job `2026-11-18-f110-s25-docs-b1c6e2c7`. Same bump batch: the one-click request line (owner decision of 2026-11-18), the `members` subject of the `unsubscribe-data` category, a line about report mail appended into the member's INBOX.
+
+### 2026-11-18 · F120 sender context: the sender line shows only in the panel, and a classifier-v4 prompt never goes live without your word (F120) · user-visible · new
+- Choice: (Q1) the sender line (what the assistant knows about a sender) shows only in the panel (Activity, Approvals); Telegram does not change. (Q4) if `classifier-v4[profile]` wins on the dev and holdout evals, the production prompt still does not switch until the owner says so. (Q3) at deploy the coordinator turns on `sender_context`, then `contact_wait` one day later; `sender_suggestions` waits for the owner.
+- Why: planner defaults; the owner decides what changes classification of real mail.
+- Undo: leave the flags off.
+- Source: plan `spec/features/planned/F120-e11a-sender-context/questions.md` (Q1, Q3, Q4).
+
+### 2026-11-18 · F120 sender context: privacy and money defaults (F120) · privacy · new
+- Choice: (Q2) the new tables go into the legal data catalog in stage 02; the privacy page sentence waits for the next legal batch (stage 12 gives the text; a TERMS_VERSION bump). (Q5) a DSR erase of a person does not delete a domain suggestion such as `@acme.pl`. (Q7) when a flag goes off, stored profiles stay until the 12-month retention deletes them. (Q6) stage 11 may spend at most $1.50 on LLM calls. Only address rows are stored, not domain rows; the hash key comes from `CREDENTIALS_KEY` by HKDF with the org id.
+- Why: planner defaults with the review's fixes.
+- Undo: change the plan before the stage builds.
+- Source: same plan, Q2, Q5 to Q8.
+
+### 2026-11-18 · F118 phone channel: push for urgent, approvals and updates only; a `minimal` Telegram level that shows no mail text and no address (F118) · user-visible · new
+- Choice: (Q2) push carries three groups: Urgent, Approvals and Updates (send results, delegations, mailbox and sync problems). The digest, the weekly report and the trust reports stay on Telegram and mail. (Q4) the `minimal` Telegram level prints no string from the notice, not even your own mailbox address; `/status` names mailboxes "Mailbox 1…"; `/review` answers with a panel link only. (Q7) if the chosen channel is missing, the notice goes to the other one; a push that fails with `no_device` falls back to Telegram.
+- Why: planner defaults with the review's fixes.
+- Undo: leave the flags `web_push` and `telegram_minimal` off.
+- Source: `spec/features/planned/F118-e9b-phone-channel-pwa-push-telegram-detail/questions.md` (Q2, Q4, Q7).
+
+### 2026-11-18 · F118 push: devices are bound to the sign-in session; company sign-in sessions end after 12 hours and then push stops until you open the panel again (F118) · production · new
+- Choice: (Q3) accept it; a held push falls back to Telegram. (Q6) push endpoints are limited to the FCM, Mozilla, Apple and Windows hosts, checked at subscribe and again at send. (Q8) 10 devices per user.
+- Why: security default.
+- Undo: change the plan before the stage builds.
+- Source: same plan, Q3, Q6, Q8.
+
+### 2026-11-18 · F118 push: real ids and counts reach the push services (FCM) from checkpoint A, but the papers name them only in stage 13 (F118) · privacy · new
+- Choice: (Q12) `web_push` stays on only for your own organization until stage 13 lands (gate G-papers). Notice payloads carry ids and counts, never mail text. The legal papers get the push services as sub-processors and one `TERMS_VERSION` bump in stage 13.
+- Why: nobody else is affected until the papers say it.
+- Undo: leave `web_push` off.
+- Source: same plan, Q12.
+
+### 2026-11-18 · F118 checkpoint A needs your phone (F118) · production · new
+- Choice: after stage 05 the real phone test needs you: run `bun run push:keys`, put the VAPID keys in the VPS `.env`, deploy, turn on `web_push` for your organization, install the panel on the Android phone, send a test push. If it fails, F118 stops (Q1). Stages 01 to 05 build before this; stage 06 and later wait.
+- Why: a real phone cannot be simulated.
+- Undo: none needed.
+- Source: same plan, Q1, O1 to O3.
