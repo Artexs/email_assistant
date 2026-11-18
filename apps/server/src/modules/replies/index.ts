@@ -1,5 +1,14 @@
 export { DrafterCallError, draftReply } from "./drafter";
-export type { DrafterResult } from "./drafter";
+export type { DrafterAttempt, DrafterResult } from "./drafter";
+export {
+  createReplyJobs,
+  CLAIM_LIMIT,
+  SCAN_LIMIT,
+  type ReplyJobDeps,
+  type ReplyJobs,
+  type ReplyRunResult,
+} from "./jobs";
+export { MAX_TRIES, USER_REQUEST_TIMEOUT_MS, type ReplyLlmScope } from "./draft-one";
 export {
   claimReplyRequests,
   countRedrafts,

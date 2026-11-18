@@ -123,9 +123,11 @@ export async function listSendsToNotify(
   opts: { limit: number; skip?: readonly string[] }
 ): Promise<SendRow[]> {
   // A follow-up is one card, whatever its payload says about a set.
-  let query = notifiableSends(db, ctx).where(
-    sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`
-  );
+  // A reply send gets no generic card: the generic card shows the whole draft text, and a reply card needs the consent check of the
+  // Telegram link (the reply notice of a later stage of ticket F115 builds it). Until then the send waits in the panel.
+  let query = notifiableSends(db, ctx)
+    .where(sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`)
+    .where(sql<boolean>`actions.payload->>'kind' is distinct from 'reply'`);
   if (opts.skip !== undefined && opts.skip.length > 0) query = query.where("actions.id", "not in", [...opts.skip]);
   const rows = await query.orderBy("actions.created_at").orderBy("actions.id").limit(opts.limit).execute();
   return rows.map(toSendRow);

@@ -14,6 +14,8 @@ export const uuidFieldNames = [
   "user_id",
   "run_id",
   "request_id",
+  // reply drafts: the id of a reply request (`request_id` is the HTTP request context)
+  "reply_request_id",
 ] as const;
 /** Number fields: a finite number or null. Counts and times (D1). */
 export const numberFieldNames = [

@@ -34,6 +34,7 @@ export {
   updateProviderResult,
   type FinishNext,
 } from "./lifecycle";
+export { listOpenReplySendsOfThread, type OpenReplySend } from "./reply-threads";
 export { countReadyOriginals, expireReadyOriginals, expireStaleReady } from "./expiry";
 export { insertReverse, lockActionsForUndo, lockLatestOriginalMove, markUndone, type UndoCandidate } from "./undo";
 export {
