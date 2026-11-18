@@ -11,7 +11,7 @@ import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setDigestTimes, setOrgFeature, upsertOrgFeature } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
 
-import { addMember, isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
+import { addMember, insertDraftAndSend, isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { markAnswered, sweepOrg, sweepReply, type SweepOrg } from "./reply-answered-fixtures";
 
@@ -196,6 +196,32 @@ describe("replies_ready: who gets it, and the count", () => {
       expect(rows).toHaveLength(1);
       expect(countOf(rows[0] as { view: unknown })).toBe(1);
       expect(rows[0]?.dedup_key).toBe(`replies_ready:${o.userId}:${open.sendId}`);
+    });
+  });
+
+  test("2b2. a clarification send in the same org is not counted and keeps its own notice: the count is 1 and its notified_at is not set by this notice", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await team(trx, { consent: true });
+      const other = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
+        kind: "clarification",
+        to: "boss@x.test",
+        createdAt: at(-2 * HOUR),
+      });
+      await reply(trx, o, at(-HOUR));
+
+      await run(trx, T);
+
+      const rows = await readyRows(trx, o);
+      expect(rows).toHaveLength(1);
+      expect(countOf(rows[0] as { view: unknown })).toBe(1);
+      // The generic approval detector gave the clarification its own card in the same run; the reply notice did not touch the row.
+      const cards = await trx
+        .selectFrom("outbox")
+        .select("dedup_key")
+        .where("org_id", "=", o.ctx.orgId)
+        .where("kind", "=", "approval")
+        .execute();
+      expect(cards.map((card) => card.dedup_key)).toEqual([`approval:${other.sendId}`]);
     });
   });
 

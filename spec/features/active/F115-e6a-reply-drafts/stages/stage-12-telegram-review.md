@@ -55,3 +55,7 @@ Part of [`../plan.md`](../plan.md). `[risky]` (sending to people, privacy, Polis
 
 ## Carry-over from the stage 09 re-review (2026-11-18)
 First commit of this stage: the gaps G1, G2 and the fix N-a, and the doc limits N-b, N-c, N-d from `review-9.md` section "Re-review of the repair". Each gets a test and a saved mutation log.
+
+## Carry-over from the stage 12 review (2026-11-18)
+
+- N14: Step 3 (the consent text, the version bump, `REPLY_CONSENT_SINCE` = the new version, and the test "an old link version gives 409 `telegram_consent_outdated`, the new one links") moved to stage 17. Stage 12 built the gate (`replyConsentOf`) with `REPLY_CONSENT_SINCE` as a placeholder above the current version, so nobody is covered until stage 17. Notes: `notes/2026-11-18-f115-s12-telegram-review.md`.

@@ -1,3 +1,5 @@
+import { NoticeViewError } from "@ea/core";
+
 import type { TenantContext } from "../../platform/db";
 import { getSend, listOpenReplySends, type SendRow } from "../actions";
 import { replyFactsOf } from "../mail";
@@ -5,7 +7,7 @@ import { getOrganization, isFeatureOn } from "../tenancy";
 import { suspiciousReasonsOf } from "../triage";
 
 import { approvalViewFor } from "./notices/approval";
-import { queue, type DbOrTrx } from "./notices/run";
+import { queue, warnSkipped, type DbOrTrx } from "./notices/run";
 import type { LinkedChat } from "./port";
 import { findReviewCards } from "./repo";
 import { reviewCardKey } from "./review-keys";
@@ -97,7 +99,9 @@ export async function queueReviewCard(
 export type NextReviewResult = { kind: "card"; result: ReviewCardResult } | { kind: "none" };
 
 // The next open reply of the organization after `afterId` (none: the first one), as a review card of `owner`. `afterId` may name a send
-// that is closed now: only its place in the order counts. An unknown `afterId` starts again at the first reply.
+// that is closed now: only its place in the order counts. An unknown `afterId` starts again at the first reply. A card that the renderer
+// refuses (for example recipients that do not fit one message) is skipped: nothing is marked, the log line holds the send id only, and the
+// next reply is tried, so one bad send never blocks the review.
 export async function queueNextReviewCard(
   deps: { db: DbOrTrx; webBaseUrl?: string },
   ctx: TenantContext,
@@ -105,18 +109,27 @@ export async function queueNextReviewCard(
   opts: { afterId?: string; now: Date }
 ): Promise<NextReviewResult> {
   const anchor = opts.afterId === undefined ? undefined : await getSend(deps.db, ctx, opts.afterId);
-  const [next] = await listReviewableReplies(deps.db, ctx, {
-    max: 1,
-    ...(anchor === undefined ? {} : { after: { createdAt: anchor.created_at, id: anchor.id } }),
-  });
-  if (next === undefined) return { kind: "none" };
   const organization = await getOrganization(deps.db, ctx);
   if (organization === undefined) return { kind: "none" };
   const panelBase = await panelBaseOf(deps.db, ctx, deps.webBaseUrl);
-  const result = await queueReviewCard(deps.db, ctx, owner, next, {
-    now: opts.now,
-    timeZone: organization.timezone,
-    ...(panelBase === undefined ? {} : { panelBase }),
-  });
-  return { kind: "card", result };
+  let cursor = anchor === undefined ? undefined : { createdAt: anchor.created_at, id: anchor.id };
+  for (;;) {
+    const [next] = await listReviewableReplies(deps.db, ctx, {
+      max: 1,
+      ...(cursor === undefined ? {} : { after: cursor }),
+    });
+    if (next === undefined) return { kind: "none" };
+    try {
+      const result = await queueReviewCard(deps.db, ctx, owner, next, {
+        now: opts.now,
+        timeZone: organization.timezone,
+        ...(panelBase === undefined ? {} : { panelBase }),
+      });
+      return { kind: "card", result };
+    } catch (error) {
+      if (!(error instanceof NoticeViewError)) throw error;
+      warnSkipped("reply_review", next.id, error, `${owner.userId}:${next.id}`);
+      cursor = { createdAt: next.created_at, id: next.id };
+    }
+  }
 }

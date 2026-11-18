@@ -96,6 +96,17 @@ describe("renderApprovalRequest, a reply (F115)", () => {
     }
   });
 
+  test("the gap line and the end line of the review say where to fill and that no draft is left (en and pl, fixed wording)", () => {
+    expect(textTables.en.approvals.reply.fill("a; b")).toBe(
+      "⚠️ Fill these: a; b. Fill them in the panel; you cannot send this draft until then."
+    );
+    expect(textTables.pl.approvals.reply.fill("a; b")).toBe(
+      "⚠️ Uzupełnij: a; b. Zrób to w panelu; do tego czasu nie możesz wysłać tego szkicu."
+    );
+    expect(textTables.en.approvals.reply.noMore).toBe("No more replies waiting.");
+    expect(textTables.pl.approvals.reply.noMore).toBe("Nie ma więcej szkiców odpowiedzi do przejrzenia.");
+  });
+
   test("a reply without gaps has Send, Reject and Skip, in this order; Skip names the send", () => {
     const message = request(reply({ gaps: [] }));
     expect(message.buttons).toEqual([

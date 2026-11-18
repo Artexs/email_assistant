@@ -652,3 +652,172 @@ describe("the sender: review cards are not held in quiet hours", () => {
     });
   });
 });
+
+describe("review repair: other kinds, refused cards, plain cards in quiet hours", () => {
+  test("TG1. a clarification send next to replies is not shown as a review card and is not a reply to skip to", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await team(trx);
+      const clarification = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
+        kind: "clarification",
+        to: "boss@x.test",
+        createdAt: at(-4 * HOUR),
+      });
+      const [reply] = await threeReplies(trx, o);
+
+      await handleCallback(o.deps, o.owner, "rv");
+
+      expect(await keysOf(trx, o)).toEqual([`approval:${reply?.sendId}:r1`]);
+      const next = await handleCallback(o.deps, o.owner, `rv:${clarification.sendId}`);
+      expect(next).toEqual({ answer: "" });
+      expect((await keysOf(trx, o)).every((key) => !key.includes(clarification.sendId))).toBe(true);
+    });
+    await withRollback(db, async (trx) => {
+      const o = await team(trx);
+      await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
+        kind: "clarification",
+        to: "boss@x.test",
+        createdAt: at(-HOUR),
+      });
+
+      const result = await handleCallback(o.deps, o.owner, "rv");
+
+      expect(result.send).toEqual({ text: "No more replies waiting.", buttons: [] });
+      expect(await cards(trx, o)).toHaveLength(0);
+    });
+  });
+
+  test("TG3. Skip on a send that is not a reply does nothing: not found, no card, the send is unchanged", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await team(trx);
+      const delegation = await insertDraftAndSend(trx, o.ctx, o.mailboxId, { createdAt: at(-2 * HOUR) });
+      await threeReplies(trx, o);
+
+      const result = await handleCallback(o.deps, o.owner, `rk:${delegation.sendId}`);
+
+      expect(result).toEqual({ answer: "This mail is not in your account." });
+      expect(await cards(trx, o)).toHaveLength(0);
+      const send = await trx
+        .selectFrom("actions")
+        .select(["status", "notified_at"])
+        .where("id", "=", delegation.sendId)
+        .executeTakeFirstOrThrow();
+      expect(send).toMatchObject({ status: "awaiting_approval", notified_at: null });
+    });
+  });
+
+  // Ten Cc addresses that together do not fit one message (the recipients of a card are never cut).
+  const longCc = Array.from(
+    { length: 10 },
+    (_, index) => `${"a".repeat(60)}${index}@${"b".repeat(60)}.${"c".repeat(60)}.${"d".repeat(60)}.test`
+  );
+
+  test("N6. a card that the renderer refuses is skipped: the next reply shows, nothing is marked, the log holds the id only", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await team(trx);
+      const bad = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
+        kind: "reply",
+        createdAt: at(-3 * HOUR),
+        from: "boss@x.test",
+        to: "boss@x.test",
+        cc: longCc,
+      });
+      const good = await sweepReply(trx, o, { createdAt: at(-2 * HOUR) });
+      const lines: string[] = [];
+      logSpy.mockImplementation((...args: unknown[]) => {
+        lines.push(format(...args));
+      });
+
+      const result = await handleCallback(o.deps, o.owner, "rv");
+
+      expect(result).toEqual({ answer: "" });
+      expect(await keysOf(trx, o)).toEqual([`approval:${good.sendId}:r1`]);
+      const row = await trx
+        .selectFrom("actions")
+        .select(["status", "notified_at"])
+        .where("id", "=", bad.sendId)
+        .executeTakeFirstOrThrow();
+      expect(row).toMatchObject({ status: "awaiting_approval", notified_at: null });
+      const warn = [...lines, ...errorLines].filter((line) => line.includes("notice_skipped"));
+      expect(warn).toHaveLength(1);
+      expect(warn[0]).toContain(`item_id=${bad.sendId}`);
+      expect([...lines, ...errorLines].join("\n")).not.toContain("aaaaaaaaaa");
+    });
+    // Only a refused card: "no more replies", and still nothing is marked.
+    await withRollback(db, async (trx) => {
+      const o = await team(trx);
+      const bad = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
+        kind: "reply",
+        createdAt: at(-3 * HOUR),
+        from: "boss@x.test",
+        to: "boss@x.test",
+        cc: longCc,
+      });
+
+      const result = await handleCallback(o.deps, o.owner, "rv");
+
+      expect(result.send).toEqual({ text: "No more replies waiting.", buttons: [] });
+      expect(await cards(trx, o)).toHaveLength(0);
+      const row = await trx
+        .selectFrom("actions")
+        .select("notified_at")
+        .where("id", "=", bad.sendId)
+        .executeTakeFirstOrThrow();
+      expect(row.notified_at).toBeNull();
+    });
+  });
+
+  test("TG2. a plain approval card (`approval:<send>`) is held in quiet hours; only a review card (`:r<n>`) goes out", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await team(trx);
+      const night = new Date("2026-11-20T22:00:00Z");
+      const pair = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
+        kind: "clarification",
+        to: "boss@x.test",
+        createdAt: at(-HOUR),
+      });
+      const view = {
+        actionId: pair.sendId,
+        now: night.toISOString(),
+        timeZone: "Europe/Warsaw",
+        view: {
+          kind: "clarification",
+          recipient: { name: null, address: "boss@x.test" },
+          sender: null,
+          recipientInactive: false,
+          subject: "Re: x",
+          dueDate: null,
+          body: "Hello",
+          quote: null,
+          synthetic: false,
+        },
+      };
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: o.ctx.orgId,
+          user_id: o.userId,
+          kind: "approval",
+          dedup_key: `approval:${pair.sendId}`,
+          email_id: pair.emailId,
+          view: JSON.stringify(view),
+          locale: "en",
+          status: "pending",
+          attempts: 0,
+          created_at: night,
+          next_attempt_at: night,
+        })
+        .execute();
+      const channel = createFakeChannel();
+
+      await createOutboxSender({ db: trx, channel, now: () => night }).run();
+
+      const row = await trx
+        .selectFrom("outbox")
+        .select(["status", "next_attempt_at"])
+        .where("dedup_key", "=", `approval:${pair.sendId}`)
+        .executeTakeFirstOrThrow();
+      expect(row.status).toBe("pending");
+      expect(row.next_attempt_at.toISOString()).toBe("2026-11-21T06:00:00.000Z");
+    });
+  });
+});
