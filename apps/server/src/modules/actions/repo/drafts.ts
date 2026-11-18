@@ -1,4 +1,4 @@
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
 import { anchorOfRow } from "../anchor";
@@ -44,6 +44,18 @@ export async function lockDraft(trx: Transaction<DB>, ctx: TenantContext, id: st
 export async function getDraft(db: DbOrTrx, ctx: TenantContext, id: string): Promise<DraftRow | undefined> {
   const row = await draftQuery(db, ctx, id).executeTakeFirst();
   return row && toDraftRow(row);
+}
+// The mailbox of a draft of this organization: of its mail, or of its loop (a follow-up). The probe CLI opens it. Another
+// organization's id gives undefined.
+export async function getDraftMailboxId(db: DbOrTrx, ctx: TenantContext, id: string): Promise<string | undefined> {
+  const result = await sql<{ mailbox_id: string | null }>`
+    select coalesce(e.mailbox_id, l.mailbox_id) as mailbox_id
+    from actions a
+    left join emails e on e.id = a.email_id and e.org_id = a.org_id
+    left join open_loops l on l.id = a.loop_id and l.org_id = a.org_id
+    where a.org_id = ${ctx.orgId} and a.type = 'create_draft' and a.reverses_action_id is null and a.id = ${id}
+  `.execute(db);
+  return result.rows[0]?.mailbox_id ?? undefined;
 }
 // D20: a reverse row of the draft exists = the draft was removed (or its removal is queued).
 export async function draftHasReverse(db: DbOrTrx, ctx: TenantContext, draftId: string): Promise<boolean> {

@@ -57,6 +57,12 @@ describe("featureFlags registry", () => {
     expect(featureFlags.reply_drafts.removeBy).toBe("2027-06-01");
   });
 
+  test("draft_copy_check exists, defaults off, epic E6a, remove by 2027-06-01", () => {
+    expect(featureFlags.draft_copy_check.default).toBe(false);
+    expect(featureFlags.draft_copy_check.epic).toBe("E6a");
+    expect(featureFlags.draft_copy_check.removeBy).toBe("2027-06-01");
+  });
+
   test("security_log exists, defaults off and has the epic E7-T2 and remove-by 2027-03-01", () => {
     expect(featureFlags.security_log.default).toBe(false);
     expect(featureEpicPattern.test(featureFlags.security_log.epic)).toBe(true);

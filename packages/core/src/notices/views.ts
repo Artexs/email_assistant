@@ -62,6 +62,7 @@ const sendResultKindSchema = z.discriminatedUnion("kind", [
       "delegation_closed",
       "policy_changed",
       "loop_closed",
+      "draft_changed",
     ]),
     draftRemoved: z.boolean(),
   }),

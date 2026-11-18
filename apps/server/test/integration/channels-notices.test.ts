@@ -1212,7 +1212,7 @@ describe("approval requests", () => {
         expect(row.text).toContain("Prepare the offer");
         expect(row.text).toContain("Quoted original:");
         expect(row.text).toContain(BODY);
-        expect(row.text).toContain("Do not send the draft from your mail client.");
+        expect(row.text).toContain("Edit here, or edit and send in your mail client.");
         expect(buttonData(row)).toEqual([`ap:${p.sendId}`, `ar:${p.sendId}`]);
       }
       expect((await sendState(trx, p.sendId)).notified_at).toEqual(T);
@@ -1751,6 +1751,22 @@ describe("send result notices", () => {
       expect(h).toContain("it waited 48 h after your approval and was not sent");
       expect(h).toContain("The draft stays in Drafts.");
       expect((await resultText(trx, o, closed.sendId)).text).toContain("the delegation was closed");
+    });
+  });
+
+  test("(4b) expired draft_changed: the text names the edit in the mail client, and the draft stays", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const o = await sendOrg(trx);
+      const changed = await ended(trx, o, { status: "expired", reason: "draft_changed" });
+      // The copy of a changed draft is kept: no reverse row removes it.
+      await run(trx);
+
+      const text = (await resultText(trx, o, changed.sendId)).text;
+      expect(text).toContain(
+        "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Quarterly offer"
+      );
+      expect(text).toContain("The draft stays in Drafts.");
     });
   });
 

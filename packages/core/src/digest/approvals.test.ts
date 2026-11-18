@@ -101,7 +101,7 @@ describe("renderApprovalRequest", () => {
     expect(message.text).toContain("Please check the offer.");
     expect(message.text).toContain("\n\nQuoted original:\n> Hello\n> World");
     expect(
-      message.text.endsWith("The system sends it after your tap. Do not send the draft from your mail client.")
+      message.text.endsWith("The system sends it after your tap. Edit here, or edit and send in your mail client.")
     ).toBe(true);
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     expect(message.buttons).toHaveLength(1);
@@ -174,7 +174,7 @@ describe("renderApprovalRequest", () => {
     expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
     expect(message.text).toContain("(draft text cut; the full text is in the draft)");
     expect(message.text).toContain("…");
-    expect(message.text.endsWith("Do not send the draft from your mail client.")).toBe(true);
+    expect(message.text.endsWith("Edit here, or edit and send in your mail client.")).toBe(true);
   });
 
   test("a big body makes the quote shorter, not the body", () => {
@@ -251,8 +251,36 @@ describe("renderApprovalRequest with an edited body", () => {
   });
 });
 
+describe("the texts of the copy check (the mail client edit)", () => {
+  test("the card line invites an edit here or in the mail client, in English and in Polish", () => {
+    expect(textTables.en.approvals.sendLine).toBe(
+      "The system sends it after your tap. Edit here, or edit and send in your mail client."
+    );
+    expect(textTables.pl.approvals.sendLine).toBe(
+      "System wyśle wiadomość po naciśnięciu przycisku. Edytuj tutaj albo edytuj i wyślij w programie pocztowym."
+    );
+    for (const lang of ["en", "pl"] as const) {
+      const text = renderApprovalRequest({ actionId: ID, view: view(), now: NOW, timeZone: TZ }, textTables[lang]).text;
+      expect(text.endsWith(textTables[lang].approvals.sendLine)).toBe(true);
+    }
+  });
+
+  test("the result of a changed draft says the user edited it and must send it from the mail client", () => {
+    expect(textTables.en.approvals.sendResult.expired.draft_changed("Fwd: Offer")).toBe(
+      "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Offer"
+    );
+    expect(textTables.pl.approvals.sendResult.expired.draft_changed("Fwd: Offer")).toBe(
+      "✏️ Szkic został zmieniony w programie pocztowym. Wyślij go stamtąd. · Fwd: Offer"
+    );
+    expect(textTables.en.approvals.followUp.expired.draft_changed).toBe(
+      "✏️ Follow-up not sent: you edited this draft in your mail client. Send it from there."
+    );
+    expect(textTables.pl.approvals.followUp.expired.draft_changed).toContain("Wyślij go stamtąd.");
+  });
+});
+
 const PANEL_URL = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
-const SEND_LINE_EN = "The system sends it after your tap. Do not send the draft from your mail client.";
+const SEND_LINE_EN = "The system sends it after your tap. Edit here, or edit and send in your mail client.";
 
 describe("renderApprovalRequest version line and panel link", () => {
   test("T1 a view without the new fields has no version line and no panel line", () => {
@@ -572,6 +600,7 @@ describe("renderSendResult", () => {
     ],
     ["delegation_closed", "⌛ Not sent: the delegation was closed · Fwd: Offer", "draft"],
     ["policy_changed", "⌛ Not sent: the setting was changed · Fwd: Offer", "both"],
+    ["draft_changed", "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Offer", "both"],
   ];
 
   test.each(sendKinds)("expired (%s)", (sendKind) => {
@@ -654,6 +683,7 @@ describe("Polish send results", () => {
         "held_timeout",
         "delegation_closed",
         "policy_changed",
+        "draft_changed",
       ] as const
     ).map((reason): SendResultKind => ({ kind: "expired", reason, draftRemoved: false })),
   ];

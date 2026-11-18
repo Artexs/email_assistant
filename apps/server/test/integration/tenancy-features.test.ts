@@ -194,6 +194,7 @@ describe("org_features", () => {
         { flag: "urgency_editor", enabled: false, source: "default" },
         { flag: "spam_review_line", enabled: false, source: "default" },
         { flag: "reply_drafts", enabled: false, source: "default" },
+        { flag: "draft_copy_check", enabled: false, source: "default" },
       ]);
     });
   });

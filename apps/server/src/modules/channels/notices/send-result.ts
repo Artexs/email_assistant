@@ -29,6 +29,7 @@ const EXPIRY_REASONS = [
   "delegation_closed",
   "policy_changed",
   "loop_closed",
+  "draft_changed",
 ] as const;
 
 function stringOf(value: unknown): string | null {

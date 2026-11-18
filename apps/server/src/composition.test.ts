@@ -169,6 +169,10 @@ describe("the token store is wired into every composition root", () => {
     expect(callOf(read("scripts/job-run.ts"), "committerDeps")).toContain("oauthTokens:");
   });
 
+  test("scripts/reply-check-copy.ts: the mailbox opener gets a token store", () => {
+    expect(callOf(read("scripts/reply-check-copy.ts"), "openMailboxProvider")).toContain("oauthTokens");
+  });
+
   test("the history check is queued at every connect path: web form, OAuth callback and mailbox:connect", () => {
     const hook = "onConnected: queueHistoryCheckOnConnect(db)";
     const web = read("web.ts");
@@ -198,6 +202,8 @@ describe("the token store is wired into every composition root", () => {
         // `backfillMailbox` with the purpose `history`: its caller (the history job) passes `oauthTokens` from its composition root.
         "modules/mail/tools.ts",
         "scripts/job-run.ts",
+        // The copy probe opens the mailbox of one draft with the shared opener and a token store (F115 stage 08).
+        "scripts/reply-check-copy.ts",
       ]);
     })();
   });

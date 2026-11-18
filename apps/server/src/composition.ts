@@ -14,6 +14,7 @@ import {
 import {
   cancelPendingApprovalRequestsOfClosedSends,
   cancelPendingOutboxOfOrg,
+  cardEditHooks,
   clearLoopCards,
   isOwnReportMail,
   SENDER_STALE_MS,
@@ -136,6 +137,8 @@ export function committerDeps(input: {
     oauthTokens: input.oauthTokens,
     compose: composeMessage,
     hooks: delegationHooks({ db: input.db }),
+    // A send that the committer closes (a changed or a missing Drafts copy) edits its Telegram cards like any other close.
+    approvalHooks: cardEditHooks({ sendScope: input.sendScope }),
     // A follow-up reads and updates its loop through these (open loops stage 10).
     loopHooks: loopHooks(),
     scope: input.scope,

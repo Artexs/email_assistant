@@ -417,6 +417,30 @@ describe("T8 the result notice of a follow-up", () => {
       expect(expiredRow?.text).toBe("⌛ Follow-up not sent: the open loop was closed.");
     });
   });
+
+  test("an edited Drafts copy ends a follow-up as draft_changed: one result row per owner with the loop id and no mail id", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const changed = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
+        sendStatus: "expired",
+        notifiedAt: at(-HOUR),
+      });
+      await trx
+        .updateTable("actions")
+        .set({ status_reason: "draft_changed" })
+        .where("id", "=", changed.sendId)
+        .execute();
+
+      await run(trx);
+
+      const row = (await outbox(trx, w.orgId, "send_result")).find(
+        (found) => found.dedup_key === `send_result:${changed.sendId}` && found.user_id === w.owner
+      );
+      expect(row?.text).toBe("✏️ Follow-up not sent: you edited this draft in your mail client. Send it from there.");
+      expect(row?.loop_id).not.toBeNull();
+      expect(row?.email_id).toBeNull();
+    });
+  });
 });
 
 describe("T3b a failed follow-up: one fixed action_failed notice, no recipient, no text", () => {

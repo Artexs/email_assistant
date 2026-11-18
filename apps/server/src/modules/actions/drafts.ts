@@ -12,15 +12,17 @@ import type { DB, TenantContext } from "../../platform/db";
 import { describeError, errorFields, HardError, SoftError } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
-import { locateByActionId, MailAuthError, type MailProvider } from "../mail";
+import { locateByActionId, MailAuthError, type FolderMessageMeta, type MailProvider } from "../mail";
 
 import { authErrorOutcome, inTransaction, loopHooksOf, type ApplyDeps, type ApplyOutcome } from "./apply-shared";
 import { HARD_ERROR_TRIES, RETRY_WAIT_MS } from "./constants";
+import { baselineOf, copyOf, draftCopyHash, judgeCopy, readDraftCopy } from "./copy";
 import { closeDraftOfSend, expireSend } from "./expiry";
 import type { LoopAnchor } from "./hooks";
 import { loopOriginal, mailOriginal } from "./original";
 import {
   finishAction,
+  getDraft,
   listSendsOfDraft,
   lockAnySend,
   mailOf,
@@ -215,6 +217,33 @@ async function closeDraftOfClosedLoop(
   }
 }
 
+// The baseline of the edit check: the copy is read once right after the APPEND (or the locate) and its hash goes into
+// `provider_result.copy_hash`. A read error here never fails the draft: the message is in the folder, and a retry would
+// APPEND a second one. The draft stays `applied` without a hash and the send has no baseline (a reply then never sends).
+async function copyBaseline(
+  provider: MailProvider,
+  folder: string,
+  action: ClaimedAction,
+  hintUid: number | null
+): Promise<string | null> {
+  try {
+    const read = await readDraftCopy(provider, folder, { actionId: action.id, hintUid, since: action.created_at });
+    if (read.kind === "missing") {
+      log.warn("draft_copy_unhashed", { action_id: action.id, error_code: "copy_not_found" });
+      return null;
+    }
+    if (read.copy.text === null) {
+      log.warn("draft_copy_unhashed", { action_id: action.id, error_code: "text_unreadable" });
+      return null;
+    }
+    return draftCopyHash(read.copy);
+  } catch (error) {
+    const fields = errorFields(error);
+    log.warn("draft_copy_unhashed", { action_id: action.id, error_code: fields.error_code ?? fields.error });
+    return null;
+  }
+}
+
 // D12. A ready draft ends as exactly one message in the Drafts folder, whatever happened before.
 export async function applyDraft(
   deps: ApplyDeps,
@@ -297,6 +326,9 @@ export async function applyDraft(
       return failedWith(deps, ctx, action, error, "append");
     }
   }
+  // Without UIDPLUS the APPEND gives no uid: the read locates the copy by its action id first.
+  const copyHash = await copyBaseline(provider, folder, action, typeof result.uid === "number" ? result.uid : null);
+  if (copyHash !== null) result = { ...result, copy_hash: copyHash };
 
   await deps.beforeCommit?.();
   const now = deps.now();
@@ -372,6 +404,22 @@ const reversePayloadSchema = z.object({
   reason: z.enum(["sent", "rejected", "expired"]),
 });
 
+// A reverse row deletes only a copy that the user did not change: its hash is the baseline of the draft. A draft with no
+// baseline is deleted as before, except a reply: it was never checked, so the user's text may be in it (deleting less is always
+// safe). The flag `draft_copy_check` does not matter here. A read error is thrown: the row retries.
+async function keptReason(
+  deps: ApplyDeps,
+  ctx: TenantContext,
+  provider: MailProvider,
+  input: { folder: string; found: FolderMessageMeta; originalId: string; kind: string }
+): Promise<"changed" | "no_baseline" | null> {
+  const original = await getDraft(deps.db, ctx, input.originalId);
+  const baseline = baselineOf(original?.provider_result ?? null);
+  if (baseline === null) return input.kind === "reply" ? "no_baseline" : null;
+  const copy = copyOf(input.found, await provider.fetchContent(input.folder, input.found.uid));
+  return judgeCopy({ kind: "found", uid: input.found.uid, copy }, baseline) === "same" ? null : "changed";
+}
+
 // D13. The reverse row removes the system's draft once and marks the original `undone`. Not found = done.
 export async function removeDraft(
   deps: ApplyDeps,
@@ -385,13 +433,18 @@ export async function removeDraft(
   const { folder, uid, reason } = payload.data;
 
   let found: Awaited<ReturnType<typeof locateByActionId>>;
+  // Why the copy stays: the user changed it, or (a reply only) the draft has no baseline to compare with.
+  let kept: "changed" | "no_baseline" | null = null;
   try {
     found = await locateByActionId(provider, folder, {
       actionId: originalId,
       hintUid: uid,
       since: action.original_created_at ?? action.created_at,
     });
-    if (found !== null) await provider.deleteMessage(folder, found.uid);
+    if (found !== null) {
+      kept = await keptReason(deps, ctx, provider, { folder, found, originalId, kind: payload.data.kind });
+      if (kept === null) await provider.deleteMessage(folder, found.uid);
+    }
   } catch (error) {
     return failedWith(deps, ctx, action, error, "before_append");
   }
@@ -403,7 +456,7 @@ export async function removeDraft(
       !(await finishAction(trx, ctx, action.id, action.locked_at, {
         status: "applied",
         at: now,
-        providerResult: { found: found !== null, uid: found?.uid ?? null },
+        providerResult: { found: found !== null, uid: found?.uid ?? null, ...(kept === null ? {} : { kept }) },
       }))
     ) {
       return false;
@@ -432,6 +485,7 @@ export async function removeDraft(
   });
   // `lost`: the draft is gone. The next claimer's locate finds nothing and still finishes the row.
   if (!done) return { kind: "lost" };
+  if (kept !== null) log.info("draft_copy_kept", { action_id: originalId, reason: kept });
   log.debug("action_reversed", { action_id: action.id, action_type: "create_draft" });
   return { kind: "applied" };
 }

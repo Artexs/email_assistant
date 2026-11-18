@@ -260,7 +260,8 @@ export type SendResultKind =
         | "held_timeout"
         | "delegation_closed"
         | "policy_changed"
-        | "loop_closed";
+        | "loop_closed"
+        | "draft_changed";
       draftRemoved: boolean;
     }
   | { kind: "rejected"; byName: string | null; draftRemoved: boolean };

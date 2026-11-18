@@ -32,7 +32,14 @@ import { getOrganization, isFeatureOn, isOrgSuspended, listMemberships } from ".
 import { APPLY_HANDLERS, applyAction, type ApplyDeps, type FolderResolver, type ResolvableFolderKey } from "./apply";
 import type { ApplyNeeds } from "./apply-shared";
 import { STALE_AFTER_MS } from "./constants";
-import { noDelegationHooks, noLoopHooks, type DelegationHooks, type LoopHooks } from "./hooks";
+import {
+  noApprovalHooks,
+  noDelegationHooks,
+  noLoopHooks,
+  type ApprovalHooks,
+  type DelegationHooks,
+  type LoopHooks,
+} from "./hooks";
 import {
   claimActions,
   countClaimable,
@@ -64,6 +71,9 @@ export interface CommitterDeps {
   batchSize?: number;
   // S4 (D33): the delegation callbacks and the composer. The defaults serve the tests of S3; `main.ts` wires them (stage 18).
   hooks?: DelegationHooks;
+  // The cards of a send that the committer closes (a changed or a missing Drafts copy lose their buttons). `main.ts` and `job:run`
+  // wire `cardEditHooks`; absent = `noApprovalHooks`.
+  approvalHooks?: ApprovalHooks;
   // Open loops (F116): reads the loop of a follow-up and writes its counters. `main.ts` and `job:run` wire it; absent = no loop is open.
   loopHooks?: LoopHooks;
   compose?(message: OutgoingMessage): Promise<Buffer>;
@@ -265,7 +275,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     sender: MailSender | null,
     now: Date,
     facts: TenantFacts | null,
-    appendFolders: ReadonlySet<string>
+    appendFolders: ReadonlySet<string>,
+    copyCheck: boolean
   ): Promise<void> {
     const mailboxId = mailbox.id;
     const mailboxLog = log.with({ org_id: ctx.orgId, mailbox_id: mailboxId });
@@ -296,6 +307,8 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       compose: deps.compose ?? composeMessage,
       sender,
       hooks: deps.hooks ?? noDelegationHooks,
+      approvalHooks: deps.approvalHooks ?? noApprovalHooks,
+      copyCheck,
       loopHooks: deps.loopHooks ?? noLoopHooks,
       appendFolders,
       ...(deps.sleep === undefined ? {} : { sleep: deps.sleep }),
@@ -403,7 +416,10 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
           return;
         }
       }
-      await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts, appendFolders);
+      // The org flag of the edit check for every kind of send (a reply always checks); read only for a batch with a send.
+      const copyCheck =
+        batch.some((action) => action.type === "send") && (await isFeatureOn(deps.db, ctx, "draft_copy_check"));
+      await applyBatch(ctx, mailbox, batch, provider, sender, now, tenantFacts, appendFolders, copyCheck);
     } finally {
       for (const connection of [provider, sender]) {
         await connection?.close().catch((error: unknown) => {

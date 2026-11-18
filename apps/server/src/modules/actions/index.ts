@@ -9,6 +9,14 @@ export {
 } from "./apply";
 export { ActionAnchorError, anchorOfRow, emailIdOf, type ActionAnchor, type ActionAnchorColumns } from "./anchor";
 export { applyDraft, buildDraftMessage } from "./drafts";
+export {
+  checkDraftCopy,
+  draftCopyHash,
+  judgeCopy,
+  type CheckDraftCopyResult,
+  type CopyCheck,
+  type CopyRead,
+} from "./copy";
 export { loopOriginal, mailOriginal } from "./original";
 export { editApproval, type EditInput, type EditResult } from "./edit";
 export { type SendLimitHit } from "./send-limit";

@@ -36,6 +36,8 @@ afterAll(async () => {
   await db.destroy();
 });
 
+// The hash of the Drafts copy that the draft step reads once after its APPEND (the baseline of the edit check).
+const HEX64 = expect.stringMatching(/^[0-9a-f]{64}$/);
 const MINUTE = 60_000;
 const NOW = new Date("2026-11-07T12:00:00Z");
 const CREATED = new Date("2026-11-07T11:00:00Z");
@@ -195,7 +197,7 @@ describe("applyDraft", () => {
       const row = await actionState(trx, p.draftId);
       expect(row.status).toBe("applied");
       expect(row.locked_at).toBeNull();
-      expect(row.provider_result).toEqual({ uid: uids[0], folder: "Drafts", found: false });
+      expect(row.provider_result).toEqual({ uid: uids[0], folder: "Drafts", found: false, copy_hash: HEX64 });
 
       const raw = s.appended[0]?.toString("utf8") ?? "";
       expect(raw).toContain("> Please prepare the offer");
@@ -241,7 +243,7 @@ describe("applyDraft", () => {
       expect(appendCalls(s)).toBe(1);
       const row = await actionState(trx, p.draftId);
       expect(row.status).toBe("applied");
-      expect(row.provider_result).toEqual({ uid: uids[0], folder: "Drafts", found: true });
+      expect(row.provider_result).toEqual({ uid: uids[0], folder: "Drafts", found: true, copy_hash: HEX64 });
     });
   });
 
@@ -503,7 +505,12 @@ describe("applyDraft", () => {
       expect(await applyDraft(depsOf(s, trx), s.ctx, action, s.fake)).toEqual({ kind: "applied" });
 
       expect(appendCalls(s)).toBe(before);
-      expect((await actionState(trx, p.draftId)).provider_result).toEqual({ uid, folder: "Drafts", found: true });
+      expect((await actionState(trx, p.draftId)).provider_result).toEqual({
+        uid,
+        folder: "Drafts",
+        found: true,
+        copy_hash: HEX64,
+      });
       const reverses = await reverseRows(trx, s, p.draftId);
       expect(reverses).toHaveLength(1);
       expect(reverses[0]).toMatchObject({ type: "create_draft", status: "ready" });
