@@ -7,6 +7,7 @@ import {
   delegationText,
   feedbackStateText,
   ruleLine,
+  senderLineText,
   senderText,
   subjectText,
 } from "../../lib/activity-text";
@@ -47,6 +48,7 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
             <h3 className="font-medium break-words">{subjectText(item.subject)}</h3>
             <div className="flex flex-col gap-1 text-sm text-muted-foreground">
               <p className="break-words">{senderText(item.from)}</p>
+              {item.sender && <p className="break-words">{senderLineText(item.sender)}</p>}
               <p>{t("act_received", { time: formatClock(new Date(item.receivedAt), timeZone, now, getLocale()) })}</p>
               {mailboxAddress !== null && <p className="break-words">{mailboxAddress}</p>}
               <p>

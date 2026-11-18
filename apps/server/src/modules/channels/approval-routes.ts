@@ -15,6 +15,7 @@ import type { Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
 import { approve, editApproval, getSend, reject, type DelegationHooks, type SendScope } from "../actions";
+import type { SenderLineDeps } from "../contacts";
 import { loopHooks } from "../loops";
 import { isFeatureOn } from "../tenancy";
 
@@ -30,6 +31,8 @@ export interface ApprovalRouteDeps {
   // The hooks of the delegation module and the UIDPLUS read of the mailbox: the same ones that the Telegram taps get.
   hooks: DelegationHooks;
   uidplus(ctx: TenantContext, mailboxId: string): Promise<boolean>;
+  // The sender line (flag `sender_context`). Absent: no line, as with the flag off.
+  sender?: SenderLineDeps;
 }
 
 const idSchema = z.uuid();

@@ -42,6 +42,7 @@ flowchart BT
   channels --> actions
   channels --> audit
   channels --> config
+  channels --> contacts
   channels --> delegation
   channels --> loops
   channels --> mail
@@ -98,6 +99,7 @@ flowchart BT
   reports --> actions
   reports --> audit
   reports --> config
+  reports --> contacts
   reports --> delegation
   reports --> loops
   reports --> mail

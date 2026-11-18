@@ -2,10 +2,11 @@ import { Client } from "pg";
 
 import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
+import { senderKeyHash } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { seedActivityRows } from "./e2e-activity-rows";
+import { seedActivityProfiles, seedActivityRows } from "./e2e-activity-rows";
 import { seedTargetOk } from "./e2e-seed-args";
 
 const out = createCliOutput("e2e-activity");
@@ -48,7 +49,15 @@ async function main(): Promise<number> {
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    const result = await seedActivityRows(db, { orgId }, mailboxId, new Date());
+    const now = new Date();
+    const result = await seedActivityRows(db, { orgId }, mailboxId, now);
+    await seedActivityProfiles(
+      db,
+      { orgId },
+      mailboxId,
+      (address) => senderKeyHash(config.CREDENTIALS_KEY, orgId, address),
+      now
+    );
     out.print(`seeded ${result.total} activity rows for mailbox ${mailboxId}`);
     return 0;
   } finally {

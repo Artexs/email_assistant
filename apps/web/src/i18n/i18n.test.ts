@@ -29,6 +29,7 @@ const SAME_IN_BOTH: TextKey[] = [
   "preset_o2",
   "preset_icloud",
   "rule_kind_vip", // "VIP" in both languages
+  "sender_rel_vip",
   "sig_counter", // numbers only
   "cat_info", // category "Info"
   "cat_spam", // category "Spam"

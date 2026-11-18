@@ -209,4 +209,14 @@ export const enActivity = {
   stats_m8_info: "Auto evidence: info",
   stats_m8_notification: "Auto evidence: notifications",
   stats_m8_spam: "Auto evidence: spam",
+  // sender line (Activity detail and Approvals): counts only, one line under the From line
+  sender_rel_delegate: "Delegate",
+  sender_rel_vip: "VIP",
+  sender_rel_bulk: "Bulk sender",
+  sender_rel_known: "Known",
+  sender_rel_new: "New",
+  sender_answered: "you answered {answered} of {received} mails in {days} days",
+  sender_wrote: "you wrote to them {userMailsTo} times",
+  sender_last_seen: "last mail {n} days ago",
+  sender_last_seen_today: "last mail today",
 } as const;
