@@ -108,6 +108,9 @@ export interface FakeExtractor {
 
 // A model client for the extractor role. `reply` is the JSON answer, or a function of the call number (1-based) that
 // returns the answer or throws. Every call is counted in `requests`.
+// The key of the contact hash: a test key, so no test needs `CREDENTIALS_KEY` in the environment.
+export const LOOPS_KEY = Buffer.alloc(32, 7).toString("base64");
+
 // The key that the log tests plant in the client. No log line and no audit row may hold it.
 export const PLANTED_KEY = "PLANTED-KEY-f116";
 
@@ -122,7 +125,15 @@ export function fakeExtractor(reply: Answer | ((call: number) => Answer | never)
 }
 
 export function depsOf(trx: Transaction<DB>, fake: FakeExtractor, extra: Partial<AnalyzeDeps> = {}): AnalyzeDeps {
-  return { db: trx, llm: fake.llm, dailyCap: 300, scope: { kind: "all" }, pause: createLlmPause(), ...extra };
+  return {
+    db: trx,
+    llm: fake.llm,
+    dailyCap: 300,
+    credentialsKey: LOOPS_KEY,
+    scope: { kind: "all" },
+    pause: createLlmPause(),
+    ...extra,
+  };
 }
 
 export async function analysisOf(trx: Transaction<DB>, sentEmailId: string) {

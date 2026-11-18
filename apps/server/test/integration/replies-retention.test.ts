@@ -56,19 +56,20 @@ describe("clearReplyTexts", () => {
   test("1. clears the instruction and the sample text of a request older than the window and keeps a newer one", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const old = await request(trx, org, { created_at: ago(91), status: "done" });
+      const old = await request(trx, org, { created_at: ago(91), updated_at: ago(91), status: "done" });
       const young = await request(trx, org, { created_at: ago(89), status: "done" });
       const open = await request(trx, org, { created_at: ago(120), status: "pending" });
       const kept = await textsOf(trx, young);
 
-      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, now: NOW })).toBe(2);
+      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE })).toBe(2);
 
       const cleared = await textsOf(trx, old);
       expect(cleared).toMatchObject({ instruction: null, sample_body: null, status: "done", trigger: "tap" });
       // The row stays: the code columns and the time of the creation keep their values.
       expect(cleared.thread_key).not.toBe("");
       expect(cleared.created_at.getTime()).toBe(ago(91).getTime());
-      expect(cleared.updated_at.getTime()).toBe(NOW.getTime());
+      // The clearing leaves `updated_at` alone: it is the end time of the request.
+      expect(cleared.updated_at.getTime()).toBe(ago(91).getTime());
       expect(await textsOf(trx, open)).toMatchObject({ instruction: null, sample_body: null, status: "pending" });
       expect(await textsOf(trx, young)).toEqual(kept);
       expect(kept).toMatchObject({ instruction: "Say yes", sample_body: "Sample text" });
@@ -79,11 +80,10 @@ describe("clearReplyTexts", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       const old = await request(trx, org, { created_at: ago(100) });
-      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, now: NOW })).toBe(1);
+      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE })).toBe(1);
       const first = await textsOf(trx, old);
 
-      const later = new Date(NOW.getTime() + DAY_MS);
-      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, now: later })).toBe(0);
+      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE })).toBe(0);
       expect(await textsOf(trx, old)).toEqual(first);
     });
   });
@@ -94,7 +94,7 @@ describe("clearReplyTexts", () => {
       const touched = await request(trx, org, { created_at: ago(100), updated_at: NOW });
       const stale = await request(trx, org, { created_at: ago(10), updated_at: ago(200) });
 
-      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, now: NOW })).toBe(1);
+      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE })).toBe(1);
       expect((await textsOf(trx, touched)).instruction).toBeNull();
       expect((await textsOf(trx, stale)).instruction).toBe("Say yes");
     });
@@ -107,7 +107,7 @@ describe("clearReplyTexts", () => {
       const onlySample = await request(trx, org, { created_at: ago(95), instruction: null });
       await request(trx, org, { created_at: ago(95), instruction: null, sample_body: null });
 
-      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, now: NOW })).toBe(2);
+      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE })).toBe(2);
       expect(await textsOf(trx, onlyInstruction)).toMatchObject({ instruction: null, sample_body: null });
       expect(await textsOf(trx, onlySample)).toMatchObject({ instruction: null, sample_body: null });
     });
@@ -117,7 +117,7 @@ describe("clearReplyTexts", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       for (let index = 0; index < 5; index += 1) await request(trx, org, { created_at: ago(95) });
-      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, now: NOW, batch: 2 })).toBe(5);
+      expect(await clearReplyTexts(trx, org.ctx, { before: BEFORE, batch: 2 })).toBe(5);
     });
   });
 
@@ -128,7 +128,7 @@ describe("clearReplyTexts", () => {
       const mine = await request(trx, a, { created_at: ago(95) });
       const theirs = await request(trx, b, { created_at: ago(95) });
 
-      expect(await clearReplyTexts(trx, a.ctx, { before: BEFORE, now: NOW })).toBe(1);
+      expect(await clearReplyTexts(trx, a.ctx, { before: BEFORE })).toBe(1);
       expect((await textsOf(trx, mine)).instruction).toBeNull();
       expect((await textsOf(trx, theirs)).instruction).toBe("Say yes");
     });
@@ -156,10 +156,10 @@ describe("clearReplyTexts with two connections", () => {
         await gate;
       });
       await hasLock;
-      expect(await clearReplyTexts(db, org.ctx, { before: BEFORE, now: NOW })).toBe(0);
+      expect(await clearReplyTexts(db, org.ctx, { before: BEFORE })).toBe(0);
       release();
       await holder;
-      expect(await clearReplyTexts(db, org.ctx, { before: BEFORE, now: NOW })).toBe(1);
+      expect(await clearReplyTexts(db, org.ctx, { before: BEFORE })).toBe(1);
     } finally {
       await db.deleteFrom("organizations").where("id", "=", org.orgId).execute();
       await db.deleteFrom("users").where("id", "=", org.userId).execute();

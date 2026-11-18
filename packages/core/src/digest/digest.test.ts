@@ -55,6 +55,38 @@ function item(n: number, category: Category, extra: Partial<DigestItem> = {}): D
   };
 }
 
+describe("the Draft reply button of a digest row", () => {
+  const rowData = (message: OutMessage) => message.buttons.map((row) => row.map((button) => button.data));
+
+  test("a draftable row gets ✍️ n with the mail id; a row without the field has none (en and pl)", () => {
+    const items = [item(1, "needs_reply", { draftable: true }), item(2, "needs_reply")];
+    const en = renderDigest(input({ counts: { needs_reply: 2 }, items }), textTables.en);
+    const all = en.buttons.flat();
+    const draft = all.filter((button) => button.data === `dr:${uuid(1)}`);
+    expect(draft).toHaveLength(1);
+    expect(draft[0]?.text).toMatch(/^✍️ [12]$/);
+    expect(all.some((button) => button.data === `dr:${uuid(2)}`)).toBe(false);
+    const pl = renderDigest(input({ counts: { needs_reply: 1 }, items: [items[0] as DigestItem] }), textTables.pl);
+    expect(pl.buttons.flat().some((button) => button.data === `dr:${uuid(1)}`)).toBe(true);
+  });
+
+  test("a keyboard row holds at most 8 buttons: two rows with the draft button do not share one line", () => {
+    const items = [
+      item(1, "needs_reply", { draftable: true, delegable: true, undoable: true }),
+      item(2, "needs_reply", { draftable: true, delegable: true, undoable: true }),
+    ];
+    const message = renderDigest(input({ counts: { needs_reply: 2 }, items }), textTables.en);
+    for (const row of rowData(message)) expect(row.length).toBeLessThanOrEqual(8);
+    expect(message.buttons.length).toBe(2);
+  });
+
+  test("without the field the keyboard is the one of before: two mails share one line", () => {
+    const items = [item(1, "needs_reply"), item(2, "needs_reply")];
+    const message = renderDigest(input({ counts: { needs_reply: 2 }, items }), textTables.en);
+    expect(message.buttons).toHaveLength(1);
+  });
+});
+
 describe("suspicious warning", () => {
   test("a flagged item shows the warning after the AI line; a flagged delegation shows no draft instead of the would-do line", () => {
     const items = [

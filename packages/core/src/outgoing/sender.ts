@@ -36,6 +36,8 @@ export interface ApprovalView {
   sentVisible?: false; // a reply only: the system cannot see the Sent mail of the mailbox, so only `\Answered` on the original shows an answer
   gaps?: string[]; // a reply only: the labels of the gaps `[[…]]` still in the body; one gap or more: no Send button
   replyTo?: string[]; // a reply only: the Reply-To of the original when it differs from its From address (the server sets it)
+  canReplyAll?: true; // a reply only: the Reply all button shows
+  canUseReplyTo?: true; // a reply only: the Use Reply-To button shows
   copyCheck?: true; // the org flag `draft_copy_check` was on when the card was made: the card line allows an edit in the mail client
 }
 

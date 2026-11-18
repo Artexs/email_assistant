@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { REPLY_BLOCK_REASONS } from "../replies/eligibility";
+
 import { textTables } from "./index";
 
 const EN_HELP = [
@@ -198,5 +200,51 @@ describe("OAuth mailbox bot texts", () => {
     expect(textTables.pl.bot.switch.loginError("a@x.test")).toBe(
       "❌ a@x.test: błąd logowania. Najpierw uruchom mailbox:password."
     );
+  });
+});
+
+describe("the taps of the reply drafts (F115 stage 13)", () => {
+  const { en, pl } = { en: textTables.en.bot.taps.reply, pl: textTables.pl.bot.taps.reply };
+
+  test("the Polish texts are the agreed ones (informal ty)", () => {
+    expect(pl.drafting).toBe("✍️ Piszę szkic. Przyjdzie w nowej wiadomości.");
+    expect(pl.redraftAsk).toBe("Napisz jedną linijkę w odpowiedzi na wiadomość poniżej.");
+    expect(pl.redraftQueued).toBe("✍️ Piszę nową wersję. Przyjdzie w nowej wiadomości.");
+    expect(pl.redraftLimit).toBe("Ten szkic ma już 5 nowych wersji. Edytuj go w panelu.");
+    expect(pl.instructionLength).toBe("Napisz jedną linijkę, od 1 do 300 znaków.");
+    expect(pl.closed).toBe("Ten szkic jest zamknięty. Nic się nie zmieniło.");
+    expect(pl.recipientsDone).toBe("👥 Zmieniono odbiorców. Nowa wersja przyjdzie w nowej wiadomości.");
+    expect(pl.tooManyRecipients).toBe(
+      "Zbyt wielu odbiorców: odpowiedź może trafić najwyżej do 10 dodatkowych osób. Użyj panelu."
+    );
+    expect(pl.noReplyTo).toBe("Ta wiadomość nie ma innego adresu Reply-To.");
+    expect(pl.noOthers).toBe("Ta wiadomość nie ma innych odbiorców.");
+    expect(pl.badRecipient).toBe("Nie można użyć jednego z adresów tej wiadomości. Zmień odbiorców w panelu.");
+    expect(pl.recipientsUnchanged).toBe("Szkic już trafia do tych odbiorców.");
+    expect(textTables.pl.bot.taps.changed).toBe("Ten szkic został zmieniony. Użyj najnowszej wiadomości.");
+  });
+
+  test("every reason that blocks a draft has a text in both languages, and the Polish one differs from the English one", () => {
+    for (const reason of [...REPLY_BLOCK_REASONS, "policy_changed"] as const) {
+      expect(en.blocked[reason].length, reason).toBeGreaterThan(10);
+      expect(pl.blocked[reason].length, reason).toBeGreaterThan(10);
+      expect(pl.blocked[reason], reason).not.toBe(en.blocked[reason]);
+    }
+    expect(pl.blocked.suspicious).toBe("Ta wiadomość wygląda podejrzanie. Brak szkicu.");
+    expect(pl.blocked.answered).toBe("Ta wiadomość ma już odpowiedź.");
+    expect(pl.blocked.policy_changed).toBe("Szkice odpowiedzi są wyłączone dla tej skrzynki. Włącz je w panelu.");
+  });
+
+  test("no text holds an address or a line break; each is short enough for the answer of a tap (200 characters) except the shown limits", () => {
+    for (const table of [en, pl]) {
+      const texts = Object.entries(table).flatMap(([key, value]) =>
+        typeof value === "string" ? [[key, value]] : Object.entries(value).map(([sub, text]) => [`${key}.${sub}`, text])
+      );
+      for (const [key, text] of texts) {
+        expect(text, key).not.toMatch(/@/);
+        expect(text, key).not.toContain("\n");
+        expect((text as string).length, key).toBeLessThanOrEqual(200);
+      }
+    }
   });
 });

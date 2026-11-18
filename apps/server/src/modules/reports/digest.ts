@@ -38,6 +38,7 @@ import {
   listMailboxes,
   type TestMailRule,
 } from "../mail";
+import { draftableMails } from "../replies";
 import { getOrganization, isFeatureOn } from "../tenancy";
 import {
   answeredEmailIds,
@@ -87,6 +88,9 @@ export interface DigestRequest {
   // The open reply drafts of the organization that an owner may review: one footer line with the count. The channels job
   // reads it (`reports` may not import `channels`); absent or 0: no line.
   repliesReady?: number;
+  // The "Draft reply" button may show on the rows: the member is an owner whose Telegram consent covers reply data (the channels job
+  // reads it: `reports` may not import `channels`). The rows still need a draft that can be made now (`draftableMails`).
+  replyDrafts?: boolean;
   // The base URL of the panel (`WEB_BASE_URL`): the spam review line links to the Activity list with it. Unset: no link.
   panelBase?: string;
 }
@@ -325,6 +329,17 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
       )
     : new Map<string, string[]>();
 
+  // The Draft reply button: an owner with the consent, a mail of the two categories that a reply answers, and no open reply draft.
+  const draftable =
+    request.replyDrafts === true && request.role === "owner"
+      ? await draftableMails(
+          db,
+          ctx,
+          rows.filter((row) => row.category === "needs_reply" || row.category === "urgent").map((row) => row.email_id),
+          { now: request.now }
+        )
+      : new Set<string>();
+
   const items: DigestItem[] = rows.map((row) => ({
     emailId: row.email_id,
     category: row.category,
@@ -361,6 +376,7 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
     (suspiciousAny.get(row.email_id) ?? []).length === 0
       ? { delegable: true }
       : {}),
+    ...(draftable.has(row.email_id) ? { draftable: true } : {}),
     ...(attachmentFacts.has(row.email_id) ? { attachments: attachmentFacts.get(row.email_id) } : {}),
     hasDraft: (actions.get(row.email_id) ?? []).some((action) => action.type === "create_draft" && !action.reverse),
     ...(whyOn

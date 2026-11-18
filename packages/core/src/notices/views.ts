@@ -132,6 +132,9 @@ const urgentView = z.strictObject({
   // Optional on read, written (true) only when the Delegate button shows: the flag `delegate_button` is on, the
   // organization has an active delegate and the mailbox is in `assist` with drafts on. A view without it renders as before.
   delegable: z.literal(true).optional(),
+  // Optional on read, written (true) only when the Draft reply button shows (see `ReplyDraftable` in the server): the reply drafts
+  // are on for the mailbox, the owner's consent covers them, and the mail has no open reply draft.
+  draftable: z.literal(true).optional(),
   now: isoDate,
   timeZone,
 });

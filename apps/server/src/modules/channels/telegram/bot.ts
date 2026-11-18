@@ -175,9 +175,25 @@ export function createTelegramBot(
     }
   });
 
-  // 6. Any other message of a linked chat.
+  // 6. Any other message of a linked chat. A line of text that replies to a message of the bot may answer a question (the instruction
+  // after Redraft); every other message gets the help text. The text goes to the handler only; no log line holds it.
   bot.on("message", async (ctx) => {
-    await reply(ctx, textsFor(linkOf(ctx).locale).bot.help);
+    const link = linkOf(ctx);
+    const replyTo = ctx.message.reply_to_message?.message_id;
+    let answer: { text: string; buttons: Parameters<typeof messageOptions>[0] } | undefined;
+    if (ctx.message.text !== undefined && replyTo !== undefined) {
+      try {
+        answer = await handlers.text(link, ctx.message.text, replyTo);
+      } catch (error) {
+        log.error("text_failed", telegramErrorFields(error));
+        answer = { text: textsFor(link.locale).bot.error, buttons: [] };
+      }
+    }
+    // A failed send is an `update_failed` line (the error handler below), as it was for the help text.
+    await ctx.reply(
+      answer?.text ?? textsFor(link.locale).bot.help,
+      messageOptions(answer?.buttons ?? [], { clearKeyboard: false })
+    );
   });
 
   // 7. Without this, grammY stops polling on the first error.

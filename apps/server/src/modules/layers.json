@@ -37,6 +37,11 @@
     },
     { "from": "loops", "to": "actions", "why": "Loops plan and close follow-up sends." },
     { "from": "loops", "to": "delegation", "why": "Loops run the delegation chaser step and read delegates." },
+    {
+      "from": "loops",
+      "to": "contacts",
+      "why": "A new waiting loop reads the usual reply time of its counterpart from the sender profile."
+    },
     { "from": "loops", "to": "triage", "why": "Loops read the suspicion of a thread and the prompt registry." },
     {
       "from": "replies",

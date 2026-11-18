@@ -1,5 +1,6 @@
 import type { SendLimitKind } from "../send-limits";
 import type { CoreTexts } from "../texts";
+import type { ReplyResultKey } from "../texts/notices";
 import type { Category } from "../triage/categories";
 import type { SenderRuleKind } from "../triage/rules";
 import { suspiciousReasons, type SuspiciousReason } from "../triage/suspicious";
@@ -50,6 +51,8 @@ export function renderUrgentNotice(
     rule?: SenderRuleKind | null | undefined;
     // The Delegate button shows. Absent: the keyboard of today.
     delegable?: boolean;
+    // The Draft reply button shows. Absent: no button.
+    draftable?: boolean;
     now: Date;
     timeZone: string;
   },
@@ -76,20 +79,23 @@ export function renderUrgentNotice(
     `→ ${input.wouldDo}`
   );
   const own = feedbackButtons(input.emailId, "urgent", { right: texts.common.right, edit: texts.common.change });
-  return {
-    text: lines.join("\n"),
-    buttons: [
-      input.delegable === true
-        ? [
-            ...own,
-            {
-              text: texts.loopTaps.buttons.delegate,
-              data: encodeCallback({ kind: "delegate_open", emailId: input.emailId }),
-            },
-          ]
-        : own,
-    ],
-  };
+  const buttons = [
+    input.delegable === true
+      ? [
+          ...own,
+          {
+            text: texts.loopTaps.buttons.delegate,
+            data: encodeCallback({ kind: "delegate_open", emailId: input.emailId }),
+          },
+        ]
+      : own,
+  ];
+  if (input.draftable === true) {
+    buttons.push([
+      { text: texts.notices.replyDrafts.draft, data: encodeCallback({ kind: "reply_draft", emailId: input.emailId }) },
+    ]);
+  }
+  return { text: lines.join("\n"), buttons };
 }
 
 export function renderAuthErrorNotice(
@@ -208,12 +214,46 @@ export function renderRepliesReadyNotice(
   };
 }
 
+// The question after a Redraft tap. The chat client opens the reply box (ForceReply); the user's line is the answer to this message.
 export function renderReplyPromptNotice(texts: CoreTexts): OutMessage {
-  return { text: texts.notices.replyDrafts.prompt, buttons: [] };
+  return { text: texts.notices.replyDrafts.prompt, buttons: [], forceReply: true };
 }
 
-export function renderReplyResultNotice(texts: CoreTexts): OutMessage {
-  return { text: texts.notices.replyDrafts.result, buttons: [] };
+// The reasons that share one result text. A reason of the eligibility rule has its own text (`bot.taps.reply.blocked`); a code that
+// has neither gets the generic line.
+const RESULT_KEY_OF: Record<string, ReplyResultKey> = {
+  needs_facts: "needs_facts",
+  not_a_reply: "not_a_reply",
+  unsafe_request: "unsafe_request",
+  no_text: "no_text",
+  timeout: "timeout",
+  llm_cap: "llm_cap",
+  llm_error: "llm_error",
+  checks: "checks",
+  output: "output",
+  internal: "internal",
+  closed: "closed",
+  changed: "changed",
+  feature_off: "off",
+  switch_off: "off",
+  not_assist: "off",
+  mail_gone: "mail_gone",
+};
+
+function isBlockReason(reason: string, texts: CoreTexts): reason is keyof CoreTexts["bot"]["taps"]["reply"]["blocked"] {
+  return Object.hasOwn(texts.bot.taps.reply.blocked, reason);
+}
+
+// The result of a tap or a redraft that ended with no new card: one fixed line for the reason code. No mail text, no address.
+export function renderReplyResultNotice(input: { reason: string }, texts: CoreTexts): OutMessage {
+  const key = Object.hasOwn(RESULT_KEY_OF, input.reason) ? RESULT_KEY_OF[input.reason] : undefined;
+  const text =
+    key !== undefined
+      ? texts.notices.replyDrafts.results[key]
+      : isBlockReason(input.reason, texts)
+        ? `✍️ ${texts.bot.taps.reply.blocked[input.reason]}`
+        : texts.notices.replyDrafts.results.generic;
+  return { text, buttons: [] };
 }
 
 // The check of the last 30 days is ready: a count, category names and the report link. No mail data.

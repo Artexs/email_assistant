@@ -24,6 +24,8 @@ import { rateText } from "./weekly";
 import { aiLine, whySuffix } from "./why-line";
 
 export const DIGEST_MAX_LINES = 15;
+// Telegram allows at most 8 buttons in one keyboard row.
+const MAX_ROW_BUTTONS = 8;
 
 const SYNC_LATE_MS = 30 * 60_000;
 const ACTION_CATEGORIES: readonly Category[] = ["urgent", "needs_reply", "delegation", "unsure"];
@@ -60,6 +62,8 @@ export interface DigestItem {
   // The Delegate button shows on this row: flag `delegate_button` on, an active delegate, the mailbox in `assist`
   // with drafts on, a category of the action section and no suspicion. Set by the reader; absent reads as no button.
   delegable?: boolean;
+  // The Draft reply button shows on this row: a reply draft can be made for the mail now and none is open. Set by the reader.
+  draftable?: boolean;
   // Set only while the flag `why_lines` is on. Absent reads as no mark: the item renders as before.
   confidence?: number | null;
   rule?: SenderRuleKind | null;
@@ -326,9 +330,19 @@ function renderListed(
             },
           ]
         : []),
+      ...(item.draftable === true
+        ? [
+            {
+              text: texts.notices.replyDrafts.draftRow(n),
+              data: encodeCallback({ kind: "reply_draft", emailId: item.emailId }),
+            },
+          ]
+        : []),
     ];
-    if (index % 2 === 0) mailRows.push(own);
-    else mailRows[mailRows.length - 1]?.push(...own);
+    // Two rows share one keyboard line while that stays within the 8 buttons of Telegram; else this row starts a line.
+    const last = mailRows[mailRows.length - 1];
+    if (index % 2 === 0 || last === undefined || last.length + own.length > MAX_ROW_BUTTONS) mailRows.push(own);
+    else last.push(...own);
   });
   buttons.push(...mailRows);
   return { message: { text: lines.join("\n"), buttons }, lineOf };

@@ -1,0 +1,38 @@
+# F115 stage 13: Redraft, Reply all, Use Reply-To and Draft reply in Telegram (2026-11-18)
+
+Stage file: `spec/features/active/F115-e6a-reply-drafts/stages/stage-13-telegram-redraft.md`. Behaviour: `docs/capabilities/drafts-and-send.md` bullet "Redraft, Reply all, Use Reply-To and Draft reply in Telegram (F115 stage 13)"; `docs/capabilities/digest-and-notices.md` (`reply_prompt`, `reply_result`, callback prefixes `rd`, `ra`, `ru`, `dr`).
+
+## Where the code is
+
+- Core: `packages/core/src/replies/recipients.ts` (`replyRecipients`, `otherParticipants`, `otherReplyTo`, `sameRecipients`: the one place that decides who a changed draft goes to; pure, stored addresses only), `digest/callback.ts` (`reply_redraft` `rd`, `reply_all` `ra`, `reply_use_reply_to` `ru`, `reply_draft` `dr`), `digest/approvals.ts` (second button row), `digest/notices.ts` (urgent `draftable`, `renderReplyPromptNotice` with `forceReply`, `renderReplyResultNotice({ reason })`), `digest/digest.ts` (row button `✍️ n`, at most 8 buttons in one keyboard row), `outgoing/view-schema.ts` (`canReplyAll`, `canUseReplyTo`), `texts/bot.ts` (`taps.reply`: tap answers and one eligibility text for each block reason), `texts/notices.ts` (`replyDrafts.prompt`, `results`, `draft`, `draftRow`).
+- Server `replies`: `service.ts` (`requestReply`, `redraftReply`, `setReplyRecipients`, `cleanInstruction`), `draftable.ts` (`draftableMails`: the "Draft reply" button hint), `repo/requests.ts` (`findOpenRequest`, `listEndedRequestsVia`, `createdAt`).
+- Server `channels`: `reply-redraft.ts` (the taps and `handleReplyText`), `notices/reply-results.ts` (detector: the card or the fixed line when the drafter ended a Telegram request), `reply-review.ts` (`queueReviewCardOfSend`), `repo/review-cards.ts` (`findReplyTargetOfMessage`, `findReplyPrompts`, `hasReviewCardSince`), `review-keys.ts` (`reply_prompt:<send>:<n>`, `isAskedForKey`), `telegram/bot.ts` + `port.ts` + `commands.ts` (`UpdateHandlers.text`), `telegram/api.ts` (`forceReplyOptions`), `sender.ts` (the question and the result are not held in quiet hours; a resent question keeps ForceReply), `notices/approval.ts` (view fields), `notices/urgent.ts` and `digest-job.ts` / `commands.ts` (the button for a consented owner).
+- `audit/repo.ts`: new event `reply.requested` (data `via`, `trigger`, `reply_request_id`; never the instruction). `module-graph`: new edges `channels -> replies` and `reports -> replies`.
+
+## Decisions (defaults, none needs the owner now)
+
+- **Channel of a request.** The request has no channel column and the ticket has no more migrations. The service writes one audit row `reply.requested` with `via`; the detector `reply_results` answers only requests with `via = telegram` (a web request, stage 14, gets no Telegram card). A crash or a second process (`job:run`) does not lose the answer: the detector reads the request, not a hook.
+- **Idempotent answer.** The detector looks at requests that ended in the last 30 minutes. A card is queued once: it is skipped when this user has a review card of that send queued at or after the end of the request (`hasReviewCardSince`). A text line has the dedup key `reply_result:<request id>`.
+- **The new card may precede the Drafts copy.** A card for a new version is queued when the request ends, before the committer has put the draft in Drafts. Send on it answers "The draft is not in Drafts yet" (`draft_not_ready`) and approves nothing; the user taps again. The approval detector's wait for an applied draft does not apply to review cards.
+- **Reply all keeps the sender as `To`.** `all` = To is the stored `From`; Cc is the stored To and Cc without an own mailbox and the sender, at most 10. `reply_to` = the first stored Reply-To address that is not the sender and not an own mailbox (a second Reply-To address is not used; the card shows all of them in the `Reply-To:` line). There is no button for "back to the sender only" in Telegram (`mode: "from"` exists in the service for the panel, stage 14).
+- **Neutral card texts.** "Changed in the panel HH:MM" became "Changed HH:MM", "Version N, edited in the panel" became "Version N", the tap answer `changed` lost "in the panel": a change can come from Telegram now. Polish the same. The outcome name `changed` and the dedup keys did not change.
+- **Extra service answers.** Besides the interface list (`queued`, `open`, `blocked`, `feature_off`; redraft `changed`, `closed`) the services also answer `forbidden` (not an owner), `not_found`, `invalid_instruction` and `redraft_limit`; `open` carries the `status` of the send (a tapped send is not shown as a card); `setReplyRecipients` answers `no_others` and `bad_recipient` besides `too_many_recipients` and `no_reply_to`. The routes of stage 14 map them.
+- **No per-mail limit for `tap` requests.** A second tap while one waits returns the same request. After a failed request a new tap makes a new model call; the daily cap of the mailbox (`LLM_DAILY_CAP`, the job's `llm_cap`) is the only bound, as for every user request. Stage 14 may add a limit if it shows.
+- **Text handler and suspended organizations.** A reply-text of a suspended organization gets the "account paused" message (like a tap); other text keeps the help answer.
+- **The line is data.** `cleanInstruction` (`cleanUserText`, one line, 1 to 300 characters by code points) is the only way a line reaches the model; it never becomes a recipient (stored addresses only), a folder or a command. No log line, audit row or error holds it (`tap_received` has `kind: reply_text` and ids). Retention (`clearReplyTexts`) already clears `reply_requests.instruction`.
+
+## Terms and consent
+
+No legal text, registry or consent text changed: **no `TERMS_VERSION` bump** (stage 17 carries the batch, see `notes/2026-11-18-f115-s12-telegram-review.md`). `REPLY_CONSENT_SINCE` is still the placeholder `2099-12-31`: no owner is covered, so none of the new buttons shows in production. Keep `reply_drafts` OFF until stage 17 lands.
+
+## For later stages
+
+- Stage 14 (routes): reuse `requestReply`, `redraftReply`, `setReplyRecipients` (they check owner, flag and gates themselves); a web request writes `via: "web"` in the audit row and gets no Telegram answer. `GET /replies/requests/:id` reads the `reply_requests` row.
+- Stage 15 (panel): the `ApprovalItem` fields `canReplyAll` and `canUseReplyTo` are in the view; the panel may show the same buttons.
+- Stage 17: rollback text: an older release does not know the callback codes `rd`, `ra`, `ru`, `dr` (they parse to null: "invalid" answer) and the audit event `reply.requested` (a free text column: harmless); the views of `reply_prompt` and `reply_result` did not change shape.
+- Tests: `apps/server/test/integration/replies-request-service.test.ts`, `channels-reply-redraft.test.ts` (24 tests), `telegram-router.test.ts`; core `recipients.test.ts`, `callback-loop.test.ts`, `approvals.test.ts`, `digest.test.ts`, `notices.test.ts`. Mutation log of this stage: `.f115s13-logs/mutations.log` (script `.f115s13-logs/mutate.py`; both untracked).
+
+## Repair after the review (review-13.md)
+
+- B1: `clearReplyTexts` no longer writes `updated_at` (the `now` option is gone) and `listEndedRequestsVia` takes `maxLifeMs` (the request timeout): a request created before `since - maxLifeMs` is no end of the window. Tests: `replies-retention.test.ts` 1, `channels-reply-redraft-repair.test.ts` 1 (the P5 scenario) and 2.
+- M29, M30, M42, M45, M47, M32, M16 are tests in `channels-reply-redraft-repair.test.ts` (shared helpers moved to `reply-telegram-fixtures.ts`). N7: wording (`sendChanged`, `redraftLimit`, the Polish `timeout` line) and the two capability pages.

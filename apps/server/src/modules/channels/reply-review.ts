@@ -133,3 +133,30 @@ export async function queueNextReviewCard(
     }
   }
 }
+
+// The review card of one named send (the new version after a change, the draft that a tap found) for `owner`. Only a reply that waits for
+// a tap gets a card. "none": no such send, not a reply, not waiting, or the renderer refuses the card (the log line holds the send id only).
+export async function queueReviewCardOfSend(
+  deps: { db: DbOrTrx; webBaseUrl?: string },
+  ctx: TenantContext,
+  owner: LinkedChat,
+  sendId: string,
+  now: Date
+): Promise<ReviewCardResult | "none"> {
+  const send = await getSend(deps.db, ctx, sendId);
+  if (send === undefined || send.status !== "awaiting_approval" || send.payload.kind !== "reply") return "none";
+  const organization = await getOrganization(deps.db, ctx);
+  if (organization === undefined) return "none";
+  const panelBase = await panelBaseOf(deps.db, ctx, deps.webBaseUrl);
+  try {
+    return await queueReviewCard(deps.db, ctx, owner, send, {
+      now,
+      timeZone: organization.timezone,
+      ...(panelBase === undefined ? {} : { panelBase }),
+    });
+  } catch (error) {
+    if (!(error instanceof NoticeViewError)) throw error;
+    warnSkipped("reply_review", send.id, error, `${owner.userId}:${send.id}`);
+    return "none";
+  }
+}

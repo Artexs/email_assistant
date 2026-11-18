@@ -1,6 +1,6 @@
 import { CALLBACK_MAX_BYTES, MESSAGE_MAX_CHARS, type OutButton, type OutMessage } from "@ea/core";
 import { Api } from "grammy";
-import type { InlineKeyboardMarkup } from "grammy/types";
+import type { ForceReply, InlineKeyboardMarkup } from "grammy/types";
 
 import { ChannelError, type ChatChannel } from "../port";
 
@@ -27,6 +27,14 @@ export function messageOptions(
   };
 }
 
+/** The options of a message that asks for one line of text: the client opens the reply box and the line answers this message. No keyboard. */
+export function forceReplyOptions(): {
+  link_preview_options: { is_disabled: true };
+  reply_markup: ForceReply;
+} {
+  return { link_preview_options: { is_disabled: true }, reply_markup: { force_reply: true } };
+}
+
 function guard(message: OutMessage): void {
   if (message.text.length < 1 || message.text.length > MESSAGE_MAX_CHARS) {
     throw new ChannelError("bad_request", "message_too_long");
@@ -49,7 +57,7 @@ export function createTelegramChannel(api: Api): ChatChannel {
         const result = await api.sendMessage(
           chatId,
           message.text,
-          messageOptions(message.buttons, { clearKeyboard: false })
+          message.forceReply === true ? forceReplyOptions() : messageOptions(message.buttons, { clearKeyboard: false })
         );
         return { messageId: result.message_id };
       } catch (error) {

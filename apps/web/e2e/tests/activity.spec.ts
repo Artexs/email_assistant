@@ -146,6 +146,54 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await expect(page.getByRole("button", { name: en.act_load_more })).toHaveCount(0);
 });
 
+// The sender line of the panel. The seed writes the profiles of two senders (`seedActivityProfiles`); the flag `sender_context` is
+// on for the seed organization only inside this test.
+test("the panel shows the sender line only with the flag on and a profile", async ({ page }) => {
+  const moved = rowOf(page, ACTIVITY_SUBJECTS.moved);
+  const reply = rowOf(page, ACTIVITY_SUBJECTS.reply);
+  const shopLine = `${t("sender_rel_new")} · ${t("sender_answered", { answered: 0, received: 1, days: 90 })} · ${t("sender_last_seen_today")}`;
+  const annaLine = [
+    t("sender_rel_known"),
+    t("sender_answered", { answered: 6, received: 8, days: 90 }),
+    t("sender_wrote", { userMailsTo: 3 }),
+    t("sender_last_seen", { n: 2 }),
+  ].join(" · ");
+
+  // The flag is off: the answer has no `sender` key and the panel no line.
+  await moved.getByText(ACTIVITY_SUBJECTS.moved).click();
+  await expect(page.getByRole("dialog")).toContainText(en.act_panel_title);
+  await expect(page.getByRole("dialog")).not.toContainText(en.sender_rel_new);
+  await page.keyboard.press("Escape");
+
+  setFlag("sender_context", true);
+  try {
+    await page.reload();
+    await moved.getByText(ACTIVITY_SUBJECTS.moved).click();
+    await expect(page.getByRole("dialog")).toContainText(shopLine);
+    await expectNoA11yViolations(page);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await reply.getByText(ACTIVITY_SUBJECTS.reply).click();
+    await expect(page.getByRole("dialog")).toContainText(annaLine);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+
+    // `sender: null` (no profile, a cleared address): the panel has no line.
+    await page.route("**/api/activity*", async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as { items: { sender?: unknown }[] };
+      for (const entry of body.items) entry.sender = null;
+      await route.fulfill({ response, json: body });
+    });
+    await page.reload();
+    await moved.getByText(ACTIVITY_SUBJECTS.moved).click();
+    await expect(page.getByRole("dialog")).toContainText(en.act_panel_title);
+    await expect(page.getByRole("dialog")).not.toContainText(en.sender_rel_new);
+  } finally {
+    setFlag("sender_context", false);
+  }
+});
+
 test("✅ and ✏️ save feedback", async ({ page }) => {
   const moved = rowOf(page, ACTIVITY_SUBJECTS.moved);
   const rightMoved = rightLabel(en.act_cat_notification);

@@ -6,8 +6,10 @@ import { getMailboxSettings } from "../../config";
 import { listDelegateNames } from "../../delegation";
 import { delegateButtonOn, draftsAvailable } from "../../loops";
 import { attachmentFactsToShow, getJunkFolderPath, INBOX, isSyntheticMessageId } from "../../mail";
+import { draftableMails } from "../../replies";
 import { isFeatureOn } from "../../tenancy";
 import { listTriagedBetween, suspiciousReasonsOf, suspiciousReasonsToShow } from "../../triage";
+import { replyConsentOf } from "../consent";
 import { type LinkedChat } from "../port";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
@@ -87,6 +89,25 @@ async function detectUrgent(
       drafting.set(mailboxId, draftsAvailable(await getMailboxSettings(db, ctx, mailboxId)));
     }
   }
+  // The Draft reply button: an owner whose consent covers reply data, and a mail that a reply draft can be made for now.
+  const owners = members.filter((member) => member.role === "owner");
+  const draftOwners =
+    owners.length > 0
+      ? await replyConsentOf(
+          db,
+          ctx,
+          owners.map((owner) => owner.userId)
+        )
+      : new Set<string>();
+  const draftable =
+    draftOwners.size > 0
+      ? await draftableMails(
+          db,
+          ctx,
+          rows.map((row) => row.email_id),
+          { now }
+        )
+      : new Set<string>();
   for (const member of members) {
     const since = sinceOf(member);
     for (const row of rows) {
@@ -143,6 +164,8 @@ async function detectUrgent(
               (suspiciousAny.get(row.email_id) ?? []).length === 0
                 ? { delegable: true as const }
                 : {}),
+              // The Draft reply button: no field unless it shows.
+              ...(draftOwners.has(member.userId) && draftable.has(row.email_id) ? { draftable: true as const } : {}),
               now,
               timeZone,
             },
