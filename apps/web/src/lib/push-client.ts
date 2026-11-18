@@ -78,13 +78,12 @@ const sameBytes = (left: ArrayBuffer, right: Uint8Array): boolean => {
 };
 
 /**
- * The click: ask the permission (a denied permission stops here, before any request), subscribe with the public key and send the
+ * The click: ask the permission when it is undecided (a denied or refused permission stops here, before any request), subscribe with the public key and send the
  * subscription. A subscription of an older server key makes `subscribe` throw: it is replaced.
  */
 export async function enablePush(publicKey: string, deps: PushFlowDeps): Promise<EnableResult> {
   try {
     let permission = deps.permission();
-    if (permission === "denied") return "blocked";
     if (permission === "default") permission = await deps.requestPermission();
     if (permission !== "granted") return "blocked";
 
