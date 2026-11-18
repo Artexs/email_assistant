@@ -606,7 +606,7 @@ describe("renderSendResult", () => {
       `⚠️ Unknown whether the mail to ${to} went out · Fwd: Offer\n${joined("The connection broke after the content was sent. Check Sent or ask the recipient before you send again.", closings[sendKind])}`
     );
     expect(parseCallback(message.buttons[0]?.[0]?.data ?? "")).toEqual({ kind: "send_again", actionId: ID });
-    // F041: only a delegation send has the "It went out" button; it is the second button.
+    // Only a delegation send has the "It went out" button; it is the second button.
     const second = message.buttons[1]?.[0];
     if (sendKind === "delegation") {
       expect(second?.text).toBe("✅ It went out");

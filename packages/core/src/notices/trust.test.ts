@@ -8,7 +8,7 @@ import type { NoticeRenderOptions } from "./kinds";
 import { renderNotice } from "./render";
 import { noticeViewSchemas, trustReportUrlSchema, trustSettingsUrlSchema } from "./views";
 
-// F110 stage 10: the two trust notice kinds (D15: category names, counts and fixed phrases only).
+// The two trust notice kinds (category names, counts and fixed phrases only).
 const mailboxId = "22222222-2222-4222-8222-222222222222";
 const reportUrl = `https://app.example.test/report?mailbox=${mailboxId}`;
 const settingsUrl = "https://app.example.test/settings";
@@ -172,7 +172,7 @@ describe("autonomy_paused", () => {
   });
 });
 
-// Review of stage 10 (P1-P7, TG1-TG3): every text is pinned in en and pl, and the links are strict.
+// Review of stage 10 (TG1-TG3): every text is pinned in en and pl, and the links are strict.
 describe("pinned texts", () => {
   const plPrefix = "⏸ Automatyczne przenoszenie wiadomości z kategorii „Powiadomienie” zostało wstrzymane";
   const plTail = `\nWłącz je ponownie w Ustawieniach.\nUstawienia: ${settingsUrl}`;

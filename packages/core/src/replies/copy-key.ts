@@ -1,7 +1,7 @@
 import { normalizeDraftText } from "./text";
 
 // The copy of a draft as the mail server holds it: what the committer reads back after APPEND and again before the
-// send (F115 stage 08). `draftCopyKey` gives the canonical string of it; the hash of that string (`draftCopyHash`, module
+// send. `draftCopyKey` gives the canonical string of it; the hash of that string (`draftCopyHash`, module
 // `actions`) is the baseline of the edit check. A server may re-encode the text or fold a header, so the key holds only
 // what a person can change: the text, the Subject, the To and Cc addresses and the attachment list. Pure code.
 export interface DraftCopy {

@@ -7,7 +7,7 @@ import { addDays, isoWeekday } from "./calendar-days";
 
 // The rules of the scripted executive of the live lab: which button of a Telegram card the executive presses.
 // Pure: the driver reads the fake Telegram and the slot truth, and calls these functions. The executive only
-// approves, rejects (with a reason) and undoes (PD-021). It never relabels and never edits a draft.
+// approves, rejects (with a reason) and undoes. It never relabels and never edits a draft.
 const ZONE = "Europe/Warsaw";
 const MINUTE_MS = 60_000;
 const MIN_DELAY_MIN = 5;

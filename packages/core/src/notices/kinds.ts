@@ -31,11 +31,11 @@ export const noticeKinds = [
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);
 
-// `mail` is the report mail of E4-B (APPEND into the own INBOX, F110 stage 20); E9b adds "push". Only four kinds go by mail.
+// `mail` is the report mail of E4-B (APPEND into the own INBOX); E9b adds "push". Only four kinds go by mail.
 export const noticeChannels = ["telegram", "mail"] as const;
 export type NoticeChannel = (typeof noticeChannels)[number];
 
-// The kinds that also go by mail (F110 D14, Q6). Every other kind goes to Telegram only; `noticeRenderers` has a `mail` renderer for these four.
+// The kinds that also go by mail. Every other kind goes to Telegram only; `noticeRenderers` has a `mail` renderer for these four.
 export const reportMailKinds = ["digest", "weekly_report", "trust_report_ready", "autonomy_paused"] as const;
 export type ReportMailKind = (typeof reportMailKinds)[number];
 

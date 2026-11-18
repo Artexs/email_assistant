@@ -2,7 +2,7 @@ import { DIGEST_TIME_PATTERN } from "../digest/schedule";
 
 import { z } from "./zod";
 
-// F110 stage 18: the own quiet hours and report channel of a member (`GET/PATCH /api/me/notify`).
+// The own quiet hours and report channel of a member (`GET/PATCH /api/me/notify`).
 export const reportChannels = ["telegram", "mail", "both"] as const;
 export const reportChannelSchema = z.enum(reportChannels);
 export type ReportChannel = z.infer<typeof reportChannelSchema>;

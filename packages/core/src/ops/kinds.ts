@@ -1,4 +1,4 @@
-// F114: the five service levels that the operator job checks. The CHECK list of `ops_alerts.kind` holds the same codes.
+// The five service levels that the operator job checks. The CHECK list of `ops_alerts.kind` holds the same codes.
 export const SLO_KINDS = [
   "slo_sync_lag",
   "slo_urgent_latency",
@@ -17,7 +17,7 @@ export interface SloCheck {
   facts: Record<string, number>;
 }
 
-// The thresholds of the service-level checks (F114 stages 02 and 04). Set by the `SLO_*` keys of `platform/config`.
+// The thresholds of the service-level checks. Set by the `SLO_*` keys of `platform/config`.
 export interface SloThresholds {
   syncLagMin: number;
   urgentLatencyMin: number;

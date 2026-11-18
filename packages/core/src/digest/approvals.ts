@@ -113,7 +113,7 @@ export function renderApprovalRequest(
   // A reply may go to more people than its title names (Reply all): the Cc line is never cut, as in a follow-up.
   if (view.kind === "reply" && (view.cc?.length ?? 0) > 0) head.push(...followUpRecipientLines(view, texts).slice(1));
   if (view.sender !== null) {
-    // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
+    // The view stores the English placeholder; the renderer prints it in the row's language.
     const stored =
       view.sender.label === textTables.en.common.unknownSender ? texts.common.unknownSender : view.sender.label;
     const label = cutText(removeLinks(stored), FIELD_MAX_CHARS);
@@ -121,7 +121,7 @@ export function renderApprovalRequest(
       view.sender.external ? `${texts.common.from}: ${label} · ${t.externalSender}` : `${texts.common.from}: ${label}`
     );
   }
-  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped (review 12, N6).
+  // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped (review 12).
   head.push(
     `${texts.common.subject}: ${cleanSubject(followUp && view.subject !== null ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
   );

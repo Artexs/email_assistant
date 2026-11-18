@@ -4,7 +4,7 @@ import { draftKinds } from "../triage/payloads";
 
 import { z } from "./zod";
 
-// GET /api/approvals and GET /api/approvals/:id (F102 ticket). Every object is strict: the page gets exactly these facts.
+// GET /api/approvals and GET /api/approvals/:id. Every object is strict: the page gets exactly these facts.
 // The mail text goes out only in `view` (the card view: the body of the draft and the quote cut at 1500 characters) and in
 // `quote` (the full quote, up to 8000 characters, that the committer would send).
 
@@ -85,7 +85,7 @@ export const approvalDetailSchema = z.strictObject({
 });
 export type ApprovalDetail = z.infer<typeof approvalDetailSchema>;
 
-// POST /api/approvals/:id/approve, /reject and /edit (F102 ticket). The body of approve and reject is `{}`. The raw limits of the
+// POST /api/approvals/:id/approve, /reject and /edit. The body of approve and reject is `{}`. The raw limits of the
 // edit are wider than the limits of the service (subject 1–200, body 1–3000 characters after cleaning): cleaning removes characters,
 // so the service decides the real limit and answers 400 `validation`.
 export const APPROVAL_EDIT_SUBJECT_RAW_MAX = 400;

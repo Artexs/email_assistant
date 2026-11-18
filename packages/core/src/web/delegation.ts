@@ -2,7 +2,7 @@ import { z } from "./zod";
 
 export { ADDRESS_PATTERN } from "../triage/payloads";
 
-// GET/POST /api/delegates and PATCH /api/delegates/:id (F102 ticket, D10). Every object is strict. The raw limits of the bodies are
+// GET/POST /api/delegates and PATCH /api/delegates/:id. Every object is strict. The raw limits of the bodies are
 // wider than the limits of the service (name 1–100 characters, address by `ADDRESS_PATTERN`, at most 10 tags of 1–30 characters
 // after trim): the service decides the real limit and answers 400 `validation` with the field.
 export const DELEGATE_LIST_MAX = 200;
@@ -38,7 +38,7 @@ export const delegateAddBodySchema = z.strictObject({
 });
 export type DelegateAddBody = z.infer<typeof delegateAddBodySchema>;
 
-// D10: the address never changes, so the body has no `email` (a strict object refuses it). At least one field.
+// The address never changes, so the body has no `email` (a strict object refuses it). At least one field.
 export const delegatePatchBodySchema = z
   .strictObject({
     name: z.string().max(DELEGATE_NAME_RAW_MAX).optional(),
@@ -50,7 +50,7 @@ export const delegatePatchBodySchema = z
   });
 export type DelegatePatchBody = z.infer<typeof delegatePatchBodySchema>;
 
-// GET /api/delegations and the two POST routes (F102 stage 15). The list answers one page of delegations by state, newest
+// GET /api/delegations and the two POST routes. The list answers one page of delegations by state, newest
 // first; `kind` is always `delegation` (E5b adds loop kinds to the same list). The task text and the subject never go to a log.
 export const DELEGATION_PAGE_SIZE = 50;
 // The most reminders that one delegation gets (the chaser and "Remind now" share it). The server and the panel read this one value.

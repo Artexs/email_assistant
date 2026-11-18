@@ -5,7 +5,7 @@ import { z } from "zod";
 import { sentExpectedOf, sentLabelDisagreements } from "./sent-blind";
 import { sentParts, type SentLabel, type SentPart, type SentSlot, type SentText } from "./sent-slot";
 
-// The freeze record of the sent bank (F116 stage 02). It has its own file, `sent-manifest.json`; the manifest of
+// The freeze record of the sent bank. It has its own file, `sent-manifest.json`; the manifest of
 // the incoming corpus does not change.
 export const sentManifestSchema = z
   .object({

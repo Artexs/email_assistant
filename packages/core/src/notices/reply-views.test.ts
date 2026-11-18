@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { encodeNoticeView, NoticeViewError } from "./encode";
 import { noticeViewSchemas } from "./views";
 
-// F115 stage 03: the views of the three reply notice kinds are strict (ADR 0032 point 5): a view holds exactly the facts
+// The views of the three reply notice kinds are strict (ADR 0032 point 5): a view holds exactly the facts
 // that its renderer needs, and the reason is a code, never a text.
 const now = "2026-11-20T10:05:00.000Z";
 const emailId = "11111111-1111-4111-8111-111111111111";

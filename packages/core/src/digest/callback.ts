@@ -31,7 +31,7 @@ export type FeedbackCallback =
 // The Yes and No buttons of the answered check in /review. They name a mail, but they are not feedback taps.
 export type AnsweredCallback = { kind: "answered_yes"; emailId: string } | { kind: "answered_no"; emailId: string };
 
-// The taps on the loop lines of the brief (F116 stage 19): the loop is named by its id. The tenant and the user come from the chat link.
+// The taps on the loop lines of the brief: the loop is named by its id. The tenant and the user come from the chat link.
 export type LoopCallback =
   | { kind: "loop_follow_up"; loopId: string }
   | { kind: "loop_later"; loopId: string }
@@ -39,7 +39,7 @@ export type LoopCallback =
   | { kind: "loop_drop"; loopId: string }
   | { kind: "loop_reopen"; loopId: string };
 
-// The Delegate button of a mail row and the pick of a delegate in the picker (F116 stage 19). They name a mail, but they are not feedback taps.
+// The Delegate button of a mail row and the pick of a delegate in the picker. They name a mail, but they are not feedback taps.
 export type DelegateCallback =
   | { kind: "delegate_open"; emailId: string }
   | { kind: "delegate_pick"; emailId: string; delegateId: string };
@@ -111,7 +111,7 @@ const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd|mk):(${UUID})$`);
 const ANSWERED = new RegExp(`^(ay|an):(${UUID})$`);
 const LOOP = new RegExp(`^(lf|ll|lc|lx|lr):(${UUID})$`);
 const DELEGATE_OPEN = new RegExp(`^dg:(${UUID})$`);
-// `dp:<mail>:<delegate>`: each UUID as 22 characters of base64url (16 bytes, no padding), so the data is 48 bytes (F116 stage 19).
+// `dp:<mail>:<delegate>`: each UUID as 22 characters of base64url (16 bytes, no padding), so the data is 48 bytes.
 const B64_UUID = "[A-Za-z0-9_-]{22}";
 const DELEGATE_PICK = new RegExp(`^dp:(${B64_UUID}):(${B64_UUID})$`);
 const REASON = new RegExp(`^rw:([pcn]):(${UUID})$`);

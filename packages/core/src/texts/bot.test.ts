@@ -67,7 +67,7 @@ describe("bot texts", () => {
     );
   });
 
-  // F115 stage 05: the two answers of a tap on a reply that cannot go out. Fixed values, so a wording change is a decision.
+  // The two answers of a tap on a reply that cannot go out. Fixed values, so a wording change is a decision.
   test("the Polish tap texts for a reply with a gap and for the flag off", () => {
     const { taps } = textTables.pl.bot;
     expect(taps.hasGaps).toBe(

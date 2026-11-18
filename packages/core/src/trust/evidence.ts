@@ -1,4 +1,4 @@
-// Eligibility of a category for `auto` from the three evidence sources (F110 D5).
+// Eligibility of a category for `auto` from the three evidence sources.
 import { EVIDENCE_MIN_LABELS } from "../metrics/m8";
 
 import type { HistoryOutcome } from "./history";
@@ -50,7 +50,7 @@ export function autoEvidence(input: AutoEvidenceInput): AutoEvidenceResult {
   if (history?.outcome === "fail") blocks.push("history_fail");
   if (trip.tripped) blocks.push("tripped");
   if (realLabels.kept >= EVIDENCE_MIN_LABELS && realLabels.decision === "no-go") blocks.push("real_labels_no_go");
-  // A trip stops "recommended" but not a deliberate manual switch (review 1 N4).
+  // A trip stops "recommended" but not a deliberate manual switch.
   const eligible = blocks.every((block) => block === "tripped");
   const moving = (movingCategories as readonly string[]).includes(input.category);
   return { eligible, recommended: blocks.length === 0 && moving, blocks };

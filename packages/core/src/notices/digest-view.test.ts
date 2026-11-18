@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { noticeViewSchemas } from "./views";
 
-// The digest view carries the ids of the loops that its brief names (F116 stage 18): they let the switch-off of Sent tracking and the
+// The digest view carries the ids of the loops that its brief names: they let the switch-off of Sent tracking and the
 // erase of a person find the stored text. Only lower-case UUIDs pass, in the plain form, at most 40.
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
 const view = (loopIds: unknown) => ({ text: "x", buttons: [], loopIds });

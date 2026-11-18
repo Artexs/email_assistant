@@ -1,4 +1,4 @@
-// Per-contact follow-up wait (F120 D12). Pure: the caller passes the stored median and the sample count.
+// Per-contact follow-up wait. Pure: the caller passes the stored median and the sample count.
 const MIN_SAMPLES = 5;
 const WAIT_FACTOR = 1.5;
 const MIN_WAIT_DAYS = 1;

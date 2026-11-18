@@ -19,7 +19,7 @@ import { plainView, skeleton, viewsOf } from "./views";
 export const DIGIT_BUDGET = 12;
 /**
  * A sequence of this many digits or more that the user did not type fails the draft, whatever the budget says: digits
- * that cost something and follow each other with one space, dot or dash between two runs (owner answer, ticket F115
+ * that cost something and follow each other with one space, dot or dash between two runs (owner answer
  * "Stage 01 account check").
  */
 export const LONG_SEQUENCE_DIGITS = 12;

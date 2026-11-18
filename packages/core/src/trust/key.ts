@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// The identity of a model setup that gate evidence belongs to (F110 D2, D7).
+// The identity of a model setup that gate evidence belongs to.
 export const evidenceEndpoints = ["standard", "eu", "own"] as const;
 export type EvidenceEndpoint = (typeof evidenceEndpoints)[number];
 
@@ -25,7 +25,7 @@ export interface EvidenceKey {
   host: string | null;
 }
 
-/** The categories the history check and "recommended" cover (D3). */
+/** The categories the history check and "recommended" cover. */
 export const movingCategories = ["info", "notification", "spam"] as const;
 export type MovingCategory = (typeof movingCategories)[number];
 

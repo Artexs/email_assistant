@@ -2,7 +2,7 @@ import { rejectReasons } from "../metrics/m3";
 
 import { z } from "./zod";
 
-// POST /api/actions/:id/reject-reason (F100 D21): the owner names the reason of a rejected send.
+// POST /api/actions/:id/reject-reason: the owner names the reason of a rejected send.
 export const rejectReasonBodySchema = z.object({ reason: z.enum(rejectReasons) });
 export type RejectReasonBody = z.infer<typeof rejectReasonBodySchema>;
 

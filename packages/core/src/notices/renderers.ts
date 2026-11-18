@@ -34,7 +34,7 @@ import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
 import { noticeViewSchemas } from "./views";
 
 // One renderer per kind. A channel key holds one function per detail level. `mail` is optional: only the four kinds of
-// `reportMailKinds` have one (F110 stage 20); for every other kind `renderNotice` answers `{ ok: false }` for a mail row.
+// `reportMailKinds` have one; for every other kind `renderNotice` answers `{ ok: false }` for a mail row.
 export interface NoticeRenderer<S extends z.ZodType> {
   schema: S;
   telegram: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };

@@ -58,7 +58,7 @@ export const slotSchema = z
       .array(z.object({ persona: z.string(), brief: z.string().max(200) }).strict())
       .max(4)
       .default([]),
-    // Week threads (stage 08).
+    // Week threads.
     threadId: z.string().optional(),
     parentId: z.string().optional(),
     senderHistory: senderHistorySchema.optional(),

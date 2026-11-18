@@ -130,7 +130,7 @@ export function hasPhoneNumber(text: string): boolean {
   return [...text.matchAll(PHONE_PATTERN)].some((match) => match[0].replace(/\D/g, "").length >= 9);
 }
 
-// Lists every rule violation of a batch (D7). Never throws; an empty list means valid.
+// Lists every rule violation of a batch. Never throws; an empty list means valid.
 export function validateBatch(
   batch: Batch,
   personas: PersonaFile,

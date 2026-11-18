@@ -20,7 +20,7 @@ export interface ApprovalView {
   kind: DraftPayload["kind"];
   recipient: OutgoingAddress;
   sender: { label: string; external: boolean } | null; // null for a reminder and a follow-up
-  recipientInactive: boolean; // the delegate row is inactive (D6)
+  recipientInactive: boolean; // the delegate row is inactive
   subject: string;
   dueDate: string | null;
   body: string; // parts.body
@@ -52,7 +52,7 @@ export function approvalViewOf(
   return {
     kind: draft.kind,
     recipient,
-    // An unknown sender is stored as the English placeholder (plan D19); the approval renderer maps it to the row's language.
+    // An unknown sender is stored as the English placeholder; the approval renderer maps it to the row's language.
     sender:
       draft.kind === "reminder" || draft.kind === "follow_up"
         ? null

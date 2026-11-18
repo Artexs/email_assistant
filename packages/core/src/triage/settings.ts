@@ -17,7 +17,7 @@ export const toolSwitchesSchema = z.object({
   // follow-up still waits for a tap. It sits in the schema so that a settings write does not drop the stored key. Only a JSON
   // `true` is on: another stored value reads as off and does not fail the parse of the other switches (triage reads them all).
   auto_follow_up: z.boolean().default(false).catch(false),
-  // Reply drafts (E6a, F115): the drafter writes a reply draft for mail that needs one. Off until the owner turns it on; the
+  // Reply drafts (E6a): the drafter writes a reply draft for mail that needs one. Off until the owner turns it on; the
   // flag `reply_drafts` must be on too, and every draft still waits for a tap. Independent of `create_draft`. Read like
   // `auto_follow_up`: only a JSON `true` is on.
   reply_drafts: z.boolean().default(false).catch(false),
@@ -89,10 +89,10 @@ export const toolSwitchNames = [
 // The switches that exist only while the flag `open_loops` is on.
 export const loopSwitchNames = ["auto_follow_up"] as const satisfies readonly (keyof ToolSwitches)[];
 
-// The switch that exists only while the flag `reply_drafts` is on (F115). The owner turns it on per mailbox.
+// The switch that exists only while the flag `reply_drafts` is on. The owner turns it on per mailbox.
 export const replySwitchNames = ["reply_drafts"] as const satisfies readonly (keyof ToolSwitches)[];
 
-// P3: the switches that the mode change to `assist` sets. `create_draft` stays as it is (S4).
+// The switches that the mode change to `assist` sets. `create_draft` stays as it is.
 export const ASSIST_DEFAULT_SWITCHES: Partial<ToolSwitches> = {
   move: true,
   mark_read: true,

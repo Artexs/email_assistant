@@ -72,7 +72,7 @@ function draftPhrase(
 ): string {
   const name = action.delegateId === null ? null : (names.get(action.delegateId) ?? null);
   const kind = action.kind ?? "delegation";
-  // F110 stage 16: the competence tags only for a delegation draft, and only when the caller passes them (flag `why_lines`).
+  // The competence tags only for a delegation draft, and only when the caller passes them (flag `why_lines`).
   const skills =
     kind === "delegation" && action.delegateId !== null ? skillsLabel(tags?.get(action.delegateId), texts) : null;
   return texts.wouldDo.draft(tense, kind, name, skills);

@@ -1,6 +1,6 @@
 import type { UserLocale } from "../tenancy";
 
-// The buttons, the answers and the status marks of the taps on loop lines and of the Delegate button (open loops, F116 stage 19).
+// The buttons, the answers and the status marks of the taps on loop lines and of the Delegate button (open loops).
 // An answer is a toast: it must fit the Telegram answer limit (200 characters). The fixed texts never hold a loop text.
 export interface LoopTapTexts {
   buttons: {

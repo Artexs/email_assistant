@@ -34,7 +34,7 @@ export interface GateRow {
   precision: number | null;
   recall: number | null; // of the same real labels (GoNoGoRow.recall)
   decision: GoDecision;
-  /** The three sources of ADR 0028 (F110). Absent or null: the flag `trust_ladder` is off, or no reader was given. */
+  /** The three sources of ADR 0028. Absent or null: the flag `trust_ladder` is off, or no reader was given. */
   global?: M8Global | null;
   history?: M8History | null;
   trip?: M8Trip | null;
@@ -47,7 +47,7 @@ export interface AutoEvidence extends GateRow {
   trip: M8Trip | null;
 }
 
-/** PD-066: the precision of real labels is shown only from 30 labels. */
+/** The precision of real labels is shown only from 30 labels. */
 export const EVIDENCE_MIN_LABELS = 30;
 
 export function realLabelEvidence(rows: readonly GateRow[]): AutoEvidence[] {

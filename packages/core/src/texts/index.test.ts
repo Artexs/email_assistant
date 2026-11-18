@@ -133,7 +133,7 @@ describe("the texts registry", () => {
   });
 });
 
-// F116 stage 15: the text that replaces a delivered follow-up card when "Track my sent mail" goes off. It holds no mail data and
+// The text that replaces a delivered follow-up card when "Track my sent mail" goes off. It holds no mail data and
 // no placeholder, so a leak of a recipient, a subject or a quote cannot ride in it.
 describe("followUpRemoved", () => {
   test("Polish keeps its diacritics and the shared term for a follow-up; English says the same without mail data", () => {

@@ -1,6 +1,6 @@
 import { DAY_MS } from "../time";
 
-// The tripwire rule (F110 D9): when user corrections pause an `auto` category.
+// The tripwire rule: when user corrections pause an `auto` category.
 export const tripReasons = [
   "corrections",
   "important_hidden",

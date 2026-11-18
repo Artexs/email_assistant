@@ -19,7 +19,7 @@ interface Profile {
   fresh?: boolean;
 }
 
-// Group-typical sender history (D9): counts and flags that a real mailbox would hold after 90 days.
+// Group-typical sender history: counts and flags that a real mailbox would hold after 90 days.
 const profiles: Record<SimPersonaGroup, Profile> = {
   boss: {
     received: [40, 80],
@@ -117,7 +117,7 @@ function replyHours(rng: Rng): number {
   return Math.round((0.5 + rng.next() * 47) * 10) / 10;
 }
 
-// The history of one sender over `days` days before the mail (D9, X3): counts and flags, never text.
+// The history of one sender over `days` days before the mail (X3): counts and flags, never text.
 export function senderHistoryFor(persona: SimPersona, scenario: Scenario, rng: Rng, days: number): SenderHistory {
   const profile = profiles[persona.group];
   const scale = days / PROFILE_DAYS;

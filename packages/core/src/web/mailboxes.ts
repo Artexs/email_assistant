@@ -127,7 +127,7 @@ export const mailboxViewSchema = z.object({
   mode: z.enum(mailboxModes).nullable(),
   movesSupported: z.boolean(),
   secretKind: secretKindSchema,
-  /** `oauth`: the mailbox signs in with a provider; the panel offers Reconnect, never a password (F117). */
+  /** `oauth`: the mailbox signs in with a provider; the panel offers Reconnect, never a password. */
   authMethod: z.enum(["password", "oauth"]),
   oauthProvider: z.enum(mailOAuthProviderKeys).nullable(),
   /** Why the OAuth login fails; set only while the status is `auth_error` on an `oauth` mailbox. */

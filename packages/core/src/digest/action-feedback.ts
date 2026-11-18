@@ -4,7 +4,7 @@ import type { CoreTexts } from "../texts";
 import { encodeCallback } from "./callback";
 import type { OutMessage } from "./message";
 
-// The reason words and the button texts are entries of `texts.approvals` (en and pl, plan D31).
+// The reason words and the button texts are entries of `texts.approvals` (en and pl).
 export function rejectReasonText(reason: RejectReason, texts: CoreTexts): string {
   return texts.approvals.reasons[reason];
 }

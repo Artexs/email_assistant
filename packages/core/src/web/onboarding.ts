@@ -6,7 +6,7 @@ export const onboardingSchema = z.object({
   telegramAvailable: z.boolean(),
   mode: z.boolean(),
   rules: z.number().int().min(0),
-  /** F110 stage 14: the flag `trust_ladder` is on, so the steps are mailbox, channel, report, rules (no mode step). */
+  /** The flag `trust_ladder` is on, so the steps are mailbox, channel, report, rules (no mode step). */
   trust: z.boolean(),
   /** A way to reach the user is set: Telegram linked, or the report channel is mail (set only with the flag on). */
   channel: z.boolean(),
