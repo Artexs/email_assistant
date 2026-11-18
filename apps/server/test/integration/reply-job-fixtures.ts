@@ -20,6 +20,9 @@ export const MINUTE = 60_000;
 export const HOUR = 60 * MINUTE;
 export const DAY = 24 * HOUR;
 
+// A time `minutes` after NOW (negative: before).
+export const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+
 export interface JobBox {
   ctx: TenantContext;
   userId: string;

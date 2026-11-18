@@ -127,6 +127,8 @@ export function createReplyJobs(rawDeps: ReplyJobDeps): ReplyJobs {
           threadKey: candidate.threadKey,
           folder: candidate.folder,
           trigger: "auto",
+          // The request is due at once, by the clock of the job (not by the clock of the database).
+          nextAttemptAt: now,
         });
         if (id !== null) total.requested += 1;
       }

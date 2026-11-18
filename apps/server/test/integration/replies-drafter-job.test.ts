@@ -29,6 +29,7 @@ import { pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import {
   addReplyMail,
+  at,
   CLEAN_ANSWER,
   fakeLlm,
   HOUR,
@@ -343,14 +344,14 @@ describe("the drafter job (F115 stage 07)", () => {
       const s = await setupBox(trx);
       const clock = fresh();
       const thread = "thread-ab";
-      const a = await addReplyMail(trx, s, { threadKey: thread, receivedAt: new Date("2026-11-18T08:00:00Z") });
+      const a = await addReplyMail(trx, s, { threadKey: thread, receivedAt: at(-120) });
       const { llm } = fakeLlm(() => CLEAN_ANSWER);
       const jobs = createReplyJobs(jobDeps(trx, llm, clock));
       await jobs.drafter.run({ mailboxId: s.mailboxId });
       const [sendA] = await openReplySends(trx, s);
       expect(sendA?.email_id).toBe(a);
 
-      const b = await addReplyMail(trx, s, { threadKey: thread, receivedAt: new Date("2026-11-18T08:05:00Z") });
+      const b = await addReplyMail(trx, s, { threadKey: thread, receivedAt: at(-115) });
       clock.now = new Date(NOW.getTime() + MINUTE);
       await jobs.drafter.run({ mailboxId: s.mailboxId });
 
@@ -386,10 +387,10 @@ describe("the drafter job (F115 stage 07)", () => {
       const thread = "thread-ba";
       const a = await addReplyMail(trx, s, {
         threadKey: thread,
-        receivedAt: new Date("2026-11-18T08:00:00Z"),
+        receivedAt: at(-120),
         category: "info",
       });
-      const b = await addReplyMail(trx, s, { threadKey: thread, receivedAt: new Date("2026-11-18T08:05:00Z") });
+      const b = await addReplyMail(trx, s, { threadKey: thread, receivedAt: at(-115) });
       const { llm, requests } = fakeLlm(() => CLEAN_ANSWER);
       const jobs = createReplyJobs(jobDeps(trx, llm, clock));
       await jobs.drafter.run({ mailboxId: s.mailboxId });
@@ -883,7 +884,7 @@ describe("the drafter job: hostile data never reaches a command or a recipient (
         "applied",
         "applied",
       ]);
-      expect(await fake.searchSinceIn("Drafts", new Date(NOW.getTime() - 3 * HOUR))).toHaveLength(3);
+      expect(await fake.searchSinceIn("Drafts", new Date(0))).toHaveLength(3);
       for (const call of fake.folderCalls) expect(hostile).not.toContain(call.folder);
       for (const method of ["moveMessage", "transferByAppend", "deleteMessage", "setFlags"]) {
         expect(fake.calls).not.toContain(method);
@@ -1118,7 +1119,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
       const clock = fresh();
       const { llm } = fakeLlm(() => CLEAN_ANSWER);
       const jobs = createReplyJobs(jobDeps(trx, llm, clock));
-      await addReplyMail(trx, s, { threadKey: "shared-thread", receivedAt: new Date("2026-11-18T08:00:00Z") });
+      await addReplyMail(trx, s, { threadKey: "shared-thread", receivedAt: at(-120) });
       await jobs.drafter.run({ mailboxId: s.mailboxId });
 
       // A second mailbox of the same org with a newer mail of a thread of the same key.
@@ -1152,7 +1153,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
       await updateMailboxSettings(trx, s.ctx, otherMailbox, { mode: "assist" });
       await setSwitch(trx, otherMailbox, true);
       const second = { ...s, mailboxId: otherMailbox };
-      await addReplyMail(trx, second, { threadKey: "shared-thread", receivedAt: new Date("2026-11-18T08:05:00Z") });
+      await addReplyMail(trx, second, { threadKey: "shared-thread", receivedAt: at(-115) });
       clock.now = new Date(NOW.getTime() + MINUTE);
       // The scan of the first mailbox does not take the mail of the second one.
       await jobs.drafter.run({ mailboxId: s.mailboxId });
@@ -1209,6 +1210,14 @@ describe("the drafter job: one draft per request, exactly once", () => {
       await pauseOtherMailboxes(trx);
       const first = await setupBox(trx);
       const second = await setupBox(trx);
+      // The targets are in the order of `created_at` and then `id`; both mailboxes were made in one transaction (one `now()`), so
+      // the test sets the order, whatever the clock of the machine is.
+      for (const [box, createdAt] of [
+        [first, new Date("2001-01-01T00:00:00Z")],
+        [second, new Date("2099-01-01T00:00:00Z")],
+      ] as const) {
+        await trx.updateTable("mailboxes").set({ created_at: createdAt }).where("id", "=", box.mailboxId).execute();
+      }
       await addReplyMail(trx, first);
       await addReplyMail(trx, second);
       const { llm, requests } = fakeLlm(async () => {

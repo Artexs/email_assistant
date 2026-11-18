@@ -6,6 +6,7 @@ import { createReplyJobs } from "../../src/modules/replies";
 import { testDb } from "./helpers";
 import {
   addReplyMail,
+  at,
   fakeLlm,
   CLEAN_ANSWER,
   jobDeps,
@@ -149,10 +150,10 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
       const thread = "thread-concurrent";
       const a = await db
         .transaction()
-        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: new Date("2026-11-18T08:00:00Z") }));
+        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: at(-120) }));
       const b = await db
         .transaction()
-        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: new Date("2026-11-18T08:05:00Z") }));
+        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: at(-115) }));
       // A is older, so instance one claims it (the claim reads `created_at`, oldest first).
       const requestA = await queueRequest(db, box, a, "auto", { at: new Date(NOW.getTime() - MINUTE) });
       const requestB = await queueRequest(db, box, b, "auto");
@@ -212,12 +213,10 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
       const thread = "thread-concurrent-2";
       const a = await db
         .transaction()
-        .execute((trx) =>
-          addReplyMail(trx, box, { threadKey: thread, receivedAt: new Date("2026-11-18T08:00:00Z"), category: "info" })
-        );
+        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: at(-120), category: "info" }));
       const b = await db
         .transaction()
-        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: new Date("2026-11-18T08:05:00Z") }));
+        .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: at(-115) }));
       // Only the newer mail needs a reply at first; the older one turns into a needs_reply mail after the newer draft is stored.
       const jobs = createReplyJobs(jobDeps(db, fakeLlm(() => CLEAN_ANSWER).llm, fresh()));
       await jobs.drafter.run({ mailboxId: box.mailboxId });
