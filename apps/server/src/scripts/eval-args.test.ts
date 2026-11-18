@@ -137,62 +137,12 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     ).toBeUndefined();
   });
 
-  // F109 stage 12 test 6.
-  describe("--escalate", () => {
+  // F130: the escalation cascade is gone, so its flags are unknown options.
+  test("--escalate and the --escalation-* flags are a usage error", () => {
     const sim = ["--sim", "lab-01", "--part", "dev"];
-
-    test("--escalation-model or --escalation-reasoning-effort without --escalate is a usage error", () => {
-      expect(parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra"])).toBeUndefined();
-      expect(parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toBeUndefined();
-      expect(
-        parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra", "--escalation-reasoning-effort", "none"])
-      ).toBeUndefined();
-    });
-
-    test("--escalate alone and with both overrides parse; the sim defaults stay", () => {
-      expect(parseEvalArgs([...sim, "--escalate"])).toMatchObject({ escalate: true, budgetUsd: 1 });
-      expect(
-        parseEvalArgs([
-          ...sim,
-          "--escalate",
-          "--escalation-model",
-          "gpt-6.1-terra",
-          "--escalation-reasoning-effort",
-          "none",
-        ])
-      ).toMatchObject({ escalate: true, "escalation-model": "gpt-6.1-terra", "escalation-reasoning-effort": "none" });
-      expect(parseEvalArgs(sim)).toMatchObject({ escalate: false });
-    });
-
-    test("an unknown effort value is a usage error", () => {
-      expect(parseEvalArgs([...sim, "--escalate", "--escalation-reasoning-effort", "loud"])).toBeUndefined();
-    });
-
-    test("the escalation flags are sim-only: the old mode, --real, --gap and --suspicious refuse them", () => {
-      expect(parseEvalArgs(["--escalate"])).toBeUndefined();
-      expect(parseEvalArgs(["--escalation-model", "gpt-6.1-terra"])).toBeUndefined();
-      expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--escalate"])).toBeUndefined();
-      expect(parseEvalArgs([...sim, "--suspicious", "--escalate"])).toBeUndefined();
-    });
-
-    // Stage 13 carry-over: the second call always uses the classifier-v2 text.
-    test("--escalate with classifier-v3 or --prompt-parts is a usage error; classifier-v2 parses", () => {
-      expect(parseEvalArgs([...sim, "--escalate", "--prompt-version", "classifier-v3"])).toBeUndefined();
-      expect(
-        parseEvalArgs([...sim, "--escalate", "--prompt-version", "classifier-v3", "--prompt-parts", "list"])
-      ).toBeUndefined();
-      expect(parseEvalArgs([...sim, "--escalate", "--prompt-parts", "list"])).toBeUndefined();
-      expect(parseEvalArgs([...sim, "--escalate", "--prompt-version", "classifier-v2"])).toMatchObject({
-        escalate: true,
-        prompt: { version: "classifier-v2" },
-      });
-      // Without --escalate the v3 run is unchanged.
-      expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "list"])).toBeDefined();
-    });
-
-    test("--escalate takes no prompt flag away: v2 stays the production prompt", () => {
-      expect(parseEvalArgs([...sim, "--escalate"])?.prompt).toEqual(productionClassifierChoice());
-    });
+    expect(parseEvalArgs([...sim, "--escalate"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toBeUndefined();
   });
 
   // Review N5: both flags are pinned to the production prompt when v3 is the pointer.
@@ -259,7 +209,6 @@ describe("--extractor", () => {
   test("the classifier options and the other modes are refused", () => {
     for (const extra of [
       ["--judge"],
-      ["--escalate"],
       ["--suspicious"],
       ["--prompt-version", "classifier-v2"],
       ["--prompt-parts", "none"],

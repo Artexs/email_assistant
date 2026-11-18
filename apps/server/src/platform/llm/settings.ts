@@ -34,7 +34,7 @@ export interface LlmRoleTable {
 /** Tests and one-provider tools: every role gets the same row; both provider rows are the same. */
 export function uniformRoleTable(row: LlmRoleSettings, provider: LlmProviderSettings): LlmRoleTable {
   return {
-    roles: { classifier: row, judge: row, drafter: row, extractor: row, escalation: row },
+    roles: { classifier: row, judge: row, drafter: row, extractor: row },
     providers: { gemini: provider, openai: provider },
   };
 }

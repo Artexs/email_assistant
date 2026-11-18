@@ -79,9 +79,8 @@ function roleOf(raw: unknown): string | undefined {
 }
 
 /**
- * Reads `classifier-*.json` files with `role: "classifier"` (an `extractor` file has another schema; an `escalation`
- * file proves a cascade). A missing directory or a file that does not parse is no start error: one `warn` line with
- * the name of the first such file and the count (no content), and the file is skipped. `quiet` drops the `info` line
+ * Reads `classifier-*.json` files with `role: "classifier"` (an `extractor` file has another schema). A missing directory or a
+ * file that does not parse is no start error: one `warn` line with the name of the first such file and the count (no content), and the file is skipped. `quiet` drops the `info` line
  * (a CLI prints through its own output and must not add log lines to a command that reads no evidence).
  */
 export function loadGateEvidence(dir: string, opts: { quiet?: boolean } = {}): GateIndex {

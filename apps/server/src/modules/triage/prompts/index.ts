@@ -6,7 +6,6 @@ import * as classifierV2 from "./classifier-v2";
 import * as classifierV3 from "./classifier-v3";
 import { type ClassifierV3Part, optionalParts } from "./classifier-v3";
 import * as drafterV1 from "./drafter-v1";
-import * as escalationV1 from "./escalation-v1";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
 
@@ -73,14 +72,6 @@ export const prompts = {
     version: drafterV1.PROMPT_VERSION,
     buildSystem: drafterV1.buildSystemPrompt,
     buildUser: drafterV1.buildUserPrompt,
-  },
-  escalation: {
-    role: "escalation",
-    version: escalationV1.PROMPT_VERSION,
-    // The classifier version whose text this prompt uses. It must equal `prompts.classifier.version`.
-    base: escalationV1.BASE_VERSION,
-    buildSystem: escalationV1.buildSystemPrompt,
-    buildUser: escalationV1.buildUserPrompt,
   },
   extractor: {
     role: "extractor",

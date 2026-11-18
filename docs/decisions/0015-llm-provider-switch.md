@@ -40,4 +40,4 @@ providers, to switch between them, and to allow more providers later.
 
 ## Amendment (2026-11, roles)
 
-`LLM_PROVIDER` is the classifier's provider and the fallback of every other role. Each role (`judge`, `drafter`, `extractor`, `escalation`) may name its own provider and model with `LLM_<ROLE>_*` keys, so two providers can run at once (PD-026: the judge is another model family than the drafter). The writer keys `OPENAI_MODEL` and `GEMINI_MODEL` are removed; the drafter role replaces the writer. Still no automatic fallback between providers.
+`LLM_PROVIDER` is the classifier's provider and the fallback of every other role. Each role (`judge`, `drafter`, `extractor`) may name its own provider and model with `LLM_<ROLE>_*` keys, so two providers can run at once (PD-026: the judge is another model family than the drafter). The writer keys `OPENAI_MODEL` and `GEMINI_MODEL` are removed; the drafter role replaces the writer. Still no automatic fallback between providers.

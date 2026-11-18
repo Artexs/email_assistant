@@ -4,7 +4,7 @@ import { isLlmRole, llmRoles, type PromptVersion } from "./llm-roles";
 
 describe("llm roles", () => {
   test("the role list is fixed", () => {
-    expect([...llmRoles]).toEqual(["classifier", "judge", "drafter", "extractor", "escalation"]);
+    expect([...llmRoles]).toEqual(["classifier", "judge", "drafter", "extractor"]);
   });
 
   test("isLlmRole accepts a role and refuses other strings", () => {

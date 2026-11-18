@@ -506,7 +506,6 @@ export function llmRoleTable(config: Config, overrides: Partial<Record<LlmRole, 
       judge: rowOf("judge"),
       drafter: rowOf("drafter"),
       extractor: rowOf("extractor"),
-      escalation: rowOf("escalation"),
     },
     providers,
   };

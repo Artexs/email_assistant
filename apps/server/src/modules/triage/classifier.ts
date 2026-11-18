@@ -4,7 +4,7 @@ import { buildTriageAnalysisSchema, type Category, markUntrustedText, type Triag
 
 import { type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
-import { classifierVersions, type ClassifierPromptChoice, productionClassifierChoice, prompts } from "./prompts";
+import { classifierVersions, type ClassifierPromptChoice, productionClassifierChoice } from "./prompts";
 import type { ClassifierDelegate } from "./prompts/classifier-v2";
 
 export interface ClassifierEmail {
@@ -109,36 +109,4 @@ function finishAnalysis(
     clarification: markedOrNull(data.fields.clarification),
   };
   return { analysis: { ...data, reason: markUntrustedText(data.reason), summary, fields } };
-}
-
-// The second call of the escalation (F109 D15): an independent classification with the same input and schema as the
-// first call, and no word about the first answer. The role row of `escalation` picks the provider and model.
-export async function escalateEmail(
-  llm: LlmClient,
-  input: {
-    email: ClassifierEmail;
-    sender: SenderContext;
-    allowed: readonly Category[];
-    delegates: readonly ClassifierDelegate[];
-    // Eval only: another model of the escalation role's provider.
-    model?: string;
-  }
-): Promise<{ analysis: TriageAnalysis; usage: LlmUsage; promptVersion: string }> {
-  const prompt = prompts.escalation;
-  const { data, usage } = await llm.generate({
-    role: prompt.role,
-    promptVersion: prompt.version,
-    schema: buildTriageAnalysisSchema(
-      input.allowed,
-      input.delegates.map((d) => d.id)
-    ),
-    system: prompt.buildSystem(input.allowed),
-    prompt: prompt.buildUser(input.email, input.sender, input.delegates, randomBytes(16).toString("hex")),
-    model: input.model,
-  });
-  return {
-    ...finishAnalysis(data, { ...input, model: input.model ?? llm.modelOf("escalation") }, llm),
-    usage,
-    promptVersion: prompt.version,
-  };
 }

@@ -16,7 +16,6 @@ import {
   gateIdentityOf,
   parseCaseResults,
   promptLabel,
-  prompts,
   renderEvalReport,
   runEval,
   simMetaOf,
@@ -92,15 +91,6 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         reasoningEffort: options["reasoning-effort"],
       },
       ...(options.judge ? { judge: { provider: options["judge-provider"], model: options["judge-model"] } } : {}),
-      // Without the flags the role row applies; its effort falls back to the classifier's (review N13).
-      ...(options.escalate
-        ? {
-            escalation: {
-              model: options["escalation-model"],
-              reasoningEffort: options["escalation-reasoning-effort"],
-            },
-          }
-        : {}),
     });
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
@@ -114,12 +104,6 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     return 1;
   }
   const model = row.model;
-  const escalationRow = options.escalate ? table.roles.escalation : undefined;
-  const escalationKeys = escalationRow === undefined ? undefined : table.providers[escalationRow.provider];
-  if (escalationKeys !== undefined && escalationKeys.apiKey === undefined) {
-    cli.fail(`${escalationKeys.apiKeyName} is missing`);
-    return 1;
-  }
   const judgeRow = options.judge ? table.roles.judge : undefined;
   const effort = row.reasoningEffort;
 
@@ -134,26 +118,11 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   // A paid run (standard or eu) of a model without a price today cannot be held to a cap, and a zero estimate would
   // mean no cap: it is refused. This guard stays for every endpoint that costs money.
   const startedAt = (deps.now ?? (() => new Date()))();
-  const classifierEstimateUsd = own ? 0 : firstEstimateUsd(model, startedAt, endpoint);
-  if (classifierEstimateUsd === null) {
+  const estimateUsd = own ? 0 : firstEstimateUsd(model, startedAt, endpoint);
+  if (estimateUsd === null) {
     cli.fail(`no price for model ${model}: add it to llmPrices before a sim run`);
     return 1;
   }
-  // A mail may cost both calls: the estimate of the first call of a run covers the two (the budget stays safe).
-  let estimateUsd = classifierEstimateUsd;
-  if (escalationRow !== undefined && escalationKeys !== undefined) {
-    if (own) {
-      cli.fail("an own endpoint run has no USD budget, so it cannot use --escalate (the escalation model is priced)");
-      return 1;
-    }
-    const escalationEstimateUsd = firstEstimateUsd(escalationRow.model, startedAt, escalationKeys.endpoint);
-    if (escalationEstimateUsd === null) {
-      cli.fail(`no price for model ${escalationRow.model}: add it to llmPrices before an escalated sim run`);
-      return 1;
-    }
-    estimateUsd += escalationEstimateUsd;
-  }
-
   if (options.judge) {
     const problem = judgeSetupError(table, startedAt);
     if (problem !== null) {
@@ -203,7 +172,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     return 1;
   }
   cli.print(
-    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} ${escalationRow === undefined ? "" : ` escalation=${escalationRow.provider}/${escalationRow.model}/${escalationRow.reasoningEffort ?? "-"}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
+    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
   );
 
   // `--rpm` is the classifier provider's rate; the judge provider keeps the configured rate (`--judge-rpm` overrides).
@@ -222,10 +191,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       endpoint,
       reasoningEffort: effort,
       // The version and the sorted parts: two variants never share a state file.
-      promptVersion:
-        escalationRow === undefined
-          ? promptLabel(options.prompt)
-          : `${promptLabel(options.prompt)}+${prompts.escalation.version}-${escalationRow.model}-${escalationRow.reasoningEffort ?? "default"}`,
+      promptVersion: promptLabel(options.prompt),
       set: `sim-${scenario}-v${loaded.version}-${part}`,
     })
   );
@@ -243,9 +209,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   const endpointOfModel = (usedModel: string) =>
     judgeRow !== undefined && usedModel === judgeRow.model && usedModel !== model
       ? table.providers[judgeRow.provider].endpoint
-      : escalationRow !== undefined && usedModel === escalationRow.model && usedModel !== model
-        ? table.providers[escalationRow.provider].endpoint
-        : endpoint;
+      : endpoint;
   const callCostUsd = (usage: { model: string; tokensIn: number; tokensOut: number }, at: Date) =>
     costPerMail(usage.model, usage.tokensIn, usage.tokensOut, at, endpointOfModel(usage.model));
   try {
@@ -273,16 +237,6 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
         retries: options.retries,
         done,
         prompt: options.prompt,
-        ...(escalationRow === undefined
-          ? {}
-          : {
-              escalation: {
-                provider: escalationRow.provider,
-                model: escalationRow.model,
-                host: llmEndpointFields(table, "escalation").host,
-                reasoningEffort: escalationRow.reasoningEffort,
-              },
-            }),
         // Only v3 reads extras; v2 ignores them.
         ...(extrasOf === undefined ? {} : { extrasOf }),
         concurrency: options.concurrency,
@@ -320,7 +274,6 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       cli.print(refusal);
     } else {
       const dir = deps.gateDir ?? gateDir;
-      // A cascade run names its file by the escalation row, so it never replaces the classifier's file.
       const identity = gateIdentityOf(report);
       const name = gateFileName({
         role: identity.role,

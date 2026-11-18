@@ -43,7 +43,7 @@ export const llmPrices: Record<string, LlmPrice[]> = {
       checked: "2026-11-13",
     },
   ],
-  // Read on the OpenAI price page, standard tier, 2026-11-15 (the escalation role of F109).
+  // Read on the OpenAI price page, standard tier, 2026-11-15 (the model of the F109 cascade eval, which did not ship; the price row stays as data).
   "gpt-6.1-terra": [
     { inputPerM: 1, cachedInputPerM: 0.05, outputPerM: 5, source: OPENAI_PRICING_URL, checked: "2026-11-15" },
   ],

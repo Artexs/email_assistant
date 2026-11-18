@@ -39,7 +39,7 @@ describe("costPerMail", () => {
     }
   });
 
-  test("gpt-6.1-terra (the escalation model) has a standard price row with a source and a date", () => {
+  test("gpt-6.1-terra (the model of the F109 cascade eval) has a standard price row with a source and a date", () => {
     const rows = llmPrices["gpt-6.1-terra"] ?? [];
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ inputPerM: 1, cachedInputPerM: 0.05, outputPerM: 5 });

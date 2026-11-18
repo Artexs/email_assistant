@@ -175,4 +175,20 @@ describe("role keys at start", () => {
   test("10: a role model needs its provider", () => {
     expect(keysOf({ ...openaiEnv, LLM_JUDGE_MODEL: "gpt-judge" })).toEqual(["LLM_JUDGE_PROVIDER"]);
   });
+
+  // F130: the VPS .env still holds the five keys of the removed escalation role. The schema drops unknown keys, so the
+  // server starts, the keys change nothing, and no role row is built for them.
+  test("11: the removed LLM_ESCALATION_* keys in an old .env do not stop the start and build no role", () => {
+    const config = loadConfig({
+      ...openaiEnv,
+      LLM_ESCALATION_PROVIDER: "openai",
+      LLM_ESCALATION_MODEL: "gpt-6.1-terra",
+      LLM_ESCALATION_TIMEOUT_MS: "60000",
+      LLM_ESCALATION_RPM: "0",
+      LLM_ESCALATION_REASONING: "huge",
+    });
+    expect(Object.keys(config).filter((key) => key.startsWith("LLM_ESCALATION_"))).toEqual([]);
+    const table = llmRoleTable(config);
+    expect(Object.keys(table.roles).sort()).toEqual(["classifier", "drafter", "extractor", "judge"]);
+  });
 });

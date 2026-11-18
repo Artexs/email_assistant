@@ -1227,6 +1227,49 @@ describe("triageOne: the delegation plan", () => {
       expect(seen.map((s) => s.delegates)).toEqual([true, false]);
     });
   });
+
+  // F130: the escalation cascade (a second call by another role for a person's mail answered info, notification,
+  // spam or unsure) was never in the worker. These are the answers it would have picked: each mail makes the same
+  // calls as before the removal, exactly one, by the classifier role with the production prompt.
+  test("a person's mail that the removed cascade would have picked still makes one classifier call", async () => {
+    const picked = [
+      { category: "info", reason_code: "newsletter" },
+      { category: "notification", reason_code: "automated_system" },
+      { category: "spam", reason_code: "marketing" },
+      { category: "info", reason_code: "newsletter", confidence: 0.3 },
+    ];
+    for (const overrides of picked) {
+      await withRollback(db, async (trx) => {
+        const { ctx, emailId, email, mailbox } = await setupMail(trx, { from_address: "anna@person.test" });
+        const calls: { role: string; promptVersion: string }[] = [];
+        const recording = {
+          modelOf: () => "fake-model",
+          endpointOf: () => "standard",
+          async generate(req) {
+            calls.push({ role: req.role, promptVersion: req.promptVersion });
+            return {
+              data: req.schema.parse(analysis(overrides)()),
+              usage: {
+                role: req.role,
+                promptVersion: req.promptVersion,
+                model: "fake-model",
+                tokensIn: 1,
+                tokensOut: 1,
+                latencyMs: 1,
+                endpoint: "standard",
+              },
+            };
+          },
+        } as LlmClient;
+
+        expect(await triageOne(triageDeps(trx, recording), ctx, mailbox, email)).toEqual({ kind: "triaged" });
+
+        expect(calls).toEqual([{ role: "classifier", promptVersion: "classifier-v2" }]);
+        const rows = await llmRows(trx, emailId);
+        expect(rows.map((r) => r.data)).toMatchObject([{ role: "classifier", prompt_version: "classifier-v2" }]);
+      });
+    }
+  });
 });
 
 const REPLY_DELEGATE = "anna@firma.test";
