@@ -1187,6 +1187,17 @@ export const en = {
   nl_done: "Done",
   nl_failed: "Failed",
   nl_failed_open: "Failed — open the page instead",
+  // F110 stage 24: the one-click unsubscribe button
+  nl_one_click_help:
+    "Unsubscribe sends one standard request from this server to the address in the newsletter. The request holds only the standard unsubscribe text.",
+  nl_unsubscribe: "Unsubscribe",
+  nl_unsubscribe_for: "Unsubscribe from {sender}",
+  nl_sending: "Sending…",
+  nl_code: "Result: {code}",
+  nl_refused: "Not sent: the address in the newsletter is not allowed",
+  nl_err_rate: "Too many requests in the last hour. Try again later.",
+  nl_err_not_allowed: "This sender can no longer be unsubscribed with one click.",
+  nl_err_send: "Could not send the request.",
 } as const;
 
 export type TextKey = keyof typeof en;

@@ -6,7 +6,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { NewsletterRows } from "../components/rules/NewslettersCard";
 import { setLocaleForTest, t, tp } from "../i18n";
 
-import { actionOf, safeLink } from "./newsletters-view";
+import { ApiError } from "./api";
+import { actionOf, safeLink, unsubscribeFailureKey, unsubscribePath } from "./newsletters-view";
 
 const NOW = new Date("2026-11-18T12:00:00Z");
 const base = {
@@ -20,8 +21,10 @@ const item = (over: Partial<NewsletterItem> & Pick<NewsletterItem, "senderLower"
   ...over,
 });
 
-function render(senders: NewsletterItem[]): string {
-  return renderToStaticMarkup(<NewsletterRows senders={senders} timeZone="Europe/Warsaw" now={NOW} />);
+function render(senders: NewsletterItem[], canTap = false): string {
+  return renderToStaticMarkup(
+    <NewsletterRows senders={senders} timeZone="Europe/Warsaw" now={NOW} canTap={canTap} mailboxId="m1" />
+  );
 }
 
 describe("safeLink", () => {
@@ -54,7 +57,7 @@ describe("actionOf", () => {
           senderLower: "a@c.example",
           method: "one_click",
           linkUrl: link,
-          request: { status: "failed", at: "2026-11-18T10:00:00.000Z" },
+          request: { status: "failed", at: "2026-11-18T10:00:00.000Z", code: "timeout" },
         })
       )
     ).toMatchObject({ kind: "open" });
@@ -111,7 +114,7 @@ describe("NewsletterRows", () => {
         item({
           senderLower: "a@c.example",
           method: "one_click",
-          request: { status, at },
+          request: { status, at, code: status === "requested" ? null : "http_500" },
           ...(linkUrl === undefined ? {} : { linkUrl }),
         }),
       ]);
@@ -137,6 +140,73 @@ describe("newsletter texts", () => {
     expect(tp("nl_count", 3)).toBe("3 e-maile w ciągu 30 dni");
     expect(tp("nl_count", 12)).toBe("12 e-maili w ciągu 30 dni");
     expect(t("nl_failed_open")).toBe("Nie udało się — otwórz stronę wypisania");
+    setLocaleForTest("en");
+  });
+});
+
+// F110 stage 24: the one-click button.
+describe("the unsubscribe button", () => {
+  setLocaleForTest("en");
+  const link = "https://u.c.example/x";
+  const at = "2026-11-18T10:00:00.000Z";
+
+  test("actionOf: only an owner who can tap gets the button, only for a one-click row with no request", () => {
+    const one = item({ senderLower: "a@c.example", method: "one_click" });
+    expect(actionOf(one, true)).toEqual({ kind: "unsubscribe" });
+    expect(actionOf(one, false)).toEqual({ kind: "wait" });
+    expect(actionOf(one)).toEqual({ kind: "wait" });
+    for (const status of ["requested", "done", "failed", "refused"] as const) {
+      const sent = item({ senderLower: "a@c.example", method: "one_click", request: { status, at, code: null } });
+      expect(actionOf(sent, true).kind).not.toBe("unsubscribe");
+    }
+    expect(actionOf(item({ senderLower: "a@c.example", method: "link", linkUrl: link }), true).kind).toBe("open");
+    expect(actionOf(item({ senderLower: "a@c.example", method: "none" }), true)).toEqual({ kind: "none" });
+  });
+
+  test("the owner sees one button per one-click row with no request, named by the address; a member and a request row see none", () => {
+    const rows = [
+      item({ senderLower: "one@c.example", method: "one_click" }),
+      item({ senderLower: "done@c.example", method: "one_click", request: { status: "done", at, code: "http_200" } }),
+      item({ senderLower: "link@c.example", method: "link", linkUrl: link }),
+    ];
+    const owner = render(rows, true);
+    expect(owner.match(/<button/g)).toHaveLength(1);
+    expect(owner).toContain(`aria-label="${t("nl_unsubscribe_for", { sender: "one@c.example" })}"`);
+    expect(owner).toContain(t("nl_unsubscribe"));
+    expect(render(rows, false)).not.toContain("<button");
+  });
+
+  test("the result code shows next to the state; a refused request says nothing was sent", () => {
+    const html = render([
+      item({ senderLower: "a@c.example", method: "one_click", request: { status: "failed", at, code: "timeout" } }),
+      item({
+        senderLower: "b@c.example",
+        method: "one_click",
+        request: { status: "refused", at, code: "private_host" },
+      }),
+      item({ senderLower: "c@c.example", method: "one_click", request: { status: "requested", at, code: null } }),
+    ]);
+    expect(html).toContain(t("nl_code", { code: "timeout" }));
+    expect(html).toContain(t("nl_code", { code: "private_host" }));
+    expect(html).toContain(t("nl_refused"));
+    expect(html.match(/Result:/g)).toHaveLength(2);
+  });
+
+  test("the path and the failure texts: 429, another 409, a second tap (no toast) and a failed send", () => {
+    expect(unsubscribePath("m1")).toBe("/api/newsletters/m1/unsubscribe");
+    expect(unsubscribeFailureKey(new ApiError(429, "rate_limited"))).toBe("nl_err_rate");
+    expect(unsubscribeFailureKey(new ApiError(409, "not_allowed"))).toBe("nl_err_not_allowed");
+    expect(unsubscribeFailureKey(new ApiError(409, "no_one_click"))).toBe("nl_err_not_allowed");
+    expect(unsubscribeFailureKey(new ApiError(409, "already_requested"))).toBeNull();
+    expect(unsubscribeFailureKey(new ApiError(500, "internal"))).toBe("nl_err_send");
+    expect(unsubscribeFailureKey(new TypeError("network"))).toBe("nl_err_send");
+  });
+
+  test("Polish texts exist for every new key", () => {
+    setLocaleForTest("pl");
+    expect(t("nl_unsubscribe")).toBe("Wypisz");
+    expect(t("nl_unsubscribe_for", { sender: "a@c.example" })).toBe("Wypisz z listy a@c.example");
+    expect(t("nl_code", { code: "timeout" })).toBe("Wynik: timeout");
     setLocaleForTest("en");
   });
 });

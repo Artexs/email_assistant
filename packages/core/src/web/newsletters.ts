@@ -19,7 +19,10 @@ export const newsletterItemSchema = z.strictObject({
   count: z.number().int().min(1),
   latestAt: z.iso.datetime(),
   method: z.enum(newsletterMethods),
-  request: z.strictObject({ status: z.enum(unsubscribeRequestStatuses), at: z.iso.datetime() }).nullable(),
+  /** `code`: the short result code of the request (`http_200`, `private_host`, `timeout`, ...); null while it is `requested`. */
+  request: z
+    .strictObject({ status: z.enum(unsubscribeRequestStatuses), at: z.iso.datetime(), code: z.string().nullable() })
+    .nullable(),
   /**
    * An `https` link of the newest mail, for the owner only. Present when `method` is `link`, and when `method` is `one_click`
    * and a request exists (the owner may open the page when the request failed). Absent otherwise. The panel opens it in a new tab;

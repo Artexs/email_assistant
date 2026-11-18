@@ -81,8 +81,8 @@ import { errorFields } from "./platform/errors";
 import { buildTrustedProxies, signInMethodOf, type WebDeps, type WebSession } from "./platform/http";
 import { createLog } from "./platform/log";
 import { dnsLookupAll } from "./platform/net-address";
-import { checkPwnedPassword } from "./platform/pwned";
 import { postOneClick, type OneClickResult } from "./platform/public-http";
+import { checkPwnedPassword } from "./platform/pwned";
 
 // The composition root of the web: the parts that need more than one module.
 const log = createLog("web");

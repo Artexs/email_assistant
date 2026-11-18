@@ -1,9 +1,16 @@
-import { formatClock, newsletterListSchema, type MailboxView, type NewsletterItem } from "@ea/core/web";
+import {
+  formatClock,
+  newsletterListSchema,
+  unsubscribeResultSchema,
+  type MailboxView,
+  type NewsletterItem,
+} from "@ea/core/web";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { getLocale, t, tp } from "../../i18n";
 import { api } from "../../lib/api";
-import { actionOf, newslettersPath } from "../../lib/newsletters-view";
+import { actionOf, newslettersPath, unsubscribeFailureKey, unsubscribePath } from "../../lib/newsletters-view";
 import { useNow } from "../../lib/use-now";
 import { useResource } from "../../lib/use-resource";
 import { Button } from "../ui/button";
@@ -16,13 +23,63 @@ import { Skeleton } from "../ui/skeleton";
 function RequestState({ item, hasLink }: { item: NewsletterItem; hasLink: boolean }) {
   const status = item.request?.status;
   if (status === undefined) return null;
-  if (status === "requested") return <span>{t("nl_requested")}</span>;
-  if (status === "done") return <span>{t("nl_done")}</span>;
-  return <span>{t(hasLink ? "nl_failed_open" : "nl_failed")}</span>;
+  const code = item.request?.code ?? null;
+  const text =
+    status === "requested"
+      ? t("nl_requested")
+      : status === "done"
+        ? t("nl_done")
+        : status === "refused"
+          ? t("nl_refused")
+          : t(hasLink ? "nl_failed_open" : "nl_failed");
+  return (
+    <span role="status">
+      {text}
+      {code !== null && status !== "requested" && (
+        <span className="text-muted-foreground"> · {t("nl_code", { code })}</span>
+      )}
+    </span>
+  );
 }
 
-function Row({ item, timeZone, now }: { item: NewsletterItem; timeZone: string; now: Date }) {
-  const action = actionOf(item);
+interface TapProps {
+  mailboxId: string;
+  canTap: boolean;
+  onChanged(): void;
+}
+
+// The tap: one POST. A second tap cannot happen: the button is gone once the row has a request, and the server refuses it anyway.
+function UnsubscribeButton({ item, mailboxId, onChanged }: { item: NewsletterItem } & Omit<TapProps, "canTap">) {
+  const [pending, setPending] = useState(false);
+  async function tap() {
+    setPending(true);
+    try {
+      await api(unsubscribePath(mailboxId), unsubscribeResultSchema, {
+        method: "POST",
+        body: { sender: item.senderLower },
+      });
+    } catch (failure) {
+      const key = unsubscribeFailureKey(failure);
+      if (key !== null) toast.error(t(key));
+    } finally {
+      setPending(false);
+      onChanged();
+    }
+  }
+  return (
+    <Button
+      size="sm"
+      disabled={pending}
+      aria-label={t("nl_unsubscribe_for", { sender: item.senderLower })}
+      onClick={tap}
+    >
+      {t(pending ? "nl_sending" : "nl_unsubscribe")}
+    </Button>
+  );
+}
+
+function Row({ item, timeZone, now, tap }: { item: NewsletterItem; timeZone: string; now: Date; tap: TapProps }) {
+  const action = actionOf(item, tap.canTap);
   return (
     <li className="flex flex-col gap-1 py-3" data-sender={item.senderLower} data-method={item.method}>
       <span className="break-all font-medium">{item.senderLower}</span>
@@ -50,13 +107,23 @@ function Row({ item, timeZone, now }: { item: NewsletterItem; timeZone: string; 
           </>
         )}
         {action.kind === "none" && <span className="text-muted-foreground">{t("nl_none")}</span>}
-        {/* One-click rows get their button from F110 stage 24. */}
+        {action.kind === "unsubscribe" && (
+          <UnsubscribeButton item={item} mailboxId={tap.mailboxId} onChanged={tap.onChanged} />
+        )}
       </div>
     </li>
   );
 }
 
-function MailboxNewsletters({ mailbox, timeZone }: { mailbox: MailboxView; timeZone: string }) {
+function MailboxNewsletters({
+  mailbox,
+  timeZone,
+  canTap,
+}: {
+  mailbox: MailboxView;
+  timeZone: string;
+  canTap: boolean;
+}) {
   const now = useNow();
   const { data, error, loading, reload } = useResource(() => api(newslettersPath(mailbox.id), newsletterListSchema));
   if (data === null) {
@@ -72,15 +139,42 @@ function MailboxNewsletters({ mailbox, timeZone }: { mailbox: MailboxView; timeZ
       </div>
     );
   }
-  return <NewsletterRows senders={data.senders} timeZone={timeZone} now={now} />;
+  return (
+    <NewsletterRows
+      senders={data.senders}
+      timeZone={timeZone}
+      now={now}
+      mailboxId={mailbox.id}
+      canTap={canTap}
+      onChanged={reload}
+    />
+  );
 }
 
-export function NewsletterRows({ senders, timeZone, now }: { senders: NewsletterItem[]; timeZone: string; now: Date }) {
+export interface NewsletterRowsProps {
+  senders: NewsletterItem[];
+  timeZone: string;
+  now: Date;
+  /** The owner of an account that can write may tap; the default is no button. */
+  canTap?: boolean;
+  mailboxId?: string;
+  onChanged?: () => void;
+}
+
+export function NewsletterRows({
+  senders,
+  timeZone,
+  now,
+  canTap = false,
+  mailboxId = "",
+  onChanged,
+}: NewsletterRowsProps) {
+  const tap: TapProps = { mailboxId, canTap, onChanged: onChanged ?? (() => undefined) };
   if (senders.length === 0) return <p className="text-sm text-muted-foreground">{t("nl_empty")}</p>;
   return (
     <ul className="flex flex-col divide-y">
       {senders.map((item) => (
-        <Row key={item.senderLower} item={item} timeZone={timeZone} now={now} />
+        <Row key={item.senderLower} item={item} timeZone={timeZone} now={now} tap={tap} />
       ))}
     </ul>
   );
@@ -89,9 +183,11 @@ export function NewsletterRows({ senders, timeZone, now }: { senders: Newsletter
 export interface NewslettersCardProps {
   mailboxes: MailboxView[];
   timeZone: string;
+  /** An owner of an account that can write (not paused). A member sees the list and no button. */
+  isOwner: boolean;
 }
 
-export function NewslettersCard({ mailboxes, timeZone }: NewslettersCardProps) {
+export function NewslettersCard({ mailboxes, timeZone, isOwner }: NewslettersCardProps) {
   const [chosen, setChosen] = useState<string | null>(null);
   // Derived in render: a mailbox that left the list falls back to the first one.
   const mailbox = mailboxes.find((item) => item.id === chosen) ?? mailboxes[0];
@@ -102,6 +198,7 @@ export function NewslettersCard({ mailboxes, timeZone }: NewslettersCardProps) {
       <CardHeader>
         <CardTitle>{t("nl_title")}</CardTitle>
         <p className="text-sm text-muted-foreground">{t("nl_help")}</p>
+        {isOwner && <p className="text-sm text-muted-foreground">{t("nl_one_click_help")}</p>}
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {mailboxes.length > 1 && (
@@ -121,7 +218,7 @@ export function NewslettersCard({ mailboxes, timeZone }: NewslettersCardProps) {
             </Select>
           </div>
         )}
-        <MailboxNewsletters key={mailbox.id} mailbox={mailbox} timeZone={timeZone} />
+        <MailboxNewsletters key={mailbox.id} mailbox={mailbox} timeZone={timeZone} canTap={isOwner} />
       </CardContent>
     </Card>
   );

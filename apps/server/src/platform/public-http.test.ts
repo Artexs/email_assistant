@@ -404,7 +404,8 @@ describe("the connection (sendPinned through the loopback seam)", () => {
       expect(result).toEqual({ kind: "ok", code: "http_200" });
       expect(dialed[0]?.address).toBe(PUBLIC);
       expect(local.seen).toHaveLength(1);
-      const seen = local.seen[0]!;
+      const seen = local.seen[0];
+      if (seen === undefined) throw new Error("no request seen");
       expect(seen.method).toBe("POST");
       expect(seen.url).toBe("/unsub/42?u=7");
       expect(seen.body).toBe("List-Unsubscribe=One-Click");

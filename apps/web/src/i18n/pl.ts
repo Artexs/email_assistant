@@ -1206,6 +1206,17 @@ export const pl: Record<TextKey, string> = {
   nl_done: "Wypisano",
   nl_failed: "Nie udało się",
   nl_failed_open: "Nie udało się — otwórz stronę wypisania",
+  // F110 stage 24: the one-click unsubscribe button
+  nl_one_click_help:
+    "Wypisanie wysyła jedno standardowe żądanie z tego serwera na adres z newslettera. Żądanie zawiera tylko standardowy tekst wypisania.",
+  nl_unsubscribe: "Wypisz",
+  nl_unsubscribe_for: "Wypisz z listy {sender}",
+  nl_sending: "Wysyłanie…",
+  nl_code: "Wynik: {code}",
+  nl_refused: "Nie wysłano: adres z newslettera jest niedozwolony",
+  nl_err_rate: "Zbyt wiele próśb w ostatniej godzinie. Spróbuj później.",
+  nl_err_not_allowed: "Tego nadawcy nie można już wypisać jednym kliknięciem.",
+  nl_err_send: "Nie udało się wysłać prośby.",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).
