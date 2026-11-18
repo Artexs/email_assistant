@@ -11,7 +11,7 @@ import { dnsLookupAll, isLocalAddress, type LookupAll } from "./net-address";
 
 const log = createLog("auth_sso");
 
-// The sign-in with a company identity provider (F119). This file is the only one that imports `@better-auth/sso` (ESLint).
+// The sign-in with a company identity provider. This file is the only one that imports `@better-auth/sso` (ESLint).
 // Better Auth loads the plugin with a small surface: two paths, no provider endpoints, no sign-up.
 
 export const SSO_SIGN_IN_PATH = "/sign-in/sso";
@@ -244,9 +244,9 @@ function ssoPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   });
 }
 
-// Discovery of a provider, for the operator CLI (F119, stage 07). The plugin trusts a discovery URL only inside Better Auth's
+// Discovery of a provider, for the operator CLI. The plugin trusts a discovery URL only inside Better Auth's
 // `trustedOrigins`; that list stays the panel list. Discovery gets our own predicate instead, and a DNS check for the
-// hosts it accepts by name (the plugin skips its own DNS check for a trusted URL: `spike.md` C3).
+// hosts it accepts by name (the plugin skips its own DNS check for a trusted URL).
 
 const PRIVATE_SUFFIXES = [".local", ".internal", ".localhost"] as const;
 
@@ -330,7 +330,7 @@ export async function discoverProviderConfig(issuer: string, options: DiscoveryO
   }
 }
 
-// The plugin JSON of a provider (`spike.md` S2): the discovered endpoints plus the client. The plugin reads this string
+// The plugin JSON of a provider: the discovered endpoints plus the client. The plugin reads this string
 // from `sso_providers.oidc_config`. Tenancy stores the string and never imports Better Auth.
 export function buildOidcConfig(
   discovered: HydratedOIDCConfig,

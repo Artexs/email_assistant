@@ -13,7 +13,7 @@ import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow } from "./loops-fixtures";
 
-// Sender context, stage 02: the migration `20261118120001_sender_context.sql` (the tables `sender_profiles` and
+// Sender context: the migration `20261118120001_sender_context.sql` (the tables `sender_profiles` and
 // `sender_suggestions`, and the columns of `open_loops` that the contact wait uses). The connection is the `app` role;
 // the Down and Up section runs as the owner.
 const db = testDb();
@@ -606,7 +606,7 @@ describe("the Down and Up sections", () => {
     await withOwner(async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const contact = await insertLoopRow(trx, o, o.mailboxId, { due_source: "contact", usual_reply_days: 4 });
-      // The statement of the stage 12 notes: the old release parses `due_source` as `stated` or `default`.
+      // The statement of an earlier release: the old release parses `due_source` as `stated` or `default`.
       const rollback =
         /UPDATE open_loops SET due_source = 'default', usual_reply_days = NULL WHERE due_source = 'contact';/.exec(
           file

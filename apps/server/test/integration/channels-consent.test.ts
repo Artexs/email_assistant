@@ -15,7 +15,7 @@ import { createOrgWithMailbox, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// The consent gate of the open loops (F116 stage 17). The repo tests run without `app.org_id`: only the `org_id`
+// The consent gate of the open loops. The repo tests run without `app.org_id`: only the `org_id`
 // filter of the query separates the organizations.
 const db = testDb();
 const NOW = new Date("2026-11-15T12:00:00.000Z");
@@ -269,7 +269,7 @@ describe("GET /api/channels/telegram consentVersion (F116 stage 22)", () => {
     expect(await stateOf(app, "owner")).toMatchObject({ consentVersion: TELEGRAM_CONSENT_VERSION });
     expect(await stateOf(app, "assistant")).toMatchObject({ consentVersion: null });
 
-    // An unlink withdraws the consent: after a CLI link the old row does not count (review 17, N4).
+    // An unlink withdraws the consent: after a CLI link the old row does not count.
     expect((await app.request("/api/channels/telegram/link", as("owner", { method: "DELETE" }))).status).toBe(204);
     await link(org.orgId, org.ownerId, new Date(NOW.getTime() + 60_000));
     expect(await stateOf(app, "owner")).toMatchObject({ linked: true, consentVersion: null });

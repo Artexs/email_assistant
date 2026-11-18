@@ -25,7 +25,7 @@ import {
 } from "./loops-match-fixtures";
 import { siblingMailbox, type Org } from "./mail-sent-fixtures";
 
-// The close rules on the database (F116 stage 13, step 2). The reads that two connections race on are in
+// The close rules on the database (step 2). The reads that two connections race on are in
 // `loops-match-concurrent.test.ts`.
 const db = testDb();
 

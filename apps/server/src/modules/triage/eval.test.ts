@@ -928,7 +928,7 @@ describe("evalStateFileName", () => {
     expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v2-all-pc3.jsonl");
   });
 
-  // F111 D8: a resume never mixes the results of two endpoints.
+  // A resume never mixes the results of two endpoints.
   test("eu and own add their endpoint; standard keeps the old name", () => {
     const standard = evalStateFileName({ ...base, model: "gpt-6-luna" });
     expect(standard).toBe("gpt-6-luna-classifier-v2-all.jsonl");

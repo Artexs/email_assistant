@@ -10,7 +10,7 @@ import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow } from "./loops-fixtures";
 
-// Retention of the loop texts (F116 stage 8, step 2): they go 90 days after the loop closed; an open loop keeps them.
+// Retention of the loop texts (step 2): they go 90 days after the loop closed; an open loop keeps them.
 const db = testDb();
 
 afterAll(async () => {

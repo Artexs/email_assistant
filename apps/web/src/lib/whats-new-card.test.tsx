@@ -6,7 +6,7 @@ import { HelpLink, WhatsNewCard, WhatsNewSlot } from "../components/shell/WhatsN
 import { setLocaleForTest, t } from "../i18n";
 import { whatsNewKey } from "./whats-new";
 
-// F112 stage 15 T2: the card for the fixture releases [0.2.0, 0.1.0] (plan P9). The click of Close runs in the browser spec (T7).
+// The card for the fixture releases [0.2.0, 0.1.0]. The click of Close runs in the browser spec.
 const USER = "0190f5a0-0000-7000-8000-000000000001";
 const RELEASES = [
   { version: "0.2.0", forUsers: [{ en: "Docs site is live.", pl: "Strona z dokumentacją działa." }] },

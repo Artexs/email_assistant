@@ -6,7 +6,7 @@ import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// The report page (F110 stage 14). It runs on the trust organization of the project (see `e2e-seed.ts`): `flag trust_ladder` on, the server
+// The report page. It runs on the trust organization of the project (see `e2e-seed.ts`): `flag trust_ladder` on, the server
 // reads the gate fixture folder (`info`, `notification` and `spam` all `go`). Besides the mailbox of the card spec the organization has three
 // mailboxes, one state each (`e2e-trust-rows.ts`): `done` (shadow mode; `notification` recommended, `spam` failed by the history, `info`
 // paused), `running` (a check that classifies) and `noResult` (`no_history`; all three moving categories recommended). The tests of a project

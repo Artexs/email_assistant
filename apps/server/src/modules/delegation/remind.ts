@@ -22,7 +22,7 @@ export type RemindNowResult =
       kind: "not_open" | "limit_reached" | "reminder_waiting" | "drafts_off" | "delegate_inactive" | "not_found";
     };
 
-// F102 stage 16 (D9, Q4, Q6): the owner asks for a reminder to the delegate now. It plans the same reminder as the chaser: a
+// The owner asks for a reminder to the delegate now. It plans the same reminder as the chaser: a
 // `reminder` draft and its send `awaiting_approval`, with no set (one `approval` card). The mail to the delegate still needs a tap
 // (ADR 0003): this function never approves. No due-date gate, no gap, no clock gate: the owner asked now.
 // One transaction, the lock order of the chaser: the settings row (share), then the delegation, then its reminder sends. The

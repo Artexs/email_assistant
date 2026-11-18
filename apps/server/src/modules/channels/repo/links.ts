@@ -74,7 +74,7 @@ export async function deleteOldTokens(
     .executeTakeFirst();
   return Number(result.numDeletedRows);
 }
-// Entry point (D18): the token is the only input, so the organization comes from the row.
+// Entry point: the token is the only input, so the organization comes from the row.
 export async function useLinkToken(
   trx: Transaction<DB>,
   tokenHash: string,
@@ -90,7 +90,7 @@ export async function useLinkToken(
     .executeTakeFirst();
   return row ? { orgId: row.org_id, userId: row.user_id } : undefined;
 }
-// Entry point (D18).
+// Entry point.
 export async function findLinkToken(
   db: DbOrTrx,
   tokenHash: string
@@ -102,7 +102,7 @@ export async function findLinkToken(
     .executeTakeFirst();
   return row ? { usedAt: row.used_at, expiresAt: row.expires_at, userId: row.user_id } : undefined;
 }
-// D18: the chat moves to the token's member, so the link of this chat in any organization goes first.
+// The chat moves to the token's member, so the link of this chat in any organization goes first.
 // Returns the links of other members that this call removed, so the caller can audit them.
 export async function replaceChatLink(
   trx: Transaction<DB>,
@@ -135,13 +135,13 @@ export async function replaceChatLink(
     .filter((link) => link.org_id !== ctx.orgId || link.user_id !== row.userId)
     .map((link) => ({ orgId: link.org_id, userId: link.user_id }));
 }
-// Entry point (D18): an update brings only the chat id.
+// Entry point: an update brings only the chat id.
 export async function findChatLink(db: DbOrTrx, chatId: number): Promise<LinkedChat | undefined> {
   const row = await selectLinkedChats(db).where("chat_links.external_chat_id", "=", String(chatId)).executeTakeFirst();
   return row ? toLinkedChat(row) : undefined;
 }
-// Scheduler entry point (D18): it walks all organizations.
-// A `suspended` organization is skipped unless `includeSuspended` (D4: no notice and no digest for it).
+// Scheduler entry point: it walks all organizations.
+// A `suspended` organization is skipped unless `includeSuspended` (no notice and no digest for it).
 export async function listLinkedChats(db: DbOrTrx, opts: { includeSuspended: boolean }): Promise<LinkedChat[]> {
   let query = selectLinkedChats(db);
   if (!opts.includeSuspended) {

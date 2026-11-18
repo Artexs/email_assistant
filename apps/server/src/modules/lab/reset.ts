@@ -9,7 +9,7 @@ import type { SeedResult, SeedTarget } from "./seed";
 import { stopLabRun, type StartInput, type StartRefusal, type StartResult } from "./start";
 import type { LabOrg, LabOrgKey, LabState } from "./state";
 
-// The reset of one lab organization (F113 stage 14). It DELETES data: the organization that `orgs.json` names for the
+// The reset of one lab organization. It DELETES data: the organization that `orgs.json` names for the
 // key, its rows, and the mail in its GreenMail mailbox. Four guards stand before the first delete; each one alone refuses:
 //   1. the name of the organization is `targets[key].orgName`;
 //   2. the mailbox address in `orgs.json` is `targets[key].mailbox`;
@@ -18,7 +18,7 @@ import type { LabOrg, LabOrgKey, LabState } from "./state";
 //      owner email; a real user in the org refuses it).
 // Guards 3 and 4 run twice: before the first change (so a refusal changes nothing), and again INSIDE the delete
 // transaction under the organization lock (`deleteOrg` gets `expect`), so a mailbox or a member added in between
-// is never deleted (stage 14 review, N1 and N2).
+// is never deleted.
 // The mailbox that is emptied is always `targets[key].mailbox`, never a value read from the database. The mail
 // client refuses any address outside the scenario addresses (`address_refused`). The other lab organization, its
 // mailbox and its runs are never touched.
@@ -128,7 +128,7 @@ async function stopRunsOf(deps: ResetDeps, key: LabOrgKey): Promise<void> {
 }
 
 /**
- * Rebuilds the lab organization of `key` from nothing (the steps of the stage 14 file). Each step can run again: a
+ * Rebuilds the lab organization of `key` from nothing. Each step can run again: a
  * crash after the delete leaves no entry (or an entry of a gone org) and the next call goes on at step 5.
  * `deleted` is false when no organization was deleted (a first reset, or its organization was already gone).
  */

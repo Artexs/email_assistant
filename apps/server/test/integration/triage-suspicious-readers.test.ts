@@ -15,7 +15,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox, insertTestEmail, insertTriaged, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F109 stage 04: the readers for other tickets (tests 1, 2, 3, 3a of the stage file).
+// The readers for other tickets (tests 1, 2, 3, 3a of the stage file).
 
 const db = testDb();
 
@@ -259,7 +259,7 @@ describe("suspiciousThreadKeysOf", () => {
   });
 });
 
-// F110 stage 22: the per-sender reader of bulk unsubscribe (tests 4 and 5 of the stage file).
+// The per-sender reader of bulk unsubscribe (tests 4 and 5 of the stage file).
 describe("suspiciousSendersOf", () => {
   const SINCE = new Date(NOW.getTime() - 30 * 24 * HOUR);
 

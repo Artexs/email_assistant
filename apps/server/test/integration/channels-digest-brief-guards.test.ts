@@ -1,4 +1,4 @@
-// F116 stage 18: the guards under the brief: the flag, the marks that keep their first time, the logs and the audit rows, and the local day.
+// The guards under the brief: the flag, the marks that keep their first time, the logs and the audit rows, and the local day.
 import { format } from "node:util";
 
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
@@ -160,7 +160,7 @@ describe("the local day of the member", () => {
       })
       .execute();
   }
-  // The day is the date of the slot (review 18 N5), not the clock time at which the job runs.
+  // The day is the date of the slot, not the clock time at which the job runs.
   const first = (trx: Transaction<DB>, org: BriefOrg, slotDate: string) =>
     isFirstDigestOfDay(trx, org.ctx, { userId: org.userId, slotDate });
 

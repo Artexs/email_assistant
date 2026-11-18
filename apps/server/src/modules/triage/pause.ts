@@ -10,7 +10,7 @@ export interface LlmPause {
   // The end of the current pause, or null when none runs or it has ended (the history check waits until then).
   pausedUntil(now: Date): Date | null;
   // The time of the first trip of the current run of pauses (the trips since the last `reset`), or null. Only `reset`
-  // clears it: a pause that grew from 5 to 10 min is one run (F109 stage 15).
+  // clears it: a pause that grew from 5 to 10 min is one run.
   pausedSince(): Date | null;
   // A call got an answer: the next trip starts at `baseMs` again.
   reset(): void;

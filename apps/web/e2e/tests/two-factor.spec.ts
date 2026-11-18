@@ -287,7 +287,7 @@ test("turn off: the next sign-in asks only for the password", async ({ browser }
   await expect(section.getByLabel(en.password_label)).toBeFocused();
   await section.getByLabel(en.password_label).fill(user.password);
 
-  // F128: the password alone is not enough. The empty code field is refused in the panel, nothing is sent.
+  // The password alone is not enough. The empty code field is refused in the panel, nothing is sent.
   const offRequests: string[] = [];
   page.on("request", (request) => {
     if (request.method() === "POST" && request.url().includes("/two-factor/disable")) offRequests.push(request.url());

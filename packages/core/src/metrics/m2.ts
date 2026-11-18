@@ -22,7 +22,7 @@ export interface OpenLoopsOnTime {
   pending: number;
 }
 
-// The user said it is no loop, or withdrew consent: not counted (F116 questions 14).
+// The user said it is no loop, or withdrew consent: not counted.
 const NOT_COUNTED = new Set(["dropped", "untracked", "sent_off"]);
 // A close that answers the loop. `stale` and `expired` are the system giving up: due, not closed.
 const ANSWERED = new Set(["replied", "replied_subject", "done", "later_reply"]);

@@ -257,7 +257,7 @@ class ImapMailProvider implements MailProvider {
           if (last === false) throw new HardError("IMAP folder gave no highest UID");
           highestUid = last.uid;
         }
-        // Interia gives a wrong STATUS value: D4 takes the largest of all three sources.
+        // Interia gives a wrong STATUS value: the largest is taken of all three sources.
         let statusUidNext: number | undefined;
         try {
           // The typings have no `false`, but a refused STATUS gives it at run time.

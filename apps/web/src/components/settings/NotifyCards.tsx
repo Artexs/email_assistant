@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 
-// F110 stage 18: the own quiet hours and the own report channel. Any member edits their own row only: the server takes
+// The own quiet hours and the own report channel. Any member edits their own row only: the server takes
 // the user from the session. Each card shows only with its flag (`me.features`); the server refuses a write without it.
 const DEFAULT_START = "22:00";
 const DEFAULT_END = "07:00";

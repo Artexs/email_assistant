@@ -23,10 +23,10 @@ const log = createLog("channels");
 export const PICKER_MAX_DELEGATES = 8;
 const NAME_MAX = 30;
 
-// The Delegate button and the picker (F116 stage 19, D11, questions.md 6, 13). Owners only. The Delegate button opens one picker
+// The Delegate button and the picker (questions.md 6, 13). Owners only. The Delegate button opens one picker
 // message with up to 8 active delegates by name; more delegates give a line with the panel link. A pick calls `delegateMail` (it checks
 // every rule again under its locks, and the send waits for the owner's tap on the card) and edits the picker to the result line.
-// `delegateMail` runs with no caller transaction here: its failure is never caught to commit (stage 16 carry-over).
+// `delegateMail` runs with no caller transaction here: its failure is never caught to commit.
 // The tenant and the user come from the chat link. An unknown mail id and one of another organization get the same answer.
 export async function handleDelegateCallback(
   deps: CallbackDeps,

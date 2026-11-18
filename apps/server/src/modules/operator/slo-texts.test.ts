@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 
 import { sloAlertText, TEST_FACTS, TEST_IDS, type AlertLocale } from "./slo-texts";
 
-// F114 stage 03: the alert text. Plain text, numbers and ids only.
+// The alert text. Plain text, numbers and ids only.
 const OPENED = new Date("2026-11-20T10:00:00Z");
 const NOW = new Date("2026-11-20T16:05:00Z");
 const id = (n: number): string => `00000000-0000-4000-8000-0000000000${String(n).padStart(2, "0")}`;

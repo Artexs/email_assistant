@@ -68,7 +68,7 @@ export const skipReasons = [
 ] as const;
 export type SentSkipReason = (typeof skipReasons)[number];
 
-// The facts of one user row of `sent_emails`. A `pending` row never comes here: it waits (stage 12).
+// The facts of one user row of `sent_emails`. A `pending` row never comes here: it waits.
 export interface SentFacts {
   actionId: string | null;
   content: "stored" | "headers_only" | "gone";

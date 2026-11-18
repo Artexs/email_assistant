@@ -25,7 +25,7 @@ export interface ReportContentProps {
   pending: boolean;
   // The answer of the last tap on "Turn on recommended" (null: none yet).
   turnedOn: TurnedOn | null;
-  // The path of the optional panel review (stage 15); null while the flag `panel_review` is off: no link then.
+  // The path of the optional panel review; null while the flag `panel_review` is off: no link then.
   reviewHref: string | null;
   onTurnOn(): void;
   onCheckAgain(): void;
@@ -42,7 +42,7 @@ const categoryNames = (categories: readonly BarCategory[]): string =>
   categories.map((category) => t(`cat_${category}`)).join(", ");
 
 // The report of one mailbox: counts and fixed phrases only. The view holds example mails for the panel review; this component never reads
-// `view.examples`, so no sender name, subject or address can show here (F110 stage 14).
+// `view.examples`, so no sender name, subject or address can show here.
 export function ReportContent({
   view,
   isOwner,

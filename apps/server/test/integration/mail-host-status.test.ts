@@ -21,7 +21,7 @@ const NOW = new Date("2026-11-14T12:00:00Z");
 const BLOCKED_AT = new Date(NOW.getTime() - 3_600_000);
 const PUBLIC = "93.184.216.34";
 
-// The preload (`bunfig.toml`) allows local hosts for GreenMail. Each test sets a refusing policy; this puts the preload policy back (D19).
+// The preload (`bunfig.toml`) allows local hosts for GreenMail. Each test sets a refusing policy; this puts the preload policy back.
 afterEach(() => {
   configureMailHosts({ allowLocal: true });
 });

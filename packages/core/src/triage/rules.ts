@@ -93,7 +93,7 @@ export function applyHardRules(
   return { kind: "classify", allowed, vip, whitelisted, noreply: isNoreplyAddress(fromAddress) };
 }
 
-// The sender rule that shaped a result (F110 stage 16): `triage_results.fields.rule`. The pattern is never stored: it can be an
+// The sender rule that shaped a result: `triage_results.fields.rule`. The pattern is never stored: it can be an
 // address. A VIP is also whitelisted, so `vip` wins over `whitelist`.
 export function senderRuleOf(result: HardRuleResult): SenderRuleKind | null {
   if (result.kind === "spam") return "blocklist";

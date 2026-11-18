@@ -197,7 +197,7 @@ function runBlind(options: z.infer<(typeof optionSchemas)["blind"]>): number {
   return applied.unknownIds.length > 0 ? 1 : 0;
 }
 
-/** D2: the one allowed recipient. Runs before any log read and any HTTP call. */
+/** The one allowed recipient. Runs before any log read and any HTTP call. */
 function guardRecipient(testAddress: string): string {
   const address = process.env.TEST_MAILBOX_ADDRESS?.trim();
   if (address === undefined || address === "") throw new HardError("TEST_MAILBOX_ADDRESS is not set: send refused");

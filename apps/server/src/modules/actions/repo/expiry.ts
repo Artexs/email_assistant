@@ -7,7 +7,7 @@ import { emailIdOf } from "../anchor";
 import { CLAIM_MAX_AGE_MS } from "./claims";
 import { actionTypeSchema, type DbOrTrx } from "./shared";
 
-// D21. The caller writes the `action.expired` audit rows.
+// The caller writes the `action.expired` audit rows.
 export async function expireStaleReady(
   db: DbOrTrx,
   ctx: TenantContext,

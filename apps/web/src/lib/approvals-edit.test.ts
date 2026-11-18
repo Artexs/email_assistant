@@ -209,7 +209,7 @@ describe("the answer map of an edit (T2)", () => {
     expect(editOutcome(failure(409, "closed", { error: "closed", state: "nonsense" })).kind).toBe("error");
   });
 
-  // F116 stage 11: the follow-up of a loop can vanish while the dialog is open (a reply closes the loop, the 48 h job expires it).
+  // The follow-up of a loop can vanish while the dialog is open (a reply closes the loop, the 48 h job expires it).
   // A reload that no longer has the row ends as `closed` (the page says why and reloads) or `gone` (404: "does not exist").
   test("a follow-up that closed or vanished while the dialog was open: the save answers with its own text", () => {
     const closed = editOutcome(failure(409, "closed", { error: "closed", state: "loop_closed" }));

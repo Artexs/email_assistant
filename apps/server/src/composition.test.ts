@@ -12,7 +12,7 @@ import { loadConfig } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db } from "./platform/db";
 
-// F117 stage 10: every composition root that opens mailboxes (the sync job, the committer, the web Reconnect) gets the token store.
+// Every composition root that opens mailboxes (the sync job, the committer, the web Reconnect) gets the token store.
 // A call without it would fail every OAuth mailbox with "oauth not wired", or leave a Reconnect without a cache drop. The
 // composition roots run at start, so the test reads their source: the text between the parentheses of each call.
 const read = (file: string): string => readFileSync(join(import.meta.dir, file), "utf8");
@@ -51,7 +51,7 @@ describe("the history job is wired in main.ts", () => {
   });
 });
 
-// F110 stage 20 (ADR 0022 point 2): report mail is the system's own mail, so every caller of the sync, the backfill and the history run
+// ADR 0022 point 2: report mail is the system's own mail, so every caller of the sync, the backfill and the history run
 // passes the composed own-mail check. A root that passed `isOwnActionId` alone would store, triage and sample the report mail.
 describe("the own-mail check is composed in every root (F110 stage 20)", () => {
   test("main.ts: the sync job and the history job get isOwnMailOf; the CLI backfill too", () => {
@@ -87,7 +87,7 @@ describe("the own-mail check is composed in every root (F110 stage 20)", () => {
   });
 });
 
-// Review N12 and N13: two sentences of the docs were wrong (the report mail is not "the only write to INBOX": the spam rescue and own sends land
+// Two sentences of the docs were wrong (the report mail is not "the only write to INBOX": the spam rescue and own sends land
 // there too; the header id is an outbox row, not an action row).
 describe("the docs say what the report mail does (F110 stage 20 review)", () => {
   const root = join(import.meta.dir, "../../..");
@@ -209,21 +209,21 @@ describe("the token store is wired into every composition root", () => {
         "composition.ts",
         "main.ts",
         "modules/actions/committer.ts",
-        // The report mail adapter opens the mailbox for an APPEND into its INBOX (F110 stage 20); it passes no sender.
+        // The report mail adapter opens the mailbox for an APPEND into its INBOX; it passes no sender.
         "modules/channels/report-mailbox-imap.ts",
         "modules/mail/jobs.ts",
         "modules/mail/open.ts",
         // `backfillMailbox` with the purpose `history`: its caller (the history job) passes `oauthTokens` from its composition root.
         "modules/mail/tools.ts",
         "scripts/job-run.ts",
-        // The copy probe opens the mailbox of one draft with the shared opener and a token store (F115 stage 08).
+        // The copy probe opens the mailbox of one draft with the shared opener and a token store.
         "scripts/reply-check-copy.ts",
       ]);
     })();
   });
 });
 
-// F116 stage 8: "Track my sent mail" off must close the open loops. A caller of `setSentSync` without the hook would
+// "Track my sent mail" off must close the open loops. A caller of `setSentSync` without the hook would
 // leave them open with the texts of the deleted sent mail. The roots run at start, so the test reads the source.
 describe("the sent switch hooks are wired into every caller of setSentSync", () => {
   test("every file outside the mail module that calls setSentSync passes sentSwitchHooks; the hook is onSentOff", () => {
@@ -260,7 +260,7 @@ describe("committerDeps", () => {
     expect(deps.oauthTokens).toBe(oauthTokens);
   });
 
-  // F116 stage 10: a committer without the loop hooks would find no follow-up loop open and send nothing for it. main.ts and
+  // A committer without the loop hooks would find no follow-up loop open and send nothing for it. main.ts and
   // scripts/job-run.ts both build their deps here, so one check covers both roots.
   test("wires the real loop hooks, not the empty ones", () => {
     const deps = committerDeps({
@@ -359,7 +359,7 @@ describe("sendScope writes one send_scope event per scope", () => {
   }
 });
 
-// F110 stage 02: the server reads the gate files from `GATE_EVIDENCE_DIR`, default `evals/results/gate` of the repo.
+// The server reads the gate files from `GATE_EVIDENCE_DIR`, default `evals/results/gate` of the repo.
 describe("gateEvidenceDir", () => {
   test("the default folder holds the committed classifier gate files", () => {
     const dir = gateEvidenceDir(configWith({}));

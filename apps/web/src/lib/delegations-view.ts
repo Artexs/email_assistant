@@ -48,7 +48,7 @@ export const filterHref = (filter: DelegationFilter): string => `/delegations?fi
 
 export type DelegationAction = "remind" | "done" | "cancel";
 
-// Who may do what (P6, Q7, Q12): Remind now and Cancel are for the owner, Done for any member. A suspended organization takes no write.
+// Who may do what: Remind now and Cancel are for the owner, Done for any member. A suspended organization takes no write.
 // The order is the order of the buttons.
 export function delegationActions(
   status: DelegationStatus,

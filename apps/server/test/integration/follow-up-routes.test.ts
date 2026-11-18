@@ -1,4 +1,4 @@
-// F116 stage 11, step 2: the read model and the panel edit of a follow-up (T5, T6). Committed rows; the org is deleted after each test.
+// The read model and the panel edit of a follow-up. Committed rows; the org is deleted after each test.
 import { approvalDetailSchema, approvalListSchema } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
@@ -103,7 +103,7 @@ describe("T5 the list and the detail", () => {
   test("a send whose recipients differ from its loop is shown with the loop's recipients' text, never other ones", async () => {
     const { s, f } = await world();
     // The draft is what the owner sees; the loop row is what the committer checks. A draft with a recipient outside the loop is
-    // shown as written (so the owner can reject it); the committer refuses it (stage 10).
+    // shown as written (so the owner can reject it); the committer refuses it.
     await db
       .updateTable("actions")
       .set({ payload: JSON.stringify({ ...f.draftPayload, to: ["other@example.test"], cc: [] }) })

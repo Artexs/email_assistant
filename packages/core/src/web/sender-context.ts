@@ -3,7 +3,7 @@ import { z } from "zod";
 import { suggestionKinds, suggestionReasonSchema, suggestionScopes } from "../contacts/types";
 import { senderRelations } from "../triage/sender-history";
 
-// Counts only: no text field (ADR 0034, PD-106).
+// Counts only: no text field (ADR 0034).
 export const senderLineSchema = z
   .object({
     relation: z.enum(senderRelations),

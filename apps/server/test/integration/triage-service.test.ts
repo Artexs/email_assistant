@@ -458,7 +458,7 @@ describe("triageOne", () => {
     });
   });
 
-  // F111 D6: the endpoint is in every `llm.call` row. The error branch has no usage: it asks the client.
+  // The endpoint is in every `llm.call` row. The error branch has no usage: it asks the client.
   test("an own endpoint: the ok row and the error row both say `own`", async () => {
     await withRollback(db, async (trx) => {
       const ok = await setupMail(trx, { from_address: "news@shop.test" });
@@ -1228,7 +1228,7 @@ describe("triageOne: the delegation plan", () => {
     });
   });
 
-  // F130: the escalation cascade (a second call by another role for a person's mail answered info, notification,
+  // The escalation cascade (a second call by another role for a person's mail answered info, notification,
   // spam or unsure) was never in the worker. These are the answers it would have picked: each mail makes the same
   // calls as before the removal, exactly one, by the classifier role with the production prompt.
   test("a person's mail that the removed cascade would have picked still makes one classifier call", async () => {

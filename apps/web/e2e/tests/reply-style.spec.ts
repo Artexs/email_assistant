@@ -7,7 +7,7 @@ import { E2E_BASE_URL } from "../env";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F115 stage 11: the style card (name, signature, writing style, Preview) and the reply drafts switch. The seed gives each project an
+// The style card (name, signature, writing style, Preview) and the reply drafts switch. The seed gives each project an
 // organization with the flag `reply_drafts` on and two mailboxes: `box` (password) and `oauth` (a provider is set). The tests of a
 // project run in this order and leave the organization as they found it (`reset`).
 //
@@ -117,7 +117,7 @@ test("T2: the organization signature is read-only and links to the card of each 
   });
   expect(set.ok()).toBe(true);
   await page.reload();
-  // With no signature of the mailbox, the text in use is the old text of the organization (the fallback of D13).
+  // With no signature of the mailbox, the text in use is the old text of the organization (the fallback).
   await expect(card(page).getByText(t("rs_in_use", { text: "E2E old organization text" }))).toBeVisible();
   const signature = page.locator("[data-card=signature]");
   await expect(signature.locator("[data-old-text]")).toHaveText("E2E old organization text");

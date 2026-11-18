@@ -12,7 +12,7 @@ import { createFixedLlmClient } from "../../src/platform/llm/testing";
 
 import { newOrg, NOW, type Org } from "./mail-sent-fixtures";
 
-// Shared setup of the Sent analysis tests (F116 stage 12).
+// Shared setup of the Sent analysis tests.
 
 export { NOW };
 

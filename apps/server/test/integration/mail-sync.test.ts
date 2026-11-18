@@ -1683,7 +1683,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
       const [moved] = await copyRowsOf(trx, s.mailboxId);
       if (moved === undefined) throw new Error("no moved row");
       const full = await trx.selectFrom("emails").selectAll().where("id", "=", moved.id).executeTakeFirstOrThrow();
-      // Not the same mail by chance of number alone: the rule cannot tell (accepted, Q5).
+      // Not the same mail by chance of number alone: the rule cannot tell (accepted).
       await insertTestEmail(trx, s.ctx, s.mailboxId, {
         dedup_key: `${moved.dedup_key}#2`,
         message_id_header: full.message_id_header,
@@ -2201,7 +2201,7 @@ describe("syncMailbox: sync folders", () => {
     });
   });
 
-  // Cross-folder dedup (stage 7b).
+  // Cross-folder dedup.
   async function crossRows(trx: Db | Transaction<DB>, mailboxId: string) {
     const rows = await trx
       .selectFrom("emails")
@@ -2539,7 +2539,7 @@ describe("syncMailbox: sync folders", () => {
     });
   });
 
-  // Stage 8: a mail of source folder `path` (Mail 1) that the system moved to AI/Info an hour ago; `path` has a later mail
+  // A mail of source folder `path` (Mail 1) that the system moved to AI/Info an hour ago; `path` has a later mail
   // (Mail 2), so the cursor of `path` is above the UID of Mail 1.
   async function movedFromFolder(
     trx: Transaction<DB>,
@@ -2888,7 +2888,7 @@ describe("syncMailbox: sync folders", () => {
   });
 });
 
-// F103: the sync lines are events with ids, folder keys and counts only.
+// The sync lines are events with ids, folder keys and counts only.
 describe("syncMailbox: log lines", () => {
   const OFFERS = "Oferty";
   const FOLDER_NOW = new Date("2026-11-08T12:00:00Z");

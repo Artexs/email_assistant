@@ -22,7 +22,7 @@ export const AI_FOLDER_NAMES: Record<FolderKey, string> = {
   ai_manual: "AI/Manual",
 };
 
-// A move goes to an app folder or back to INBOX (D11, D12).
+// A move goes to an app folder or back to INBOX.
 export const moveTargets = [...folderKeys, "inbox"] as const;
 export type MoveTarget = (typeof moveTargets)[number];
 
@@ -32,7 +32,7 @@ export function isMoveTarget(value: unknown): value is MoveTarget {
 
 export const MOVE_TARGET_NAMES: Record<MoveTarget, string> = { ...AI_FOLDER_NAMES, inbox: "INBOX" };
 
-// What the classifier and the delegates list give the planner for a `delegation` mail (D4).
+// What the classifier and the delegates list give the planner for a `delegation` mail.
 export interface DelegationInput {
   delegateId: string | null;
   delegateName: string | null;
@@ -111,14 +111,14 @@ function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
 }
 
 export interface PlanSource {
-  // The mail's source_folder is the path of the mailbox's junk row (D11).
+  // The mail's source_folder is the path of the mailbox's junk row.
   fromJunk: boolean;
-  // F109 D6: a suspicious `delegation` mail plans nothing: no draft, no send, and no move out of the Junk folder.
+  // A suspicious `delegation` mail plans nothing: no draft, no send, and no move out of the Junk folder.
   holdDelegation?: boolean;
 }
 
-// The plan for a mail from the spam folder (D11): the normal move gate decides; no flag, no VIP exception.
-// A `delegation` mail only moves into INBOX: no draft, no send, no approval (U10).
+// The plan for a mail from the spam folder: the normal move gate decides; no flag, no VIP exception.
+// A `delegation` mail only moves into INBOX: no draft, no send, no approval.
 // Returns undefined for the categories that use the normal plan.
 function planFromJunk(category: Category): PlannedAction[] | undefined {
   switch (category) {

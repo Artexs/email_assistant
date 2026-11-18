@@ -4,7 +4,7 @@ import { pl } from "../i18n/pl";
 import { isAllowedPlaceholder, legalLangs, legalPlaceholders, type LegalLang } from "./legal";
 import { findPlaceholders, headingTitles, readLegalSource } from "./legal-checks";
 
-// The terms of service and the data processing agreement (F107 stage 04). The texts are drafts: each fact that no source
+// The terms of service and the data processing agreement. The texts are drafts: each fact that no source
 // states is a placeholder.
 
 const termsHeadings: Record<LegalLang, string[]> = {

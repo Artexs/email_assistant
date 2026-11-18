@@ -6,7 +6,7 @@ import { tripReasons } from "../trust/tripwire";
 import { historyOutcomes } from "./trust";
 import { z } from "./zod";
 
-// The evidence of a category shows its precision only from this many real labels (PD-066).
+// The evidence of a category shows its precision only from this many real labels.
 export { EVIDENCE_MIN_LABELS };
 
 const count = z.number().int().min(0);
@@ -73,8 +73,8 @@ export const weekStatsSchema = z.strictObject({
         recall: rate,
         wilsonLower: rate,
         decision: z.enum(["go", "no-go", "no-go: too few"]),
-        // The three sources of ADR 0028 (F110). Null: the flag `trust_ladder` is off for the organization, or the caller has no trust reader.
-        // A stored view of a report queued before F110 has no key: it reads null (the default).
+        // The three sources of ADR 0028. Null: the flag `trust_ladder` is off for the organization, or the caller has no trust reader.
+        // A stored view of a report queued before the trust ladder has no key: it reads null (the default).
         global: z
           .strictObject({
             decision: z.enum(["go", "no-go", "too-few", "none"]),

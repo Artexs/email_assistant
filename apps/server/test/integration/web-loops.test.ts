@@ -10,7 +10,7 @@ import { actionsOfLoop, ANNA, auditOf, commandLoop, FRIDAY, loopOf } from "./loo
 import { TEST_ORIGIN } from "./web-helpers";
 import { call, loopApp, loopWorld, type LoopWorld } from "./web-loops-fixtures";
 
-// F116 stage 20, step 1: the loop routes. Every route is one call of a loop command with `via: "web"`. The commands have
+// The loop routes. Every route is one call of a loop command with `via: "web"`. The commands have
 // their own tests (`loops-commands.test.ts`, `loops-follow-up-draft.test.ts`, `loops-delegate.test.ts`); these tests check the
 // roles, the flags, the answers and the tenancy of the routes.
 const db = testDb();

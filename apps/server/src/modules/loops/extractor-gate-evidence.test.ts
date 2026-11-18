@@ -12,7 +12,7 @@ import { buildExtractorGateFile, extractorGateEvidence } from "./extractor-repor
 const gateDir = resolve(import.meta.dir, "../../../../../evals/results/gate");
 
 // A prompt or model change of the extractor needs a passing sim holdout gate file. CI has no LLM key, so it checks
-// the evidence, not the numbers. Analysis (F116 stage 12) does not start without this check green: there is no
+// the evidence, not the numbers. Analysis does not start without this check green: there is no
 // runtime check of the file.
 test("a passing standard gate file exists for the current extractor prompt version", () => {
   expect(extractorGateEvidence(gateDir, prompts.extractor.version).length).toBeGreaterThan(0);

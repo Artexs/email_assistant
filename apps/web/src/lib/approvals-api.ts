@@ -39,7 +39,7 @@ export function postReject(id: string): Promise<ApprovalRejectAnswer> {
   return api(`/api/approvals/${id}/reject`, approvalRejectAnswerSchema, { method: "POST", body: {} });
 }
 
-// The id is the send that the dialog opened (D2). The answer names the new send: a new version, and a new request to approve.
+// The id is the send that the dialog opened. The answer names the new send: a new version, and a new request to approve.
 export function postEdit(id: string, body: ApprovalEditBody): Promise<ApprovalEditAnswer> {
   return api(`/api/approvals/${encodeURIComponent(id)}/edit`, approvalEditAnswerSchema, { method: "POST", body });
 }

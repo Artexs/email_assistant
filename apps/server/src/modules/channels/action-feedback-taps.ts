@@ -30,7 +30,7 @@ export interface FeedbackTapInput {
   edit: CardEdit;
 }
 
-// The reason tap after a reject and the mistake tap after a send (plan D21). The caller checked the owner role.
+// The reason tap after a reject and the mistake tap after a send. The caller checked the owner role.
 // Both taps check the flag themselves: a button that was sent before the flag went off writes nothing.
 export async function handleReasonTap(
   input: FeedbackTapInput,

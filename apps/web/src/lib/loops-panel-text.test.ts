@@ -6,7 +6,7 @@ import type { TextKey } from "../i18n";
 
 afterEach(() => setLocaleForTest("en"));
 
-// T2 (F116 stage 22): one fixed value per new key, in Polish and in English. A change of a text must change this list.
+// One fixed value per new key, in Polish and in English. A change of a text must change this list.
 const NEW_TEXTS: Record<string, { en: string; pl: string }> = {
   dla_button: { en: "Delegate", pl: "Zleć" },
   dla_title: { en: "Delegate this mail", pl: "Zleć tę wiadomość" },

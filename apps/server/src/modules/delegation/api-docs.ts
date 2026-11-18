@@ -14,7 +14,7 @@ import {
 
 import { apiDoc } from "../../platform/openapi";
 
-// The OpenAPI description of the delegate and delegation routes (ADR 0023, F102 ticket). Any member reads; the delegate writes and
+// The OpenAPI description of the delegate and delegation routes (ADR 0023). Any member reads; the delegate writes and
 // the cancel are owner only; any member marks a delegation done. Every route answers 404 `not_found` while the flag
 // `delegation_pages` is off.
 const tags = ["delegates"];

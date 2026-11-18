@@ -4,7 +4,7 @@ import { en } from "../../src/i18n/en";
 import { alertFill, expectAlertFills, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// F127: an alert with a bare text child must use the full width of its box. The "mobile" (Pixel 7) and "desktop" projects give the two widths.
+// An alert with a bare text child must use the full width of its box. The "mobile" (Pixel 7) and "desktop" projects give the two widths.
 // The two-factor alerts need an operator, a break-glass owner with the second factor off (the server refuses that) or a user with few
 // backup codes. The seed has none of them, so the spec answers the status request of the Account card with each state: the page, the
 // component and the styles are the real ones.

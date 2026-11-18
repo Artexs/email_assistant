@@ -58,7 +58,7 @@ export interface FakeMailProviderOptions {
   folderSpecialUse?: Record<string, string>;
   /** One UID counter for all folders, as Interia (F3). Default false (one counter per folder, as GreenMail, F6). */
   globalUids?: boolean;
-  /** The STATUS UIDNEXT that the fake reports before the D4 rule; Interia gives 1 (F2). Default: the real next UID. */
+  /** The STATUS UIDNEXT that the fake reports before the largest-of-three-sources rule; Interia gives 1. Default: the real next UID. */
   uidNextValue?: number;
   /** `appendMessage` and `transferByAppend` return the APPENDUID (default true); false mimics a server that drops it. */
   appendUid?: boolean;

@@ -89,7 +89,7 @@ export async function setSsoRequired(
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
 
-// F119 N12, start-up check: when `FEATURES_OFF` holds `sso_sign_in`, the number of organizations that require SSO (those
+// Start-up check: when `FEATURES_OFF` holds `sso_sign_in`, the number of organizations that require SSO (those
 // lose every sign-in but the break-glass owner's). 0 when the flag is not killed: no query then.
 export async function countSsoRequiredWhileKilled(db: Db | Transaction<DB>): Promise<number> {
   return featureSettings().off.has("sso_sign_in") ? countSsoRequiredOrgs(db) : 0;

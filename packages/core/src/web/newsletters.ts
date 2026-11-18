@@ -1,11 +1,11 @@
-// The newsletters list of one mailbox (F110 stage 23, flag `bulk_unsubscribe`, D17). Every text field is untrusted mail text:
+// The newsletters list of one mailbox (flag `bulk_unsubscribe`). Every text field is untrusted mail text:
 // the panel shows it as plain text, and `senderLower` is the identity of a row (never the display name).
 import { z } from "./zod";
 
 export const newsletterMethods = ["one_click", "link", "none"] as const;
 export type NewsletterMethod = (typeof newsletterMethods)[number];
 
-/** The state of an unsubscribe request (the table `unsubscribe_requests`; stage 24 writes it). */
+/** The state of an unsubscribe request (the table `unsubscribe_requests`). */
 export const unsubscribeRequestStatuses = ["requested", "done", "failed", "refused"] as const;
 export type UnsubscribeRequestStatus = (typeof unsubscribeRequestStatuses)[number];
 
@@ -35,7 +35,7 @@ export type NewsletterItem = z.infer<typeof newsletterItemSchema>;
 export const newsletterListSchema = z.strictObject({ senders: z.array(newsletterItemSchema) });
 export type NewsletterList = z.infer<typeof newsletterListSchema>;
 
-/** The body of `POST /api/newsletters/:mailboxId/unsubscribe` (F110 stage 24): the sender address as the list shows it (`senderLower`). */
+/** The body of `POST /api/newsletters/:mailboxId/unsubscribe`: the sender address as the list shows it (`senderLower`). */
 export const unsubscribeBodySchema = z.strictObject({ sender: z.string().min(3).max(254) });
 export type UnsubscribeBody = z.infer<typeof unsubscribeBodySchema>;
 

@@ -5,9 +5,9 @@ import type { TenantContext } from "../../../platform/db";
 import type { DbOrTrx } from "./shared";
 
 const RETENTION_BATCH = 1000;
-// A pending mail that no job took in this time loses its body at the retention run (A23).
+// A pending mail that no job took in this time loses its body at the retention run.
 export const PENDING_BODY_DAYS = 7;
-// Retention (A23). Each loop updates one batch of rows by id and skips rows a job holds (a later day clears them).
+// Retention. Each loop updates one batch of rows by id and skips rows a job holds (a later day clears them).
 // A repeat call changes nothing: every rule excludes cleared rows. No filter on the mailbox status, the plan or the triage scope.
 // A `processing` row is cleared only when its lock is older than both periods: a live run never holds a lock that long,
 // so such a row is stuck (the worker does not run for a paused mailbox, a suspended organization or scope `off`).

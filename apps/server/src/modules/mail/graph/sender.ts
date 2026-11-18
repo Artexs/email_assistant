@@ -4,12 +4,12 @@ import { SoftError } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
 import { MailAuthError, SmtpSendError, type MailSender, type SendResult, type SmtpStage } from "../port";
 
-// The Microsoft Graph `sendMail` sender (ticket F117, the Graph error map). It sends the MIME of `compose.ts` as it is, so the send is as safe
+// The Microsoft Graph `sendMail` sender (the Graph error map). It sends the MIME of `compose.ts` as it is, so the send is as safe
 // to retry as SMTP: the `SmtpSendError` stage tells the caller if the mail may be out (`unknown`: no resend).
 // Nothing here logs a header, a body, a token or an address. The error body of Graph is read for `error.code` only.
 const log = createLog("mail");
 
-/** Graph takes 4 MB per request; base64 adds a third, so a raw message over 3 MiB cannot go (default limit; spike row M10 may change it). */
+/** Graph takes 4 MB per request; base64 adds a third, so a raw message over 3 MiB cannot go (default limit; a live check may change it). */
 export const GRAPH_MAX_RAW_BYTES = 3 * 1024 * 1024;
 export const GRAPH_SEND_TIMEOUT_MS = 30_000;
 const ERROR_BODY_MAX_BYTES = 16_384;
@@ -115,7 +115,7 @@ function fetchErrorCode(error: unknown): string | null {
 }
 
 /**
- * A sender that calls `POST <baseUrl>/v1.0/me/sendMail` once per `send` (D17). It never retries a call that the server may have
+ * A sender that calls `POST <baseUrl>/v1.0/me/sendMail` once per `send`. It never retries a call that the server may have
  * accepted. A 401 means "not accepted": one call with a fresh token follows. A refused login is a `MailAuthError` with a reason.
  */
 export async function openGraphSender(opts: GraphSenderOpenOptions): Promise<MailSender> {

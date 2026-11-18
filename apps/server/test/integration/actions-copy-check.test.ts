@@ -32,7 +32,7 @@ import {
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-// F115 stage 08, step 2: the copy check before the SMTP call. GreenMail holds the copies; the test edits them like a mail client.
+// The copy check before the SMTP call. GreenMail holds the copies; the test edits them like a mail client.
 const db = testDb();
 const boxes: CopyBox[] = [];
 let logs: CapturedLogs | null = null;
@@ -55,7 +55,7 @@ const approvals = (trx: Transaction<DB>): ApprovalDeps => ({
   uidplus: async () => true,
 });
 
-// The copy results of `reply_send_checked`. The pass before a reply send (stage 09) writes the same event with the codes `answered`,
+// The copy results of `reply_send_checked`. The pass before a reply send writes the same event with the codes `answered`,
 // `not_answered`, `newer_mail` and `original_moved`; its tests are in `replies-answered-pass.test.ts`.
 const COPY_RESULTS = ["same", "changed", "missing", "no_baseline"];
 const checked = (captured: CapturedLogs): unknown[] =>

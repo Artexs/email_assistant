@@ -12,7 +12,7 @@ import { lockLoop, SYSTEM } from "./repo";
 // A follow-up never leaves the next one due before this many working days: the next Draft is not `too_soon`.
 export const FOLLOW_UP_MIN_WAIT_DAYS = 3;
 const MAX_REFERENCES = 20;
-// `follow_ups_sent` is limited to 0–2 by the table. A third send cannot happen (stage 14 refuses it), but the mail has gone
+// `follow_ups_sent` is limited to 0–2 by the table. A third send cannot happen (the loop command refuses it), but the mail has gone
 // out when this runs: the count must never raise a CHECK error and roll the commit of a sent mail back.
 const MAX_FOLLOW_UPS = 2;
 

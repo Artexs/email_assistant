@@ -420,7 +420,7 @@ describe("createExpiryJob", () => {
 });
 
 describe("suspended organizations", () => {
-  // F079: the awaiting send of this test has a delivered request (`requestSent`), so it times out in the pause.
+  // The awaiting send of this test has a delivered request (`requestSent`), so it times out in the pause.
   // A send without a delivered request waits for the resume instead: see actions-resume-approvals.test.ts.
   test("(12) the expiry runs for a suspended organization; a resume does not send an approval older than 48 h", async () => {
     await withRollback(db, async (trx) => {

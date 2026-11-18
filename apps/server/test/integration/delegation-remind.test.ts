@@ -26,7 +26,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F102 stage 16: `remindNow` plans a reminder to the delegate at once. Service level, one rolled-back transaction per test (the route,
+// `remindNow` plans a reminder to the delegate at once. Service level, one rolled-back transaction per test (the route,
 // the double click and the settings lock with two connections are in `web-delegation-remind.test.ts`).
 const db = testDb();
 
@@ -384,7 +384,7 @@ describe("remindNow", () => {
   });
 });
 
-// T9: a tap is always needed (ADR 0003). One committer tick applies the draft and never the send; the notifier then queues one
+// A tap is always needed (ADR 0003). One committer tick applies the draft and never the send; the notifier then queues one
 // `approval` card for the owner and no set card.
 describe("remindNow: a mail to a person needs a tap", () => {
   const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);

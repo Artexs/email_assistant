@@ -22,7 +22,7 @@ import { SetAnywayDialog } from "./SetAnywayDialog";
 
 export interface CategoriesCardProps {
   settings: SettingsWebView;
-  // The trust view of the mailbox. `null`: the flag `trust_ladder` is off or the view did not load: the card is as before F110.
+  // The trust view of the mailbox. `null`: the flag `trust_ladder` is off or the view did not load: the card is as before the trust ladder.
   trust?: TrustView | null;
   isOwner: boolean;
   onChanged(change: SettingsWebChange, toastKey: TextKey, vars?: Record<string, string | number>): void;

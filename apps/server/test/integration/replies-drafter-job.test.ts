@@ -49,7 +49,7 @@ import {
   type JobBox,
 } from "./reply-job-fixtures";
 
-// F115 stage 07: the drafter job (scan, claim, call, write) against Postgres with a fake model. Every test runs in a transaction that
+// The drafter job (scan, claim, call, write) against Postgres with a fake model. Every test runs in a transaction that
 // is rolled back. The tests that need a real commit (the kill point, two instances at once) are in replies-drafter-committed.test.ts.
 const db = testDb();
 

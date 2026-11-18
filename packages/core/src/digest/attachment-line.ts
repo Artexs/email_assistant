@@ -4,7 +4,7 @@ import { removeLinks } from "../triage/untrusted-text";
 
 import { cutText } from "./text";
 
-// The attachment line of a notice (F109 stage 06, D8): names, types and sizes of captured parts. Never the file or its content.
+// The attachment line of a notice: names, types and sizes of captured parts. Never the file or its content.
 export interface AttachmentPart {
   name: string | null;
   type: string;

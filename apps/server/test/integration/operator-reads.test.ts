@@ -19,7 +19,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox, insertAction, insertTestEmail, insertTriaged } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F099 stages 07 and 08: the tenant-scoped reads of the operator list and detail (plan D14, D17, D18, D28).
+// The tenant-scoped reads of the operator list and detail.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
 const HOUR = 3_600_000;

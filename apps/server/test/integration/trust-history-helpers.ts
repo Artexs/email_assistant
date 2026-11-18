@@ -14,7 +14,7 @@ import type { LlmClient } from "../../src/platform/llm";
 
 import { createOrgWithMailbox } from "./fixtures";
 
-// Committed mailboxes for the tests of the history job (F110 stage 06). The job claims with a transaction of its own, so
+// Committed mailboxes for the tests of the history job. The job claims with a transaction of its own, so
 // these tests cannot run inside a rolled-back transaction. Every test removes its organization and its user in `finally`.
 // The fixed clock of a box: two hours ahead of the real time of the test, so a check that the database queues with `now()` is due.
 const CLOCK_AHEAD_MS = 2 * 3_600_000;

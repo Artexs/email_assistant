@@ -70,7 +70,7 @@ describe("loadPages", () => {
 });
 
 describe("restartPages", () => {
-  // A new tab starts at page 1 again (review 18 TG1).
+  // A new tab starts at page 1 again.
   test("sets the page count back to 1 and reloads once", () => {
     const pages = { current: 3 };
     let reloads = 0;

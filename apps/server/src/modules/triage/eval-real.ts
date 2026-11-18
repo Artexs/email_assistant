@@ -26,7 +26,7 @@ function sourceOfRow(row: LabeledRows[number]): Prediction["source"] {
   return row.reason_code === "triage_error" ? "error" : "llm";
 }
 
-// A row without a model is a rule result, a triage error, or a blocked LLM call (user answer Q28: predicted `unsure`).
+// A row without a model is a rule result, a triage error, or a blocked LLM call (predicted `unsure`).
 function sourceOf(row: LabeledRows[number]): Pick<Prediction, "source" | "predicted" | "modelCategory" | "confidence"> {
   if (row.model === null && row.reason_code === "llm_blocked") {
     return { source: "llm", predicted: "unsure", modelCategory: "unsure", confidence: 0 };

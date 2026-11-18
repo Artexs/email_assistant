@@ -75,7 +75,7 @@ export interface CasesEvalReport extends EvalReportBase {
   host: string | null;
   reasoningEffort: string | null;
   promptVersion: string;
-  // The optional parts of a `classifier-v3` run in the type's order; null for another version (stage 08).
+  // The optional parts of a `classifier-v3` run in the type's order; null for another version.
   promptParts: ClassifierV3Part[] | null;
   cases: CaseResult[];
   // Spend of the earlier results and the new ones, by the run's price table. Zero without a budget.
@@ -111,7 +111,7 @@ export interface RealEvalReport extends EvalReportBase {
 export type EvalReport = CasesEvalReport | RealEvalReport;
 
 // The state file of one run. Gemini has no effort, so its names stay as before.
-// The endpoint is part of the name: a resume never takes the results of another endpoint (F111 D8). A run with an
+// The endpoint is part of the name: a resume never takes the results of another endpoint. A run with an
 // explicit `--state` path skips this function, so the endpoint is the caller's duty there.
 export function evalStateFileName(opts: {
   model: string;

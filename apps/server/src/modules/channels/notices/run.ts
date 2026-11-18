@@ -20,13 +20,13 @@ export interface NoticeDeps {
   now(): Date;
   // The process start time (from `main.ts`).
   startedAt: Date;
-  // The LLM pause and the scope of the triage worker of this process (F109 stage 15). Absent: the worker is off, so no
+  // The LLM pause and the scope of the triage worker of this process. Absent: the worker is off, so no
   // `not_triaged` notice.
   degraded?: { pause: Pick<LlmPause, "isPaused" | "pausedSince">; scope: TriageScope };
   testMail: TestMailRule;
-  // `WEB_BASE_URL`: the panel link on the approval card needs it (F102 D5). Unset: no link.
+  // `WEB_BASE_URL`: the panel link on the approval card needs it. Unset: no link.
   webBaseUrl?: string;
-  // The M8 reader of `trust` for the weekly report (F110 stage 12): `channels` may not import `trust`, so the composition root fills it.
+  // The M8 reader of `trust` for the weekly report: `channels` may not import `trust`, so the composition root fills it.
   // Absent: the evidence lines of the report are left out.
   trustEvidence?: TrustEvidenceReader;
 }
@@ -43,7 +43,7 @@ export interface OrgRun {
   resumedAt: Date | null;
   members: LinkedChat[];
   owners: LinkedChat[];
-  // The members of the organization that a report goes to: a linked chat, or a mail channel with a report mailbox (F110 stage 19).
+  // The members of the organization that a report goes to: a linked chat, or a mail channel with a report mailbox.
   reportMembers: ReportMember[];
   mailboxes: MailboxSummary[];
   pausedMailboxIds: Set<string>;

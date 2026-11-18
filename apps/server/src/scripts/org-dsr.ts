@@ -12,7 +12,7 @@ function line(text: string): void {
   process.stdout.write(`${text}\n`);
 }
 
-// Prints counts, table.column names and sizes, never the address (F106 D17). A find that matches nothing prints a
+// Prints counts, table.column names and sizes, never the address. A find that matches nothing prints a
 // warning on stderr and still exits 0: the operator checks the spelling. Returns the exit code.
 async function find(args: Extract<OrgDsrArgs, { mode: "find" }>, db: Db) {
   const result = await findSubjectData(db, {

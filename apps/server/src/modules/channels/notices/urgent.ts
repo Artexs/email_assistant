@@ -15,7 +15,7 @@ import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 export const URGENT_LOOKBACK_MS = 24 * 3_600_000;
 export const URGENT_LIMIT = 200;
 
-// D13: every linked member gets an urgent notice for mail that was triaged after the link.
+// Every linked member gets an urgent notice for mail that was triaged after the link.
 async function detectUrgent(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -26,7 +26,7 @@ async function detectUrgent(
   resumedAt: Date | null
 ): Promise<void> {
   const lookbackStart = now.getTime() - URGENT_LOOKBACK_MS;
-  // S3: mail triaged before a resume gets no urgent notice.
+  // Mail triaged before a resume gets no urgent notice.
   const sinceOf = (member: LinkedChat) => Math.max(member.linkedAt.getTime(), lookbackStart, resumedAt?.getTime() ?? 0);
   const earliest = Math.min(...members.map(sinceOf));
   const triaged = (
@@ -37,7 +37,7 @@ async function detectUrgent(
       { limit: URGENT_LIMIT, categories: ["urgent"] }
     )
   ).filter((row) => !pausedMailboxIds.has(row.mailbox_id));
-  // D23: mail in the spam folder is in the digest, but it gets no urgent notice.
+  // Mail in the spam folder is in the digest, but it gets no urgent notice.
   const junkPaths = new Map<string, string | null>();
   const rows: typeof triaged = [];
   for (const row of triaged) {
@@ -61,7 +61,7 @@ async function detectUrgent(
     ctx,
     rows.map((row) => row.email_id)
   );
-  // F110 stage 16: the keys of the why line go into the view only while the flag is on.
+  // The keys of the why line go into the view only while the flag is on.
   const whyOn = await isFeatureOn(db, ctx, "why_lines");
   const delegateIds = new Set<string>();
   for (const list of actions.values()) {
@@ -70,11 +70,11 @@ async function detectUrgent(
     }
   }
   const names = await listDelegateNames(db, ctx, [...delegateIds]);
-  // The Delegate button (F116 stage 19): the flag and an active delegate (once), then a mailbox that drafts (per mailbox) and no
+  // The Delegate button: the flag and an active delegate (once), then a mailbox that drafts (per mailbox) and no
   // suspicion (per mail).
   const delegateOn = await delegateButtonOn(db, ctx);
   const drafting = new Map<string, boolean>();
-  // The reasons that `delegateMail` refuses (PD-063), flag or no flag: the button is hidden for the same mails.
+  // The reasons that `delegateMail` refuses, flag or no flag: the button is hidden for the same mails.
   const suspiciousAny = delegateOn
     ? await suspiciousReasonsOf(
         db,
@@ -130,7 +130,7 @@ async function detectUrgent(
               actions: rowActions,
               delegateNames,
               stayFolder: row.folder,
-              // Only a flagged mail gets the field: a view without it also renders in the code before F109 (rollback).
+              // Only a flagged mail gets the field: a view without it also renders in the code from before the field existed (rollback).
               ...(flagged.length > 0 ? { suspicious: flagged } : {}),
               // The same rule for the attachment line: no field with the flag off or without an attachment to show.
               ...(attachmentFact === undefined ? {} : { attachments: attachmentFact }),

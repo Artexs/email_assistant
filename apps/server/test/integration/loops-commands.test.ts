@@ -32,7 +32,7 @@ import {
 } from "./loops-commands-fixtures";
 import { reply } from "./loops-match-fixtures";
 
-// F116 stage 14, step 2: Later, Done, Drop, Reopen, Untrack. The races of the same rules are in `loops-commands-race.test.ts`.
+// Later, Done, Drop, Reopen, Untrack. The races of the same rules are in `loops-commands-race.test.ts`.
 const db = testDb();
 
 afterAll(async () => {

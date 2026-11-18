@@ -6,7 +6,7 @@ import { costModel } from "./cost-model";
 export interface LlmCallRow {
   mailboxId: string | null;
   model: string | null;
-  // `standard` when the row has no `endpoint` key (written before F111).
+  // `standard` when the row has no `endpoint` key (written before the endpoint was logged).
   endpoint: LlmEndpointKind;
   tokensIn: number | null;
   tokensOut: number | null;

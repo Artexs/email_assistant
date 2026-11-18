@@ -11,7 +11,7 @@ import { createDb, type Db, type DB, type TenantContext } from "../../src/platfo
 import { createOrgWithMailbox, insertAction, insertDelegate, insertTriaged } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F116 stage 16 review: the Delegate command under two picks at once, the Polish draft and the actor of the audit rows.
+// The Delegate command under two picks at once, the Polish draft and the actor of the audit rows.
 // The race tests commit their rows and delete the organization after; the others roll back.
 const db = testDb();
 

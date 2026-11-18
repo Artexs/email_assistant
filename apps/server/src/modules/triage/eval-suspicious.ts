@@ -13,7 +13,7 @@ import {
 
 import { linkPairsOfHtml } from "../mail";
 
-// The sim stand-in for the known senders of production (known-sender rule of the F109 plan). It is not the production rule: production
+// The sim stand-in for the known senders of production (the known-sender rule). It is not the production rule: production
 // also counts frequent senders (3 clean mails in 90 days), and the sim has no such history for a mail's sender.
 const KNOWN_GROUPS: readonly SimPersonaGroup[] = ["team", "delegate", "client", "vendor", "boss", "partner"];
 
@@ -97,7 +97,7 @@ function knownSetOf(scenario: Scenario, senderRules: EvalCase["senderRules"]): K
 
 /**
  * The `assessSuspicious` input of one sim case. `html` is the HTML part of the case, when the corpus text has
- * one: the eval case holds only the body text. Stage 08 reuses this function.
+ * one: the eval case holds only the body text.
  */
 export function suspiciousInputOfCase(evalCase: EvalCase, scenario: Scenario, html?: string | null): SuspiciousInput {
   const from = splitAddress(evalCase.from);
@@ -161,7 +161,7 @@ export function suspiciousRows(
   }));
 }
 
-// Targets of the F109 stage 05 plan (default; the owner confirms). They apply to the holdout; the other parts print them as a guide.
+// Targets (default; the owner confirms). They apply to the holdout; the other parts print them as a guide.
 export const TARGETS = { recall: 0.9, whitelistedFlagged: 0, otherFlagRate: 0.02 } as const;
 
 const pct = (part: number, total: number): string => (total === 0 ? "n/a" : `${((part / total) * 100).toFixed(1)}%`);

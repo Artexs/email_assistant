@@ -175,7 +175,7 @@ describe("lateMin", () => {
   });
 });
 
-// F110 stage 18: the quiet hours of one member (tests 1 to 4 of the stage).
+// The quiet hours of one member (tests 1 to 4 of the stage).
 describe("own quiet hours", () => {
   const night = { start: "23:00", end: "06:00" };
   // 2026-11-06 is CET (UTC+1): local HH:MM = UTC HH:MM + 1 h.
@@ -233,7 +233,7 @@ describe("own quiet hours", () => {
   });
 });
 
-// F110 stage 18 review: the end time of the own hours can fall in a spring gap or in the autumn hour that repeats, also in
+// The end time of the own hours can fall in a spring gap or in the autumn hour that repeats, also in
 // zones west of UTC. `quietEnd` is always after `now`, never early and never past the end by more than the gap.
 describe("quietEnd on a daylight-saving day", () => {
   const NY = "America/New_York";

@@ -243,7 +243,7 @@ describe("gateFileName", () => {
     expect(gateFileName({ ...base, model: "a/b c" })).toContain("-a_b_c-");
   });
 
-  // F111 D8: the endpoint is part of the name; `standard` keeps the name of stage 21.
+  // The endpoint is part of the name; `standard` keeps its older name.
   test("standard is the stage 21 name; eu and own add the endpoint", () => {
     const stage21 = { ...base, version: "1" };
     expect(gateFileName(stage21)).toBe("classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json");

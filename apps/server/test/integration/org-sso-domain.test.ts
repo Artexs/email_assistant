@@ -27,7 +27,7 @@ import { secretOfUri, totpCode } from "../totp";
 import { testDb } from "./helpers";
 import { resetBody } from "./web-helpers";
 
-// Stage 09 of spec/features/active/F119-e7-t7-identity-b-oidc: the domain proof (DNS TXT or attestation) and the require switch.
+// The domain proof (DNS TXT or attestation) and the require switch.
 // The CLI runs in process (`runOrgSso`) with a fake resolver; Better Auth runs for real, so the session checks read real sessions.
 const db = testDb();
 

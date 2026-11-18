@@ -1,6 +1,6 @@
 import type { UserLocale } from "../tenancy";
 
-// The attachment line of a notice (F109 stage 06). Fixed phrases only: the names come from the mail and are cut in the builder.
+// The attachment line of a notice. Fixed phrases only: the names come from the mail and are cut in the builder.
 export interface AttachmentTexts {
   // The decimal separator of a size in MB.
   decimal: string;

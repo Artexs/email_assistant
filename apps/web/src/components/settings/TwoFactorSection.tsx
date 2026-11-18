@@ -118,7 +118,7 @@ export function TwoFactorSection() {
       clearErrors();
       setPending(true);
       const typed = password;
-      // F128: turning it off and new codes need a code too (one field: the app code or a backup code).
+      // Turning it off and new codes need a code too (one field: the app code or a backup code).
       // `enable` has no code: the empty string stands for "not used".
       const confirmed = purpose === "enable" ? "" : cleanConfirmCode(code);
       if (confirmed === null) {

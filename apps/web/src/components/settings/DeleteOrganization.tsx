@@ -24,7 +24,7 @@ function errorId(error: DeleteError | null, field: "password" | "name"): string 
   return error.field === null ? "del-error" : undefined;
 }
 
-// F106 D5: the owner deletes the organization from the end of the Account card (flag `org_delete`). The password
+// The owner deletes the organization from the end of the Account card (flag `org_delete`). The password
 // and the typed name live only in this component's state: they are cleared when the dialog closes and after every
 // outcome, and they are never stored, logged or put in a URL.
 export function DeleteOrganization() {

@@ -4,7 +4,7 @@ import { createMailOAuthClient, type MailOAuthClientOptions, type MailOAuthClien
 import { mailOAuthProviders, type MailOAuthProvider, type MailOAuthProviderSpec } from "./providers";
 
 export interface MailOAuthClientsDeps extends MailOAuthClientOptions {
-  /** A test passes its own registry (the fake token server). The default is the constant registry (D6). */
+  /** A test passes its own registry (the fake token server). The default is the constant registry. */
   specs?: Readonly<Record<MailOAuthProvider, MailOAuthProviderSpec>>;
 }
 

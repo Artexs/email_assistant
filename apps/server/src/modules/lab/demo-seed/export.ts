@@ -65,7 +65,7 @@ function closeRows(table: DemoTable, rows: DemoRow[], kept: Map<DemoTable, Set<s
 
 /**
  * The demo organization at the end of run day `day`, as one seed. It reads ONLY the organization of `ctx` (every query
- * filters `org_id`; `organizations` by its id) in one read-only snapshot, and writes nothing. Rules (stage 15):
+ * filters `org_id`; `organizations` by its id) in one read-only snapshot, and writes nothing. Rules:
  * - the run belongs to the `demo` key and the org is named exactly like the demo target, else `run_not_demo` or
  *   `org_mismatch`;
  * - the columns are those of `EXPORT_MAP`; users, memberships, chat links, credentials and sessions are not in a seed;

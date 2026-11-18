@@ -44,7 +44,7 @@ export type IncomingSimCommand =
   | (Base & { kind: "audit-list"; version: string })
   | (Base & { kind: "audit-apply"; version: string; date: string });
 
-// The sent-bank commands (F116): the `bank: "sent"` field tells them from the incoming ones.
+// The sent-bank commands: the `bank: "sent"` field tells them from the incoming ones.
 type SentBase = Base & { bank: "sent" };
 export type SentSimCommand =
   | (SentBase & { kind: "plan"; force: boolean })

@@ -1,7 +1,7 @@
 import type { TextKey } from "../en";
 
 export const plApprovals = {
-  // approvals page (F102 stage 12)
+  // approvals page
   appr_off: "Ta strona jest wyłączona w Twojej organizacji.",
   appr_empty: "Nic nie czeka na Twoje zatwierdzenie.",
   appr_list_label: "Szkice czekające na zatwierdzenie",
@@ -189,7 +189,7 @@ export const plApprovals = {
   dgn_cancel_text: "Wykonawca: {name}. Nie można tego cofnąć.",
   dgn_cancel_confirm: "Anuluj zlecenie",
   dgn_keep: "Zachowaj zlecenie",
-  // open loops page (F116 stage 21): the F102 page /delegations while the flag open_loops is on
+  // open loops page: the page /delegations while the flag open_loops is on
   nav_open_loops: "Otwarte sprawy",
   title_open_loops: "Otwarte sprawy",
   lp_tabs_label: "Rodzaje otwartych spraw",
@@ -289,7 +289,7 @@ export const plApprovals = {
   title_approvals: "Zatwierdzenia",
   title_delegates: "Wykonawcy",
   title_delegations: "Zlecenia",
-  // F116 stage 22: the Delegate action on a mail row, the open-loop settings and the new Telegram terms
+  // The Delegate action on a mail row, the open-loop settings and the new Telegram terms
   dla_button: "Zleć",
   dla_title: "Zleć tę wiadomość",
   dla_text:
@@ -316,7 +316,7 @@ export const plApprovals = {
   tgc_title: "Nowe zasady Telegrama: otwarte sprawy",
   tgc_confirm: "Potwierdź",
   tgc_confirmed_toast: "Potwierdzono nowe zasady Telegrama.",
-  // F110 stage 13: the evidence lines of the autonomy card and the block lines of the "Set anyway" dialog
+  // The evidence lines of the autonomy card and the block lines of the "Set anyway" dialog
   trust_proof_go: "Dowód: {percent} % na {cases} przypadkach testowych",
   trust_proof_go_provisional: "Dowód: {percent} % na {cases} przypadkach testowych (wstępny)",
   trust_proof_none: "Brak jeszcze dowodu dla tego modelu AI",
@@ -344,7 +344,7 @@ export const plApprovals = {
   trust_block_tripped: "Ta kategoria została wstrzymana po problemie. Ponowne włączenie kończy wstrzymanie.",
   trust_block_real_labels_no_go: "Twoje własne oceny pokazują, że ta kategoria nie jest jeszcze dość precyzyjna.",
   trust_report_link: "Zobacz raport",
-  // F110 stage 23: the newsletters card of the Rules page (flag bulk_unsubscribe)
+  // The newsletters card of the Rules page (flag bulk_unsubscribe)
   nl_title: "Newslettery",
   nl_help:
     "Nadawcy newsletterów i powiadomień z ostatnich 30 dni. Nadawcy spamu i podejrzani nadawcy nie są na liście.",
@@ -359,7 +359,7 @@ export const plApprovals = {
   nl_done: "Wypisano",
   nl_failed: "Nie udało się",
   nl_failed_open: "Nie udało się — otwórz stronę wypisania",
-  // F110 stage 24: the one-click unsubscribe button
+  // The one-click unsubscribe button
   nl_one_click_help:
     "Wypisanie wysyła jedno standardowe żądanie z tego serwera na adres z newslettera. Żądanie zawiera tylko standardowy tekst wypisania.",
   nl_unsubscribe: "Wypisz",

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { sentBlindCaseSchema, sentLabelSchema, sentParts, sentSlotSchema, sentTextSchema } from "./sent-slot";
 
-// The files of the sent bank (F116 stage 02): `evals/sim/<scenario>/<sent part>/{slots,texts,blind,labels}/batch-NNN.json`.
+// The files of the sent bank: `evals/sim/<scenario>/<sent part>/{slots,texts,blind,labels}/batch-NNN.json`.
 const head = { scenario: z.string(), part: z.enum(sentParts), batch: z.string() };
 
 export const sentSlotBatchFileSchema = z.object({ ...head, slots: z.array(sentSlotSchema) }).strict();

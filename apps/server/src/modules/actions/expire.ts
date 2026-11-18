@@ -10,10 +10,10 @@ import { expireSend } from "./expiry";
 import type { DelegationHooks } from "./hooks";
 import { expireReadyOriginals, listAwaitingSendIds, listUnseenApprovalSends } from "./repo";
 
-// Shared by Undo, the expire-ready CLI and the settings setters (stage 14, as `SettingsDeps.expireReady`).
+// Shared by Undo, the expire-ready CLI and the settings setters (as `SettingsDeps.expireReady`).
 // A row that a committer run holds now stays. One `action.expired` audit row per expired row, in the caller's transaction.
-// `filter.sends`: the `awaiting_approval` sends of the mailbox close too, each with its draft and delegation (D13, D33). It needs `opts.sendClose`.
-// `true` closes every kind; `replies` only the reply sends; `others` every kind except the reply sends (F115 D12).
+// `filter.sends`: the `awaiting_approval` sends of the mailbox close too, each with its draft and delegation. It needs `opts.sendClose`.
+// `true` closes every kind; `replies` only the reply sends; `others` every kind except the reply sends.
 export async function expireReady(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -67,7 +67,7 @@ export async function expireReady(
   return expired;
 }
 
-// F079: at the resume of a suspended organization, every send whose approval request no owner saw ends as `not_seen`.
+// At the resume of a suspended organization, every send whose approval request no owner saw ends as `not_seen`.
 // The request waited in `outbox` through the pause: it would go out late, or the 24 h rule of the sender would end it
 // and the send would time out unseen. Each owner gets the result notice. One `action.expired` audit row per send.
 // `resumedAt` is the time of the resume: the sends notified before it are listed.

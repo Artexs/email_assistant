@@ -19,7 +19,7 @@ import { runJobTick } from "../../src/platform/scheduler";
 import { createOrgWithMailbox, insertTriaged, linkChat, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F114 stage 03: one tick of the `ops.slo` job against `ops_alerts`, with a fake send, a fake clock and fake checks.
+// One tick of the `ops.slo` job against `ops_alerts`, with a fake send, a fake clock and fake checks.
 const db = testDb();
 
 afterAll(async () => {
@@ -407,7 +407,7 @@ describe("ops:alert-test", () => {
   });
 });
 
-// F114 stage 04: the real disk and backup-age checks as `SloCheckEntry` objects, through the whole tick and the stage 03 texts.
+// The real disk and backup-age checks as `SloCheckEntry` objects, through the whole tick and the texts.
 describe("the ops.slo tick with the disk and backup-age checks", () => {
   const backupCfg = { ...cfg, backupStatusFile: "/run/ea-backup/status.json" };
   const entries = (statfs: Parameters<typeof checkDisk>[0], file: () => Promise<string>): SloCheckEntry[] => [

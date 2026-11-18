@@ -17,7 +17,7 @@ import { sentOriginOf, type ClaimedAction, type DraftRow } from "./repo";
 
 const log = createLog("actions");
 
-// What the pass before a reply send decided (F115 stage 09, D7, D10).
+// What the pass before a reply send decided.
 // - `continue`: no reason to stop. `answered` tells whether the mail is answered: the copy check then decides the reason.
 // - `close`: the send ends `expired` with this reason (the DB facts: a newer mail in the thread, or the mail left its folder).
 // - `error`: an IMAP read failed (the flags, or the Sent pass could not finish); nothing is sent. The caller maps the error to a retry.
@@ -29,7 +29,7 @@ export type ReplyPass =
 // The pass runs before the copy check of a reply, before any commit of the send:
 // 0. The DB facts: a newer mail in the thread (an automatic mail does not count) → `newer_mail`; the mail is not in the folder that
 //    the draft was made for → `original_moved`. No IMAP call.
-// 1. The header step of the Sent sync on the committer's own connection (D10). The flag off, the switch off or a mailbox with no Sent
+// 1. The header step of the Sent sync on the committer's own connection. The flag off, the switch off or a mailbox with no Sent
 //    folder: go on with the flags only. A pass that ran out of its time budget is an error of the soft kind (the next try goes on
 //    from the cursor), because a partial read would let an answer in Sent go unseen. The header step only reads the folder.
 // 2. One `fetchFlagsIn` for the original, and the stored flags of that mail are updated (the same writer as the flag refresh).
@@ -73,7 +73,7 @@ export async function checkReplyBeforeSend(
     );
     if (sent.status === "budget") throw new SoftError("the Sent pass ran out of time");
 
-    // A vacation reply in Sent is no answer: read the `Auto-Submitted` header of the Sent mail that would count (stage 09 review N4).
+    // A vacation reply in Sent is no answer: read the `Auto-Submitted` header of the Sent mail that would count.
     await markAutomaticAnswers({ db: deps.db, provider }, ctx, emailId);
     const flags = await refreshFlagsOfEmail({ db: deps.db, provider, now: deps.now }, ctx, emailId);
     const answered = (await replyFactsOf(deps.db, ctx, [emailId])).get(emailId)?.answered === true;

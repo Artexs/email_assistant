@@ -8,11 +8,11 @@ import { globalEvidenceFor, loadGateEvidence } from "./evidence";
 
 import { gateFileSchema, prompts } from "./index";
 
-// An `-eu` or `-own` gate file proves another endpoint (F111 D8). It still has to parse, but it is no evidence for
+// An `-eu` or `-own` gate file proves another endpoint. It still has to parse, but it is no evidence for
 // the default endpoint of the install, so it does not count here.
 const ENDPOINT_SUFFIX = /-(eu|own)\.json$/;
 
-// Every gate file of the prompt version is parsed. The result lists the files that count as PD-025 evidence:
+// Every gate file of the prompt version is parsed. The result lists the files that count as gate evidence:
 // no endpoint suffix in the name, and no other endpoint in the file.
 function gateEvidence(dir: string, promptVersion: string): string[] {
   const files = readdirSync(dir).filter(
@@ -26,7 +26,7 @@ function gateEvidence(dir: string, promptVersion: string): string[] {
   return evidence;
 }
 
-// A prompt or model change of the classifier needs a sim holdout gate file (PD-025). CI has no LLM key, so it checks the evidence, not the numbers.
+// A prompt or model change of the classifier needs a sim holdout gate file. CI has no LLM key, so it checks the evidence, not the numbers.
 test("a sim holdout gate file exists for the current classifier prompt version", () => {
   const dir = resolve(import.meta.dir, "../../../../../evals/results/gate");
   expect(gateEvidence(dir, prompts.classifier.version).length).toBeGreaterThan(0);
@@ -70,7 +70,7 @@ test("a broken own gate file still fails the parse", () => {
   }
 });
 
-// The runtime reader (F110 stage 02) must read the committed files as the server reads them at start. A change of
+// The runtime reader must read the committed files as the server reads them at start. A change of
 // the gate file format that the reader cannot parse fails here, not at the start of a release.
 test("the runtime reader reads every committed classifier gate file with no warning", () => {
   const dir = resolve(import.meta.dir, "../../../../../evals/results/gate");

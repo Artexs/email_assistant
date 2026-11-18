@@ -18,7 +18,7 @@ import type { DB } from "../../src/platform/db";
 import { insertAction, insertDelegate, insertDelegation, insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F106 stage 07: `findSubjectData`, `dsrAddressHash` and the `org:dsr --find` CLI. The seed is committed (the find reads
+// `findSubjectData`, `dsrAddressHash` and the `org:dsr --find` CLI. The seed is committed (the find reads
 // a snapshot in its own transaction); `afterEach` removes it. The connection is the `app` role.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

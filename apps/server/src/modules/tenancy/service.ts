@@ -140,7 +140,7 @@ export interface SetOrgPlanInput {
 export interface SetOrgPlanHooks {
   // Runs in the same transaction when the plan moves to suspended; returns the number of cancelled messages.
   onSuspended?: (trx: Transaction<DB>, ctx: TenantContext) => Promise<number>;
-  // Runs in the same transaction when the plan leaves suspended (F079); `now` is the new `resumed_at`.
+  // Runs in the same transaction when the plan leaves suspended; `now` is the new `resumed_at`.
   // Returns the number of sends that it closed.
   onResumed?: (trx: Transaction<DB>, ctx: TenantContext, input: { now: Date; actor: string }) => Promise<number>;
 }
@@ -246,7 +246,7 @@ export interface SetOrgFeatureInput {
   now: Date;
 }
 
-// F119 N12: `sso_sign_in` is off and the organization requires SSO, so only the break-glass owner can sign in. The write still applies.
+// `sso_sign_in` is off and the organization requires SSO, so only the break-glass owner can sign in. The write still applies.
 export type SetOrgFeatureWarning = "sso_required_on";
 
 export type SetOrgFeatureResult =
@@ -255,7 +255,7 @@ export type SetOrgFeatureResult =
   | { kind: "not_found" }
   | { kind: "unknown_flag" };
 
-// One transaction: the organization lock (it orders two writes at once), the row, and the audit row in the same commit (D11).
+// One transaction: the organization lock (it orders two writes at once), the row, and the audit row in the same commit.
 // A row with the same value is "unchanged": no write, no audit row. An off with no row writes a row.
 export async function setOrgFeature(
   db: Db | Transaction<DB>,
@@ -294,7 +294,7 @@ export type SetBreakGlassResult =
   | { kind: "not_owner" } // no membership, or the role is assistant
   | { kind: "no_two_factor" }; // users.two_factor_enabled is false
 
-// F105 D11. One transaction: the organization lock, the checks, the old mark off, the new mark on, and one audit row per change.
+// One transaction: the organization lock, the checks, the old mark off, the new mark on, and one audit row per change.
 // The clear runs before the set: the partial unique index never sees two marks.
 export async function setBreakGlassOwner(
   db: Db,
@@ -333,7 +333,7 @@ export async function setBreakGlassOwner(
 
 export type ClearBreakGlassResult = { kind: "cleared"; userId: string } | { kind: "none" } | { kind: "not_found" };
 
-// Takes a transaction too: the operator reset (F105 stage 07) calls it inside its own.
+// Takes a transaction too: the operator reset calls it inside its own.
 // `onlyUserId`: clear only when this user still holds the mark after the organization lock; else "none".
 export async function clearBreakGlassOwner(
   db: Db | Transaction<DB>,
@@ -362,7 +362,7 @@ export type ResetTwoFactorResult =
   | { kind: "reset"; hadTwoFactor: boolean; sessionsEnded: number; breakGlassCleared: string[] } // org ids
   | { kind: "not_member" };
 
-// The operator reset (F105 D13). One transaction holds every write: the second factor, the sessions, the trusted
+// The operator reset. One transaction holds every write: the second factor, the sessions, the trusted
 // devices, the break-glass marks and the audit rows. A repeat run changes nothing but the audit row (sessions_ended 0).
 // It writes the audit row also when the second factor was off: the operator ran it, the log shows it.
 export async function resetTwoFactor(

@@ -13,7 +13,7 @@ import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb } from "./helpers";
 import { insertMailboxProfile, insertReplyRequest } from "./reply-fixtures";
 
-// F115 stage 03: the reply request and the mailbox profile are in the data request, the erase and the organization
+// The reply request and the mailbox profile are in the data request, the erase and the organization
 // export. The seed is committed (the erase runs its own transaction); `afterEach` removes it. The connection is the
 // `app` role.
 const db = testDb();

@@ -12,7 +12,7 @@ import { adminUrl, withDatabase, worktreeDbComment } from "../../src/scripts/db-
 import { createOrgWithMailbox, insertTriaged } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F103 stage 04: the scripts print through createCliOutput: `print` to stdout, `fail` to stderr. Each test pins the
+// The scripts print through createCliOutput: `print` to stdout, `fail` to stderr. Each test pins the
 // stream of a line that no other CLI test pins by stream (db-worktree, org-status, telegram-unlink, telegram-check,
 // triage-cost, triage-label, eval). The case-set runs of `eval` are in `scripts/eval-streams.test.ts`.
 // Test addresses end in `@x.test`; temp files live in one folder under the OS temp dir.

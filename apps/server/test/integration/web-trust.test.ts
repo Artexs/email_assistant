@@ -19,7 +19,7 @@ import {
   type TrustWebBox,
 } from "./web-trust-kit";
 
-// GET /api/trust/:mailboxId (F110 stage 11): the one read model. Committed rows; `afterEach` removes the organizations.
+// GET /api/trust/:mailboxId: the one read model. Committed rows; `afterEach` removes the organizations.
 const db = testDb();
 let box: TrustWebBox;
 

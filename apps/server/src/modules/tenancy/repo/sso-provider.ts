@@ -2,7 +2,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
-// The write side of the provider table (F119 stage 07). Reads and writes name the organization: the operator CLI runs with
+// The write side of the provider table. Reads and writes name the organization: the operator CLI runs with
 // no tenant scope, so RLS would show every row.
 
 export interface SsoProviderFull {
@@ -17,7 +17,7 @@ function proofOf(value: string | null): "dns" | "attested" | null {
   return value === "dns" || value === "attested" ? value : null;
 }
 
-// FOR UPDATE: a callback in flight holds this row (the plugin locks it with an UPDATE) and finishes first (N7).
+// FOR UPDATE: a callback in flight holds this row (the plugin locks it with an UPDATE) and finishes first.
 // The caller holds the organization lock already (`lockOrganization`): that lock first, then this one.
 export async function lockSsoProvider(trx: Transaction<DB>, ctx: TenantContext): Promise<SsoProviderFull | undefined> {
   const row = await trx
@@ -52,7 +52,7 @@ export async function isDomainTakenByOther(
   return row !== undefined;
 }
 
-// The provider id is the organization id as text (stage 02).
+// The provider id is the organization id as text.
 export async function insertSsoProvider(
   trx: Transaction<DB>,
   ctx: TenantContext,

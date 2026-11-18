@@ -1,4 +1,4 @@
-// The trust view of one mailbox (F110 stage 11): the one read model of the autonomy card, the report page and M8.
+// The trust view of one mailbox: the one read model of the autonomy card, the report page and M8.
 // Counts, codes, dates and the examples only. The examples hold a sender name and a subject: the panel is behind login and the
 // view never goes to Telegram.
 import { mailboxModes } from "../triage/categories";

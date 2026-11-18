@@ -1,4 +1,4 @@
-// Committed rows and real connections for the tests of a loop that closes while the committer sends (F116 stages 10 and 13).
+// Committed rows and real connections for the tests of a loop that closes while the committer sends.
 import { randomUUID } from "node:crypto";
 
 import { sendPayloadFor, type DraftPayload } from "@ea/core";

@@ -100,7 +100,7 @@ export const miniPlanSpec: PlanSpec = {
   week: defaultWeekSpec,
 };
 
-// One sent mail (F116): an ask with a time-word due and a dated promise, plus the files that belong to it.
+// One sent mail: an ask with a time-word due and a dated promise, plus the files that belong to it.
 export const miniSentSlot: SentSlot = {
   id: "s-0001",
   part: "sent-dev",

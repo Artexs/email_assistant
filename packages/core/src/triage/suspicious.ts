@@ -1,7 +1,7 @@
 import { splitAddress } from "./address";
 
-// Suspicious-mail rules (F109, PD-063). One pure function: the reasons for one mail, from fields the
-// caller already holds. No DB, no network. The caller decides who is a known sender (stage 03).
+// Suspicious-mail rules. One pure function: the reasons for one mail, from fields the
+// caller already holds. No DB, no network. The caller decides who is a known sender.
 
 export const suspiciousReasons = [
   "auth_fail",
@@ -27,7 +27,7 @@ export interface SuspiciousInput {
   protectedNames: string[];
 }
 
-// A free-mail domain never makes a sender known by its domain (plan D4).
+// A free-mail domain never makes a sender known by its domain.
 export const freeMailDomains: readonly string[] = [
   "gmail.com",
   "googlemail.com",
@@ -52,7 +52,7 @@ export const freeMailDomains: readonly string[] = [
   "web.de",
 ];
 
-// Plan D3: a built-in list of two-level suffixes, not a public-suffix library.
+// A built-in list of two-level suffixes, not a public-suffix library.
 const TWO_LEVEL_SUFFIXES: ReadonlySet<string> = new Set([
   "com.pl",
   "net.pl",
@@ -382,7 +382,7 @@ export function assessSuspicious(input: SuspiciousInput): SuspiciousReason[] {
 
   if (isAuthFail(input.authResults, input.trustedAuthservIds)) reasons.push("auth_fail");
 
-  // A known sender gets only `auth_fail` and `risky_attachment` (plan D1).
+  // A known sender gets only `auth_fail` and `risky_attachment`.
   if (!input.senderKnown) {
     if (senderDomain !== null && isLookalike(senderDomain, input.knownDomains)) reasons.push("lookalike_domain");
     if (isDisplayNameSpoof(input.fromAddress, input.fromName, input.protectedNames)) {
@@ -396,6 +396,6 @@ export function assessSuspicious(input: SuspiciousInput): SuspiciousReason[] {
   return reasons;
 }
 
-// The three states of the suspicion of one mail (F115 D4, F109 review-4 N3). A mail with no `triage_results` row is NOT clean:
+// The three states of the suspicion of one mail. A mail with no `triage_results` row is NOT clean:
 // it was never checked. `flagged` carries the reasons of the newest row. Readers that block a draft need all three states.
 export type Suspicion = { state: "untriaged" } | { state: "clean" } | { state: "flagged"; reasons: SuspiciousReason[] };

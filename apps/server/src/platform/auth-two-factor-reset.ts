@@ -2,7 +2,7 @@ import { sql, type Transaction } from "kysely";
 
 import type { DB } from "./db";
 
-// Kysely only, no better-auth import (F105 D4).
+// Kysely only, no better-auth import.
 // The second place where our SQL touches the Better Auth tables (docs/code-patterns.md § Data access).
 // The caller owns the transaction: every write below commits or rolls back with the caller's other writes.
 export async function resetTwoFactorRows(

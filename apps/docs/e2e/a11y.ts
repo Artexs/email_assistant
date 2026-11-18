@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
-// WCAG 2.0 to 2.2, levels A and AA: the same tags as the panel (`apps/web/e2e/a11y.ts`, F102 D13). No rule is turned off.
+// WCAG 2.0 to 2.2, levels A and AA: the same tags as the panel (`apps/web/e2e/a11y.ts`). No rule is turned off.
 // A docs-local copy: the docs app imports nothing from `apps/web/e2e`.
 export const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 

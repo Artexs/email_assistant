@@ -18,7 +18,7 @@ import { setLogLevel } from "../../src/platform/log";
 import { createOrgWithMailbox, insertTestEmail, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F103 stage 11: the triage events that the other triage log tests do not pin. Each test reads the unfiltered capture
+// The triage events that the other triage log tests do not pin. Each test reads the unfiltered capture
 // of console.log and console.error (text format) and checks the whole text: event name, level, fields, no free text,
 // no dropped field.
 

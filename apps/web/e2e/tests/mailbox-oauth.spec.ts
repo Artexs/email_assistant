@@ -8,7 +8,7 @@ import { cleanUpOrg, cspErrors, nextAddress, signIn } from "../helpers";
 import { e2eEnv, repoRoot } from "../env";
 import { readSeed } from "../seed";
 
-// F117 stage 16: the sign-in buttons of the connect dialog and the result banner on `/mailboxes`, in a browser.
+// The sign-in buttons of the connect dialog and the result banner on `/mailboxes`, in a browser.
 // The fake Microsoft client keys are in `e2e/env.ts`. The flag `mail_oauth_microsoft` is on for the seed organization only while this
 // file runs; Google stays off.
 // The browser never reaches Microsoft: the spec answers the authorize URL itself.

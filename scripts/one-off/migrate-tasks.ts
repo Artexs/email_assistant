@@ -1,11 +1,11 @@
-// One-off (Limen transition, stage 1 step 1.9): moves the old task history from `tasks/` to Limen's
+// One-off (Limen transition): moves the old task history from `tasks/` to Limen's
 // feature lanes `spec/features/<lane>/FNNN-<name>/` and rewrites the links to the moved files.
-// Plan: spec/features/active/F0NN-limen-transition/stages/stage-1-out-of-box.md § 1.9. Delete in stage 3.
+// Delete this file when the Limen transition is complete.
 //
 //   bun scripts/one-off/migrate-tasks.ts migrate   # git mv, ticket.md, migration-map.tsv, link rewrite
 //   bun scripts/one-off/migrate-tasks.ts links     # prints every relative link that does not resolve
 //
-// The S6 family (`s6-pre-sale`, `s6a`–`s6f`) and `tasks/README.md` stay in `tasks/` and are not edited.
+// The `s6-*` task files (`s6-pre-sale`, `s6a`–`s6f`) and `tasks/README.md` stay in `tasks/` and are not edited.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, normalize, posix } from "node:path";
 

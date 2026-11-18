@@ -1,5 +1,5 @@
 // Astro integration: after the build, every in-place page must exist, show its source title as the page heading
-// and be listed in the sidebar, in the section "Operate" unless the page has its own link (plan D5). It catches a loader or sidebar that the config no longer wires.
+// and be listed in the sidebar, in the section "Operate" unless the page has its own link. It catches a loader or sidebar that the config no longer wires.
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";

@@ -5,7 +5,7 @@ import type { Db } from "../platform/db";
 
 import { inTransaction } from "./e2e-activity-rows";
 
-// F110 stage 13: the trust rows of the autonomy card spec. A `done` history check that finished an hour ago: `info` and `notification`
+// The trust rows of the autonomy card spec. A `done` history check that finished an hour ago: `info` and `notification`
 // pass, `spam` fails (6 of 60 acted-on mails would have moved), and an active trip on `info` (two corrections). Together with the gate
 // fixture folder (`apps/web/e2e/gate-fixture/`, all three categories `go`), the card shows: `notification` eligible, `spam` blocked by
 // the history, `info` paused. The rows hold counts only; no mail is seeded.
@@ -46,7 +46,7 @@ export async function seedTrustRows(db: Db, ctx: TenantContext, mailboxId: strin
   });
 }
 
-// F110 stage 14: the rows of the report page spec, one state per mailbox. `done`: as the card mailbox (a done check, `spam` failed, a trip
+// The rows of the report page spec, one state per mailbox. `done`: as the card mailbox (a done check, `spam` failed, a trip
 // on `info`), so `notification` is the one recommended category. `running`: a check that classifies; `next_attempt_at` is a year away, so
 // the history job of the e2e server never claims it and the state holds. `noResult`: a check that ended with `no_history`, no trip: the
 // evidence of the gate fixture alone recommends all three moving categories. The rows hold counts only; no mail is seeded.

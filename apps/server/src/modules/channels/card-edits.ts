@@ -29,10 +29,10 @@ export interface CardEditResult {
   cancelled: number;
 }
 
-// F102 stage 06 (D4): after a decision on a send, every owner's sent card of that send shows the result and loses its
-// buttons. Runs in the transaction of the decision. One `approval_edit` row per card and outcome; the sender (stage 09) edits
+// After a decision on a send, every owner's sent card of that send shows the result and loses its
+// buttons. Runs in the transaction of the decision. One `approval_edit` row per card and outcome; the sender edits
 // the Telegram message. `sendId` is the send that the card asks about. `exceptUserId` is the user whose own tap edits the
-// card in place. A card of a reminder set (`approval_set:`) gets no edit (Q15).
+// card in place. A card of a reminder set (`approval_set:`) gets no edit.
 //   `sent` card with its text and message id → one row (`approval_edit:<card id>:<outcome>`)
 //   `pending` card → `failed` / `answered_elsewhere` (nobody saw it; the send is decided)
 //   `sending` card → nothing: it is in flight, and a tap on it answers by the state (accepted race)
@@ -63,7 +63,7 @@ export async function queueCardEdits(
     }
     // A decision reads its clock before it waits for the send lock, so a decision that commits later can carry an earlier time.
     // The sender drops a row when a newer row of the card went out (`newerEditSent`): the row of the later decision must
-    // sort after the earlier one, or the card would keep the older result (review 9 N1). One millisecond after the newest row.
+    // sort after the earlier one, or the card would keep the older result. One millisecond after the newest row.
     const newest = await newestEditCreatedAt(trx, ctx, card.id);
     const queuedAt =
       newest !== null && newest.getTime() >= input.at.getTime() ? new Date(newest.getTime() + 1) : input.at;
@@ -81,7 +81,7 @@ export async function queueCardEdits(
         at: input.at,
         timeZone: organization.timezone,
         ...(input.heldBy === undefined ? {} : { heldBy: input.heldBy }),
-        // The Reject button of the held card names the send (Q13).
+        // The Reject button of the held card names the send.
         ...(input.outcome === "approved_held" ? { actionId: input.sendId } : {}),
       },
       now: input.at,
@@ -94,7 +94,7 @@ export async function queueCardEdits(
 
 const SAVEPOINT = "card_edits";
 
-// The real `ApprovalHooks` (F102 card sync). Runs in the transaction of the decision, with no call to the outside.
+// The real `ApprovalHooks`. Runs in the transaction of the decision, with no call to the outside.
 // `approved` becomes `approved_held` when `heldReason` names a cause. Card sync is best effort: a failure here (a view that
 // does not render, a database error) is logged and undone to a savepoint, and the decision stays. The send of the edit is
 // the sender's; its failures end the edit row as `failed` (the visible state).

@@ -1,6 +1,6 @@
 import { z } from "./zod";
 
-// GET /api/loops and the POST routes of one loop (ADR 0023, ticket folder F116-e5b-open-loops). Every object is strict. The loop texts (`text`,
+// GET /api/loops and the POST routes of one loop (ADR 0023, `docs/capabilities/open-loops.md`). Every object is strict. The loop texts (`text`,
 // `subject`, `counterpart`) are mail data: they never go to a log; they are null after the retention cleared them.
 export const loopKinds = ["waiting", "promised", "delegated"] as const;
 export type LoopKindName = (typeof loopKinds)[number];

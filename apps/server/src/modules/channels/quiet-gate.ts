@@ -15,7 +15,7 @@ export interface QuietGate {
   holdUntil(row: ClaimedOutbox, timezone: string): Promise<Date | null>;
 }
 
-// Quiet hours of one claimed batch (F110 stage 18), shared by the Telegram sender and the report mail sender. The hours of the users of
+// Quiet hours of one claimed batch, shared by the Telegram sender and the report mail sender. The hours of the users of
 // the batch are read once. An organization with the flag `user_quiet_hours` off, or a user with no hours of their own, gets the default.
 // The caller decides which rows quiet hours hold (never the digest and a card edit).
 export function createQuietGate(deps: {

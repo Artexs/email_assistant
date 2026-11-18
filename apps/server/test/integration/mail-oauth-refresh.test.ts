@@ -56,8 +56,8 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { webOrg, type WebOrg } from "./web-helpers";
 
-// F117 stage 10: the token store (`createOAuthTokens`), the login retry of `openMailboxProvider` and the status with a reason.
-// The token endpoint is the fake of stage 06. Rows are committed: the refresh runs its own transaction on the pool, so it must see them.
+// The token store (`createOAuthTokens`), the login retry of `openMailboxProvider` and the status with a reason.
+// The token endpoint is the fake token server. Rows are committed: the refresh runs its own transaction on the pool, so it must see them.
 // The sync job lists the mailboxes of the whole database; a mailbox that is not a test mailbox gets a soft error and no status change.
 const db = testDb();
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);

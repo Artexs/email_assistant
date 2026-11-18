@@ -20,7 +20,7 @@ export interface ReturnedJobDeps {
   batchSize?: number;
 }
 
-// D12: one transaction per mail. The row lock on the original move keeps Undo and this job in turn (M8).
+// One transaction per mail. The row lock on the original move keeps Undo and this job in turn (M8).
 export async function processReturned(
   db: Db | Transaction<DB>,
   ctx: TenantContext,

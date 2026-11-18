@@ -43,7 +43,7 @@ import { assessEmail, type SuspiciousContext } from "./suspicious-context";
 
 const log = createLog("triage");
 
-// D6: one child per mail; the ids of the lines of one mail stay out of each call.
+// One child per mail; the ids of the lines of one mail stay out of each call.
 function emailLogOf(ctx: TenantContext, email: ClaimedEmail): Log {
   return log.with({ org_id: ctx.orgId, mailbox_id: email.mailbox_id, email_id: email.id });
 }
@@ -63,13 +63,13 @@ export interface TriageMailbox {
   delegates: { id: string; name: string; email: string; tags: string[] }[];
   // The IANA zone of the organization (due dates).
   timezone: string;
-  // The path of the mailbox's junk folder row (null: none), read once per run with the snapshot (D11).
+  // The path of the mailbox's junk folder row (null: none), read once per run with the snapshot.
   junkFolder: string | null;
-  // `organizations.resumed_at` (null: never resumed). Drives the backlog rule of D4.
+  // `organizations.resumed_at` (null: never resumed). Drives the backlog rule.
   resumedAt: Date | null;
-  // The known senders and the protected names of this mailbox, read once per batch (F109 stage 03).
+  // The known senders and the protected names of this mailbox, read once per batch.
   suspicious: SuspiciousContext;
-  // `mailbox_settings.urgency_profile` of the batch read (null: none). A change mid-batch follows triage rule 9 (F109 stage 10).
+  // `mailbox_settings.urgency_profile` of the batch read (null: none). A change mid-batch follows triage rule 9.
   urgencyProfile: UrgencyProfile | null;
 }
 
@@ -92,7 +92,7 @@ export interface TriageDecision {
   delegation: DelegationInput | null;
   // The codes of `assessSuspicious`, computed before the LLM call; `triage_results.suspicious_reasons`. Empty on the error path.
   suspiciousReasons: SuspiciousReason[];
-  // D6: a flagged `delegation` mail (flag `suspicious_mail` on, reasons not empty) plans nothing, also from the Junk folder.
+  // A flagged `delegation` mail (flag `suspicious_mail` on, reasons not empty) plans nothing, also from the Junk folder.
   holdDelegation?: boolean;
 }
 
@@ -141,7 +141,7 @@ function payloadOf(action: PlannedAction): Record<string, unknown> {
   }
 }
 
-// D7: a delegate's reply closes the open delegation. Runs in the triage transaction, after `finishEmail`.
+// A delegate's reply closes the open delegation. Runs in the triage transaction, after `finishEmail`.
 async function markReply(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -158,7 +158,7 @@ async function markReply(
   return (await markAnswered(trx, ctx, found.delegationId, { emailId: email.id, at: now })) ? found.delegationId : null;
 }
 
-// D6: a `ready` delegation draft with its send gets the `delegations` row; both payloads get its id (D2).
+// A `ready` delegation draft with its send gets the `delegations` row; both payloads get its id.
 async function createDelegationRow(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -254,7 +254,7 @@ export async function saveTriage(
       confidence: decision.confidence,
       reasonCode: decision.reasonCode,
       reason: decision.reason,
-      // The `rule` key is last: no model field can set it (F110 stage 16). An old row has no key and reads null.
+      // The `rule` key is last: no model field can set it. An old row has no key and reads null.
       fields: {
         ...decision.fields,
         ...(decision.modelCategory === null ? {} : { model_category: decision.modelCategory }),
@@ -407,7 +407,7 @@ async function handleClassifyError(
   return finishTriageError(deps, ctx, mailbox, email);
 }
 
-// Mail older than this before `resumed_at` is backlog of the pause (D4, A16).
+// Mail older than this before `resumed_at` is backlog of the pause.
 export const BACKLOG_GRACE_MS = 24 * 3_600_000;
 
 type SkipReason = "too_old" | "suspended_backlog" | "body_expired";
@@ -464,7 +464,7 @@ export async function triageOne(
     return skipEmail(deps, ctx, mailbox, email, "suspended_backlog");
   }
   // A backfilled mail is exempt from the age rules, so it can wait in `pending` past the retention period (a suspended
-  // organization, scope `off`) and lose its body there. Without the body the classification is poor: no LLM call (F083).
+  // organization, scope `off`) and lose its body there. Without the body the classification is poor: no LLM call.
   if (
     email.backfilled_at !== null &&
     email.body_text === null &&
@@ -565,7 +565,7 @@ export async function triageOne(
   });
 
   const { category, belowThreshold } = decideCategory(analysis, mailbox.policy);
-  // D6: a flagged delegation mail gets no draft, no send, no delegations row and no move (also from Junk). The category stays.
+  // A flagged delegation mail gets no draft, no send, no delegations row and no move (also from Junk). The category stays.
   const flaggedDelegation =
     suspiciousReasons.length > 0 && category === "delegation" && (await isFeatureOn(deps.db, ctx, "suspicious_mail"));
   const delegation = flaggedDelegation ? null : delegationInputOf(analysis, mailbox.delegates, email.from_address);

@@ -11,7 +11,7 @@ import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
 import { DUE, flagLoops, seedLoops } from "./loops-m2-fixtures";
 import { WEEK, WEEK_NOW, seedWeek } from "./metrics-fixtures";
 
-// F116 stage 23, T8 and the readers behind it: the M2 numbers over delegations and loops.
+// The readers behind the loop metrics: the numbers over delegations and loops.
 
 const db = testDb();
 const deps: WeekStatsDeps = { urgentNotices: listUrgentNoticeTimes, testMail: { senders: [] } };

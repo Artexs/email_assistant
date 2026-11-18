@@ -35,7 +35,7 @@ import {
 } from "./copy-hash-fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F115 stage 08, step 1 (the baseline after the APPEND) and step 4 (the probe service): GreenMail, real copies.
+// The baseline after the APPEND and the probe service: GreenMail, real copies.
 const db = testDb();
 const boxes: CopyBox[] = [];
 let logs: CapturedLogs | null = null;

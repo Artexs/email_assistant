@@ -1,6 +1,6 @@
 import { z } from "./zod";
 
-// The panel API of the mailbox OAuth sign-in (F117). The route, its apiDoc and the panel parse with these objects.
+// The panel API of the mailbox OAuth sign-in. The route, its apiDoc and the panel parse with these objects.
 
 /** The providers a mailbox connects with. Registry order: the order of `options`. */
 export const mailOAuthProviderKeys = ["microsoft", "google"] as const;
@@ -52,7 +52,7 @@ export const mailOAuthOptionsSchema = z.object({
 export type MailOAuthOptions = z.infer<typeof mailOAuthOptionsSchema>;
 
 /**
- * The value of `?oauth=` on `/mailboxes` after the callback redirect (D11). The panel maps each code to a text.
+ * The value of `?oauth=` on `/mailboxes` after the callback redirect. The panel maps each code to a text.
  * The server type `OAuthResultCode` (`mail/oauth/apply.ts`) must hold the same codes.
  */
 export const mailOAuthResultCodes = [

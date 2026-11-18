@@ -23,14 +23,14 @@ export interface SenderContext {
   noreply: boolean;
 }
 
-// What the user's own data adds to one mail (F109 stage 08, decision D10). `classifier-v2` ignores it. Counts and
-// names only: no text of another mail leaves the readers (P4). Absent extras mean all empty or null.
+// What the user's own data adds to one mail. `classifier-v2` ignores it. Counts and
+// names only: no text of another mail leaves the readers. Absent extras mean all empty or null.
 export interface ClassifierExtras {
   // Non-inline attachments, at most 10. Names are untrusted mail data.
   attachments: { name: string | null; type: string; size: number | null }[];
   // The mail has a List-Id or a List-Unsubscribe header.
   isList: boolean;
-  // Counts of earlier mail of this sender. No model labels (review N2). Null for a flagged mail: a forged
+  // Counts of earlier mail of this sender. No model labels. Null for a flagged mail: a forged
   // address must not inherit a good history.
   senderHistory: {
     days: number;

@@ -17,10 +17,10 @@ export interface QuietHours {
   end: string;
 }
 
-// P4: no notices from 22:00 to 07:00 in the organization time zone. A change is a code change.
+// No notices from 22:00 to 07:00 in the organization time zone. A change is a code change.
 export const QUIET_HOURS: QuietHours = { start: "22:00", end: "07:00" };
 
-// The quiet hours of a member row (F110 P5): both columns null means the default; equal start and end means none.
+// The quiet hours of a member row: both columns null means the default; equal start and end means none.
 export function quietHoursOf(start: string | null, end: string | null): QuietHours {
   return start === null || end === null ? QUIET_HOURS : { start, end };
 }
@@ -194,7 +194,7 @@ export function quietEnd(at: Date, timeZone: string, quiet: QuietHours = QUIET_H
   return new Date(next ?? at.getTime() + 60_000);
 }
 
-// Minutes from `from` to `to` that lie outside the quiet hours of the time zone (F114 urgent check). The sender holds
+// Minutes from `from` to `to` that lie outside the quiet hours of the time zone. The sender holds
 // a notice in quiet hours by the time of the send, so the minutes in quiet hours are not late. Zero when `to <= from`.
 export function lateMin(from: Date, to: Date, timeZone: string, quiet: QuietHours = QUIET_HOURS): number {
   const fromMs = from.getTime();

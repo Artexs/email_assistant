@@ -4,7 +4,7 @@ import type { TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
-// The first step of the apply step for a draft or a send: it commits before any APPEND or SMTP call (D17).
+// The first step of the apply step for a draft or a send: it commits before any APPEND or SMTP call.
 // `locked_at` stays: the claim token is valid through the step.
 // A send starts only from `approved` with `approved_at` set; a draft from `ready` or `approved`.
 export async function markApplying(
@@ -19,7 +19,7 @@ export async function markApplying(
     .set((eb) => ({
       status: "applying",
       outgoing_message_id: opts?.outgoingMessageId ?? eb.ref("outgoing_message_id"),
-      // PD-044: the send limits count by this time; each new SMTP try (after a release) restamps it.
+      // The send limits count by this time; each new SMTP try (after a release) restamps it.
       send_started_at: opts?.sendStartedAt ?? eb.ref("send_started_at"),
       updated_at: sql<Date>`now()`,
     }))
@@ -44,11 +44,11 @@ export type FinishNext =
       reason: string;
       lastError?: string;
       countAttempt?: true;
-      // S4: a send failure stores { stage, response_code, code } for the result notice (D20).
+      // A send failure stores { stage, response_code, code } for the result notice.
       providerResult?: ProviderResult;
     }
-  // S4: an `applying` draft whose send ended before the APPEND (N12). `loop_closed`: the claimed `approved` send of a
-  // follow-up whose loop closed before the SMTP call (open loops stage 10).
+  // An `applying` draft whose send ended before the APPEND. `loop_closed`: the claimed `approved` send of a
+  // follow-up whose loop closed before the SMTP call.
   | { status: "expired"; at: Date; reason: "send_closed" | "loop_closed" };
 // `lockedAt` is the claim token: a stale run that lost its claim changes nothing.
 // `next.at` is the run clock: it sets `updated_at` (and `applied_at`). `from` lists the statuses that may finish.

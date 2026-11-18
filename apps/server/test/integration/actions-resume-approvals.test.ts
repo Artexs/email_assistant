@@ -18,7 +18,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox, insertDraftAndSend, pauseOtherMailboxes } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F079: at the resume of a suspended organization, a send whose approval request no owner saw ends as `not_seen`.
+// At the resume of a suspended organization, a send whose approval request no owner saw ends as `not_seen`.
 const db = testDb();
 
 afterAll(async () => {

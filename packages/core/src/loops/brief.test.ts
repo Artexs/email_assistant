@@ -42,7 +42,7 @@ const delegation = (n: number, over: Partial<BriefDelegation> = {}): BriefDelega
   ...over,
 });
 
-// T1 of the stage: 2 urgent, 7 waiting on you, 3 loops, 1 delegation and 1 promise.
+// The data: 2 urgent, 7 waiting on you, 3 loops, 1 delegation and 1 promise.
 function fullInput(over: Partial<BriefInput> = {}): BriefInput {
   return briefInput({
     urgent: part([
@@ -452,7 +452,7 @@ describe("the brief inside the digest", () => {
     // No "+n more" for the urgent mails that the 🔴 lines took.
     expect(message.text).not.toContain("urgent");
     expect(message.text).not.toContain("Delegations:");
-    // The feedback buttons belong to the rows of the normal list only; the loop rows come first, as their lines do (stage 19).
+    // The feedback buttons belong to the rows of the normal list only; the loop rows come first, as their lines do.
     expect(message.buttons.slice(-1)[0]?.map((button) => button.text)).toEqual(["✅ 1", "✏️ 1", "✅ 2", "✏️ 2"]);
     expect(message.buttons.flat().filter((button) => /^(✅|✏️) \d$/.test(button.text))).toHaveLength(4);
   });

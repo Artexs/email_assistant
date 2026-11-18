@@ -2,7 +2,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
-// The writes and reads of the domain proof and of the "SSO required" switch (F119 stage 09). Every call names the
+// The writes and reads of the domain proof and of the "SSO required" switch. Every call names the
 // organization: the operator CLI runs with no tenant scope. The caller holds the organization lock and runs one transaction.
 
 // The proof columns go together (CHECK). Only a row without a proof changes, so a second writer changes nothing.

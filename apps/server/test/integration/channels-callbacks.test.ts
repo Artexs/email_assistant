@@ -792,7 +792,7 @@ describe("approval taps", () => {
     });
   });
 
-  // F041: a delegation send that ended `outcome_unknown`, its delegation `cancelled`, and the result notice in the outbox.
+  // A delegation send that ended `outcome_unknown`, its delegation `cancelled`, and the result notice in the outbox.
   async function unknownDelegationSend(trx: Transaction<DB>, s: Awaited<ReturnType<typeof approvalSetup>>) {
     const delegateId = await insertDelegate(trx, s.ctx, { email: "anna@x.test" });
     const messageId = `<out-${randomUUID()}@x.test>`;

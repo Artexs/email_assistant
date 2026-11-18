@@ -50,18 +50,18 @@ export interface KnownCopy {
   id: string;
   dedupKey: string;
   folder: string;
-  /** emails.source_folder (D6). */
+  /** emails.source_folder. */
   sourceFolder: string;
   /** The UID the row holds in `folder`. */
   uid: number;
   contentHash: string;
   from: string | null;
   receivedAt: Date;
-  /** emails.undo_pending_at: a system move into a synced folder is in flight (D9). */
+  /** emails.undo_pending_at: a system move into a synced folder is in flight. */
   movePendingAt: Date | null;
 }
 
-/** D9: a `movePendingAt` older than this is a leftover; the normal rules apply. */
+/** A `movePendingAt` older than this is a leftover; the normal rules apply. */
 export const MOVE_PENDING_MAX_AGE_MS = 24 * 3_600_000;
 
 /** UIDs that the other rows of the same identity hold in `folder`: they are never the copy of row `exceptId`. */
@@ -106,7 +106,7 @@ function findMatchedElsewhere(
 }
 
 /**
- * D7. `folder` = S, the synced folder of the incoming mail. `copies` = rows with the same Message-ID and hash.
+ * `folder` = S, the synced folder of the incoming mail. `copies` = rows with the same Message-ID and hash.
  * `matched` maps an email id (or `run:<dedup key>` of a row that this run stored) to the folder where this run
  * matched or stored it: such a copy is never free, so it is never located and never `relocated`.
  * check_folder lists the free copies outside S in copy order; the caller checks them until one is gone.
@@ -176,7 +176,7 @@ export function resolveFolderCheck(input: {
 /** "strict": Message-ID and hash. "no_size": for a server that changes RFC822.SIZE on a COPY. */
 export type IdentityMode = "strict" | "no_size";
 
-// Stage 1 result (Interia, 2026-11-07): a COPY keeps RFC822.SIZE and INTERNALDATE.
+// Measured on Interia (2026-11-07): a COPY keeps RFC822.SIZE and INTERNALDATE.
 export const IDENTITY_MODE: IdentityMode = "strict";
 
 /** What a stored `emails` row knows about its mail. */
@@ -214,7 +214,7 @@ export function isDeleted(meta: FolderMessageMeta): boolean {
 }
 
 /**
- * D4: the metas of the `source_folder` of moved rows (stage 8), at the `inbox_uid` (the last known UID in the source
+ * The metas of the `source_folder` of moved rows, at the `inbox_uid` (the last known UID in the source
  * folder) and the `uid` of each row (a system move gives the mail a new folder UID; a webmail move back keeps it).
  * A meta that is not `\Deleted` and has the identity of the row at one of its UIDs is a mail that came back to its
  * source folder below the cursor.

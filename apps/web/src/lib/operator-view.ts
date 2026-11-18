@@ -54,7 +54,7 @@ export interface SsoLines {
   breakGlass: string;
 }
 
-// The SSO block of the organization detail (F119 PD-047). `null` means no provider: the caller shows `op_sso_none`.
+// The SSO block of the organization detail. `null` means no provider: the caller shows `op_sso_none`.
 // Only the fields of the strict operator schema reach the screen: a domain, three flags and a count.
 export function ssoLines(sso: OperatorOrgDetail["sso"]): SsoLines | null {
   if (sso === null) return null;

@@ -1,6 +1,6 @@
 import { cleanUserText } from "../outgoing/user-text";
 
-// The mailbox profile of reply drafts (F115 stage 10, D13): the display name, the signature and the writing style. One check, shared
+// The mailbox profile of reply drafts: the display name, the signature and the writing style. One check, shared
 // by the route, the CLI and the preview. Pure code: no I/O.
 
 export const PROFILE_NAME_MAX = 100;
@@ -63,7 +63,7 @@ function nonBlank(text: string | null | undefined): string | null {
 }
 
 /**
- * The texts that stand in for an empty field (D13): the name falls back to the owner name, then the address; the signature falls
+ * The texts that stand in for an empty field: the name falls back to the owner name, then the address; the signature falls
  * back to the organization style text, then the owner name, then the address. `ownerName` is null when the organization has no owner.
  */
 export function profileFallbacks(input: { ownerName: string | null; address: string; orgStyleText: string | null }): {

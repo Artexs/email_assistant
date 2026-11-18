@@ -19,7 +19,7 @@ describe("security log registry", () => {
     expect(securityKindOf("org.delete_refused")).toBe("delete_refused");
     expect(securityKindOf("dsr.find")).toBe("dsr_find");
     expect(securityKindOf("dsr.erase")).toBe("dsr_erase");
-    // F119: every audit code of company sign-in and of the member commands maps to its own kind.
+    // Every audit code of company sign-in and of the member commands maps to its own kind.
     expect(securityKindOf("sso.login")).toBe("sso_sign_in");
     expect(securityKindOf("sso.refused")).toBe("sso_refused");
     expect(securityKindOf("sso.provider_set")).toBe("sso_provider_set");

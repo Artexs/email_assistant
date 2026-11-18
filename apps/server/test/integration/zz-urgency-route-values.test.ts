@@ -11,7 +11,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
-// The urgency route as the Rules page card reaches it (F110 stage 21 review): who may write, and the limits of the values.
+// The urgency route as the Rules page card reaches it: who may write, and the limits of the values.
 const db = testDb();
 const NOW = new Date("2026-11-15T12:00:00Z");
 const orgs: WebOrg[] = [];

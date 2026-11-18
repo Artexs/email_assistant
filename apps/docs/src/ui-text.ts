@@ -1,4 +1,4 @@
-// The panel's own text for a doc page (plan D8): `<UiText k="nav_settings" />` renders it in the page language.
+// The panel's own text for a doc page: `<UiText k="nav_settings" />` renders it in the page language.
 // The lookup runs at build time and throws, because `astro check` does not type-check MDX.
 import { en } from "@ea/web/i18n/en";
 import { pl } from "@ea/web/i18n/pl";

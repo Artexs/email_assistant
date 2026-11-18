@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
-// WCAG 2.0 to 2.2, levels A and AA (F102 D13). No rule is turned off for a whole page.
+// WCAG 2.0 to 2.2, levels A and AA. No rule is turned off for a whole page.
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
 export interface A11yScope {

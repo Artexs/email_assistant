@@ -25,7 +25,7 @@ import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtu
 import { testDb } from "./helpers";
 import { fillMailbox } from "./mailbox-rows";
 
-// F106 stage 05: `exportOrganization` and `writeEncryptedFile`. The seed is committed (the export reads a snapshot in
+// `exportOrganization` and `writeEncryptedFile`. The seed is committed (the export reads a snapshot in
 // its own transaction); `afterEach` removes it. The connection is the `app` role, with no tenant scope.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
@@ -252,7 +252,7 @@ describe("exportOrganization", () => {
     const a = await seedOrg(shared.id);
     const b = await seedOrg(shared.id);
     const path = outPath();
-    // F109 stage 02: the urgency profile and the stored reason codes go out with their rows.
+    // The urgency profile and the stored reason codes go out with their rows.
     const profile = { topics: [{ label: "audit", keywords: ["tax"] }], deadlines: [] };
     await db
       .updateTable("mailbox_settings")

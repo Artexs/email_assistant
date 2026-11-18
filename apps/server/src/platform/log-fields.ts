@@ -1,5 +1,5 @@
 /** Field names a log line may carry after its base keys (ADR 0024). Add a name in the change that first logs it; the review checks that its values are ids, codes, counts or times. */
-/** UUID fields: a lower-case UUID or null (D1). */
+/** UUID fields: a lower-case UUID or null. */
 export const uuidFieldNames = [
   "org_id",
   "mailbox_id",
@@ -19,7 +19,7 @@ export const uuidFieldNames = [
   // push devices (F118): the id of a push subscription; never its endpoint or keys
   "push_subscription_id",
 ] as const;
-/** Number fields: a finite number or null. Counts and times (D1). */
+/** Number fields: a finite number or null. Counts and times. */
 export const numberFieldNames = [
   "count",
   "attempts",
@@ -100,12 +100,12 @@ export const numberFieldNames = [
   "info_moved",
   "notification_moved",
   "spam_moved",
-  // re-gate run (F110 stage 08): the `auto` grants stamped for the running key, moved to it, and paused
+  // re-gate run: the `auto` grants stamped for the running key, moved to it, and paused
   "stamped",
   "regranted",
   "paused",
 ] as const;
-/** Code fields: the F089 D7 rule (D1, D2). Values come from closed sets, never from mail, users or outside text. */
+/** Code fields: the closed-set rule. Values come from closed sets, never from mail, users or outside text. */
 export const codeFieldNames = [
   "job",
   "code",
@@ -158,7 +158,7 @@ export const codeFieldNames = [
   "spam_outcome",
   // re-gate run: `start` (once, before the workers) or `job` (every 5 minutes)
   "run",
-  // the copy check before a send (F115 stage 08): `same`, `changed`, `missing` or `no_baseline`
+  // the copy check before a send: `same`, `changed`, `missing` or `no_baseline`
   "result",
 ] as const;
 /** All allowed field names (ADR 0024). Add a name to the list of its kind in the change that first logs it; the review checks its values. */
@@ -186,7 +186,7 @@ const numberNameSet: ReadonlySet<string> = new Set(numberFieldNames);
 const UUID_VALUE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const VALUE_STRING = /^[A-Za-z0-9_.:/*-]{0,64}$/;
 
-/** D7: a finite number, a boolean, null, or a string of 0–64 characters from [A-Za-z0-9_.:/*-] without "://". No space, no "@", no URL. */
+/** A finite number, a boolean, null, or a string of 0–64 characters from [A-Za-z0-9_.:/*-] without "://". No space, no "@", no URL. */
 export function isLogValue(value: unknown): value is string | number | boolean | null {
   if (value === null || typeof value === "boolean") {
     return true;
@@ -211,7 +211,7 @@ export function logFieldKind(name: string): LogFieldKind | undefined {
   return fieldNameSet.has(name) ? "code" : undefined;
 }
 
-/** D1: uuid → lower-case UUID string or null; number → finite number or null; code → the D7 rule. */
+/** Uuid → lower-case UUID string or null; number → finite number or null; code → the closed-set rule. */
 export function isLogValueOfKind(kind: LogFieldKind, value: unknown): boolean {
   if (kind === "code") {
     return isLogValue(value);

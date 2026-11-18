@@ -116,7 +116,7 @@ export function buildFolderMap(folders: MailFolder[]): Record<string, string> {
     const key = folder.specialUse === null ? undefined : SPECIAL_USE_KEYS[folder.specialUse];
     if (key !== undefined && map[key] === undefined) map[key] = folder.path;
   }
-  // S3 creates the AI folders before the first move; connect does not change the mailbox.
+  // The mail actions create the AI folders before the first move; connect does not change the mailbox.
   return { ...map, ...AI_FOLDER_NAMES };
 }
 
@@ -195,7 +195,7 @@ export async function connectMailbox(
   const secret = deps.secrets.encrypt(valid.password, `mailbox:${mailboxId}`);
 
   const run = async (trx: Db | Transaction<DB>) => {
-    // The lock covers only the check and the inserts, never a login (D6).
+    // The lock covers only the check and the inserts, never a login.
     await lockMailboxLimit(trx, ctx);
     const current = await getOrgPlan(trx, ctx);
     if (current === undefined) throw new HardError("organization not found");

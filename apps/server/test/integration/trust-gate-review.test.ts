@@ -25,8 +25,8 @@ import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertTripRow } from "./trust-fixtures";
 
-// The repair of the stage 04 review: a too-few global blocks, the four test gaps, and the whole input space of the
-// evidence gate against the eligibility rule of `spec/features/active/F110-e4-b-earn-trust/plan.md`, with the flag on and off. Rows roll back.
+// The repair after a review: a too-few global blocks, the four test gaps, and the whole input space of the
+// evidence gate against the eligibility rule of `docs/capabilities/trust.md`, with the flag on and off. Rows roll back.
 const db = testDb();
 const NOW = new Date("2026-11-11T12:00:00Z");
 const repoRoot = resolve(import.meta.dir, "../../../..");

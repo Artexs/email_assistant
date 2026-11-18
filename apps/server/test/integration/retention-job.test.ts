@@ -150,7 +150,7 @@ async function insertSentRow(trx: Transaction<DB>, org: Org, text: string, inter
     .execute();
 }
 
-// One row per kind of the A23 list, all over 90 days (the mail body is over the 30 days of the organization).
+// One row per kind of the retention list, all over 90 days (the mail body is over the 30 days of the organization).
 async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
   const ctx = { orgId: org.orgId };
   const old = await insertTestEmail(trx, ctx, org.mailboxId, {
@@ -392,7 +392,7 @@ describe("retention job: runOrg", () => {
   });
 });
 
-// F083 (minor-4): the job reads no mailbox status, plan or triage scope. Scope `off` means the triage worker does not run,
+// The job reads no mailbox status, plan or triage scope. Scope `off` means the triage worker does not run,
 // so for the retention job it is the same as a stuck mail in a mailbox that no worker visits. Each §7 row, with the
 // stuck `processing` mail and the stuck `applying` payload, must clear in every state; open work must stay.
 describe("retention job: every §7 row in a paused mailbox, a suspended organization and with triage off", () => {

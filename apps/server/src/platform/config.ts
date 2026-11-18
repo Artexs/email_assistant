@@ -39,7 +39,7 @@ const coreShape = {
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   // json = one JSON object per line (the VPS); text = "[module] event key=value" (dev). ADR 0024.
   LOG_FORMAT: z.preprocess(emptyAsUndefined, z.enum(["json", "text"]).default("json")),
-  // The release name: the image build sets it (deploy/Dockerfile ARG EA_RELEASE); every JSON log line carries it. F114 D10.
+  // The release name: the image build sets it (deploy/Dockerfile ARG EA_RELEASE); every JSON log line carries it.
   EA_RELEASE: z.preprocess(
     emptyAsUndefined,
     z
@@ -57,7 +57,7 @@ const coreShape = {
     emptyAsUndefined,
     z.string().refine(isOrigin, "must be http(s)://host[:port] with no path, query or hash").optional()
   ),
-  // The folder of the gate files (`classifier-*.json`) that the server reads at start (F110 D1). Empty = `evals/results/gate` of the image.
+  // The folder of the gate files (`classifier-*.json`) that the server reads at start. Empty = `evals/results/gate` of the image.
   GATE_EVIDENCE_DIR: z.preprocess(emptyAsUndefined, z.string().startsWith("/", "must be an absolute path").optional()),
   // Comma list of flag keys (packages/core/src/features.ts) that read off for every organization. Empty = none.
   FEATURES_OFF: z.preprocess(emptyAsUndefined, z.string().optional()),

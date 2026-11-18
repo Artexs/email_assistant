@@ -7,7 +7,7 @@ import { sendFilterExpr, type SendClaimFilter } from "./filters";
 import type { DbOrTrx } from "./shared";
 
 type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "not_seen" | "held_timeout";
-// F079: true when an owner received the approval request of the send (one `sent` outbox row of it).
+// True when an owner received the approval request of the send (one `sent` outbox row of it).
 const requestSent = sql<boolean>`exists (
   select 1 from outbox o2
   where o2.org_id = a.org_id and o2.status = 'sent'
@@ -17,9 +17,9 @@ const requestSent = sql<boolean>`exists (
 // A reply send (payload kind `reply`). The reply rules differ: a 7-day limit from `created_at`, no `not_notified`, no `not_seen`
 // (`approvalExpiresAt` in lifetime.ts holds the same rule for the tap and the panel).
 const isReply = sql<boolean>`(a.payload->>'kind' is not distinct from 'reply')`;
-// D22: the sends of one mailbox that the expiry job closes, each with the first reason that applies.
+// The sends of one mailbox that the expiry job closes, each with the first reason that applies.
 // `timeout` needs a delivered request. An old request that no owner received ends as `not_seen`, except in a suspended
-// organization: there the send waits and the resume hook ends it (F079, `expireUnseenApprovals`).
+// organization: there the send waits and the resume hook ends it (`expireUnseenApprovals`).
 // A reply ends as `timeout` 7 days after `created_at`, whatever `notified_at`; the 48 h rules of the other kinds skip it. `not_notified`
 // needs no guard: it has the same 7-day cut-off, and the reply clause above it matches first.
 export async function listExpiredApprovals(
@@ -61,7 +61,7 @@ export async function listExpiredApprovals(
   `.execute(db);
   return result.rows;
 }
-// F079: the `awaiting_approval` sends of an organization whose approval request no owner saw before `before`.
+// The `awaiting_approval` sends of an organization whose approval request no owner saw before `before`.
 // A request counts as seen when one `outbox` row of it is `sent`. `notified_at` set means the notifier queued it.
 // A send with `notified_at` null is not listed: the notifier queues it at its next run, with a fresh text.
 // The caller locks each one (`expireSend`).
@@ -129,7 +129,7 @@ export async function listAwaitingSendIds(
     .execute();
   return rows.map((row) => ({ id: row.id, emailId: row.email_id }));
 }
-// For /status (D16): the whole organization, or one mailbox. `approvedHeld` is the approved sends that `send` does
+// For /status: the whole organization, or one mailbox. `approvedHeld` is the approved sends that `send` does
 // not admit; `approvedSending` is the approved sends that it admits.
 export async function countApprovals(
   db: DbOrTrx,

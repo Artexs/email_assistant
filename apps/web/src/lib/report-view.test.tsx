@@ -286,7 +286,7 @@ describe("the report content", () => {
     expect(markup).toContain(pl.rep_read_only);
   });
 
-  // The page shows counts and fixed phrases only (F110 stage 14): the view carries example mails for the panel review, and none of
+  // The page shows counts and fixed phrases only: the view carries example mails for the panel review, and none of
   // their text may reach the markup, in any state, for an owner or a member, in English or Polish.
   test("no mail text: the sender name, the subject and the address of the examples never show, in any state", () => {
     const states: TrustView[] = [

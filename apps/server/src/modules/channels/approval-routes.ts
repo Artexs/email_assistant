@@ -59,7 +59,7 @@ function idOf(raw: string): string {
   return parsed.data;
 }
 
-// F102 ticket: the routes of the approvals page. Any member reads; the three writes are owner only (F102 plan, P6: owner only). The flag comes first: with it off a
+// The routes of the approvals page. Any member reads; the three writes are owner only (owner only). The flag comes first: with it off a
 // bad id is a 404, not a 400. The read answers pass their strict schemas in `approvals-read.ts`. Every write passes `via: "web"` and the
 // real card hook, so the Telegram cards follow. The id in the path is the version that the page showed: no route looks for a newer one.
 export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
@@ -90,7 +90,7 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
     db: deps.db,
     hooks: deps.hooks,
     approvalHooks: cardEditHooks({ sendScope: deps.sendScope }),
-    // The edit of a follow-up reads its loop (open loops stage 11).
+    // The edit of a follow-up reads its loop.
     loopHooks: loopHooks(),
     uidplus: deps.uidplus,
   });
@@ -124,8 +124,8 @@ export function approvalRoutes(deps: ApprovalRouteDeps): Hono<ApiEnv> {
       case "feature_off":
         return c.json({ error: "feature_off" }, 409);
       // `expired` with `byThisTap`: the send timed out and this call expired it. `approve` queued the `expired` card edit for every
-      // sent card (the panel has no card of its own), so the Telegram cards lose their buttons (F102 stage 18). The hourly expiry
-      // job still edits no card (Q18): a tap on a card of such a send answers `expired`.
+      // sent card (the panel has no card of its own), so the Telegram cards lose their buttons. The hourly expiry
+      // job still edits no card: a tap on a card of such a send answers `expired`.
       case "expired":
         return c.json({ error: "closed", state: "expired" }, 409);
       case "sending":

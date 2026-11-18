@@ -27,7 +27,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F109 stage 10: the real-mail readers of `classifier-v3` (tests 1-7 of the stage file) and the log canary.
+// The real-mail readers of `classifier-v3` (tests 1-7 of the stage file) and the log canary.
 
 const db = testDb();
 

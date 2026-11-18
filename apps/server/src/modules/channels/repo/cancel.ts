@@ -35,7 +35,7 @@ export async function cancelPendingOutbox(
 // The suspend hook: queued messages of the organization never go out. `sending` rows finish.
 // Approval requests stay `pending`: the notifier queues them once, so a cancelled request would time out unseen.
 // They wait for a resume (the sender does not claim them while suspended). At the resume, the sends whose request no owner
-// saw end as `not_seen` and their requests are cancelled (F079, `cancelPendingApprovalRequestsOfClosedSends`).
+// saw end as `not_seen` and their requests are cancelled (`cancelPendingApprovalRequestsOfClosedSends`).
 export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<number> {
   const failed = await db
     .updateTable("outbox")
@@ -48,7 +48,7 @@ export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext):
   await releaseMarksOfFailedDigests(db, ctx, failed);
   return failed.length;
 }
-// F079: the resume hook. An approval request whose send no longer waits never goes out: its buttons would answer "expired".
+// The resume hook. An approval request whose send no longer waits never goes out: its buttons would answer "expired".
 // A `pending` row, and a `sending` row whose claim is stale (`locked_at` before `staleBefore`: a crash left it, and the
 // sender would claim it again), become `failed` / `outdated`. A `sending` row with a fresh claim is in flight: it finishes.
 // A request of a send that still waits stays.
@@ -77,7 +77,7 @@ const noAwaitingApprovalSend = sql`not exists (
     and ((outbox.kind = 'approval' and outbox.dedup_key = 'approval:' || a.id::text)
       or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
 )`;
-// The erase of one person's data (F106 stage 09): a waiting approval-set request whose sends all closed (the sender holds
+// The erase of one person's data: a waiting approval-set request whose sends all closed (the sender holds
 // it, for quiet hours or lag) still lists the erased subject in its view. It becomes `failed` / `outdated` (as at a resume)
 // and loses its text and view. A request of a send that still waits stays: the erase refuses while such a send names the
 // mail. Only rows created at or after `since`. Returns the number of rows changed.

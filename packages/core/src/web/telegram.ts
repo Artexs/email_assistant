@@ -6,7 +6,7 @@ export const telegramStateSchema = z.object({
   linkedAt: z.iso.datetime().nullable(),
   botUsername: z.string().nullable(),
   // The consent version of the session user that an unlink did not withdraw. null: no consent row, or the chat is not linked.
-  // The panel asks for a new confirmation while `consentCovers(consentVersion, TELEGRAM_CONSENT_VERSION)` is false (F116 stage 22).
+  // The panel asks for a new confirmation while `consentCovers(consentVersion, TELEGRAM_CONSENT_VERSION)` is false.
   consentVersion: z.string().nullable(),
 });
 export type TelegramState = z.infer<typeof telegramStateSchema>;
@@ -21,7 +21,7 @@ export type TelegramLink = z.infer<typeof telegramLinkSchema>;
 // the server then refuses links made with the old text.
 // Versions are ISO dates; a second bump on the same day adds ".2", ".3" (they sort after the bare date and before the next day).
 export const TELEGRAM_CONSENT_VERSION = "2026-11-15.2";
-// The first version whose text names the open-loops data (recipients, the ask, the promise). F116 stage 17.
+// The first version whose text names the open-loops data (recipients, the ask, the promise).
 // A user whose newest consent is older gets no loop text in Telegram (consentCovers).
 export const OPEN_LOOPS_CONSENT_SINCE = "2026-11-15.2";
 

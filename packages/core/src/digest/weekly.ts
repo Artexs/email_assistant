@@ -1,4 +1,4 @@
-// The Monday message and the rate text of the handled-share line (F100 stage 16, D23, D24). Pure: facts in, text out.
+// The Monday message and the rate text of the handled-share line. Pure: facts in, text out.
 import { weekRange } from "../metrics/week";
 import type { CoreTexts } from "../texts";
 import { barCategories } from "../triage/metrics";
@@ -7,7 +7,7 @@ import { LOOP_KINDS, type WeekStats } from "../web/stats";
 import { formatDay } from "./local-time";
 import type { OutMessage } from "./message";
 
-// PD-066: a precision of real labels is shown from this many labels.
+// A precision of real labels is shown from this many labels.
 const AUTO_MIN_LABELS = 30;
 
 /** "62% (124 of 200)"; with no mail at all "– (0 of 0)". `of` is the word between the two numbers. */
@@ -51,7 +51,7 @@ function autoItems(week: WeekStats, texts: CoreTexts): string[] {
   return items;
 }
 
-// F110 stage 12 (PD-066, D15): one line per bar category with the evidence of its `auto`. A category with an active trip in any
+// One line per bar category with the evidence of its `auto`. A category with an active trip in any
 // mailbox reads "paused (reason)"; else a category with `auto` on reads proof and check, from the row with the most kept labels.
 // One line per category, so the lines never grow with the number of mailboxes. A row with null keys (flag off, no reader) adds nothing.
 function evidenceItems(week: WeekStats, texts: CoreTexts): string[] {

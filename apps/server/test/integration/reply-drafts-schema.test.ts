@@ -13,7 +13,7 @@ import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures"
 import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile, insertReplyRequest } from "./reply-fixtures";
 
-// F115 stage 03: the migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the copy of the style text,
+// The migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the copy of the style text,
 // the three notice kinds). The connection is the `app` role; the Down and Up sections run as the owner.
 const db = testDb();
 afterAll(async () => {
@@ -401,7 +401,7 @@ describe("the style text copy and the Down and Up sections", () => {
         expect(profile?.display_name).toBeNull();
         expect(profile?.writing_style).toBeNull();
       }
-      // The organization text stays (E6b drops it).
+      // The organization text stays (a later step drops it).
       const org = await trx
         .selectFrom("organizations")
         .select("style_text")

@@ -137,7 +137,7 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     ).toBeUndefined();
   });
 
-  // F130: the escalation cascade is gone, so its flags are unknown options.
+  // The escalation cascade is gone, so its flags are unknown options.
   test("--escalate and the --escalation-* flags are a usage error", () => {
     const sim = ["--sim", "lab-01", "--part", "dev"];
     expect(parseEvalArgs([...sim, "--escalate"])).toBeUndefined();
@@ -145,7 +145,7 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     expect(parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toBeUndefined();
   });
 
-  // Review N5: both flags are pinned to the production prompt when v3 is the pointer.
+  // Both flags are pinned to the production prompt when v3 is the pointer.
   describe("N5: the production pointer is v3", () => {
     const production = productionClassifierChoice("classifier-v3", ["attachments", "list", "urgency"]);
 

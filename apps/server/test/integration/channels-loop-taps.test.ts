@@ -12,7 +12,7 @@ import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { actionsOfLoop, loopOf } from "./loops-commands-fixtures";
 
-// F116 stage 19, step 2: the taps on the loop lines of the brief. Every test runs in a transaction that is rolled back.
+// The taps on the loop lines of the brief. Every test runs in a transaction that is rolled back.
 const db = testDb();
 
 afterAll(async () => {
@@ -288,7 +288,7 @@ describe("the edit of the tapped line", () => {
       expect([...dataOf(already.edit as OutMessage)].sort()).toEqual(
         [lf(second.id), ll(second.id), lc(second.id), lf(third.id), ll(third.id), lc(third.id)].sort()
       );
-      // Retention, the Sent switch or an erase blanked the stored message (review 19 N2): the chat keeps its old text, so the tap edits
+      // Retention, the Sent switch or an erase blanked the stored message: the chat keeps its old text, so the tap edits
       // the keyboard only. The blank marker must never replace the text of the chat message.
       await trx
         .updateTable("outbox")

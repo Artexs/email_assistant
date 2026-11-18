@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { en } from "./en";
 import { pl } from "./pl";
 
-// F115 stage 11: the texts of the reply drafts switch and the style card. The Polish values are fixed here on purpose: a reword changes
+// The texts of the reply drafts switch and the style card. The Polish values are fixed here on purpose: a reword changes
 // this table, and the review of the Polish text reads it here. The words follow the glossary: "szkic", "skrzynka", "zatwierdzenie";
 // no text speaks of the user in a gendered past tense.
 const PL_TEXTS = {

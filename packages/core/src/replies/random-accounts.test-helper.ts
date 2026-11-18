@@ -1,4 +1,4 @@
-// Seeded random accounts and ordinary Polish business sentences for the tests of the account view (F115 stage 01).
+// Seeded random accounts and ordinary Polish business sentences for the tests of the account view.
 // Tests only: no import outside this folder.
 
 export type Rnd = () => number;

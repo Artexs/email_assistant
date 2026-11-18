@@ -8,7 +8,7 @@ export type LabelInput =
   | { kind: "quit" }
   | { kind: "ask_again"; message: string };
 
-// Only these 5 categories are offered. `delegation` waits for S4; `unsure` is not a label.
+// Only these 5 categories are offered. `delegation` waits for the send work; `unsure` is not a label.
 export const labelChoices = [
   "urgent",
   "needs_reply",

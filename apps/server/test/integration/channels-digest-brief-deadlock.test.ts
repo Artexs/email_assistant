@@ -1,4 +1,4 @@
-// F116 stage 18, review 18 G1: the digest and "Track my sent mail" off lock the loops of a mailbox in one order (by id).
+// The digest and "Track my sent mail" off lock the loops of a mailbox in one order (by id).
 // The old digest locked the waiting loops first and the promised loops second, by due date; `onSentOff` locks by id. With a
 // promised loop of LOW id and a waiting loop of HIGH id the two orders cross. The shape, with committed rows:
 //   X holds the waiting loop (the high id), as any other command would;

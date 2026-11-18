@@ -47,7 +47,7 @@ const IDS = {
   delegate: "approval-edit-delegate",
 };
 
-// The edit of a waiting draft (F102 P2, D2, D3): subject, body and, for a delegation, the delegate. The form checks the limits of the
+// The edit of a waiting draft: subject, body and, for a delegation, the delegate. The form checks the limits of the
 // service; the server check is the real one. The send id is the one that the dialog opened with: a newer version answers 409 `changed`.
 export function ApprovalEditDialog({
   detail,

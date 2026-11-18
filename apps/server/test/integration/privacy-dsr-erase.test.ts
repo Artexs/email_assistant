@@ -29,7 +29,7 @@ import {
 } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F106 stage 08: `eraseSubjectData` and the `org:dsr --erase` CLI. The seed is committed (the erase runs its own
+// `eraseSubjectData` and the `org:dsr --erase` CLI. The seed is committed (the erase runs its own
 // transaction and takes row locks); `afterEach` removes it. The connection is the `app` role.
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");

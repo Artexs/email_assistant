@@ -8,7 +8,7 @@ import { loopsOrg } from "./loops-analyze-fixtures";
 import { insertLoopRow } from "./loops-fixtures";
 import type { Org } from "./mail-sent-fixtures";
 
-// Shared rows of the reply-match tests (F116 stage 13).
+// Shared rows of the reply-match tests.
 
 export { loopsOrg };
 

@@ -10,7 +10,7 @@ import { createDb, type DB } from "../../src/platform/db";
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F102 stage 06: `actions.supersedes_action_id`, `outbox.edit_of_outbox_id` and the kind `approval_edit`.
+// `actions.supersedes_action_id`, `outbox.edit_of_outbox_id` and the kind `approval_edit`.
 const db = testDb();
 
 afterAll(async () => {
@@ -225,7 +225,7 @@ describe("F102 schema: outbox approval_edit", () => {
 });
 
 // The Down section runs in a transaction (DDL is transactional) as the table owner and is rolled back, so the shared test
-// DB keeps its schema (as the F109 stage 02 test 9).
+// DB keeps its schema.
 describe("F102 migration: Down", () => {
   test("TG3: Down deletes the approval_edit rows, keeps the other kinds, and drops the columns and the keys", async () => {
     const url = process.env.MIGRATOR_DATABASE_URL;

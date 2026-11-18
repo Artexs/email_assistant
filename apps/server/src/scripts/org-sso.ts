@@ -29,7 +29,7 @@ const DISCOVERY_TIMEOUT_MS = 10_000;
 
 export interface OrgSsoDeps {
   db: Db;
-  // One line of stdin, for the client secret. The CLI never takes the secret as an argument (D10).
+  // One line of stdin, for the client secret. The CLI never takes the secret as an argument.
   readStdinLine: () => Promise<string>;
   out: (line: string) => void;
   err: (line: string) => void;
@@ -122,7 +122,7 @@ export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<numbe
           return 1;
         }
         const oidcConfig = buildOidcConfig(found.discovered, { clientId: command.clientId, clientSecret });
-        // `db`, never an open transaction: after a unique violation a transaction is aborted (stage 07 review N4).
+        // `db`, never an open transaction: after a unique violation a transaction is aborted.
         const result = await setSsoProvider(deps.db, ctx, {
           issuer: command.issuer,
           domain,

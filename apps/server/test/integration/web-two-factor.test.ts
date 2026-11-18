@@ -394,7 +394,7 @@ describe("two-factor sign-in", () => {
     expect(sixth.status).toBe(400);
     expect(sixth.json?.code).toBe("TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE");
     expect(client.has("ea.session_token")).toBe(false);
-    // The count belongs to the account lock of stage 03.
+    // The count belongs to the account lock of the account lock.
     await sql`UPDATE auth_two_factors SET failed_verification_count = 0 WHERE user_id = ${user.userId}`.execute(db);
   });
 
@@ -812,7 +812,7 @@ describe("two-factor events", () => {
   });
 });
 
-// F128: turning TOTP off and new backup codes need a code, not only the password.
+// Turning TOTP off and new backup codes need a code, not only the password.
 describe("F128: a code for turn off and new codes", () => {
   const disable = (user: Enrolment, body: Record<string, unknown>, via?: AuthHandle) =>
     user.client.post("/two-factor/disable", body, via);

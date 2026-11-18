@@ -6,7 +6,7 @@ import { OUTBOX_REMOVED_TEXT } from "./outbox";
 import type { DbOrTrx } from "./shared";
 
 const RETENTION_BATCH = 1000;
-// Retention (A23): the text and the view of an old message go after the period. Two rules:
+// Retention: the text and the view of an old message go after the period. Two rules:
 // - a `sent` or `failed` row gets the text `[removed]` (its `error_code` stays);
 // - a `pending` or `sending` row also becomes `failed` / `expired`: the row of a suspended organization is never claimed,
 //   and a message of that age must not go out at a resume.
@@ -76,7 +76,7 @@ export async function clearOutboxTexts(
     if (changed === 0) return total;
   }
 }
-// Retention (A23): link tokens used or expired before `before` (the caller passes now − 1 d) are deleted.
+// Retention: link tokens used or expired before `before` (the caller passes now − 1 d) are deleted.
 // The table has no `id`; its key is `token_hash`.
 export async function deleteOldLinkTokens(
   db: DbOrTrx,

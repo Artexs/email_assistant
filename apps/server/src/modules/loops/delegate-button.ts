@@ -6,7 +6,7 @@ import { isFeatureOn } from "../tenancy";
 
 import type { DbOrTrx } from "./repo";
 
-// Where the Delegate button shows (F116 stage 19, questions.md 6). The button is a hint: `delegateMail` checks every rule again
+// Where the Delegate button shows (questions.md 6). The button is a hint: `delegateMail` checks every rule again
 // when the user picks a delegate.
 
 // The categories of the action section of the digest that a user may hand to a delegate. `delegation` has its delegate already.

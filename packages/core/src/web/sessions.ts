@@ -22,7 +22,7 @@ const SYSTEMS: readonly (readonly [RegExp, OsCode])[] = [
   [/Linux/, "linux"],
 ];
 
-// L21: the first matching rule wins, so Edge and Opera (which also say "Chrome") come first.
+// The first matching rule wins, so Edge and Opera (which also say "Chrome") come first.
 export function deviceOf(userAgent: string | null): { browser: BrowserCode; os: OsCode } {
   const text = userAgent ?? "";
   return {

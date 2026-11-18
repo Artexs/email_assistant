@@ -156,7 +156,7 @@ describe("weekly report detector", () => {
     });
   });
 
-  // F110 stage 12: the notifier passes the reader of the composition root to the week service; the report shows its lines.
+  // The notifier passes the reader of the composition root to the week service; the report shows its lines.
   test("(5b) with a trust reader and trust_ladder on, the row holds the keys and the text the evidence lines", async () => {
     await withRollback(db, async (trx) => {
       const o = await orgA(trx);

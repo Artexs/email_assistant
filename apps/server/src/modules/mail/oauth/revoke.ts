@@ -8,8 +8,8 @@ import { OAuthSoftError, type MailOAuthClients } from "./client";
 import type { MailOAuthProvider } from "./providers";
 import { readOAuthSecret, withMailboxOAuthLock } from "./secret-store";
 
-// What Remove does at the provider (F117 ticket, remove rule). Google has a revoke call. Microsoft has none for a delegated token: the owner
-// withdraws the access on a page, so Remove only picks the page. A token never reaches a log line or an error here (the F117 plan secrets rule).
+// What Remove does at the provider (remove rule). Google has a revoke call. Microsoft has none for a delegated token: the owner
+// withdraws the access on a page, so Remove only picks the page. A token never reaches a log line or an error here.
 
 /** The tenant of every personal Microsoft account (Outlook.com, Hotmail). A work or school tenant has another GUID. */
 export const MICROSOFT_PERSONAL_TENANT = "9188040d-6c67-4c5b-b112-36a304b66dad";

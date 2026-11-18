@@ -79,7 +79,7 @@ async function* exportChunks(
   yield "}}";
 }
 
-// Writes all data of one organization to an encrypted file (F106 stage 05, D6, D14, D17). One `REPEATABLE READ READ ONLY`
+// Writes all data of one organization to an encrypted file. One `REPEATABLE READ READ ONLY`
 // transaction, so the file is one snapshot. The audit row comes after the file is complete; if it fails, the file goes
 // too, so a file and its audit row exist together. The audit row holds counts only; the module logs nothing, because the CLI prints the result on stdout.
 //

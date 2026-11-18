@@ -484,7 +484,7 @@ describe("removeMailbox", () => {
   });
 });
 
-// F103: the log lines of a removal hold ids and codes only.
+// The log lines of a removal hold ids and codes only.
 describe("removeMailbox log lines", () => {
   const MARKER = "MARKER-ADDR@x.test";
 

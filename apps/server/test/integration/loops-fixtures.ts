@@ -4,7 +4,7 @@ import type { Insertable, Transaction } from "kysely";
 
 import type { DB } from "../../src/platform/db";
 
-// Rows for the tests of the open loop tables (F116). Raw inserts: the repository of the loops comes with a later stage.
+// Rows for the tests of the open loop tables. Raw inserts: the repository of the loops comes with a later stage.
 
 const SENT_AT = new Date("2026-11-10T10:00:00Z");
 

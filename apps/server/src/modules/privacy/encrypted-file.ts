@@ -2,7 +2,7 @@ import { link, open, stat, unlink } from "node:fs/promises";
 
 import { Encrypter } from "age-encryption";
 
-// True for a public `age` key that the library parses. Passphrase mode is not supported (F106 Q5).
+// True for a public `age` key that the library parses. Passphrase mode is not supported.
 export function isAgeRecipient(value: string): boolean {
   if (!value.startsWith("age1")) return false;
   try {
@@ -43,7 +43,7 @@ function toByteStream(chunks: AsyncIterable<string>): ReadableStream<Uint8Array>
   });
 }
 
-// Writes `chunks`, encrypted to one `age` public key, to `path` (F106 stage 05, D14).
+// Writes `chunks`, encrypted to one `age` public key, to `path`.
 //
 // The bytes go to `path.part` (create only, mode 600). At the end `link` makes `path` and `unlink` removes the part, so a
 // file that already exists at `path` is never replaced, not even by one that appears while this runs. Any error removes

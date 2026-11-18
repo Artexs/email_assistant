@@ -25,11 +25,11 @@ export interface OpenDeps {
   db: Db | Transaction<DB>;
   secrets: SecretBox;
   openProvider(opts: ImapConnectOptions): Promise<MailProvider>;
-  // S4 (D33): only a caller that asks `withSender` needs it. Without it the sender is null (applySend releases the send).
+  // Only a caller that asks `withSender` needs it. Without it the sender is null (applySend releases the send).
   openSender?(opts: SmtpConnectOptions): Promise<MailSender>;
-  // F117 D5: opens the sender of a mailbox with `send_via = 'graph'`. Without it that mailbox has no sender.
+  // Opens the sender of a mailbox with `send_via = 'graph'`. Without it that mailbox has no sender.
   openGraphSender?(opts: GraphSenderOptions): Promise<MailSender>;
-  // F117: the access tokens of `oauth` mailboxes. Without it an `oauth` mailbox does not open.
+  // The access tokens of `oauth` mailboxes. Without it an `oauth` mailbox does not open.
   oauthTokens?: OAuthTokens;
 }
 
@@ -46,7 +46,7 @@ export async function openMailboxProvider(
   const credentials = await getCredentials(deps.db, ctx, mailboxId);
   if (credentials === undefined) throw new HardError("mailbox has no stored password");
   const oauth = credentials.secret_kind === "oauth";
-  // The table CHECK refuses this row; the code does not rely on it (D5).
+  // The table CHECK refuses this row; the code does not rely on it.
   if (mailbox.send_via === "graph" && !oauth) throw new HardError("graph send needs an oauth mailbox");
   let auth: AuthMaterial;
   if (oauth) {

@@ -21,7 +21,7 @@ import { secretOfUri, totpCode } from "../totp";
 import { testDb } from "./helpers";
 import { resetBody } from "./web-helpers";
 
-// Stage 06 of F119: "SSO required" refuses member passwords and resets like a wrong password (ADR 0026 point 6).
+// "SSO required" refuses member passwords and resets like a wrong password (ADR 0026 point 6).
 // The flag `organizations.sso_required` is set by SQL here; the operator CLI comes later.
 const db = testDb();
 

@@ -1,10 +1,10 @@
 /**
- * Contract check for new migrations (spec/features/active/F114-e8b-alerts-and-releases-incl-the-restore-drill/plan.md, migration check). Pure: text in, findings out.
+ * Contract check for new migrations (`docs/code-patterns.md`: the contract statement rule). Pure: text in, findings out.
  * A release's migration must work with the code of the previous release (expand/contract).
  * A statement that breaks old code is a finding unless the file has a line `-- contract: v<x.y.z>`.
  */
 
-/** The newest migration timestamp at the base of F114 stage 06. Files at or before it are not checked. */
+/** The newest migration timestamp at the base of this check. Files at or before it are not checked. */
 export const CONTRACT_CHECK_AFTER = "20261115160001";
 
 export type MigrationRule =

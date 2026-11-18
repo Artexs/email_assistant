@@ -111,7 +111,7 @@ export async function fillMailbox(
   ]);
   await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: now });
 
-  // One open loop and one analysis for that sent row (F116): both go with the mailbox.
+  // One open loop and one analysis for that sent row: both go with the mailbox.
   const sent = await trx
     .selectFrom("sent_emails")
     .select("id")
@@ -123,7 +123,7 @@ export async function fillMailbox(
   await insertLoopRow(trx, ctx, mailboxId, { sent_email_id: sent.id });
   await insertAnalysisRow(trx, ctx, mailboxId, sent.id, { status: "pending" });
 
-  // One reply request (for the mail) and the profile of the mailbox (F115): both go with the mailbox.
+  // One reply request (for the mail) and the profile of the mailbox: both go with the mailbox.
   await trx
     .insertInto("reply_requests")
     .values({
@@ -151,7 +151,7 @@ export async function fillMailbox(
     })
     .execute();
 
-  // One request to unsubscribe from a sender (F110 stage 22): it goes with the mailbox.
+  // One request to unsubscribe from a sender: it goes with the mailbox.
   await trx
     .insertInto("unsubscribe_requests")
     .values({
@@ -189,7 +189,7 @@ export async function fillMailbox(
     })
     .execute();
 
-  // One history check with one item (the item goes with the mail and with the check) and one trip (F110): all go with the mailbox.
+  // One history check with one item (the item goes with the mail and with the check) and one trip: all go with the mailbox.
   const checkId = await insertCheckRow(trx, ctx, mailboxId, { status: "done", finished_at: now });
   await insertCheckItemRow(trx, ctx, checkId, triaged.emailId);
   await insertTripRow(trx, ctx, mailboxId);
@@ -217,7 +217,7 @@ export async function countMailboxRows(
   trx: Transaction<DB>,
   orgId: string,
   ids: MailboxIds,
-  // Audit rows of these events are not counted: stage 5 writes `mailbox.removed` with data.mailbox_id after the delete.
+  // Audit rows of these events are not counted: the remove writes `mailbox.removed` with data.mailbox_id after the delete.
   opts?: { exceptEvents?: readonly string[] }
 ): Promise<Record<string, number>> {
   const { mailboxId, emailIds, actionIds } = ids;

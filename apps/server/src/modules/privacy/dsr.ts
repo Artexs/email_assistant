@@ -116,7 +116,7 @@ async function* reportChunks(
   yield `],"mentions":${JSON.stringify(match.mentions)},"listed":${JSON.stringify({ delegates: delegates.rows, sender_rules: rules.rows })},"open_actions":${JSON.stringify(match.openActions)}}`;
 }
 
-// The dry run for one address (F106 account data ticket). One `REPEATABLE READ READ ONLY` transaction reads the match
+// The dry run for one address. One `REPEATABLE READ READ ONLY` transaction reads the match
 // and the optional report, so the counts and the file are one snapshot. The one audit row (`dsr.find`) comes after the
 // file is complete; if it fails the file goes too. The address is in the report file only, which is encrypted.
 // A refusal writes no audit row. The module logs nothing: the CLI prints ids, counts and sizes.

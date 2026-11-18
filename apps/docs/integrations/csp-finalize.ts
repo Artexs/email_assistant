@@ -1,8 +1,8 @@
-// Astro integration for the docs site CSP (ADR 0030, plan D3).
+// Astro integration for the docs site CSP (ADR 0030).
 // Astro's `security.csp` hashes only its own module scripts. Starlight adds inline scripts (theme, search dialog,
 // sidebar state) and `style` attributes. After the build this pass adds the sha256 of each inline script to
 // `script-src`, sets `style-src 'self' 'unsafe-inline'` (a hash in the list makes browsers ignore 'unsafe-inline'),
-// then checks every page with `docsCspProblem`. A meta CSP cannot set `frame-ancestors` (plan Q6): the config leaves it out.
+// then checks every page with `docsCspProblem`. A meta CSP cannot set `frame-ancestors`: the config leaves it out.
 // So that no content source can add a script, `assertNoContentScript` runs before the build.
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";

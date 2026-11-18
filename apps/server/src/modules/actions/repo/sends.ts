@@ -42,7 +42,7 @@ export interface SendRow {
   locked_at: Date | null;
   email: SendMail | null;
 }
-// Every send of an organization, a mail send or a follow-up (open loops stage 11). Mail sends and loop sends each join their own
+// Every send of an organization, a mail send or a follow-up. Mail sends and loop sends each join their own
 // anchor (the database CHECK says exactly one); a send whose anchor row is gone has no `mailbox_id` and is not listed.
 // `listSetSends` and `getSetSend` stay mail-only on purpose: a follow-up never joins an approval set.
 export function sendBase(db: DbOrTrx, ctx: TenantContext) {
@@ -195,7 +195,7 @@ export async function getAnySend(db: DbOrTrx, ctx: TenantContext, id: string): P
   const row = await anySendQuery(db, ctx, id).executeTakeFirst();
   return row && toAnySendRow(row);
 }
-// FOR UPDATE of the action row only (the mail row stays unlocked: the lock order of S3, D6).
+// FOR UPDATE of the action row only (the mail row stays unlocked: the lock order of the mailbox actions).
 export async function lockSend(trx: Transaction<DB>, ctx: TenantContext, id: string): Promise<SendRow | undefined> {
   const row = await sendQuery(trx, ctx, id).forUpdate("actions").executeTakeFirst();
   return row && toSendRow(row);
@@ -205,8 +205,8 @@ export async function getSend(db: DbOrTrx, ctx: TenantContext, id: string): Prom
   return row && toSendRow(row);
 }
 // `from` guards the change. An `approved` send closes only when no run holds it (`locked_at` null or before `staleBefore`).
-// `result_notified_at` stays null: the notifier sends the result (D20). `resultNotifiedAt` is for the send that a panel edit
-// replaced (`superseded`): no result notice is due (F102 ticket). The caller writes the audit row.
+// `result_notified_at` stays null: the notifier sends the result. `resultNotifiedAt` is for the send that a panel edit
+// replaced (`superseded`): no result notice is due. The caller writes the audit row.
 // `ignoreLock`: the caller is the run that holds the lock of an `approved` row (the committer), so the lock does not stop the close.
 export async function setExpired(
   trx: Transaction<DB>,
@@ -242,7 +242,7 @@ export async function setExpired(
   return result.numUpdatedRows > 0n;
 }
 // Ids of the reminder sends of a delegation that can still be closed, locked FOR UPDATE.
-// Lock order (D6): the caller holds the delegation lock. Only `awaiting_approval` and `approved` rows are selected on purpose:
+// Lock order: the caller holds the delegation lock. Only `awaiting_approval` and `approved` rows are selected on purpose:
 // a reminder in flight is `applying`, and the committer holds that row while it waits for the delegation lock.
 // Selecting `applying` rows here would close the cycle and deadlock.
 export async function listOpenReminderSends(
@@ -287,7 +287,7 @@ export async function setApproved(
   return result.numUpdatedRows > 0n;
 }
 // An `approved` row that a run holds (`locked_at` at or after `staleBefore`) finishes: it is not rejected.
-// The caller writes the audit row. `result_notified_at` stays null (D20).
+// The caller writes the audit row. `result_notified_at` stays null.
 export async function setRejected(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -347,7 +347,7 @@ export async function findSendByKey(
     .where("idempotency_key", "=", key)
     .executeTakeFirst();
 }
-// "Send again" (D18): one new `approved` send per failed row, same draft. Null when the key exists.
+// "Send again": one new `approved` send per failed row, same draft. Null when the key exists.
 export async function insertSendAgain(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -374,14 +374,14 @@ export async function insertSendAgain(
   return row?.id ?? null;
 }
 
-// Serializes the limit check of one mailbox until the transaction ends (D6). Like `lockMailboxLimit` (mail/repo):
+// Serializes the limit check of one mailbox until the transaction ends. Like `lockMailboxLimit` (mail/repo):
 // outside a transaction the lock would end with its own statement, so it throws.
 export async function lockMailboxSends(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<void> {
   if (!db.isTransaction) throw new Error("lockMailboxSends needs a transaction");
   await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`send_limit:${ctx.orgId}:${mailboxId}`}, 0))`.execute(db);
 }
 
-// PD-044 (D4): the sends of one mailbox that may have reached people and started after `since`.
+// The sends of one mailbox that may have reached people and started after `since`.
 // A send of an incoming mail belongs to the mailbox of that mail; a send of a loop (a follow-up) to the mailbox of the loop.
 // The follow-up must count here: this is what holds a follow-up behind the send limits of its mailbox and recipients.
 // An `approved` row with an old stamp (put back before a retry), `rejected`, `expired` and refused sends do not count.
@@ -432,7 +432,7 @@ function recipientsOf(payload: unknown): string[] {
   return [...read("to"), ...read("cc")];
 }
 
-// F099 D17: sends of the organization that ended `failed` after `since` (by `updated_at`).
+// Sends of the organization that ended `failed` after `since` (by `updated_at`).
 export async function countFailedSendsSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {
   const row = await db
     .selectFrom("actions")
@@ -458,7 +458,7 @@ export async function countFailedSendsSinceOfAll(db: DbOrTrx, since: Date): Prom
   return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
 }
 
-// F099 D14: the newest `applied_at` of an applied send of the organization, null when none.
+// The newest `applied_at` of an applied send of the organization, null when none.
 export async function lastSendAppliedAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
   const row = await db
     .selectFrom("actions")
@@ -473,7 +473,7 @@ export async function lastSendAppliedAt(db: DbOrTrx, ctx: TenantContext): Promis
   return row?.applied_at ?? null;
 }
 
-// F102 ticket: the newest version of a send through `supersedes_action_id` (the send itself when nothing replaced it).
+// The newest version of a send through `supersedes_action_id` (the send itself when nothing replaced it).
 // One recursive query, tenant-scoped on both sides; the unique index on `supersedes_action_id` makes the chain a line.
 export async function newestVersionOf(db: DbOrTrx, ctx: TenantContext, id: string): Promise<string> {
   const result = await sql<{ id: string }>`

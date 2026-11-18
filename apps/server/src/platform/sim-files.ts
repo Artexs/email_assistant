@@ -34,7 +34,7 @@ const DEFAULT_ROOT = resolve(import.meta.dir, "../../../../evals/sim");
 
 export type BatchFolder = "slots" | "texts" | "blind" | "labels";
 
-// A part folder of the corpus: the incoming parts and the sent parts (F116) share the batch layout.
+// A part folder of the corpus: the incoming parts and the sent parts share the batch layout.
 export type BankPart = SimPart | SentPart;
 
 // A file problem. The message holds file paths and issue codes, never mail text.

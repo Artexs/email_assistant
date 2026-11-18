@@ -20,7 +20,7 @@ export interface CardOfSend {
 }
 
 // The approval request cards (kind `approval`, dedup `approval:<send id>`) of one send, one per owner. The set cards
-// (`approval_set:`) are another kind and never match (Q15). Oldest first, so the queue order of the edits is stable.
+// (`approval_set:`) are another kind and never match. Oldest first, so the queue order of the edits is stable.
 export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: string): Promise<CardOfSend[]> {
   const rows = await db
     .selectFrom("outbox")

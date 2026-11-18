@@ -13,8 +13,8 @@ import type { DB, Db } from "../../platform/db";
 
 type DbOrTrx = Db | Transaction<DB>;
 
-// F110 stage 19 (D14, P4): the report kinds that also go by mail. Every other kind goes to Telegram only. The list lives in core,
-// next to the mail renderers of these kinds (F110 stage 20).
+// The report kinds that also go by mail. Every other kind goes to Telegram only. The list lives in core,
+// next to the mail renderers of these kinds.
 export const mailReportKinds = reportMailKinds;
 export type MailReportKind = ReportMailKind;
 
@@ -39,7 +39,7 @@ export interface ReportRoutes {
   mailboxId: string | null;
 }
 
-// The channel rule of the report kinds (stage 18 setting, stage 19 queue):
+// The channel rule of the report kinds:
 // - flag `report_mail` off: Telegram when a chat is linked, whatever the stored channel (a stored `mail` waits for the flag);
 // - `telegram`: Telegram when linked;
 // - `both`: Telegram when linked, and mail when the member has a report mailbox;
@@ -57,7 +57,7 @@ export function reportRoutesOf(member: ReportMember, flagOn: boolean): ReportRou
 export const mailDedupKey = (telegramKey: string): string => `${telegramKey}:mail`;
 
 // Members that a report job visits: a linked chat, or a mail channel with a report mailbox. A suspended organization is left
-// out unless `includeSuspended` (D4). `orgId` narrows to one organization. The flag is not read here: the caller decides
+// out unless `includeSuspended`. `orgId` narrows to one organization. The flag is not read here: the caller decides
 // with `reportRoutesOf`, because a member with the flag off and a stored `mail` and no chat gets nothing.
 export async function listReportMembers(
   db: DbOrTrx,

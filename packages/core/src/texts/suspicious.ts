@@ -1,7 +1,7 @@
 import type { UserLocale } from "../tenancy";
 import type { SuspiciousReason } from "../triage/suspicious";
 
-// The warning of a suspicious mail in a notice (F109 stage 04). Fixed phrases only: no mail text.
+// The warning of a suspicious mail in a notice. Fixed phrases only: no mail text.
 export interface SuspiciousTexts {
   // The one line of the warning; `list` is the reason names in `suspiciousReasons` order, joined by ", ".
   line: (list: string) => string;

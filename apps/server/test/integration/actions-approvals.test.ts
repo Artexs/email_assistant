@@ -610,7 +610,7 @@ describe("expiry queries", () => {
       const approved = (hours: number) => ({ userId: s.userId, at: ago(hours * HOUR) });
       const timeout = await pair(trx, s, { notifiedAt: ago(49 * HOUR), requestSent: true });
       const both = await pair(trx, s, { notifiedAt: ago(49 * HOUR), draftStatus: "failed", requestSent: true });
-      // F079: the request of this one never reached an owner: it is not a timeout.
+      // The request of this one never reached an owner: it is not a timeout.
       const unseen = await pair(trx, s, { notifiedAt: ago(49 * HOUR) });
       const missing = await pair(trx, s, { draftStatus: "failed" });
       const undone = await pair(trx, s, { draftStatus: "undone" });

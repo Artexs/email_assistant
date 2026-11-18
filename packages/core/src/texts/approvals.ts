@@ -12,7 +12,7 @@ export interface ApprovalTexts {
     delegation: (to: string) => string; // `to` = "<name> <address>" or "<address>"
     clarification: (address: string) => string;
     reminder: (to: string) => string;
-    reply: (address: string) => string; // a reply draft (F115): the sender's address
+    reply: (address: string) => string; // a reply draft: the sender's address
   };
   // The card, the result lines and the closing lines of a follow-up (open loops). A follow-up goes to other people, so the card
   // spells out every address; no text here names the loop or its ask.
@@ -105,7 +105,7 @@ export interface ApprovalTexts {
       policy_changed: (subject: string) => string;
       loop_closed: (subject: string) => string;
       draft_changed: (subject: string) => string;
-      // The reasons of the reply drafts (F115): each says that nothing was sent.
+      // The reasons of the reply drafts: each says that nothing was sent.
       answered: (subject: string) => string;
       sent_by_user: (subject: string) => string;
       newer_mail: (subject: string) => string;
@@ -132,7 +132,7 @@ export interface ApprovalTexts {
     title: (name: string, subject: string) => string;
     tapDone: string;
   };
-  // The answers to the reason and mistake taps (F100 stage 14).
+  // The answers to the reason and mistake taps.
   feedbackTaps: {
     noted: (reason: string) => string; // `reason` = an entry of `reasons`
     notRejected: string;

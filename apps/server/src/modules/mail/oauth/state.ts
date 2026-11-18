@@ -10,7 +10,7 @@ import { getMembership } from "../../tenancy";
 
 import type { MailOAuthProvider } from "./providers";
 
-// The sign-in state of the mailbox OAuth code flow (F117 stage 07, D9, D18).
+// The sign-in state of the mailbox OAuth code flow.
 // A row binds one sign-in attempt to a user, an organization, a provider and (a Reconnect) a mailbox. The `state` value is random and
 // leaves the server only in the provider URL: the row keeps its SHA-256. The PKCE verifier is stored encrypted (AAD `oauth_state:<row id>`).
 // No state, verifier or code reaches a log line, an error message or an audit row.

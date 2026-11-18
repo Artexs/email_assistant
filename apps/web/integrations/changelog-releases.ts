@@ -1,4 +1,4 @@
-// Astro integration: the panel's "What is new" card reads the released versions of `CHANGELOG.md` (F112 stage 15, plan P9, D13).
+// Astro integration: the panel's "What is new" card reads the released versions of `CHANGELOG.md`.
 // The file is parsed at build time (`parseChangelog`); a file that does not parse stops the build. The island gets the module
 // `virtual:ea-changelog-releases`: only the released versions that have "For users" lines, no raw Markdown.
 // There is no env or file switch for another changelog: a test input in a production build would be a risk.

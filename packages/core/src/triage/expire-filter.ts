@@ -9,7 +9,7 @@ export interface ExpireFilter {
   // The category of the newest triage_results row of the mail.
   category?: { is: string } | { not: string };
   // Also close the `awaiting_approval` sends of the mailbox and their drafts: `expireReady` does it. `true`: every kind. `replies`:
-  // only the reply sends (F115: the switch `reply_drafts` went off). `others`: every kind except the reply sends (`create_draft` went
+  // only the reply sends (the switch `reply_drafts` went off). `others`: every kind except the reply sends (`create_draft` went
   // off: a reply draft has its own switch, so it stays).
   sends?: true | "replies" | "others";
 }

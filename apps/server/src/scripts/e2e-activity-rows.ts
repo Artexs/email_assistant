@@ -86,7 +86,7 @@ export async function insertMails(
 }
 
 export interface ActionInput {
-  // A follow-up is anchored on a loop, not on a mail (F116): `emailId` null and `loopId` set.
+  // A follow-up is anchored on a loop, not on a mail: `emailId` null and `loopId` set.
   emailId: string | null;
   loopId?: string;
   type: "move" | "mark_read" | "flag" | "create_draft" | "send";
@@ -124,7 +124,7 @@ export async function insertAction(trx: Transaction<DB>, ctx: TenantContext, inp
   return row.id;
 }
 
-// The rows of S5d B12: M1 moved notification, M2 reply, M3 unsure, M4 delegated, then the fillers.
+// The rows of the activity page: moved notification, reply, unsure, delegated, then the fillers.
 // The actions of one mail get distinct `created_at` values: the activity read model orders them by it.
 export async function seedActivityRows(
   db: Db | Transaction<DB>,
@@ -154,7 +154,7 @@ export async function seedActivityRows(
         confidence: 0.88,
         reasonCode: "direct_request",
         reason: "Anna asks for an answer.",
-        // F110 stage 16: a VIP result, for the rule hit of the Activity row and panel.
+        // A VIP result, for the rule hit of the Activity row and panel.
         fields: { rule: "vip" },
       },
       {

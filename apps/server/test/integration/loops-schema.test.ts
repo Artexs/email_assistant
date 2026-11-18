@@ -16,8 +16,8 @@ import {
 import { testDb, withRollback } from "./helpers";
 import { insertAnalysisRow, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-// Constraints, keys, row-level security and the Down section of the F116 stage 07 migration
-// (spec/features/active/F116-e5b-open-loops/stages/stage-07-migration.md).
+// Constraints, keys, row-level security and the Down section of the loops migration
+// (`docs/capabilities/open-loops.md`).
 const db = testDb();
 
 afterAll(async () => {

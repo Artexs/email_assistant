@@ -29,7 +29,7 @@ import {
   withTripBox,
 } from "./trust-tripwire-helpers";
 
-// The tripwire (F110 stage 09, ADR 0028): a granted category whose moves the user corrects is paused, once, with one notice per
+// The tripwire (ADR 0028): a granted category whose moves the user corrects is paused, once, with one notice per
 // linked owner. Committed rows and a fixed clock (the grant is 2026-11-01T10:00Z, now is 2026-11-08T12:00Z).
 const db = testDb();
 const ownerUrl = process.env.MIGRATOR_DATABASE_URL;

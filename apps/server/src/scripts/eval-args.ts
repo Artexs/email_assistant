@@ -160,7 +160,7 @@ function parsePromptParts(text: string): ClassifierV3Part[] | undefined {
   return optionalParts(names as ClassifierV3Part[]);
 }
 
-// Review N5: without `--prompt-parts`, v3 runs the production parts when v3 is the production pointer, else `none`.
+// Without `--prompt-parts`, v3 runs the production parts when v3 is the production pointer, else `none`.
 export function resolvePrompt(
   version: ClassifierVersion | undefined,
   partsText: string | undefined,

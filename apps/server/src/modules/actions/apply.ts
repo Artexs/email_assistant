@@ -39,7 +39,7 @@ export type { ApplyDeps, ApplyOutcome, FolderResolver, ResolvableFolderKey } fro
 
 const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\Seen" };
 
-// D9: a reverse move or a rescue (forward target `inbox`) that ends (applied or failed) clears the in-flight flag of the mail.
+// A reverse move or a rescue (forward target `inbox`) that ends (applied or failed) clears the in-flight flag of the mail.
 async function clearMovePending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
   if (action.type === "move" && (action.reverses_action_id !== null || action.payload.folder === "inbox")) {
     await setUndoPending(trx, ctx, emailIdOf(action), null);
@@ -246,8 +246,8 @@ async function applyFlag(
   return { kind: "applied" };
 }
 
-// A move (D5): the ensure puts the mail in the target whatever happened before.
-// A reverse brings it back to its source folder (D10); a forward move to `inbox` is the rescue (D12).
+// A move: the ensure puts the mail in the target whatever happened before.
+// A reverse brings it back to its source folder; a forward move to `inbox` is the rescue.
 async function applyMove(
   deps: ApplyDeps,
   ctx: TenantContext,
@@ -268,7 +268,7 @@ async function applyMove(
   } catch (error) {
     return mapProviderError(deps, ctx, action, error);
   }
-  // D9: the sync must not store an INBOX copy of the mail while the rescue runs. Idempotent: each try sets it again.
+  // The sync must not store an INBOX copy of the mail while the rescue runs. Idempotent: each try sets it again.
   if (rescue) await setUndoPending(deps.db, ctx, email.id, deps.now());
   // When the sync marked the mail returned, `from` is the source folder too and the ensure only locates (rule 1).
   const from = email.folder;
@@ -320,7 +320,7 @@ async function applyMove(
       data: {
         action_type: "move",
         mailbox_id: deps.mailboxId,
-        // The payload of a reverse is the original's (D10).
+        // The payload of a reverse is the original's.
         ...(folderKey === undefined ? {} : { folder_key: folderKey }),
         reverse: reverseOf !== null,
         moved_now: movedNow,

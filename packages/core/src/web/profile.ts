@@ -20,7 +20,7 @@ export {
   type StyleLength,
 } from "../replies/style-form";
 
-// F115 stage 10: the mailbox profile of reply drafts, as the routes `GET|PUT /api/mailboxes/:id/profile` and
+// The mailbox profile of reply drafts, as the routes `GET|PUT /api/mailboxes/:id/profile` and
 // `POST /api/mailboxes/:id/profile/preview` carry it. The limits and the character rules are in `checkProfileInput`
 // (`replies/profile.ts`): the route, the CLI and the preview all call it, and a text that fails answers 400 `validation`.
 
@@ -32,7 +32,7 @@ export const profileBodySchema = z.object({
 });
 export type ProfileBody = z.infer<typeof profileBodySchema>;
 
-// The stored values (null: not set) and the texts that stand in for a null (D13), so that the card shows what is used.
+// The stored values (null: not set) and the texts that stand in for a null, so that the card shows what is used.
 export const profileViewSchema = z.object({
   displayName: z.string().nullable(),
   signature: z.string().nullable(),

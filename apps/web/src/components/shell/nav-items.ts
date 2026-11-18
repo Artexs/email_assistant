@@ -33,10 +33,10 @@ export interface NavItem {
 
 const OPEN_LOOPS_FLAG = "open_loops";
 
-// The order of the panel (F102 stages 12 and 18): Activity, Approvals, Delegations, Mailboxes, Settings, Rules, Stats.
+// The order of the panel: Activity, Approvals, Delegations, Mailboxes, Settings, Rules, Stats.
 // An item with flags shows only while the organization has one of them on (`/api/me` field `features`). The desktop sidebar shows all
-// of them. While the flag `open_loops` is on, the Delegations item is the "Open loops" page (F116 stage 21): same address, new label;
-// the flag alone also shows it (its tabs Waiting and Promised need no F102 flag).
+// of them. While the flag `open_loops` is on, the Delegations item is the "Open loops" page: same address, new label;
+// the flag alone also shows it (its tabs Waiting and Promised need no delegations flag).
 const ORDER: { item: NavItem; flags: readonly string[] | null }[] = [
   { item: { key: "activity", href: "/activity", label: "nav_activity", icon: Activity }, flags: null },
   {

@@ -1,7 +1,7 @@
-// The panel review "Check 10 decisions" (F110 stage 15, flag `panel_review`): the web twin of the Telegram `/review` page.
+// The panel review "Check 10 decisions" (flag `panel_review`): the web twin of the Telegram `/review` page.
 // An item holds mail text (the sender's display name and the subject): the panel is behind login and shows it to the members of the
 // organization that owns the mailbox. The text comes from the stored mail row, never from a model call, and it never goes to a log or to
-// Telegram. The label only records what the user thinks: it unlocks nothing (ADR 0028, P1).
+// Telegram. The label only records what the user thinks: it unlocks nothing (ADR 0028).
 import { reviewLabelCategories } from "../digest/callback";
 import { categories, feedbackVerdicts } from "../triage/categories";
 

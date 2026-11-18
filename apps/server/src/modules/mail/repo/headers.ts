@@ -8,7 +8,7 @@ import type { DbOrTrx } from "./shared";
 
 const RETENTION_BATCH = 1000;
 
-// `listUnsubscribePost` is null on a row stored before F110 stage 22 (the header was not captured then).
+// `listUnsubscribePost` is null on a row stored before the header was captured.
 export interface EmailHeadersRow extends Omit<CapturedHeaders, "listUnsubscribePost"> {
   listUnsubscribePost: boolean | null;
   emailId: string;
@@ -86,7 +86,7 @@ export async function getEmailHeaders(
   };
 }
 
-// The captured attachment list and the part count of each mail (F109 stage 06). A mail with no `email_headers` row is absent.
+// The captured attachment list and the part count of each mail. A mail with no `email_headers` row is absent.
 // Every query filters `org_id`; after retention the list is `[]` and the count stays.
 export async function listAttachmentInputs(
   db: DbOrTrx,

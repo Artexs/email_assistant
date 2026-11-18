@@ -17,7 +17,7 @@ export function browserStorage(): Storage | null {
   }
 }
 
-/** The Help link of the shell (F112 stage 15). The caller shows it only with the flag `docs_links` on. */
+/** The Help link of the shell. The caller shows it only with the flag `docs_links` on. */
 export function HelpLink({ className }: { className?: string }) {
   // `useLocale` subscribes to a language switch; `getLocale` is the value `t()` uses in the same render (also on the server).
   useLocale();
@@ -35,7 +35,7 @@ interface CardState {
   show: readonly CardRelease[];
 }
 
-/** The card of this page load: null when nothing is new or the storage is not usable (plan P9). */
+/** The card of this page load: null when nothing is new or the storage is not usable. */
 function openCard(releases: readonly CardRelease[], userId: string, storage: Storage | null): CardState | null {
   if (storage === null) return null;
   const stored = readSeen(storage, userId);

@@ -8,9 +8,9 @@ import { getCredentials, updateCredentials } from "../repo";
 
 import type { MailOAuthProvider } from "./providers";
 
-// The stored secret of an OAuth mailbox and the lock that orders its writers (F117 stage 09).
+// The stored secret of an OAuth mailbox and the lock that orders its writers.
 // The secret is the refresh token and its metadata, encrypted with AAD `mailbox:<id>` and the current key version (ADR 0009).
-// No access token is stored. An error here has a fixed message; it never holds the secret or the ciphertext (F117 plan, secrets rule).
+// No access token is stored. An error here has a fixed message; it never holds the secret or the ciphertext (secrets rule).
 
 export interface OAuthSecret {
   v: 1;
@@ -55,7 +55,7 @@ export function decodeOAuthSecret(clear: string): OAuthSecret {
 
 /**
  * Runs `fn` in one transaction on the pool under the per-mailbox advisory lock. The lock ends with the transaction. A Reconnect and a
- * refresh (stage 10) both take it, so they never interleave. Pass the pool, never a caller's transaction.
+ * refresh both take it, so they never interleave. Pass the pool, never a caller's transaction.
  */
 export async function withMailboxOAuthLock<T>(
   pool: Db,

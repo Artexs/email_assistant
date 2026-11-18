@@ -12,7 +12,7 @@ import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
 import { insertTestEmail, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 
-// F106 stage 02: `deleteOrganization`. The organizations are committed (the service opens its own transaction);
+// `deleteOrganization`. The organizations are committed (the service opens its own transaction);
 // `afterEach` removes what a test leaves. The connection is the `app` role, with no tenant scope.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");

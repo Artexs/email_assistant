@@ -17,7 +17,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-// The /review command (F097 stage 04): the flag, the page, the suspended wrapper, the taps and the tenant filter.
+// The /review command: the flag, the page, the suspended wrapper, the taps and the tenant filter.
 const T = new Date("2026-11-20T12:00:00Z");
 const HOUR = 3_600_000;
 const TEST_SENDER = "agent@test-sender.test";

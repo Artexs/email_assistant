@@ -7,7 +7,7 @@ import { eraseSubjectData, matchSubject } from "../../src/modules/privacy";
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
 
-// Sender context, stage 02: the address of an open rule suggestion is in the data request. A data-request erase of the
+// Sender context: the address of an open rule suggestion is in the data request. A data-request erase of the
 // address deletes the row (`DSR_ADDRESS_MAP`, rule `delete`), as for `unsubscribe_requests`. A domain pattern names no person
 // and stays. The seed is committed (the erase runs its own transaction); `afterEach` removes it. The connection is the `app` role.
 const db = testDb();

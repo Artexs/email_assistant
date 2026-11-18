@@ -5,7 +5,7 @@ import { decodeBase64Url, PUBLIC_KEY_BYTES, vapidPublicKeyOf } from "./vapid-key
 
 // The env keys of Web Push. `config.ts` spreads them into the schema.
 export const pushShape = {
-  // Web Push (F118, RFC 8292): the VAPID key pair (raw P-256, base64url) and the contact URI. All three or none. Secret: never print or log.
+  // Web Push (RFC 8292): the VAPID key pair (raw P-256, base64url) and the contact URI. All three or none. Secret: never print or log.
   VAPID_PUBLIC_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
   VAPID_PRIVATE_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
   VAPID_SUBJECT: z.preprocess(emptyAsUndefined, z.string().optional()),

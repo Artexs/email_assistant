@@ -1,4 +1,4 @@
-// F116 stage 18: the stored digest is a new copy of loop data (address, ask, subject in `outbox.text` and `outbox.view`). Every
+// The stored digest is a new copy of loop data (address, ask, subject in `outbox.text` and `outbox.view`). Every
 // rule that removes loop data must reach it. The places that copy a value of a loop into a digest, and the rules that delete:
 //   1. `outbox.text`, `outbox.view.text` of the `digest` row (the brief lines).  Removed by: the Sent switch off (`clearLoopCards`
 //      finds the row by `view.loopIds`), the erase of a person (`blankDigestsNamingLoops`), retention (`clearOutboxTexts`, 90 days),

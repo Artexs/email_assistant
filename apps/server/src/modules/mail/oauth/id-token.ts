@@ -1,6 +1,6 @@
-// The ID token of a mailbox OAuth code redeem (F117 stage 08, D12, Q8). The token comes straight from the token endpoint over TLS:
+// The ID token of a mailbox OAuth code redeem. The token comes straight from the token endpoint over TLS:
 // OpenID Connect Core 1.0 §3.1.3.7 rule 6 lets the client trust that channel in place of the signature. So this parser reads the
-// payload only. It reads no header field and checks no signature. D18: the token and its claims never reach a log line or an error;
+// payload only. It reads no header field and checks no signature. The token and its claims never reach a log line or an error;
 // a parse fault returns null and no text.
 
 /** The claims the callback uses. Everything else in the payload is dropped. */

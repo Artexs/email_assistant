@@ -194,7 +194,7 @@ describe("GET /api/me onboarding", () => {
   });
 });
 
-// F110 stage 14: with `trust_ladder` on, the steps are mailbox, channel, report. Counts and flags only.
+// With `trust_ladder` on, the steps are mailbox, channel, report. Counts and flags only.
 describe("GET /api/me onboarding with the flag trust_ladder", () => {
   async function flagOn(orgId: string): Promise<void> {
     await upsertOrgFeature(db, { orgId }, { flag: "trust_ladder", enabled: true, setBy: "test", setAt: NOW });

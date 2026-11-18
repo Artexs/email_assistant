@@ -5,7 +5,7 @@ import { type DB, type TenantContext } from "../../../platform/db";
 import { queueNotice } from "../notice-queue";
 import { listLinkedChatsOfOrg } from "../repo";
 
-// D11: every owner hears that a mailbox was removed. No mailbox or email id: those rows are gone, and the text holds no address.
+// Every owner hears that a mailbox was removed. No mailbox or email id: those rows are gone, and the text holds no address.
 // `access` (an OAuth mailbox) is set here because the mailbox row is gone when the notice renders.
 export async function queueMailboxRemovedNotices(
   trx: Transaction<DB>,

@@ -1,4 +1,4 @@
-// The evidence lines of the autonomy card (F110 stage 13). Pure: a `TrustCategory` of the trust view in, fixed phrases out.
+// The evidence lines of the autonomy card. Pure: a `TrustCategory` of the trust view in, fixed phrases out.
 // No mail text is used here. The phrases come from the page texts (en and pl), one key per case.
 import type { TrustCategory, TrustCheck, TrustView } from "@ea/core/web";
 

@@ -18,7 +18,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-// F110 stage 17: the Telegram runtime hands WEB_BASE_URL to the /digest command, so its spam review line links to the panel.
+// The Telegram runtime hands WEB_BASE_URL to the /digest command, so its spam review line links to the panel.
 const T0 = new Date("2026-11-06T10:00:00Z");
 const MINUTE = 60_000;
 const CHAT_ID = 987654321012;

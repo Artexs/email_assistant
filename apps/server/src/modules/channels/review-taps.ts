@@ -11,7 +11,7 @@ import {
   type ReviewLabelCategory,
 } from "@ea/core";
 
-// A feedback tap with the review kinds folded into the plain ones (F097 D5): `callbacks.ts` has one branch for each
+// A feedback tap with the review kinds folded into the plain ones: `callbacks.ts` has one branch for each
 // action, and `source` tells the digest tap (`telegram`) from the review tap (`review`).
 export type FeedbackTap =
   | { kind: "right"; category: ReviewLabelCategory; emailId: string }

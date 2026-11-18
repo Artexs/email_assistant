@@ -1,4 +1,4 @@
-// The `TriageMailbox` snapshot for a caller that is not the triage job (F110 stage 07: the history check classifies with the settings
+// The `TriageMailbox` snapshot for a caller that is not the triage job (the history check classifies with the settings
 // of the mailbox as triage would). The triage job builds its snapshot in `jobs.ts`, between a claim and its first mail; the
 // type `TriageMailbox` makes a field that one of them leaves out a compile error.
 import { type EvidenceKey, mailboxModes, parseCategoryPolicy, parseToolSwitches } from "@ea/core";

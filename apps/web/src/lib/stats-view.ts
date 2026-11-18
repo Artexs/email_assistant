@@ -42,7 +42,7 @@ function evidenceText(week: WeekStats, category: BarCategory): string {
     if (best === null || row.kept > best.kept) best = row;
   }
   if (best === null || best.precision === null || best.wilsonLower === null) return NONE;
-  // Below the label minimum a precision says too little: show the count of labels only (PD-066).
+  // Below the label minimum a precision says too little: show the count of labels only.
   if (best.kept < EVIDENCE_MIN_LABELS) {
     return t(best.auto ? "stats_evidence_few_auto" : "stats_evidence_few", {
       kept: best.kept,

@@ -41,7 +41,7 @@ describe("job:run CLI", () => {
     expect(result.stderr).not.toContain("ran once");
   });
 
-  // F116 stage 15 review: the chaser branch. The alias line comes after the run; a mailbox that fails gives exit 1.
+  // The chaser branch. The alias line comes after the run; a mailbox that fails gives exit 1.
   test("loops.chaser and its alias print the counts line; only the alias prints the alias line, after the run", async () => {
     const plain = await runJob(["--name", "loops.chaser"]);
     expect(plain.code).toBe(0);
@@ -56,7 +56,7 @@ describe("job:run CLI", () => {
     expect(lines[1]).toContain("delegation.chaser is an alias of loops.chaser");
   });
 
-  // F115 stage 09: the sweep needs no model and no LLM scope; it prints counts only.
+  // The sweep needs no model and no LLM scope; it prints counts only.
   test("replies.sweep runs once without the model and prints a counts line", async () => {
     const result = await runJob(["--name", "replies.sweep"]);
 

@@ -45,7 +45,7 @@ export async function listOpenReplySendsOfThread(
   }));
 }
 
-// An open reply send that the sweep may close (F115 stage 09).
+// An open reply send that the sweep may close.
 export interface SweepReplySend {
   sendId: string;
   emailId: string;

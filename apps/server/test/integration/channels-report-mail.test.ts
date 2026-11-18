@@ -29,7 +29,7 @@ import {
 import { testDb, withRollback } from "./helpers";
 import { seedWeek } from "./metrics-fixtures";
 
-// F110 stage 19: the report kinds of D14 (digest, weekly_report, trust_report_ready, autonomy_paused) also go by mail to a
+// The report kinds (digest, weekly_report, trust_report_ready, autonomy_paused) also go by mail to a
 // member whose report channel is `mail` or `both`; the Telegram sender never claims a mail row.
 const db = testDb();
 
@@ -513,7 +513,7 @@ describe("urgent and the other kinds stay on Telegram (test 5)", () => {
   });
 });
 
-// The 24 h expiry of a mail row moved to the report mail sender (F110 stage 20): `channels-report-mail-append.test.ts` covers it.
+// The 24 h expiry of a mail row moved to the report mail sender: `channels-report-mail-append.test.ts` covers it.
 describe("the Telegram sender and mail rows (step 2, test 7)", () => {
   const T = new Date("2026-11-06T10:00:00Z");
 

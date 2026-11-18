@@ -2,7 +2,7 @@ import { encryptPushPayload, PushKeyError, PushPayloadTooLarge } from "./encrypt
 import { checkPushEndpoint } from "./endpoint";
 import { VapidError, type VapidKeys, vapidHeaders } from "./vapid";
 
-// One POST of one encrypted payload to one push endpoint (RFC 8030), mapped to a `PushResult` (F118 D10).
+// One POST of one encrypted payload to one push endpoint (RFC 8030), mapped to a `PushResult`.
 // Order: the endpoint check, the topic and TTL check and the encryption all run BEFORE any network step. The request goes
 // through the injected `fetch`: `redirect: "manual"` (a 3xx is refused, never followed), a 10 s deadline, and the answer body is
 // cancelled unread (so the response cap is zero bytes). A result holds a kind and a number only: no endpoint, key, payload or

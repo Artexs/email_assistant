@@ -7,7 +7,7 @@ import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile } from "./reply-fixtures";
 
-// F115 stage 03b, step 1: `mailboxProfileOf` and `upsertMailboxProfile` (module `mail`).
+// `mailboxProfileOf` and `upsertMailboxProfile` (module `mail`).
 const db = testDb();
 
 afterAll(async () => {

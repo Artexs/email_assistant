@@ -86,7 +86,7 @@ describe("autoEvidence", () => {
   });
 });
 
-// The whole input space against the eligibility rule of `spec/features/active/F110-e4-b-earn-trust/plan.md` and ADR 0028, written as a conjunction, not as a
+// The whole input space against the eligibility rule of `docs/capabilities/trust.md` and ADR 0028, written as a conjunction, not as a
 // list of blocks: eligible = a non-provisional global `go`, a history that is not `fail`, and real labels that are not a
 // `no-go` at 30 or more; recommended = eligible, no active trip and a moving category.
 describe("autoEvidence over the whole input space", () => {

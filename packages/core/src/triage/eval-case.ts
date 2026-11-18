@@ -9,7 +9,7 @@ import { urgencyProfileSchema, urgencySources } from "./urgency-profile";
 // The receivedAt of every eval case. "Today" in a case text is 2026-11-02 (a Monday).
 export const EVAL_RECEIVED_AT = new Date("2026-11-02T09:00:00Z");
 
-// A deterministic uuid per delegate key: the payload schemas need a uuid (D2) and a mail cannot know it.
+// A deterministic uuid per delegate key: the payload schemas need a uuid and a mail cannot know it.
 export function delegateIdOf(key: string): string {
   return `00000000-0000-4000-8000-${createHash("sha256").update(key).digest("hex").slice(0, 12)}`;
 }

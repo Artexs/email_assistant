@@ -12,7 +12,7 @@ import { dataOf, deliverDigest, linkOf, MESSAGE_AT, tapDeps } from "./channels-l
 import { insertDelegate, insertTriaged, renderedOf } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// F116 stage 19, step 3: the Delegate button and the picker. Every test runs in a transaction that is rolled back.
+// The Delegate button and the picker. Every test runs in a transaction that is rolled back.
 const db = testDb();
 
 afterAll(async () => {
@@ -296,7 +296,7 @@ describe("T12 the urgent notice", () => {
         const org = await delegateOrg(trx, { category: "urgent" });
         await prepare(trx, org);
         const row = await urgentRow(trx, org);
-        // No field at all: a view without it also renders in the code before stage 19.
+        // No field at all: a view without it also renders in the code from before the field existed.
         expect("delegable" in (row.view as object)).toBe(false);
         expect(renderedOf(row).buttons[0]).toHaveLength(2);
       });

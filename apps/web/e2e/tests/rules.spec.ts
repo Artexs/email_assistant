@@ -11,7 +11,7 @@ test.describe.configure({ mode: "serial" });
 let errors: string[] = [];
 let logged: string[] = [];
 
-// The blocks of S5a (10/110), S5b (40/140) and settings (60/160) are taken. This spec shares 70 and 170 with
+// The blocks 10/110, 40/140 and 60/160 are taken. This spec shares 70 and 170 with
 // onboarding.spec.ts: no collision, because there is one worker and the counter in helpers.ts runs across all files.
 test.beforeEach(async ({ context, page }, testInfo) => {
   const base = testInfo.project.name === "mobile" ? 70 : 170;

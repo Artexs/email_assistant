@@ -52,7 +52,7 @@ export async function fetchSince(
   return filterAboveCursor(inWindow, 0).kept;
 }
 
-// D4 and D5: one folder of the run, with its own cursor. S = `row.path`.
+// One folder of the run, with its own cursor. S = `row.path`.
 async function syncFolder(
   deps: SyncDeps,
   ctx: TenantContext,
@@ -122,7 +122,7 @@ async function syncFolder(
 
 const RESERVED_MAP_KEYS = new Set(["drafts", "sent", "trash"]);
 
-// D2: insert the rows of the default folders that the server lists. Returns the listed paths (null: unknown) and the new keys.
+// Insert the rows of the default folders that the server lists. Returns the listed paths (null: unknown) and the new keys.
 async function discoverFolders(
   deps: SyncDeps,
   ctx: TenantContext,

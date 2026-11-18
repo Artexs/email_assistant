@@ -63,7 +63,7 @@ function invalidField(field: "name" | "email" | "tags"): ValidationError {
   return new ValidationError([{ path: field, code: "invalid_value", message: `invalid ${field}` }]);
 }
 
-// F102 ticket, P4 and P6: the routes of the delegates page. Any member reads; `POST` and `PATCH` are owner only. The flag comes
+// The routes of the delegates page. Any member reads; `POST` and `PATCH` are owner only. The flag comes
 // first: with it off every route is a 404, also for a member and also with a bad id. Every write passes `via: "web"` and the user as actor.
 export function delegateRoutes(deps: DelegateRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
@@ -130,7 +130,7 @@ export function delegateRoutes(deps: DelegateRouteDeps): Hono<ApiEnv> {
   return app;
 }
 
-// F102 stages 15 and 16: the routes of the delegations page. Any member reads and marks a delegation done; the cancel and the remind are owner
+// The routes of the delegations page. Any member reads and marks a delegation done; the cancel and the remind are owner
 // only. The flag comes first, as for the delegates: with it off every route is a 404, for every role and with a bad id.
 // Every write passes `via: "web"` and the user as actor.
 export function delegationRoutes(deps: DelegationRouteDeps): Hono<ApiEnv> {

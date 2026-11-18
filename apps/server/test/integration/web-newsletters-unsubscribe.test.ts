@@ -9,7 +9,7 @@ import { testDb } from "./helpers";
 import { as } from "./web-helpers";
 import { addRequest, addSenderMail, LINK, newsletterBox, NOW, PASS, type NewsletterBox } from "./web-newsletters-kit";
 
-// POST /api/newsletters/:mailboxId/unsubscribe (F110 stage 24, tests 7 to 10 of the stage file and the rules around them).
+// POST /api/newsletters/:mailboxId/unsubscribe (tests 7 to 10 of the stage file and the rules around them).
 // Committed rows. The client is a fake: no test sends a real request (the guarded client has its own tests in
 // `platform/public-http.test.ts`).
 const db = testDb();
@@ -330,7 +330,7 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
   });
 });
 
-// TG3 (review of stage 24): the REAL client behind the route. The lookup is a stub and the dialer throws: a refused target must end
+// The REAL client behind the route. The lookup is a stub and the dialer throws: a refused target must end
 // `refused` with its stored code and reach neither. Nothing here opens a connection.
 describe("the real guarded client behind the route", () => {
   test("13: a metadata address, an IPv4-mapped literal and port 8443 end `refused`: the stored code, 0 lookups, 0 dials", async () => {

@@ -39,7 +39,7 @@ export function readStatsWeekOptions(args: string[]): StatsWeekOptions | undefin
   }
 }
 
-// D27: every rate has its count; a denominator of 0 prints "-".
+// Every rate has its count; a denominator of 0 prints "-".
 const share = (part: number, whole: number): string =>
   whole === 0 ? `${part} of ${whole} (-)` : `${part} of ${whole} (${Math.round((part / whole) * 100)}%)`;
 const num = (value: number | null, digits = 2): string => (value === null ? "-" : value.toFixed(digits));
@@ -78,7 +78,7 @@ export function statsLines(stats: WeekStats): string[] {
       `m8 ${row.mailboxId} ${row.category} auto ${row.auto ? "yes" : "no"} kept ${row.kept}` +
         ` precision ${shown ? num(row.precision) : "-"} lower ${shown ? num(row.wilsonLower) : "-"} ${row.decision}`
     );
-    // F110 stage 12: the three sources of ADR 0028; no line with the flag `trust_ladder` off.
+    // The three sources of ADR 0028; no line with the flag `trust_ladder` off.
     if (row.global !== null) {
       const history =
         row.history === null ? "none" : `${row.history.outcome} (${row.history.moved}/${row.history.acted})`;

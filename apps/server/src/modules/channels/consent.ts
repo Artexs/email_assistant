@@ -8,8 +8,8 @@ type DbOrTrx = Db | Transaction<DB>;
 
 // The consent version of each user: the version in the newest `web.telegram_consent` audit row of the user in this org
 // that is newer than the user's last `chat.unlinked` row. An unlink withdraws the consent: a later link with no consent step
-// (the CLI) must not find the old row and count it (F116 review 17, N4). A row with the same time as the unlink row is not newer.
-// A user with no such row (a chat linked before the F098 consent step) gets null. Every user id of `userIds` is a key of the map.
+// (the CLI) must not find the old row and count it. A row with the same time as the unlink row is not newer.
+// A user with no such row (a chat linked before the consent step existed) gets null. Every user id of `userIds` is a key of the map.
 // The audit actor of the consent event is the user id (routes.ts); the `chat.unlinked` row holds it as `data.user_id`.
 // The org filter is explicit, RLS is not the only guard.
 export async function consentVersionsOf(
@@ -50,7 +50,7 @@ export async function consentVersionsOf(
   return versions;
 }
 
-// THE gate of open-loop data in Telegram (F116 stage 17 review, N5): the users whose consent covers it. Every sender of a follow-up
+// THE gate of open-loop data in Telegram: the users whose consent covers it. Every sender of a follow-up
 // card, a follow-up result, a brief section or a loop button asks here and nowhere else (a test scans the sources for any other use
 // of `consentCovers`). A user not in the set gets no recipient, no ask and no promise: a fixed line and the panel link only.
 export async function loopConsentOf(db: DbOrTrx, ctx: TenantContext, userIds: readonly string[]): Promise<Set<string>> {
@@ -60,7 +60,7 @@ export async function loopConsentOf(db: DbOrTrx, ctx: TenantContext, userIds: re
   );
 }
 
-// The own consent version of one user, for the panel (`GET /channels/telegram`, F116 stage 22): the panel shows the "New Telegram
+// The own consent version of one user, for the panel (`GET /channels/telegram`): the panel shows the "New Telegram
 // terms" block when it is older than the current text. It decides nothing about what Telegram receives: that is `loopConsentOf`.
 export async function ownConsentVersion(db: DbOrTrx, ctx: TenantContext, userId: string): Promise<string | null> {
   return (await consentVersionsOf(db, ctx, [userId])).get(userId) ?? null;

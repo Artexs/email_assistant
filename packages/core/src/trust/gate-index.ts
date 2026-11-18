@@ -1,4 +1,4 @@
-// The shape of the gate files that the server reads at start (F110 stage 02). The types live here because the settings
+// The shape of the gate files that the server reads at start. The types live here because the settings
 // module (below triage in the layers) carries the index in its deps. The reader is `triage/evidence.ts`.
 import type { BarCategory } from "../triage/metrics";
 
@@ -10,7 +10,7 @@ export interface GateIndexFile {
   key: EvidenceKey;
   /** The file name only. */
   file: string;
-  /** The `date` field of the gate file. Newer wins (D2). */
+  /** The `date` field of the gate file. Newer wins. */
   date: string;
   provisional: boolean;
   categories: Record<BarCategory, GlobalEvidence>;

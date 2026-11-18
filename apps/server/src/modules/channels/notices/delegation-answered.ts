@@ -5,7 +5,7 @@ import { type LinkedChat } from "../port";
 
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
-// D24: every linked member hears that a delegate answered.
+// Every linked member hears that a delegate answered.
 async function detectDelegationAnswered(
   db: DbOrTrx,
   ctx: TenantContext,
