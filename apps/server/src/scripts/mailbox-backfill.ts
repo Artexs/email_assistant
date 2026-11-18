@@ -3,17 +3,12 @@ import { parseArgs } from "node:util";
 import { z } from "zod";
 
 import { isOwnMailOf } from "../composition";
-import { backfillMailbox, configureMailHosts, CursorMovedError } from "../modules/mail";
+import { backfillMailbox, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
-import { createCliOutput } from "../platform/cli";
-import { loadConfig, mailAllowLocal } from "../platform/config";
-import { createSecretBox } from "../platform/crypto";
-import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
 import { backfillRefusal } from "./mailbox-backfill-gate";
-
-const out = createCliOutput("mailbox-backfill");
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
 
 const usage = [
   "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
@@ -22,10 +17,10 @@ const usage = [
   "  Exit 0: done. Exit 1: usage error, suspended organization (org_suspended) or failure.",
 ].join("\n");
 
-function readOptions() {
+function readOptions(argv: string[]) {
   try {
     const { values } = parseArgs({
-      args: process.argv.slice(2),
+      args: argv,
       options: {
         "org-id": { type: "string" },
         "mailbox-id": { type: "string" },
@@ -50,28 +45,23 @@ function readOptions() {
   }
 }
 
-async function main(): Promise<number> {
-  const options = readOptions();
+// Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
+export async function run(argv: string[], deps: CliDeps): Promise<number> {
+  const { db, out } = deps;
+  const options = readOptions(argv);
   if (!options) {
     out.fail(usage);
     return 1;
   }
-
-  const config = loadConfig();
-
-  configureMailHosts({ allowLocal: mailAllowLocal(config) });
-  const db = createDb(config.DATABASE_URL);
   try {
-    await assertAppRole(db);
     const refusal = await backfillRefusal(db, options.orgId);
     if (refusal !== undefined) {
       out.fail(refusal);
       return 1;
     }
-    const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const now = new Date();
     const result = await backfillMailbox(
-      { db, secrets, isOwnActionId: isOwnMailOf(db) },
+      { ...deps, isOwnActionId: isOwnMailOf(db) },
       { orgId: options.orgId },
       options.mailboxId,
       {
@@ -92,17 +82,12 @@ async function main(): Promise<number> {
         "the regular sync moved the cursor during the backfill; run the same command again (the dedup key stops duplicates)"
       );
     } else {
-      out.fail(`failed: ${describeError(error)}`);
+      out.fail(oauthReasonLine(error) ?? `failed: ${describeError(error)}`);
     }
     return 1;
-  } finally {
-    await db.destroy();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  process.exit(await runMailboxCli("mailbox-backfill", run));
+}
