@@ -300,6 +300,8 @@ export interface E2eLoopPlan {
   laterCount?: number;
   autoReply?: true;
   pair?: true;
+  // The loop got its due date from the usual reply time of the counterpart (`due_source` `contact`).
+  usualReplyDays?: number;
 }
 export const E2E_OPEN_LOOPS = {
   // Waiting: Draft follow-up and Later change them.
@@ -339,6 +341,15 @@ export const E2E_OPEN_LOOPS = {
     subject: "E2E limit",
     dueInDays: -3,
     followUpsSent: 2,
+  },
+  // A due date from the usual reply time of the contact: the row shows "Usual reply".
+  waitContact: {
+    kind: "waiting",
+    counterpart: "igor@client.test",
+    text: "Confirm the contact reply time",
+    subject: "E2E contact",
+    dueInDays: 4,
+    usualReplyDays: 2,
   },
   waitAuto: {
     kind: "waiting",

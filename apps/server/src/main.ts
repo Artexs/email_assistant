@@ -303,7 +303,14 @@ if (scope !== null) {
   });
   log.info("job_scheduled", { job: "trust.history" });
   // The Sent analysis of the open loops uses the same model client and the same scope: with the scope off, no mail goes out.
-  const loopJobs = createLoopJobs({ db, llm, dailyCap: config.LLM_DAILY_CAP, scope, now: () => new Date() });
+  const loopJobs = createLoopJobs({
+    db,
+    llm,
+    dailyCap: config.LLM_DAILY_CAP,
+    credentialsKey: config.CREDENTIALS_KEY,
+    scope,
+    now: () => new Date(),
+  });
   scheduler.add("loops.analyze", "35 * * * * *", () => {
     loopsAnalyzeRun = loopJobs.analyze.run().then(() => undefined);
     return loopsAnalyzeRun;

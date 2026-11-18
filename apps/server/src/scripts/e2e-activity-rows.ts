@@ -124,6 +124,41 @@ export async function insertAction(trx: Transaction<DB>, ctx: TenantContext, inp
   return row.id;
 }
 
+// The sender profiles of two seeded senders, for the sender line of the panel (it shows only while the flag `sender_context` is on).
+// The seeded mails carry synthetic Message-IDs, so the profile pass would skip them: the rows are written directly. `keyHashOf` is
+// `senderKeyHash` with the key of the run. The shop is a new sender with one mail; Anna is a known one.
+export const ACTIVITY_PROFILES = {
+  shop: { address: "shop@e2e.test", received: 1, answered: 0, userMailsTo: 0, relation: "new", seenDaysAgo: 0 },
+  anna: { address: "anna@e2e.test", received: 8, answered: 6, userMailsTo: 3, relation: "known", seenDaysAgo: 2 },
+} as const;
+
+export async function seedActivityProfiles(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  keyHashOf: (address: string) => string,
+  now: Date
+): Promise<void> {
+  await inTransaction(db, async (trx) => {
+    await trx
+      .insertInto("sender_profiles")
+      .values(
+        Object.values(ACTIVITY_PROFILES).map((profile) => ({
+          org_id: ctx.orgId,
+          mailbox_id: mailboxId,
+          key_hash: keyHashOf(profile.address),
+          received: profile.received,
+          answered: profile.answered,
+          user_mails_to: profile.userMailsTo,
+          relation: profile.relation,
+          first_seen_at: new Date(now.getTime() - 30 * DAY),
+          last_seen_at: new Date(now.getTime() - profile.seenDaysAgo * DAY),
+        }))
+      )
+      .execute();
+  });
+}
+
 // The rows of the activity page: moved notification, reply, unsure, delegated, then the fillers.
 // The actions of one mail get distinct `created_at` values: the activity read model orders them by it.
 export async function seedActivityRows(

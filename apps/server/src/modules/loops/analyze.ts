@@ -6,6 +6,7 @@ import { configCodes, type LlmClient, type LlmUsage, softCodes } from "../../pla
 import { createLog } from "../../platform/log";
 import { countLlmCallsSince, recordLlmCall } from "../audit";
 import { getMailboxSettings } from "../config";
+import { contactWaitFor } from "../contacts";
 import { listDelegates } from "../delegation";
 import { getSentSyncState, listMailboxes, type TestMailRule } from "../mail";
 import { isFeatureOn, getOrganization } from "../tenancy";
@@ -38,6 +39,8 @@ export interface AnalyzeDeps {
   // `LLM_DAILY_CAP`: the calls of a mailbox in one quota day, all roles together.
   dailyCap: number;
   scope: AnalysisScope;
+  // `CREDENTIALS_KEY`: the key of the contact hash, for the usual reply time of a contact (`contactWaitFor`).
+  credentialsKey: string;
   // The pause of this job. A soft error or a configuration error of the model stops all mailboxes for a while.
   pause: LlmPause;
 }
@@ -207,7 +210,9 @@ async function analyzeRow(
       startedAt,
       now: env.now,
     });
-    const written = await writeExtraction(deps.db, ctx, env, row, answer.result, prompt.version);
+    const written = await writeExtraction(deps.db, ctx, env, row, answer.result, prompt.version, (counterpart) =>
+      contactWaitFor({ db: deps.db, credentialsKey: deps.credentialsKey }, ctx, env.mailboxId, counterpart)
+    );
     if (written.kind === "off") return "off";
     if (written.kind === "written") result.opened += written.opened;
     return "analysed";

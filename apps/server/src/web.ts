@@ -428,7 +428,7 @@ export function apiRouters(
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
     api.route("/", replyRoutes({ db, preview: extras.stylePreview ?? null }));
     api.route("/", rulesRoutes({ db, now }));
-    api.route("/", activityRoutes({ db, now }));
+    api.route("/", activityRoutes({ db, now, sender: { db, credentialsKey: config.CREDENTIALS_KEY } }));
     api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
     api.route("/", reviewRoutes({ db, now, testMail: testMailRule(config) }));
@@ -449,7 +449,14 @@ export function apiRouters(
     );
     api.route(
       "/",
-      approvalRoutes({ db, now, sendScope: extras.sendScope, hooks: delegationHooks({ db }), uidplus: uidplusOf(db) })
+      approvalRoutes({
+        db,
+        now,
+        sendScope: extras.sendScope,
+        hooks: delegationHooks({ db }),
+        uidplus: uidplusOf(db),
+        sender: { db, credentialsKey: config.CREDENTIALS_KEY },
+      })
     );
     api.route(
       "/",

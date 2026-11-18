@@ -114,6 +114,11 @@ test("rows: each kind shows its counterpart, text, reason, due date and counters
   await expect(view).toContainText(/Due \d{1,2} \w{3,4} \d{4} \(default wait\)/);
   await expect(view).toContainText(en.lp_follow_ups.replace("{n}", "0").replace("{max}", "2"));
   await expect(view).toContainText(en.lp_status_open);
+  await expect(view).not.toContainText("Usual reply");
+  // A due date from the usual reply time of the contact says so and shows that time under the date.
+  const contact = rowOf(waiting, "waitContact");
+  await expect(contact).toContainText(/Due \d{1,2} \w{3,4} \d{4} \(usual reply time of this contact\)/);
+  await expect(contact).toContainText(en.lp_usual_reply.replace("{n}", "2"));
   // Two follow-ups sent: the button is off with the reason on screen, and the keyboard reaches both.
   const limit = rowOf(waiting, "waitLimit");
   await expect(limit).toContainText(en.lp_follow_ups.replace("{n}", "2").replace("{max}", "2"));

@@ -34,6 +34,8 @@ export interface BriefLoop {
   // The start of the wait: the Sent mail that the answer is missing for.
   sinceAt: Date;
   autoReplyOnly: boolean;
+  // The usual reply time of the counterpart in days; null unless the due date comes from it. Only a count.
+  usualReplyDays: number | null;
   // How many times the user moved the due date (0 to 3): at 3 the Later button goes.
   laterCount: number;
   // The Draft button shows: the mailbox is in `assist` with drafts on, no follow-up waits for a tap and fewer than two were sent.
@@ -221,7 +223,8 @@ function lineText(line: BriefLine, texts: CoreTexts, opts: BriefRenderOptions): 
     ...(loop.followUp === "approval" ? [t.waitingMarker.approval] : []),
   ];
   const text = t.waitingLine(whoOf(loop.counterpart), day(loop.sinceAt), whatOf(loop.text, loop.subject, texts));
-  return [text, ...markers].join(" · ");
+  const usual = loop.usualReplyDays === null ? [] : [t.usualReply(loop.usualReplyDays)];
+  return [text, ...markers, ...usual].join(" · ");
 }
 
 const countLine = (key: BriefSectionKey, count: number, texts: CoreTexts): string => {

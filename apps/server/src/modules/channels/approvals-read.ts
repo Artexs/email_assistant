@@ -9,6 +9,7 @@ import {
   type ApprovalItem,
   type ApprovalList,
   type SendPayload,
+  type SenderLine,
 } from "@ea/core";
 
 import type { Db, TenantContext } from "../../platform/db";
@@ -24,6 +25,7 @@ import {
   type SendRow,
   type SendScope,
 } from "../actions";
+import { readSenderLines, type SenderLineDeps, type SenderMail } from "../contacts";
 import { listDelegates } from "../delegation";
 import { getMailbox, mailboxHasUidplus } from "../mail";
 import { replyVersionFacts } from "../replies";
@@ -37,6 +39,8 @@ import { approvalViewFor } from "./notices/approval";
 export interface ApprovalReadDeps {
   db: Db;
   sendScope: SendScope;
+  // The sender line (flag `sender_context`). Absent: no line, as with the flag off.
+  sender?: SenderLineDeps;
 }
 
 type DetailState = ApprovalDetail["state"];
@@ -127,6 +131,24 @@ async function build(deps: ApprovalReadDeps, ctx: TenantContext, send: SendRow, 
   };
 }
 
+// The mail that the sender line is about: the original mail of the send. A follow-up or a reminder has none, and the address is null once
+// retention cleared it.
+function senderMailOf(b: Built): SenderMail {
+  return { mailboxId: b.send.mailbox_id, address: b.send.email?.from_address ?? null };
+}
+
+// The `sender` key of each build, in order: `{}` while the flag is off (the key is absent), else `{ sender: line | null }`.
+async function senderKeys(
+  deps: ApprovalReadDeps,
+  ctx: TenantContext,
+  builds: readonly Built[],
+  now: Date
+): Promise<{ sender?: SenderLine | null }[]> {
+  const lines =
+    deps.sender === undefined ? null : await readSenderLines(deps.sender, ctx, builds.map(senderMailOf), now);
+  return builds.map((_, index) => (lines === null ? {} : { sender: lines[index] ?? null }));
+}
+
 function common(b: Built) {
   return {
     id: b.send.id,
@@ -147,21 +169,36 @@ export async function listApprovals(deps: ApprovalReadDeps, ctx: TenantContext, 
     staleBefore: new Date(now.getTime() - STALE_AFTER_MS),
     limit: APPROVAL_LIST_MAX,
   });
-  const items: ApprovalItem[] = [];
+  const kept: {
+    b: Built;
+    state: ApprovalItem["state"];
+    expiresAt: Date;
+    view: NonNullable<Built["view"]>;
+    payload: SendPayload;
+  }[] = [];
   for (const send of sends) {
     const b = await build(deps, ctx, send, now);
     const expiresAt = b === undefined ? null : expiresAtOf(send, b.state);
     if (b === undefined || b.view === null || b.payload === undefined || expiresAt === null) continue;
     if (b.state !== "waiting" && b.state !== "held") continue;
-    items.push({
-      ...common(b),
-      state: b.state,
-      version: b.view.version ?? 1,
-      kind: b.payload.kind,
-      expiresAt: expiresAt.toISOString(),
-      view: b.view,
-    });
+    kept.push({ b, state: b.state, expiresAt, view: b.view, payload: b.payload });
   }
+  // One profile read for the whole list.
+  const senders = await senderKeys(
+    deps,
+    ctx,
+    kept.map((entry) => entry.b),
+    now
+  );
+  const items: ApprovalItem[] = kept.map(({ b, state, expiresAt, view, payload }, index) => ({
+    ...common(b),
+    ...senders[index],
+    state,
+    version: view.version ?? 1,
+    kind: payload.kind,
+    expiresAt: expiresAt.toISOString(),
+    view,
+  }));
   return approvalListSchema.parse({ items });
 }
 
@@ -184,8 +221,10 @@ export async function getApprovalDetail(
           email,
         }))
       : [];
+  const [sender] = await senderKeys(deps, ctx, [b], now);
   return approvalDetailSchema.parse({
     ...common(b),
+    ...sender,
     version: b.version,
     state: b.state,
     kind: b.payload?.kind ?? null,
