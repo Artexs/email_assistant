@@ -107,6 +107,8 @@ export interface ApprovalTexts {
     unknownRest: string;
     expired: {
       timeout: (subject: string) => string;
+      // A reply lives 7 days, another send 48 h (F115 stage 12): the `timeout` of a reply names no hours of the other rule.
+      timeoutReply: (subject: string) => string;
       draft_missing: (subject: string) => string;
       not_notified: (subject: string) => string;
       not_seen: (subject: string) => string;
@@ -266,6 +268,7 @@ export const approvalTexts = {
         "The connection broke after the content was sent. Check Sent or ask the recipient before you send again.",
       expired: {
         timeout: (subject) => `⌛ Not sent: the approval expired (48 h) · ${subject}`,
+        timeoutReply: (subject) => `⌛ Not sent: nobody approved the draft in 7 days · ${subject}`,
         // Two causes: the draft was never made, or the copy in Drafts is gone (deleted, moved or sent from the mail client).
         draft_missing: (subject) =>
           `❌ Not sent: the draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client) · ${subject}`,
@@ -431,6 +434,7 @@ export const approvalTexts = {
         "Połączenie zostało przerwane po wysłaniu treści. Sprawdź folder Sent lub zapytaj odbiorcę, zanim wyślesz ponownie.",
       expired: {
         timeout: (subject) => `⌛ Nie wysłano: zatwierdzenie wygasło (48 h) · ${subject}`,
+        timeoutReply: (subject) => `⌛ Nie wysłano: nikt nie zatwierdził szkicu w ciągu 7 dni · ${subject}`,
         draft_missing: (subject) =>
           `❌ Nie wysłano: szkicu nie ma w folderze Drafts (nie powstał albo został usunięty, przeniesiony lub wysłany w programie pocztowym) · ${subject}`,
         not_notified: (subject) =>

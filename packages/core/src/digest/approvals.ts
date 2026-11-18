@@ -429,7 +429,10 @@ export function renderSendResult(
     case "expired": {
       const draft = draftText(result.draftRemoved);
       const both = [words(closing, draft)];
-      first = t.sendResult.expired[result.reason](subject);
+      first =
+        sendKind === "reply" && result.reason === "timeout"
+          ? t.sendResult.expired.timeoutReply(subject)
+          : t.sendResult.expired[result.reason](subject);
       // These two reasons say less: no draft line for a missing draft, no closing for a closed delegation.
       // A missing copy and a send from the mail client say less too: the draft is not in Drafts, so no draft line.
       if (result.reason === "draft_missing" || result.reason === "sent_by_user") rest = [closing];

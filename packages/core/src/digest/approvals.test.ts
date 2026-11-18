@@ -148,6 +148,26 @@ describe("renderApprovalRequest, a reply (F115)", () => {
     );
   });
 
+  test("a reply that nobody approved in 7 days says 7 days, not the 48 h of the other kinds (en and pl)", () => {
+    const expired = (sendKind: "reply" | "delegation", texts: typeof textTables.en) =>
+      renderSendResult(
+        {
+          actionId: ID,
+          sendKind,
+          result: { kind: "expired", reason: "timeout", draftRemoved: true },
+          recipient: { name: null, address: "jan@client.test" },
+          subject: "Re: Offer",
+          synthetic: false,
+        },
+        texts
+      ).text.split("\n")[0];
+    expect(expired("reply", textTables.en)).toBe("⌛ Not sent: nobody approved the draft in 7 days · Re: Offer");
+    expect(expired("reply", textTables.pl)).toBe(
+      "⌛ Nie wysłano: nikt nie zatwierdził szkicu w ciągu 7 dni · Re: Offer"
+    );
+    expect(expired("delegation", textTables.en)).toContain("(48 h)");
+  });
+
   test("the result lines of a reply have no closing line", () => {
     const sent = renderSendResult(
       {
@@ -780,7 +800,12 @@ describe("renderSendResult", () => {
   test.each(sendKinds)("expired (%s)", (sendKind) => {
     for (const draftRemoved of [true, false]) {
       const draft = draftRemoved ? "The draft was removed." : "The draft stays in Drafts.";
-      for (const [reason, first, second] of expired) {
+      for (const [reason, firstOfKind, second] of expired) {
+        // A reply lives 7 days: its `timeout` line names no 48 h (F115 stage 12).
+        const first =
+          sendKind === "reply" && reason === "timeout"
+            ? "⌛ Not sent: nobody approved the draft in 7 days · Fwd: Offer"
+            : firstOfKind;
         const message = result(sendKind, { kind: "expired", reason, draftRemoved });
         let rest = joined(closings[sendKind], draft);
         if (second === "closing") rest = closings[sendKind];
