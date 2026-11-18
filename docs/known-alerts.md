@@ -743,7 +743,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `sync_below_cursor_limit` (fields `org_id`, `mailbox_id`, `folder_key`, `limit`; before F103: `sync <mailboxId> returned below cursor: list hit the limit <n>`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
-- **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `warn`).
+- **Source:** `apps/server/src/modules/mail/sync-below-cursor.ts` (`[mail]`, level `warn`).
 - **Cause:** The list of mails moved in the last 7 days has 500 rows (`RETURN_CHECK_LIMIT`). The check looks at the newest 500 only, so older moved mails are not checked for a return.
 - **Fix:** Check how many mails the system moved in 7 days. If the number is real, raise the limit in a task. No data is lost: the check only misses returns of the oldest rows.
 - **Status:** investigating
@@ -751,7 +751,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `sync_below_cursor_done` (fields `org_id`, `mailbox_id`, `folder_key`, `checked`, `returned`, `copies`; before F103: `sync <mailboxId> returned below cursor: checked <n>, returned <m>, copies <c>`)
 
 - **First seen:** 2026-11-07 (S3 code; not seen live, the dev run with the phone (stage 16) and the VPS deploy (stage 19) are open)
-- **Source:** `apps/server/src/modules/mail/sync.ts` (`[mail]`, level `info`; one line per sync that has moved mails).
+- **Source:** `apps/server/src/modules/mail/sync-below-cursor.ts` (`[mail]`, level `info`; one line per sync that has moved mails).
 - **Cause:** <n> mails moved in the last 7 days were looked up in INBOX below the UID cursor, <m> of them came back (Interia keeps the UID). `copies` > 0 means a copy of a moved mail sits below the cursor while the original is still in its folder. A stored copy holds its UID, so the next sync counts it no more (`copies=0`). A copy that sync does not store counts again on every sync for 7 days. The debug line `sync_below_cursor_copy` (`email_id`; before F103: `sync <mailboxId> copy below cursor: email <id>`) names the row. When the cursor of the folder moves during the check, the warning `sync_below_cursor_moved` (`folder_key`) ends it and the next sync repeats it. When sync stores copies, the info line `sync_below_cursor_copies_stored` (`mailbox_id`, `folder_key`, `count`) follows. For each copy that sync does not store, the debug line `sync_below_cursor_copy_skipped` gives `email_id` (the moved row) and `kind`: `move_in_flight`, `held`, `cross_copy`, `uncertain` or `not_inserted`.
 - **Fix:** `returned` > 0 is normal after a user move back. `copies` > 0: no loss. Sync stores and triages the copy unless a `sync_below_cursor_copy_skipped` line gives the reason (switch the log level to debug to see it). A copy that stays counted for days with `kind=held` or `uncertain` needs a look at the rows of that mail.
 - **Status:** investigating

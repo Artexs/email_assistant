@@ -31,6 +31,8 @@ export {
   skipReasonOf,
 } from "./extractor-eval";
 export type { ExtractorCaseResult, ExtractorEvalDeps, ExtractorRunInput, ExtractorScores } from "./extractor-eval";
+export { runExtractorEvalRun } from "./extractor-eval-run";
+export type { EvalRunOutput, ExtractorEvalOptions, ExtractorEvalRunDeps } from "./extractor-eval-run";
 export {
   barChecks,
   buildExtractorGateFile,

@@ -242,16 +242,12 @@ export {
 } from "./seed";
 export {
   backfillInbox,
-  CursorMovedError,
   HISTORY_SKIP_REASON,
-  syncMailbox,
   type BackfillPurpose,
   type BackfillRefusal,
   type HistoryBackfillOutcome,
-  type MailboxSyncResult,
-  type SyncDeps,
-  type SyncResult,
-} from "./sync";
+} from "./sync-backfill";
+export { CursorMovedError, syncMailbox, type MailboxSyncResult, type SyncDeps, type SyncResult } from "./sync";
 export {
   auditMailbox,
   backfillMailbox,
