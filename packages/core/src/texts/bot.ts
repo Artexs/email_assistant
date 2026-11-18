@@ -122,6 +122,7 @@ export interface BotTexts {
       tooManyRecipients: string;
       noReplyTo: string;
       noOthers: string; // Reply all: the mail has no other recipient
+      badRecipient: string; // an address of the mail cannot be used as a recipient
       recipientsUnchanged: string;
       // Why a draft cannot be made now: the reasons of the eligibility rule and the closed gate of the mailbox.
       blocked: Record<ReplyBlockReason | "policy_changed", string>;
@@ -339,6 +340,7 @@ export const botTexts = {
         tooManyRecipients: "Too many recipients: a reply goes to at most 10 more people. Use the panel.",
         noReplyTo: "This mail has no other Reply-To address.",
         noOthers: "This mail has no other recipients.",
+        badRecipient: "An address of this mail cannot be used. Change the recipients in the panel.",
         recipientsUnchanged: "The draft already goes to these recipients.",
         blocked: {
           not_checked: "This mail is not checked yet. Try again in a few minutes.",
@@ -504,6 +506,7 @@ export const botTexts = {
         tooManyRecipients: "Zbyt wielu odbiorców: odpowiedź może trafić najwyżej do 10 dodatkowych osób. Użyj panelu.",
         noReplyTo: "Ta wiadomość nie ma innego adresu Reply-To.",
         noOthers: "Ta wiadomość nie ma innych odbiorców.",
+        badRecipient: "Nie można użyć jednego z adresów tej wiadomości. Zmień odbiorców w panelu.",
         recipientsUnchanged: "Szkic już trafia do tych odbiorców.",
         blocked: {
           not_checked: "Ta wiadomość nie została jeszcze sprawdzona. Spróbuj za kilka minut.",

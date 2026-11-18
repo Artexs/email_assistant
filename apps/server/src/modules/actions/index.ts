@@ -98,6 +98,7 @@ export {
   listApprovalSends,
   listActionsForEmail,
   listActionsForEmails,
+  listOpenReplyEmailIds,
   listOpenReplySendsOfThread,
   listMailboxesWithOpenReplySends,
   listSweepReplySends,

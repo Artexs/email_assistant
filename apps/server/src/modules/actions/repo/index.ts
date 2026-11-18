@@ -35,6 +35,7 @@ export {
   type FinishNext,
 } from "./lifecycle";
 export {
+  listOpenReplyEmailIds,
   listOpenReplySendsOfThread,
   listMailboxesWithOpenReplySends,
   listSweepReplySends,

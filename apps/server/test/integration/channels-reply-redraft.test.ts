@@ -1,0 +1,540 @@
+import { REPLY_CONSENT_SINCE, textTables } from "@ea/core";
+import { afterAll, describe, expect, test } from "bun:test";
+import type { Transaction } from "kysely";
+
+import { noDelegationHooks } from "../../src/modules/actions";
+import { auditEvents, recordAudit } from "../../src/modules/audit";
+import {
+  createOutboxSender,
+  detectNotices,
+  handleCallback,
+  type CallbackDeps,
+  type LinkedChat,
+} from "../../src/modules/channels";
+import { createFakeChannel, type FakeChannel } from "../../src/modules/channels/fake/channel";
+import { handleReplyText } from "../../src/modules/channels/reply-redraft";
+import { NO_TEST_SENDERS } from "../../src/modules/mail";
+import { requestReply } from "../../src/modules/replies";
+import type { DB } from "../../src/platform/db";
+
+import { addMember, isolateChannels, linkChat, randomChatId, renderedOf } from "./fixtures";
+import { testDb, withRollback } from "./helpers";
+import {
+  addReplyMail,
+  CLEAN_ANSWER,
+  draftedReply,
+  fakeLlm,
+  HOUR,
+  jobDeps,
+  MINUTE,
+  NOW,
+  pairRows,
+  requestsOf,
+  runJob,
+  setMailAddresses,
+  setupBox,
+  type Clock,
+  type FakeAnswer,
+  type JobBox,
+} from "./reply-job-fixtures";
+
+// The reply drafts in Telegram: Redraft, Reply all, Draft reply. The model is a fake and the channel is a fake; the sender, the notice
+// detectors and the drafter job run against one transaction that is rolled back. One clock moves forward after each step.
+const db = testDb();
+
+afterAll(async () => {
+  await db.destroy();
+});
+
+interface Rig {
+  box: JobBox;
+  owner: LinkedChat;
+  member: LinkedChat;
+  memberId: string;
+  deps: CallbackDeps;
+  clock: Clock;
+  channel: FakeChannel;
+  // One sender run, one notice detection and one job run, each a minute after the step before.
+  sendOut(): Promise<void>;
+  detect(): Promise<void>;
+  job(answer?: FakeAnswer): Promise<void>;
+}
+
+async function rig(trx: Transaction<DB>, opts: { consented?: boolean } = {}): Promise<Rig> {
+  await isolateChannels(trx);
+  const box = await setupBox(trx);
+  const memberId = await addMember(trx, box.ctx.orgId);
+  await linkChat(trx, box.ctx, box.userId, randomChatId(), new Date(NOW.getTime() - HOUR));
+  await linkChat(trx, box.ctx, memberId, randomChatId(), new Date(NOW.getTime() - HOUR));
+  if (opts.consented !== false) {
+    await recordAudit(trx, box.ctx, {
+      event: auditEvents.webTelegramConsent,
+      actor: box.userId,
+      data: { via: "web", version: REPLY_CONSENT_SINCE },
+      at: new Date(NOW.getTime() - 2 * HOUR),
+    });
+  }
+  const clock: Clock = { now: NOW };
+  const link = (userId: string, role: "owner" | "assistant"): LinkedChat => ({
+    orgId: box.ctx.orgId,
+    userId,
+    role,
+    chatId: 1,
+    linkedAt: new Date(NOW.getTime() - HOUR),
+    locale: "en",
+  });
+  const deps: CallbackDeps = {
+    db: trx,
+    now: () => clock.now,
+    actionsScope: { kind: "all" },
+    hooks: noDelegationHooks,
+    uidplus: async () => true,
+    sendScope: { kind: "all" },
+  };
+  const channel = createFakeChannel();
+  const tick = () => {
+    clock.now = new Date(clock.now.getTime() + MINUTE);
+  };
+  return {
+    box,
+    owner: link(box.userId, "owner"),
+    member: link(memberId, "assistant"),
+    memberId,
+    deps,
+    clock,
+    channel,
+    async sendOut() {
+      tick();
+      await createOutboxSender({ db: trx, channel, now: () => clock.now }).run();
+    },
+    async detect() {
+      tick();
+      await detectNotices({
+        db: trx,
+        now: () => clock.now,
+        startedAt: new Date(NOW.getTime() - HOUR),
+        testMail: NO_TEST_SENDERS,
+      });
+    },
+    async job(answer: FakeAnswer = CLEAN_ANSWER) {
+      tick();
+      const { llm } = fakeLlm(() => answer);
+      await runJob(jobDeps(trx, llm, clock), box);
+    },
+  };
+}
+
+async function outboxOf(trx: Transaction<DB>, r: Rig, kind: string) {
+  return trx
+    .selectFrom("outbox")
+    .selectAll()
+    .where("org_id", "=", r.box.ctx.orgId)
+    .where("kind", "=", kind as never)
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+}
+
+const openSend = async (trx: Transaction<DB>, r: Rig) =>
+  (await pairRows(trx, r.box)).find((row) => row.type === "send" && row.status === "awaiting_approval");
+
+// A reply card that went out: the review of the draft, sent by the fake channel. Returns the message id of the card.
+async function cardOut(trx: Transaction<DB>, r: Rig): Promise<number> {
+  // The committer has put the draft in Drafts: the review lists only such replies.
+  await trx
+    .updateTable("actions")
+    .set({ status: "applied", applied_at: NOW })
+    .where("org_id", "=", r.box.ctx.orgId)
+    .where("type", "=", "create_draft")
+    .where("status", "=", "ready")
+    .execute();
+  await handleCallback(r.deps, r.owner, "rv");
+  await r.sendOut();
+  const sent = r.channel.sent.at(-1);
+  if (sent === undefined) throw new Error("no card went out");
+  return sent.messageId;
+}
+
+describe("Redraft", () => {
+  test("1. Redraft sends one question with ForceReply; the user's line answers it; the job writes version 2; the user gets the version 2 card", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock);
+      await cardOut(trx, r);
+
+      const tap = await handleCallback(r.deps, r.owner, `rd:${sendId}`);
+      expect(tap).toEqual({ answer: textTables.en.bot.taps.reply.redraftAsk });
+      // A second tap while the question waits does not double it.
+      await handleCallback(r.deps, r.owner, `rd:${sendId}`);
+      expect(await outboxOf(trx, r, "reply_prompt")).toHaveLength(1);
+      await r.sendOut();
+      const prompt = r.channel.sent.at(-1);
+      expect(prompt?.message).toEqual({
+        text: "✍️ Write one line: what should the reply say?",
+        buttons: [],
+        forceReply: true,
+      });
+      const [row] = await outboxOf(trx, r, "reply_prompt");
+      expect(row).toMatchObject({ status: "sent", email_id: emailId, dedup_key: `reply_prompt:${sendId}:1` });
+
+      const answer = await handleReplyText(r.deps, r.owner, "say yes for Tuesday", prompt?.messageId as number);
+      expect(answer).toEqual({ text: textTables.en.bot.taps.reply.redraftQueued, buttons: [] });
+      const redraft = (await requestsOf(trx, r.box)).find((row) => row.trigger === "redraft");
+      expect(redraft).toMatchObject({
+        trigger: "redraft",
+        previous_send_id: sendId,
+        instruction: "say yes for Tuesday",
+      });
+
+      const llm = fakeLlm(() => CLEAN_ANSWER);
+      r.clock.now = new Date(r.clock.now.getTime() + MINUTE);
+      await runJob(jobDeps(trx, llm.llm, r.clock), r.box);
+      expect(llm.requests[0]?.prompt).toContain("say yes for Tuesday");
+      const second = await openSend(trx, r);
+      expect(second?.id).not.toBe(sendId);
+
+      await r.detect();
+      const cards = (await outboxOf(trx, r, "approval")).filter((card) =>
+        card.dedup_key.startsWith(`approval:${second?.id}`)
+      );
+      expect(cards.map((card) => card.dedup_key)).toEqual([`approval:${second?.id}:r1`]);
+      expect(renderedOf(cards[0] as never).text).toContain("Version 2");
+      // The detector answers once: a second tick queues no second card.
+      await r.detect();
+      expect(
+        (await outboxOf(trx, r, "approval")).filter((card) => card.dedup_key.startsWith(`approval:${second?.id}`))
+      ).toHaveLength(1);
+    });
+  });
+
+  test("2. a line that replies to the review card itself is a redraft too", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { sendId } = await draftedReply(trx, r.box, r.clock);
+      const cardId = await cardOut(trx, r);
+
+      const answer = await handleReplyText(r.deps, r.owner, "shorter please", cardId);
+
+      expect(answer?.text).toBe(textTables.en.bot.taps.reply.redraftQueued);
+      const redrafts = (await requestsOf(trx, r.box)).filter((row) => row.trigger === "redraft");
+      expect(redrafts).toHaveLength(1);
+      expect(redrafts[0]).toMatchObject({ previous_send_id: sendId, requested_by: r.box.userId });
+    });
+  });
+
+  test("3. a line that replies to another message, or to a message of another chat, gives no request: the help answer follows", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      await draftedReply(trx, r.box, r.clock);
+      const cardId = await cardOut(trx, r);
+
+      expect(await handleReplyText(r.deps, r.owner, "text", 987_654)).toBeUndefined();
+      // The member has no such message: the id of the owner's card means nothing in the member's chat.
+      expect(await handleReplyText(r.deps, r.member, "text", cardId)).toBeUndefined();
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "redraft")).toEqual([]);
+    });
+  });
+
+  test("4. a member's line that replies to a reply card gets the owner-only answer, no request", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock);
+      // The member once got a card (as an owner before the role changed): the card is a sent row of this user.
+      await trx
+        .insertInto("outbox")
+        .values({
+          org_id: r.box.ctx.orgId,
+          user_id: r.memberId,
+          kind: "reply_prompt",
+          dedup_key: `reply_prompt:${sendId}:1`,
+          email_id: emailId,
+          view: JSON.stringify({ emailId }),
+          locale: "en",
+          status: "sent",
+          attempts: 0,
+          next_attempt_at: NOW,
+          created_at: NOW,
+          sent_at: NOW,
+          external_message_id: "5555",
+        })
+        .execute();
+
+      const answer = await handleReplyText(r.deps, r.member, "say yes", 5555);
+
+      expect(answer).toEqual({ text: textTables.en.bot.taps.ownerOnly, buttons: [] });
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "redraft")).toEqual([]);
+    });
+  });
+
+  test("5. a member taps Redraft, Reply all, Use Reply-To or Draft reply: the owner-only answer, nothing is queued", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock);
+
+      for (const data of [`rd:${sendId}`, `ra:${sendId}`, `ru:${sendId}`, `dr:${emailId}`]) {
+        expect(await handleCallback(r.deps, r.member, data), data).toEqual({
+          answer: textTables.en.bot.taps.ownerOnly,
+        });
+      }
+      expect(await outboxOf(trx, r, "reply_prompt")).toEqual([]);
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger !== "auto")).toEqual([]);
+    });
+  });
+
+  test("6. an owner whose consent does not cover reply data gets the consent line for a tap and for a line of text; nothing is queued", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { sendId } = await draftedReply(trx, r.box, r.clock);
+      const cardId = await cardOut(trx, r);
+      // The consent is withdrawn after the card went out: the owner unlinks and links again with no consent step.
+      await recordAudit(trx, r.box.ctx, {
+        event: auditEvents.chatUnlinked,
+        actor: "system",
+        data: { user_id: r.box.userId },
+        at: new Date(r.clock.now.getTime() + 1),
+      });
+
+      const tap = await handleCallback(r.deps, r.owner, `rd:${sendId}`);
+      expect(tap.send?.text).toContain(textTables.en.notices.replyDrafts.consent);
+      const text = await handleReplyText(r.deps, r.owner, "say yes", cardId);
+      expect(text?.text).toBe(textTables.en.notices.replyDrafts.consent);
+      expect(await outboxOf(trx, r, "reply_prompt")).toEqual([]);
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "redraft")).toEqual([]);
+    });
+  });
+
+  test("7. the sixth redraft is refused at once: the tap says so and no question is queued; a line that is too long is refused", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      let { sendId } = await draftedReply(trx, r.box, r.clock);
+      for (let n = 1; n <= 5; n += 1) {
+        const cardId = await cardOut(trx, r);
+        expect((await handleReplyText(r.deps, r.owner, `line ${n}`, cardId))?.text).toBe(
+          textTables.en.bot.taps.reply.redraftQueued
+        );
+        await r.job();
+        sendId = (await openSend(trx, r))?.id as string;
+      }
+      const tap = await handleCallback(r.deps, r.owner, `rd:${sendId}`);
+      expect(tap).toEqual({ answer: textTables.en.bot.taps.reply.redraftLimit });
+      expect(await outboxOf(trx, r, "reply_prompt")).toEqual([]);
+
+      const cardId = await cardOut(trx, r);
+      expect((await handleReplyText(r.deps, r.owner, "line 6", cardId))?.text).toBe(
+        textTables.en.bot.taps.reply.redraftLimit
+      );
+      expect((await handleReplyText(r.deps, r.owner, "x".repeat(301), cardId))?.text).toBe(
+        textTables.en.bot.taps.reply.instructionLength
+      );
+    });
+  });
+
+  test("8. a request that ends with no draft or with an error comes as one fixed line (kind reply_result); the line is Polish for a Polish user", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { sendId } = await draftedReply(trx, r.box, r.clock);
+      const cardId = await cardOut(trx, r);
+      await handleReplyText(r.deps, r.owner, "what is the price?", cardId);
+
+      await r.job({ decision: "no_draft", reason_code: "needs_facts", body: "", gaps: [], language: "pl" });
+      await r.detect();
+      await r.detect();
+
+      const results = await outboxOf(trx, r, "reply_result");
+      expect(results).toHaveLength(1);
+      expect(results[0]?.view).toEqual({ emailId: expect.any(String), reason: "needs_facts" });
+      expect(renderedOf(results[0] as never)).toEqual({
+        text: textTables.en.notices.replyDrafts.results.needs_facts,
+        buttons: [],
+      });
+      expect(renderedOf({ ...results[0], locale: "pl" } as never).text).toBe(
+        textTables.pl.notices.replyDrafts.results.needs_facts
+      );
+      // The old version stays open: the redraft changed nothing.
+      expect((await openSend(trx, r))?.id).toBe(sendId);
+    });
+  });
+});
+
+describe("Reply all and Use Reply-To", () => {
+  test("9. Reply all gives the version 2 card with the Cc line; the tapped card is edited; a second tap on the old card answers `changed`", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock, { from: "anna@client.test" });
+      await setMailAddresses(trx, emailId, {
+        to: [r.box.address, "b@y.test"],
+        cc: ["c@z.test"],
+        replyTo: ["office@client.test"],
+      });
+      const cardId = await cardOut(trx, r);
+      // The first card has the buttons: Redraft, Reply all and Use Reply-To.
+      const firstCard = await outboxOf(trx, r, "approval");
+      expect(renderedOf(firstCard[0] as never).buttons[1]?.map((button) => button.data)).toEqual([
+        `rd:${sendId}`,
+        `ra:${sendId}`,
+        `ru:${sendId}`,
+      ]);
+
+      const tap = await handleCallback(r.deps, r.owner, `ra:${sendId}`, { messageId: cardId });
+
+      expect(tap.answer).toBe(textTables.en.bot.taps.reply.recipientsDone);
+      expect(tap.edit?.text).toContain("✏️ Changed");
+      expect(tap.edit?.buttons).toEqual([]);
+      const second = await openSend(trx, r);
+      expect(second?.id).not.toBe(sendId);
+      expect(second?.payload).toEqual({ kind: "reply", to: ["anna@client.test"], cc: ["b@y.test", "c@z.test"] });
+      const cards = (await outboxOf(trx, r, "approval")).filter((card) =>
+        card.dedup_key.startsWith(`approval:${second?.id}`)
+      );
+      expect(cards).toHaveLength(1);
+      const message = renderedOf(cards[0] as never);
+      expect(message.text).toContain("Cc: b@y.test, c@z.test");
+      expect(message.text).toContain("Version 2");
+      // Reply all is done: the new card offers Use Reply-To and Redraft, not Reply all again.
+      expect(message.buttons[1]?.map((button) => button.data)).toEqual([`rd:${second?.id}`, `ru:${second?.id}`]);
+
+      const old = await handleCallback(r.deps, r.owner, `ra:${sendId}`);
+      expect(old).toEqual({ answer: textTables.en.bot.taps.changed });
+    });
+  });
+
+  test("10. Use Reply-To swaps the recipient; a mail with no other Reply-To answers with the text; 11 other recipients answer too_many", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock, { from: "anna@client.test" });
+      const t = textTables.en.bot.taps.reply;
+
+      expect((await handleCallback(r.deps, r.owner, `ru:${sendId}`)).answer).toBe(t.noReplyTo);
+      expect((await handleCallback(r.deps, r.owner, `ra:${sendId}`)).answer).toBe(t.noOthers);
+      await setMailAddresses(trx, emailId, {
+        to: [r.box.address, ...Array.from({ length: 11 }, (_, index) => `p${index}@y.test`)],
+        replyTo: ["office@client.test"],
+      });
+      expect((await handleCallback(r.deps, r.owner, `ra:${sendId}`)).answer).toBe(t.tooManyRecipients);
+
+      expect((await handleCallback(r.deps, r.owner, `ru:${sendId}`)).answer).toBe(t.recipientsDone);
+      expect((await openSend(trx, r))?.payload).toEqual({ kind: "reply", to: ["office@client.test"], cc: [] });
+    });
+  });
+
+  test("11. a tap on a send that was rejected answers `closed`; the flag off answers `feature off`", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { sendId } = await draftedReply(trx, r.box, r.clock);
+      await trx.updateTable("actions").set({ status: "rejected" }).where("id", "=", sendId).execute();
+
+      for (const data of [`rd:${sendId}`, `ra:${sendId}`, `ru:${sendId}`]) {
+        expect(await handleCallback(r.deps, r.owner, data), data).toEqual({
+          answer: textTables.en.bot.taps.reply.closed,
+        });
+      }
+    });
+  });
+});
+
+describe("Draft reply", () => {
+  async function urgentRig(trx: Transaction<DB>, opts: { consented?: boolean } = {}) {
+    const r = await rig(trx, opts);
+    // A mail of the category `urgent` that a reply answers.
+    const emailId = await addReplyMail(trx, r.box, {
+      category: "urgent",
+      receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+      from: "anna@client.test",
+    });
+    await trx
+      .updateTable("triage_results")
+      .set({ created_at: new Date(NOW.getTime() - 5 * MINUTE) })
+      .where("email_id", "=", emailId)
+      .execute();
+    return { r, emailId };
+  }
+
+  test("12. the urgent notice of a mail that a reply can answer has the Draft reply button; the tap queues a `tap` request; the job drafts; the user gets the card", async () => {
+    await withRollback(db, async (trx) => {
+      const { r, emailId } = await urgentRig(trx);
+
+      await r.detect();
+      const urgentRows = await outboxOf(trx, r, "urgent");
+      expect(urgentRows).toHaveLength(2);
+      // The owner gets the button; the member, who may not draft, gets none.
+      const own = urgentRows.find((row) => row.user_id === r.box.userId);
+      const members = urgentRows.find((row) => row.user_id === r.memberId);
+      expect(renderedOf(own as never).buttons.at(-1)).toEqual([{ text: "✍️ Draft reply", data: `dr:${emailId}` }]);
+      expect(renderedOf(members as never).buttons).toHaveLength(1);
+
+      const tap = await handleCallback(r.deps, r.owner, `dr:${emailId}`);
+      expect(tap).toEqual({ answer: textTables.en.bot.taps.reply.drafting });
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "tap")).toHaveLength(1);
+      // A second tap while it waits makes no second request.
+      await handleCallback(r.deps, r.owner, `dr:${emailId}`);
+      expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "tap")).toHaveLength(1);
+
+      await r.job();
+      const send = await openSend(trx, r);
+      expect(send?.email_id).toBe(emailId);
+      await r.detect();
+      const cards = (await outboxOf(trx, r, "approval")).filter((card) =>
+        card.dedup_key.startsWith(`approval:${send?.id}`)
+      );
+      expect(cards.map((card) => card.dedup_key)).toEqual([`approval:${send?.id}:r1`]);
+      expect(cards[0]?.user_id).toBe(r.box.userId);
+    });
+  });
+
+  test("13. a tap on a mail whose draft is open gives that card and no new request", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId, sendId } = await draftedReply(trx, r.box, r.clock);
+      const before = (await requestsOf(trx, r.box)).length;
+
+      const tap = await handleCallback(r.deps, r.owner, `dr:${emailId}`);
+
+      expect(tap).toEqual({ answer: "" });
+      expect((await requestsOf(trx, r.box)).length).toBe(before);
+      expect((await outboxOf(trx, r, "approval")).map((card) => card.dedup_key)).toEqual([`approval:${sendId}:r1`]);
+    });
+  });
+
+  test("14. a tap that the rules block answers with the reason text and queues nothing (en and pl texts exist for every reason)", async () => {
+    await withRollback(db, async (trx) => {
+      const { r, emailId } = await urgentRig(trx);
+      await trx
+        .updateTable("triage_results")
+        .set({ suspicious_reasons: ["reply_to_mismatch"] })
+        .where("email_id", "=", emailId)
+        .execute();
+
+      const tap = await handleCallback(r.deps, r.owner, `dr:${emailId}`);
+
+      expect(tap).toEqual({ answer: textTables.en.bot.taps.reply.blocked.suspicious });
+      expect(await requestsOf(trx, r.box)).toEqual([]);
+      const unknown = await handleCallback(r.deps, r.owner, "dr:00000000-0000-4000-8000-000000000000");
+      expect(unknown).toEqual({ answer: textTables.en.bot.taps.notFound });
+    });
+  });
+
+  test("15. no Draft reply button without the consent, for a mail that is answered, or for a mail whose draft is open", async () => {
+    await withRollback(db, async (trx) => {
+      const { r, emailId } = await urgentRig(trx, { consented: false });
+      await r.detect();
+      const rows = await outboxOf(trx, r, "urgent");
+      expect(rows).toHaveLength(2);
+      for (const row of rows) expect(renderedOf(row as never).buttons, emailId).toHaveLength(1);
+    });
+    await withRollback(db, async (trx) => {
+      const { r, emailId } = await urgentRig(trx);
+      // The draft of the mail is open before the notice is made.
+      await requestReply({ db: trx, now: () => r.clock.now }, r.box.ctx, {
+        userId: r.box.userId,
+        via: "telegram",
+        emailId,
+      });
+      await r.job();
+      expect((await openSend(trx, r))?.email_id).toBe(emailId);
+      await r.detect();
+      const rows = await outboxOf(trx, r, "urgent");
+      expect(rows).toHaveLength(2);
+      for (const row of rows) expect(renderedOf(row as never).buttons).toHaveLength(1);
+    });
+  });
+});

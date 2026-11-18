@@ -44,6 +44,7 @@ flowchart BT
   channels --> delegation
   channels --> loops
   channels --> mail
+  channels --> replies
   channels --> reports
   channels --> tenancy
   channels --> triage
@@ -96,6 +97,7 @@ flowchart BT
   reports --> delegation
   reports --> loops
   reports --> mail
+  reports --> replies
   reports --> tenancy
   reports --> triage
   tenancy --> audit

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { textTables } from "@ea/core";
+import { textTables, type OutMessage } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { BotError, GrammyError, HttpError } from "grammy";
 import type { Transaction } from "kysely";
@@ -110,9 +110,11 @@ const telegramErrors: [string, () => unknown, Record<string, unknown>][] = [
 function makeFake() {
   const commands: { link: LinkedChat; name: CommandName }[] = [];
   const callbacks: { link: LinkedChat; data: string }[] = [];
-  const state: { commandText: string; callback: () => CallbackResult } = {
+  const texts: { link: LinkedChat; text: string; replyToMessageId: number }[] = [];
+  const state: { commandText: string; callback: () => CallbackResult; text: () => OutMessage | undefined } = {
     commandText: "STATUS-TEXT",
     callback: () => ({ answer: "Saved" }),
+    text: () => ({ text: "TEXT-ANSWER", buttons: [] }),
   };
   const handlers: UpdateHandlers = {
     command(link, name) {
@@ -123,8 +125,12 @@ function makeFake() {
       callbacks.push({ link, data });
       return Promise.resolve(state.callback());
     },
+    text(link, text, replyToMessageId) {
+      texts.push({ link, text, replyToMessageId });
+      return Promise.resolve(state.text());
+    },
   };
-  return { commands, callbacks, state, handlers };
+  return { commands, callbacks, texts, state, handlers };
 }
 
 function setup(trx: Transaction<DB>) {
@@ -132,8 +138,11 @@ function setup(trx: Transaction<DB>) {
   const bot = createTelegramBot(TOKEN, { db: trx, now: () => T, handlers: fake.handlers }, { botInfo: testBotInfo });
   const recorder = recordCalls(bot);
   let updateId = 1;
-  const send = (chatId: number, text: string, extra?: { chatType?: "group" | "supergroup"; fromIsBot?: boolean }) =>
-    bot.handleUpdate(messageUpdate({ updateId: updateId++, chatId, text, ...extra }));
+  const send = (
+    chatId: number,
+    text: string,
+    extra?: { chatType?: "group" | "supergroup"; fromIsBot?: boolean; replyToMessageId?: number }
+  ) => bot.handleUpdate(messageUpdate({ updateId: updateId++, chatId, text, ...extra }));
   const tap = (chatId: number, data: string, messageId = 77) =>
     bot.handleUpdate(callbackUpdate({ updateId: updateId++, chatId, data, messageId }));
   return { fake, bot, calls: recorder.calls, send, tap };
@@ -319,6 +328,44 @@ describe("telegram router", () => {
         textTables.en.bot.help,
       ]);
       expect(fake.commands).toHaveLength(1);
+    });
+  });
+
+  test("a line of text that replies to a message of the bot goes to the text handler; other text never does", async () => {
+    await withRollback(db, async (trx) => {
+      const { fake, calls, send } = setup(trx);
+      const linked = await linkedMember(trx);
+
+      await send(linked.chatId, "plain text, no reply");
+      expect(fake.texts).toHaveLength(0);
+      expect(calls.map((call) => call.payload.text)).toEqual([textTables.en.bot.help]);
+
+      calls.length = 0;
+      await send(linked.chatId, "say yes for Tuesday", { replyToMessageId: 4242 });
+      expect(fake.texts).toHaveLength(1);
+      expect(fake.texts[0]).toMatchObject({ text: "say yes for Tuesday", replyToMessageId: 4242 });
+      expect(fake.texts[0]?.link).toMatchObject({ userId: linked.userId, orgId: linked.orgId });
+      expect(calls.map((call) => call.payload.text)).toEqual(["TEXT-ANSWER"]);
+
+      // The handler has no use for the line (it answers no message that takes text): the bot gives the help answer.
+      calls.length = 0;
+      fake.state.text = () => undefined;
+      await send(linked.chatId, "another line", { replyToMessageId: 9 });
+      expect(calls.map((call) => call.payload.text)).toEqual([textTables.en.bot.help]);
+    });
+  });
+
+  test("a text handler that throws gives the error text; the line and the error text are in no log line", async () => {
+    await withRollback(db, async (trx) => {
+      const { fake, calls, send } = setup(trx);
+      const linked = await linkedMember(trx);
+      fake.state.text = () => {
+        throw new Error(CANARY);
+      };
+      await send(linked.chatId, `a line with ${CANARY}`, { replyToMessageId: 5 });
+      expect(calls.map((call) => call.payload.text)).toEqual([textTables.en.bot.error]);
+      expect(eventsOf("text_failed")).toHaveLength(1);
+      expect(lines.join("\n")).not.toContain(CANARY);
     });
   });
 

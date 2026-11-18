@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 
 import type { TenantContext } from "../../../platform/db";
+import { sendIdOfCardKey, sendIdOfPromptKey } from "../review-keys";
 
 import type { DbOrTrx } from "./shared";
 
@@ -96,4 +97,66 @@ export async function lastRepliesReady(
     .limit(1)
     .executeTakeFirst();
   return row === undefined ? undefined : { createdAt: row.created_at, status: row.status };
+}
+
+// The statuses of the questions after Redraft that this user got of one send (a question that no sender took yet is not doubled).
+export async function findReplyPrompts(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  userId: string,
+  sendId: string
+): Promise<{ status: string }[]> {
+  return db
+    .selectFrom("outbox")
+    .select("status")
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .where("kind", "=", "reply_prompt")
+    .where("dedup_key", "like", `reply_prompt:${sendId}:%`)
+    .execute();
+}
+
+// The send that a line of text answers: the line replies to a message of the bot that this user got in the linked chat and that was
+// sent after the link (message ids belong to one chat): the question after Redraft, or a review card of a reply. undefined: the message is
+// none of those, or another user's.
+export async function findReplyTargetOfMessage(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  link: { userId: string; linkedAt: Date },
+  messageId: number
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("outbox")
+    .select("dedup_key")
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", link.userId)
+    .where("kind", "in", ["reply_prompt", "approval"])
+    .where("status", "=", "sent")
+    .where("external_message_id", "=", String(messageId))
+    .where("sent_at", ">=", link.linkedAt)
+    .orderBy("created_at", "desc")
+    .executeTakeFirst();
+  if (row === undefined) return undefined;
+  return sendIdOfPromptKey(row.dedup_key) ?? sendIdOfCardKey(row.dedup_key) ?? undefined;
+}
+
+// True when this user got a review card of the send that was queued at or after `since` (the card that answers a request is queued once).
+export async function hasReviewCardSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  userId: string,
+  sendId: string,
+  since: Date
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("outbox")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .where("kind", "=", "approval")
+    .where("dedup_key", "like", `approval:${sendId}:r%`)
+    .where("created_at", ">=", since)
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
 }

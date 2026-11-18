@@ -1,5 +1,5 @@
 import type { ReplyTrigger } from "@ea/core";
-import type { Selectable, Transaction } from "kysely";
+import { sql, type Selectable, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
@@ -31,6 +31,8 @@ export interface NewReplyRequest {
   requestedBy?: string | null;
   previousSendId?: string | null;
   nextAttemptAt?: Date;
+  // The time of the request by the clock of the caller (the timeout of a user request counts from it). Absent: the clock of the database.
+  createdAt?: Date;
 }
 
 // Inserts one request. A mail gets at most one `auto` request (the unique key of the table): a repeat gives null and changes
@@ -53,6 +55,7 @@ export async function createReplyRequest(
       requested_by: input.requestedBy ?? null,
       previous_send_id: input.previousSendId ?? null,
       ...(input.nextAttemptAt === undefined ? {} : { next_attempt_at: input.nextAttemptAt }),
+      ...(input.createdAt === undefined ? {} : { created_at: input.createdAt, updated_at: input.createdAt }),
     })
     .onConflict((oc) => oc.columns(["org_id", "email_id"]).where("trigger", "=", "auto").doNothing())
     .returning("id")
@@ -237,4 +240,86 @@ export async function failStaleUserRequests(
     .returning("id")
     .execute();
   return rows.map((row) => row.id);
+}
+
+// The id of a request of this mail that still waits or runs (`pending`, `drafting`): a second tap or a second line must not make a
+// second model call. `previousSendId`: only a request that replaces this send (a redraft).
+export async function findOpenRequest(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { emailId: string; trigger: "tap" | "redraft"; previousSendId?: string }
+): Promise<string | undefined> {
+  let query = db
+    .selectFrom("reply_requests")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", opts.emailId)
+    .where("trigger", "=", opts.trigger)
+    .where("status", "in", ["pending", "drafting"]);
+  if (opts.previousSendId !== undefined) query = query.where("previous_send_id", "=", opts.previousSendId);
+  const row = await query.orderBy("created_at", "desc").orderBy("id", "desc").limit(1).executeTakeFirst();
+  return row?.id;
+}
+
+export interface EndedRequest {
+  id: string;
+  emailId: string;
+  requestedBy: string;
+  trigger: "tap" | "redraft";
+  status: ReplyRequestEnd;
+  reasonCode: string | null;
+  sendActionId: string | null;
+  endedAt: Date;
+}
+
+// The tap and redraft requests that ended at or after `since` and that were asked for through `via` (the audit row `reply.requested` of the
+// service holds it; the request has no channel column). Oldest end first. The chat channel answers each one once with the result.
+export async function listEndedRequestsVia(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { via: string; since: Date; limit: number }
+): Promise<EndedRequest[]> {
+  const rows = await db
+    .selectFrom("reply_requests as r")
+    .select([
+      "r.id",
+      "r.email_id",
+      "r.requested_by",
+      "r.trigger",
+      "r.status",
+      "r.reason_code",
+      "r.send_action_id",
+      "r.updated_at",
+    ])
+    .where("r.org_id", "=", ctx.orgId)
+    .where("r.trigger", "in", ["tap", "redraft"])
+    .where("r.status", "in", ["done", "no_draft", "failed", "cancelled", "superseded"])
+    .where("r.requested_by", "is not", null)
+    .where("r.updated_at", ">=", opts.since)
+    .where(
+      sql<boolean>`exists (
+        select 1 from audit_log a
+        where a.org_id = r.org_id and a.event = 'reply.requested'
+          and a.data->>'reply_request_id' = r.id::text and a.data->>'via' = ${opts.via})`
+    )
+    .orderBy("r.updated_at")
+    .orderBy("r.id")
+    .limit(opts.limit)
+    .execute();
+  return rows.flatMap((row) =>
+    row.requested_by === null || (row.trigger !== "tap" && row.trigger !== "redraft")
+      ? []
+      : [
+          {
+            id: row.id,
+            emailId: row.email_id,
+            requestedBy: row.requested_by,
+            trigger: row.trigger,
+            status: row.status as EndedRequest["status"],
+            reasonCode: row.reason_code,
+            sendActionId: row.send_action_id,
+            endedAt: row.updated_at,
+          },
+        ]
+  );
 }
