@@ -31,8 +31,10 @@ export const noticeKinds = [
 export type NoticeKind = (typeof noticeKinds)[number];
 export const noticeKindSchema = z.enum(noticeKinds);
 
-// `mail` is the report mail of the trust ladder (APPEND into the own INBOX); the phone channel adds "push". Only four kinds go by mail.
-export const noticeChannels = ["telegram", "mail"] as const;
+// `mail` is the report mail of the trust ladder (APPEND into the own INBOX). Only four kinds go by mail. `push` is the Web Push row
+// of the phone channel (one row per device, `outbox.push_subscription_id`): the CHECK list of the table has it, and the test
+// `telegram-schema` ties the two lists. No code writes or renders a `push` row yet.
+export const noticeChannels = ["telegram", "mail", "push"] as const;
 export type NoticeChannel = (typeof noticeChannels)[number];
 
 // The kinds that also go by mail. Every other kind goes to Telegram only; `noticeRenderers` has a `mail` renderer for these four.

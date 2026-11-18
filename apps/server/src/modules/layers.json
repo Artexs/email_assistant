@@ -3,7 +3,7 @@
   "layers": [
     ["audit", "tenancy"],
     ["config", "mail"],
-    ["triage", "actions", "delegation", "loops", "replies"],
+    ["triage", "actions", "delegation", "loops", "replies", "contacts"],
     ["reports", "channels", "testmail"],
     ["operator", "privacy", "trust"],
     ["lab"]
@@ -29,6 +29,11 @@
       "from": "delegation",
       "to": "actions",
       "why": "The chaser plans reminder actions; the service closes reminder sends."
+    },
+    {
+      "from": "contacts",
+      "to": "delegation",
+      "why": "The profile pass reads the active delegate addresses (relation delegate) and the delegations of a sender."
     },
     { "from": "loops", "to": "actions", "why": "Loops plan and close follow-up sends." },
     { "from": "loops", "to": "delegation", "why": "Loops run the delegation chaser step and read delegates." },

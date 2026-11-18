@@ -200,6 +200,7 @@ describe("org_features", () => {
         { flag: "sender_context", enabled: false, source: "default" },
         { flag: "contact_wait", enabled: false, source: "default" },
         { flag: "sender_suggestions", enabled: false, source: "default" },
+        { flag: "web_push", enabled: false, source: "default" },
       ]);
     });
   });

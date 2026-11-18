@@ -2,6 +2,8 @@
 
 Part of [`../plan.md`](../plan.md). Needs 01, 02.
 
+> Done in stage 02 (accepted by the coordinator): the flag `web_push` is already in `featureFlags` with its registries. Do not add it again; this stage only reads it.
+
 Carry-over reads: `plan.md` D3, D9, D16, D18, D19; `interfaces.md` (routes, flag, audit events); `docs/code-patterns.md` § Add a user command; `channels/routes.ts` (the `/me/notify` routes as a model); `platform/http.ts` (`sessionId` in the context); `docs/capabilities/web-panel.md` rule 6.
 
 ## Step 1 — Flag and routes
@@ -33,3 +35,6 @@ Carry-over reads: `plan.md` D3, D9, D16, D18, D19; `interfaces.md` (routes, flag
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the manifest and worker (04), the card (05), notices by push (06–08).
+
+## Carry-over from the stage 02 review (2026-11-18)
+See `../review-2.md` (the lines for stage 03).

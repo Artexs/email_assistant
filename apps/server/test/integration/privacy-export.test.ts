@@ -77,6 +77,8 @@ interface Seed {
   idpClientSecret: string;
   linkTokenHash: string;
   encryptedSecret: string;
+  pushSecret: string;
+  pushEndpointHash: string;
   verificationIdentifier: string;
 }
 
@@ -152,6 +154,11 @@ async function seedOrg(sharedUserId?: string): Promise<Seed> {
       values (${orgId}, ${orgId}::uuid, 'https://idp.x.test', ${`${randomUUID()}.x.test`}, ${JSON.stringify({ clientSecret: idpClientSecret })})`.execute(
       trx
     );
+    // A push device (phone channel): the export holds its label and times but never the encrypted endpoint or its hash.
+    const pushSecret = `push-secret-${randomUUID()}`;
+    const pushEndpointHash = createHash("sha256").update(randomUUID()).digest("hex");
+    await sql`insert into push_subscriptions (org_id, user_id, secret, key_version, endpoint_hash, device_label)
+      values (${orgId}::uuid, ${ownerId}::uuid, ${pushSecret}, 1, ${pushEndpointHash}, 'Phone')`.execute(trx);
     const password = `scrypt-hash-${randomUUID()}`;
     const sessionToken = `session-${randomUUID()}`;
     const verificationIdentifier = `reset-password:${randomUUID()}`;
@@ -177,6 +184,8 @@ async function seedOrg(sharedUserId?: string): Promise<Seed> {
       idpClientSecret,
       linkTokenHash,
       encryptedSecret,
+      pushSecret,
+      pushEndpointHash,
       verificationIdentifier,
     };
   });
@@ -321,7 +330,7 @@ describe("exportOrganization", () => {
     expect(text).toContain(a.mailboxAddress);
   });
 
-  test("2. the plain text holds no password, credential, session token, IdP client secret, link token or verification identifier", async () => {
+  test("2. the plain text holds no password, credential, session token, IdP client secret, link token, push secret or verification identifier", async () => {
     const a = await seedOrg();
     const path = outPath();
     written(await exportOrganization(db, { orgId: a.orgId, recipient, out: path, now: NOW }));
@@ -332,6 +341,8 @@ describe("exportOrganization", () => {
       a.sessionToken,
       a.idpClientSecret,
       a.linkTokenHash,
+      a.pushSecret,
+      a.pushEndpointHash,
       a.verificationIdentifier,
     ]) {
       expect(text).not.toContain(secret);

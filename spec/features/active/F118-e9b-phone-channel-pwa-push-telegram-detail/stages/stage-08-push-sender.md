@@ -36,3 +36,6 @@ Carry-over reads: `plan.md` D5, D9, D10; `interfaces.md`; `digest-and-notices.md
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the dedup-key readers and the Telegram fallback (08b); Telegram detail (09–12).
+
+## Carry-over from the stage 02 review (2026-11-18)
+See `../review-2.md` (the lines for stage 08).

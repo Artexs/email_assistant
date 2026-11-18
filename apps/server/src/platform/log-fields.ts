@@ -16,6 +16,8 @@ export const uuidFieldNames = [
   "request_id",
   // reply drafts: the id of a reply request (`request_id` is the HTTP request context)
   "reply_request_id",
+  // push devices (phone channel): the id of a push subscription; never its endpoint or keys
+  "push_subscription_id",
 ] as const;
 /** Number fields: a finite number or null. Counts and times. */
 export const numberFieldNames = [

@@ -217,6 +217,13 @@ export const featureFlags = {
     epic: "E11a",
     removeBy: "2027-06-01",
   },
+  web_push: {
+    default: false,
+    description:
+      "Notices as push messages on the phone or the computer where you installed the panel (kind, count and a link, no mail text).",
+    epic: "E9",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;

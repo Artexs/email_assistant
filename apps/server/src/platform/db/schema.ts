@@ -424,6 +424,7 @@ export interface Memberships {
   break_glass: Generated<boolean>;
   created_at: Generated<Timestamp>;
   digest_times: Generated<string[]>;
+  notice_routes: Generated<Json>;
   org_id: string;
   quiet_end: string | null;
   quiet_start: string | null;
@@ -524,11 +525,26 @@ export interface Outbox {
   mailbox_id: string | null;
   next_attempt_at: Timestamp;
   org_id: string;
+  push_subscription_id: string | null;
   sent_at: Timestamp | null;
   status: Generated<string>;
   text: string | null;
   user_id: string;
   view: Generated<Json>;
+}
+
+export interface PushSubscriptions {
+  created_at: Generated<Timestamp>;
+  device_label: string;
+  endpoint_hash: string;
+  id: Generated<string>;
+  key_version: number;
+  last_error_code: string | null;
+  last_success_at: Timestamp | null;
+  org_id: string;
+  secret: string;
+  session_id: string | null;
+  user_id: string;
 }
 
 export interface ReplyRequests {
@@ -753,6 +769,7 @@ export interface DB {
   org_features: OrgFeatures;
   organizations: Organizations;
   outbox: Outbox;
+  push_subscriptions: PushSubscriptions;
   reply_requests: ReplyRequests;
   sender_profiles: SenderProfiles;
   sender_rules: SenderRules;

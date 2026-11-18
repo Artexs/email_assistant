@@ -8,6 +8,8 @@ Push rows wait for the stage 08 sender. No deploy between the lands of 07 and 08
 
 This stage adds `"push"` to `noticeChannels` and an optional `push` key to `NoticeRenderer` (no renderer yet; `renderNotice` answers `{ ok: false }` for push until stage 08).
 
+> Done in stage 02 (accepted by the coordinator): `"push"` is already in `noticeChannels` and `NoticeRenderer` and `noticeEditRenderers` already have the optional `push` key, with a test in `notices/registry.test.ts`. Do not add them again; this stage writes the push rows.
+
 ## Step 1 — `queueNotice` fans out
 
 - **Goal:** a producer calls `queueNotice` once per member and event; it writes the rows of the route.

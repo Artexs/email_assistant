@@ -120,7 +120,8 @@ export const TABLE_SPECS: Readonly<Record<DemoTable, TableSpec>> = {
     userRefs: ["user_id"],
     json: ["buttons", "view"],
     idText: ["dedup_key"],
-    unexportable: ["digest_id", "loop_id"],
+    // A push row points at a device (`push_subscriptions`), which is not in the file.
+    unexportable: ["digest_id", "loop_id", "push_subscription_id"],
   },
   audit_log: {
     sort: "id",

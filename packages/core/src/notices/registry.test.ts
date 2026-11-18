@@ -32,7 +32,7 @@ import { weekStatsExample } from "../metrics/fixtures";
 import { type CoreTexts, textTables } from "../texts";
 
 import { encodeNoticeView } from "./encode";
-import { type NoticeKind, noticeKinds, type NoticeRenderOptions, reportMailKinds } from "./kinds";
+import { type NoticeKind, noticeChannels, noticeKinds, type NoticeRenderOptions, reportMailKinds } from "./kinds";
 import { renderNotice, renderNoticeEdit } from "./render";
 import { noticeRenderers } from "./renderers";
 import { type NoticeView, noticeViewSchemas } from "./views";
@@ -701,6 +701,28 @@ describe("the mail channel (F110 stage 20)", () => {
       timeZone: "Europe/Warsaw",
     };
     expect(() => renderNoticeEdit(input, mail)).toThrow("no card edit for channel mail");
+  });
+});
+
+describe("the push channel (F118 stage 02)", () => {
+  const push: NoticeRenderOptions = { channel: "push", detail: "full", locale: "en" };
+
+  test("the channel list has push, and no kind has a push renderer yet (stage 08 adds them)", () => {
+    expect([...noticeChannels]).toEqual(["telegram", "mail", "push"]);
+    expect(noticeKinds.filter((kind) => noticeRenderers[kind].push !== undefined)).toEqual([]);
+  });
+
+  test("every kind answers { ok: false } for a push row, and a card edit throws", () => {
+    for (const testCase of cases) {
+      expect(renderNotice(testCase.kind, stored(testCase), push), testCase.kind).toEqual({ ok: false });
+    }
+    const input = {
+      original: "x",
+      outcome: "approved" as const,
+      at: new Date("2026-11-13T10:00:00.000Z"),
+      timeZone: "Europe/Warsaw",
+    };
+    expect(() => renderNoticeEdit(input, push)).toThrow("no card edit for channel push");
   });
 });
 

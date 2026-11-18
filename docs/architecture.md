@@ -315,6 +315,8 @@ erDiagram
 
 Each slice adds the migration for its own tables (column "Slice"). Column names avoid SQL reserved words (`from`, `to`, `references`).
 
+`push_subscriptions` (F118 stage 02, `spec/features/active/F118-e9b-phone-channel-pwa-push-telegram-detail/`; not in the list above; migration `20261118130001_push_devices.sql`): id, org_id, user_id (composite FK `(org_id, user_id)` to `memberships`, cascade), session_id (FK `auth_sessions`, `SET NULL`: null means the session ended and the device is not live), secret (the endpoint and the keys in the ADR 0009 box, AAD `push:<id>`) with key_version, endpoint_hash (SHA-256 hex of the endpoint; unique per user), device_label (≤ 60), created_at, last_success_at, last_error_code. The same migration adds `outbox.push_subscription_id` (composite FK `(push_subscription_id, org_id)`, `SET NULL (push_subscription_id)`, so a sent row stays as history; CHECK: only `channel = 'push'` may set it), the outbox channel `push`, and `memberships.notice_routes` (jsonb object, default `{}`). No code writes a push row yet; the repository is `apps/server/src/modules/channels/push/repo.ts`.
+
 Tenancy:
 
 - Every domain table has `org_id` (copied down for simple filters).
