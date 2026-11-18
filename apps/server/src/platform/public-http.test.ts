@@ -529,7 +529,8 @@ describe("the production path has no way to reach a local host", () => {
     const callers: string[] = [];
     for (const path of sources(root)) {
       const text = readFileSync(path, "utf8");
-      if (path.endsWith("platform/public-http.ts")) continue;
+      // The client itself, and the registry that names the call in a string (`outside-services.ts`).
+      if (path.endsWith("platform/public-http.ts") || path.endsWith("platform/outside-services.ts")) continue;
       expect({ path, dial: /\bdial\s*:/.test(text) || /\bsendPinned\b/.test(text) }).toEqual({ path, dial: false });
       if (/\bpostOneClick\(/.test(text)) callers.push(path.slice(root.length + 1));
       for (const call of text.matchAll(/postOneClick\(([^)]*)\)/g))
