@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./web": "./src/web/index.ts"
+    "./web": "./src/web/index.ts",
+    "./push": "./src/push-worker.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

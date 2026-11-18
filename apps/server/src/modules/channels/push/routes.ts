@@ -219,7 +219,7 @@ export function pushRoutes(deps: PushRouteDeps): Hono<ApiEnv> {
     const lang = (await getUserAuthProfile(deps.db, userId))?.locale ?? "pl";
     let sent = 0;
     for (const { id, target } of prepared) {
-      // The push payload shape: v, id, kind, count, itemId, lang (the schema of the later PWA stage must accept this literal).
+      // The push payload shape: v, id, kind, count, itemId, lang (`pushPayloadSchema` of the service worker parses this literal; a test pins it).
       const payload = { v: 1, id: randomUUID(), kind: "test", count: 1, itemId: null, lang };
       const result = await sendWebPush(
         target,

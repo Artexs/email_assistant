@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { pushStateSchema, pushSubscriptionAnswerSchema, pushTestAnswerSchema } from "@ea/core";
+import { pushPayloadSchema, pushStateSchema, pushSubscriptionAnswerSchema, pushTestAnswerSchema } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -472,6 +472,8 @@ describe("POST /api/me/push/test", () => {
       itemId: null,
       lang: "pl",
     });
+    // The service worker parses the same bytes with this schema: the test payload must pass it.
+    expect(pushPayloadSchema.safeParse(payload).success).toBe(true);
     expect((await devicesOf(org.ownerId)).find((d) => d.id === id)?.last_success_at).not.toBeNull();
 
     push.answer(500);
