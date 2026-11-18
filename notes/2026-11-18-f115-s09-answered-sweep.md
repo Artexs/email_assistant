@@ -30,6 +30,20 @@ What a later agent needs. Stage file: `spec/features/active/F115-e6a-reply-draft
 - Stage 17: the capability page has the two new bullets; `docs/known-alerts.md` has no entry for `reply_sweep_failed` (a warn line with `error_code`).
 - No migration. No change of `TERMS_VERSION`; no legal text or registry changed.
 
+## Repair after the Opus review (FAIL 41804a77; `spec/features/active/F115-e6a-reply-drafts/review-9.md`)
+
+- **B1.** Only closes count against the cap of 200 per run. At most 1000 open sends are listed per run (`SWEEP_LIST_LIMIT`). Mailboxes are visited by the age of their oldest open reply send (`listMailboxesWithOpenReplySends`; a mailbox with nothing open is not in the list; `listSyncTargets` still decides which mailboxes are active). Test hooks: `SweepDeps.closeLimit`, `SweepDeps.listLimit`. Known limit: one mailbox with more than 1000 open sends starves its newest sends (the list is oldest first); not expected (replies live 7 days).
+- **N1.** `closeSend(notify: "approved")` decides the notice from the row the close locks; the sweep uses it.
+- **N2.** `isSentVisible` is false also for the Sent state `no_folder` or `folder_missing` and for a folder map with no `sent` key.
+- **N3.** `listUserAnswers` counts a Sent mail only when a recipient (To or Cc) is the sender or an address of the Reply-To of the original. A row whose recipients the retention cleared (no stored recipient) is not judged by this rule (it counts as before: the existing test "still answers after the headers were cleared"). This also changes the `answered` fact of the drafter (`replyFactsOf`).
+- **N4.** A Sent mail with `Auto-Submitted` other than `no` is no answer (`notAutomaticSql` in `mail/repo/shared.ts`). The header step of the Sent sync does not store that header (only the text step does), so the committer pass reads it once for the Sent mail that would count and is unread (`mail/sent-automatic.ts`, `markAutomaticAnswers`: UID plus Message-ID check, then `fetchContent`; reads only) and stores it only when automatic. The sweep reads the database only: a vacation reply that the text step has not read yet still counts there (a close of a draft, never a send).
+- **N6.** `original_moved` needs `emails.moved_at` null (a move of the assistant does not count), in the pass and the sweep. The text says "moved to another folder" and names no folder (the view has none).
+- **N7.** `newerMailInThread` ignores mail in the junk folder (`mailbox_folders` role `junk`, by folder or source folder), in the trash folder (`mailboxes.folder_map.trash`) and mail whose newest triage result is `spam`.
+- **T1.** Test 2b is split (2b, 2c), test 4 and 6 are split (4h, 6b); no test of `replies-answered-pass.test.ts` has more than one GreenMail box. **T2.** Test T2 in `replies-sweep.test.ts`. **N10.** `newer_mail`: "Read the newer mail; a new draft may follow."; `suspicious`: "Read the mail with care; a new draft may follow." (the decision text "read the newer mail" does not fit a suspicious mail, so the wording is adapted); `original_moved` says what to do (answer it from its new place); en and pl.
+
 ## Mutation proof
+
+Repair: `/tmp/f115-s09/mutations-repair.log` (script `/tmp/f115-s09/mutate2.py`, 39 mutants, 39 killed; the review round was run before a merge of master). First round: `/tmp/f115-s09/mutations.log`.
+
 
 `/tmp/f115-s09/mutations.log` (script `/tmp/f115-s09/mutate.py`). The tmp files are not in the repo.
