@@ -152,20 +152,27 @@ export interface SentRecipientDomain {
   mails: number;
 }
 
-// The id of the newest user Sent mail of the mailbox (any age), or null. A cheap key for a cache of `sentRecipientDomains`:
-// a new Sent mail changes it. It returns an id, never an address.
-export async function newestUserSentId(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string | null> {
-  const row = await db
-    .selectFrom("sent_emails")
-    .select("id")
-    .where("org_id", "=", ctx.orgId)
-    .where("mailbox_id", "=", mailboxId)
-    .where("origin", "=", "user")
-    .orderBy("sent_at", "desc")
-    .orderBy("id", "desc")
-    .limit(1)
-    .executeTakeFirst();
-  return row?.id ?? null;
+export interface UserSentKey {
+  // The count of user Sent mails of the mailbox, any age.
+  count: number;
+  // The id of the newest one (by `sent_at`, then id), or null with no mail.
+  newestId: string | null;
+}
+
+// A cheap key for a cache of `sentRecipientDomains`: the count and the newest id of the user Sent mail of the mailbox. A new Sent
+// mail changes the count, also when its `sent_at` equals the newest (the Date header has whole seconds, so the order by id alone
+// could keep the same newest id). It returns a count and an id, never an address.
+export async function userSentKey(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<UserSentKey> {
+  const { rows } = await sql<{ count: number; newest_id: string | null }>`
+    SELECT count(*)::int AS count,
+      (SELECT n.id FROM sent_emails n
+        WHERE n.org_id = ${ctx.orgId} AND n.mailbox_id = ${mailboxId} AND n.origin = 'user'
+        ORDER BY n.sent_at DESC, n.id DESC LIMIT 1) AS newest_id
+    FROM sent_emails s
+    WHERE s.org_id = ${ctx.orgId} AND s.mailbox_id = ${mailboxId} AND s.origin = 'user'
+  `.execute(db);
+  const row = rows[0];
+  return { count: row?.count ?? 0, newestId: row?.newest_id ?? null };
 }
 
 // The registrable domains that the user wrote to: To or Cc of `origin = 'user'` Sent mail of this mailbox with `sent_at` at or after

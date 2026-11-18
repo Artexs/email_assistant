@@ -589,4 +589,37 @@ describe("the cache of the Sent domains", () => {
       expect((await contextOf(trx, a)).sentDomains).toEqual(["kontrahent.pl"]);
     });
   });
+  test("a new Sent mail with the same sent_at and a lower id still ends the entry", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await setFlags(trx, s, {});
+      const insert = (id: string, to: string) =>
+        trx
+          .insertInto("sent_emails")
+          .values({
+            id,
+            org_id: s.ctx.orgId,
+            mailbox_id: s.mailboxId,
+            dedup_key: `mid:${randomUUID()}`,
+            path: "Sent",
+            uidvalidity: "7",
+            uid: "1",
+            message_id: `<${randomUUID()}@x.test>`,
+            thread_key: `test:${randomUUID()}`,
+            to_addresses: [to],
+            cc_addresses: [],
+            origin: "user",
+            content: "headers_only",
+            sent_at: ago(3),
+            internal_date: ago(3),
+          })
+          .execute();
+      await insert("ffffffff-0000-4000-8000-000000000001", "a@erste.pl");
+      await insert("ffffffff-0000-4000-8000-000000000002", "a@erste.pl");
+      expect((await contextOf(trx, s)).sentDomains).toEqual(["erste.pl"]);
+      await insert("00000000-0000-4000-8000-000000000001", "a@zweite.pl");
+      await insert("00000000-0000-4000-8000-000000000002", "a@zweite.pl");
+      expect((await contextOf(trx, s)).sentDomains).toEqual(["erste.pl", "zweite.pl"]);
+    });
+  });
 });

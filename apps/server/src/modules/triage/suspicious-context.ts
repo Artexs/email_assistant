@@ -10,7 +10,7 @@ import {
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
-import { getEmailHeaders, listMailboxes, newestUserSentId, sentRecipientDomains, type ClaimedEmail } from "../mail";
+import { getEmailHeaders, listMailboxes, userSentKey, sentRecipientDomains, type ClaimedEmail } from "../mail";
 import { isFeatureOn, listMemberships } from "../tenancy";
 
 import {
@@ -73,12 +73,13 @@ function isFreeMail(domain: string): boolean {
 }
 
 interface SentCandidates {
+  mails: number;
   newestSentId: string | null;
   at: number;
   domains: string[];
 }
 
-// A per-mailbox cache of the Sent candidates. The key is the newest user Sent id (a new Sent mail ends the entry) and the age
+// A per-mailbox cache of the Sent candidates. The key is the count and the newest id of the user Sent mail (a new Sent mail ends the entry) and the age
 // of 10 minutes (the 90-day window and the newest results of incoming mail move on). Staleness only ever keeps a target on the
 // list a little longer, or leaves one off for 10 minutes; a target never exempts a sender. One entry per mailbox, at most 1000.
 const SENT_CACHE_MAX_AGE_MS = 10 * 60_000;
@@ -100,17 +101,23 @@ async function sentCandidates(
   now: Date
 ): Promise<string[]> {
   const key = `${ctx.orgId}:${mailboxId}`;
-  const newestSentId = await newestUserSentId(db, ctx, mailboxId);
+  const { count: mails, newestId: newestSentId } = await userSentKey(db, ctx, mailboxId);
   const cached = sentCache.get(key);
   const age = cached === undefined ? -1 : now.getTime() - cached.at;
-  if (cached !== undefined && cached.newestSentId === newestSentId && age >= 0 && age < SENT_CACHE_MAX_AGE_MS) {
+  if (
+    cached !== undefined &&
+    cached.mails === mails &&
+    cached.newestSentId === newestSentId &&
+    age >= 0 &&
+    age < SENT_CACHE_MAX_AGE_MS
+  ) {
     return cached.domains;
   }
 
   const since = new Date(now.getTime() - SENT_DOMAIN_WINDOW_DAYS * 24 * 3_600_000);
   let domains: string[] = [];
   const written =
-    newestSentId === null
+    mails === 0
       ? []
       : await sentRecipientDomains(db, ctx, mailboxId, {
           since,
@@ -126,7 +133,7 @@ async function sentCandidates(
     const oldest = sentCache.keys().next();
     if (oldest.done !== true) sentCache.delete(oldest.value);
   }
-  sentCache.set(key, { newestSentId, at: now.getTime(), domains });
+  sentCache.set(key, { mails, newestSentId, at: now.getTime(), domains });
   return domains;
 }
 
