@@ -11,6 +11,7 @@ import {
   type LoopCallback,
   type OutMessage,
   type RejectReason,
+  type ReplyCallback,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -37,7 +38,9 @@ import { editBriefLine, lineEditResult } from "./brief-line-edit";
 import { cardEditHooks } from "./card-edits";
 import { heldReason } from "./held-reason";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
-import { findOutboxByDedup } from "./repo";
+import { nextAfterReplyDecision } from "./reply-taps";
+import { findApprovalCardOfTap, findOutboxByDedup } from "./repo";
+import { sendIdOfCardKey } from "./review-keys";
 
 const log = createLog("channels");
 
@@ -53,7 +56,10 @@ export interface CallbackDeps {
 }
 
 // The answered check taps have their own handler (`answered-taps.ts`); `handleCallback` routes them first.
-type ApprovalCallback = Exclude<Callback, FeedbackCallback | AnsweredCallback | LoopCallback | DelegateCallback>;
+type ApprovalCallback = Exclude<
+  Callback,
+  FeedbackCallback | AnsweredCallback | LoopCallback | DelegateCallback | ReplyCallback
+>;
 
 function statusText(taps: CoreTexts["bot"]["taps"], status: string): string | undefined {
   const texts: Record<string, string> = {
@@ -116,7 +122,12 @@ export async function handleApprovalCallback(
       reasonButtons?: boolean;
     } = {}
   ): Promise<OutMessage | undefined> => {
-    const row = await findOutboxByDedup(deps.db, ctx, link.userId, dedupKey);
+    // The card of a send is `approval:<send>` or, for a reply in the review, `approval:<send>:r<n>`: the tap names its message.
+    const cardOf = sendIdOfCardKey(dedupKey);
+    const row =
+      cardOf === null
+        ? await findOutboxByDedup(deps.db, ctx, link.userId, dedupKey)
+        : await findApprovalCardOfTap(deps.db, ctx, link.userId, cardOf, source.messageId);
     if (row === undefined || row.text === null || row.text === "") return undefined;
     return renderNoticeEdit(
       { original: row.text, outcome, at: now, timeZone, ...extra },
@@ -137,6 +148,8 @@ export async function handleApprovalCallback(
               heldBy === undefined ? "approved" : "approved_held",
               heldBy === undefined ? {} : { heldBy, actionId: callback.actionId }
             ),
+            // A reply in the review: the next one follows the decision
+            ...(await nextAfterReplyDecision(deps, ctx, link, callback.actionId, texts, now)),
           };
         }
         case "already_approved":
@@ -180,6 +193,7 @@ export async function handleApprovalCallback(
             "rejected",
             reasonButtons ? { actionId: callback.actionId, reasonButtons } : {}
           ),
+          ...(await nextAfterReplyDecision(deps, ctx, link, callback.actionId, texts, now)),
         };
       }
       if (result.kind === "already") return { answer: statusText(taps, result.status) ?? taps.notFound };

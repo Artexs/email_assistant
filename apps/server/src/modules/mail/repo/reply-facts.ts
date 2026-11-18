@@ -35,10 +35,12 @@ export interface MailReplyFacts {
 
 // One entry per mail of the organization in `emailIds`; an id of another organization or a missing mail is absent.
 // Reads in chunks of 500 ids; no ids, no query. Every query filters `org_id`.
+// `settledSentOnly`: a Sent row with no read header yet is no answer (`listUserAnswers`); the sweep sets it.
 export async function replyFactsOf(
   db: DbOrTrx,
   ctx: TenantContext,
-  emailIds: readonly string[]
+  emailIds: readonly string[],
+  opts: { settledSentOnly?: boolean } = {}
 ): Promise<Map<string, MailReplyFacts>> {
   const found = new Map<string, MailReplyFacts>();
   if (emailIds.length === 0) return found;
@@ -107,7 +109,7 @@ export async function replyFactsOf(
           .execute()
       ).map((row) => row.email_id)
     );
-    const userAnswers = await listUserAnswers(db, ctx, ids);
+    const userAnswers = await listUserAnswers(db, ctx, ids, { settledOnly: opts.settledSentOnly === true });
     for (const mail of mails) {
       const header = headerRows.get(mail.id);
       const junkPath = junkPaths.get(mail.mailbox_id);

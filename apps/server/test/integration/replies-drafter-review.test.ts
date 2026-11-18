@@ -54,8 +54,8 @@ async function markDraftApplied(trx: Transaction<DB>, draftId: string): Promise<
     .execute();
 }
 
-describe("N1: the generic approval notice skips a reply send", () => {
-  test("a drafted reply whose draft is applied gets no notice and no notified_at; a clarification send of the same org still gets its card", async () => {
+describe("N1: the generic approval notice skips a reply send (stage 12: the reply notice counts it)", () => {
+  test("a drafted reply whose draft is applied gets no approval card; only the count notice names it; a clarification send of the same org still gets its card", async () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       await isolateChannels(trx);
@@ -83,15 +83,19 @@ describe("N1: the generic approval notice skips a reply send", () => {
       expect(rows.filter((row) => row.kind === "approval").map((row) => row.dedup_key)).toEqual([
         `approval:${clarification.sendId}`,
       ]);
-      // No row of any kind holds the id of the reply send or its text.
-      expect(JSON.stringify(rows)).not.toContain(send?.id ?? "no-send");
+      // No card, no view and no text of any row holds the reply send or its text. The `replies_ready` notice holds a count only (its dedup
+      // key names the first send it counted, as an id).
+      expect(JSON.stringify(rows.map((row) => row.view))).not.toContain(send?.id ?? "no-send");
       expect(JSON.stringify(rows)).not.toContain("wtorek mi pasuje");
+      expect(rows.filter((row) => row.kind === "replies_ready")).toHaveLength(1);
+      // The generic detector lists no reply; the notice marks the send as counted.
+      expect((await listSendsToNotify(trx, s.ctx, { limit: 50 })).map((row) => row.id)).toEqual([]);
       const reply = await trx
         .selectFrom("actions")
         .select("notified_at")
         .where("id", "=", send?.id ?? "")
         .executeTakeFirstOrThrow();
-      expect(reply.notified_at).toBeNull();
+      expect(reply.notified_at?.getTime()).toBe(at(1).getTime());
     });
   });
 });

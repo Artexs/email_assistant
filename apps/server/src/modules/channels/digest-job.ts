@@ -12,6 +12,7 @@ import { getMembership, getOrganization, isFeatureOn } from "../tenancy";
 import { loopConsentOf } from "./consent";
 import { queueNotice } from "./notice-queue";
 import type { LinkedChat } from "./port";
+import { listReviewableReplies, REVIEW_SCAN_MAX } from "./reply-review";
 import {
   listReportMembers,
   mailDedupKey,
@@ -146,6 +147,11 @@ export async function queueDigest(
       const loopConsent = (await loopConsentOf(trx, ctx, [userId])).has(userId);
       loops = { firstOfDay, loopConsent, ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }) };
     }
+    // The reply drafts that wait for a review: a count for an owner while the flag is on. No text, no button.
+    const repliesReady =
+      link.role === "owner" && (await isFeatureOn(trx, ctx, "reply_drafts"))
+        ? (await listReviewableReplies(trx, ctx, { max: REVIEW_SCAN_MAX })).length
+        : 0;
     const request = {
       kind: "scheduled" as const,
       periodStart,
@@ -155,6 +161,7 @@ export async function queueDigest(
       locale: link.locale,
       role: link.role,
       testMail,
+      ...(repliesReady > 0 ? { repliesReady } : {}),
       // The spam review line is part of the text: it needs the panel link, and both rows carry it.
       ...(webBaseUrl === undefined ? {} : { panelBase: webBaseUrl }),
     };

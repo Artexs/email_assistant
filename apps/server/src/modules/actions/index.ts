@@ -107,6 +107,7 @@ export {
   listExpiredApprovals,
   listFollowUpLimitHolds,
   listSendLimitHolds,
+  listOpenReplySends,
   listSendResultsToNotify,
   listRecentSends,
   listSendsOfDraft,

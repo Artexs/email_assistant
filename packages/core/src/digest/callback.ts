@@ -44,8 +44,13 @@ export type DelegateCallback =
   | { kind: "delegate_open"; emailId: string }
   | { kind: "delegate_pick"; emailId: string; delegateId: string };
 
+// The review of reply drafts in Telegram: `reply_review` asks for the next open reply draft after `afterId` (none: the
+// first one); `reply_skip` leaves the draft of `sendId` for now and asks for the next one. Both name a send, never a mail.
+export type ReplyCallback = { kind: "reply_review"; afterId?: string } | { kind: "reply_skip"; sendId: string };
+
 export type Callback =
   | FeedbackCallback
+  | ReplyCallback
   | AnsweredCallback
   | LoopCallback
   | DelegateCallback
@@ -62,6 +67,10 @@ export type Callback =
 
 export function isAnsweredCallback(callback: Callback): callback is AnsweredCallback {
   return callback.kind === "answered_yes" || callback.kind === "answered_no";
+}
+
+export function isReplyCallback(callback: Callback): callback is ReplyCallback {
+  return callback.kind === "reply_review" || callback.kind === "reply_skip";
 }
 
 export function isLoopCallback(callback: Callback): callback is LoopCallback {
@@ -110,6 +119,9 @@ const WITHOUT_CODE = new RegExp(`^(fe|fx|fu|ve|vx):(${UUID})$`);
 const APPROVAL = new RegExp(`^(ap|ar|as|rs|ag|gw|dd|mk):(${UUID})$`);
 const ANSWERED = new RegExp(`^(ay|an):(${UUID})$`);
 const LOOP = new RegExp(`^(lf|ll|lc|lx|lr):(${UUID})$`);
+// `rv` (the first open reply draft) or `rv:<send>` (the next one after it); `rk:<send>` (skip this one).
+const REPLY_REVIEW = new RegExp(`^rv(?::(${UUID}))?$`);
+const REPLY_SKIP = new RegExp(`^rk:(${UUID})$`);
 const DELEGATE_OPEN = new RegExp(`^dg:(${UUID})$`);
 // `dp:<mail>:<delegate>`: each UUID as 22 characters of base64url (16 bytes, no padding), so the data is 48 bytes.
 const B64_UUID = "[A-Za-z0-9_-]{22}";
@@ -179,6 +191,10 @@ export function encodeCallback(callback: Callback): string {
       return `lx:${checkedId(callback.loopId)}`;
     case "loop_reopen":
       return `lr:${checkedId(callback.loopId)}`;
+    case "reply_review":
+      return callback.afterId === undefined ? "rv" : `rv:${checkedId(callback.afterId)}`;
+    case "reply_skip":
+      return `rk:${checkedId(callback.sendId)}`;
     case "delegate_open":
       return `dg:${checkedId(callback.emailId)}`;
     case "delegate_pick":
@@ -262,6 +278,12 @@ export function parseCallback(data: string): Callback | null {
         return { kind: "loop_reopen", loopId };
     }
   }
+  const review = REPLY_REVIEW.exec(data);
+  if (review !== null) {
+    return review[1] === undefined ? { kind: "reply_review" } : { kind: "reply_review", afterId: review[1] };
+  }
+  const skip = REPLY_SKIP.exec(data);
+  if (skip !== null) return { kind: "reply_skip", sendId: skip[1] as string };
   const open = DELEGATE_OPEN.exec(data);
   if (open !== null) return { kind: "delegate_open", emailId: open[1] as string };
   const pick = DELEGATE_PICK.exec(data);

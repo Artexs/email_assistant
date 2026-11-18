@@ -61,4 +61,26 @@ describe("the consent gate of open-loop data", () => {
     const commands = sources.find((s) => s.file === "modules/channels/commands.ts")?.text ?? "";
     expect(commands).not.toMatch(/\bloops:/);
   });
+
+  // Reply-draft data has the same kind of choke point.
+  test("only consent.ts compares a consent version with the reply version; only the reply notice and the review taps call replyConsentOf", () => {
+    expect(usersOf(/\bREPLY_CONSENT_SINCE\b/)).toEqual(["modules/channels/consent.ts"]);
+    expect(usersOf(/\breplyConsentOf\(/)).toEqual([
+      "modules/channels/consent.ts",
+      "modules/channels/notices/replies-ready.ts",
+      "modules/channels/reply-taps.ts",
+    ]);
+  });
+
+  test("every file that queues a review card or reads a reply for a card goes through the gate: the taps check the consent first", () => {
+    const taps = sources.find((s) => s.file === "modules/channels/reply-taps.ts")?.text ?? "";
+    // The tap handler checks the consent before it reads a reply, and the step after a decision checks it again.
+    expect(taps.indexOf("replyConsentOf(")).toBeGreaterThan(-1);
+    expect(taps.indexOf("replyConsentOf(")).toBeLessThan(taps.indexOf("queueNextReviewCard("));
+    // The only callers of the review card queue are the tap code.
+    expect(usersOf(/\bqueueNextReviewCard\(|\bqueueReviewCard\(/)).toEqual([
+      "modules/channels/reply-review.ts",
+      "modules/channels/reply-taps.ts",
+    ]);
+  });
 });

@@ -45,5 +45,6 @@ One worker job per stage, in order 01 → 03 → 03b → 04 … 18 (`plan.md` §
 - Owner answers, 2026-11-15:
   - Stage 01 account check: owner "idk", so the coordinator default holds: the draft fails on every run of 12 or more digits (separators allowed) that the user did not type, and on any IBAN that passes mod 97; the digit budget stays as a second layer; the user's approval of the exact version is the final control. Zero misses on hostile text is not a goal; the residual is measured and listed. Then one narrow Opus re-review, then the land.
   - Stage 02 (real LLM prototype run): the owner wants another model and provider (for example DeepSeek through its API) and has no key yet. Stage 02 waits for the key (`notes/owner-later.md` item 2). G1 passes on the defaults for PD-071 and PD-083; PD-072 (the model) stays open and is a config value; stages 03 and later build now.
+- Stage 12 review (2026-11-18): while `reply_drafts` is on and stage 17 has not landed, owners get "Confirm the new Telegram terms in the panel" and no panel version can cover reply data. Keep `reply_drafts` OFF in any pilot until stage 17 lands.
 
 Detail: `plan.md`, `interfaces.md`, `stages/`. Defaults for the owner: `questions.md`. Scout packets: `scouts.md`. PD-076 replaces F043.

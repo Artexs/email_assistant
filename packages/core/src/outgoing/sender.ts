@@ -1,4 +1,5 @@
 import { senderLabel } from "../digest/text";
+import { gapsOf } from "../replies/gaps";
 import { textTables } from "../texts";
 import type { DraftPayload } from "../triage/payloads";
 
@@ -33,6 +34,8 @@ export interface ApprovalView {
   version?: number; // the edit version of the send, from 2 on
   panelUrl?: string; // the panel page of this send
   sentVisible?: false; // a reply only: the system cannot see the Sent mail of the mailbox, so only `\Answered` on the original shows an answer
+  gaps?: string[]; // a reply only: the labels of the gaps `[[…]]` still in the body; one gap or more: no Send button
+  replyTo?: string[]; // a reply only: the Reply-To of the original when it differs from its From address (the server sets it)
   copyCheck?: true; // the org flag `draft_copy_check` was on when the card was made: the card line allows an edit in the mail client
 }
 
@@ -73,7 +76,11 @@ export function approvalViewOf(
       : {}),
     // A reply may carry a Cc after "Reply all": the card and the panel spell every recipient out.
     ...(draft.kind === "reply"
-      ? { to: message.to.map((entry) => entry.address), cc: message.cc.map((entry) => entry.address) }
+      ? {
+          to: message.to.map((entry) => entry.address),
+          cc: message.cc.map((entry) => entry.address),
+          gaps: gapsOf(message.parts.body).slice(0, 20),
+        }
       : {}),
   };
 }

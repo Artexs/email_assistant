@@ -84,6 +84,9 @@ export interface DigestRequest {
   role: MembershipRole;
   testMail: TestMailRule;
   loops?: DigestLoops;
+  // The open reply drafts of the organization that an owner may review: one footer line with the count. The channels job
+  // reads it (`reports` may not import `channels`); absent or 0: no line.
+  repliesReady?: number;
   // The base URL of the panel (`WEB_BASE_URL`): the spam review line links to the Activity list with it. Unset: no link.
   panelBase?: string;
 }
@@ -423,6 +426,9 @@ export async function buildDigest(db: Db, ctx: TenantContext, request: DigestReq
         : { handled: { ...handled, shadowOnly: mailboxes.every((mailbox) => mailbox.mode === "shadow") } }),
       ...(spamReview === null ? {} : { spamReview }),
       ...(brief === null ? {} : { brief }),
+      ...(request.repliesReady === undefined || request.repliesReady <= 0
+        ? {}
+        : { repliesReady: request.repliesReady }),
     },
     texts
   );

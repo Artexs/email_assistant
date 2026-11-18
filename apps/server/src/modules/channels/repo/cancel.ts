@@ -74,7 +74,7 @@ function waitingApprovalRequest(staleBefore: Date) {
 const noAwaitingApprovalSend = sql`not exists (
   select 1 from actions a
   where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'
-    and ((outbox.kind = 'approval' and outbox.dedup_key = 'approval:' || a.id::text)
+    and ((outbox.kind = 'approval' and (outbox.dedup_key = 'approval:' || a.id::text or outbox.dedup_key like 'approval:' || a.id::text || ':r%'))
       or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
 )`;
 // The erase of one person's data: a waiting approval-set request whose sends all closed (the sender holds

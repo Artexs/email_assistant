@@ -190,13 +190,22 @@ export function renderLoopConsentNotice(
   return { text: lines.join("\n"), buttons: [] };
 }
 
-// Reply drafts. One fixed line each and no button: the review stages replace them. No mail text, no address.
+// Reply drafts. The ready notice is a count and a clock: no mail text, no address. An owner whose consent covers reply data (`review`)
+// gets the Review button; the others get the consent line only. The panel link line is added when set.
 export function renderRepliesReadyNotice(
-  input: { count: number; now: Date; timeZone: string },
+  input: { count: number; now: Date; timeZone: string; review: boolean; panelUrl?: string | undefined },
   texts: CoreTexts
 ): OutMessage {
   const clock = formatClock(input.now, input.timeZone, input.now, texts.locale);
-  return { text: texts.notices.replyDrafts.ready(input.count, clock), buttons: [] };
+  const lines = [texts.notices.replyDrafts.ready(input.count, clock)];
+  if (!input.review) lines.push(texts.notices.replyDrafts.consent);
+  if (input.panelUrl !== undefined) lines.push(texts.approvals.panelLine(input.panelUrl));
+  return {
+    text: lines.join("\n"),
+    buttons: input.review
+      ? [[{ text: texts.notices.replyDrafts.review, data: encodeCallback({ kind: "reply_review" }) }]]
+      : [],
+  };
 }
 
 export function renderReplyPromptNotice(texts: CoreTexts): OutMessage {

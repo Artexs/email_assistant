@@ -294,8 +294,8 @@ const cases: Case[] = [
   },
   {
     kind: "replies_ready",
-    view: { count: 3, now, timeZone },
-    direct: (texts) => renderRepliesReadyNotice({ count: 3, now, timeZone }, texts),
+    view: { count: 3, now, timeZone, review: true },
+    direct: (texts) => renderRepliesReadyNotice({ count: 3, now, timeZone, review: true }, texts),
   },
   { kind: "reply_prompt", view: { emailId: id1 }, direct: (texts) => renderReplyPromptNotice(texts) },
   {

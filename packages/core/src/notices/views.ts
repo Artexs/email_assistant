@@ -301,10 +301,14 @@ const loopConsentView = z.strictObject({
 // Reply drafts (the review stages replace these views). `replies_ready`: a count and the queue time.
 // `reply_prompt` and `reply_result` name the mail only by id, as the outbox row does; `reason` is a lower-case code
 // (a reply block reason or a request status), never a text.
+// `review` is true for an owner whose Telegram consent covers reply data (the Review button); false: the count, the consent line
+// and the panel link only. `panelUrl`: the approvals page, when `WEB_BASE_URL` is set and the flag `approvals_page` is on.
 const repliesReadyView = z.strictObject({
   count: z.number().int().min(1),
   now: isoDate,
   timeZone,
+  review: z.boolean(),
+  panelUrl: panelUrlSchema.optional(),
 });
 const replyPromptView = z.strictObject({ emailId: id });
 const replyResultView = z.strictObject({ emailId: id, reason: z.string().regex(/^[a-z_]{1,40}$/) });
