@@ -47,7 +47,7 @@ export interface TenancyRouteDeps {
     ctx: TenantContext,
     userId: string
   ) => Promise<{ available: boolean; linked: boolean; botUsername: string | null }>;
-  sessions: (userId: string) => Promise<AuthSessionRow[]>; // web.ts: listUserSessions of the auth handle (L21)
+  sessions: (userId: string) => Promise<AuthSessionRow[]>; // web.ts: listUserSessions of the auth handle
   operatorContact: string | null; // the public OPERATOR_CONTACT value, not a secret
   backupCodesLeft: (userId: string) => Promise<number | null>; // web.ts: backupCodesLeft of the auth handle
   keepMode: (ctx: TenantContext, userId: string, now: Date) => Promise<void>;
@@ -156,7 +156,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     return c.body(null, 204);
   });
 
-  // L17: any member accepts the current terms; an old version answers 409 so the dialog reloads.
+  // Any member accepts the current terms; an old version answers 409 so the dialog reloads.
   // A repeat call answers 204 and writes nothing.
   app.post("/me/terms", tenancyDocs.postTerms, async (c) => {
     const body = await parseBody(c, termsAcceptBodySchema);
@@ -176,7 +176,7 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
     return c.body(null, 204);
   });
 
-  // L21: the member's own live sessions, newest first, never the token.
+  // The member's own live sessions, newest first, never the token.
   app.get("/me/sessions", tenancyDocs.getSessions, async (c) => {
     const { userId, sessionId } = c.get("session");
     const now = deps.now();
