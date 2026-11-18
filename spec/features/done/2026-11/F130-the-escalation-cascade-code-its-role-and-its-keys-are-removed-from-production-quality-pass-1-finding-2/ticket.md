@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-18
 ---
 
 # F130 · the escalation cascade code, its role and its keys are removed from production (quality pass 1, finding 2)

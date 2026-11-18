@@ -96,6 +96,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F130-the-escalation-cascade-code-its-role-and-its-keys-are-removed-from-production-quality-pass-1-finding-2` (🟢 PROVEN): the escalation cascade code, its role and its keys are removed from production (quality pass 1, finding 2); landed 2026-11-18
 - `F112-e10a-docs-site` (🟢 PROVEN): E10a Docs site; landed 2026-11-18
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
@@ -105,5 +106,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F103-e8a-logs` (🟢 PROVEN): E8a Logs; landed 2026-11-15
 - `F101-panel-to-astro-7` (🟢 PROVEN): Panel to Astro 7; landed 2026-11-15
 - `F097-e2a-offline-lab` (🟢 PROVEN): Every category has a measured precision and recall on a frozen synthetic corpus, and real labels start; landed 2026-11-15
-- `F094-the-server-image-ci-and-local-checks-run-one-current-bun-1-4-x` (🟢 PROVEN): The server image, CI and local checks run one current Bun (1.4.x); landed 2026-11-15
-- 2026-11: 80 landed. spec/features/done/2026-11/
+- 2026-11: 81 landed. spec/features/done/2026-11/
