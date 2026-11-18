@@ -1,6 +1,7 @@
 import {
   cleanUserText,
   draftPayloadSchema,
+  MAX_REDRAFTS,
   parseToolSwitches,
   replyEligibility,
   replyRecipients,
@@ -36,7 +37,7 @@ import { lockThread, runInTransaction } from "./write";
 // The instruction of a user is one line of 1 to 300 characters (the column holds 300).
 export const INSTRUCTION_MAX = 300;
 // At most this many redraft requests for one mail.
-export const REDRAFT_LIMIT = 5;
+export const REDRAFT_LIMIT = MAX_REDRAFTS;
 
 // The text of a user, cleaned: control and direction characters gone, one line. null: empty or too long. It is data for the model and is
 // never a recipient, a folder or a command.

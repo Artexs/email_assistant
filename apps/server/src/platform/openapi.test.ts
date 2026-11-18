@@ -109,4 +109,29 @@ describe("GET /api/openapi.json", () => {
     expect(pick(operation, "responses", "409", "description")).toContain("closed, changed");
     expect(pick(content("responses", "409"), "error", "type")).toBe("string");
   });
+
+  test("a second success answer (`alsoOk`) is in the file next to the first", async () => {
+    const app = appWith({
+      session: true,
+      routers: (api) => {
+        api.post(
+          "/y",
+          apiDoc({
+            operationId: "postY",
+            summary: "Post y",
+            tags: ["y"],
+            ok: { status: 202, schema: z.object({ requestId: z.string() }) },
+            alsoOk: { status: 200, schema: z.object({ sendId: z.string() }) },
+          }),
+          (c) => c.json({ requestId: "r" }, 202)
+        );
+      },
+    });
+    const doc = (await (await app.request("/api/openapi.json")).json()) as Doc;
+    const operation = doc.paths["/api/y"]?.post;
+    const props = (status: string) =>
+      pick(operation, "responses", status, "content", "application/json", "schema", "properties");
+    expect(Object.keys(props("202") as object)).toEqual(["requestId"]);
+    expect(Object.keys(props("200") as object)).toEqual(["sendId"]);
+  });
 });

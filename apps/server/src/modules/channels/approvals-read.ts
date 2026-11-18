@@ -3,6 +3,7 @@ import {
   approvalDetailSchema,
   approvalListSchema,
   draftPayloadSchema,
+  MAX_REDRAFTS,
   sendPayloadSchema,
   type ApprovalDetail,
   type ApprovalItem,
@@ -25,6 +26,7 @@ import {
 } from "../actions";
 import { listDelegates } from "../delegation";
 import { getMailbox, mailboxHasUidplus } from "../mail";
+import { replyVersionFacts } from "../replies";
 
 import { heldReason } from "./held-reason";
 import { approvalViewFor } from "./notices/approval";
@@ -78,6 +80,24 @@ interface Built {
   quote: string | null;
   version: number | null;
   heldBy: ApprovalItem["heldBy"];
+  // A reply only: the facts of the panel (`approvalReplyFields`); undefined for every other kind.
+  reply: Pick<ApprovalItem, "instruction" | "redraftsLeft" | "recipientsMode"> | undefined;
+}
+
+// The facts of a reply for the panel. They come from the payload and the request rows, never from the mailbox.
+async function replyFieldsOf(
+  deps: ApprovalReadDeps,
+  ctx: TenantContext,
+  send: SendRow,
+  draftPayload: ReturnType<typeof draftPayloadSchema.safeParse>
+): Promise<Built["reply"]> {
+  if (!draftPayload.success || draftPayload.data.kind !== "reply" || send.email_id === null) return undefined;
+  const facts = await replyVersionFacts(deps.db, ctx, { sendId: send.id, emailId: send.email_id });
+  return {
+    instruction: facts.instruction,
+    redraftsLeft: Math.max(0, MAX_REDRAFTS - facts.redrafts),
+    recipientsMode: draftPayload.data.recipients,
+  };
 }
 
 async function build(deps: ApprovalReadDeps, ctx: TenantContext, send: SendRow, now: Date): Promise<Built | undefined> {
@@ -88,7 +108,8 @@ async function build(deps: ApprovalReadDeps, ctx: TenantContext, send: SendRow, 
   const payload = sendPayloadSchema.safeParse(send.payload);
   const draft =
     send.depends_on_action_id === null ? undefined : await getDraft(deps.db, ctx, send.depends_on_action_id);
-  const draftOk = draft !== undefined && draftPayloadSchema.safeParse(draft.payload).success;
+  const draftParsed = draft === undefined ? undefined : draftPayloadSchema.safeParse(draft.payload);
+  const draftOk = draftParsed?.success === true;
   const built = payload.success && draftOk ? await approvalViewFor(deps.db, ctx, send, { draftRow: draft }) : undefined;
   const heldBy = state === "held" ? ((await heldReason(deps, ctx, send.id)) ?? null) : null;
   return {
@@ -101,6 +122,8 @@ async function build(deps: ApprovalReadDeps, ctx: TenantContext, send: SendRow, 
     quote: built?.quote ?? null,
     version: built?.view.version ?? null,
     heldBy,
+    reply:
+      draftParsed === undefined || !payload.success ? undefined : await replyFieldsOf(deps, ctx, send, draftParsed),
   };
 }
 
@@ -114,6 +137,7 @@ function common(b: Built) {
     ...(b.send.loop_id === null ? {} : { loopId: b.send.loop_id }),
     draftReady: b.draft?.status === "applied",
     heldBy: b.heldBy,
+    ...b.reply,
   };
 }
 

@@ -1,6 +1,6 @@
 import type { HeldBy } from "../digest/approvals";
 import { approvalViewSchema } from "../outgoing/view-schema";
-import { draftKinds } from "../triage/payloads";
+import { draftKinds, replyRecipientModes } from "../triage/payloads";
 
 import { z } from "./zod";
 
@@ -49,8 +49,20 @@ const itemFields = {
   loopId: z.uuid().optional(),
 };
 
+// Only a reply has them (the other kinds have no key). The view holds the rest of the reply facts: `gaps`, `cc`, `replyTo`, `sentVisible`.
+// `instruction`: the line of the request that made this version (null: none, or retention cleared it). `redraftsLeft`: 5 minus the
+// redraft requests of the mail (0 to 5). `recipientsMode`: who the draft goes to: `from` (the sender), `reply_to` (the Reply-To address
+// of the mail) or `all` (the sender in To, the other recipients in Cc; never the Reply-To). The panel shows it before Send.
+export const MAX_REDRAFTS = 5;
+export const approvalReplyFields = {
+  instruction: z.string().max(300).nullable().optional(),
+  redraftsLeft: z.number().int().min(0).max(MAX_REDRAFTS).optional(),
+  recipientsMode: z.enum(replyRecipientModes).optional(),
+};
+
 export const approvalItemSchema = z.strictObject({
   ...itemFields,
+  ...approvalReplyFields,
   version: z.number().int().min(1),
   state: z.enum(approvalListStates),
   draftReady: z.boolean(),
@@ -71,6 +83,7 @@ export type ApprovalDelegate = z.infer<typeof approvalDelegateSchema>;
 // draft. `expiresAt` is set for `waiting` and `held` only.
 export const approvalDetailSchema = z.strictObject({
   ...itemFields,
+  ...approvalReplyFields,
   version: z.number().int().min(1).nullable(),
   state: z.enum(approvalDetailStates),
   draftReady: z.boolean(),
