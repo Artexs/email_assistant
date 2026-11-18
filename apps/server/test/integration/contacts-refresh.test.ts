@@ -27,7 +27,7 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// Sender context, stage 03: the profile pass (`readSenderActivity`, `refreshMailboxProfiles`, `readProfiles`). The clock is
+// Sender context: the profile pass (`readSenderActivity`, `refreshMailboxProfiles`, `readProfiles`). The clock is
 // fixed. The key is a test key, so the file needs no `CREDENTIALS_KEY` in the environment.
 const db = testDb();
 afterAll(async () => {

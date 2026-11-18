@@ -67,7 +67,7 @@ function insertRow(ctx: TenantContext, mailboxId: string, hash: string, item: Se
   };
 }
 
-// One recompute pass for one mailbox (plan F120: the profile is a derived snapshot of the source tables of 90 days). One
+// One recompute pass for one mailbox (the profile is a derived snapshot of the source tables of 90 days). One
 // transaction. Order: the flag `sender_context` (off: nothing happens), the advisory lock with try (busy: skip), then the read
 // inside the lock, then the writes. A row written has the keyed hash of the address and counts, medians and dates: never an
 // address. The dates only widen (`first_seen_at` the least, `last_seen_at` and `last_user_mail_at` the greatest of the stored and

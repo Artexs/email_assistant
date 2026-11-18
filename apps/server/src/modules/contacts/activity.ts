@@ -18,7 +18,7 @@ import { listMailboxes, mailKindFilter, type TestMailRule } from "../mail";
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
 
-// The window of the profile (plan F120): mail received in the 90 days up to `now`.
+// The window of the profile: mail received in the 90 days up to `now`.
 export const PROFILE_DAYS = 90;
 // A reply delay median needs this many samples.
 const MIN_DELAY_SAMPLES = 5;
@@ -168,10 +168,10 @@ interface DelegationRow {
   n: number;
 }
 
-// The activity of every address that wrote to the mailbox or that the user wrote to, in the 90 days up to `now` (plan F120 decisions on the window, the delays and the
-// bulk ratio). Set-based: a fixed number of statements for the mailbox, never one per sender. Every statement filters `org_id` and the
-// mailbox. The plain addresses stay in memory: the caller hashes them before it writes (`senderKeyHash`). Own addresses and
-// test mail never get a row. A mail counts once per address.
+// The activity of every address that wrote to the mailbox or that the user wrote to, in the 90 days up to `now`.
+// Set-based: a fixed number of statements for the mailbox, never one per sender. Every statement filters `org_id` and
+// the mailbox. The plain addresses stay in memory: the caller hashes them before it writes (`senderKeyHash`). Own
+// addresses and test mail never get a row. A mail counts once per address.
 export async function readSenderActivity(
   db: DbOrTrx,
   ctx: TenantContext,
