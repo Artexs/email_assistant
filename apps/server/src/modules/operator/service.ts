@@ -7,6 +7,7 @@ import {
   type OperatorOrgList,
   type OperatorOrgRow,
   type OperatorPlanBody,
+  type OperatorPlanResult,
   QUOTA_TIMEZONE,
   quotaDayStart,
 } from "@ea/core";
@@ -28,6 +29,7 @@ import {
   type SetOrgFeatureResult,
   type SetOrgPlanHooks,
   type SetOrgPlanResult,
+  type OrgPlanState,
 } from "../tenancy";
 import { lastTriageAt } from "../triage";
 
@@ -180,16 +182,64 @@ export async function listOperatorNotices(deps: { db: Db; now: () => Date }, day
   return { notices: notices.slice(0, NOTICE_LIMIT), since: since.toISOString() };
 }
 
+/** The answer of the plan route: the HTTP status and the final JSON body; `kind` is the service result for the log line. */
+export interface OperatorPlanOutcome {
+  kind: SetOrgPlanResult["kind"];
+  status: 200 | 400 | 404;
+  body: OperatorPlanResult | { error: string };
+}
+
+const planResultOf = (
+  result: "changed" | "unchanged",
+  state: OrgPlanState,
+  counts: { cancelledMessages: number; expiredSends: number }
+): OperatorPlanResult => ({
+  result,
+  plan: state.plan,
+  trialEndsAt: state.trialEndsAt?.toISOString() ?? null,
+  maxMailboxes: state.maxMailboxes,
+  resumedAt: state.resumedAt?.toISOString() ?? null,
+  ...counts,
+});
+
+/** Maps a `setOrgPlan` result to the answer of the route (pure). */
+export function planOutcomeOf(result: SetOrgPlanResult): OperatorPlanOutcome {
+  switch (result.kind) {
+    case "not_found":
+    case "trial_days_needed":
+      return { kind: result.kind, status: result.kind === "not_found" ? 404 : 400, body: { error: result.kind } };
+    case "bad_input":
+      return { kind: result.kind, status: 400, body: { error: result.reason } };
+    case "unchanged":
+      return {
+        kind: result.kind,
+        status: 200,
+        body: planResultOf("unchanged", result.state, { cancelledMessages: 0, expiredSends: 0 }),
+      };
+    case "changed":
+      return {
+        kind: result.kind,
+        status: 200,
+        body: planResultOf("changed", result.after, {
+          cancelledMessages: result.cancelledMessages,
+          expiredSends: result.expiredSends,
+        }),
+      };
+  }
+}
+
 // D20: the same service functions as the CLIs; the actor is the operator's user id. The audit rows go into the target organization.
 export async function changeOrgPlan(
   deps: { db: Db; now: () => Date; planHooks: SetOrgPlanHooks },
   input: { orgId: string; actor: string; body: OperatorPlanBody }
-): Promise<SetOrgPlanResult> {
-  return setOrgPlan(
-    deps.db,
-    { orgId: input.orgId },
-    { ...input.body, actor: input.actor, now: deps.now() },
-    deps.planHooks
+): Promise<OperatorPlanOutcome> {
+  return planOutcomeOf(
+    await setOrgPlan(
+      deps.db,
+      { orgId: input.orgId },
+      { ...input.body, actor: input.actor, now: deps.now() },
+      deps.planHooks
+    )
   );
 }
 
