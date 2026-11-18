@@ -257,6 +257,34 @@ describe("the copy check: an IMAP error", () => {
   });
 });
 
+describe("the copy check: the folder", () => {
+  test("10. the copy is looked for in the folder that the draft row stores, not in the folder_map default", async () => {
+    await withRollback(db, async (trx) => {
+      const { box, p } = await seedPair(trx, boxes, { kind: "reply", flag: false });
+      // The copy lives in another folder now (the folder map changed after the APPEND); the row names it.
+      await box.mailClient.ensureFolder("Old drafts");
+      const meta = await copyOf(box, p.draftId);
+      if (meta === null) throw new Error("no copy");
+      const moved = await box.mailClient.transferByAppend("Drafts", meta.uid, "Old drafts");
+      const row = await actionRow(trx, p.draftId);
+      await trx
+        .updateTable("actions")
+        .set({
+          provider_result: JSON.stringify({
+            ...(row.provider_result as object),
+            folder: "Old drafts",
+            uid: moved.newUid,
+          }),
+        })
+        .where("id", "=", p.draftId)
+        .execute();
+
+      expect((await runSend(trx, box, p.sendId)).status).toBe("applied");
+      expect(box.sender.sent).toHaveLength(1);
+    });
+  });
+});
+
 describe("the copy check: the cards", () => {
   test("9. a send that the check closes edits its cards through the approval hooks of the committer: once, as expired", async () => {
     await withRollback(db, async (trx) => {
