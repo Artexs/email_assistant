@@ -51,7 +51,7 @@ import {
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
-import { goNoGoFor, triageRoutes } from "./modules/triage";
+import { goNoGoFor, newsletterRoutes, triageRoutes } from "./modules/triage";
 import { queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
 import {
   createAuth,
@@ -68,6 +68,7 @@ import { backupCodesLeft } from "./platform/auth-two-factor";
 import {
   authMailSettings,
   mailAllowLocal,
+  mailTrustedAuthservIds,
   operatorUserIds,
   webTrustedOrigins,
   webTrustedProxies,
@@ -383,6 +384,7 @@ export function apiRouters(
     api.route("/", activityRoutes({ db, now }));
     api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
+    api.route("/", newsletterRoutes({ db, now, trustedAuthservIds: mailTrustedAuthservIds(config) }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     api.route(

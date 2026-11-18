@@ -29,6 +29,8 @@ export interface NewsletterSender {
   oneClick: boolean;
   /** The newest mail has an `https` link in `List-Unsubscribe` (the user may open it; the server does nothing). */
   hasLink: boolean;
+  /** The first offered `https` link of the newest mail (`firstHttpsUnsubscribeUrl`); null when `hasLink` is false. Never logged. */
+  linkUrl: string | null;
 }
 
 interface Row {
@@ -42,19 +44,27 @@ interface Row {
   list_unsubscribe_post: boolean | null;
 }
 
-// True when `List-Unsubscribe` holds an `https` URI with a host (`<https://host/path>`, separated by commas). Nothing else
-// is read from it; the check is not a safety check of the target (stage 24 does that).
-export function hasHttpsUnsubscribeLink(header: string | null): boolean {
-  if (header === null) return false;
+// The first `https` URI of `List-Unsubscribe` (`<https://host/path>`, separated by commas) that the view may offer: it has a host and
+// no user name or password. Returns the parsed form (`URL.href`, so no control character survives), or null. The stored header has at
+// most 1000 characters (a CHECK of `email_headers`), so the link is short. The link is untrusted text. This is not a safety check
+// of the target (stage 24 does that before any request).
+export function firstHttpsUnsubscribeUrl(header: string | null): string | null {
+  if (header === null) return null;
   for (const match of header.matchAll(/<([^<>]*)>/g)) {
     try {
       const url = new URL((match[1] ?? "").trim());
-      if (url.protocol === "https:" && url.hostname !== "") return true;
+      if (url.protocol === "https:" && url.hostname !== "" && url.username === "" && url.password === "")
+        return url.href;
     } catch {
       // Not a URL: skip this element.
     }
   }
-  return false;
+  return null;
+}
+
+// True when `firstHttpsUnsubscribeUrl` finds a link.
+export function hasHttpsUnsubscribeLink(header: string | null): boolean {
+  return firstHttpsUnsubscribeUrl(header) !== null;
 }
 
 // The senders of the last 30 days that the newsletters view may list, most mails first (then newest mail), at most 200. A sender is
@@ -111,7 +121,8 @@ export async function listNewsletterSenders(
   return rows
     .filter((row) => !flagged.has(row.sender))
     .map((row): NewsletterSender => {
-      const hasLink = hasHttpsUnsubscribeLink(row.list_unsubscribe);
+      const linkUrl = firstHttpsUnsubscribeUrl(row.list_unsubscribe);
+      const hasLink = linkUrl !== null;
       const fromDomain = row.sender.slice(row.sender.lastIndexOf("@") + 1);
       return {
         senderLower: row.sender,
@@ -124,6 +135,7 @@ export async function listNewsletterSenders(
           hasLink &&
           hasTrustedAlignedDkimPass(row.auth_results, opts.trustedAuthservIds, fromDomain),
         hasLink,
+        linkUrl,
       };
     })
     .sort(

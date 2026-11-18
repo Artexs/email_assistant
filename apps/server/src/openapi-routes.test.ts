@@ -309,6 +309,24 @@ describe("the real app", () => {
     }
   });
 
+  test("GET /api/newsletters/{mailboxId} is described: operation id, tag, uuid path parameter, 200 and 404, no body", async () => {
+    const operation = (await openApiSpec(realApp())).paths?.["/api/newsletters/{mailboxId}"]?.get as {
+      operationId?: string;
+      tags?: string[];
+      parameters?: unknown;
+      requestBody?: unknown;
+      responses?: Record<string, { description?: string } | undefined>;
+    };
+    expect(operation.operationId).toBe("getNewsletters");
+    expect(operation.tags).toEqual(["newsletters"]);
+    expect(operation.parameters).toMatchObject([
+      { name: "mailboxId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+    ]);
+    expect(operation.requestBody).toBeUndefined();
+    expect(Object.keys(operation.responses ?? {})).toContain("200");
+    expect(operation.responses?.["404"]?.description).toContain("not_found");
+  });
+
   test("the three trust routes are described: operation ids, a uuid path parameter, 202 for the check, owner only on the writes, the 409 codes", async () => {
     const paths = (await openApiSpec(realApp())).paths;
     interface Operation {
