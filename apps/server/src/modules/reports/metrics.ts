@@ -19,6 +19,7 @@ import {
   type HiddenMoveRow,
   type OpenLoopsOnTime,
   type SeriousMistakes,
+  type TrustEvidenceRows,
   type UnitCost,
   type UrgentLatency,
   type UrgentNoticeRow,
@@ -41,10 +42,18 @@ type DbOrTrx = Db | Transaction<DB>;
 
 export type UrgentNoticeReader = (db: DbOrTrx, ctx: TenantContext, q: WeekQuery) => Promise<UrgentNoticeRow[]>;
 
+/**
+ * The M8 reader of `trust` (`trustViewFor`): the three evidence sources of one mailbox. `null`: the mailbox is not the organization's.
+ * `reports` (layer 4) may not import `trust` (layer 5): the composition root fills it.
+ */
+export type TrustEvidenceReader = (ctx: TenantContext, mailboxId: string) => Promise<TrustEvidenceRows | null>;
+
 export interface WeekStatsDeps {
   /** The M5 reader of `channels` (`listUrgentNoticeTimes`); the composition root fills it, `reports` may not import `channels`. */
   urgentNotices: UrgentNoticeReader;
   testMail: TestMailRule;
+  /** M8 only. Absent, or the flag `trust_ladder` off: the three evidence keys of an M8 row are null (F110 stage 12). */
+  trustEvidence?: TrustEvidenceReader;
 }
 
 interface MailboxScope {
@@ -84,10 +93,14 @@ async function gateRows(
   ctx: TenantContext,
   mailboxes: readonly MailboxScope[],
   now: Date,
-  testMail: TestMailRule
+  deps: WeekStatsDeps
 ): Promise<GateRow[]> {
+  const { testMail } = deps;
   const rows: GateRow[] = [];
+  // The flag is read once: with it off, no mailbox reads the trust data and the three keys stay null.
+  const trustOn = deps.trustEvidence !== undefined && (await isFeatureOn(db, ctx, "trust_ladder"));
   for (const mailbox of mailboxes) {
+    const trust = trustOn ? await deps.trustEvidence?.(ctx, mailbox.id) : null;
     const report = await realGoNoGoRows(db, ctx, mailbox.id, now, testMail);
     const settings = await getMailboxSettings(db, ctx, mailbox.id);
     const policy = parseCategoryPolicy(settings?.category_policy ?? {});
@@ -101,6 +114,9 @@ async function gateRows(
         precision: row.precision,
         recall: row.recall,
         decision: row.decision,
+        global: trust?.[category].global ?? null,
+        history: trust?.[category].history ?? null,
+        trip: trust?.[category].trip ?? null,
       });
     }
   }
@@ -161,7 +177,7 @@ export async function weekStats(
     testMail: deps.testMail,
   };
   const rows = await readMetricRows(db, ctx, q, deps, { withLoops: true });
-  const gates = input.withEvidence === false ? [] : await gateRows(db, ctx, scope, input.now, deps.testMail);
+  const gates = input.withEvidence === false ? [] : await gateRows(db, ctx, scope, input.now, deps);
   return buildWeekStats(
     {
       truth: rows.truth,

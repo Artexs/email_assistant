@@ -3,15 +3,18 @@ import { randomUUID } from "node:crypto";
 import { statsResponseSchema } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
+import { settingsDeps } from "../../src/composition";
 import { listUrgentNoticeTimes } from "../../src/modules/channels";
 import { statsRoutes, weekStats } from "../../src/modules/reports";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
 import { insertMembership, insertUser } from "../../src/modules/tenancy/repo";
+import { trustEvidenceReader } from "../../src/modules/trust";
 
 import { testDb } from "./helpers";
 import { flagLoops, seedLoops } from "./loops-m2-fixtures";
 import { WEEK, seedWeek, type SeededWeek } from "./metrics-fixtures";
 import { as, webTestApp } from "./web-helpers";
+import { gateFile, gateOf } from "./web-trust-kit";
 
 const db = testDb();
 const NOW = new Date("2026-11-24T10:00:00Z");
@@ -113,5 +116,40 @@ describe("GET /api/stats", () => {
 
     const assistant = await app().request("/api/stats?weeks=1", as("assistant"));
     expect(assistant.status).toBe(200);
+  });
+
+  // F110 stage 12: the reader is wired like the root does; both roles read the same keys, and the flag decides.
+  test("trust_ladder on: both roles get the three evidence keys; off: null", async () => {
+    await flag(true);
+    const withReader = () =>
+      webTestApp({
+        db,
+        sessions: { owner: seeded.orgA.ownerId, assistant: assistantId },
+        routers: (api) =>
+          api.route(
+            "/",
+            statsRoutes({
+              db,
+              now: () => NOW,
+              ...deps,
+              trustEvidence: trustEvidenceReader({
+                settings: settingsDeps(db, () => NOW, gateOf(gateFile({ info: 0.8 }))),
+                testMail: { senders: [] },
+              }),
+            })
+          ),
+      });
+    const rowsOf = async (role: "owner" | "assistant") =>
+      statsResponseSchema.parse(await (await withReader().request("/api/stats?weeks=1", as(role))).json()).weeks[0]
+        ?.m8 ?? [];
+    for (const row of await rowsOf("owner")) expect([row.global, row.history, row.trip]).toEqual([null, null, null]);
+
+    await upsertOrgFeature(db, seeded.orgA.ctx, { flag: "trust_ladder", enabled: true, setBy: "test", setAt: NOW });
+    const owner = await rowsOf("owner");
+    expect(owner).toHaveLength(5);
+    expect(owner.find((row) => row.category === "info")?.global).toMatchObject({ decision: "go", cases: 200 });
+    expect(owner.find((row) => row.category === "spam")?.global).toMatchObject({ decision: "no-go" });
+    expect(owner.every((row) => row.trip?.tripped === false && row.history === null)).toBe(true);
+    expect(await rowsOf("assistant")).toEqual(owner);
   });
 });

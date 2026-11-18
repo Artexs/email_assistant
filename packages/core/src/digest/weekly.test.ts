@@ -2,8 +2,10 @@ import { describe, expect, test } from "bun:test";
 
 import { weekStatsExample } from "../metrics/fixtures";
 import { textTables } from "../texts";
+import { barCategories } from "../triage/metrics";
 import type { WeekStats } from "../web/stats";
 
+import { MESSAGE_MAX_CHARS } from "./message";
 import { rateText, renderWeeklyReport } from "./weekly";
 
 const timeZone = "Europe/Warsaw";
@@ -29,6 +31,99 @@ describe("rateText", () => {
     expect(rateText(0, 0)).toBe("– (0 of 0)");
     expect(rateText(1, 3)).toBe("33% (1 of 3)");
     expect(rateText(124, 200, "z")).toBe("62% (124 z 200)");
+  });
+});
+
+// F110 stage 12 (tests 4 and 5): the evidence lines of `auto`.
+describe("the evidence lines of the weekly report", () => {
+  const MAILBOXES = [1, 2, 3].map((n) => `00000000-0000-4000-8000-00000000000${n}`);
+  type Row = WeekStats["m8"][number];
+  const on = (mailboxId: string, category: Row["category"], patch: Partial<Row> = {}): Row => ({
+    mailboxId,
+    category,
+    auto: true,
+    kept: 40,
+    precision: 0.97,
+    recall: 0.9,
+    wilsonLower: 0.9,
+    decision: "go",
+    global: { decision: "go", provisional: false, wilsonLower: 0.9, cases: 120 },
+    history: { outcome: "pass", acted: 80, moved: 1 },
+    trip: { tripped: false, reason: null },
+    ...patch,
+  });
+  const allKeys = (): WeekStats =>
+    weekStatsExample({ m8: MAILBOXES.flatMap((id) => barCategories.map((category) => on(id, category))) });
+  const textOf = (week: WeekStats, texts: typeof en): string =>
+    renderWeeklyReport({ week, timeZone, answeredWaiting: 0 }, texts).text;
+  const evidenceLines = (text: string, marker: string): string[] =>
+    text.split("\n").filter((line) => line.includes(marker));
+
+  test("4. all keys set, 5 categories and 3 mailboxes: one line per category, the message fits 4096", () => {
+    const english = textOf(allKeys(), en);
+    expect(evidenceLines(english, "· proof")).toEqual([
+      "urgent: auto on · proof go · check pass",
+      "reply: auto on · proof go · check pass",
+      "info: auto on · proof go · check pass",
+      "notification: auto on · proof go · check pass",
+      "spam: auto on · proof go · check pass",
+    ]);
+    const polish = textOf(allKeys(), pl);
+    expect(evidenceLines(polish, "· dowód")).toHaveLength(5);
+    expect(evidenceLines(polish, "· dowód")[0]).toBe("pilne: automat włączony · dowód go · sprawdzenie zaliczone");
+    // Polish: one colon at most per line.
+    for (const line of polish.split("\n")) expect(line.split(":").length - 1).toBeLessThanOrEqual(1);
+    for (const text of [english, polish]) expect(text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+  });
+
+  test("4. proof and check phrases follow the row; a trip reads paused with its reason phrase", () => {
+    const week = weekStatsExample({
+      m8: [
+        on(MAILBOXES[0] as string, "info", {
+          global: { decision: "no-go", provisional: true, wilsonLower: 0.5, cases: 10 },
+          history: null,
+        }),
+        on(MAILBOXES[0] as string, "spam", { history: { outcome: "inconclusive", acted: 60, moved: 2 } }),
+        // A tripped category has `auto` off; the trip of any mailbox decides the line of the category.
+        on(MAILBOXES[0] as string, "notification", { auto: false, trip: { tripped: true, reason: "corrections" } }),
+        on(MAILBOXES[1] as string, "notification"),
+        // `auto` off and no trip: no line.
+        on(MAILBOXES[0] as string, "urgent", { auto: false }),
+      ],
+    });
+    expect(evidenceLines(textOf(week, en), "· proof").concat(evidenceLines(textOf(week, en), "paused"))).toEqual([
+      "info: auto on · proof no-go · check none",
+      "spam: auto on · proof go · check inconclusive",
+      "notification: paused (you corrected its moves)",
+    ]);
+    expect(evidenceLines(textOf(week, pl), "wstrzymane")).toEqual([
+      "powiadomienia: wstrzymane (poprawiono jego ruchy)",
+    ]);
+  });
+
+  test("5. keys null: no evidence line, in en and pl", () => {
+    const week = weekStatsExample();
+    for (const texts of [en, pl]) {
+      const text = textOf(week, texts);
+      expect(text).not.toContain("· proof");
+      expect(text).not.toContain("· dowód");
+      expect(text).not.toContain("paused");
+      expect(text).not.toContain("wstrzymane");
+    }
+    // The text of test 1 (full week, null keys), with no review line.
+    expect(textOf(week, en)).toBe(
+      [
+        "📈 Week Mon 16 Nov – Sun 22 Nov",
+        "Missed important mail (lower bound): 20% (1 of 5)",
+        "Random review sample: 0 missed of 1",
+        "Open loops on time: 50% closed (1 of 2), 100% surfaced (2 of 2)",
+        "Serious mistakes: 4 (hidden important 2, wrong person 1, wrong content 0, sent by mistake 1)",
+        "Handled for you: 33% (3 of 9)",
+        "Urgent notice time: p90 3 min (1 notice, 1 without a notice)",
+        "Cost: $0.41 per mailbox per month (target ≤ $5)",
+        "Auto: notification 97% of 41 labels (lower bound 87%)",
+      ].join("\n")
+    );
   });
 });
 

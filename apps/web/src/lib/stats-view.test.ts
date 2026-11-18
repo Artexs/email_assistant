@@ -9,6 +9,8 @@ afterEach(() => setLocaleForTest("en"));
 
 const MAILBOX = "00000000-0000-4000-8000-0000000000aa";
 const OTHER_MAILBOX = "00000000-0000-4000-8000-0000000000bb";
+// The three evidence keys of F110 stage 12: null with the flag `trust_ladder` off. The page does not show them yet.
+const NO_TRUST = { global: null, history: null, trip: null } as const;
 
 function week(patch: Partial<WeekStats> = {}): WeekStats {
   return {
@@ -136,7 +138,7 @@ describe("statsRows", () => {
   });
 
   test("the evidence rows show the row with most kept mails and mark auto", () => {
-    const gate = { recall: 0.9, decision: "go" as const };
+    const gate = { ...NO_TRUST, recall: 0.9, decision: "go" as const };
     const rows = statsRows([
       week({
         m8: [
@@ -159,6 +161,7 @@ describe("statsRows", () => {
             wilsonLower: null,
             recall: null,
             decision: "no-go: too few",
+            ...NO_TRUST,
           },
         ],
       }),
@@ -169,7 +172,14 @@ describe("statsRows", () => {
   });
 
   test("the evidence hides precision below 30 labels and shows it from 30", () => {
-    const gate = { recall: 0.9, decision: "go" as const, auto: false, mailboxId: MAILBOX, category: "spam" as const };
+    const gate = {
+      ...NO_TRUST,
+      recall: 0.9,
+      decision: "go" as const,
+      auto: false,
+      mailboxId: MAILBOX,
+      category: "spam" as const,
+    };
     const few = statsRows([week({ m8: [{ ...gate, kept: 3, precision: 1, wilsonLower: 0.44 }] })]);
     expect(cellOf(few, "stats_m8_spam")).toBe("3 of 30 rated mails needed");
     expect(cellOf(few, "stats_m8_spam")).not.toContain("%");
@@ -180,7 +190,7 @@ describe("statsRows", () => {
   });
 
   test("below 30 labels a category on auto keeps its auto mark", () => {
-    const gate = { recall: 0.9, decision: "go" as const, mailboxId: MAILBOX, category: "spam" as const };
+    const gate = { ...NO_TRUST, recall: 0.9, decision: "go" as const, mailboxId: MAILBOX, category: "spam" as const };
     const few = statsRows([week({ m8: [{ ...gate, auto: true, kept: 29, precision: 1, wilsonLower: 0.88 }] })]);
     expect(cellOf(few, "stats_m8_spam")).toBe("29 of 30 rated mails needed · auto");
     const notAuto = statsRows([week({ m8: [{ ...gate, auto: false, kept: 29, precision: 1, wilsonLower: 0.88 }] })]);
@@ -188,7 +198,13 @@ describe("statsRows", () => {
   });
 
   test("a category with no labels shows a dash, auto or not", () => {
-    const gate = { recall: null, decision: "no-go: too few" as const, mailboxId: MAILBOX, category: "spam" as const };
+    const gate = {
+      ...NO_TRUST,
+      recall: null,
+      decision: "no-go: too few" as const,
+      mailboxId: MAILBOX,
+      category: "spam" as const,
+    };
     const none = statsRows([week({ m8: [{ ...gate, auto: true, kept: 0, precision: null, wilsonLower: null }] })]);
     expect(cellOf(none, "stats_m8_spam")).toBe("–");
   });
@@ -207,7 +223,14 @@ describe("statsRows", () => {
   test("the Polish cells keep the count and use the Polish connector", () => {
     setLocaleForTest("pl");
     expect(cellOf(statsRows([week()]), "stats_m1")).toBe("20 % (1 z 5)");
-    const gate = { recall: 0.9, decision: "go" as const, auto: true, mailboxId: MAILBOX, category: "spam" as const };
+    const gate = {
+      ...NO_TRUST,
+      recall: 0.9,
+      decision: "go" as const,
+      auto: true,
+      mailboxId: MAILBOX,
+      category: "spam" as const,
+    };
     const few = statsRows([week({ m8: [{ ...gate, kept: 3, precision: 1, wilsonLower: 0.44 }] })]);
     expect(cellOf(few, "stats_m8_spam")).toBe("3 z 30 potrzebnych ocenionych wiadomości · automat");
     const shown = statsRows([week({ m8: [{ ...gate, kept: 30, precision: 0.97, wilsonLower: 0.83 }] })]);

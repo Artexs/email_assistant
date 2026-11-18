@@ -4,7 +4,7 @@ import { type GateEvidenceDeps, onboardingOf, scopeInfoOf, type ScopeEnv } from 
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
+import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, trustEvidenceOf, uidplusOf } from "./composition";
 import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
@@ -381,7 +381,16 @@ export function apiRouters(
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
-    api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));
+    api.route(
+      "/",
+      statsRoutes({
+        db,
+        now,
+        urgentNotices: listUrgentNoticeTimes,
+        testMail: testMailRule(config),
+        trustEvidence: trustEvidenceOf(db, now, extras.gate, testMailRule(config)),
+      })
+    );
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));

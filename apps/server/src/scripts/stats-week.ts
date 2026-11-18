@@ -1,5 +1,6 @@
 import { lastFinishedWeek } from "@ea/core";
 
+import { gateEvidenceOf, trustEvidenceOf } from "../composition";
 import { listUrgentNoticeTimes } from "../modules/channels";
 import { weekStats } from "../modules/reports";
 import { getOrganization } from "../modules/tenancy";
@@ -39,7 +40,11 @@ async function main(): Promise<number> {
         mailboxId: options.mailboxId,
         now,
       },
-      { urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }
+      {
+        urgentNotices: listUrgentNoticeTimes,
+        testMail: testMailRule(config),
+        trustEvidence: trustEvidenceOf(db, () => now, gateEvidenceOf(config, { quiet: true }), testMailRule(config)),
+      }
     );
     if (stats === "not_found") {
       process.stderr.write(`not_found: no such mailbox\n${usage}\n`);
