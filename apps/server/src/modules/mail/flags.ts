@@ -121,7 +121,7 @@ export type FlagsOfEmailResult =
   | { kind: "mismatch" }
   | { kind: "not_found" };
 
-// The flag refresh for one mail, on the caller's connection (F115 D10: the pass before a reply send asks the server whether the mail
+// The flag refresh for one mail, on the caller's connection (the pass before a reply send asks the server whether the mail
 // is answered). The same read, the same mail check and the same writer as `refreshFlags`; one `fetchFlagsIn` call for one UID.
 export async function refreshFlagsOfEmail(
   deps: Pick<FlagsRefreshDeps, "db" | "provider" | "now">,

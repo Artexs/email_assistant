@@ -4,7 +4,7 @@ import type { TenantContext } from "../../../platform/db";
 
 import { notAutomaticSql, type DbOrTrx } from "./shared";
 
-// D7 (ticket F115): is there a newer mail in the thread of this mail? "Newer" is by `received_at`, then by id (the same order as the thread
+// Is there a newer mail in the thread of this mail? "Newer" is by `received_at`, then by id (the same order as the thread
 // rule of the drafter). The mail must be in the same mailbox and have the same `thread_key`. An automatic mail does not count: `Auto-Submitted`
 // set to anything but `no` (an out-of-office is no answer to the question). A mail in the junk folder or the trash folder of the mailbox
 // (by its folder or its source folder), and a mail whose newest triage result is `spam`, does not count either: junk must not close a reply.

@@ -269,7 +269,7 @@ export class MailboxLimitError extends HardError {
   }
 }
 
-/** The web refuses a local or private mail host (B12). */
+/** The web refuses a local or private mail host. */
 export class HostNotAllowedError extends HardError {
   constructor(options?: { cause?: unknown }) {
     super("host not allowed", options);

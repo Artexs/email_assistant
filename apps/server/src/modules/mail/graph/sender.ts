@@ -9,7 +9,7 @@ import { MailAuthError, SmtpSendError, type MailSender, type SendResult, type Sm
 // Nothing here logs a header, a body, a token or an address. The error body of Graph is read for `error.code` only.
 const log = createLog("mail");
 
-/** Graph takes 4 MB per request; base64 adds a third, so a raw message over 3 MiB cannot go (default limit; spike row M10 may change it). */
+/** Graph takes 4 MB per request; base64 adds a third, so a raw message over 3 MiB cannot go (default limit; a live check may change it). */
 export const GRAPH_MAX_RAW_BYTES = 3 * 1024 * 1024;
 export const GRAPH_SEND_TIMEOUT_MS = 30_000;
 const ERROR_BODY_MAX_BYTES = 16_384;

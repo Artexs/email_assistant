@@ -49,7 +49,7 @@ function codeOf(error: unknown): unknown {
   return typeof error === "object" && error !== null && "code" in error ? error.code : undefined;
 }
 
-// B8: the typed address must match; the pause commits first so that no new claim starts, then one transaction deletes
+// The typed address must match; the pause commits first so that no new claim starts, then one transaction deletes
 // the rows, writes the audit row and queues the owners' notice.
 export async function removeMailbox(
   deps: RemoveDeps,
