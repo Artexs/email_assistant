@@ -2,6 +2,7 @@ import { parseArgs } from "node:util";
 
 import {
   barCategories,
+  replySwitchNames,
   toolSwitchNames,
   urgencyProfileSchema,
   type BarCategory,
@@ -19,7 +20,7 @@ export const usage = [
   "  bun run mailbox:settings show   --org-id <uuid> --mailbox-id <uuid>",
   "  bun run mailbox:settings mode   --org-id <uuid> --mailbox-id <uuid> --mode shadow|assist [--keep-switches]",
   "  bun run mailbox:settings auto   --org-id <uuid> --mailbox-id <uuid> --category urgent|needs_reply|info|notification|spam --value on|off [--threshold 0.nn] [--force]",
-  "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft --value on|off",
+  "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft|reply_drafts --value on|off",
   "  bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off",
   "  bun run mailbox:settings sent-sync --org-id <uuid> --mailbox-id <uuid> --value on|off   (consent to read Sent: turn it on only on the owner's instruction)",
   "  bun run mailbox:settings urgency --org-id <uuid> --mailbox-id <uuid> (--file <path.json> | --clear)",
@@ -150,7 +151,7 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
       }
       default: {
         const parsed = z
-          .object({ ...common, name: z.enum(toolSwitchNames), value: onOff })
+          .object({ ...common, name: z.enum([...toolSwitchNames, ...replySwitchNames]), value: onOff })
           .parse({ ...ids, name: values.name, value: values.value });
         return { kind: "switch", ...parsed };
       }

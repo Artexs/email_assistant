@@ -8,7 +8,7 @@ import { evidenceBlocks } from "../trust/evidence";
 import { z } from "./zod";
 
 export { barCategories, type BarCategory } from "../triage/metrics";
-export { toolSwitchNames, loopSwitchNames, ASSIST_DEFAULT_SWITCHES } from "../triage/settings";
+export { toolSwitchNames, loopSwitchNames, replySwitchNames, ASSIST_DEFAULT_SWITCHES } from "../triage/settings";
 
 export const GATE_BAR = 0.98;
 export const GATE_MIN_KEPT = 30;

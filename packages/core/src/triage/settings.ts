@@ -89,6 +89,9 @@ export const toolSwitchNames = [
 // The switches that exist only while the flag `open_loops` is on.
 export const loopSwitchNames = ["auto_follow_up"] as const satisfies readonly (keyof ToolSwitches)[];
 
+// The switch that exists only while the flag `reply_drafts` is on (F115). The owner turns it on per mailbox.
+export const replySwitchNames = ["reply_drafts"] as const satisfies readonly (keyof ToolSwitches)[];
+
 // P3: the switches that the mode change to `assist` sets. `create_draft` stays as it is (S4).
 export const ASSIST_DEFAULT_SWITCHES: Partial<ToolSwitches> = {
   move: true,
@@ -109,7 +112,7 @@ export function describeSettings(settings: SettingsSnapshot): string[] {
   const onOff = (value: boolean) => (value ? "on" : "off");
   return [
     `mode: ${settings.mode}`,
-    ...toolSwitchNames.map((name) => `switch ${name}: ${onOff(settings.toolSwitches[name])}`),
+    ...[...toolSwitchNames, ...replySwitchNames].map((name) => `switch ${name}: ${onOff(settings.toolSwitches[name])}`),
     ...barCategories.map(
       (category) =>
         `auto ${category}: ${onOff(autoFor(settings.categoryPolicy, category))}, threshold ${thresholdFor(settings.categoryPolicy, category)}`

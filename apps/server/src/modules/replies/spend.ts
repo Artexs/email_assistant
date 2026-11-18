@@ -52,13 +52,13 @@ export async function recordAttempts(
   db: DbOrTrx,
   ctx: TenantContext,
   llm: LlmClient,
-  input: { mailboxId: string; emailId: string; attempts: readonly DrafterAttempt[]; at: Date }
+  input: { mailboxId: string; emailId: string | null; attempts: readonly DrafterAttempt[]; at: Date }
 ): Promise<void> {
   const prompt = prompts.drafter;
   for (const attempt of input.attempts) {
     try {
       await recordLlmCall(db, ctx, {
-        emailId: input.emailId,
+        ...(input.emailId === null ? {} : { emailId: input.emailId }),
         mailboxId: input.mailboxId,
         role: prompt.role,
         promptVersion: prompt.version,

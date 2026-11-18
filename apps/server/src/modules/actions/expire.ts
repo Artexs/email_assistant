@@ -13,6 +13,7 @@ import { expireReadyOriginals, listAwaitingSendIds, listUnseenApprovalSends } fr
 // Shared by Undo, the expire-ready CLI and the settings setters (stage 14, as `SettingsDeps.expireReady`).
 // A row that a committer run holds now stays. One `action.expired` audit row per expired row, in the caller's transaction.
 // `filter.sends`: the `awaiting_approval` sends of the mailbox close too, each with its draft and delegation (D13, D33). It needs `opts.sendClose`.
+// `true` closes every kind; `replies` only the reply sends; `others` every kind except the reply sends (F115 D12).
 export async function expireReady(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -48,7 +49,10 @@ export async function expireReady(
     });
   }
   if (filter.sends && opts.sendClose) {
-    const sends = await listAwaitingSendIds(trx, ctx, filter.mailboxId, { emailId: filter.emailId });
+    const sends = await listAwaitingSendIds(trx, ctx, filter.mailboxId, {
+      emailId: filter.emailId,
+      ...(filter.sends === true ? {} : { kinds: filter.sends }),
+    });
     for (const send of sends) {
       const closed = await expireSend(trx, ctx, send.id, {
         reason: "policy_changed",
