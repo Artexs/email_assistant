@@ -6,7 +6,7 @@ import { z } from "zod";
 import { batchName, corpusDir, listBatches, readLabelBatch, readScenario, writeBatchFile } from "../platform/sim-files";
 
 import type { IncomingSimCommand } from "./sim-args";
-import { blindEntries, blindHash, fail, inRange, loadPart, ok, rangeSlots, type SimResult } from "./sim-corpus";
+import { blindEntries, blindHash, fail, inRange, loadPart, ok, rangeSlots, type SimResult } from "./sim-corpus-load";
 
 export async function blindExport(cmd: Extract<IncomingSimCommand, { kind: "blind-export" }>): Promise<SimResult> {
   const dir = corpusDir(cmd.scenario, cmd.root);

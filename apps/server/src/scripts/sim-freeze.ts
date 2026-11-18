@@ -41,7 +41,7 @@ import {
   type Corpus,
   type PartData,
   type SimResult,
-} from "./sim-corpus";
+} from "./sim-corpus-load";
 import { check } from "./sim-report";
 
 // A label counts when it is of the current text.

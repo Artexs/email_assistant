@@ -1,14 +1,14 @@
 import { SimFileError } from "../platform/sim-files";
 
 import { isSentCommand, type SimCommand } from "./sim-args";
-import { fail, type SimResult } from "./sim-corpus";
+import { fail, type SimResult } from "./sim-corpus-load";
 import { auditApply, auditList, freeze } from "./sim-freeze";
 import { blindExport, labelImport, reconcile, stale } from "./sim-labels";
 import { brief, check, plan, status } from "./sim-report";
 import { runSentSim } from "./sim-sent-commands";
 
-// The result type and the blind hash live in `sim-corpus.ts`; callers keep importing them from here.
-export { blindHash, type SimResult } from "./sim-corpus";
+// The result type and the blind hash live in `sim-corpus-load.ts`; callers keep importing them from here.
+export { blindHash, type SimResult } from "./sim-corpus-load";
 
 export async function runSim(cmd: SimCommand): Promise<SimResult> {
   try {

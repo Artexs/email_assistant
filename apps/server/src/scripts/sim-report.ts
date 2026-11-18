@@ -28,7 +28,7 @@ import {
 } from "../platform/sim-files";
 
 import type { IncomingSimCommand } from "./sim-args";
-import { blindEntries, blindHash, fail, inRange, loadPart, ok, partsOf, type SimResult } from "./sim-corpus";
+import { blindEntries, blindHash, fail, inRange, loadPart, ok, partsOf, type SimResult } from "./sim-corpus-load";
 
 export function plan(cmd: Extract<IncomingSimCommand, { kind: "plan" }>): SimResult {
   const dir = corpusDir(cmd.scenario, cmd.root);
