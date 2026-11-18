@@ -164,6 +164,8 @@ describe("the job contacts.refresh: errors and logs", () => {
       });
       // The message of the error holds an address: no line carries it.
       expect(logs.lines.join("\n")).not.toContain("anna@acme.pl");
+      // No dropped field: the line did not try to carry the message.
+      expect(logProblems(logs.lines, ["anna@acme.pl"])).toEqual([]);
     });
   });
 
