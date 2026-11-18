@@ -87,6 +87,14 @@ export function blockLines(blocks: readonly TrustBlock[]): TextKey[] {
   return blocks.map((block) => BLOCK_KEYS[block]);
 }
 
+// The blocks the dialog shows: the ones of the 409 body (the answer of the moment), else the ones of the view the card holds.
+export function refusalBlocks(
+  fromBody: readonly TrustBlock[] | undefined,
+  fromView: readonly TrustBlock[]
+): readonly TrustBlock[] {
+  return fromBody ?? fromView;
+}
+
 // The ratings line of today stays, once the user rated enough mails (`kept >= minKept`, as the precision text of the card).
 export function showRatingsLine(kept: number, minKept: number): boolean {
   return kept >= minKept;

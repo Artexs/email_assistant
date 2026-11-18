@@ -15,7 +15,7 @@ import { errorText } from "../../lib/errors";
 import { formatConfidence, formatPercent, gateText } from "../../lib/gate-text";
 import { patchSettings } from "../../lib/settings-api";
 import { reportPath } from "../../lib/trust-api";
-import { type TrustBlock, type TrustTone, showRatingsLine, trustLines } from "../../lib/trust-card";
+import { type TrustBlock, type TrustTone, refusalBlocks, showRatingsLine, trustLines } from "../../lib/trust-card";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Switch } from "../ui/switch";
 import { SetAnywayDialog } from "./SetAnywayDialog";
@@ -72,7 +72,7 @@ export function CategoriesCard({ settings, trust = null, isOwner, onChanged, onM
         setAnyway({
           category,
           gate: parsed.success ? parsed.data.gate : fallback,
-          blocks: parsed.success && parsed.data.blocks !== undefined ? parsed.data.blocks : fallbackBlocks,
+          blocks: refusalBlocks(parsed.success ? parsed.data.blocks : undefined, fallbackBlocks),
         });
       } else {
         toast.error(t(errorText(error)));

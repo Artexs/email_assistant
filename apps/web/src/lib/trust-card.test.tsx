@@ -13,7 +13,7 @@ import { CategoriesCard } from "../components/settings/CategoriesCard";
 import { setLocaleForTest, t } from "../i18n";
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
-import { blockLines, mailLine, pausedLine, proofLine, showRatingsLine, trustLines } from "./trust-card";
+import { blockLines, mailLine, pausedLine, proofLine, refusalBlocks, showRatingsLine, trustLines } from "./trust-card";
 
 afterEach(() => setLocaleForTest("en"));
 
@@ -284,6 +284,13 @@ describe("the line rules", () => {
     expect(new Set(keys).size).toBe(all.length);
     expect(blockLines([])).toEqual([]);
     expect(t("trust_block_history_fail")).toContain("would hide mail you needed");
+  });
+
+  test("refusal blocks: the 409 body wins, even when it is empty; without blocks in the body the view decides", () => {
+    expect(refusalBlocks(["history_fail"], ["tripped"])).toEqual(["history_fail"]);
+    expect(refusalBlocks([], ["tripped"])).toEqual([]);
+    expect(refusalBlocks(undefined, ["tripped"])).toEqual(["tripped"]);
+    expect(refusalBlocks(undefined, [])).toEqual([]);
   });
 
   test("Polish: every new line has a text and the placeholders match English", () => {
