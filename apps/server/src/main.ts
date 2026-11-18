@@ -8,6 +8,7 @@ import {
   mailOAuthRuntime,
   sendScope,
   settingsDeps,
+  trustEvidenceOf,
   uidplusOf,
 } from "./composition";
 import { createCommitterJob, createExpiryJob, sentOriginOf } from "./modules/actions";
@@ -443,6 +444,7 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     sendScope: scopeOfSends,
     testMail: testMailRule(config),
     ...(degraded === undefined ? {} : { degraded }),
+    trustEvidence: trustEvidenceOf(db, () => new Date(), gate, testMailRule(config)),
     operatorContact: config.OPERATOR_CONTACT ?? null,
     syncEveryMin: Number(config.MAIL_SYNC_EVERY_MIN),
     ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),

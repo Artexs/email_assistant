@@ -10,6 +10,7 @@ Part of [`../plan.md`](../plan.md). Web stage. Flag `bulk_unsubscribe`. Polish t
   - Each item: `senderLower`, `fromName`, `count`, `latestAt`, `method: "one_click" | "link" | "none"`, `request: { status, at } | null` (from `unsubscribe_requests`), and `linkUrl` only when `method` is `link`.
   - `linkUrl` = the first `https` URI of `List-Unsubscribe` of the newest mail; any `http:` or other scheme is not offered (`method: "none"`). The URL is shown only in the panel, never logged.
   - Flag off → 404.
+  - Built as follows (stage 23 worker, each a type 2 decision on the safe side): `linkUrl` goes to the owner only (a member sees the list without actions); it is also present for a `one_click` sender once a request exists, because "Failed — open the page instead" needs the link; `fromName` is cut to 100 code points and is attacker text, so the panel shows `senderLower` as the identity; a URI with a user name or password is not offered; the reader returns the parsed URL (`URL.href`). The route lives in `triage` (`newsletter-routes.ts`, `newsletter-view.ts`) and gets `MAIL_TRUSTED_AUTHSERV_IDS` only.
 - **Test** (`apps/server/test/integration/web-newsletters.test.ts`):
   1. Two senders (one one-click, one link only) → two items with the right `method`; the link item has `linkUrl`, the one-click item has none.
   2. A sender whose only URI is `http://…` → `method: "none"`.

@@ -479,6 +479,30 @@ export const E2E_URGENCY_SEEDED = {
   endedLabel: "Tax filing",
   futureLabel: "Board pack",
 } as const;
+// F110 stage 13: the e2e server pins the classifier setup, so the gate fixture (`apps/web/e2e/gate-fixture/`) matches the running key
+// whatever a developer's `.env` says. `e2e-gate-fixture.test.ts` checks the fixture against this pin and the production prompt choice.
+export const E2E_LLM_PIN = {
+  LLM_PROVIDER: "openai",
+  OPENAI_MODEL_CLASSIFIER: "gpt-6-luna",
+  OPENAI_REASONING_EFFORT: "none",
+  OPENAI_BASE_URL: "",
+  OPENAI_ENDPOINT_KIND: "",
+} as const;
+export const E2E_GATE_FIXTURE_DIR = "apps/web/e2e/gate-fixture";
+
+// F110 stage 13: one organization per project for the autonomy card spec. The flag `trust_ladder` is on and the server reads the gate
+// fixture folder (`GATE_EVIDENCE_DIR`, see `apps/web/e2e/env.ts`). One mailbox with a done history check and one trip: see `e2e-trust-rows.ts`.
+// The spec turns `spam` on with "Set anyway", so each project needs its own organization.
+export const E2E_TRUST_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-trust-owner-mobile@x.test",
+  desktop: "e2e-trust-owner-desktop@x.test",
+};
+export const E2E_TRUST_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-trust-member-mobile@x.test",
+  desktop: "e2e-trust-member-desktop@x.test",
+};
+export const e2eTrustOrgName = (project: E2eProject): string => `E2E Trust ${project}`;
+export const e2eTrustMailbox = (project: E2eProject): string => `e2e-trust-${project}@e2e.test`;
 export const E2E_TIMEZONE = "Europe/Warsaw";
 
 // The seeded profile at the seed time `now`: the ended deadline is due the day before the local date of the organization, the future one in ten days.
@@ -496,6 +520,30 @@ export function e2eUrgencyProfile(now: Date): {
     ],
   };
 }
+
+// F110 stage 23: one organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
+// newsletter senders (see `e2e-newsletter-rows.ts`). The addresses are the identity of the rows. The server of the e2e run trusts the
+// authserv-id `E2E_AUTHSERV_ID` (`MAIL_TRUSTED_AUTHSERV_IDS`), so a `dkim=pass` of that id gives one-click.
+export const E2E_AUTHSERV_ID = "mx.e2e.test";
+export const E2E_NEWSLETTERS_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-newsletters-owner-mobile@x.test",
+  desktop: "e2e-newsletters-owner-desktop@x.test",
+};
+export const E2E_NEWSLETTERS_MEMBER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-newsletters-member-mobile@x.test",
+  desktop: "e2e-newsletters-member-desktop@x.test",
+};
+export const e2eNewslettersOrgName = (project: E2eProject): string => `E2E Newsletters ${project}`;
+export const e2eNewslettersMailbox = (project: E2eProject): string => `e2e-newsletters-${project}@e2e.test`;
+// `name` is the display name of the newest mail: text of the sender, shown small. The `markup` sender has hostile text in it.
+export const E2E_NEWSLETTER_SENDERS = {
+  oneClick: { address: "one-click@news.example", name: "One Click Weekly", count: 3 },
+  link: { address: "link@news.example", name: "Link Letter", count: 2 },
+  none: { address: "plain@news.example", name: "Plain Notes", count: 1 },
+  failed: { address: "failed@news.example", name: "Failed Daily", count: 1 },
+  markup: { address: "markup@news.example", name: "<img src=x onerror=alert(1)>", count: 1 },
+} as const;
+export const E2E_NEWSLETTER_LINK = "https://unsub.news.example/u?id=42";
 
 export const E2E_ACTIVITY_MEMBER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-activity-mobile@x.test",
@@ -600,6 +648,24 @@ export interface SeedFile {
       member: { userId: string; email: string; password: string };
       seeded: { id: string; address: string };
       empty: { id: string; address: string };
+    }
+  >;
+  trustOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+      mailbox: { id: string; address: string };
+    }
+  >;
+  newsletterOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      member: { userId: string; email: string; password: string };
+      mailbox: { id: string; address: string };
     }
   >;
   approvalsOrgs: Record<

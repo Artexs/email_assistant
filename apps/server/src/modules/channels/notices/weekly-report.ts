@@ -63,13 +63,13 @@ async function detectWeeklyReport(run: OrgRun): Promise<void> {
       if (telegram || mailboxId !== null) due.push({ member, telegram, mailboxId });
     }
     if (due.length > 0) {
-      const { testMail } = run.deps;
+      const { testMail, trustEvidence } = run.deps;
       // One snapshot for all members of the organization: each member gets one message, not one per mailbox.
       const week = await weekStats(
         db,
         ctx,
         { weekStart, mailboxId: null, now },
-        { urgentNotices: listUrgentNoticeTimes, testMail }
+        { urgentNotices: listUrgentNoticeTimes, testMail, ...(trustEvidence === undefined ? {} : { trustEvidence }) }
       );
       if (week === "not_found") throw new Error("week stats not found");
       const answeredWaiting = await countAnsweredWaiting(db, ctx, {

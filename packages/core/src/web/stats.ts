@@ -1,7 +1,9 @@
 // The numbers of one week (M1–M5, M7, M8). Counts and numbers only: no address, no subject, no mail id.
 import { EVIDENCE_MIN_LABELS } from "../metrics/m8";
 import { barCategories } from "../triage/metrics";
+import { tripReasons } from "../trust/tripwire";
 
+import { historyOutcomes } from "./trust";
 import { z } from "./zod";
 
 // The evidence of a category shows its precision only from this many real labels (PD-066).
@@ -71,6 +73,26 @@ export const weekStatsSchema = z.strictObject({
         recall: rate,
         wilsonLower: rate,
         decision: z.enum(["go", "no-go", "no-go: too few"]),
+        // The three sources of ADR 0028 (F110). Null: the flag `trust_ladder` is off for the organization, or the caller has no trust reader.
+        // A stored view of a report queued before F110 has no key: it reads null (the default).
+        global: z
+          .strictObject({
+            decision: z.enum(["go", "no-go", "too-few", "none"]),
+            provisional: z.boolean(),
+            wilsonLower: rate,
+            cases: count,
+          })
+          .nullable()
+          .default(null),
+        // The newest `done` history check; null: none yet, no result for this category, or no trust data.
+        history: z
+          .strictObject({ outcome: z.enum(historyOutcomes), acted: count, moved: count })
+          .nullable()
+          .default(null),
+        trip: z
+          .strictObject({ tripped: z.boolean(), reason: z.enum(tripReasons).nullable() })
+          .nullable()
+          .default(null),
       })
     )
     .max(1000),

@@ -4,7 +4,7 @@ import { type GateEvidenceDeps, onboardingOf, scopeInfoOf, type ScopeEnv } from 
 import { getConnInfo } from "@hono/bun";
 import type { Context } from "hono";
 
-import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, uidplusOf } from "./composition";
+import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, trustEvidenceOf, uidplusOf } from "./composition";
 import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
@@ -38,7 +38,7 @@ import {
 import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
 import { replyRoutes, type StylePreview } from "./modules/replies";
-import { activityRoutes, statsRoutes } from "./modules/reports";
+import { activityRoutes, statsRoutes, type StatsRouteDeps } from "./modules/reports";
 import {
   anySsoUsable,
   getUserAuthProfile,
@@ -52,7 +52,7 @@ import {
   tenancyRoutes,
   type TenancyRouteDeps,
 } from "./modules/tenancy";
-import { goNoGoFor, triageRoutes } from "./modules/triage";
+import { goNoGoFor, newsletterRoutes, triageRoutes } from "./modules/triage";
 import { queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
 import {
   createAuth,
@@ -69,6 +69,7 @@ import { backupCodesLeft } from "./platform/auth-two-factor";
 import {
   authMailSettings,
   mailAllowLocal,
+  mailTrustedAuthservIds,
   operatorUserIds,
   webTrustedOrigins,
   webTrustedProxies,
@@ -253,6 +254,23 @@ export function homePathOf(
   };
 }
 
+// F110 stage 12: the stats route reads the three evidence sources of M8 through the trust reader. `reports` may not import `trust`,
+// so this root passes the reader.
+export function statsRouteDeps(
+  db: Db,
+  now: () => Date,
+  testMail: TestMailRule,
+  gate?: GateEvidenceDeps
+): StatsRouteDeps {
+  return {
+    db,
+    now,
+    urgentNotices: listUrgentNoticeTimes,
+    testMail,
+    trustEvidence: trustEvidenceOf(db, now, gate, testMail),
+  };
+}
+
 // D8, D16: the web calls the same setters as the CLI, with the one `settingsDeps` builder.
 export function settingsRouteDeps(
   db: Db,
@@ -385,8 +403,9 @@ export function apiRouters(
     api.route("/", replyRoutes({ db, preview: extras.stylePreview ?? null }));
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now }));
-    api.route("/", statsRoutes({ db, now, urgentNotices: listUrgentNoticeTimes, testMail: testMailRule(config) }));
+    api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));
+    api.route("/", newsletterRoutes({ db, now, trustedAuthservIds: mailTrustedAuthservIds(config) }));
     api.route("/", actionRoutes({ db, now }));
     api.route("/", channelRoutes({ db, now, botUsername: extras.botUsername }));
     api.route(

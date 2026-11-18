@@ -10,6 +10,7 @@ export * from "./mail-oauth";
 export * from "./mailboxes";
 export * from "./notify";
 export * from "./me";
+export * from "./newsletters";
 export * from "./next-path";
 export * from "./onboarding";
 export * from "./org-name";
