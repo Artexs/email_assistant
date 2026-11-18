@@ -4,7 +4,7 @@ import path from "node:path";
 import { categoryOfColumn, type Kept } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { RETENTION_TEXT_DAYS } from "./retention";
+import { PROFILE_RETENTION_DAYS, RETENTION_TEXT_DAYS, SUGGESTION_ENDED_DAYS, SUGGESTION_OPEN_DAYS } from "./retention";
 
 // The data-category registry states the retention periods that the retention job applies (`docs/capabilities/retention.md`
 // rule 2). A change of a period in one place fails here until the other follows.
@@ -27,6 +27,23 @@ describe("data categories: retention pins", () => {
   test("the 90-day text period equals RETENTION_TEXT_DAYS", () => {
     expect(RETENTION_TEXT_DAYS).toBe(90);
     expect(keptOf("emails", "subject")).toEqual({ kind: "days", days: RETENTION_TEXT_DAYS });
+  });
+});
+
+// Sender context: the category states the longest period (a profile, 365 days after its newest date); the retention job
+// applies it (`deleteOldProfiles`), and an ended suggestion goes 90 days after its end, an unanswered open one ends after 30.
+describe("sender context: the category and the job agree", () => {
+  test("a profile is kept PROFILE_RETENTION_DAYS (365) after its last activity", () => {
+    expect(PROFILE_RETENTION_DAYS).toBe(365);
+    for (const column of ["key_hash", "received", "last_seen_at", "last_user_mail_at"]) {
+      expect(keptOf("sender_profiles", column)).toEqual({ kind: "days", days: PROFILE_RETENTION_DAYS });
+    }
+    expect(keptOf("sender_suggestions", "pattern")).toEqual({ kind: "days", days: PROFILE_RETENTION_DAYS });
+  });
+
+  test("the suggestion periods are shorter than the category period", () => {
+    expect(SUGGESTION_ENDED_DAYS).toBe(90);
+    expect(SUGGESTION_OPEN_DAYS).toBe(30);
   });
 });
 

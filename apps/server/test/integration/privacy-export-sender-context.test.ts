@@ -133,16 +133,21 @@ describe("the export of sender profiles and suggestions", () => {
     }
   });
 
-  test("3 the address of another organization never joins: the key holds the organization id", async () => {
+  test("3 an address that only another organization holds (a mail, a Sent mail, a rule, a delegate) never joins", async () => {
     const a = await seedOrg();
     const b = await seedOrg();
     await db.transaction().execute(async (trx) => {
       await seedSenderActivity(trx, b.ctx, b.mailboxId, { address: "anna@acme.pl", mails: [{ at: ago(3) }] });
+      await seedSenderActivity(trx, b.ctx, b.mailboxId, { sent: [{ at: ago(2), to: ["bob@acme.pl"] }] });
+      await insertDelegate(trx, b.ctx, { email: "dele@corp.pl" });
     });
-    await profileRow(a, "anna@acme.pl");
+    await insertSenderRule(db, b.ctx, { mailboxId: null, pattern: "vip@rule.pl", kind: "vip" });
+    // The key holds the organization id, so the same address has another key in each organization: the row of A is
+    // found by the hash with the id of A. A lookup that read the rows of B would hash B's addresses with the id of A.
+    for (const address of ["anna@acme.pl", "bob@acme.pl", "dele@corp.pl", "vip@rule.pl"]) await profileRow(a, address);
     const profiles = (await exportRows(a)).sender_profiles ?? [];
-    expect(profiles).toHaveLength(1);
-    expect(profiles[0]?.address).toBeNull();
+    expect(profiles).toHaveLength(4);
+    for (const row of profiles) expect(row.address).toBeNull();
   });
 
   test("4 each exported profile row has the map columns and `address`; suggestions go whole, in every mailbox", async () => {

@@ -13,6 +13,7 @@ import {
 } from "../../src/modules/contacts";
 import { eraseSubjectData, findSubjectData } from "../../src/modules/privacy";
 import { dsrAddressHash, senderKeyHash } from "../../src/platform/crypto";
+import { createDb } from "../../src/platform/db";
 import { waitFor } from "../wait-for";
 
 import { ago, KEY, newOrg, NO_TEST, NOW, secondMailbox, type Org } from "./contacts-fixtures";
@@ -140,18 +141,31 @@ describe("sender profiles and suggestions in a data request", () => {
     const w = await seedWorld();
     const open = await suggest(w, { value: ANNA });
     const ended = await suggest(w, { value: ANNA, kind: "whitelist", open: false, mailboxId: w.second.mailboxId });
+    // An open row whose key does not match (pattern only): the pattern rule of the address map finds it, the hash does not.
+    const byPattern = await db
+      .insertInto("sender_suggestions")
+      .values({
+        org_id: w.ctx.orgId,
+        mailbox_id: w.mailboxId,
+        key_hash: hashOf(w.ctx.orgId, "other-key"),
+        scope: "address",
+        kind: "blocklist",
+        pattern: ANNA,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
     const bobOpen = await suggest(w, { value: BOB });
     const bobEnded = await suggest(w, { value: BOB, kind: "blocklist", open: false });
 
     const found = await find(w, ANNA);
     if (found.kind !== "found") throw new Error("find refused");
-    // The open row is found twice (pattern and key) and counted once.
-    expect(found.counts.sender_suggestions).toBe(2);
+    // The open row is found twice (pattern and key) and counted once; the pattern-only row and the ended row once each.
+    expect(found.counts.sender_suggestions).toBe(3);
 
     const result = await erase(w, ANNA);
     expect(result.kind).toBe("erased");
     expect(await suggestionIds(w)).toEqual([bobOpen, bobEnded].sort());
-    expect([open, ended]).not.toContain(bobOpen);
+    expect([open, ended, byPattern.id]).not.toContain(bobOpen);
   });
 
   test("3 another organization's rows of the same address stay, even with the same key value in a row", async () => {
@@ -222,6 +236,8 @@ describe("sender profiles and suggestions in a data request", () => {
     await db.transaction().execute(async (trx) => {
       const rows = await senderContextRowsOf(trx, w.ctx, KEY, ANNA);
       expect(rows.profiles).toHaveLength(2);
+      // The forged suggestion of the other organization holds this key, and is not ours.
+      expect(rows.suggestions).toEqual([]);
       const deleted = await deleteSenderContextRowsOf(trx, w.ctx, KEY, ANNA);
       expect(deleted).toEqual({ profiles: 2, suggestions: 0 });
     });
@@ -335,6 +351,58 @@ describe("sender profiles and suggestions in a data request", () => {
   });
 });
 
+describe("the profile locks and the completeness check of the erase", () => {
+  test("7c the erase locks the mailboxes of its organization only: a pass of another organization still runs", async () => {
+    const w = await seedWorld();
+    const other = await seedWorld();
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolveGate) => {
+      release = resolveGate;
+    });
+    let held = false;
+    const eraser = db.transaction().execute(async (trx) => {
+      await lockProfilesOfOrg(trx, w.ctx);
+      held = true;
+      await gate;
+    });
+    await waitFor(() => held, "the erase holds the locks");
+    expect((await pass(w, w.mailboxId)).skipped).toBe(true);
+    expect((await pass(other, other.mailboxId)).skipped).toBe(false);
+    release();
+    await eraser;
+  });
+
+  test("9 a profile row that the delete leaves behind stops the erase: nothing changes, no mail goes", async () => {
+    const ownerUrl = process.env.MIGRATOR_DATABASE_URL;
+    if (ownerUrl === undefined) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role makes the trigger");
+    const owner = createDb(ownerUrl);
+    const w = await seedWorld();
+    const fn = `skip_delete_${w.mailboxId.replaceAll("-", "")}`;
+    const mails = async () =>
+      (await db.selectFrom("emails").select("id").where("org_id", "=", w.ctx.orgId).execute()).length;
+    const before = await mails();
+    try {
+      // A trigger that turns the DELETE of this organization's profile rows into nothing: the delete reports 0 rows.
+      await sql
+        .raw(`CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RETURN NULL; END $f$`)
+        .execute(owner);
+      await sql
+        .raw(
+          `CREATE TRIGGER ${fn} BEFORE DELETE ON sender_profiles FOR EACH ROW
+           WHEN (OLD.org_id = '${w.ctx.orgId}') EXECUTE FUNCTION ${fn}()`
+        )
+        .execute(owner);
+      await expect(erase(w, ANNA)).rejects.toThrow("dsr_erase_incomplete");
+      expect(await mails()).toBe(before);
+      expect(await profileHashes(w)).toContain(hashOf(w.ctx.orgId, ANNA));
+    } finally {
+      await sql.raw(`DROP TRIGGER IF EXISTS ${fn} ON sender_profiles`).execute(owner);
+      await sql.raw(`DROP FUNCTION IF EXISTS ${fn}()`).execute(owner);
+      await owner.destroy();
+    }
+  });
+});
+
 describe("org:dsr CLI", () => {
   test("8 the find prints the two sender lines and no address", async () => {
     const key = process.env.CREDENTIALS_KEY;
@@ -376,6 +444,8 @@ describe("org:dsr CLI", () => {
     const lines = stdout.trimEnd().split("\n");
     expect(lines).toContain("sender profiles 2");
     expect(lines).toContain("sender suggestions 1");
+    // Profiles and suggestions alone are a match: no "check the spelling" warning.
+    expect(stderr).toBe("");
     expect(stdout + stderr).not.toContain("@");
     expect(stdout + stderr).not.toContain(hash);
   });

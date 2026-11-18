@@ -6,12 +6,7 @@ import { sql } from "kysely";
 
 import { deleteEndedSuggestions, deleteOldProfiles } from "../../src/modules/contacts";
 import { setOrgFeature } from "../../src/modules/tenancy";
-import {
-  PROFILE_RETENTION_DAYS,
-  createRetentionJob,
-  SUGGESTION_ENDED_DAYS,
-  SUGGESTION_OPEN_DAYS,
-} from "../../src/retention";
+import { createRetentionJob } from "../../src/retention";
 
 import { newOrg, NOW, type Org, type Trx } from "./contacts-fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -25,7 +20,8 @@ afterAll(async () => {
 
 const hash = (): string => randomUUID().replaceAll("-", "").repeat(2);
 const daysAgo = (days: number, plusMs = 0): Date => new Date(NOW.getTime() - days * DAY_MS + plusMs);
-const BEFORE = daysAgo(PROFILE_RETENTION_DAYS);
+// The periods are literals here: the tests of `runOrg` below pin the constants of the retention job.
+const BEFORE = daysAgo(365);
 
 const profile = async (
   trx: Trx,
@@ -90,8 +86,8 @@ const runProfiles = (trx: Trx, org: Org, opts: { batch?: number } = {}) =>
   deleteOldProfiles(trx, org.ctx, { before: BEFORE, ...opts });
 const runSuggestions = (trx: Trx, org: Org, opts: { batch?: number } = {}) =>
   deleteEndedSuggestions(trx, org.ctx, {
-    before: daysAgo(SUGGESTION_ENDED_DAYS),
-    openBefore: daysAgo(SUGGESTION_OPEN_DAYS),
+    before: daysAgo(90),
+    openBefore: daysAgo(30),
     now: NOW,
     ...opts,
   });
@@ -253,6 +249,31 @@ describe("retention of rule suggestions", () => {
       expect(out.profiles).toBe(1);
       expect(out.suggestions).toBe(1);
       expect((await suggestionOf(trx, open))?.status).toBe("expired");
+    });
+  });
+});
+
+describe("the retention job passes the periods", () => {
+  test("a profile of 366 days goes and one of 364 stays; a suggestion ended 91 days ago goes and one of 89 stays; an open one of 31 days expires and one of 29 stays", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      const oldProfile = await profile(trx, org, { seen: daysAgo(366) });
+      const youngProfile = await profile(trx, org, { seen: daysAgo(364) });
+      const oldEnded = await suggestion(trx, org, { status: "dismissed", ended: daysAgo(91) });
+      const youngEnded = await suggestion(trx, org, { status: "dismissed", ended: daysAgo(89) });
+      const oldOpen = await suggestion(trx, org, { created: daysAgo(31) });
+      const youngOpen = await suggestion(trx, org, { created: daysAgo(29) });
+      const out = await createRetentionJob({ db: trx, now: () => NOW }).runOrg(
+        { id: org.ctx.orgId, dataRetentionDays: 30 },
+        NOW
+      );
+      expect({ profiles: out.profiles, suggestions: out.suggestions }).toEqual({ profiles: 1, suggestions: 2 });
+      expect(await keysOf(trx, org)).toEqual([youngProfile]);
+      expect(oldProfile).not.toBe(youngProfile);
+      expect(await suggestionOf(trx, oldEnded)).toBeUndefined();
+      expect(await suggestionOf(trx, youngEnded)).toBeDefined();
+      expect((await suggestionOf(trx, oldOpen))?.status).toBe("expired");
+      expect((await suggestionOf(trx, youngOpen))?.status).toBe("open");
     });
   });
 });

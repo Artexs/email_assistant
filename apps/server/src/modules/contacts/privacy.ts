@@ -102,9 +102,10 @@ export async function lockProfilesOfOrg(trx: Transaction<DB>, ctx: TenantContext
 }
 
 // The rows of one person in the sender-context tables of the organization, found by the keyed hash of the address (the
-// profiles hold no address). `suggestions` are the rows of scope `address` with that key: open ones and ended ones (an ended
-// row has no pattern, only the key). A domain row (`@acme.pl`) names a domain, not the person, and is not listed. The rows
-// of an open suggestion whose `pattern` is the address are in the data-request map (`sender_suggestions.pattern`) too.
+// profiles hold no address). `suggestions` are the rows with that key: open ones and ended ones (an ended row has no pattern,
+// only the key). A domain row (`@acme.pl`) names a domain, not the person: its key is the hash of `@acme.pl`, which no
+// address hashes to, so it is never listed. The rows of an open suggestion whose `pattern` is the address are in the
+// data-request map (`sender_suggestions.pattern`) too.
 export interface SenderContextRows {
   profiles: string[];
   suggestions: string[];
@@ -122,7 +123,7 @@ export async function senderContextRowsOf(
   `.execute(db);
   const suggestions = await sql<{ id: string }>`
     SELECT id::text AS id FROM sender_suggestions
-    WHERE org_id = ${ctx.orgId} AND scope = 'address' AND key_hash = ${hash} ORDER BY id
+    WHERE org_id = ${ctx.orgId} AND key_hash = ${hash} ORDER BY id
   `.execute(db);
   return { profiles: profiles.rows.map((row) => row.id), suggestions: suggestions.rows.map((row) => row.id) };
 }
@@ -139,7 +140,7 @@ export async function deleteSenderContextRowsOf(
     DELETE FROM sender_profiles WHERE org_id = ${ctx.orgId} AND key_hash = ${hash}
   `.execute(trx);
   const suggestions = await sql`
-    DELETE FROM sender_suggestions WHERE org_id = ${ctx.orgId} AND scope = 'address' AND key_hash = ${hash}
+    DELETE FROM sender_suggestions WHERE org_id = ${ctx.orgId} AND key_hash = ${hash}
   `.execute(trx);
   return { profiles: Number(profiles.numAffectedRows ?? 0), suggestions: Number(suggestions.numAffectedRows ?? 0) };
 }
