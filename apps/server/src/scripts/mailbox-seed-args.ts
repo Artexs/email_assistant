@@ -95,13 +95,13 @@ export function loadCases(file: string): EvalCase[] {
   return z.array(evalCaseSchema).parse(JSON.parse(readFileSync(resolve(casesDir, file), "utf8")));
 }
 
-/** `to` is a placeholder: `seedMailbox` sets the mailbox address when `--from-owner` is given. */
-export function toSeedMessage(evalCase: EvalCase, to: string): SeedMessage {
+/** `to` stays empty: `seedMailbox` sets the mailbox address. */
+export function toSeedMessage(evalCase: EvalCase): SeedMessage {
   const { name, address } = splitAddress(evalCase.from);
   return {
     messageId: `<eval-${evalCase.id}-${randomUUID()}@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`,
     from: name === null ? address : `${name} <${address}>`,
-    to: [to],
+    to: [],
     subject: evalCase.subject,
     date: new Date(),
     text: evalCase.body,

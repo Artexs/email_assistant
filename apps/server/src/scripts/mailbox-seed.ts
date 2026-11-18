@@ -24,7 +24,7 @@ export async function run(argv: string[], deps: CliDeps): Promise<number> {
         files.flatMap((file) => loadCases(`${file}.json`)),
         { perCategory: options.perCategory }
       );
-      messages = cases.map((evalCase) => toSeedMessage(evalCase, deps.testAddress ?? ""));
+      messages = cases.map((evalCase) => toSeedMessage(evalCase));
     }
     const appended = await seedMailbox(deps, { orgId: options.orgId }, options.mailboxId, {
       count: options.count,

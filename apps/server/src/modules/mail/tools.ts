@@ -91,7 +91,7 @@ export interface SeedOwnerFrom {
  * default; it must exist (the tool creates only INBOX).
  *
  * A mailbox with a real provider (`oauth_provider` set) takes only `ownerFrom`: every `From` becomes a plus address of the owner and `To` the mailbox,
- * so a reply or a delegation reaches only the owner. Without it the seed refuses.
+ * so a reply or a delegation reaches only the owner. Without it the seed refuses. `To` is always the mailbox address.
  */
 export async function seedMailbox(
   deps: ToolDeps,
@@ -133,14 +133,12 @@ export async function seedMailbox(
       };
     });
   const owner = opts.ownerFrom;
-  const messages =
-    owner === undefined
-      ? source
-      : source.map((message, index) => ({
-          ...message,
-          from: ownerSmokeFrom(message.from, owner.address, owner.numberFrom + index),
-          to: [address],
-        }));
+  // `To` is always the mailbox: the caller may not know its address (TEST_MAILBOX_ADDRESS can hold a list).
+  const messages = source.map((message, index) => ({
+    ...message,
+    to: [address],
+    ...(owner === undefined ? {} : { from: ownerSmokeFrom(message.from, owner.address, owner.numberFrom + index) }),
+  }));
   const raws = messages.map((message) => Buffer.from(renderSeedMessage(message)));
   const provider = await openToolProvider(deps, ctx, mailboxId);
   try {

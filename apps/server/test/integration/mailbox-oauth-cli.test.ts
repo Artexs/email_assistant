@@ -236,26 +236,19 @@ describe("mailbox:seed on a Google OAuth mailbox", () => {
     expect(fake.calls.filter((call) => call.grant === "refresh_token").length).toBeGreaterThan(0);
   });
 
-  test("a list in TEST_MAILBOX_ADDRESS admits the mailbox; an address outside the list is refused", async () => {
+  test("a list in TEST_MAILBOX_ADDRESS admits the mailbox and To is the mailbox; an address outside the list is refused", async () => {
     const box = await oauthMailbox("google");
+    const args = [...mailboxArgs(box), "--eval-cases", "synthetic", "--per-category", "1", "--from-owner", OWNER];
     const ok = capture();
-    expect(
-      await runSeed(
-        [...mailboxArgs(box), "--count", "2", "--from-owner", OWNER],
-        depsOf(`a@x.test, ${box.address}`, ok.out)
-      )
-    ).toBe(0);
-    expect(await inboxHeaders(box)).toHaveLength(2);
+    expect(await runSeed(args, depsOf(`a@x.test, ${box.address}`, ok.out))).toBe(0);
+    const rows = await inboxHeaders(box);
+    expect(rows).toHaveLength(5);
+    for (const row of rows) expect(row.to).toEqual([box.address]);
 
     const refused = capture();
-    expect(
-      await runSeed(
-        [...mailboxArgs(box), "--count", "2", "--from-owner", OWNER],
-        depsOf("a@x.test, b@x.test", refused.out)
-      )
-    ).toBe(1);
+    expect(await runSeed(args, depsOf("a@x.test, b@x.test", refused.out))).toBe(1);
     expect(refused.stderr.join("\n")).toContain("not the test mailbox");
-    expect(await inboxHeaders(box)).toHaveLength(2);
+    expect(await inboxHeaders(box)).toHaveLength(5);
   });
 
   test("4. without --from-owner: exit 1 with the refusal text, and nothing is appended", async () => {
