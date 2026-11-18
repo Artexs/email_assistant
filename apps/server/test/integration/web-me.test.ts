@@ -124,6 +124,9 @@ describe("GET /api/me", () => {
       telegramAvailable: true,
       mode: false,
       rules: 0,
+      trust: false,
+      channel: false,
+      report: false,
       done: false,
     });
   });

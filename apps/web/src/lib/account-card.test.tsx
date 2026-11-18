@@ -21,7 +21,17 @@ const baseMe: Me = {
   operatorContact: null,
   role: "owner",
   telegram: { available: false, linked: false, botUsername: null },
-  onboarding: { mailbox: true, telegram: false, telegramAvailable: false, mode: false, rules: 0, done: false },
+  onboarding: {
+    mailbox: true,
+    telegram: false,
+    telegramAvailable: false,
+    mode: false,
+    rules: 0,
+    trust: false,
+    channel: false,
+    report: false,
+    done: false,
+  },
   scopes: {
     triage: { kind: "off", reason: "env_off" },
     actions: { kind: "off", reason: "env_off" },
