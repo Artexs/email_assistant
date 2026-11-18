@@ -1,4 +1,4 @@
-import { createECDH } from "node:crypto";
+import { createECDH, type ECDH } from "node:crypto";
 
 // Raw P-256 key helpers for Web Push (RFC 8292 VAPID, RFC 8291). Keys are base64url without padding: the private key is the
 // 32-byte scalar, the public key the 65-byte uncompressed point. Nothing here logs, and no error holds key text.
@@ -21,9 +21,12 @@ export interface VapidKeyPair {
   privateKey: string;
 }
 
-/** A new random P-256 pair for `bun run push:keys`. */
-export function generateVapidKeyPair(): VapidKeyPair {
-  const ecdh = createECDH("prime256v1");
+/** The part of `ECDH` that key generation uses. A test gives a stand-in that returns a short scalar. */
+export type KeyMaker = Pick<ECDH, "generateKeys" | "getPrivateKey" | "getPublicKey">;
+
+/** A new random P-256 pair for `bun run push:keys`. `makeEcdh` is a test seam; production never passes it. */
+export function generateVapidKeyPair(makeEcdh: () => KeyMaker = () => createECDH("prime256v1")): VapidKeyPair {
+  const ecdh = makeEcdh();
   ecdh.generateKeys();
   // The scalar can lose leading zero bytes in some runtimes: pad it back to 32 bytes.
   const scalar = ecdh.getPrivateKey();

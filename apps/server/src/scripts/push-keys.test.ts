@@ -23,15 +23,27 @@ async function run(args: string[]): Promise<{ code: number; out: string; err: st
 
 // The keys of this run are throw-away: they are checked as booleans, so a failure never prints them.
 describe("push:keys", () => {
-  test("prints a matching pair and a subject line through the CLI output, with no config and no env", async () => {
+  test("prints a prefixed warning and three bare env lines with a matching pair, with no config and no env", async () => {
     const { code, out, err } = await run([]);
     expect(code).toBe(0);
     expect(err).toBe("");
     const lines = out.trim().split("\n");
-    expect(lines.every((line) => line.startsWith("[push-keys] "))).toBe(true);
-    const value = (name: string): string => lines.find((line) => line.includes(`${name}=`))?.split(`${name}=`)[1] ?? "";
+    // One prefixed warning line, then the three env lines BARE and in this order: a prefixed line is dropped by the .env loader.
+    expect(lines).toHaveLength(4);
+    const [warning = "", ...envLines] = lines;
+    expect(warning.startsWith("[push-keys] ")).toBe(true);
+    expect(warning.includes("Never log or commit the private key")).toBe(true);
+    expect(envLines.map((line) => line.split("=")[0])).toEqual([
+      "VAPID_PUBLIC_KEY",
+      "VAPID_PRIVATE_KEY",
+      "VAPID_SUBJECT",
+    ]);
+    expect(envLines.every((line) => /^VAPID_[A-Z_]+=/.test(line) && !line.includes("["))).toBe(true);
+    const value = (name: string): string =>
+      envLines.find((line) => line.startsWith(`${name}=`))?.slice(name.length + 1) ?? "";
     const publicKey = value("VAPID_PUBLIC_KEY");
     const privateKey = value("VAPID_PRIVATE_KEY");
+    expect(warning.includes(privateKey) || warning.includes(publicKey)).toBe(false);
     expect({
       publicSize: decodeBase64Url(publicKey)?.length,
       privateSize: decodeBase64Url(privateKey)?.length,

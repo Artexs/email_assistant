@@ -142,4 +142,25 @@ describe("sendWebPush", () => {
       for (const secret of [endpoint, keys.privateKey, receiver.sub.auth, "secret"]) expect(text).not.toContain(secret);
     }
   });
+
+  test("TG2. a large 201 body is cancelled and never read: the result is sent", async () => {
+    let pulls = 0;
+    let cancelled = false;
+    const chunk = new Uint8Array(1024 * 1024);
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 64) controller.close();
+        else controller.enqueue(chunk);
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const { fetch } = fakeFetch(() => new Response(body, { status: 201 }));
+    expect(await send(fetch)).toEqual({ kind: "sent" });
+    // Give the cancel a turn to reach the stream.
+    await Bun.sleep(10);
+    expect({ cancelled, readsAtMost: pulls <= 2 }).toEqual({ cancelled: true, readsAtMost: true });
+  });
 });
