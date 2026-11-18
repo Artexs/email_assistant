@@ -163,7 +163,7 @@ Every text that a user reads has an English and a Polish version, from the first
 
 ### Add a user-visible text
 
-1. Panel: add the key to `apps/web/src/i18n/en.ts` and to `pl.ts` (a count text: both plural tables). Use it through `t()` or `tp()`.
+1. Panel: add the key to a group file `apps/web/src/i18n/texts/en-<group>.ts` and to the same group in `pl-<group>.ts` (`en.ts` and `pl.ts` spread the groups; a count text: both plural tables in `en.ts` and `pl.ts`). Use it through `t()` or `tp()`.
 2. Telegram or a phrase for the panel: add an entry to the section of `packages/core/src/texts/` in `en` and in `pl`. Do not write a text in a renderer.
 3. Test: one unit test with a fixed Polish value (`textTables.pl.…` or `pl[key]`), next to the English one.
 4. If the text changes what goes to Telegram, bump `TELEGRAM_CONSENT_VERSION` and the consent text.
@@ -308,7 +308,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 
 ## Web app (`apps/web`)
 
-- Every user-visible string is a key in `apps/web/src/i18n/en.ts` and in `pl.ts` and reaches a component through `t()` or `tp()` (`## Texts carry a locale`). A component never holds a literal text (`react/jsx-no-literals` on the islands and the shell and auth components).
+- Every user-visible string is a key in `apps/web/src/i18n/en.ts` and in `pl.ts` (the keys sit in the group files of `apps/web/src/i18n/texts/`) and reaches a component through `t()` or `tp()` (`## Texts carry a locale`). A component never holds a literal text (`react/jsx-no-literals` on the islands and the shell and auth components).
 - No inline `<script>` and no hand-written `<style>`: the build hashes the scripts (D5), and styles come from Tailwind classes.
 - shadcn components come from the shadcn CLI, never by hand.
 - One island per page. The shell is a React component inside the island.
