@@ -57,7 +57,7 @@ export interface ActionEdge {
   types: readonly ActionType[];
   writer: ActionWriter;
   reasons: readonly string[];
-  // The row is released for a later try (the lock clears). The status can stay (E9, E11, E12) or change (E10, E13).
+  // The row is released for a later try (the lock clears). The status can stay or change.
   retry?: true;
   callers: readonly string[];
 }
@@ -507,7 +507,7 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
 // A guard admits each edge below. No caller uses it. Closing them is the runtime follow-up task.
 
 export const LATENT_EDGES: readonly LatentEdge[] = [
-  // L2: markApplying admits more than E2 and E3.
+  // markApplying admits more edges than it should (see `why`).
   {
     writer: "markApplying",
     from: "ready",
@@ -522,7 +522,7 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
     types: NON_SEND,
     why: "L2: only a send is `approved`; setApproved needs type send",
   },
-  // L3, L5, L6, L8: finishAction with its default `from`, and with `from: ["approved"]`.
+  // finishAction with its default `from`, and with `from: ["approved"]`.
   {
     writer: "finishAction",
     from: "ready",
@@ -565,7 +565,7 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
     types: ["send"],
     why: "L5: the only caller with `from: [approved]` passes `failed`",
   },
-  // L1: releaseAction has no type guard, and its target is a parameter.
+  // releaseAction has no type guard, and its target is a parameter.
   {
     writer: "releaseAction",
     from: "ready",
@@ -599,7 +599,7 @@ export const LATENT_EDGES: readonly LatentEdge[] = [
     types: [...MAILBOX, "save_summary"],
     why: "L1: only a draft or a send is `applying`",
   },
-  // L4, L7: markUndone has no type guard.
+  // markUndone has no type guard.
   {
     writer: "markUndone",
     from: "applied",

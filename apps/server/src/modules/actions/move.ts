@@ -29,7 +29,7 @@ async function ensureOnce(
   opts: { byAppend: boolean }
 ): Promise<EnsureResult | null> {
   const target = await locateMessage(provider, to, locateKeyOf(email, hints.toUid), { excludeUids: exclude.to });
-  // B1: the source is the target. A second locate would find the same mail, and "both" would expunge the only copy.
+  // The source is the target. A second locate would find the same mail, and "both" would expunge the only copy.
   if (from === to) {
     return target === null ? null : { uid: target.uid, movedNow: false, leftoverDeleted: false };
   }

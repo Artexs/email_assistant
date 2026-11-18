@@ -398,7 +398,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     let provider: MailProvider | null = null;
     let sender: MailSender | null = null;
     if (batch.some((action) => needs(action).provider)) {
-      // The recovery of an `applying` send needs no SMTP (M9).
+      // The recovery of an `applying` send needs no SMTP.
       const withSender = batch.some((action) => needs(action).sender && action.status === "approved");
       const opened = await openFor(ctx, mailboxId, batch, now, withSender);
       if (opened === null) return;

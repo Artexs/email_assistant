@@ -14,7 +14,7 @@ export type UndoResult =
   | { kind: "already" } // a reverse row exists (any status) or the originals are undone
   | { kind: "nothing" } // no applied mailbox action
   | { kind: "too_old" } // applied, but applied_at older than UNDO_WINDOW_MS
-  | { kind: "held" } // undoable, but ACTIONS_SCOPE or the mailbox status would hold the reverse back (M9)
+  | { kind: "held" } // undoable, but ACTIONS_SCOPE or the mailbox status would hold the reverse back
   | { kind: "not_found" }; // no such mail in this organization
 
 // Every undoable action of the mail gets a reverse row; the committer applies it. The caller writes the feedback.
@@ -39,7 +39,7 @@ export async function undo(
     );
 
     if (undoable.length > 0) {
-      // M9: the committer would never claim the reverse, so the toast "within a minute" would be false.
+      // The committer would never claim the reverse, so the toast "within a minute" would be false.
       const applies = mail.mailboxStatus === "active" && scopeAdmits(claimFilterFor(opts.scope), mail);
       if (!applies) return { kind: "held" };
 

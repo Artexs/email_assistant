@@ -15,7 +15,7 @@ export function claimFilterFor(scope: ActionsScope): MailboxClaimFilter {
   return { kind: "all" };
 }
 
-// Pure. Does the claim filter let this mail through? The Undo tap uses it (M9).
+// Pure. Does the claim filter let this mail through? The Undo tap uses it.
 export function scopeAdmits(
   filter: MailboxClaimFilter,
   mail: { messageIdHeader: string | null; fromAddress: string | null }

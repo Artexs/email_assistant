@@ -646,7 +646,7 @@ export async function applySend(
   if (prepared === null || raw === null) return badPayload(deps, ctx, action);
   const { payload, message } = prepared;
 
-  // (1a) A reply only (F115 stage 09): the DB facts, the Sent pass and the flag of the original. A newer mail in the thread or a
+  // (1a) A reply only: the DB facts, the Sent pass and the flag of the original. A newer mail in the thread or a
   // moved original ends the send here. An answered mail is told to the copy check, which picks the reason. A delegation, a
   // clarification, a reminder and a follow-up never reach the Sent folder here.
   let answered = false;

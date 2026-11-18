@@ -23,7 +23,7 @@ export interface FailedAction {
   folder: string;
   source_folder: string;
 }
-// No time filter (M11): the notice job marks every row it lists. An original `mail_not_found` row stays quiet;
+// No time filter: the notice job marks every row it lists. An original `mail_not_found` row stays quiet;
 // a reverse one is listed, because the user tapped Undo and must learn that nothing moved.
 export async function listFailedUnnotified(
   db: DbOrTrx,

@@ -27,7 +27,7 @@ export type ApplyOutcome =
   // An `applying` draft whose send ended before the APPEND.
   // `loop_closed`: the loop of a follow-up closed before the APPEND (the draft) or before the SMTP call (the send).
   // `draft_changed`, `draft_missing`: the Drafts copy was edited or is gone before the SMTP call (no mail went out).
-  // `answered`, `sent_by_user`, `newer_mail`, `original_moved`: a reply that the pass before the send stopped (F115 stage 09).
+  // `answered`, `sent_by_user`, `newer_mail`, `original_moved`: a reply that the pass before the send stopped.
   | {
       kind: "expired";
       reason:
