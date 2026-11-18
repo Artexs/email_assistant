@@ -1,10 +1,8 @@
 import {
-  membershipRoleSchema,
   noticeChannels,
   noticeDetails,
   noticeKindSchema,
   noticeKinds,
-  noticeViewSchemas,
   outButtonsSchema,
   userLocaleSchema,
   type NoticeChannel,
@@ -14,219 +12,17 @@ import {
   type OutMessage,
   type UserLocale,
 } from "@ea/core";
-import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
-import { releaseBriefMarks } from "../loops";
+import type { TenantContext } from "../../../platform/db";
 
-import type { LinkedChat } from "./port";
-
-type DbOrTrx = Db | Transaction<DB>;
-
-const CHANNEL = "telegram";
-
-function selectLinkedChats(db: DbOrTrx) {
-  return db
-    .selectFrom("chat_links")
-    .innerJoin("memberships", (join) =>
-      join.onRef("memberships.org_id", "=", "chat_links.org_id").onRef("memberships.user_id", "=", "chat_links.user_id")
-    )
-    .innerJoin("users", "users.id", "chat_links.user_id")
-    .select([
-      "chat_links.org_id",
-      "chat_links.user_id",
-      "chat_links.external_chat_id",
-      "chat_links.linked_at",
-      "memberships.role",
-      "users.locale",
-    ])
-    .where("chat_links.channel", "=", CHANNEL);
-}
-
-function toLinkedChat(row: {
-  org_id: string;
-  user_id: string;
-  external_chat_id: string;
-  linked_at: Date;
-  role: string;
-  locale: string | null;
-}): LinkedChat {
-  return {
-    orgId: row.org_id,
-    userId: row.user_id,
-    role: membershipRoleSchema.parse(row.role),
-    // bigint comes back as a string; a chat id has at most 52 bits, so Number is exact.
-    chatId: Number(row.external_chat_id),
-    linkedAt: row.linked_at,
-    // A user without a locale gets Polish, as the auth mails do (localeOf in apps/server/src/web.ts).
-    locale: userLocaleSchema.nullable().parse(row.locale) ?? "pl",
-  };
-}
-
-export async function insertLinkToken(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  row: { tokenHash: string; userId: string; expiresAt: Date; createdAt: Date }
-): Promise<void> {
-  await db
-    .insertInto("chat_link_tokens")
-    .values({
-      token_hash: row.tokenHash,
-      org_id: ctx.orgId,
-      user_id: row.userId,
-      expires_at: row.expiresAt,
-      created_at: row.createdAt,
-    })
-    .execute();
-}
-
-// Deletes the unused tokens of the user, and every token of the user created before `createdBefore`.
-export async function deleteOldTokens(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  userId: string,
-  createdBefore: Date
-): Promise<number> {
-  const result = await db
-    .deleteFrom("chat_link_tokens")
-    .where("org_id", "=", ctx.orgId)
-    .where("user_id", "=", userId)
-    .where((eb) => eb.or([eb("used_at", "is", null), eb("created_at", "<", createdBefore)]))
-    .executeTakeFirst();
-  return Number(result.numDeletedRows);
-}
-
-// Entry point (D18): the token is the only input, so the organization comes from the row.
-export async function useLinkToken(
-  trx: Transaction<DB>,
-  tokenHash: string,
-  now: Date
-): Promise<{ orgId: string; userId: string } | undefined> {
-  const row = await trx
-    .updateTable("chat_link_tokens")
-    .set({ used_at: now })
-    .where("token_hash", "=", tokenHash)
-    .where("used_at", "is", null)
-    .where("expires_at", ">", now)
-    .returning(["org_id", "user_id"])
-    .executeTakeFirst();
-  return row ? { orgId: row.org_id, userId: row.user_id } : undefined;
-}
-
-// Entry point (D18).
-export async function findLinkToken(
-  db: DbOrTrx,
-  tokenHash: string
-): Promise<{ usedAt: Date | null; expiresAt: Date; userId: string } | undefined> {
-  const row = await db
-    .selectFrom("chat_link_tokens")
-    .select(["used_at", "expires_at", "user_id"])
-    .where("token_hash", "=", tokenHash)
-    .executeTakeFirst();
-  return row ? { usedAt: row.used_at, expiresAt: row.expires_at, userId: row.user_id } : undefined;
-}
-
-// D18: the chat moves to the token's member, so the link of this chat in any organization goes first.
-// Returns the links of other members that this call removed, so the caller can audit them.
-export async function replaceChatLink(
-  trx: Transaction<DB>,
-  ctx: TenantContext,
-  row: { userId: string; chatId: number; linkedAt: Date }
-): Promise<{ orgId: string; userId: string }[]> {
-  const moved = await trx
-    .deleteFrom("chat_links")
-    .where("channel", "=", CHANNEL)
-    .where("external_chat_id", "=", String(row.chatId))
-    .returning(["org_id", "user_id"])
-    .execute();
-  await trx
-    .deleteFrom("chat_links")
-    .where("org_id", "=", ctx.orgId)
-    .where("user_id", "=", row.userId)
-    .where("channel", "=", CHANNEL)
-    .execute();
-  await trx
-    .insertInto("chat_links")
-    .values({
-      org_id: ctx.orgId,
-      user_id: row.userId,
-      channel: CHANNEL,
-      external_chat_id: row.chatId,
-      linked_at: row.linkedAt,
-    })
-    .execute();
-  return moved
-    .filter((link) => link.org_id !== ctx.orgId || link.user_id !== row.userId)
-    .map((link) => ({ orgId: link.org_id, userId: link.user_id }));
-}
-
-// Entry point (D18): an update brings only the chat id.
-export async function findChatLink(db: DbOrTrx, chatId: number): Promise<LinkedChat | undefined> {
-  const row = await selectLinkedChats(db).where("chat_links.external_chat_id", "=", String(chatId)).executeTakeFirst();
-  return row ? toLinkedChat(row) : undefined;
-}
-
-// Scheduler entry point (D18): it walks all organizations.
-// A `suspended` organization is skipped unless `includeSuspended` (D4: no notice and no digest for it).
-export async function listLinkedChats(db: DbOrTrx, opts: { includeSuspended: boolean }): Promise<LinkedChat[]> {
-  let query = selectLinkedChats(db);
-  if (!opts.includeSuspended) {
-    query = query
-      .innerJoin("organizations", "organizations.id", "chat_links.org_id")
-      .where("organizations.plan", "<>", "suspended");
-  }
-  const rows = await query.orderBy("chat_links.org_id").orderBy("chat_links.user_id").execute();
-  return rows.map(toLinkedChat);
-}
-
-// The linked chats of one organization, for the notices of a web action (the tenant filter is the org id).
-export async function listLinkedChatsOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<LinkedChat[]> {
-  const rows = await selectLinkedChats(db)
-    .where("chat_links.org_id", "=", ctx.orgId)
-    .orderBy("chat_links.user_id")
-    .execute();
-  return rows.map(toLinkedChat);
-}
-
-// The linked chats of every organization, counted as `listLinkedChatsOfOrg` lists them (an organization with none has no entry).
-export async function countLinkedChatsOfAll(db: DbOrTrx): Promise<Map<string, number>> {
-  const rows = await selectLinkedChats(db)
-    .clearSelect()
-    .select(["chat_links.org_id", sql<string>`count(*)`.as("count")])
-    .groupBy("chat_links.org_id")
-    .execute();
-  return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
-}
-
-export async function getChatLinkForUser(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  userId: string
-): Promise<LinkedChat | undefined> {
-  const row = await selectLinkedChats(db)
-    .where("chat_links.org_id", "=", ctx.orgId)
-    .where("chat_links.user_id", "=", userId)
-    .executeTakeFirst();
-  return row ? toLinkedChat(row) : undefined;
-}
-
-export async function deleteChatLinks(db: DbOrTrx, ctx: TenantContext, userId: string): Promise<number> {
-  const result = await db
-    .deleteFrom("chat_links")
-    .where("org_id", "=", ctx.orgId)
-    .where("user_id", "=", userId)
-    .where("channel", "=", CHANNEL)
-    .executeTakeFirst();
-  return Number(result.numDeletedRows);
-}
+import { releaseMarksOfFailedDigests } from "./digest-marks";
+import type { DbOrTrx } from "./shared";
 
 // The text of a `sent` or `failed` row after retention (A23); the view is `{}` then.
 export const OUTBOX_REMOVED_TEXT = "[removed]";
-
 export const outboxKinds = noticeKinds;
 export type OutboxKind = NoticeKind;
-
 export const outboxFailCodes = [
   "blocked",
   "bad_request",
@@ -244,7 +40,6 @@ export const outboxFailCodes = [
   "append_refused",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
-
 export interface NewOutboxRow {
   userId: string;
   kind: OutboxKind;
@@ -263,7 +58,6 @@ export interface NewOutboxRow {
   createdAt: Date;
   nextAttemptAt: Date;
 }
-
 // null = the event has a row already (D4: exactly one row per event).
 export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutboxRow): Promise<string | null> {
   const inserted = await db
@@ -291,7 +85,6 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
     .executeTakeFirst();
   return inserted?.id ?? null;
 }
-
 // The mails of one mailbox that got a `not_triaged` notice since `since` (any member, any status): the cap of the
 // degraded notice counts mails, not rows (F109 stage 15).
 export async function listNotTriagedEmailIds(
@@ -312,7 +105,6 @@ export async function listNotTriagedEmailIds(
     .execute();
   return new Set(rows.flatMap((row) => (row.email_id === null ? [] : [row.email_id])));
 }
-
 // The text of the message that was queued for this user; the tap handlers edit it. Tenant and user filter the row.
 export async function findOutboxByDedup(
   db: DbOrTrx,
@@ -338,7 +130,6 @@ export async function findOutboxByDedup(
     locale: userLocaleSchema.parse(row.locale),
   };
 }
-
 export interface ClaimedOutbox {
   id: string;
   orgId: string;
@@ -361,7 +152,6 @@ export interface ClaimedOutbox {
   editOfOutboxId: string | null;
   wasStale: boolean;
 }
-
 // Scheduler entry point (D18): it walks all organizations. `orgIds` is for tests only.
 // One channel per claim, `telegram` by default: the Telegram sender never claims a `mail` row, so it is never sent to a chat; the report mail sender
 // (F110 stage 20) claims `mail` rows only.
@@ -447,7 +237,6 @@ export async function claimDueOutbox(
     }))
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
-
 // A `mail` row older than `before` (the caller passes now − 24 h) that is still open becomes `failed` / `expired`, as the
 // Telegram sender does with its rows. The report mail sender runs this at each tick, so a row that no run could send ends as
 // `expired` (a mailbox that stays paused, a sender that is down). Returns the count.
@@ -461,7 +250,6 @@ export async function expireOldMailOutbox(db: DbOrTrx, opts: { before: Date }): 
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
 }
-
 export async function markOutboxSent(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -489,7 +277,6 @@ export async function markOutboxSent(
     .executeTakeFirst();
   return Number(result.numUpdatedRows) === 1;
 }
-
 export async function releaseOutbox(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -512,7 +299,6 @@ export async function releaseOutbox(
     .executeTakeFirst();
   return Number(result.numUpdatedRows) === 1;
 }
-
 // A claim that took a row over from a dead run (`wasStale`) counts one attempt of that row, so a row that keeps crashing its sender ends
 // as `too_many_errors` (F110 stage 20). The token compare-and-set is the one of `releaseOutbox`.
 export async function countOutboxAttempt(
@@ -531,7 +317,6 @@ export async function countOutboxAttempt(
     .executeTakeFirst();
   return Number(result.numUpdatedRows) === 1;
 }
-
 export async function failOutbox(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -550,321 +335,4 @@ export async function failOutbox(
     .execute();
   await releaseMarksOfFailedDigests(db, ctx, failed);
   return failed.length === 1;
-}
-
-// A digest that ended `failed` never showed its brief lines: their marks go back (F116 stage 19, review 18 N4). The row keeps its view
-// (`loopIds`), so the next digest names the loops again and no other digest has to. `except`: loops whose marks stay (a loop that is
-// being cleared; its mark does not matter any more).
-async function releaseMarksOfFailedDigests(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  rows: readonly { id: string; kind: string; view: unknown; created_at: Date }[],
-  except: ReadonlySet<string> = new Set()
-): Promise<void> {
-  for (const row of rows) {
-    if (row.kind !== "digest") continue;
-    const view = noticeViewSchemas.digest.safeParse(row.view);
-    const loopIds = (view.success ? (view.data.loopIds ?? []) : []).filter((id) => !except.has(id));
-    await releaseBriefMarks(db, ctx, { outboxId: row.id, loopIds, at: row.created_at });
-  }
-}
-
-// The digests that no sender delivered (`pending`, `sending`) and that a delete or a blanking is about to end (the Sent switch off,
-// an erase): their marks go back before the view is blanked or the row is deleted (review 19 N1). `named`: only the digests that name
-// one of these loops. `since`: only the digests created at or after this time. `except`: the loops that are being cleared keep their
-// marks. The caller holds the transaction and calls this before the update or the delete, while the views are still there.
-export async function releaseMarksOfUndeliveredDigests(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  filter: { named?: readonly string[]; since?: Date; except?: readonly string[] }
-): Promise<void> {
-  if (filter.named?.length === 0) return;
-  let query = db
-    .selectFrom("outbox")
-    .select(["id", "kind", "view", "created_at"])
-    .where("org_id", "=", ctx.orgId)
-    .where("kind", "=", "digest")
-    .where("status", "in", ["pending", "sending"]);
-  if (filter.since !== undefined) query = query.where("created_at", ">=", filter.since);
-  if (filter.named !== undefined) {
-    const named = [...filter.named];
-    query = query.where(
-      sql<boolean>`jsonb_typeof(view->'loopIds') = 'array' and exists (
-        select 1 from unnest(${named}::text[]) as l(id) where jsonb_exists(view->'loopIds', l.id))`
-    );
-  }
-  await releaseMarksOfFailedDigests(db, ctx, await query.execute(), new Set(filter.except ?? []));
-}
-
-// Only `pending` rows: a row in flight finishes.
-export async function cancelPendingOutbox(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  filter: {
-    kind: "auth_error" | "sync_stale" | "send_held" | "host_blocked" | "sent_missing";
-    mailboxId: string;
-    exceptDedupKey?: string;
-    // Only the rows whose dedup key starts with this text (the follow-up hold notice has its own key family).
-    dedupPrefix?: string;
-  }
-): Promise<number> {
-  let query = db
-    .updateTable("outbox")
-    .set({ status: "failed", error_code: "outdated" })
-    .where("org_id", "=", ctx.orgId)
-    .where("kind", "=", filter.kind)
-    .where("mailbox_id", "=", filter.mailboxId)
-    .where("status", "=", "pending");
-  if (filter.exceptDedupKey !== undefined) query = query.where("dedup_key", "<>", filter.exceptDedupKey);
-  if (filter.dedupPrefix !== undefined) {
-    const prefix = filter.dedupPrefix;
-    query = query.where(sql<boolean>`starts_with(dedup_key, ${prefix})`);
-  }
-  const result = await query.executeTakeFirst();
-  return Number(result.numUpdatedRows);
-}
-
-// The suspend hook: queued messages of the organization never go out. `sending` rows finish.
-// Approval requests stay `pending`: the notifier queues them once, so a cancelled request would time out unseen.
-// They wait for a resume (the sender does not claim them while suspended). At the resume, the sends whose request no owner
-// saw end as `not_seen` and their requests are cancelled (F079, `cancelPendingApprovalRequestsOfClosedSends`).
-export async function cancelPendingOutboxOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<number> {
-  const failed = await db
-    .updateTable("outbox")
-    .set({ status: "failed", error_code: "outdated", locked_at: null })
-    .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "pending")
-    .where("kind", "not in", ["approval", "approval_set"])
-    .returning(["id", "kind", "view", "created_at"])
-    .execute();
-  await releaseMarksOfFailedDigests(db, ctx, failed);
-  return failed.length;
-}
-
-// F079: the resume hook. An approval request whose send no longer waits never goes out: its buttons would answer "expired".
-// A `pending` row, and a `sending` row whose claim is stale (`locked_at` before `staleBefore`: a crash left it, and the
-// sender would claim it again), become `failed` / `outdated`. A `sending` row with a fresh claim is in flight: it finishes.
-// A request of a send that still waits stays.
-export async function cancelPendingApprovalRequestsOfClosedSends(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  opts: { staleBefore: Date }
-): Promise<number> {
-  const result = await sql`
-    update outbox set status = 'failed', error_code = 'outdated', locked_at = null
-    where org_id = ${ctx.orgId} and kind in ('approval', 'approval_set')
-      and ${waitingApprovalRequest(opts.staleBefore)}
-      and ${noAwaitingApprovalSend}
-  `.execute(db);
-  return Number(result.numAffectedRows ?? 0);
-}
-
-// The outbox row of `outbox` that no sender has taken: `pending`, or `sending` with a stale claim.
-function waitingApprovalRequest(staleBefore: Date) {
-  return sql`(status = 'pending' or (status = 'sending' and locked_at < ${staleBefore}))`;
-}
-
-// The request of an `outbox` row (`approval` or `approval_set`) has no send that still waits for an answer. One predicate
-// for the resume hook and for the erase of one person's data.
-const noAwaitingApprovalSend = sql`not exists (
-  select 1 from actions a
-  where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'
-    and ((outbox.kind = 'approval' and outbox.dedup_key = 'approval:' || a.id::text)
-      or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
-)`;
-
-// The erase of one person's data (F106 stage 09): a waiting approval-set request whose sends all closed (the sender holds
-// it, for quiet hours or lag) still lists the erased subject in its view. It becomes `failed` / `outdated` (as at a resume)
-// and loses its text and view. A request of a send that still waits stays: the erase refuses while such a send names the
-// mail. Only rows created at or after `since`. Returns the number of rows changed.
-export async function closeWaitingApprovalSetsSince(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  opts: { since: Date; staleBefore: Date; text: string }
-): Promise<number> {
-  const result = await sql`
-    update outbox set status = 'failed', error_code = 'outdated', locked_at = null, text = ${opts.text}, view = '{}'::jsonb
-    where org_id = ${ctx.orgId} and kind = 'approval_set' and created_at >= ${opts.since}
-      and ${waitingApprovalRequest(opts.staleBefore)}
-      and ${noAwaitingApprovalSend}
-  `.execute(db);
-  return Number(result.numAffectedRows ?? 0);
-}
-
-// Members that got a "sync is late" notice for an episode and no "sync works again" notice yet.
-export async function listSentStaleEpisodes(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  mailboxId: string
-): Promise<{ userId: string; episode: string }[]> {
-  const rows = await db
-    .selectFrom("outbox as s")
-    .select(["s.user_id", sql<string>`split_part(s.dedup_key, ':', 3)`.as("episode")])
-    .where("s.org_id", "=", ctx.orgId)
-    .where("s.mailbox_id", "=", mailboxId)
-    .where("s.kind", "=", "sync_stale")
-    .where("s.status", "=", "sent")
-    .where((eb) =>
-      eb.not(
-        eb.exists(
-          eb
-            .selectFrom("outbox as ok")
-            .select("ok.id")
-            .whereRef("ok.org_id", "=", "s.org_id")
-            .whereRef("ok.user_id", "=", "s.user_id")
-            .where(
-              sql<boolean>`ok.dedup_key = 'sync_ok:' || s.mailbox_id::text || ':' || split_part(s.dedup_key, ':', 3)`
-            )
-        )
-      )
-    )
-    .orderBy("s.created_at")
-    .execute();
-  return rows.map((row) => ({ userId: row.user_id, episode: row.episode }));
-}
-
-const RETENTION_BATCH = 1000;
-
-// Retention (A23): the text and the view of an old message go after the period. Two rules:
-// - a `sent` or `failed` row gets the text `[removed]` (its `error_code` stays);
-// - a `pending` or `sending` row also becomes `failed` / `expired`: the row of a suspended organization is never claimed,
-//   and a message of that age must not go out at a resume.
-// Batches by id; a locked row waits for a later day. A repeat call changes nothing.
-export async function clearOutboxTexts(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  opts: { before: Date; batch?: number }
-): Promise<number> {
-  const batch = opts.batch ?? RETENTION_BATCH;
-  let total = 0;
-  for (;;) {
-    const result = await db
-      .updateTable("outbox")
-      .set({ text: OUTBOX_REMOVED_TEXT, view: JSON.stringify({}) })
-      .where("org_id", "=", ctx.orgId)
-      .where(
-        "id",
-        "in",
-        db
-          .selectFrom("outbox")
-          .select("id")
-          .where("org_id", "=", ctx.orgId)
-          .where("created_at", "<", opts.before)
-          .where("status", "in", ["sent", "failed"])
-          .where((eb) =>
-            eb.or([eb("text", "is distinct from", OUTBOX_REMOVED_TEXT), sql<boolean>`view <> '{}'::jsonb`])
-          )
-          .orderBy("id")
-          .limit(batch)
-          .forUpdate()
-          .skipLocked()
-      )
-      .executeTakeFirstOrThrow();
-    const changed = Number(result.numUpdatedRows);
-    total += changed;
-    if (changed === 0) break;
-  }
-  for (;;) {
-    const result = await db
-      .updateTable("outbox")
-      .set({
-        status: "failed",
-        error_code: "expired",
-        locked_at: null,
-        text: OUTBOX_REMOVED_TEXT,
-        view: JSON.stringify({}),
-      })
-      .where("org_id", "=", ctx.orgId)
-      .where(
-        "id",
-        "in",
-        db
-          .selectFrom("outbox")
-          .select("id")
-          .where("org_id", "=", ctx.orgId)
-          .where("created_at", "<", opts.before)
-          .where("status", "in", ["pending", "sending"])
-          .orderBy("id")
-          .limit(batch)
-          .forUpdate()
-          .skipLocked()
-      )
-      .executeTakeFirstOrThrow();
-    const changed = Number(result.numUpdatedRows);
-    total += changed;
-    if (changed === 0) return total;
-  }
-}
-
-// Retention (A23): link tokens used or expired before `before` (the caller passes now − 1 d) are deleted.
-// The table has no `id`; its key is `token_hash`.
-export async function deleteOldLinkTokens(
-  db: DbOrTrx,
-  ctx: TenantContext,
-  opts: { before: Date; batch?: number }
-): Promise<number> {
-  const batch = opts.batch ?? RETENTION_BATCH;
-  let total = 0;
-  for (;;) {
-    const result = await db
-      .deleteFrom("chat_link_tokens")
-      .where("org_id", "=", ctx.orgId)
-      .where(
-        "token_hash",
-        "in",
-        db
-          .selectFrom("chat_link_tokens")
-          .select("token_hash")
-          .where("org_id", "=", ctx.orgId)
-          .where((eb) => eb.or([eb("used_at", "<", opts.before), eb("expires_at", "<", opts.before)]))
-          .orderBy("token_hash")
-          .limit(batch)
-          .forUpdate()
-          .skipLocked()
-      )
-      .executeTakeFirst();
-    const changed = Number(result.numDeletedRows);
-    total += changed;
-    if (changed === 0) return total;
-  }
-}
-
-// F099 D14: the newest `sent_at` of an outbox row of the organization, null when none was sent.
-export async function lastOutboxSentAt(db: DbOrTrx, ctx: TenantContext): Promise<Date | null> {
-  const row = await db
-    .selectFrom("outbox")
-    .select("sent_at")
-    .where("org_id", "=", ctx.orgId)
-    .where("sent_at", "is not", null)
-    .orderBy("sent_at", "desc")
-    .limit(1)
-    .executeTakeFirst();
-  return row?.sent_at ?? null;
-}
-
-// F099 D17: failed outbox rows created after `since`. The outbox has no failure time; the sender gives up
-// 24 h after the queue time, so `created_at` bounds it. `outdated` and `expired` are cancellations.
-export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {
-  const row = await db
-    .selectFrom("outbox")
-    .select(sql<string>`count(*)`.as("count"))
-    .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "failed")
-    .where("created_at", ">", since)
-    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
-    .executeTakeFirstOrThrow();
-  return Number(row.count);
-}
-
-// The same count for every organization at once (an organization with no failed row has no entry).
-export async function countFailedOutboxSinceOfAll(db: DbOrTrx, since: Date): Promise<Map<string, number>> {
-  const rows = await db
-    .selectFrom("outbox")
-    .select(["org_id", sql<string>`count(*)`.as("count")])
-    .where("status", "=", "failed")
-    .where("created_at", ">", since)
-    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
-    .groupBy("org_id")
-    .execute();
-  return new Map(rows.map((row) => [row.org_id, Number(row.count)]));
 }

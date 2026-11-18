@@ -48,22 +48,22 @@ The system keeps mail text only for a limited time. Once a day the job `platform
 
 ## Entry points
 
-| Kind     | Name                                                       | Where                                               |
-| -------- | ---------------------------------------------------------- | --------------------------------------------------- |
-| job      | `platform.retention` (`0 40 2 * * *`: daily at 02:40)      | `apps/server/src/main.ts`                           |
-| function | `createRetentionJob`, `RETENTION_TEXT_DAYS`                | `apps/server/src/retention.ts`                      |
-| function | `clearMailBodies`, `clearMailHeaders`, `PENDING_BODY_DAYS` | `apps/server/src/modules/mail/repo/retention.ts`    |
-| function | `clearSentBodies`, `clearSentHeaders`                      | `apps/server/src/modules/mail/repo/retention.ts`    |
-| function | `clearCapturedHeaders`                                     | `apps/server/src/modules/mail/repo/headers.ts`      |
-| function | `clearTriageTexts`                                         | `apps/server/src/modules/triage/repo.ts`            |
-| function | `clearActionPayloads`, `clearActionErrors`                 | `apps/server/src/modules/actions/repo/retention.ts` |
-| function | `clearDelegationTasks`, `isOpenDelegationDraft`            | `apps/server/src/modules/delegation/repo.ts`        |
-| function | `clearLoopTexts`                                           | `apps/server/src/modules/loops/retention.ts`        |
-| function | `clearReplyTexts`                                          | `apps/server/src/modules/replies/retention.ts`      |
-| function | `clearOutboxTexts`, `deleteOldLinkTokens`                  | `apps/server/src/modules/channels/repo.ts`          |
-| function | `deleteOldOAuthStates`                                     | `apps/server/src/modules/mail/repo/retention.ts`    |
-| function | `deleteExpiredVerifications`                               | `apps/server/src/platform/auth.ts`                  |
-| function | `listOrganizations`                                        | `apps/server/src/modules/tenancy/repo/index.ts`     |
+| Kind     | Name                                                       | Where                                                |
+| -------- | ---------------------------------------------------------- | ---------------------------------------------------- |
+| job      | `platform.retention` (`0 40 2 * * *`: daily at 02:40)      | `apps/server/src/main.ts`                            |
+| function | `createRetentionJob`, `RETENTION_TEXT_DAYS`                | `apps/server/src/retention.ts`                       |
+| function | `clearMailBodies`, `clearMailHeaders`, `PENDING_BODY_DAYS` | `apps/server/src/modules/mail/repo/retention.ts`     |
+| function | `clearSentBodies`, `clearSentHeaders`                      | `apps/server/src/modules/mail/repo/retention.ts`     |
+| function | `clearCapturedHeaders`                                     | `apps/server/src/modules/mail/repo/headers.ts`       |
+| function | `clearTriageTexts`                                         | `apps/server/src/modules/triage/repo.ts`             |
+| function | `clearActionPayloads`, `clearActionErrors`                 | `apps/server/src/modules/actions/repo/retention.ts`  |
+| function | `clearDelegationTasks`, `isOpenDelegationDraft`            | `apps/server/src/modules/delegation/repo.ts`         |
+| function | `clearLoopTexts`                                           | `apps/server/src/modules/loops/retention.ts`         |
+| function | `clearReplyTexts`                                          | `apps/server/src/modules/replies/retention.ts`       |
+| function | `clearOutboxTexts`, `deleteOldLinkTokens`                  | `apps/server/src/modules/channels/repo/retention.ts` |
+| function | `deleteOldOAuthStates`                                     | `apps/server/src/modules/mail/repo/retention.ts`     |
+| function | `deleteExpiredVerifications`                               | `apps/server/src/platform/auth.ts`                   |
+| function | `listOrganizations`                                        | `apps/server/src/modules/tenancy/repo/index.ts`      |
 
 ## Data
 
