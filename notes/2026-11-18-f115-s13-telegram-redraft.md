@@ -31,3 +31,8 @@ No legal text, registry or consent text changed: **no `TERMS_VERSION` bump** (st
 - Stage 15 (panel): the `ApprovalItem` fields `canReplyAll` and `canUseReplyTo` are in the view; the panel may show the same buttons.
 - Stage 17: rollback text: an older release does not know the callback codes `rd`, `ra`, `ru`, `dr` (they parse to null: "invalid" answer) and the audit event `reply.requested` (a free text column: harmless); the views of `reply_prompt` and `reply_result` did not change shape.
 - Tests: `apps/server/test/integration/replies-request-service.test.ts`, `channels-reply-redraft.test.ts` (24 tests), `telegram-router.test.ts`; core `recipients.test.ts`, `callback-loop.test.ts`, `approvals.test.ts`, `digest.test.ts`, `notices.test.ts`. Mutation log of this stage: `.f115s13-logs/mutations.log` (script `.f115s13-logs/mutate.py`; both untracked).
+
+## Repair after the review (review-13.md)
+
+- B1: `clearReplyTexts` no longer writes `updated_at` (the `now` option is gone) and `listEndedRequestsVia` takes `maxLifeMs` (the request timeout): a request created before `since - maxLifeMs` is no end of the window. Tests: `replies-retention.test.ts` 1, `channels-reply-redraft-repair.test.ts` 1 (the P5 scenario) and 2.
+- M29, M30, M42, M45, M47, M32, M16 are tests in `channels-reply-redraft-repair.test.ts` (shared helpers moved to `reply-telegram-fixtures.ts`). N7: wording (`sendChanged`, `redraftLimit`, the Polish `timeout` line) and the two capability pages.
