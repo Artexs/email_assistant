@@ -11,7 +11,8 @@ const log = createLog("actions");
 // `error`: the read of the Drafts folder failed; the caller maps the error to a retry (the send has not started).
 export type CopyGate =
   | { kind: "continue" }
-  | { kind: "close"; reason: "draft_changed" | "draft_missing" }
+  // `noBaseline`: a `draft_missing` of a draft that has no baseline hash, so the copy was never compared (not a copy that is gone).
+  | { kind: "close"; reason: "draft_changed" | "draft_missing"; noBaseline?: true }
   | { kind: "error"; error: unknown };
 
 // A reply always checks. Another kind checks only while the org flag `draft_copy_check` is on (`ApplyDeps.copyCheck`).
@@ -39,7 +40,7 @@ export async function checkCopyBeforeSend(
   const baseline = baselineOf(draft.provider_result);
   if (baseline === null) {
     log.info("reply_send_checked", { action_id: action.id, result: "no_baseline" });
-    return sendKind === "reply" ? { kind: "close", reason: "draft_missing" } : { kind: "continue" };
+    return sendKind === "reply" ? { kind: "close", reason: "draft_missing", noBaseline: true } : { kind: "continue" };
   }
   try {
     const stored = draft.provider_result?.folder;

@@ -43,3 +43,8 @@ Own e2e DB first (name `f115_s15_e2e`). Never `web:dev`.
 ## Carry-over from stage 08
 
 - The Telegram card line is now "Edit here, or edit and send in your mail client." The panel keeps the old texts: `appr_send_note` ("The system sends it after your approval. Do not send the draft from your mail client.") and `appr_edit_hint` ("Edit here, not in your mail client."). Change both (en and pl, in place) so the panel and the card agree. A panel row that ends `expired` / `draft_changed` needs a status text; the approvals list has no text per reason, so check how `expired` rows show their reason.
+
+## Carry-over from stage 09
+
+- `ApprovalItem.sentVisible` for a reply: read it from `isSentVisible(db, ctx, mailboxId)` (`mail` module; the org flag `sent_sync` and the switch of the mailbox), as `approvalViewFor` does for the card view field `sentVisible: false`.
+- The sweep closes open replies (`answered`, `newer_mail`, `original_moved`, `suspicious`, `policy_changed`) with no result notice for a waiting reply; the panel list shows them as expired with that `status_reason`.

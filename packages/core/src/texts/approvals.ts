@@ -84,6 +84,7 @@ export interface ApprovalTexts {
     copyCheck: (code: string) => string; // the Drafts copy could not be read before the send
     compose: (tries: number) => string;
     badPayload: string;
+    hasGaps: string;
   };
   sendResult: {
     sent: (to: string, subject: string) => string;
@@ -104,6 +105,12 @@ export interface ApprovalTexts {
       policy_changed: (subject: string) => string;
       loop_closed: (subject: string) => string;
       draft_changed: (subject: string) => string;
+      // The reasons of the reply drafts (F115): each says that nothing was sent.
+      answered: (subject: string) => string;
+      sent_by_user: (subject: string) => string;
+      newer_mail: (subject: string) => string;
+      original_moved: (subject: string) => string;
+      suspicious: (subject: string) => string;
     };
     rejected: (byName: string | null, subject: string) => string;
   };
@@ -162,7 +169,8 @@ export const approvalTexts = {
       rejected: (byName) => `✖️ Follow-up rejected${byName === null ? "" : ` (${byName})`}`,
       expired: {
         timeout: "⌛ Follow-up not sent: the approval expired (48 h).",
-        draft_missing: "❌ Follow-up not sent: the draft could not be created.",
+        draft_missing:
+          "❌ Follow-up not sent: the draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client).",
         not_notified: "⌛ Follow-up not sent: no approval request could be sent within 7 days.",
         not_seen: "⌛ Follow-up not sent: the approval request did not reach you.",
         held_timeout: "⌛ Follow-up not sent: it waited 48 h after your approval and did not go out.",
@@ -223,6 +231,7 @@ export const approvalTexts = {
         `The system could not read the draft in your mailbox${code === "" ? "" : ` (${code})`}; nothing was sent`,
       compose: (tries) => `The mail could not be built ${tries} times`,
       badPayload: "The stored send data is not valid; nothing was sent",
+      hasGaps: "The reply still has a gap marked with [[ ]] that nobody filled; nothing was sent",
     },
     sendResult: {
       sent: (to, subject) => `✅ Sent to ${to} · ${subject}`,
@@ -237,7 +246,9 @@ export const approvalTexts = {
         "The connection broke after the content was sent. Check Sent or ask the recipient before you send again.",
       expired: {
         timeout: (subject) => `⌛ Not sent: the approval expired (48 h) · ${subject}`,
-        draft_missing: (subject) => `❌ Not sent: the draft could not be created · ${subject}`,
+        // Two causes: the draft was never made, or the copy in Drafts is gone (deleted, moved or sent from the mail client).
+        draft_missing: (subject) =>
+          `❌ Not sent: the draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client) · ${subject}`,
         not_notified: (subject) =>
           `⌛ Not sent: no approval request could go out within 7 days (no linked owner, or the draft was not created) · ${subject}`,
         not_seen: (subject) =>
@@ -248,6 +259,14 @@ export const approvalTexts = {
         policy_changed: (subject) => `⌛ Not sent: the setting was changed · ${subject}`,
         loop_closed: (subject) => `⌛ Not sent: the open loop was closed · ${subject}`,
         draft_changed: (subject) => `✏️ You edited this draft in your mail client. Send it from there. · ${subject}`,
+        answered: (subject) => `⌛ You already answered this mail. Nothing was sent. · ${subject}`,
+        sent_by_user: (subject) => `⌛ It looks like you sent it from your mail client. Nothing was sent. · ${subject}`,
+        newer_mail: (subject) =>
+          `⌛ A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow. · ${subject}`,
+        original_moved: (subject) =>
+          `⌛ The mail was moved to another folder. Nothing was sent. Answer it from its new place if you still want to. · ${subject}`,
+        suspicious: (subject) =>
+          `⌛ The mail was marked as suspicious after the draft was made. Nothing was sent. Read the mail with care; a new draft may follow. · ${subject}`,
       },
       rejected: (byName, subject) => `✖️ Rejected${byName === null ? "" : ` by ${byName}`} · ${subject}`,
     },
@@ -301,7 +320,8 @@ export const approvalTexts = {
       rejected: (byName) => `✖️ Przypomnienie o odpowiedzi odrzucone${byName === null ? "" : ` (${byName})`}`,
       expired: {
         timeout: "⌛ Nie wysłano przypomnienia o odpowiedzi: zatwierdzenie wygasło (48 h).",
-        draft_missing: "❌ Nie wysłano przypomnienia o odpowiedzi: nie udało się utworzyć szkicu.",
+        draft_missing:
+          "❌ Nie wysłano przypomnienia o odpowiedzi: szkicu nie ma w folderze Drafts (nie powstał albo został usunięty, przeniesiony lub wysłany w programie pocztowym).",
         not_notified:
           "⌛ Nie wysłano przypomnienia o odpowiedzi: w ciągu 7 dni nie udało się wysłać prośby o zatwierdzenie.",
         not_seen: "⌛ Nie wysłano przypomnienia o odpowiedzi: prośba o zatwierdzenie do Ciebie nie dotarła.",
@@ -366,6 +386,7 @@ export const approvalTexts = {
         `System nie mógł odczytać szkicu w Twojej skrzynce${code === "" ? "" : ` (${code})`}; nic nie wysłano`,
       compose: (tries) => `Nie udało się zbudować wiadomości ${tries} ${PL_TIMES[pluralCategory("pl", tries)]}`,
       badPayload: "Zapisane dane wysyłki są nieprawidłowe; nic nie wysłano",
+      hasGaps: "W odpowiedzi nadal jest luka oznaczona [[ ]], której nikt nie uzupełnił; nic nie wysłano",
     },
     sendResult: {
       sent: (to, subject) => `✅ Wysłano do: ${to} · ${subject}`,
@@ -380,7 +401,8 @@ export const approvalTexts = {
         "Połączenie zostało przerwane po wysłaniu treści. Sprawdź folder Sent lub zapytaj odbiorcę, zanim wyślesz ponownie.",
       expired: {
         timeout: (subject) => `⌛ Nie wysłano: zatwierdzenie wygasło (48 h) · ${subject}`,
-        draft_missing: (subject) => `❌ Nie wysłano: nie udało się utworzyć szkicu · ${subject}`,
+        draft_missing: (subject) =>
+          `❌ Nie wysłano: szkicu nie ma w folderze Drafts (nie powstał albo został usunięty, przeniesiony lub wysłany w programie pocztowym) · ${subject}`,
         not_notified: (subject) =>
           `⌛ Nie wysłano: w ciągu 7 dni nie udało się wysłać prośby o zatwierdzenie (brak połączonego właściciela albo szkic nie powstał) · ${subject}`,
         not_seen: (subject) =>
@@ -391,6 +413,15 @@ export const approvalTexts = {
         policy_changed: (subject) => `⌛ Nie wysłano: ustawienie zostało zmienione · ${subject}`,
         loop_closed: (subject) => `⌛ Nie wysłano: sprawa została zamknięta · ${subject}`,
         draft_changed: (subject) => `✏️ Szkic został zmieniony w programie pocztowym. Wyślij go stamtąd. · ${subject}`,
+        answered: (subject) => `⌛ Na tę wiadomość już odpowiedziano. Nic nie wysłano. · ${subject}`,
+        sent_by_user: (subject) =>
+          `⌛ Wygląda na to, że odpowiedź wysłano z programu pocztowego. Nic nie wysłano. · ${subject}`,
+        newer_mail: (subject) =>
+          `⌛ W tym wątku pojawiła się nowsza wiadomość. Nic nie wysłano. Przeczytaj nowszą wiadomość; może pojawić się nowy szkic. · ${subject}`,
+        original_moved: (subject) =>
+          `⌛ Wiadomość przeniesiono do innego folderu. Nic nie wysłano. Jeśli nadal chcesz odpowiedzieć, zrób to z jej nowego miejsca. · ${subject}`,
+        suspicious: (subject) =>
+          `⌛ Po utworzeniu szkicu wiadomość oznaczono jako podejrzaną. Nic nie wysłano. Przeczytaj ją uważnie; może pojawić się nowy szkic. · ${subject}`,
       },
       rejected: (byName, subject) => `✖️ Odrzucono${byName === null ? "" : ` (${byName})`} · ${subject}`,
     },

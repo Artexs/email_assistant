@@ -48,7 +48,7 @@ export function runInTransaction<T>(db: Db | Transaction<DB>, run: (trx: Transac
 
 // One writer at a time for a thread of a mailbox: the decision "is there an open reply for a newer or an older mail" and the insert
 // that follows it must not interleave with the same decision of another request. The lock ends with the transaction.
-async function lockThread(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, threadKey: string) {
+export async function lockThread(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, threadKey: string) {
   await sql`SELECT pg_advisory_xact_lock(hashtextextended(${`reply_thread:${ctx.orgId}:${mailboxId}:${threadKey}`}, 0))`.execute(
     trx
   );
