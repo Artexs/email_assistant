@@ -7,7 +7,7 @@ import { as } from "./web-helpers";
 import { post, replyWebKit, type ReplyWorld } from "./web-reply-kit";
 
 // POST /api/approvals/:id/recipients: who receives a reply. The addresses come from the stored mail, never from the request. The
-// decisions of the stage 13 review carry-over are tested here: Reply all and the Reply-To, a +tag variant of an own mailbox, a stored
+// decisions that the review of the Telegram redraft left open are tested here: Reply all and the Reply-To, a +tag variant of an own mailbox, a stored
 // address with a display name.
 const db = testDb();
 const kit = replyWebKit(db);
@@ -136,7 +136,7 @@ describe("the three modes", () => {
   });
 });
 
-describe("the carry-over decisions of the stage 13 review", () => {
+describe("the decisions on the open points of the Telegram redraft review", () => {
   test("5. Reply all with a different Reply-To goes to the sender and never to the Reply-To; the panel shows both before Send", async () => {
     const w = await kit.setup();
     const { sendId } = await drafted(w, { to: ["b@y.test"], replyTo: ["office@client.test"] });

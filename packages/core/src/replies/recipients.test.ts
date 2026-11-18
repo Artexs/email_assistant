@@ -102,7 +102,7 @@ describe("the lists behind the buttons", () => {
   });
 });
 
-// The rules of the carry-over of the stage 13 review, decided in stage 14: Reply all and the Reply-To, a `+tag` variant of an own
+// The rules that the review of the Telegram redraft left open, decided with the reply routes: Reply all and the Reply-To, a `+tag` variant of an own
 // mailbox, and a stored address with a display name. The service, the card and the panel all call these functions.
 describe("Reply all and the Reply-To of the mail", () => {
   const withReplyTo = facts({ replyTo: ["office@client.test"] });
