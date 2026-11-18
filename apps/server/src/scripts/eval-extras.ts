@@ -1,8 +1,6 @@
 import { assessSuspicious, type EvalCase, EVAL_RECEIVED_AT, localDateTime, type Scenario } from "@ea/core";
 
-import { type ClassifierExtras, deadlinesInWindow } from "../modules/triage";
-
-import { suspiciousInputOfCase, typeOfName } from "./eval-suspicious";
+import { type ClassifierExtras, deadlinesInWindow, suspiciousInputOfCase, typeOfName } from "../modules/triage";
 
 // F109 stage 08: the `ClassifierExtras` of a sim case. The sim history is the persona group's generated mix, so only
 // `received` and `corrections` pass (review N2); `byCategory` never does.
