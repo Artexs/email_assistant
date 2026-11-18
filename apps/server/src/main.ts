@@ -19,6 +19,7 @@ import {
   createReportMailSender,
   createTelegramRuntime,
 } from "./modules/channels";
+import { createContactsRefreshJob } from "./modules/contacts";
 import { delegationHooks } from "./modules/delegation";
 import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "./modules/loops";
 import { configureMailHosts, countSyncTargets, createMailSyncJob, openImapProvider } from "./modules/mail";
@@ -220,6 +221,7 @@ let repliesSweepRun: Promise<void> = Promise.resolve();
 let historyRun: Promise<void> = Promise.resolve();
 let tripwireRun: Promise<void> = Promise.resolve();
 let loopsMatchRun: Promise<void> = Promise.resolve();
+let contactsRefreshRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process.
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 // The style preview of the reply drafts: it needs the model client, so it exists only while the LLM scope is on.
@@ -348,6 +350,19 @@ scheduler.add("loops.match", "50 */2 * * * *", () => {
   return loopsMatchRun;
 });
 log.info("job_scheduled", { job: "loops.match" });
+// The sender profiles: one recompute of each active mailbox with the flag `sender_context` on, hourly at minute 7. It reads the
+// database only and calls no model, so it runs with the scope off too.
+const contactsRefresh = createContactsRefreshJob({
+  db,
+  credentialsKey: config.CREDENTIALS_KEY,
+  testMail: testMailRule(config),
+  now: () => new Date(),
+});
+scheduler.add("contacts.refresh", "0 7 * * * *", () => {
+  contactsRefreshRun = contactsRefresh.run().then(() => undefined);
+  return contactsRefreshRun;
+});
+log.info("job_scheduled", { job: "contacts.refresh" });
 // The sweep of the reply drafts: it closes an open reply whose mail was answered, left its folder or got a newer mail in its thread. It
 // reads the database only and calls no model and no mailbox, so it runs with the scope off too.
 const replySweep = createReplySweep({
@@ -524,6 +539,7 @@ async function shutdown(): Promise<void> {
       regateRun,
       tripwireRun,
       loopsMatchRun,
+      contactsRefreshRun,
       committerRun,
       returnedRun,
       expiryRun,

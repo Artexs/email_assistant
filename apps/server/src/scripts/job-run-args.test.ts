@@ -24,6 +24,11 @@ describe("parseJobRunArgs", () => {
     expect(parseJobRunArgs(["--name", "loops.match", "--force"])).toBeNull();
   });
 
+  test("parses contacts.refresh and refuses --force for it", () => {
+    expect(parseJobRunArgs(["--name", "contacts.refresh"])).toEqual({ name: "contacts.refresh", force: false });
+    expect(parseJobRunArgs(["--name", "contacts.refresh", "--force"])).toBeNull();
+  });
+
   test("parses replies.drafter and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "replies.drafter"])).toEqual({ name: "replies.drafter", force: false });
     expect(parseJobRunArgs(["--name", "replies.drafter", "--force"])).toBeNull();

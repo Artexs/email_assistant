@@ -12,6 +12,7 @@ import {
 } from "../composition";
 import { createCommitterJob, createExpiryJob } from "../modules/actions";
 import { cardEditHooks, createTelegramRuntime } from "../modules/channels";
+import { createContactsRefreshJob } from "../modules/contacts";
 import { delegationHooks } from "../modules/delegation";
 import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "../modules/loops";
 import { configureMailHosts } from "../modules/mail";
@@ -134,6 +135,18 @@ async function main(): Promise<number> {
           `${args.name}: ran once (mailboxes ${run.mailboxes}, checked ${run.checked}, replied ${run.replied}, replied by subject ${run.repliedSubject}, dropped ${run.dropped}, automatic ${run.autoMarked}, mailbox errors ${run.mailboxErrors})`
         );
         return 0;
+      } else if (args.name === "contacts.refresh") {
+        const run = await createContactsRefreshJob({
+          db,
+          credentialsKey: config.CREDENTIALS_KEY,
+          testMail: testMailRule(config),
+          now,
+        }).run();
+        // Counts only: no id, no address, no hash.
+        out.print(
+          `${args.name}: ran once (mailboxes ${run.mailboxes}, skipped ${run.skipped}, written ${run.written}, unchanged ${run.unchanged}, zeroed ${run.zeroed}, mailbox errors ${run.mailboxErrors})`
+        );
+        return run.mailboxErrors > 0 ? 1 : 0;
       } else {
         const row = llmRoleTable(config).roles.classifier;
         const runtime = createTelegramRuntime({

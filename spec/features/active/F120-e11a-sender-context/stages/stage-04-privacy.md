@@ -42,3 +42,6 @@ Carry-over reads: `docs/capabilities/account-data.md` rules 7–13, `docs/capabi
 ## Done when
 
 All tests pass; mutations: remove the org filter from the erase delete → step 2 test 3 fails; remove the erase lock → test 7 fails. Then the Proof command. Checkpoint after this stage (plan.md § Owner checkpoints).
+
+## Carry-over from the stage 03b review (2026-11-18)
+FIRST COMMIT of this stage: the tests TG1 to TG5 and the flag-misuse guard test from `../review-3b.md`, each with a saved mutation log. Design carry-over for the retention clause: see the same file.
