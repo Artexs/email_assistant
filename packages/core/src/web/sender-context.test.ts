@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { senderLineSchema, suggestionItemSchema } from "./sender-context";
 
 describe("senderLineSchema", () => {
-  const line = { relation: "known", received: 12, answered: 4, userMailsTo: 2, lastSeenDaysAgo: 3, days: 90 };
+  const line = { relation: "known", received: 12, answered: 4, userMailsTo: 2, lastSeenDaysAgo: 3, days: 90 } as const;
 
   test("accepts counts and a null last-seen", () => {
     expect(senderLineSchema.parse(line)).toEqual(line);
@@ -24,7 +24,7 @@ describe("suggestionItemSchema", () => {
     pattern: "@acme.pl",
     reason: { corrected: 4, senders: 2 },
     createdAt: "2026-11-18T10:00:00.000Z",
-  };
+  } as const;
 
   test("accepts an open suggestion", () => {
     expect(suggestionItemSchema.parse(item)).toEqual(item);
