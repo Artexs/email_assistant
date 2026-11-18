@@ -28,6 +28,7 @@ import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import { seedApprovalsRows } from "./e2e-approvals-rows";
 import { seedDelegationsRows } from "./e2e-delegations-rows";
 import { seedLoopsRows } from "./e2e-loops-rows";
+import { seedNewsletterRows } from "./e2e-newsletter-rows";
 import { seedOpenLoopsRows } from "./e2e-open-loops-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
@@ -55,6 +56,10 @@ import {
   e2eLoopsOrgName,
   E2E_URGENCY_MEMBER_EMAILS,
   E2E_URGENCY_OWNER_EMAILS,
+  E2E_NEWSLETTERS_MEMBER_EMAILS,
+  E2E_NEWSLETTERS_OWNER_EMAILS,
+  e2eNewslettersMailbox,
+  e2eNewslettersOrgName,
   e2eUrgencyMailbox,
   e2eUrgencyOrgName,
   e2eUrgencyProfile,
@@ -152,6 +157,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eDelegationsOrgName),
         ...E2E_PROJECTS.map(e2eOpenLoopsOrgName),
         ...E2E_PROJECTS.map(e2eUrgencyOrgName),
+        ...E2E_PROJECTS.map(e2eNewslettersOrgName),
         ...E2E_PROJECTS.map(e2eLoopsOrgName),
       ],
     ]);
@@ -180,6 +186,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_OPEN_LOOPS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_URGENCY_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_MEMBER_EMAILS[project]),
       ],
@@ -507,6 +515,41 @@ async function main(): Promise<number> {
         };
       }
 
+      // F110 stage 23: one organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
+      // newsletter senders and one request. See `e2e-newsletter-rows.ts`.
+      const newsletterIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; mailboxId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const newsletterOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eNewslettersOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_NEWSLETTERS_OWNER_EMAILS[project],
+          displayName: `E2E Newsletters owner ${project}`,
+        });
+        const ctx = { orgId: newsletterOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_NEWSLETTERS_MEMBER_EMAILS[project],
+          displayName: `E2E Newsletters member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        await upsertOrgFeature(db, ctx, {
+          flag: "bulk_unsubscribe",
+          enabled: true,
+          setBy: newsletterOwner.userId,
+          setAt: new Date(),
+        });
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eNewslettersMailbox(project));
+        await seedNewsletterRows(db, ctx, mailboxId, new Date());
+        newsletterIds[project] = {
+          orgId: newsletterOwner.orgId,
+          ownerId: newsletterOwner.userId,
+          memberId: member.id,
+          mailboxId,
+        };
+      }
+
       // F116 stage 22: one organization per project for the loops spec. The flags `open_loops`, `delegate_button`, `delegation_pages`,
       // `sent_sync` and `approvals_page` are on; one active delegate; a mailbox in assist mode with drafts on that tracks Sent; the owner is linked to
       // Telegram with a consent of an old version. See `e2e-loops-rows.ts`.
@@ -779,6 +822,21 @@ async function main(): Promise<number> {
         };
       }
 
+      const newsletterOrgs = {} as SeedFile["newsletterOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_NEWSLETTERS_OWNER_EMAILS[project];
+        const memberEmail = E2E_NEWSLETTERS_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = newsletterIds[project];
+        newsletterOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          mailbox: { id: ids.mailboxId, address: e2eNewslettersMailbox(project) },
+        };
+      }
+
       const loopsOrgs = {} as SeedFile["loopsOrgs"];
       for (const project of E2E_PROJECTS) {
         const ownerEmail = E2E_LOOPS_OWNER_EMAILS[project];
@@ -846,6 +904,7 @@ async function main(): Promise<number> {
         delegationsOrgs,
         openLoopsOrgs,
         urgencyOrgs,
+        newsletterOrgs,
         approvalsOrgs,
         loopsOrgs,
       };
