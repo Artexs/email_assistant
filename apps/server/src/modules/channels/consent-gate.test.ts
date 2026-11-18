@@ -66,8 +66,13 @@ describe("the consent gate of open-loop data", () => {
   test("only consent.ts compares a consent version with the reply version; only the reply notice and the review taps call replyConsentOf", () => {
     expect(usersOf(/\bREPLY_CONSENT_SINCE\b/)).toEqual(["modules/channels/consent.ts"]);
     expect(usersOf(/\breplyConsentOf\(/)).toEqual([
+      "modules/channels/commands.ts", // the Draft reply button of the digest on demand
       "modules/channels/consent.ts",
+      "modules/channels/digest-job.ts", // the Draft reply button of a scheduled digest
       "modules/channels/notices/replies-ready.ts",
+      "modules/channels/notices/reply-results.ts", // the card that follows a request
+      "modules/channels/notices/urgent.ts", // the Draft reply button of an urgent notice
+      "modules/channels/reply-redraft.ts", // the line of text after Redraft
       "modules/channels/reply-taps.ts",
     ]);
   });
@@ -82,5 +87,17 @@ describe("the consent gate of open-loop data", () => {
       "modules/channels/reply-review.ts",
       "modules/channels/reply-taps.ts",
     ]);
+    // The card of one named send (a new version, a draft that a tap found, the answer to a request) has three callers. The taps that
+    // change a reply run after the check of `handleReplyCallback`; the result detector checks the consent itself.
+    expect(usersOf(/\bqueueReviewCardOfSend\(/)).toEqual([
+      "modules/channels/notices/reply-results.ts",
+      "modules/channels/reply-redraft.ts",
+      "modules/channels/reply-review.ts",
+    ]);
+    expect(taps.indexOf("replyConsentOf(")).toBeLessThan(taps.indexOf("handleReplyChangeTap(deps"));
+    const results = sources.find((s) => s.file === "modules/channels/notices/reply-results.ts")?.text ?? "";
+    expect(results.indexOf("replyConsentOf(")).toBeGreaterThan(-1);
+    expect(results.indexOf("replyConsentOf(")).toBeLessThan(results.indexOf("await answerCard("));
+    expect(results.match(/queueReviewCardOfSend\(/g)).toHaveLength(1);
   });
 });

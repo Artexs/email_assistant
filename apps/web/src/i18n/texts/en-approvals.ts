@@ -215,6 +215,10 @@ export const enApprovals = {
   lp_days_less: "less than a working day",
   lp_due_stated: "Due {date} (stated in your mail)",
   lp_due_default: "Due {date} (default wait)",
+  // The due date from the usual reply time of the contact (flag contact_wait)
+  lp_due_contact: "Due {date} (usual reply time of this contact)",
+  lp_usual_reply: "Usual reply: {n} days",
+  lp_usual_reply_one: "Usual reply: 1 day",
   lp_follow_ups: "Follow-ups: {n} of {max}",
   lp_matched_subject: "Matched by subject: the reply came in another thread.",
   lp_auto_reply_only: "Auto-reply only: the loop stays open.",

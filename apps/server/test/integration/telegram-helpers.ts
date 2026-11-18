@@ -50,6 +50,8 @@ export function messageUpdate(input: {
   text: string;
   chatType?: "private" | "group" | "supergroup";
   fromIsBot?: boolean;
+  // The id of the message that this one replies to (a Telegram reply).
+  replyToMessageId?: number;
 }): Update {
   const command = /^\/[A-Za-z0-9_]+/.exec(input.text);
   return {
@@ -60,6 +62,16 @@ export function messageUpdate(input: {
       chat: { id: input.chatId, type: input.chatType ?? "private", first_name: "Test" } as never,
       from: { id: input.chatId, is_bot: input.fromIsBot ?? false, first_name: "Test" },
       text: input.text,
+      ...(input.replyToMessageId === undefined
+        ? {}
+        : {
+            reply_to_message: {
+              message_id: input.replyToMessageId,
+              date: 0,
+              chat: { id: input.chatId, type: input.chatType ?? "private", first_name: "Test" } as never,
+              reply_to_message: undefined,
+            },
+          }),
       ...(command ? { entities: [{ type: "bot_command", offset: 0, length: command[0].length }] } : {}),
     },
   };

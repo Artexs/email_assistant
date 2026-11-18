@@ -344,6 +344,34 @@ describe("shadow (T5)", () => {
   });
 });
 
+describe("the usual reply time of the contact", () => {
+  const linesOf = (usualReplyDays: number | null, extra: Partial<Parameters<typeof loop>[1]> = {}) =>
+    loopSections(briefInput({ waitingLoops: part([loop(1, { usualReplyDays, ...extra })]) }));
+
+  test("a loop with a usual reply time ends its line with it, in both languages; two days is plural", () => {
+    const sections = linesOf(2);
+    expect(renderBrief(sections, en, opts)).toContain(
+      "⏳ No answer from anna@example.test since Tue 10.11 · Offer for Q1 · usual reply: 2 days"
+    );
+    expect(renderBrief(sections, pl, opts).some((line) => line.endsWith(" · zwykle odpowiada w 2 dni"))).toBe(true);
+  });
+
+  test("one day is singular; five and 22 days are plural in Polish", () => {
+    expect(renderBrief(linesOf(1), en, opts).some((line) => line.endsWith(" · usual reply: 1 day"))).toBe(true);
+    expect(renderBrief(linesOf(1), pl, opts).some((line) => line.endsWith(" · zwykle odpowiada w 1 dzień"))).toBe(true);
+    expect(renderBrief(linesOf(5), pl, opts).some((line) => line.endsWith(" · zwykle odpowiada w 5 dni"))).toBe(true);
+  });
+
+  test("null adds no suffix; the suffix comes after a marker", () => {
+    for (const texts of [en, pl]) {
+      expect(renderBrief(linesOf(null), texts, opts).join("\n")).not.toMatch(/usual reply|zwykle odpowiada/);
+    }
+    expect(renderBrief(linesOf(3, { autoReplyOnly: true }), en, opts)).toContain(
+      "⏳ No answer from anna@example.test since Tue 10.11 · Offer for Q1 · auto-reply only · usual reply: 3 days"
+    );
+  });
+});
+
 describe("the 4096 cut (T3)", () => {
   const rows = Array.from({ length: 5 }, (_, i) =>
     loop(i + 1, { text: `waiting ${i}`, dueAt: new Date(NOW.getTime() - (10 - i) * DAY) })

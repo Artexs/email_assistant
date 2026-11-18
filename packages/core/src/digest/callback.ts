@@ -45,8 +45,16 @@ export type DelegateCallback =
   | { kind: "delegate_pick"; emailId: string; delegateId: string };
 
 // The review of reply drafts in Telegram: `reply_review` asks for the next open reply draft after `afterId` (none: the
-// first one); `reply_skip` leaves the draft of `sendId` for now and asks for the next one. Both name a send, never a mail.
-export type ReplyCallback = { kind: "reply_review"; afterId?: string } | { kind: "reply_skip"; sendId: string };
+// first one); `reply_skip` leaves the draft of `sendId` for now and asks for the next one. The buttons of the review card name a
+// send: `reply_redraft` asks for a new text (the user writes one line next), `reply_all` and `reply_use_reply_to` change the
+// recipients. `reply_draft` is the "Draft reply" button of a mail (an urgent notice or a digest row): it names the mail.
+export type ReplyCallback =
+  | { kind: "reply_review"; afterId?: string }
+  | { kind: "reply_skip"; sendId: string }
+  | { kind: "reply_redraft"; sendId: string }
+  | { kind: "reply_all"; sendId: string }
+  | { kind: "reply_use_reply_to"; sendId: string }
+  | { kind: "reply_draft"; emailId: string };
 
 export type Callback =
   | FeedbackCallback
@@ -70,7 +78,14 @@ export function isAnsweredCallback(callback: Callback): callback is AnsweredCall
 }
 
 export function isReplyCallback(callback: Callback): callback is ReplyCallback {
-  return callback.kind === "reply_review" || callback.kind === "reply_skip";
+  return (
+    callback.kind === "reply_review" ||
+    callback.kind === "reply_skip" ||
+    callback.kind === "reply_redraft" ||
+    callback.kind === "reply_all" ||
+    callback.kind === "reply_use_reply_to" ||
+    callback.kind === "reply_draft"
+  );
 }
 
 export function isLoopCallback(callback: Callback): callback is LoopCallback {
@@ -88,7 +103,12 @@ export function isDelegateCallback(callback: Callback): callback is DelegateCall
 }
 
 export function isFeedbackCallback(callback: Callback): callback is FeedbackCallback {
-  return "emailId" in callback && !isAnsweredCallback(callback) && !isDelegateCallback(callback);
+  return (
+    "emailId" in callback &&
+    !isAnsweredCallback(callback) &&
+    !isDelegateCallback(callback) &&
+    !isReplyCallback(callback)
+  );
 }
 
 export function isReviewCallback(callback: Callback): boolean {
@@ -122,6 +142,8 @@ const LOOP = new RegExp(`^(lf|ll|lc|lx|lr):(${UUID})$`);
 // `rv` (the first open reply draft) or `rv:<send>` (the next one after it); `rk:<send>` (skip this one).
 const REPLY_REVIEW = new RegExp(`^rv(?::(${UUID}))?$`);
 const REPLY_SKIP = new RegExp(`^rk:(${UUID})$`);
+// `rd` (Redraft), `ra` (Reply all), `ru` (Use Reply-To): a send; `dr` (Draft reply): a mail.
+const REPLY_CARD = new RegExp(`^(rd|ra|ru|dr):(${UUID})$`);
 const DELEGATE_OPEN = new RegExp(`^dg:(${UUID})$`);
 // `dp:<mail>:<delegate>`: each UUID as 22 characters of base64url (16 bytes, no padding), so the data is 48 bytes.
 const B64_UUID = "[A-Za-z0-9_-]{22}";
@@ -195,6 +217,14 @@ export function encodeCallback(callback: Callback): string {
       return callback.afterId === undefined ? "rv" : `rv:${checkedId(callback.afterId)}`;
     case "reply_skip":
       return `rk:${checkedId(callback.sendId)}`;
+    case "reply_redraft":
+      return `rd:${checkedId(callback.sendId)}`;
+    case "reply_all":
+      return `ra:${checkedId(callback.sendId)}`;
+    case "reply_use_reply_to":
+      return `ru:${checkedId(callback.sendId)}`;
+    case "reply_draft":
+      return `dr:${checkedId(callback.emailId)}`;
     case "delegate_open":
       return `dg:${checkedId(callback.emailId)}`;
     case "delegate_pick":
@@ -284,6 +314,20 @@ export function parseCallback(data: string): Callback | null {
   }
   const skip = REPLY_SKIP.exec(data);
   if (skip !== null) return { kind: "reply_skip", sendId: skip[1] as string };
+  const card = REPLY_CARD.exec(data);
+  if (card !== null) {
+    const id = card[2] as string;
+    switch (card[1]) {
+      case "rd":
+        return { kind: "reply_redraft", sendId: id };
+      case "ra":
+        return { kind: "reply_all", sendId: id };
+      case "ru":
+        return { kind: "reply_use_reply_to", sendId: id };
+      default:
+        return { kind: "reply_draft", emailId: id };
+    }
+  }
   const open = DELEGATE_OPEN.exec(data);
   if (open !== null) return { kind: "delegate_open", emailId: open[1] as string };
   const pick = DELEGATE_PICK.exec(data);

@@ -218,6 +218,10 @@ export const plApprovals = {
   lp_days_less: "mniej niż jeden dzień roboczy",
   lp_due_stated: "Termin: {date} (podany w wiadomości)",
   lp_due_default: "Termin: {date} (domyślny)",
+  // The due date from the usual reply time of the contact (flag contact_wait)
+  lp_due_contact: "Termin: {date} (zwykły czas odpowiedzi tej osoby)",
+  lp_usual_reply: "Zwykle odpowiada w {n} dni",
+  lp_usual_reply_one: "Zwykle odpowiada w 1 dzień",
   lp_follow_ups: "Przypomnienia o odpowiedzi: {n} z {max}",
   lp_matched_subject: "Dopasowano po temacie: odpowiedź przyszła w innym wątku.",
   lp_auto_reply_only: "Tylko automatyczna odpowiedź: sprawa zostaje otwarta.",

@@ -463,7 +463,7 @@ describe("card sync: an edit of a send (T7, T8)", () => {
         { text: `CARD-ONE\n\n${edits.changed(CLOCK)}`, buttons: [] },
         { text: `CARD-TWO\n\n${edits.changed(CLOCK)}`, buttons: [] },
       ]);
-      expect(edits.changed(CLOCK)).toStartWith("✏️ Changed in the panel 14:05.");
+      expect(edits.changed(CLOCK)).toStartWith("✏️ Changed 14:05.");
     });
   });
 
@@ -877,7 +877,7 @@ describe("approval cards: version and panel link (T9, T10)", () => {
       const v1 = await notify(w);
       expect(v1.length).toBe(2);
       for (const card of v1) expect(card.message.text).not.toContain(t.versionLine(1));
-      for (const card of v1) expect(card.message.text).not.toContain("edited in the panel");
+      for (const card of v1) expect(card.message.text).not.toContain("✏️ Version");
     });
     await withRollback(db, async (trx) => {
       const w = await waitingWorld(trx);

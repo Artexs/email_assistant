@@ -33,5 +33,11 @@ The docs say what the code does (PD-009). No code change except a doc test that 
 - N2: until this stage lands, an owner with `reply_drafts` on gets "Confirm the new Telegram terms in the panel" and no panel version can cover reply data. Keep `reply_drafts` OFF in any pilot until this stage lands; write it in the pilot steps of stage 18 and `deploy/README.md`.
 - N5: rollback text: an older release slices `approval:<id>:r1` into a bad send id (the sender throws 22P02), and it rejects the new `replies_ready` view as `bad_view`. Put both in the rollback SQL with N11 of review-9 (fail the `replies_ready` rows and the `approval:<id>:r<n>` rows that are `pending` or `sending`).
 
+## Carry-over from stage 13
+
+- Stage 13 changed no legal text and did not bump `TERMS_VERSION`; `REPLY_CONSENT_SINCE` is still the placeholder, so none of Redraft, Reply all, Use Reply-To and Draft reply shows to a user. The legal batch of stage 12 and 17 stands. Notes: `notes/2026-11-18-f115-s13-telegram-redraft.md`.
+- Rollback text: an older release does not know the callback codes `rd`, `ra`, `ru`, `dr` (they parse to null and answer "invalid") and the audit event `reply.requested` (free text column; harmless); the views of `reply_prompt` and `reply_result` kept their shape.
+- Privacy: the user's line of instruction is stored only in `reply_requests.instruction` (retention clears it); the audit row `reply.requested` holds ids and codes only; the Telegram message of the user stays in Telegram.
+
 ## Carry-over from the stage 13 review (2026-11-18)
 See `../review-13.md`: rollback text N1 (strict view fields), the tap-flood cost N3 and a per-mail tap limit, the ended-request window limit N9.

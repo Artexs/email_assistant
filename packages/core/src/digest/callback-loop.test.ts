@@ -8,6 +8,7 @@ import {
   isDelegateCallback,
   isFeedbackCallback,
   isLoopCallback,
+  isReplyCallback,
   labelCategories,
   parseCallback,
   reviewLabelCategories,
@@ -52,6 +53,10 @@ const everyKind: Callback[] = [
   { kind: "delegate_pick", emailId: EMAIL, delegateId: DELEGATE },
   { kind: "reply_review", afterId: ID },
   { kind: "reply_skip", sendId: ID },
+  { kind: "reply_redraft", sendId: ID },
+  { kind: "reply_all", sendId: ID },
+  { kind: "reply_use_reply_to", sendId: ID },
+  { kind: "reply_draft", emailId: ID },
 ];
 
 describe("callback prefixes", () => {
@@ -137,6 +142,30 @@ describe("delegate callback data", () => {
 
 // The review of reply drafts.
 describe("the reply review callbacks", () => {
+  test("Redraft, Reply all, Use Reply-To and Draft reply use their own prefixes (rd, ra, ru, dr) and are no feedback taps", () => {
+    const expected = {
+      reply_redraft: "rd",
+      reply_all: "ra",
+      reply_use_reply_to: "ru",
+      reply_draft: "dr",
+    } as const;
+    for (const [kind, prefix] of Object.entries(expected)) {
+      const callback = everyKind.find((entry) => entry.kind === kind) as Callback;
+      expect(encodeCallback(callback)).toBe(`${prefix}:${ID}`);
+      expect(parseCallback(`${prefix}:${ID}`)).toEqual(callback);
+      expect(isReplyCallback(callback)).toBe(true);
+      expect(isFeedbackCallback(callback)).toBe(false);
+    }
+    // A prefix of the reply kinds is used by no other kind.
+    const others = everyKind.filter((callback) => !callback.kind.startsWith("reply_"));
+    const prefixes = new Set(others.map((callback) => encodeCallback(callback).slice(0, 2)));
+    for (const prefix of Object.values(expected)) expect(prefixes.has(prefix), prefix).toBe(false);
+    for (const data of ["rd", `rd:`, `ra:${ID}x`, `ru:x`, `dr:${ID}:1`, `DR:${ID}`]) {
+      expect(parseCallback(data), data).toBeNull();
+    }
+    expect(() => encodeCallback({ kind: "reply_draft", emailId: "x" })).toThrow("bad id");
+  });
+
   test("`rv` starts the review, `rv:<send>` asks for the next one after a send; both parse back and are short", () => {
     expect(encodeCallback({ kind: "reply_review" })).toBe("rv");
     expect(parseCallback("rv")).toEqual({ kind: "reply_review" });

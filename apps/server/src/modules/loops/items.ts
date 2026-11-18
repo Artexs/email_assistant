@@ -62,6 +62,7 @@ export async function loopItemsOf(db: DbOrTrx, ctx: TenantContext, rows: readonl
       subject: row.subject,
       dueAt: row.due_at.toISOString(),
       dueSource: row.due_source,
+      usualReplyDays: row.usual_reply_days,
       sentAt: row.wait_from_at.toISOString(),
       laterLeft: Math.max(0, MAX_LATER_TAPS - row.later_count),
       followUpsSent: row.follow_ups_sent,

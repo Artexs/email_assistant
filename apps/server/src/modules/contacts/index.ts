@@ -15,3 +15,4 @@ export {
   type RefreshDeps,
   type RefreshResult,
 } from "./refresh";
+export { contactWaitFor, type ContactWait } from "./wait";

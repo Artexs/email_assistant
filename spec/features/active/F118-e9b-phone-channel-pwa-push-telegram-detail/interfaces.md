@@ -8,7 +8,8 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 - `pushKinds`: the kinds with a push renderer (D6). `noticeGroups`: `{ urgent, approvals, updates }` → kinds (D6). `noticeGroupOf(kind): NoticeGroup | null`. All three in stage 04.
 - `noticeFactsOf(kind, view): { count: number; itemId: string | null }` (stage 08 for push kinds, stage 09 for every kind). One source for the push payload and the `minimal` text.
 - `noticePath(kind, itemId): string` (stage 04): the panel path of a tap (D17). Pure; the service worker bundles it.
-- `PushPayload = { v: 1; id: string; kind: NoticeKind | "test"; count: number; itemId: string | null; lang: "pl" | "en" }` and `pushPayloadSchema` (strict) (stage 04).
+- `PushPayload = { v: 1; id: string; kind: PushKind | "test"; count: number; itemId: string | null; lang: "pl" | "en" }` and `pushPayloadSchema` (strict) (stage 04). `kind` is a push kind (D6) or `test`, not any `NoticeKind`: a kind without a push renderer is not a valid payload. `id` is 1 to 64 characters, `itemId` 1 to 64 or null, `count` an integer 0 to 99999. `noticePath(kind, itemId)` takes any `NoticeKind` or `test` (stage 09 uses it for every kind in the `minimal` render); only an `approval` with a UUID `itemId` gets `?id=`.
+- `pushTexts(lang)` returns `{ title(kind), body(kind, count) }`; `@ea/core/push` (`packages/core/src/push-worker.ts`) is the small entry that the service worker bundles: the payload, `noticePath`, the groups and `pushTexts`, with no Node module.
 - `renderNotice(kind, view, { channel: "push", detail: "full", locale })` → `{ ok: true, text: <JSON of PushPayload without id>, buttons: [] }` for a push kind, `{ ok: false }` for any other kind (stage 08). The sender adds `id`.
 - `renderNotice(kind, view, { channel: "telegram", detail: "minimal", locale, webBaseUrl? })` for every kind (stage 09). The `NoticeRenderer` type makes `telegram.minimal` required.
 - `effectiveDetail({ flagOn, locked, memberDetail }): "full" | "minimal"` (stage 10).
@@ -27,6 +28,6 @@ Part of [plan.md](plan.md). These names are the contract between the stages and 
 - `NoticeRecipient = { userId, role, locale, since: Date, hasChat: boolean }` (stage 07): `OrgRun.members` and `owners` become recipients.
 - `queueNotice` (stage 07): new inputs `eventAt?: Date` (required for a push kind, D20) and `only?: "telegram" | "push"` (D21). Without an explicit `channel`, it writes one Telegram row and one push row per live device with `createdAt ≤ eventAt`, by `effectiveRoute`. It returns the Telegram row id when it wrote one, else the first push row id, else null.
 - Job `channels.push` (`createPushSender`, every 15 s, stage 08): registered when `pushConfigOf` is not null, with or without the Telegram bot.
-- Audit events: `push.subscribed`, `push.removed` (stage 03), `member.telegram_detail_changed`, `org.telegram_lock_changed` (stage 11). Data: ids and the new value only.
+- Audit events: `push.subscribed`, `push.removed`, `push.test_sent` (stage 03; the last one counts the test notices of a user per hour and holds the device count), `member.telegram_detail_changed`, `org.telegram_lock_changed` (stage 11). Data: ids and the new value only.
 - Outbox fail codes added: `no_device` (stage 02, `removeDevice`), `push_refused` (stage 08).
 - Log fields added: `push_subscription_id` (uuid), `http_status` (number) if missing. Never an endpoint, a key or a payload.

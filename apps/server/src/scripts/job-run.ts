@@ -87,7 +87,14 @@ async function main(): Promise<number> {
       } else if (args.name === "loops.analyze") {
         if (llmScope === null) throw new Error("the model scope is off");
         const llm = createLlmClient({ table: llmRoleTable(config) });
-        const jobs = createLoopJobs({ db, llm, dailyCap: config.LLM_DAILY_CAP, scope: llmScope, now });
+        const jobs = createLoopJobs({
+          db,
+          llm,
+          dailyCap: config.LLM_DAILY_CAP,
+          credentialsKey: config.CREDENTIALS_KEY,
+          scope: llmScope,
+          now,
+        });
         const run = await jobs.analyze.run();
         // Counts only: no id, no address, no text.
         out.print(

@@ -18,7 +18,7 @@ import {
   type ClaimedOutbox,
   type OutboxFailCode,
 } from "./repo";
-import { isReviewCardKey } from "./review-keys";
+import { isAskedForKey } from "./review-keys";
 
 const log = createLog("channels");
 
@@ -112,7 +112,11 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         // (ADR 0032 point 5).
         let message: OutMessage;
         if (row.text !== null) {
-          message = { text: row.text, buttons: row.buttons };
+          message = {
+            text: row.text,
+            buttons: row.buttons,
+            ...(row.kind === "reply_prompt" ? { forceReply: true as const } : {}),
+          };
         } else {
           const rendered = renderNotice(row.kind, row.view, {
             channel: row.channel,
@@ -139,8 +143,9 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           }
         }
         const timezone = await quiet.timezoneOf(ctx);
-        // The digest, a card edit and a review card that the owner asked for with a tap are never held: the user is awake and waits for it.
-        if (row.kind !== "digest" && !isEdit && !isReviewCardKey(row.kind, row.dedupKey)) {
+        // The digest, a card edit and a message that the owner asked for with a tap or a line of text (a review card, the question after
+        // Redraft, the result of a request) are never held: the user is awake and waits for it.
+        if (row.kind !== "digest" && !isEdit && !isAskedForKey(row.kind, row.dedupKey)) {
           const until = await quiet.holdUntil(row, timezone);
           if (until !== null) {
             await release(row, until, false);
