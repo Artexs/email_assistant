@@ -1,11 +1,9 @@
-import { costPerMail, localToInstant } from "@ea/core";
+import { costPerMail, DAY_MS, localToInstant } from "@ea/core";
 
 import type { Db } from "../../platform/db";
 import { listLlmCallRows } from "../audit";
 
 import type { LabRun } from "./state";
-
-const DAY_MS = 24 * 3_600_000;
 
 export interface RunSpend {
   // `unpriced`: at least one call has a model with no price. `usd` then holds the priced calls only, a lower bound.

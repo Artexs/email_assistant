@@ -1,4 +1,4 @@
-import { SENT_MAX_AGE_DAYS, type SentSkipReason } from "@ea/core";
+import { DAY_MS, SENT_MAX_AGE_DAYS, type SentSkipReason } from "@ea/core";
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../platform/db";
@@ -7,8 +7,6 @@ import { SYNTHETIC_MESSAGE_ID_LIKE, type TestMailRule } from "../mail";
 import type { DbOrTrx } from "./repo";
 
 // The state of the analysis of the user's own Sent mail (`sent_analyses`). Codes and counters only: no text, no address.
-
-const DAY_MS = 86_400_000;
 
 // The skip reasons of the code filters, plus the three of this job.
 export type AnalysisSkipReason = SentSkipReason | "thread_restart" | "delegation_thread" | "llm_cap";

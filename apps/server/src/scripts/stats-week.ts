@@ -5,6 +5,7 @@ import { listUrgentNoticeTimes } from "../modules/channels";
 import { configureMailHosts } from "../modules/mail";
 import { weekStats } from "../modules/reports";
 import { getOrganization } from "../modules/tenancy";
+import { createCliOutput } from "../platform/cli";
 import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { errorFields } from "../platform/errors";
@@ -13,12 +14,13 @@ import { createLog } from "../platform/log";
 import { readStatsWeekOptions, statsLines, usage } from "./stats-week-args";
 
 const log = createLog("stats-week");
+const out = createCliOutput("stats-week");
 
 // Operator tool: it ignores the `stats_page` flag and writes nothing.
 async function main(): Promise<number> {
   const options = readStatsWeekOptions(process.argv.slice(2));
   if (!options) {
-    process.stderr.write(`${usage}\n`);
+    out.fail(usage);
     return 1;
   }
 
@@ -31,7 +33,8 @@ async function main(): Promise<number> {
     const ctx = { orgId: options.orgId };
     const organization = await getOrganization(db, ctx);
     if (organization === undefined) {
-      process.stderr.write(`not_found: no such organization\n${usage}\n`);
+      out.fail("not_found: no such organization");
+      out.fail(usage);
       return 1;
     }
     const now = new Date();
@@ -50,11 +53,12 @@ async function main(): Promise<number> {
       }
     );
     if (stats === "not_found") {
-      process.stderr.write(`not_found: no such mailbox\n${usage}\n`);
+      out.fail("not_found: no such mailbox");
+      out.fail(usage);
       return 1;
     }
-    // The figures are for the operator, not log lines.
-    process.stdout.write(`${statsLines(stats).join("\n")}\n`);
+    // The figures are for the operator, not log lines: one bare `key value …` line each (`raw`, no `[name]` prefix).
+    out.raw(statsLines(stats).join("\n"));
     return 0;
   } catch (error) {
     log.error("stats_week_failed", { ...errorFields(error) });

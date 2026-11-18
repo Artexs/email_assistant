@@ -1,4 +1,4 @@
-import { isFeatureKey, userLocaleSchema, type FeatureKey, type OrganizationView, type OrgPlan } from "@ea/core";
+import { DAY_MS, isFeatureKey, userLocaleSchema, type FeatureKey, type OrganizationView, type OrgPlan } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -155,8 +155,6 @@ export type SetOrgPlanResult =
       reason: "nothing_to_change" | "trial_days_without_trial" | "trial_days_range" | "max_mailboxes_range";
     };
 
-const dayMs = 24 * 60 * 60 * 1000;
-
 // One transaction: the lock, the new state, one audit row, then the suspend or resume hook. A throw in a hook rolls back all.
 export async function setOrgPlan(
   db: Db | Transaction<DB>,
@@ -188,7 +186,7 @@ export async function setOrgPlan(
     let trialEndsAt: Date | null = null;
     if (targetPlan === "trial") {
       if (trialDays !== undefined) {
-        trialEndsAt = new Date(input.now.getTime() + trialDays * dayMs);
+        trialEndsAt = new Date(input.now.getTime() + trialDays * DAY_MS);
       } else if (before.plan === "trial") {
         trialEndsAt = before.trialEndsAt;
       } else {

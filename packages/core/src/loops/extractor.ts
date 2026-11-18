@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { localDateTime } from "../digest/local-time";
 import { cleanUserText } from "../outgoing/user-text";
+import { DAY_MS } from "../time";
 
 import { dueRefSchema } from "./dates";
 
@@ -13,7 +14,6 @@ export const EXTRACT_BODY_MAX = 8000;
 export const SENT_MAX_AGE_DAYS = 14;
 export const SENT_MAX_RECIPIENTS = 10;
 
-const DAY_MS = 86_400_000;
 const LINK = /https?:|www\./i;
 const LONG_DIGITS = /\d(?:[\s.-]?\d){5,}/;
 

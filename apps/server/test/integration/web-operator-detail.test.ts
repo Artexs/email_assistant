@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertOutbox } from "../../src/modules/channels";
 import { insertMailbox } from "../../src/modules/mail/repo";
+import { listOperatorNotices } from "../../src/modules/operator";
 import { operatorRoutes } from "../../src/modules/operator/routes";
 import { insertDigest, markDigestSent } from "../../src/modules/reports";
 import { upsertOrgFeature } from "../../src/modules/tenancy";
@@ -253,6 +254,34 @@ describe("operator detail and notices (F099 stage 08)", () => {
       const res = await app().request(`/api/operator/notices?days=${days}`, as("assistant"));
       expect({ days, status: res.status }).toEqual({ days, status: 400 });
     }
+  });
+
+  // Golden (F133): the order of equal times, as the per-organization reads gave it before the list was batched.
+  test("7b. notices of one time: by organization id, and inside one organization the newest row first", async () => {
+    const when = at(-3 * DAY);
+    await notice(org.orgId, "llm_cap", "tie:a1", when);
+    await notice(org.orgId, "llm_cap", "tie:a2", when);
+    await notice(org.otherOrgId, "llm_cap", "tie:b1", when);
+    const res = await app().request("/api/operator/notices", as("assistant"));
+    const rows = operatorNoticesSchema.parse(await res.json()).notices.filter((row) => row.key.startsWith("tie:"));
+    const orgs = [org.orgId, org.otherOrgId].sort((x, y) => x.localeCompare(y));
+    const keysOf = (orgId: string) => (orgId === org.orgId ? ["tie:a2", "tie:a1"] : ["tie:b1"]);
+    expect(rows.map((row) => `${row.orgId}:${row.key}`)).toEqual(
+      orgs.flatMap((orgId) => keysOf(orgId).map((key) => `${orgId}:${key}`))
+    );
+  });
+
+  test("7c. the notice list reads once, not once per organization", async () => {
+    let queries = 0;
+    const counted = db.withPlugin({
+      transformQuery: (args) => {
+        queries += 1;
+        return args.node;
+      },
+      transformResult: (args) => Promise.resolve(args.result),
+    });
+    await listOperatorNotices({ db: counted, now: () => NOW }, 7);
+    expect(queries).toBeLessThanOrEqual(2);
   });
 
   test("8. neither body holds an organization name, an address or a display name", async () => {

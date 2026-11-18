@@ -9,6 +9,8 @@ import {
 
 import { dateLocale, t, type TextKey } from "../i18n";
 
+import { formatTrimmed, formatUsd, percentOf, wholePercent } from "./format-number";
+
 export interface StatsCell {
   text: string;
 }
@@ -20,20 +22,16 @@ export interface StatsRow {
 
 const NONE = "–";
 
-function percent(count: number, total: number): number {
-  return Math.round((count / total) * 100);
-}
-
 // A rate always shows its count; a denominator of 0 shows a dash, never "0%".
 function rateText(count: number, total: number): string {
   if (total === 0) return NONE;
-  return t("stats_rate", { percent: percent(count, total), count, total });
+  return t("stats_rate", { percent: percentOf(count, total), count, total });
 }
 
 function minutesText(week: WeekStats): string {
   const { p90Minutes, noticed } = week.m5;
   if (p90Minutes === null) return NONE;
-  return t("stats_minutes", { minutes: Number(p90Minutes.toFixed(1)), noticed });
+  return t("stats_minutes", { minutes: formatTrimmed(p90Minutes, 1), noticed });
 }
 
 // M8 is the evidence of one category. With several mailboxes the row with the most kept mails speaks for it.
@@ -52,9 +50,9 @@ function evidenceText(week: WeekStats, category: BarCategory): string {
     });
   }
   return t(best.auto ? "stats_evidence_auto" : "stats_evidence", {
-    percent: Math.round(best.precision * 100),
+    percent: wholePercent(best.precision),
     kept: best.kept,
-    lower: Math.round(best.wilsonLower * 100),
+    lower: wholePercent(best.wilsonLower),
   });
 }
 
@@ -99,7 +97,7 @@ export function statsRows(weeks: readonly WeekStats[]): StatsRow[] {
     row("stats_m4", (w) => rateText(w.m4.handled, w.m4.triaged)),
     row("stats_m4_would", (w) => rateText(w.m4.wouldHandle, w.m4.triaged)),
     row("stats_m5", minutesText),
-    row("stats_m7", (w) => `$${w.m7.perMailboxMonthUsd.toFixed(2)}`),
+    row("stats_m7", (w) => formatUsd(w.m7.perMailboxMonthUsd, 2)),
     ...barCategories.map((category) => row(`stats_m8_${category}`, (w) => evidenceText(w, category))),
   ];
 }

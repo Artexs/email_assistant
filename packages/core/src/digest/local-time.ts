@@ -1,6 +1,7 @@
 // Time zone helpers for the digest schedule, the quiet hours and the "HH:MM" texts. Pure: no I/O.
 import type { UserLocale } from "../tenancy";
 import { clockTexts } from "../texts/clock";
+import { DAY_MS } from "../time";
 
 // `localParts` parses the `en-US` short weekday with this list. The display uses `clockTexts`.
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -95,8 +96,6 @@ export function nextLocalDate(date: string): string {
   );
   return dateText(next.getUTCFullYear(), next.getUTCMonth() + 1, next.getUTCDate());
 }
-
-const DAY_MS = 86_400_000;
 
 interface LocalInstants {
   // The instants at which the wall clock reads the time, oldest first; in a gap the one instant after the change.

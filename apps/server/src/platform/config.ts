@@ -1,6 +1,7 @@
 import { isIP } from "node:net";
 
 import {
+  DEFAULT_SEND_LIMITS,
   type FeatureKey,
   isFeatureKey,
   isLoopbackApiRoot,
@@ -171,9 +172,18 @@ const baseSchema = z.object({
   // Comma-separated sender addresses whose mail counts as test mail (D1 of F097). Empty = none.
   TEST_SENDER_ADDRESSES: z.preprocess(emptyAsUndefined, z.string().optional()),
   // Send limits per mailbox (PD-044); a send over a limit waits. Integers 1 to 10 000; empty = the default.
-  SEND_LIMIT_MAILBOX_HOUR: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(20)),
-  SEND_LIMIT_MAILBOX_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(100)),
-  SEND_LIMIT_RECIPIENT_DAY: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(1).max(10_000).default(5)),
+  SEND_LIMIT_MAILBOX_HOUR: z.preprocess(
+    emptyAsUndefined,
+    z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.mailboxHour)
+  ),
+  SEND_LIMIT_MAILBOX_DAY: z.preprocess(
+    emptyAsUndefined,
+    z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.mailboxDay)
+  ),
+  SEND_LIMIT_RECIPIENT_DAY: z.preprocess(
+    emptyAsUndefined,
+    z.coerce.number().int().min(1).max(10_000).default(DEFAULT_SEND_LIMITS.recipientDay)
+  ),
   // Comma list of authserv-ids (hosts) whose `Authentication-Results` header the suspicious-mail rules trust, besides the
   // registrable domain of the mailbox IMAP host (F109 D2). Empty = none.
   MAIL_TRUSTED_AUTHSERV_IDS: z.preprocess(emptyAsUndefined, z.string().optional()),

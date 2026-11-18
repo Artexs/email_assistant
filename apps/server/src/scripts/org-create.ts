@@ -1,5 +1,7 @@
 import { parseArgs } from "node:util";
 
+import { DAY_MS } from "@ea/core";
+
 import { createOrganizationWithOwner } from "../modules/tenancy";
 import { createCliOutput } from "../platform/cli";
 import { loadConfig } from "../platform/config";
@@ -11,7 +13,6 @@ const out = createCliOutput("org-create");
 const usage =
   "usage: bun run org:create --org-name <name> --email <email> --display-name <name> [--timezone <tz, default Europe/Warsaw>] [--plan trial|active, default trial] [--trial-days N, default 30, trial only]";
 
-const dayMs = 24 * 60 * 60 * 1000;
 const defaultTrialDays = 30;
 
 function readOptions() {
@@ -43,7 +44,7 @@ function readOptions() {
     if (trialDaysText !== undefined && !/^\d+$/.test(trialDaysText)) return undefined;
     const trialDays = trialDaysText === undefined ? defaultTrialDays : Number(trialDaysText);
     if (trialDays < 1 || trialDays > 365) return undefined;
-    const endsAt = new Date(Date.now() + trialDays * dayMs);
+    const endsAt = new Date(Date.now() + trialDays * DAY_MS);
     return { orgName, email, displayName, timezone: values.timezone, plan: { kind: "trial", endsAt } as const };
   } catch {
     return undefined;

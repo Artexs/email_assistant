@@ -82,6 +82,7 @@ export function tombstoneKeyHash(dedupKey: string): string {
 }
 
 const DSR_HASH_INFO = "ea/dsr-address/v1";
+const SENDER_KEY_INFO = "ea/sender-profile/v1";
 
 // The hash of a DSR address for the audit row (F106 account data ticket): HMAC-SHA256 hex over the normalized address. The key is the
 // HKDF-SHA256 of the credentials key (empty salt, info `ea/dsr-address/v1`, 32 bytes), so a person who reads the audit
@@ -94,4 +95,17 @@ export function dsrAddressHash(credentialsKeyBase64: string, address: string): s
   }
   const derived = Buffer.from(hkdfSync("sha256", key, Buffer.alloc(0), DSR_HASH_INFO, KEY_BYTES));
   return createHmac("sha256", derived).update(address, "utf8").digest("hex");
+}
+
+// The key of a sender in the profile and suggestion tables (F120 D3): HMAC-SHA256 hex over `<orgId>:<value>`, with a key
+// derived by HKDF-SHA256 from the credentials key (empty salt, info `ea/sender-profile/v1`). The org id in the message
+// gives a different key for the same address in each organization. The value is an address or `@domain`; the caller
+// normalizes it (trim, lower case). The hash never leaves the server. A change of the credentials key orphans old rows.
+export function senderKeyHash(credentialsKeyBase64: string, orgId: string, value: string): string {
+  const key = decodeBase64(credentialsKeyBase64);
+  if (key === null || key.length !== KEY_BYTES) {
+    throw new CryptoError(`Credentials key must be base64 of exactly ${KEY_BYTES} bytes`);
+  }
+  const derived = Buffer.from(hkdfSync("sha256", key, Buffer.alloc(0), SENDER_KEY_INFO, KEY_BYTES));
+  return createHmac("sha256", derived).update(`${orgId}:${value}`, "utf8").digest("hex");
 }

@@ -1,3 +1,4 @@
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { clearActionErrors, clearActionPayloads } from "./modules/actions";
@@ -22,9 +23,6 @@ import { errorFields } from "./platform/errors";
 import { createLog } from "./platform/log";
 
 const log = createLog("retention");
-
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
 
 // A23: every text of the §7 list goes after this period, except the mail body (the organization's `data_retention_days`).
 export const RETENTION_TEXT_DAYS = 90;

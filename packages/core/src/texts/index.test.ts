@@ -30,6 +30,14 @@ describe("the texts registry", () => {
       ["Google", "admin_consent_required"],
       ["Google", "protocol_disabled"],
     ],
+    // The operator notices take more than three arguments; the cap count covers the Polish plural forms.
+    "operator.llmCap": [
+      ["m", "o", 1, "d"],
+      ["m", "o", 2, "d"],
+      ["m", "o", 5, "d"],
+    ],
+    "operator.authMailFailed": [["reset", "u", "o", "EAUTH"]],
+    "operator.sendLimit": [["m", "o", "mailbox_hour", "a", "b"]],
   };
 
   // Walks a table: a string is non-empty, an array holds such values, a function returns a non-empty string.

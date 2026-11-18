@@ -6,7 +6,13 @@ export interface CliOutput {
   fail(text: string): void;
 }
 
-export function createCliOutput(name: string): CliOutput {
+/** What `createCliOutput` returns: the `CliOutput` of the text paths, and `raw` for the machine output of a script. */
+export interface CliRawOutput extends CliOutput {
+  /** `text` on stdout with no prefix: machine output that a person or a test reads line by line (`key value …`). */
+  raw(text: string): void;
+}
+
+export function createCliOutput(name: string): CliRawOutput {
   const prefix = `[${name}]`;
   return {
     print(text) {
@@ -16,6 +22,10 @@ export function createCliOutput(name: string): CliOutput {
     fail(text) {
       // eslint-disable-next-line no-console
       console.error(prefix, text);
+    },
+    raw(text) {
+      // eslint-disable-next-line no-console
+      console.log(text);
     },
   };
 }

@@ -1,5 +1,6 @@
 import { undoAnswerKinds } from "../digest/answers";
 import { labelCategories } from "../digest/callback";
+import { DAY_MS } from "../time";
 import { categories, feedbackSources, feedbackVerdicts } from "../triage/categories";
 import { senderRuleKinds } from "../triage/rules";
 import { suspiciousReasons } from "../triage/suspicious";
@@ -11,8 +12,6 @@ export { categories, type Category, type FeedbackSource, type FeedbackVerdict } 
 export const ACTIVITY_PAGE_SIZE = 50;
 export const ACTIVITY_MAX_LIMIT = 100;
 export const ACTIVITY_MAX_DAYS = 90;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const activityRanges = ["24h", "7d", "30d", "90d"] as const;
 export type ActivityRange = (typeof activityRanges)[number];

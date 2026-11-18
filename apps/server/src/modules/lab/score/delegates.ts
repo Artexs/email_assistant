@@ -1,9 +1,10 @@
 import {
+  type DelegateBehaviour,
   DELEGATION_DEFAULT_DUE_MS,
+  HOUR_MS,
   localDateTime,
   localToInstant,
   nextLocalDate,
-  type DelegateBehaviour,
 } from "@ea/core";
 
 import type { Db, TenantContext } from "../../../platform/db";
@@ -16,7 +17,6 @@ import { section, table } from "./render-util";
 import type { SectionScope } from "./section";
 
 const ZONE = "Europe/Warsaw";
-const HOUR_MS = 3_600_000;
 // The executive's tap on the reminder card comes after the chaser run (stage 13: 2 hours).
 const TAP_ALLOWANCE_MS = 2 * HOUR_MS;
 

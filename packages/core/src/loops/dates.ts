@@ -2,12 +2,12 @@ import { z } from "zod";
 
 import { localDateTime, localToInstant, nextLocalDate } from "../digest/local-time";
 import { addWorkingDays } from "../metrics/week";
+import { DAY_MS } from "../time";
 
 // Pure date rules of the open loops (D7). The model gives a date or a time word; the code resolves it.
 // Every due date is 17:00 local time of the organization.
 const DUE_TIME = "17:00";
 const MAX_DAYS_AHEAD = 60;
-const DAY_MS = 86_400_000;
 
 // 0 = Sunday … 6 = Saturday, as `localDateTime` returns it.
 const weekdayWords = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;

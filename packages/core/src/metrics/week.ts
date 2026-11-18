@@ -1,7 +1,6 @@
 // The week and the working day of the measures. Pure: every function takes the time zone, none reads the clock.
 import { localDateTime, localToInstant, nextLocalDate } from "../digest/local-time";
-
-const DAY_MS = 24 * 3_600_000;
+import { addDays } from "../time";
 
 function dateMs(date: string): number {
   return Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10)));
@@ -9,10 +8,6 @@ function dateMs(date: string): number {
 
 function weekdayOf(date: string): number {
   return new Date(dateMs(date)).getUTCDay();
-}
-
-function addDays(date: string, days: number): string {
-  return new Date(dateMs(date) + days * DAY_MS).toISOString().slice(0, 10);
 }
 
 /** The Monday (YYYY-MM-DD, local) of the week that holds `at` in `timeZone`. */

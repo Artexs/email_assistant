@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { isLoopbackApiRoot } from "@ea/core";
+import { DEFAULT_SEND_LIMITS, isLoopbackApiRoot } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import {
@@ -679,6 +679,11 @@ describe("send limits", () => {
 
   test("no key set gives the PD-044 defaults", () => {
     expect(sendLimits(loadConfig(fullEnv))).toEqual({ mailboxHour: 20, mailboxDay: 100, recipientDay: 5 });
+  });
+
+  test("the schema default is the core default (one source)", () => {
+    expect(sendLimits(loadConfig(fullEnv))).toEqual(DEFAULT_SEND_LIMITS);
+    expect(DEFAULT_SEND_LIMITS).toEqual({ mailboxHour: 20, mailboxDay: 100, recipientDay: 5 });
   });
 
   test("values are read; an empty string is the default", () => {

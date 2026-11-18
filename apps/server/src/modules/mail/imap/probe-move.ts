@@ -1,4 +1,5 @@
 // Write probe for the S3 move rules: one synthetic mail, every IMAP write the committer will use. Test account only.
+import { DAY_MS } from "@ea/core";
 import type { FetchMessageObject, ImapFlow } from "imapflow";
 
 import { HardError, SoftError } from "../../../platform/errors";
@@ -8,7 +9,6 @@ import { connectImapClient, toMailError, type ImapConnectOptions } from "./clien
 import { withCleanupNotes } from "./probe";
 
 const INBOX_PATH = "INBOX";
-const DAY_MS = 86_400_000;
 const FETCH_QUERY = { uid: true, size: true, internalDate: true, envelope: true, flags: true } as const;
 
 export interface ProbeMoveReport {

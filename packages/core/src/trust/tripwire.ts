@@ -1,3 +1,5 @@
+import { DAY_MS } from "../time";
+
 // The tripwire rule (F110 D9): when user corrections pause an `auto` category.
 export const tripReasons = [
   "corrections",
@@ -16,7 +18,6 @@ export interface TripState {
 
 export const TRIP_WINDOW_DAYS = 7;
 export const TRIP_MIN_CORRECTIONS = 2;
-const DAY_MS = 86_400_000;
 
 /** `corrections` holds only the corrections that count under D9. The window is the 7 days before `now`. */
 export function tripwireDue(input: {

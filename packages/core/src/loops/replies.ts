@@ -1,7 +1,8 @@
+import { DAY_MS } from "../time";
+
 // Pure close rules of the open loops. A later mail from a person who is not the user ends a wait for a reply.
 // No I/O: the server reads the rows and calls these functions. A wrong "match" hides a slip, so every doubt is "no match".
 
-const DAY_MS = 86_400_000;
 // The reach of the subject rule: a mail that is not in the thread counts only this long after the wait began.
 export const SUBJECT_MATCH_DAYS = 30;
 // Longest text that the rules read. The loop copy of a subject is at most 300 characters; a mail may carry more.
