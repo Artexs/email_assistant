@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { SHOT_DESKTOP_SIZE } from "../src/shots";
 
-// The wiring of the shot run (stage 11, step 2): `bun run docs:shots` runs `apps/web/e2e/docs-shots.config.ts`. The browser run itself needs
+// The wiring of the shot run (step 2): `bun run docs:shots` runs `apps/web/e2e/docs-shots.config.ts`. The browser run itself needs
 // the e2e stack and is made by hand under the shared lock (`flock /tmp/email-assistant-shared-tests.lock`); these tests read the files.
 const ROOT = join(import.meta.dir, "../../..");
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");

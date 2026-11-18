@@ -2,14 +2,14 @@
  * Hides the keyboard hint ("Ctrl K") inside the search button. Starlight 0.43.1 sets the button's aria-label to "Search" and
  * shows the hint as visible text, so axe reports `label-content-name-mismatch` (WCAG 2.5.3) on every page at desktop width.
  * The shortcut itself stays (`aria-keyshortcuts`, and Ctrl+K opens the search). `!important`: a script sets the inline style.
- * Stage 06 (F112, plan N4). Remove this file when a Starlight update fixes the label; `docs:test` (T4) then still passes.
+ * Remove this file when a Starlight update fixes the label; `docs:test` then still passes.
  */
 site-search kbd {
   display: none !important;
 }
 
 /*
- * `<Shot>` (stage 11): the screenshot of a panel page, or, while `DOCS_SHOTS` is not `on`, a bordered box with its alt text.
+ * `<Shot>`: the screenshot of a panel page, or, while `DOCS_SHOTS` is not `on`, a bordered box with its alt text.
  */
 .shot img {
   display: block;

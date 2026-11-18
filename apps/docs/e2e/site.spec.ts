@@ -5,7 +5,7 @@ import { DOCS_BASE } from "@ea/core";
 import { expectNoA11yViolations } from "./a11y";
 import { builtPagePaths, distIsBuilt, docsTestOrigin } from "./site";
 
-// The browser check of the built docs site (plan D11, stage 06). The page list comes from the built `.html` files, not from a hand list.
+// The browser check of the built docs site. The page list comes from the built `.html` files, not from a hand list.
 // With `DOCS_TEST_URL` the tests open that site; the list still comes from the local `dist` (build the same commit first).
 if (!distIsBuilt()) {
   throw new Error("apps/docs/dist/index.html is missing: run `bun run docs:build` before `bun run docs:test`");

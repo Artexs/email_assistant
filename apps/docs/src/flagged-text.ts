@@ -1,4 +1,4 @@
-// The user-visible strings of every default-off feature flag (plan P2): a page under `src/content/docs` must not hold one,
+// The user-visible strings of every default-off feature flag: a page under `src/content/docs` must not hold one,
 // because a reader cannot know whether their organization has the flag on. `flagged-text.test.ts` scans the pages.
 // The in-place operator sources are out of scope (operator text). A stage that meets a new flagged string adds it here.
 import { featureFlags, type FeatureKey } from "@ea/core";

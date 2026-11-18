@@ -1,4 +1,4 @@
-// The public changelog page (plan D12, P2): built from `parseChangelog` only, never from the raw file.
+// The public changelog page: built from `parseChangelog` only, never from the raw file.
 // It shows each release with its version and date, and the "For users" items in English.
 // `Unreleased`, the file header, comments and every other group (operator text) are not published.
 // A file that does not parse throws `ChangelogError`: the build fails.
