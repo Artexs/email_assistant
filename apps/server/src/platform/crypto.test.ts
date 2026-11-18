@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHmac, hkdfSync, randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
@@ -119,6 +119,14 @@ describe("senderKeyHash", () => {
 
   test("the hash differs from the DSR address hash (another info string)", () => {
     expect(senderKeyHash(key, "o1", "a@x.pl")).not.toBe(dsrAddressHash(key, "a@x.pl"));
+  });
+
+  test("the hash is HMAC-SHA256 of `<orgId>:<value>` under the HKDF key with info `ea/sender-profile/v1`", () => {
+    const derived = Buffer.from(
+      hkdfSync("sha256", Buffer.from(key, "base64"), Buffer.alloc(0), "ea/sender-profile/v1", 32)
+    );
+    const expected = createHmac("sha256", derived).update("o1:a@x.pl", "utf8").digest("hex");
+    expect(senderKeyHash(key, "o1", "a@x.pl")).toBe(expected);
   });
 
   test("a domain value and an address value give different hashes", () => {

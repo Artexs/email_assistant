@@ -277,6 +277,11 @@ describe("suggestionsFor: cap, order, skip", () => {
     expect(result.map((c) => c.pattern)).toEqual(["m@m.pl", "z@z.pl"]);
   });
 
+  test("VIPs with equal answers order by flagged count, then key", () => {
+    const result = suggestionsFor([sender("a@a.pl", vipMail), sender("z@z.pl", { ...vipMail, flagged30: 4 })], ctx());
+    expect(result.map((c) => c.pattern)).toEqual(["z@z.pl", "a@a.pl"]);
+  });
+
   test("a dismissed key is skipped and the next candidate fills the slot", () => {
     const four = [
       sender("a@a.pl", vipMail),
