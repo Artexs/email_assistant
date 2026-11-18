@@ -1233,6 +1233,54 @@ export const pl: Record<TextKey, string> = {
   nl_done: "Wypisano",
   nl_failed: "Nie udało się",
   nl_failed_open: "Nie udało się — otwórz stronę wypisania",
+  // F110 stage 14: the report page ("what I would have done") and the onboarding steps with the flag trust_ladder
+  title_report: "Raport",
+  rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",
+  rep_no_mailbox: "Najpierw połącz skrzynkę. Potem zacznie się sprawdzanie poczty.",
+  rep_load_error: "Nie udało się wczytać raportu.",
+  rep_intro: "Co asystent zrobiłby z Twoją pocztą z ostatnich 30 dni.",
+  rep_read_only:
+    "Sprawdzanie przeczytało wiadomości z ostatnich 30 dni w folderze INBOX, tylko do odczytu. Niczego nie zmieniło.",
+  rep_starting: "Rozpoczynam sprawdzanie…",
+  rep_progress: "Sprawdzam ostatnie 30 dni… ({checked} z najwyżej {max} wiadomości)",
+  rep_checked: "Sprawdzone wiadomości: {checked}.",
+  rep_capped:
+    "Sprawdzanie zatrzymało się na limicie kosztów. Wynik opiera się na dotychczas sprawdzonych wiadomościach.",
+  rep_counts: "Sprawdzone wiadomości: {total} · Zostałyby przeniesione: {wouldMove}",
+  rep_auto_on: "Automatyczne przenoszenie: włączone",
+  rep_recommended: "Zalecane: włącz",
+  rep_not_recommended: "Jeszcze niezalecane",
+  rep_turn_on: "Włącz zalecane ({categories})",
+  rep_turned_on: "Włączono: {categories}.",
+  rep_mode_assist: "Skrzynka jest teraz w trybie asystenta.",
+  rep_mode_shadow: "Skrzynka jest teraz w trybie podglądu. Asystent nadal niczego nie zmienia.",
+  rep_nothing: "Na razie nic nie jest zalecane. Powody są w liniach powyżej.",
+  rep_all_on: "Wszystko, co jest zalecane, jest już włączone.",
+  rep_owner_only: "Włączyć to może tylko właściciel.",
+  rep_check_again: "Sprawdź ponownie",
+  rep_check_started: "Sprawdzanie rozpoczęte.",
+  rep_check_running: "Sprawdzanie już trwa.",
+  rep_review_suggest: "Chcesz sam sprawdzić 10 decyzji? To nieobowiązkowe.",
+  rep_review_link: "Sprawdź 10 decyzji",
+  rep_nr_no_history: "Nie ma wiadomości z ostatnich 30 dni do sprawdzenia. Decydują same wyniki testów.",
+  rep_nr_uidvalidity:
+    "Skrzynka zmieniła numerację folderu, więc sprawdzanie nie mogło się zakończyć. Decydują same wyniki testów.",
+  rep_nr_cost_unknown:
+    "Cena tego modelu AI jest nieznana, więc sprawdzanie się nie odbyło. Decydują same wyniki testów.",
+  rep_nr_stopped: "Sprawdzanie zatrzymało się po kilku nieudanych próbach. Decydują same wyniki testów.",
+  rep_nr_key_changed: "Model AI zmienił się w trakcie sprawdzania, więc je przerwano. Decydują same wyniki testów.",
+  rep_nr_auth_refused:
+    "Skrzynka odrzuciła logowanie, więc sprawdzanie nie mogło odczytać poczty. Decydują same wyniki testów.",
+  rep_nr_model_failing:
+    "Sprawdzanie zatrzymało się, bo model AI zawiódł przy pięciu wiadomościach z rzędu. Decydują same wyniki testów.",
+  ob_channel_title: "Wybierz, jak asystent ma się z Tobą kontaktować",
+  ob_channel_mail: "Raporty trafiają do Ciebie pocztą.",
+  ob_report_title: "Zobacz, co bym zrobił",
+  ob_report_wait: "Sprawdzanie zacznie się po połączeniu skrzynki.",
+  ob_report_open:
+    "Asystent sprawdza pocztę z ostatnich 30 dni, tylko do odczytu. Potem pokazuje, co by zrobił, a Ty możesz włączyć to, co zaleca.",
+  ob_report_done: "Sprawdzanie zakończone.",
+  ob_report_link: "Otwórz raport",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).

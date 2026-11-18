@@ -22,3 +22,12 @@ export async function loadTrustView(mailboxId: string): Promise<TrustView | null
     throw error;
   }
 }
+
+// "Turn on recommended" and "Check again" of the report page (stage 11 routes, owner only).
+export function recommendedPath(mailboxId: string): string {
+  return `${trustPath(mailboxId)}/recommended`;
+}
+
+export function historyCheckPath(mailboxId: string): string {
+  return `${trustPath(mailboxId)}/history-check`;
+}

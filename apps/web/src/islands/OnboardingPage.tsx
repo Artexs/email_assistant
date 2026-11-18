@@ -68,24 +68,49 @@ function Onboarding() {
             </a>
           )}
         </ChecklistItem>
-        <ChecklistItem title="ob_telegram_title" done={onboarding.telegramAvailable ? onboarding.telegram : null}>
-          <TelegramLink timeZone={me.organization.timezone} onChange={reload} />
-        </ChecklistItem>
-        <ChecklistItem title="ob_mode_title" done={onboarding.mode}>
-          <p className="text-sm">
-            {onboarding.mode ? t("ob_mode_done") : isOwnerRole ? t("ob_mode_open") : t("ob_mode_assistant")}
-          </p>
-          {!onboarding.mode && isOwner && (
-            <div className="flex flex-wrap gap-2">
-              <Button disabled={pending} onClick={keepShadow}>
-                {t("ob_keep_shadow")}
-              </Button>
-              <a href="/settings" className={buttonVariants({ variant: "outline" })}>
-                {t("ob_open_settings")}
-              </a>
-            </div>
-          )}
-        </ChecklistItem>
+        {onboarding.trust ? (
+          <>
+            <ChecklistItem title="ob_channel_title" done={onboarding.telegramAvailable ? onboarding.channel : null}>
+              <TelegramLink timeZone={me.organization.timezone} onChange={reload} />
+              {onboarding.channel && !onboarding.telegram && <p className="text-sm">{t("ob_channel_mail")}</p>}
+            </ChecklistItem>
+            <ChecklistItem title="ob_report_title" done={onboarding.report}>
+              <p className="text-sm">
+                {onboarding.report
+                  ? t("ob_report_done")
+                  : onboarding.mailbox
+                    ? t("ob_report_open")
+                    : t("ob_report_wait")}
+              </p>
+              {onboarding.mailbox && (
+                <a href="/report" className={`${buttonVariants({ variant: "outline" })} self-start`}>
+                  {t("ob_report_link")}
+                </a>
+              )}
+            </ChecklistItem>
+          </>
+        ) : (
+          <>
+            <ChecklistItem title="ob_telegram_title" done={onboarding.telegramAvailable ? onboarding.telegram : null}>
+              <TelegramLink timeZone={me.organization.timezone} onChange={reload} />
+            </ChecklistItem>
+            <ChecklistItem title="ob_mode_title" done={onboarding.mode}>
+              <p className="text-sm">
+                {onboarding.mode ? t("ob_mode_done") : isOwnerRole ? t("ob_mode_open") : t("ob_mode_assistant")}
+              </p>
+              {!onboarding.mode && isOwner && (
+                <div className="flex flex-wrap gap-2">
+                  <Button disabled={pending} onClick={keepShadow}>
+                    {t("ob_keep_shadow")}
+                  </Button>
+                  <a href="/settings" className={buttonVariants({ variant: "outline" })}>
+                    {t("ob_open_settings")}
+                  </a>
+                </div>
+              )}
+            </ChecklistItem>
+          </>
+        )}
         <ChecklistItem title="ob_rules_title" done={onboarding.rules > 0} optional>
           <p className="text-sm">{t("ob_rules_text")}</p>
           {onboarding.rules > 0 && <p className="text-sm text-muted-foreground">{tp("ob_rules", onboarding.rules)}</p>}
