@@ -1,6 +1,6 @@
 # 0022 — Report mail goes into the user's own INBOX by IMAP APPEND
 
-- Status: proposed (E4 discovery, 2026-11-13; waits for the owner's answer to decision 5 of `docs/product/stage-2/epics/E04-control-surface.md`)
+- Status: accepted (F110, 2026-11-18; first proposed in E4 discovery on 2026-11-13). Built by F110 stages 18 to 20 behind the flag `report_mail`: `docs/capabilities/trust.md` rule 19.
 - Date: 2026-11-13
 - Numbers 0018–0020 are reserved by the S6 plan; 0021 is the E2 simulator stack.
 

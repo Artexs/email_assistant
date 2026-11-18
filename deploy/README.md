@@ -732,6 +732,48 @@ The audit rows `dsr.find` and `dsr.erase` hold a hash of the address, never the 
 
 Both DSR commands and `org:export` and the refused delete attempts show in the security log of the organization (Account card, flag `security_log`).
 
+## Trust ladder (F110)
+
+Capability page: `docs/capabilities/trust.md` (rules, limits, tests). The trust ladder lets a mailbox earn automatic moves from global evidence, a history check at connect and a tripwire. Eight feature flags carry it (default off). Two parts run in every organization with no flag: the grant that each `auto` stores, and the re-gate (`trust.regate`).
+
+### Release
+
+1. Release with every flag off (`docs/release-checklist.md`). The migrations `20261115180001_trust_ladder.sql`, `20261117120001_history_model_failing.sql` and `20261117140001_unsubscribe_data.sql` only add things: the old release runs on the new schema.
+2. Do not change the model, the provider, the reasoning effort or `OPENAI_BASE_URL` in the same release. The first re-gate run stamps every existing `auto` with the grant `legacy` for the running key; a switch in the same release would stamp the new key with no evidence.
+3. Check: `bash deploy/logs.sh --since 15m --event trust_regate_done` shows `run=start` with `paused` 0. `$C exec server ls evals/results/gate` lists the gate files of the image.
+
+### Turn the flags on
+
+One flag at a time, one pilot organization first: `$C run --rm cli bun run org:flag --org-id <uuid> --flag <key> --on` (`--off` turns it off). The order and the reasons are in `docs/capabilities/trust.md` rule 22:
+
+1. `trust_ladder`. Then queue a check if a mailbox needs one at once: `$C run --rm cli bun run trust:history-check --org-id <uuid> --mailbox-id <uuid>`. The job `trust.history` runs it; the check ends `done` or `no_result` within an hour, costs at most $0.25, and the report page `/report` shows it. With the gate file of today (provisional) no category is recommended.
+2. `user_quiet_hours`. 3. `report_mail` (set `WEB_BASE_URL` first; one member chooses the channel in Settings). 4. `why_lines`, then `spam_review_line`. 5. `panel_review`. 6. `urgency_editor`.
+3. `bulk_unsubscribe` last. Set `MAIL_TRUSTED_AUTHSERV_IDS` only to providers that write their own `Authentication-Results` header on top of the mail. The privacy text does not yet name the one-click request (owner decision 2026-11-18): decide that first.
+
+`FEATURES_OFF=<key,key>` in `.env` plus `$C up -d server` forces flags off for every organization.
+
+### Roll back
+
+Roll back the code, not the migrations. Do not run `db:rollback` on a live database: `trust_ladder` first deletes all `trust_report_ready`, `autonomy_paused` and mail-channel outbox rows and drops the history checks, the trips, the quiet hours and the report channels. The old code ignores the new tables and columns.
+
+1. Turn the flags off (`org:flag --off`, or `FEATURES_OFF`).
+2. Stop the server, then fail the pending rows that the old code cannot read: the new kinds, every mail-channel row, every `weekly_report` (its evidence lines hold new keys) and the `urgent` rows with the keys `confidence` or `rule` (the old view schemas are strict). The old `claimDueOutbox` claims the whole batch and then throws in the kind check, so one new row blocks the notice sender of every organization:
+
+   ```sh
+   $C stop server
+   $C exec -T db psql -U postgres -d email_assistant <<'SQL'
+   UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL
+   WHERE status IN ('pending', 'sending')
+     AND (kind IN ('trust_report_ready', 'autonomy_paused') OR channel = 'mail'
+          OR kind = 'weekly_report'
+          OR (kind = 'urgent' AND view ?| array['confidence', 'rule']));
+   SQL
+   ```
+
+3. Run `deploy/rollback.sh` (§ Roll back a release).
+4. What stays: report mails already in INBOX (the old sync has no own-mail check for them and may triage one that it has not read yet), stored history mail (normal retention), and unsubscribe requests already sent. A later F110 start finds a policy with no `grant` and stamps it `legacy` again.
+5. The migrations by name, for a development database or a restored backup only (newest first, one `bun run db:rollback` each; the three migrations above are not the only ones after `trust_ladder`, so it cannot be rolled back alone): `20261117140001_unsubscribe_data.sql` drops `unsubscribe_requests` and `email_headers.list_unsubscribe_post`; `20261117120001_history_model_failing.sql` rewrites the reason `model_failing` to `stopped`; `20261115180001_trust_ladder.sql` drops the three trust tables and the four `memberships` columns. A broken migration gets a forward fix in a patch release or a restore from backup.
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.

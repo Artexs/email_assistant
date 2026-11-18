@@ -5,6 +5,7 @@ capabilities:
   - actions-and-undo
   - triage
   - measurement
+  - trust
 ---
 
 import UiText from "../../../components/UiText.astro";
@@ -53,6 +54,16 @@ So the shadow period does a job: it collects the ratings that the check needs.
 
 An owner can still turn auto on for a category that did not pass. The panel asks for a second confirmation, and the choice is yours.
 The Undo makes this choice less risky.
+
+## Auto belongs to one AI setup
+
+The system stores the AI setup that was in use when auto went on for a category: the model, the prompt and the endpoint.
+Proof for one setup says nothing about another one.
+When your operator changes the AI model, the prompt or the endpoint, the system checks each auto switch again.
+A switch stays on only when the new setup has proof for the category.
+In all other cases the system turns auto off for the category, drops the moves that it planned and did not make yet, and sends a notice to the owners.
+No mail is moved back. The mail stays where it is, and you can undo each move as usual.
+An owner can turn auto on again in **<UiText k="nav_settings" />**. The check of this page applies again.
 
 ## Undo
 

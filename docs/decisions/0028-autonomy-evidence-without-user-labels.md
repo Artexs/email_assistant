@@ -1,6 +1,6 @@
 # 0028 — Autonomy per category is earned from global evidence and a history check, not from user labels
 
-- Status: proposed (E4 discovery, 2026-11-13; the owner's rule, PD-030). Changes PD-018 and the real-label clause of PD-024. E3 sets the numbers.
+- Status: accepted (F110, 2026-11-18; first proposed in E4 discovery on 2026-11-13 from the owner's rule, PD-030). Changes PD-018 and the real-label clause of PD-024. E3 sets the numbers.
 - Date: 2026-11-13
 
 ## Context
@@ -13,6 +13,7 @@ The owner's rule (2026-11-13): "we can't rely on users to confirm any values the
 
 1. **Global evidence decides by default.** A category is eligible for `auto` when it passes go/no-go on the frozen simulator holdout for the running prompt and model version (E2a, PD-024: at least 200 cases, Wilson 95% lower bound against the bar). The result is stored per version and is the same for every mailbox.
 2. **History check at connect.** Without a user step, the system reads the last 30 days of the mailbox read-only (INBOX and synced folders, with `\Seen`, `\Answered`, `\Flagged`; Sent after the E5 read-Sent ADR), classifies a capped sample, and compares the result with weak labels from the user's behaviour. It counts mail the user acted on (answered, flagged, wrote to the sender) that a moving category (`notification`, `spam`, `info`) would have moved. A category that fails stays off, with the reason and the example mails. No history or no result: global evidence alone decides.
+   Outcome rule as built (F110 plan decision D4; the owner confirmed the defaults on 2026-11-15, `F110-e4-b-earn-trust/questions.md` Q2): with `n` acted-on mails in the sample and `k` of them moved by the category, `n < 50` is `no_result`, a Wilson 95% upper bound of at most 2% is `pass`, `k/n` above 2% is `fail`, and anything between is `inconclusive`. Only `fail` blocks, because at `k = 0` the bound needs `n >= 189`, so the strict reading of point 5 would block most mailboxes, against point 3. As built, the check reads INBOX only (other folders: F060; Sent: E5a). Detail: `docs/capabilities/trust.md`.
 3. **User signals only block.** Corrections, Undo, moved-back mail and optional reviews never unlock a category. A tripwire pauses `auto` for a category when its corrections pass a rate, with a notice. With enough labels (at least 30) the real-label gate counts as an extra block.
 4. **Consent stays a tap.** Shadow stays the default mode. The user turns on the recommended categories with one tap on the report page; the mode is the consent (D2). "Set anyway" for a category that failed stays, with its audit row.
 5. **E3 owns the numbers:** the history-check bound (default: Wilson 95% upper bound of acted-on mail moved ≤ 2% on at least 50 mails), the sample cap (default 500 mails) and its cost cap, the tripwire rate (default 2 corrections of applied moves in 7 days, or one acted-on mail moved).
