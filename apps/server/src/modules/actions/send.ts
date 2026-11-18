@@ -29,6 +29,7 @@ import { DELEGATION_DUE_AFTER_MS, HARD_ERROR_TRIES, RETRY_WAIT_MS, SEND_SOFT_CAP
 import { checkCopyBeforeSend, mustCheckCopy } from "./copy-check";
 import { buildDraftMessage, loopAnchorOf, recipientsFromLoop } from "./drafts";
 import { closeDraftOfSend } from "./expiry";
+import { checkReplyBeforeSend } from "./reply-pass";
 import {
   finishAction,
   getDraft,
@@ -525,14 +526,17 @@ async function copyCheckFailed(
   return { kind: "retry", soft: true };
 }
 
-// The Drafts copy changed or is gone: the claimed send ends `expired` with the reason and no SMTP call is made. The copy stays
-// (the reverse row of the draft keeps a changed copy). `notify: true`: the owner gets a result notice. A send of a loop takes the
-// loop lock first.
-async function closeForCopy(
+// A claimed send that must not go out ends `expired` with the reason and no SMTP call is made. The copy in Drafts is removed through
+// the reverse row of the draft, unless it changed (`removeDraft` keeps a changed copy). `notify: true`: the owner gets a result
+// notice. A send of a loop takes the loop lock first.
+async function closeForReason(
   deps: ApplyDeps,
   ctx: TenantContext,
   action: ClaimedAction,
-  reason: Extract<CloseSendReason, "draft_changed" | "draft_missing">
+  reason: Extract<
+    CloseSendReason,
+    "draft_changed" | "draft_missing" | "answered" | "sent_by_user" | "newer_mail" | "original_moved"
+  >
 ): Promise<ApplyOutcome> {
   const closed = await inTransaction(deps.db, async (trx) => {
     if (action.loop_id !== null) await loopHooksOf(deps).isOpen(trx, ctx, action.loop_id);
@@ -642,13 +646,33 @@ export async function applySend(
   if (prepared === null || raw === null) return badPayload(deps, ctx, action);
   const { payload, message } = prepared;
 
+  // (1a) A reply only (F115 stage 09): the DB facts, the Sent pass and the flag of the original. A newer mail in the thread or a
+  // moved original ends the send here. An answered mail is told to the copy check, which picks the reason. A delegation, a
+  // clarification, a reminder and a follow-up never reach the Sent folder here.
+  let answered = false;
+  if (payload.kind === "reply") {
+    const pass = await checkReplyBeforeSend(deps, ctx, action, provider, draft);
+    if (pass.kind === "error") return copyCheckFailed(deps, ctx, action, pass.error);
+    if (pass.kind === "close") return closeForReason(deps, ctx, action, pass.reason);
+    answered = pass.answered;
+  }
+
   // (1b) The edit check: the Drafts copy must be the one the system made. A reply always checks; another kind checks while the
   // org flag is on. Before any commit of the send, so a closed send never counts against the send limits.
+  // A mail that is answered stops the send in every case; the copy tells why: unchanged → `answered` (the copy is removed), gone →
+  // `sent_by_user` (the user sent it from the mail client), changed → `draft_changed` (the copy stays), never compared (no
+  // baseline) → `answered` (the copy stays).
   if (mustCheckCopy(deps, payload.kind)) {
     const gate = await checkCopyBeforeSend(deps, action, provider, draft, payload.kind);
     if (gate.kind === "error") return copyCheckFailed(deps, ctx, action, gate.error);
-    if (gate.kind === "close") return closeForCopy(deps, ctx, action, gate.reason);
+    if (gate.kind === "close") {
+      if (answered && gate.reason === "draft_missing") {
+        return closeForReason(deps, ctx, action, gate.noBaseline === true ? "answered" : "sent_by_user");
+      }
+      return closeForReason(deps, ctx, action, gate.reason);
+    }
   }
+  if (answered) return closeForReason(deps, ctx, action, "answered");
 
   // (2) Own commit, before any SMTP call. The limit check and `markApplying` share one transaction under the mailbox lock (PD-044).
   // A follow-up goes only while its loop is open: `isOpen` takes the loop lock first, then the limit check and

@@ -246,7 +246,7 @@ export type SendResultKind =
   | { kind: "rejected_by_server"; stage: string; responseCode: number | null }
   | {
       kind: "failed";
-      cause: "tries" | "content_soft" | "soft_cap" | "compose" | "bad_payload" | "copy_check";
+      cause: "tries" | "content_soft" | "soft_cap" | "compose" | "bad_payload" | "copy_check" | "has_gaps";
       code: string | null;
       tries: number;
     }
@@ -262,10 +262,34 @@ export type SendResultKind =
         | "delegation_closed"
         | "policy_changed"
         | "loop_closed"
-        | "draft_changed";
+        | "draft_changed"
+        // The reasons that only a reply send has (F115): the mail was answered, a newer mail came, the mail moved or turned suspicious.
+        | "answered"
+        | "sent_by_user"
+        | "newer_mail"
+        | "original_moved"
+        | "suspicious";
       draftRemoved: boolean;
     }
   | { kind: "rejected"; byName: string | null; draftRemoved: boolean };
+
+const REPLY_ONLY_REASONS: readonly string[] = [
+  "answered",
+  "sent_by_user",
+  "newer_mail",
+  "original_moved",
+  "suspicious",
+];
+
+type ExpiredReason = Extract<SendResultKind, { kind: "expired" }>["reason"];
+type FollowUpReason = Exclude<
+  ExpiredReason,
+  "answered" | "sent_by_user" | "newer_mail" | "original_moved" | "suspicious"
+>;
+
+function isFollowUpReason(reason: ExpiredReason): reason is FollowUpReason {
+  return !REPLY_ONLY_REASONS.includes(reason);
+}
 
 function words(...parts: string[]): string {
   return parts.filter((part) => part !== "").join(" ");
@@ -287,6 +311,8 @@ function causeLine(result: Extract<SendResultKind, { kind: "failed" }>, texts: C
       return causes.copyCheck(code);
     case "bad_payload":
       return causes.badPayload;
+    case "has_gaps":
+      return causes.hasGaps;
   }
 }
 
@@ -312,6 +338,8 @@ function renderFollowUpResult(
       line = t.rejected(result.byName === null ? null : cutText(result.byName, FIELD_MAX_CHARS));
       break;
     case "expired":
+      // A follow-up never ends with a reason of the reply drafts: no text exists for it.
+      if (!isFollowUpReason(result.reason)) throw new RangeError("a follow-up has no text for this reason");
       line = t.expired[result.reason];
       break;
     default:
@@ -360,7 +388,7 @@ export function renderSendResult(
     case "failed":
       first = t.sendResult.notSent(to, subject);
       rest = [words(t.sendResult.failedStays(causeLine(result, texts)), closing)];
-      if (result.cause !== "bad_payload") buttons = sendAgain;
+      if (result.cause !== "bad_payload" && result.cause !== "has_gaps") buttons = sendAgain;
       break;
     case "outcome_unknown":
       first = t.sendResult.unknown(to, subject);
@@ -376,7 +404,8 @@ export function renderSendResult(
       const both = [words(closing, draft)];
       first = t.sendResult.expired[result.reason](subject);
       // These two reasons say less: no draft line for a missing draft, no closing for a closed delegation.
-      if (result.reason === "draft_missing") rest = [closing];
+      // A missing copy and a send from the mail client say less too: the draft is not in Drafts, so no draft line.
+      if (result.reason === "draft_missing" || result.reason === "sent_by_user") rest = [closing];
       else if (result.reason === "delegation_closed") rest = [draft];
       else rest = both;
       break;
