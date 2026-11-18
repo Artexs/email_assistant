@@ -301,6 +301,23 @@ describe("suspiciousSendersOf", () => {
     });
   });
 
+  test("4c: the window edge: a flagged mail exactly at `since` counts, one millisecond older does not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const flagged = (from: string, at: Date) =>
+        insertTriaged(trx, ctxA, a.mailboxId, {
+          category: "info",
+          createdAt: at,
+          from,
+          suspiciousReasons: ["auth_fail"],
+        });
+      await flagged("edge@news.test", SINCE);
+      await flagged("outside@news.test", new Date(SINCE.getTime() - 1));
+      const set = await suspiciousSendersOf(trx, ctxA, a.mailboxId, ["edge@news.test", "outside@news.test"], SINCE);
+      expect([...set]).toEqual(["edge@news.test"]);
+    });
+  });
+
   test("5: another organization's mail never counts, and another mailbox of the same organization does not either; empty input gives the empty set", async () => {
     await withRollback(db, async (trx) => {
       const { a, b, ctxA, ctxB } = await setup(trx);

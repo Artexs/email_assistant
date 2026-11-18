@@ -236,6 +236,28 @@ describe("listNewsletterSenders", () => {
   });
 });
 
+describe("the 30-day edge", () => {
+  test("13: a mail received exactly 30 days before now counts; one millisecond older does not", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctx } = await setup(trx);
+      const c = { link: LINK, post: ONE_CLICK };
+      await mail(trx, ctx, a.mailboxId, { from: "edge@c.example", at: ago(30 * DAY), ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "outside@c.example", at: ago(30 * DAY + 1), ...c });
+      // A spam mail one millisecond outside the window does not block its sender; one exactly on the edge does.
+      await mail(trx, ctx, a.mailboxId, { from: "old-spam@c.example", at: ago(30 * DAY + 1), category: "spam" });
+      await mail(trx, ctx, a.mailboxId, { from: "old-spam@c.example", at: ago(DAY), ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "edge-spam@c.example", at: ago(30 * DAY), category: "spam" });
+      await mail(trx, ctx, a.mailboxId, { from: "edge-spam@c.example", at: ago(DAY), ...c });
+
+      const senders = await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED);
+      expect(senders.map((s) => [s.senderLower, s.count]).sort()).toEqual([
+        ["edge@c.example", 1],
+        ["old-spam@c.example", 1],
+      ]);
+    });
+  });
+});
+
 describe("a link in a mail is data, never an action", () => {
   test("12: reading the senders makes no request: fetch is never called, and the module imports no HTTP client", async () => {
     const real = globalThis.fetch;

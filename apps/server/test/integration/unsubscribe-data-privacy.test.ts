@@ -8,6 +8,7 @@ import { Decrypter, generateX25519Identity, identityToRecipient } from "age-encr
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 
 import { eraseSubjectData, exportOrganization, matchSubject } from "../../src/modules/privacy";
+import { createDb } from "../../src/platform/db";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
@@ -143,6 +144,34 @@ describe("unsubscribe requests in a data request", () => {
     expect(await rowsOf(w)).toEqual([]);
     expect((await rowsOf(other)).map((row) => row.id)).toEqual([theirs]);
     expect(Object.keys((await match(other, person)).mentions)).toEqual(["unsubscribe_requests.sender_lower"]);
+  });
+});
+
+describe("the org filter of the delete rule", () => {
+  test("4b: an erase run as the owner role (row-level security does not apply) deletes only the rows of its own organization", async () => {
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs this erase");
+    const owner = createDb(url);
+    try {
+      const w = await seedWorld();
+      const other = await seedWorld();
+      const person = `news-${randomUUID().slice(0, 8)}@list.test`;
+      await seedRequest(w, person);
+      const theirs = await seedRequest(other, person);
+
+      const result = await eraseSubjectData(owner, {
+        orgId: w.orgId,
+        address: person,
+        confirm: person,
+        credentialsKey: KEY,
+        now: NOW,
+      });
+      expect(result.kind).toBe("erased");
+      expect(await rowsOf(w)).toEqual([]);
+      expect((await rowsOf(other)).map((row) => row.id)).toEqual([theirs]);
+    } finally {
+      await owner.destroy();
+    }
   });
 });
 
