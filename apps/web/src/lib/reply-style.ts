@@ -12,7 +12,7 @@ import type { TextKey } from "../i18n";
 
 import { api, ApiError } from "./api";
 
-// The style card of reply drafts (F115 stage 11): the routes of `replies/routes.ts`, and the pure rules that the card uses.
+// The style card of reply drafts: the routes of `replies/routes.ts`, and the pure rules that the card uses.
 
 export function profilePath(mailboxId: string, tail = ""): string {
   return `/api/mailboxes/${encodeURIComponent(mailboxId)}/profile${tail}`;

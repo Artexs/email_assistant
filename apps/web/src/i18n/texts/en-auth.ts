@@ -47,7 +47,7 @@ export const enAuth = {
   login_help_summary: "No password yet?",
   login_help_text:
     "Setup links are created on the server with web:invite. A link works once, for 24 hours. If yours has expired, ask for a new one.",
-  // company sign-in (F119 stage 12)
+  // company sign-in
   login_sso_hint: "Does your company use single sign-on? Sign in with your company account.",
   login_sso_button: "Sign in with your company account",
   login_sso_email: "Work e-mail",
@@ -116,7 +116,7 @@ export const enAuth = {
   tf_copy: "Copy",
   tf_copied: "Codes copied.",
   tf_copy_failed: "The codes could not be copied. Write them down.",
-  // delete organization (F106)
+  // delete organization
   del_title: "Delete organization",
   del_text:
     "This deletes the organization {name} and all its data here at once: mailboxes, mail, triage results, actions, delegations, rules, Telegram links, history and the accounts of its members. It cannot be undone. Backups keep a copy until they expire; the privacy policy gives the period.",
@@ -171,7 +171,7 @@ export const enAuth = {
   legal_privacy_title: "Privacy policy",
   legal_terms_title: "Terms of service",
   legal_dpa_title: "Data processing agreement",
-  // legal page frame (F107 stage 02; every key starts with `legal_`: the version guard of stage 06 hashes them)
+  // legal page frame (every key starts with `legal_`: the version guard of stage 06 hashes them)
   legal_draft_line: "DRAFT, not legal advice. This service runs on a private server for its owner only.",
   legal_version: "Version: {version}",
   legal_categories_title: "What we store",

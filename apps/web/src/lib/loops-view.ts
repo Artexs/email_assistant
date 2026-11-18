@@ -13,13 +13,13 @@ import { t, tp, type TextKey } from "../i18n";
 import { ApiError } from "./api";
 import { errorText } from "./errors";
 
-// The "Open loops" page (F116 stage 21) is the F102 page `/delegations` while the flag `open_loops` is on. Its tabs are the kinds of
+// The "Open loops" page is the F102 page `/delegations` while the flag `open_loops` is on. Its tabs are the kinds of
 // loop; `?tab=` names the tab and `?filter=` the state filter.
 export const LOOP_TABS = loopKinds;
 export type LoopTab = LoopKindName;
 export const LOOP_DEFAULT_TAB: LoopTab = "delegated";
 
-// The most follow-ups of one loop (D12). The server refuses a third with `limit_reached`.
+// The most follow-ups of one loop. The server refuses a third with `limit_reached`.
 export const LOOP_FOLLOW_UP_MAX = 2;
 
 // A record: a new kind, filter or close reason breaks the build until it has a text.
@@ -89,7 +89,7 @@ export type LoopAction = "follow_up" | "later" | "done" | "drop" | "untrack" | "
 
 type ActionItem = Pick<LoopItem, "kind" | "status" | "closeReason" | "laterLeft" | "followUpWaiting" | "text">;
 
-// Who may do what (D11): Draft follow-up, Drop, Untrack and Reopen are for the owner; Later and Done for any member. A promise has no
+// Who may do what: Draft follow-up, Drop, Untrack and Reopen are for the owner; Later and Done for any member. A promise has no
 // follow-up and no Later; Untrack is for a forward to a delegate; a follow-up that waits for a tap hides Draft follow-up; Later hides
 // at 0 left; Reopen needs a closed loop that still has its text (and was not closed by turning Sent tracking off). A suspended
 // organization takes no write. The order is the order of the buttons.

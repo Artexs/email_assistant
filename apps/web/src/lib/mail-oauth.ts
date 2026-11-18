@@ -10,7 +10,7 @@ import type { TextKey } from "../i18n";
 import { api as realApi, ApiError } from "./api";
 import { errorText } from "./errors";
 
-// The panel side of the mailbox OAuth sign-in (F117 stage 16): which buttons the connect dialog shows, what a tap does,
+// The panel side of the mailbox OAuth sign-in: which buttons the connect dialog shows, what a tap does,
 // and the banner after the redirect back to `/mailboxes?oauth=<code>`.
 
 type Api = typeof realApi;

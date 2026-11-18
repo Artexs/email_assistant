@@ -152,7 +152,7 @@ function Approvals() {
     select(next);
   };
 
-  // The edit made a new version (a new send, `waiting`): the page shows it, says it and asks for a new approval (Q11).
+  // The edit made a new version (a new send, `waiting`): the page shows it, says it and asks for a new approval.
   const onEdited = (answer: { id: string; version: number }) => {
     setEditing(null);
     setReasonFor(null);

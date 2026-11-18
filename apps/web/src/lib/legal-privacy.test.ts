@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { isAllowedPlaceholder, legalLangs, legalPlaceholders, type LegalLang } from "./legal";
 import { findPlaceholders, headingTitles, readLegalSource } from "./legal-checks";
 
-// The privacy policy (F107 stage 03). The texts are drafts: each fact that no source states is a placeholder.
+// The privacy policy. The texts are drafts: each fact that no source states is a placeholder.
 
 const headings: Record<LegalLang, string[]> = {
   en: [

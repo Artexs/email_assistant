@@ -1,5 +1,5 @@
 export const enApprovals = {
-  // approvals page (F102 stage 12)
+  // approvals page
   appr_off: "This page is off for your organization.",
   appr_empty: "Nothing waits for your approval.",
   appr_list_label: "Drafts that wait for approval",
@@ -187,7 +187,7 @@ export const enApprovals = {
   dgn_cancel_text: "Delegate: {name}. It cannot be undone.",
   dgn_cancel_confirm: "Cancel delegation",
   dgn_keep: "Keep the delegation",
-  // open loops page (F116 stage 21): the F102 page /delegations while the flag open_loops is on
+  // open loops page: the F102 page /delegations while the flag open_loops is on
   nav_open_loops: "Open loops",
   title_open_loops: "Open loops",
   lp_tabs_label: "Kinds of open loops",
@@ -286,7 +286,7 @@ export const enApprovals = {
   title_approvals: "Approvals",
   title_delegates: "Delegates",
   title_delegations: "Delegations",
-  // F116 stage 22: the Delegate action on a mail row, the open-loop settings and the new Telegram terms
+  // The Delegate action on a mail row, the open-loop settings and the new Telegram terms
   dla_button: "Delegate",
   dla_title: "Delegate this mail",
   dla_text: "Pick a delegate. The assistant writes a draft to this person. Nothing goes out before you approve it.",
@@ -312,7 +312,7 @@ export const enApprovals = {
   tgc_title: "New Telegram terms: open loops",
   tgc_confirm: "Confirm",
   tgc_confirmed_toast: "The new Telegram terms are confirmed.",
-  // F110 stage 13: the evidence lines of the autonomy card and the block lines of the "Set anyway" dialog
+  // The evidence lines of the autonomy card and the block lines of the "Set anyway" dialog
   trust_proof_go: "Proof: {percent}% on {cases} test cases",
   trust_proof_go_provisional: "Proof: {percent}% on {cases} test cases (provisional)",
   trust_proof_none: "No proof for this AI model yet",
@@ -338,7 +338,7 @@ export const enApprovals = {
   trust_block_tripped: "This category was paused after a problem. Turning it on again ends the pause.",
   trust_block_real_labels_no_go: "Your own ratings show that this category is not precise enough.",
   trust_report_link: "See the report",
-  // F110 stage 23: the newsletters card of the Rules page (flag bulk_unsubscribe)
+  // The newsletters card of the Rules page (flag bulk_unsubscribe)
   nl_title: "Newsletters",
   nl_help:
     "Senders of newsletters and notices from the last 30 days. Spam senders and suspicious senders are not listed.",
@@ -353,7 +353,7 @@ export const enApprovals = {
   nl_done: "Done",
   nl_failed: "Failed",
   nl_failed_open: "Failed — open the page instead",
-  // F110 stage 24: the one-click unsubscribe button
+  // The one-click unsubscribe button
   nl_one_click_help:
     "Unsubscribe sends one standard request from this server to the address in the newsletter. The request holds only the standard unsubscribe text.",
   nl_unsubscribe: "Unsubscribe",

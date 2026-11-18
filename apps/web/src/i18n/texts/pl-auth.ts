@@ -49,7 +49,7 @@ export const plAuth = {
   login_help_summary: "Nie masz jeszcze hasła?",
   login_help_text:
     "Linki do ustawienia hasła powstają na serwerze poleceniem web:invite. Link działa raz, przez 24 godziny. Jeśli Twój wygasł, poproś o nowy.",
-  // company sign-in (F119 stage 12)
+  // company sign-in
   login_sso_hint: "Twoja firma używa logowania jednokrotnego? Zaloguj się kontem firmowym.",
   login_sso_button: "Zaloguj się kontem firmowym",
   login_sso_email: "Służbowy adres e-mail",
@@ -120,7 +120,7 @@ export const plAuth = {
   tf_copy: "Kopiuj",
   tf_copied: "Kody skopiowane.",
   tf_copy_failed: "Nie udało się skopiować kodów. Zapisz je.",
-  // delete organization (F106)
+  // delete organization
   del_title: "Usuń organizację",
   del_text:
     "To od razu usunie organizację {name} i wszystkie jej dane w aplikacji: skrzynki, wiadomości, wyniki klasyfikacji, działania, zlecenia, reguły, połączenia z Telegramem, historię i konta jej członków. Tego nie można cofnąć. Kopie zapasowe zachowują dane, dopóki nie wygasną; okres określa polityka prywatności.",
@@ -176,7 +176,7 @@ export const plAuth = {
   legal_privacy_title: "Polityka prywatności",
   legal_terms_title: "Regulamin",
   legal_dpa_title: "Umowa powierzenia przetwarzania danych",
-  // legal page frame (F107 stage 02; every key starts with `legal_`: the version guard of stage 06 hashes them)
+  // legal page frame (every key starts with `legal_`: the version guard of stage 06 hashes them)
   legal_draft_line:
     "WERSJA ROBOCZA, nie jest poradą prawną. Ta usługa działa na prywatnym serwerze wyłącznie dla jej właściciela.",
   legal_version: "Wersja: {version}",

@@ -30,7 +30,7 @@ export interface DeleteError {
   key: TextKey;
 }
 
-// DELETE /api/organization (F106 stage 04). 400 `wrong_password`, 400 `wrong_name` and 429 `locked` have their own
+// DELETE /api/organization. 400 `wrong_password`, 400 `wrong_name` and 429 `locked` have their own
 // text. Any other server answer (a busy 503 `internal`, a closed flag `not_found`) proves that nothing was deleted:
 // `del_failed`. An error without a server answer (a network error, an unreadable 200) does not prove it: the delete
 // may have run, so the text says to reload and check (`del_failed_unknown`).

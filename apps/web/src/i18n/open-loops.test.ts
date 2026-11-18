@@ -4,7 +4,7 @@ import { en, enPlurals } from "./en";
 import { setLocaleForTest, tp } from "./index";
 import { pl, plPlurals } from "./pl";
 
-// F116 stage 21 (T4): the texts of the "Open loops" page have a fixed Polish value. A reword changes this table on purpose; the review
+// The texts of the "Open loops" page have a fixed Polish value. A reword changes this table on purpose; the review
 // of the Polish text reads it here. The words follow the glossary: "zlecenie", "otwarte sprawy", "przypomnienie o odpowiedzi"; no text
 // speaks of the user in a gendered past tense.
 const PL_TEXTS = {

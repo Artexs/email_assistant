@@ -22,7 +22,7 @@ export interface EditValues {
   delegateId: string | null;
 }
 
-// An owner who may write edits a waiting delegation, clarification or follow-up (Q2: a reminder has no edit; a held send is approved already).
+// An owner who may write edits a waiting delegation, clarification or follow-up (a reminder has no edit; a held send is approved already).
 export function canEdit(detail: Pick<ApprovalDetail, "state" | "kind">, who: { owner: boolean; canWrite: boolean }) {
   return (
     who.owner &&
@@ -66,7 +66,7 @@ export interface SaveState {
   canSave: boolean;
 }
 
-// The limits are those of the service (D3): the length after `cleanUserText`. The server check is the real one.
+// The limits are those of the service: the length after `cleanUserText`. The server check is the real one.
 export function saveState(start: EditValues, values: EditValues): SaveState {
   const subject = cleanUserText(values.subject, { oneLine: true });
   const body = cleanUserText(values.body, { oneLine: false });

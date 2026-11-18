@@ -6,7 +6,7 @@ export function trustPath(mailboxId: string): string {
   return `/api/trust/${encodeURIComponent(mailboxId)}`;
 }
 
-// The page of the report of one mailbox (F110 stage 14).
+// The page of the report of one mailbox.
 export function reportPath(mailboxId: string): string {
   return `/report?mailbox=${encodeURIComponent(mailboxId)}`;
 }

@@ -12,7 +12,7 @@ import {
 const keys = (items: { key: string }[]) => items.map((item) => item.key);
 
 describe("navItems", () => {
-  // T1: the order and the 5-tab limit for each combination of `approvals_page`, `delegation_pages`, `stats_page` and `open_loops`.
+  // The order and the 5-tab limit for each combination of `approvals_page`, `delegation_pages`, `stats_page` and `open_loops`.
   const base = ["activity", "mailboxes", "settings", "rules"];
   const flags = ["approvals_page", "delegation_pages", "stats_page", "open_loops"] as const;
   const expectedAll = (features: readonly string[]): string[] => [
@@ -52,7 +52,7 @@ describe("navItems", () => {
     expect(keys(phoneOverflow([...flags]))).toEqual(["rules", "stats"]);
   });
 
-  // T3: the label of the Delegations item with the flag open_loops on and off.
+  // The label of the Delegations item with the flag open_loops on and off.
   test("the Delegations item is Open loops while the flag open_loops is on, and Delegations otherwise", () => {
     const label = (features: string[]) => navItems(features).find((item) => item.key === "delegations")?.label;
     expect(label(["delegation_pages"])).toBe("nav_delegations");
@@ -87,7 +87,7 @@ describe("pageTitle", () => {
 });
 
 describe("approvalsBadge", () => {
-  // T2: the badge text for 0, 1 and 100, and the edges of "99+".
+  // The badge text for 0, 1 and 100, and the edges of "99+".
   test("hidden at 0, the number up to 99, then 99+", () => {
     expect(approvalsBadge(0)).toBeNull();
     expect(approvalsBadge(1)).toBe("1");

@@ -55,7 +55,7 @@ const detail = (patch: Partial<ApprovalDetail>): ApprovalDetail => ({
 });
 
 describe("the text maps", () => {
-  // T3: the state-to-label map covers every state of the detail, in both languages.
+  // The state-to-label map covers every state of the detail, in both languages.
   test("every detail state, held cause, kind, closed state and reason has a text in en and pl", () => {
     const keys = [
       ...approvalDetailStates.map((state) => STATE_LABELS[state]),

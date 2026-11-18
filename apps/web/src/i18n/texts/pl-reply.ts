@@ -1,7 +1,7 @@
 import type { TextKey } from "../en";
 
 export const plReply = {
-  // F115 stage 11: the reply drafts switch and the style card (name, signature, writing style, preview)
+  // The reply drafts switch and the style card (name, signature, writing style, preview)
   switch_reply_drafts: "Szkice odpowiedzi",
   rs_switch_help:
     "Przygotowuje szkic odpowiedzi na pocztę, która wymaga Twojej odpowiedzi. Nic nie zostanie wysłane bez Twojego zatwierdzenia.",
@@ -44,7 +44,7 @@ export const plReply = {
   rs_org_note: "Podpisy ustawia się teraz osobno dla każdej skrzynki.",
   rs_org_old: "Ten dawny tekst organizacji nadal obowiązuje w skrzynce, która nie ma własnego podpisu.",
   rs_org_link: "Otwórz kartę skrzynki {address}",
-  // F110 stage 14: the report page ("what I would have done") and the onboarding steps with the flag trust_ladder
+  // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Raport",
   rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",
   rep_no_mailbox: "Najpierw połącz skrzynkę. Potem zacznie się sprawdzanie poczty.",
@@ -92,7 +92,7 @@ export const plReply = {
     "Asystent sprawdza pocztę z ostatnich 30 dni, tylko do odczytu. Potem pokazuje, co by zrobił, a Ty możesz włączyć to, co zaleca.",
   ob_report_done: "Sprawdzanie zakończone.",
   ob_report_link: "Otwórz raport",
-  // F110 stage 15: the optional panel review "Check 10 decisions" (flag panel_review)
+  // The optional panel review "Check 10 decisions" (flag panel_review)
   title_review: "Sprawdź 10 decyzji",
   rv_intro:
     "To decyzje asystenta dotyczące Twojej poczty z ostatnich 30 dni. Oceń, czy każda jest trafna. To nieobowiązkowe. Nic nie zmienia w Twojej skrzynce.",
@@ -107,6 +107,6 @@ export const plReply = {
   rv_done: "Gotowe",
   rv_thanks: "Dziękujemy. Twoje odpowiedzi pomagają asystentowi sprawdzać samego siebie. Niczego nie włączają.",
   rv_back: "Wróć do raportu",
-  // F133: an amount in US dollars (the number carries the decimal mark of the language)
+  // An amount in US dollars (the number carries the decimal mark of the language)
   money_usd: "{amount} USD",
 } satisfies Partial<Record<TextKey, string>>;

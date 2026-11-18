@@ -1,7 +1,7 @@
 import type { TextKey } from "../en";
 
 export const plMailboxes = {
-  // S5b: shared
+  // shared
   owner_only: "Tylko właściciel może to zrobić.",
   cancel: "Anuluj",
   save: "Zapisz",
@@ -92,7 +92,7 @@ export const plMailboxes = {
   err_port: "Wpisz port od 1 do 65535.",
   err_host: "Wpisz nazwę serwera bez spacji.",
   connected_toast: "Skrzynka połączona. Pierwsza synchronizacja zacznie się w ciągu 5 minut.",
-  // mailbox OAuth sign-in (F117)
+  // mailbox OAuth sign-in
   oauth_btn_microsoft: "Zaloguj się przez Microsoft",
   oauth_btn_google: "Zaloguj się przez Google",
   oauth_or_password: "Albo połącz hasłem",

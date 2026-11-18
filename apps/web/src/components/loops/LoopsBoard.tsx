@@ -64,7 +64,7 @@ export interface LoopsBoardProps {
   showHeading?: boolean;
 }
 
-// One list of loops of one kind with its actions (stage 21). The loop commands are the routes of stage 20; every answer reloads the list.
+// One list of loops of one kind with its actions. The loop commands are the routes of stage 20; every answer reloads the list.
 export function LoopsBoard({ kind, filter, filterNav, showHeading = false }: LoopsBoardProps) {
   const { me, reload: reloadMe } = useMe();
   const list = useLoopList(kind, filter);

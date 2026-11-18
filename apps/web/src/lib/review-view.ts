@@ -1,4 +1,4 @@
-// The panel review page (F110 stage 15). Pure rules: which buttons an item has, what counts as answered, when the thank-you shows.
+// The panel review page. Pure rules: which buttons an item has, what counts as answered, when the thank-you shows.
 import {
   reviewLabelCategories,
   type PanelReviewItem,

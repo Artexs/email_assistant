@@ -102,7 +102,7 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     }
   };
 
-  // A linked user with an older consent confirms the current text (F116 stage 22). The server writes the row for the session user.
+  // A linked user with an older consent confirms the current text. The server writes the row for the session user.
   const confirmTerms = async () => {
     setBusy(true);
     try {

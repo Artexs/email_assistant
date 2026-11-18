@@ -125,7 +125,7 @@
   }
 }
 
-/* The legal pages (F107): Markdown output has no classes, so the reading layout styles the elements. */
+/* The legal pages: Markdown output has no classes, so the reading layout styles the elements. */
 .legal-draft {
   border: 1px solid var(--border);
   border-left-width: 4px;

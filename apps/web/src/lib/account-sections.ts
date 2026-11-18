@@ -3,7 +3,7 @@ import type { Me } from "@ea/core/web";
 import { canDeleteOrganization } from "./delete-organization";
 
 export interface AccountSections {
-  // The change-password form and the two-factor section: they need a password (F119 D14).
+  // The change-password form and the two-factor section: they need a password.
   passwordControls: boolean;
   // The delete block: the owner rule of `canDeleteOrganization`, and the member needs a password to confirm it.
   deleteBlock: boolean;

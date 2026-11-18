@@ -13,7 +13,7 @@ export interface NewTermsProps {
 }
 
 // "New Telegram terms: open loops": the consent text and one Confirm button for a linked user whose consent is older than the
-// current text (F116 stage 22). It renders nothing for a current consent.
+// current text. It renders nothing for a current consent.
 export function NewTerms({ state, features, busy, onConfirm }: NewTermsProps) {
   if (!needsNewTerms(state, features)) return null;
   return (
