@@ -354,6 +354,26 @@ describe("handled share line", () => {
   });
 });
 
+describe("replies ready line (F115 stage 12)", () => {
+  test("one footer line with the count, en and pl, no button; 0 or absent: no line", () => {
+    const one = render(input({ repliesReady: 1 }));
+    expect(one.text).toContain("📝 1 reply ready");
+    expect(one.buttons).toEqual([]);
+    expect(render(input({ repliesReady: 7 })).text).toContain("📝 7 replies ready");
+    expect(render(input({ repliesReady: 7 }), textTables.pl).text).toContain("📝 Szkice odpowiedzi do przejrzenia: 7");
+    expect(render(input({ repliesReady: 0 })).text).not.toContain("📝");
+    expect(render(input()).text).not.toContain("📝");
+  });
+
+  test("the line is in the footer, before the shadow line", () => {
+    const text = render(input({ items: [item(1, "info")], counts: { info: 1 }, repliesReady: 2 })).text;
+    const lines = text.split("\n");
+    expect(lines.indexOf("📝 2 replies ready")).toBeGreaterThan(lines.lastIndexOf(""));
+    expect(lines.at(-1)).toContain("Shadow mode");
+    expect(lines.at(-2)).toBe("📝 2 replies ready");
+  });
+});
+
 describe("renderDigest", () => {
   test("empty digest still shows the last sync", () => {
     const message = render(input());

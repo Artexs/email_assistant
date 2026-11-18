@@ -98,8 +98,8 @@ export async function markNotified(db: DbOrTrx, ctx: TenantContext, id: string, 
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
-// Sends the notifier can show: the draft is `applied` and the mailbox is `active`.
-function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
+// Sends that wait for an answer and that a card can show: the draft is `applied` and the mailbox is `active`.
+function openSends(db: DbOrTrx, ctx: TenantContext) {
   return sendBase(db, ctx)
     .innerJoin("actions as draft", (join) =>
       join.onRef("draft.id", "=", "actions.depends_on_action_id").onRef("draft.org_id", "=", "actions.org_id")
@@ -113,8 +113,11 @@ function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
     .where("mailboxes.org_id", "=", ctx.orgId)
     .where("draft.status", "=", "applied")
     .where("mailboxes.status", "=", "active")
-    .where("actions.status", "=", "awaiting_approval")
-    .where("actions.notified_at", "is", null);
+    .where("actions.status", "=", "awaiting_approval");
+}
+// Sends the notifier can show: also no owner has been told about them yet.
+function notifiableSends(db: DbOrTrx, ctx: TenantContext) {
+  return openSends(db, ctx).where("actions.notified_at", "is", null);
 }
 // `skip`: ids that the caller knows it cannot make a card for (a card that the renderer refuses): they must not fill the limit.
 export async function listSendsToNotify(
@@ -123,8 +126,9 @@ export async function listSendsToNotify(
   opts: { limit: number; skip?: readonly string[] }
 ): Promise<SendRow[]> {
   // A follow-up is one card, whatever its payload says about a set.
-  // A reply send gets no generic card: the generic card shows the whole draft text, and a reply card needs the consent check of the
-  // Telegram link (the reply notice of a later stage of ticket F115 builds it). Until then the send waits in the panel.
+  // A reply send never gets the generic card (F115 D15, D16): the generic card shows the whole draft text with no consent check of the
+  // Telegram link. The `replies_ready` notice and the review cards of stage 12 (`channels/notices/replies-ready.ts`, `reply-review.ts`)
+  // are the only way a reply reaches a chat.
   let query = notifiableSends(db, ctx)
     .where(sql<boolean>`(actions.payload->>'set_id' is null or actions.loop_id is not null)`)
     .where(sql<boolean>`actions.payload->>'kind' is distinct from 'reply'`);
@@ -307,4 +311,23 @@ export async function listFollowUpLimitHolds(db: DbOrTrx, ctx: TenantContext, no
     nextAt: row.next_at,
     lastError: row.last_error,
   }));
+}
+
+// The open reply sends of an organization (F115 stage 12): payload kind `reply`, awaiting approval, draft applied, mailbox active. Oldest
+// first (`created_at`, then id). `after`: only the sends that come after this one in that order (a keyset; the review asks for the next).
+// `unnotifiedOnly`: only the sends that no `replies_ready` notice counted yet (`notified_at` null).
+export async function listOpenReplySends(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { limit: number; after?: { createdAt: Date; id: string }; unnotifiedOnly?: boolean }
+): Promise<SendRow[]> {
+  let query = openSends(db, ctx).where(sql<boolean>`actions.payload->>'kind' = 'reply'`);
+  if (opts.unnotifiedOnly === true) query = query.where("actions.notified_at", "is", null);
+  if (opts.after !== undefined) {
+    query = query.where(
+      sql<boolean>`(actions.created_at, actions.id) > (${opts.after.createdAt}, ${opts.after.id}::uuid)`
+    );
+  }
+  const rows = await query.orderBy("actions.created_at").orderBy("actions.id").limit(opts.limit).execute();
+  return rows.map(toSendRow);
 }

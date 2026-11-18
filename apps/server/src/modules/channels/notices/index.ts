@@ -14,6 +14,7 @@ import { delegationAnsweredDetector } from "./delegation-answered";
 import { followUpClosedDetector } from "./follow-up-closed";
 import { hostBlockedDetector } from "./host-blocked";
 import { notTriagedDetector } from "./not-triaged";
+import { repliesReadyDetector } from "./replies-ready";
 import { log, type Detector, type NoticeDeps, type OrgRun } from "./run";
 import { sendHeldDetector } from "./send-held";
 import { sendResultDetector } from "./send-result";
@@ -38,6 +39,7 @@ export const detectors: readonly Detector[] = [
   syncDetector,
   approvalDetector,
   approvalSetDetector,
+  repliesReadyDetector,
   sendResultDetector,
   followUpClosedDetector,
   sendHeldDetector,
@@ -56,8 +58,7 @@ export const queuedBy = {
   approval_edit: "channels/card-edits.ts",
   // The one line for an owner whose consent does not cover open-loop data: queued by the approval and send-result detectors.
   loop_consent: "channels/notices/loop-consent.ts",
-  // F115: the replies module queues these (stages 12 and 13 create the files; the entry is a name only).
-  replies_ready: "replies/notices.ts",
+  // F115: stage 13 queues these (the entry is a name only). `replies_ready` has its own detector (stage 12).
   reply_prompt: "replies/telegram.ts",
   reply_result: "replies/telegram.ts",
   // F110: the trust module calls `queueTrustNotice` inside its own transaction (history check end, re-gate, tripwire).

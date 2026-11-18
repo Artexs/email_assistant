@@ -87,6 +87,19 @@ function followUpRecipientLines(view: ApprovalView, texts: CoreTexts): string[] 
   return lines;
 }
 
+// The recipient lines of a reply card: To (always), Cc (when there is one) and Reply-To (when it differs from the From address).
+function replyRecipientLines(view: ApprovalView, texts: CoreTexts): string[] {
+  const t = texts.approvals.reply;
+  const to = view.to ?? [view.recipient.address];
+  const lines = [`${t.to} ${to.join(", ")}`];
+  if ((view.cc?.length ?? 0) > 0) lines.push(`${t.cc} ${(view.cc ?? []).join(", ")}`);
+  if ((view.replyTo?.length ?? 0) > 0) lines.push(`${t.replyTo} ${(view.replyTo ?? []).join(", ")}`);
+  if (lines.join("\n").length > FOLLOW_UP_RECIPIENTS_MAX_CHARS) {
+    throw new RangeError("the recipients of a reply do not fit a card");
+  }
+  return lines;
+}
+
 export function renderApprovalRequest(
   input: {
     actionId: string;
@@ -110,8 +123,9 @@ export function renderApprovalRequest(
   const head = [view.synthetic ? `${title} · ${texts.common.test}` : title];
   if (view.version !== undefined && view.version >= 2) head.push(t.versionLine(view.version));
   if (followUp) head.push(...followUpRecipientLines(view, texts));
-  // A reply may go to more people than its title names (Reply all): the Cc line is never cut, as in a follow-up.
-  if (view.kind === "reply" && (view.cc?.length ?? 0) > 0) head.push(...followUpRecipientLines(view, texts).slice(1));
+  // A reply card names every recipient (F115 stage 12): To, Cc and the Reply-To of the original when it differs from its From. The
+  // addresses are never cut (the owner decides on them), as in a follow-up; a list that cannot fit one message is refused.
+  if (view.kind === "reply") head.push(...replyRecipientLines(view, texts));
   if (view.sender !== null) {
     // The view stores the English placeholder (plan D19); the renderer prints it in the row's language.
     const stored =
@@ -129,7 +143,9 @@ export function renderApprovalRequest(
   if (followUp && view.followUpNumber !== undefined) head.push(t.followUp.number(view.followUpNumber));
 
   const build = (body: string, bodyNote: boolean, quote: { text: string; replaced: boolean; cut: boolean } | null) => {
-    const lines = [...head, "", t.draft, body];
+    const gaps = view.kind === "reply" ? (view.gaps ?? []) : [];
+    // The gaps come first: the owner sees what to fill before the text. The line is never cut with the body.
+    const lines = [...head, ...(gaps.length > 0 ? ["", t.reply.fill(gaps.join("; "))] : []), "", t.draft, body];
     if (bodyNote) lines.push(t.bodyCut);
     if (quote !== null) {
       lines.push("", t.quoted, quote.text);
@@ -140,6 +156,8 @@ export function renderApprovalRequest(
     if (view.panelUrl !== undefined) lines.push(t.panelLine(view.panelUrl));
     // A reply, and every kind while the flag `draft_copy_check` is on (the view says so), may be edited in the mail client.
     lines.push(view.kind === "reply" || view.copyCheck === true ? t.sendLineEditable : t.sendLine);
+    // The Sent mail is not read: only `\Answered` on the original shows an answer, so the owner must check by hand (D10).
+    if (view.kind === "reply" && view.sentVisible === false) lines.push(t.reply.sentHidden);
     return lines.join("\n");
   };
   const quoteAt = (max: number) => {
@@ -174,6 +192,15 @@ export function renderApprovalRequest(
   }
   // The recipients never shrink (the owner decides on them), so a card that cannot hold them does not render at all.
   if (text.length > MESSAGE_MAX_CHARS) throw new RangeError("the approval card does not fit one message");
+  if (view.kind === "reply") {
+    // A reply card has no Send button while a gap is open (D15), and a Skip button (F115 stage 12).
+    const row: OutMessage["buttons"][number] = [];
+    if ((view.gaps ?? []).length === 0)
+      row.push({ text: t.buttons.send, data: encodeCallback({ kind: "approve", actionId }) });
+    row.push({ text: t.buttons.reject, data: encodeCallback({ kind: "reject", actionId }) });
+    row.push({ text: t.reply.skip, data: encodeCallback({ kind: "reply_skip", sendId: actionId }) });
+    return { text, buttons: [row] };
+  }
   return {
     text,
     buttons: [
@@ -465,7 +492,8 @@ export type ApprovalEditOutcome =
   | "went_out"
   | "done"
   | "marked_mistake"
-  | "changed";
+  | "changed"
+  | "skipped";
 
 export type HeldBy = "scope" | "paused" | "auth_error" | "host_blocked";
 
@@ -533,6 +561,9 @@ export function approvalEdit(
       break;
     case "changed":
       line = t.edit.changed(time);
+      break;
+    case "skipped":
+      line = t.edit.skipped(time);
       break;
   }
   const tail = `\n\n${line}`;

@@ -18,6 +18,7 @@ import {
   type ClaimedOutbox,
   type OutboxFailCode,
 } from "./repo";
+import { isReviewCardKey } from "./review-keys";
 
 const log = createLog("channels");
 
@@ -138,7 +139,8 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
           }
         }
         const timezone = await quiet.timezoneOf(ctx);
-        if (row.kind !== "digest" && !isEdit) {
+        // The digest, a card edit and a review card that the owner asked for with a tap are never held: the user is awake and waits for it.
+        if (row.kind !== "digest" && !isEdit && !isReviewCardKey(row.kind, row.dedupKey)) {
           const until = await quiet.holdUntil(row, timezone);
           if (until !== null) {
             await release(row, until, false);

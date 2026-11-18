@@ -62,11 +62,90 @@ describe("renderApprovalRequest, a reply (F115)", () => {
     expect(pl.text.split("\n")[0]).toBe("✍️ Odpowiedź do jan@client.test");
   });
 
-  test("a Cc is spelled out whole, a reply with none has no Cc line", () => {
-    expect(request(reply()).text).not.toContain("Cc:");
-    const text = request(reply({ cc: ["b@y.test", "c@y.test"] })).text;
-    expect(text).toContain("\nCc: b@y.test, c@y.test\n");
-    expect(text).not.toContain("\nTo:");
+  test("a reply card spells out To, Cc and a Reply-To that differs from the From; a plain reply has To only", () => {
+    const plain = request(reply()).text;
+    expect(plain).toContain("\nTo: jan@client.test\n");
+    expect(plain).not.toContain("Cc:");
+    expect(plain).not.toContain("Reply-To:");
+    const text = request(reply({ cc: ["b@y.test", "c@y.test"], replyTo: ["team@client.test"] })).text;
+    expect(text).toContain("\nTo: jan@client.test\nCc: b@y.test, c@y.test\nReply-To: team@client.test\n");
+    const pl = renderApprovalRequest(
+      { actionId: ID, view: reply({ cc: ["b@y.test"] }), now: NOW, timeZone: TZ },
+      textTables.pl
+    );
+    expect(pl.text).toContain("\nDo: jan@client.test\nDW: b@y.test\n");
+  });
+
+  test("a reply with one gap: the gap line comes before the draft, there is no Send button; Reject and Skip stay (en and pl)", () => {
+    for (const texts of [textTables.en, textTables.pl]) {
+      const message = renderApprovalRequest(
+        {
+          actionId: ID,
+          view: reply({ gaps: ["the price", "the date"], body: "Hello [[the price]]" }),
+          now: NOW,
+          timeZone: TZ,
+        },
+        texts
+      );
+      const lines = message.text.split("\n");
+      const gapLine = lines.findIndex((line) => line.includes("the price; the date"));
+      expect(gapLine).toBeGreaterThan(0);
+      expect(gapLine).toBeLessThan(lines.indexOf(texts.approvals.draft));
+      const data = message.buttons.flat().map((button) => parseCallback(button.data)?.kind);
+      expect(data).toEqual(["reject", "reply_skip"]);
+    }
+  });
+
+  test("a reply without gaps has Send, Reject and Skip, in this order; Skip names the send", () => {
+    const message = request(reply({ gaps: [] }));
+    expect(message.buttons).toEqual([
+      [
+        { text: "📤 Send", data: `ap:${ID}` },
+        { text: "✖️ Reject", data: `ar:${ID}` },
+        { text: "⏭ Skip", data: `rk:${ID}` },
+      ],
+    ]);
+    expect(request(reply()).buttons[0]?.map((button) => button.data)).toEqual([`ap:${ID}`, `ar:${ID}`, `rk:${ID}`]);
+  });
+
+  test("a reply says that the Sent mail is not read only when the view says so (en and pl)", () => {
+    expect(request(reply()).text).not.toContain("sent mail");
+    expect(request(reply({ sentVisible: false })).text).toEndWith(
+      "I cannot see your sent mail; check you did not answer already."
+    );
+    const pl = renderApprovalRequest(
+      { actionId: ID, view: reply({ sentVisible: false }), now: NOW, timeZone: TZ },
+      textTables.pl
+    );
+    expect(pl.text).toEndWith("Nie widzę Twojej wysłanej poczty. Sprawdź, czy ta wiadomość nie ma już odpowiedzi.");
+    // Another kind never prints the line.
+    expect(request(view({ sentVisible: false })).text).not.toContain("sent mail");
+  });
+
+  test("the quote shrinks first: a long quote leaves the gap line, the recipients and the whole body in the card", () => {
+    const body = `Dear Jan,\n\n${"A long answer. ".repeat(100)}[[the date]]`;
+    const message = request(
+      reply({
+        body,
+        gaps: ["the date"],
+        cc: ["b@y.test"],
+        replyTo: ["team@client.test"],
+        quote: { text: `> ${"quoted ".repeat(900)}`, cut: false },
+      })
+    );
+    expect(message.text.length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+    expect(message.text).toContain(body);
+    expect(message.text).toContain("Fill these: the date");
+    expect(message.text).toContain("Cc: b@y.test");
+    expect(message.text).toContain("(quote cut");
+  });
+
+  test("an approval edit with the outcome skipped keeps the card text, adds one line and drops every button", () => {
+    const edited = approvalEdit({ original: "card", outcome: "skipped", at: NOW, timeZone: TZ }, textTables.en);
+    expect(edited).toEqual({ text: "card\n\n⏭ Skipped 11:00. The draft stays in the panel.", buttons: [] });
+    expect(approvalEdit({ original: "card", outcome: "skipped", at: NOW, timeZone: TZ }, textTables.pl).text).toBe(
+      "card\n\n⏭ Pominięto 11:00. Szkic zostaje w panelu."
+    );
   });
 
   test("the result lines of a reply have no closing line", () => {

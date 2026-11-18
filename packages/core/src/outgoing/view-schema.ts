@@ -28,4 +28,8 @@ export const approvalViewSchema = z.strictObject({
   panelUrl: panelUrlSchema.optional(),
   copyCheck: z.literal(true).optional(),
   sentVisible: z.literal(false).optional(),
+  // A reply only (F115 stage 12): the labels of the gaps `[[…]]` that nobody filled (the card shows them first and has no Send button),
+  // and the Reply-To addresses of the original when they differ from its From address. Optional: the other kinds and old views have none.
+  gaps: z.array(z.string().max(80)).max(20).optional(),
+  replyTo: z.array(z.string().max(320)).min(1).max(5).optional(),
 });

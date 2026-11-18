@@ -25,7 +25,14 @@ import {
 import { listSenderRules } from "../../config";
 import { getDelegate, listDelegateAddresses } from "../../delegation";
 import { loopHooks } from "../../loops";
-import { getMailbox, isSentVisible, isSyntheticMessageId, listMailboxes, mailboxProfileOf } from "../../mail";
+import {
+  getMailbox,
+  isSentVisible,
+  isSyntheticMessageId,
+  listMailboxes,
+  mailboxProfileOf,
+  replyFactsOf,
+} from "../../mail";
 import { getOrganization, isFeatureOn, listMemberships } from "../../tenancy";
 import { type LinkedChat } from "../port";
 
@@ -116,8 +123,18 @@ export async function approvalViewFor(
   // The card line invites an edit in the mail client only where the system stops a changed copy (a reply, or the flag on).
   if (await isFeatureOn(db, ctx, "draft_copy_check")) view.copyCheck = true;
   // A reply is stopped when the mail is answered, but only `\Answered` on the original shows that while the Sent mail is not read
-  // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail" (stage 12 prints it).
+  // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail".
   if (draft.kind === "reply" && !(await isSentVisible(db, ctx, mailbox.id))) view.sentVisible = false;
+  // A reply goes to the stored From. The card also shows the Reply-To of the original when it names other addresses (F115 stage 12).
+  if (draft.kind === "reply" && email !== null && send.email_id !== null) {
+    const emailId = send.email_id;
+    const from = email.from_address?.toLowerCase() ?? null;
+    const replyTo = (await replyFactsOf(db, ctx, [emailId])).get(emailId)?.replyTo ?? [];
+    const others = [...new Set(replyTo.map((address) => address.toLowerCase()))]
+      .filter((address) => address !== from && address.length <= 320)
+      .slice(0, 5);
+    if (others.length > 0) view.replyTo = others;
+  }
   return { view, subject: message.subject, quote: message.parts.quote };
 }
 

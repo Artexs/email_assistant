@@ -111,6 +111,8 @@ export interface DigestInput {
   skippedBacklog: number;
   waiting: number;
   delegations?: { open: number; overdue: number };
+  // The reply drafts that wait for a review (F115 stage 12): one footer line with the count, no button. 0 or absent: no line.
+  repliesReady?: number;
   // The LLM pause (F100 stage 07, flag `llm_pause_line`). Set: its line is the first line of the footer.
   llmPause?: LlmPause;
   // The handled share of the last 7 days (D24): set only while `handled_share` is on.
@@ -278,6 +280,9 @@ function renderListed(
   const delegationShown = input.brief?.sections?.waiting.lines.some((line) => "delegation" in line) === true;
   if (!delegationShown && input.delegations !== undefined && input.delegations.open + input.delegations.overdue > 0) {
     footer.push(texts.digest.delegations(input.delegations.open, input.delegations.overdue));
+  }
+  if (input.repliesReady !== undefined && input.repliesReady > 0) {
+    footer.push(texts.digest.repliesReady(input.repliesReady));
   }
   const openLoops = input.brief?.openLoops ?? null;
   if (openLoops !== null && openLoops.waiting + openLoops.promised > 0) {

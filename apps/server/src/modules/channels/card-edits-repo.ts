@@ -4,8 +4,15 @@ import { sql, type Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 
 import { OUTBOX_REMOVED_TEXT } from "./repo";
+import { sendIdOfCardKey } from "./review-keys";
 
 type DbOrTrx = Db | Transaction<DB>;
+
+// The dedup key of an approval card of one send: `approval:<id>` (the detector) or `approval:<id>:r<n>` (a review card of a reply, F115
+// stage 12). A send id is a UUID, so the LIKE pattern has no wildcard of its own.
+function cardKeyOfSend(sendId: string) {
+  return sql<boolean>`(dedup_key = ${`approval:${sendId}`} or dedup_key like ${`approval:${sendId}:r%`})`;
+}
 
 export interface CardOfSend {
   id: string;
@@ -19,7 +26,7 @@ export interface CardOfSend {
   locale: UserLocale;
 }
 
-// The approval request cards (kind `approval`, dedup `approval:<send id>`) of one send, one per owner. The set cards
+// The approval request cards (kind `approval`, dedup `approval:<send id>`, or `approval:<send id>:r<n>` for a review card) of one send. The set cards
 // (`approval_set:`) are another kind and never match (Q15). Oldest first, so the queue order of the edits is stable.
 export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: string): Promise<CardOfSend[]> {
   const rows = await db
@@ -27,7 +34,7 @@ export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: s
     .select(["id", "user_id", "status", "text", "external_message_id", "email_id", "loop_id", "locale"])
     .where("org_id", "=", ctx.orgId)
     .where("kind", "=", "approval")
-    .where("dedup_key", "=", `approval:${sendId}`)
+    .where(cardKeyOfSend(sendId))
     .orderBy("created_at")
     .orderBy("id")
     .execute();
@@ -51,7 +58,7 @@ export async function failPendingCardsOfSend(db: DbOrTrx, ctx: TenantContext, se
     .set({ status: "failed", error_code: "answered_elsewhere", locked_at: null })
     .where("org_id", "=", ctx.orgId)
     .where("kind", "=", "approval")
-    .where("dedup_key", "=", `approval:${sendId}`)
+    .where(cardKeyOfSend(sendId))
     .where("status", "=", "pending")
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
@@ -82,14 +89,14 @@ export async function getEditTarget(
     .where("kind", "=", "approval")
     .where("status", "=", "sent")
     .executeTakeFirst();
-  const prefix = "approval:";
-  if (!row || row.external_message_id === null || !row.text || !row.dedup_key.startsWith(prefix)) return undefined;
+  const sendId = row === undefined ? null : sendIdOfCardKey(row.dedup_key);
+  if (!row || row.external_message_id === null || !row.text || sendId === null) return undefined;
   return {
     id: row.id,
     messageId: Number(row.external_message_id),
     sentAt: row.sent_at,
     text: row.text,
-    sendId: row.dedup_key.slice(prefix.length),
+    sendId,
   };
 }
 

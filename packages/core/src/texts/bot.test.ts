@@ -80,6 +80,12 @@ describe("bot texts", () => {
     expect(textTables.en.bot.taps.featureOff).toBe("Reply drafts are switched off. Nothing was sent.");
   });
 
+  // F115 stage 12: a reply lives 7 days and another send 48 h, so the expired tap text names no number of hours.
+  test("the expired tap text says no hours, en and pl", () => {
+    expect(textTables.en.bot.taps.expired).toBe("This approval expired. The mail was not sent.");
+    expect(textTables.pl.bot.taps.expired).toBe("To zatwierdzenie wygasło. Wiadomość nie została wysłana.");
+  });
+
   // The Polish count texts: the noun and the verb follow the count (1, 2, 5, 22).
   test("the Polish reminder-set texts agree with the count", () => {
     const { taps } = textTables.pl.bot;

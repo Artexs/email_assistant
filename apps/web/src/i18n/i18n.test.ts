@@ -1,4 +1,4 @@
-import { OPEN_LOOPS_CONSENT_SINCE, TELEGRAM_CONSENT_VERSION } from "@ea/core";
+import { OPEN_LOOPS_CONSENT_SINCE, REPLY_CONSENT_SINCE, TELEGRAM_CONSENT_VERSION } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { en, enPlurals, type PluralKey, type TextKey } from "./en";
@@ -150,6 +150,18 @@ describe("the Telegram consent text", () => {
 
   test("T7 the current version is not older than the open-loops version", () => {
     expect(TELEGRAM_CONSENT_VERSION >= OPEN_LOOPS_CONSENT_SINCE).toBe(true);
+  });
+
+  // F115 stage 12 (D16): a Telegram user is covered for reply data only by a consent version that offered a text naming it. While
+  // `REPLY_CONSENT_SINCE` is above the current version nobody is covered (stage 12 ships without the legal text change: it needs a
+  // TERMS_VERSION bump that belongs to F115 stage 17). Once it is not above, both consent texts must name the reply drafts and the other
+  // recipients' addresses, or this test fails.
+  test("T8 the reply version is not offered before its text names reply data", () => {
+    if (REPLY_CONSENT_SINCE > TELEGRAM_CONSENT_VERSION) return;
+    expect(en.tg_consent_text).toContain("reply drafts that the AI writes");
+    expect(en.tg_consent_text).toContain("(To, Cc, Reply-To)");
+    expect(pl.tg_consent_text).toContain("szkice odpowiedzi");
+    expect(pl.tg_consent_text).toContain("(Do, DW, Reply-To)");
   });
 
   test("T7b the open-loops version is newer than the F109 attachment version", () => {

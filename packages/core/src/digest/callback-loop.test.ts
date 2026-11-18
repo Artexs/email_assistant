@@ -50,6 +50,8 @@ const everyKind: Callback[] = [
   ...loopKinds.map((kind): Callback => ({ kind, loopId: ID })),
   { kind: "delegate_open", emailId: ID },
   { kind: "delegate_pick", emailId: EMAIL, delegateId: DELEGATE },
+  { kind: "reply_review", afterId: ID },
+  { kind: "reply_skip", sendId: ID },
 ];
 
 describe("callback prefixes", () => {
@@ -130,5 +132,31 @@ describe("delegate callback data", () => {
     const last = (mail as string).slice(-1);
     const other = last === "A" ? "B" : "A";
     expect(parseCallback(`dp:${(mail as string).slice(0, -1)}${other}:${delegate}`)).toBeNull();
+  });
+});
+
+// F115 stage 12: the review of reply drafts.
+describe("the reply review callbacks", () => {
+  test("`rv` starts the review, `rv:<send>` asks for the next one after a send; both parse back and are short", () => {
+    expect(encodeCallback({ kind: "reply_review" })).toBe("rv");
+    expect(parseCallback("rv")).toEqual({ kind: "reply_review" });
+    expect(encodeCallback({ kind: "reply_review", afterId: ID })).toBe(`rv:${ID}`);
+    expect(parseCallback(`rv:${ID}`)).toEqual({ kind: "reply_review", afterId: ID });
+    expect(encodeCallback({ kind: "reply_skip", sendId: ID })).toBe(`rk:${ID}`);
+  });
+
+  test("forged or malformed data gives null; an id that is not a UUID is refused when encoding", () => {
+    for (const data of ["rv:", "rv:x", `rv:${ID}x`, `rk:`, "rk", `rk:${ID}:1`, `RV:${ID}`, `rv ${ID}`]) {
+      expect(parseCallback(data), data).toBeNull();
+    }
+    expect(() => encodeCallback({ kind: "reply_skip", sendId: "not-an-id" })).toThrow("bad id");
+    expect(() => encodeCallback({ kind: "reply_review", afterId: "x" })).toThrow("bad id");
+  });
+
+  test("the two prefixes are new: no other kind uses rv or rk", () => {
+    const others = everyKind.filter((callback) => !callback.kind.startsWith("reply_"));
+    const prefixes = new Set(others.map((callback) => encodeCallback(callback).slice(0, 2)));
+    expect(prefixes.has("rv")).toBe(false);
+    expect(prefixes.has("rk")).toBe(false);
   });
 });

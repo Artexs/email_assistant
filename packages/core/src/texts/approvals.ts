@@ -36,6 +36,16 @@ export interface ApprovalTexts {
       string
     >;
   };
+  // The review card of a reply draft (F115 stage 12): the lines that only a reply has, and its Skip button.
+  reply: {
+    to: string; // "To:"
+    cc: string; // "Cc:"
+    replyTo: string; // "Reply-To:" (the Reply-To of the original, when it differs from its From)
+    fill: (gaps: string) => string; // the gaps that nobody filled; no Send button while there is one
+    sentHidden: string; // the Sent mail is not read: only `\Answered` shows an answer
+    skip: string; // the button
+    noMore: string; // the review is at its end
+  };
   inactive: string; // "(inactive)"
   externalSender: string; // "⚠️ external sender"
   due: string; // "Due"
@@ -127,6 +137,7 @@ export interface ApprovalTexts {
     rejectedReason: (reason: string) => string; // no clock: the tap time is not the reject time
     markedMistake: (time: string) => string;
     changed: (time: string) => string; // a panel edit replaced the draft; the new version is a new message
+    skipped: (time: string) => string; // a reply card that the owner skipped in the review (F115 stage 12)
   };
   answered: {
     title: (name: string, subject: string) => string;
@@ -179,6 +190,15 @@ export const approvalTexts = {
         loop_closed: "⌛ Follow-up not sent: the open loop was closed.",
         draft_changed: "✏️ Follow-up not sent: you edited this draft in your mail client. Send it from there.",
       },
+    },
+    reply: {
+      to: "To:",
+      cc: "Cc:",
+      replyTo: "Reply-To:",
+      fill: (gaps) => `⚠️ Fill these: ${gaps}. You cannot send this draft until they are filled.`,
+      sentHidden: "I cannot see your sent mail; check you did not answer already.",
+      skip: "⏭ Skip",
+      noMore: "No more replies waiting.",
     },
     inactive: "(inactive)",
     externalSender: "⚠️ external sender",
@@ -289,6 +309,7 @@ export const approvalTexts = {
       rejectedReason: (reason) => `✖️ Rejected. Reason: ${reason}.`,
       markedMistake: (time) => `⚠️ Marked as a mistake ${time}.`,
       changed: (time) => `✏️ Changed in the panel ${time}. The new version comes as a new message.`,
+      skipped: (time) => `⏭ Skipped ${time}. The draft stays in the panel.`,
     },
     answered: {
       title: (name, subject) => `📩 ${name} answered · ${subject}`,
@@ -332,6 +353,15 @@ export const approvalTexts = {
         draft_changed:
           "✏️ Nie wysłano przypomnienia o odpowiedzi: szkic został zmieniony w programie pocztowym. Wyślij go stamtąd.",
       },
+    },
+    reply: {
+      to: "Do:",
+      cc: "DW:",
+      replyTo: "Reply-To:",
+      fill: (gaps) => `⚠️ Uzupełnij: ${gaps}. Dopóki luki są puste, nie możesz wysłać tego szkicu.`,
+      sentHidden: "Nie widzę Twojej wysłanej poczty. Sprawdź, czy ta wiadomość nie ma już odpowiedzi.",
+      skip: "⏭ Pomiń",
+      noMore: "Nie ma więcej odpowiedzi do przejrzenia.",
     },
     inactive: "(nieaktywny wykonawca)",
     externalSender: "⚠️ nadawca zewnętrzny",
@@ -444,6 +474,7 @@ export const approvalTexts = {
       rejectedReason: (reason) => `✖️ Odrzucono. Powód: ${reason}.`,
       markedMistake: (time) => `⚠️ Oznaczono jako błąd ${time}.`,
       changed: (time) => `✏️ Zmieniono w panelu ${time}. Nowa wersja przyjdzie w osobnej wiadomości.`,
+      skipped: (time) => `⏭ Pominięto ${time}. Szkic zostaje w panelu.`,
     },
     answered: {
       title: (name, subject) => `📩 Odpowiedź od: ${name} · ${subject}`,

@@ -1,4 +1,4 @@
-import { consentCovers, OPEN_LOOPS_CONSENT_SINCE } from "@ea/core";
+import { consentCovers, OPEN_LOOPS_CONSENT_SINCE, REPLY_CONSENT_SINCE } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -58,6 +58,18 @@ export async function loopConsentOf(db: DbOrTrx, ctx: TenantContext, userIds: re
   return new Set(
     [...versions].filter(([, version]) => consentCovers(version, OPEN_LOOPS_CONSENT_SINCE)).map(([id]) => id)
   );
+}
+
+// THE gate of reply-draft data in Telegram (F115 stage 12, D16): the users whose consent covers the reply drafts that the AI writes and
+// the addresses of the other recipients of a mail. The review card of a reply and the Review button ask here and nowhere else. A user
+// not in the set gets the count of waiting replies, the panel link and one fixed line.
+export async function replyConsentOf(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  userIds: readonly string[]
+): Promise<Set<string>> {
+  const versions = await consentVersionsOf(db, ctx, userIds);
+  return new Set([...versions].filter(([, version]) => consentCovers(version, REPLY_CONSENT_SINCE)).map(([id]) => id));
 }
 
 // The own consent version of one user, for the panel (`GET /channels/telegram`, F116 stage 22): the panel shows the "New Telegram
