@@ -339,12 +339,11 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
     expect(((await (await soft.post(soft.mine)).json()) as { kind: string }).kind).toBe("failed");
   });
 
-  test("it counts in the daily cap like a tap: at 100% the preview is failed / llm_cap with no call; each preview uses one call of the cap", async () => {
-    const { org, mine, fake, post } = await setup({ dailyCap: 3 });
-    expect((await post(mine)).status).toBe(200);
-    expect((await post(mine)).status).toBe(200);
-    expect(await (await post(mine)).json()).toEqual({ body: CLEAN_ANSWER.body });
-    expect(fake.requests).toHaveLength(3);
+  test("it counts in the daily cap like a tap: it is not held at 80 %, and at 100% the preview is failed / llm_cap with no call", async () => {
+    const { org, mine, fake, post } = await setup({ dailyCap: 5 });
+    // The fifth call starts at 80 % (4 of 5): an automatic draft would wait, a tap does not.
+    for (let i = 0; i < 5; i += 1) expect(await (await post(mine)).json()).toEqual({ body: CLEAN_ANSWER.body });
+    expect(fake.requests).toHaveLength(5);
 
     const full = await post(mine);
 
@@ -352,8 +351,8 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
       status: 200,
       body: { kind: "failed", reason: "llm_cap" },
     });
-    expect(fake.requests).toHaveLength(3);
-    expect(await previewRows(org.orgId)).toHaveLength(3);
+    expect(fake.requests).toHaveLength(5);
+    expect(await previewRows(org.orgId)).toHaveLength(5);
   });
 
   test("a second preview of the same mailbox at the same time is 429 preview_busy, so a burst cannot pass the limit", async () => {

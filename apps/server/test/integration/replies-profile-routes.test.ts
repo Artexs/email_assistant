@@ -283,6 +283,19 @@ describe("GET and PUT /api/mailboxes/:id/profile", () => {
     for (const text of ["Anna", "Nowak", CANARY, "Warm"]) expect(dump).not.toContain(text);
   });
 
+  test("the audit row names only the fields that changed, not the fields that the body repeats", async () => {
+    const { org, app, mine } = await setup();
+    await app.request(profileUrl(mine.id), as("owner", put({ displayName: "Anna Nowak" })));
+
+    await app.request(profileUrl(mine.id), as("owner", put({ displayName: "Anna Nowak", signature: "Sig" })));
+
+    const audits = await profileAudits(org.orgId);
+    expect(audits.map((row) => row.data)).toEqual([
+      { mailbox_id: mine.id, fields: "display_name", via: "web" },
+      { mailbox_id: mine.id, fields: "signature", via: "web" },
+    ]);
+  });
+
   test("a body with a wrong type is 400; a key that is left out keeps its stored value", async () => {
     const { app, mine } = await setup();
     await app.request(profileUrl(mine.id), as("owner", put({ displayName: "Anna", writingStyle: "Warm" })));
