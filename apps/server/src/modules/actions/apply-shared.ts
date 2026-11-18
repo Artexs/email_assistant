@@ -27,7 +27,19 @@ export type ApplyOutcome =
   // An `applying` draft whose send ended before the APPEND.
   // `loop_closed`: the loop of a follow-up closed before the APPEND (the draft) or before the SMTP call (the send).
   // `draft_changed`, `draft_missing`: the Drafts copy was edited or is gone before the SMTP call (no mail went out).
-  | { kind: "expired"; reason: "send_closed" | "loop_closed" | "draft_changed" | "draft_missing" }
+  // `answered`, `sent_by_user`, `newer_mail`, `original_moved`: a reply that the pass before the send stopped (F115 stage 09).
+  | {
+      kind: "expired";
+      reason:
+        | "send_closed"
+        | "loop_closed"
+        | "draft_changed"
+        | "draft_missing"
+        | "answered"
+        | "sent_by_user"
+        | "newer_mail"
+        | "original_moved";
+    }
   | { kind: "retry"; soft: boolean }
   | { kind: "auth_error"; reason?: AuthErrorReason }
   | { kind: "lost" };
@@ -62,6 +74,8 @@ export interface ApplyDeps {
   approvalHooks?: ApprovalHooks;
   /** The org flag `draft_copy_check`: a send of every kind compares its Drafts copy first. A reply always compares. Absent: off. */
   copyCheck?: boolean;
+  /** The time budget of the Sent pass before a reply send, in ms. Absent: the budget of the Sent sync. A test sets it small. */
+  sentBudgetMs?: number;
   /** Open loops: reads the loop of a follow-up and writes its counters. Absent: `noLoopHooks` (a loop is never open). */
   loopHooks?: LoopHooks;
   /** Paths of the mailbox's `sort` rows (enabled or not): a move into one of them is an APPEND transfer (Interia re-sorts a COPY, F12). */

@@ -3,7 +3,14 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 
 import type { FlagsOfMessage, MailProvider } from "./port";
-import { listFlagTargets, touchEmailFlags, writeEmailFlags, type FlagRead, type FlagTarget } from "./repo";
+import {
+  getFlagTarget,
+  listFlagTargets,
+  touchEmailFlags,
+  writeEmailFlags,
+  type FlagRead,
+  type FlagTarget,
+} from "./repo";
 import { normalizeMessageId } from "./sync-rules";
 
 // The sync job refreshes the IMAP flags of recent mail on its own connection, at most this often per mailbox.
@@ -103,4 +110,42 @@ export async function refreshFlags(
     }
   }
   return result;
+}
+
+// What `refreshFlagsOfEmail` found. `read`: the server answered for this UID and the stored flags now equal it (`answered` is the server's
+// `\Answered`). `gone`: the UID is not in the folder (the mail moved or went). `mismatch`: the UID now names another mail. `not_found`:
+// no such mail in this organization. In the last three nothing was written and the stored flags stand.
+export type FlagsOfEmailResult =
+  | { kind: "read"; answered: boolean }
+  | { kind: "gone" }
+  | { kind: "mismatch" }
+  | { kind: "not_found" };
+
+// The flag refresh for one mail, on the caller's connection (F115 D10: the pass before a reply send asks the server whether the mail
+// is answered). The same read, the same mail check and the same writer as `refreshFlags`; one `fetchFlagsIn` call for one UID.
+export async function refreshFlagsOfEmail(
+  deps: Pick<FlagsRefreshDeps, "db" | "provider" | "now">,
+  ctx: TenantContext,
+  emailId: string
+): Promise<FlagsOfEmailResult> {
+  const target = await getFlagTarget(deps.db, ctx, emailId);
+  if (target === undefined) return { kind: "not_found" };
+  const found = (await deps.provider.fetchFlagsIn(target.folder, [target.uid])).find((meta) => meta.uid === target.uid);
+  if (found === undefined) return { kind: "gone" };
+  if (!sameMail(target, found)) return { kind: "mismatch" };
+  const answered = hasFlag(found.flags, flagNames.answered);
+  await writeEmailFlags(
+    deps.db,
+    ctx,
+    [
+      {
+        ...target,
+        seen: hasFlag(found.flags, flagNames.seen),
+        answered,
+        flagged: hasFlag(found.flags, flagNames.flagged),
+      },
+    ],
+    deps.now()
+  );
+  return { kind: "read", answered };
 }

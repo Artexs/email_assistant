@@ -18,6 +18,26 @@ export interface FlagTarget {
   receivedAt: Date;
 }
 
+// The flag target of one mail of the organization (the pass before a reply send reads the flags of the one mail it answers).
+// A mail that is not in this organization gives undefined.
+export async function getFlagTarget(db: DbOrTrx, ctx: TenantContext, emailId: string): Promise<FlagTarget | undefined> {
+  const row = await db
+    .selectFrom("emails as e")
+    .select(["e.id", "e.folder", "e.uid", "e.message_id_header", "e.received_at"])
+    .where("e.org_id", "=", ctx.orgId)
+    .where("e.id", "=", emailId)
+    .executeTakeFirst();
+  return row === undefined
+    ? undefined
+    : {
+        emailId: row.id,
+        folder: row.folder,
+        uid: Number(row.uid),
+        messageId: row.message_id_header,
+        receivedAt: row.received_at,
+      };
+}
+
 // Mail of the mailbox received at or after `since`: never checked first, then the oldest `checked_at`, then the newest mail.
 export async function listFlagTargets(
   db: DbOrTrx,

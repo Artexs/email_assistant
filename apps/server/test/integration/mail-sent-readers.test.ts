@@ -101,8 +101,9 @@ async function sent(trx: Transaction<DB>, org: Org, at: Date, extra: Partial<New
   return row.id;
 }
 
-const incoming = (trx: Transaction<DB>, org: Org, messageId: string | null) =>
-  insertTestEmail(trx, org.ctx, org.mailboxId, { message_id_header: messageId });
+// The sender of the incoming mail is the address that the default Sent row goes to (`to@x.test`): an answer goes to the sender.
+const incoming = (trx: Transaction<DB>, org: Org, messageId: string | null, from = "to@x.test") =>
+  insertTestEmail(trx, org.ctx, org.mailboxId, { message_id_header: messageId, from_address: from });
 
 describe("listUserAnswers", () => {
   test("gives the earliest user reply with its time and row id", async () => {
@@ -159,6 +160,68 @@ describe("listUserAnswers", () => {
 
       expect(answers.has(x)).toBe(false);
       expect(answers.has(y)).toBe(true);
+    });
+  });
+
+  test("a Sent mail that keeps the thread headers but goes to someone else (a forward) is no answer; To, Cc and the Reply-To of the mail count", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const forward = await incoming(trx, a, "<fwd@a.test>", "boss@x.test");
+      const toSender = await incoming(trx, a, "<to@a.test>", "boss@x.test");
+      const ccSender = await incoming(trx, a, "<cc@a.test>", "boss@x.test");
+      const viaReplyTo = await incoming(trx, a, "<rt@a.test>", "list@x.test");
+      const mixedCase = await incoming(trx, a, "<mc@a.test>", "Boss@X.test");
+      await trx
+        .insertInto("email_headers")
+        .values({
+          email_id: viaReplyTo,
+          org_id: a.ctx.orgId,
+          reply_to: ["owner@x.test"],
+          parts_known: true,
+          captured_at: NOW,
+        })
+        .execute();
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<fwd@a.test>", toAddresses: ["colleague@x.test"] });
+      await sent(trx, a, ago(HOUR), {
+        parentMessageId: "<to@a.test>",
+        toAddresses: ["colleague@x.test", "boss@x.test"],
+      });
+      await sent(trx, a, ago(HOUR), {
+        parentMessageId: "<cc@a.test>",
+        toAddresses: ["colleague@x.test"],
+        ccAddresses: ["boss@x.test"],
+      });
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<rt@a.test>", toAddresses: ["owner@x.test"] });
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<mc@a.test>", toAddresses: ["boss@x.test"] });
+
+      const answers = await listUserAnswers(trx, a.ctx, [forward, toSender, ccSender, viaReplyTo, mixedCase]);
+
+      expect(answers.has(forward)).toBe(false);
+      expect(answers.has(toSender)).toBe(true);
+      expect(answers.has(ccSender)).toBe(true);
+      expect(answers.has(viaReplyTo)).toBe(true);
+      // The stored sender address is lower case (`from_address_lower`), the stored Sent addresses are lower case: a mixed-case sender matches.
+      expect(answers.has(mixedCase)).toBe(true);
+    });
+  });
+
+  test("an automatic Sent mail (Auto-Submitted other than no) is no answer; `no` and no header are", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await newOrg(trx);
+      const auto = await incoming(trx, a, "<auto@a.test>");
+      const withParams = await incoming(trx, a, "<par@a.test>");
+      const no = await incoming(trx, a, "<no@a.test>");
+      const plain = await incoming(trx, a, "<plain@a.test>");
+      const setAuto = async (id: string, value: string) =>
+        trx.updateTable("sent_emails").set({ auto_submitted: value }).where("id", "=", id).execute();
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<auto@a.test>" }), "auto-replied");
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<par@a.test>" }), "Auto-Generated; x=1");
+      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<no@a.test>" }), "no");
+      await sent(trx, a, ago(HOUR), { parentMessageId: "<plain@a.test>" });
+
+      const answers = await listUserAnswers(trx, a.ctx, [auto, withParams, no, plain]);
+
+      expect([...answers.keys()].sort()).toEqual([no, plain].sort());
     });
   });
 
@@ -327,7 +390,7 @@ describe("the readers and the log", () => {
       const a = await newOrg(trx);
       await pathOn(trx, a, "Sent");
       await updateSentCursor(trx, a.ctx, a.mailboxId, { uidValidity: 7, lastUid: 1 }, { firstPassAt: ago(DAY) });
-      const x = await incoming(trx, a, "<x@a.test>");
+      const x = await incoming(trx, a, "<x@a.test>", "canary-to@x.test");
       const id = await sent(trx, a, ago(HOUR), {
         parentMessageId: "<x@a.test>",
         subject: "CanarySubject",

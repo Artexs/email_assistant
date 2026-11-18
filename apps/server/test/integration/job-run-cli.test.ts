@@ -56,6 +56,17 @@ describe("job:run CLI", () => {
     expect(lines[1]).toContain("delegation.chaser is an alias of loops.chaser");
   });
 
+  // F115 stage 09: the sweep needs no model and no LLM scope; it prints counts only.
+  test("replies.sweep runs once without the model and prints a counts line", async () => {
+    const result = await runJob(["--name", "replies.sweep"]);
+
+    expect(result.code).toBe(0);
+    expect(result.stdout).toMatch(
+      /\[job-run\] replies\.sweep: ran once \(mailboxes \d+, checked \d+, answered \d+, newer mail \d+, original moved \d+, suspicious \d+, policy changed \d+, skipped \d+, mailbox errors 0\)/
+    );
+    expect(result.stdout + result.stderr).not.toContain("TRIAGE_LLM_SCOPE");
+  });
+
   test("a mailbox that fails makes the chaser exit 1, and the counts line names the error", async () => {
     const created = await db.transaction().execute(async (trx) => {
       const org = await createOrgWithMailbox(trx);

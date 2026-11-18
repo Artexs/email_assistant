@@ -55,6 +55,9 @@ const approvals = (trx: Transaction<DB>): ApprovalDeps => ({
   uidplus: async () => true,
 });
 
+// The copy results of `reply_send_checked`. The pass before a reply send (stage 09) writes the same event with the codes `answered`,
+// `not_answered`, `newer_mail` and `original_moved`; its tests are in `replies-answered-pass.test.ts`.
+const COPY_RESULTS = ["same", "changed", "missing", "no_baseline"];
 const checked = (captured: CapturedLogs): unknown[] =>
   captured.lines
     .map((line) => {
@@ -64,7 +67,7 @@ const checked = (captured: CapturedLogs): unknown[] =>
         return {};
       }
     })
-    .filter((line) => line.event === "reply_send_checked")
+    .filter((line) => line.event === "reply_send_checked" && COPY_RESULTS.includes(String(line.result)))
     .map((line) => line.result);
 
 describe("the copy check: an untouched or re-saved copy sends", () => {

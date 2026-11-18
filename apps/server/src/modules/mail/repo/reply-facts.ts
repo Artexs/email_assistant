@@ -25,6 +25,8 @@ export interface MailReplyFacts {
   fromJunk: boolean;
   /** `emails.folder`: where the mail is now. */
   folder: string;
+  /** `emails.moved_at`: set when the assistant moved the mail (a move action), null when it did not. */
+  movedAt: Date | null;
   receivedAt: Date;
   threadKey: string;
   toAddresses: string[];
@@ -65,6 +67,7 @@ export async function replyFactsOf(
         "from_address",
         "source_folder",
         "folder",
+        "moved_at",
         "received_at",
         "thread_key",
         "to_addresses",
@@ -127,6 +130,7 @@ export async function replyFactsOf(
         fromAddress: mail.from_address,
         fromJunk: junkPath !== undefined && mail.source_folder === junkPath,
         folder: mail.folder,
+        movedAt: mail.moved_at,
         receivedAt: mail.received_at,
         threadKey: mail.thread_key,
         toAddresses: mail.to_addresses,

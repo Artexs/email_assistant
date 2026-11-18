@@ -80,6 +80,8 @@ export interface CommitterDeps {
   // Absent = `DEFAULT_SEND_LIMITS` and no callback (the older tests). `main.ts` wires them.
   sendLimits?: ApplyDeps["sendLimits"];
   onSendLimited?: ApplyDeps["onSendLimited"];
+  /** The time budget of the Sent pass before a reply send (`ApplyDeps.sentBudgetMs`). Absent: the default. A test sets it small. */
+  sentBudgetMs?: number;
 }
 
 // The owner and the organization of one tenant, read once per run.
@@ -313,6 +315,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       appendFolders,
       ...(deps.sleep === undefined ? {} : { sleep: deps.sleep }),
       ...(deps.sendLimits === undefined ? {} : { sendLimits: deps.sendLimits }),
+      ...(deps.sentBudgetMs === undefined ? {} : { sentBudgetMs: deps.sentBudgetMs }),
       ...(deps.onSendLimited === undefined ? {} : { onSendLimited: deps.onSendLimited }),
     };
     let index = 0;
