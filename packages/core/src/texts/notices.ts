@@ -1,6 +1,7 @@
 import type { SendLimitKind } from "../send-limits";
 import type { UserLocale } from "../tenancy";
 import type { BarCategory } from "../triage/metrics";
+import type { TripReason } from "../trust/tripwire";
 import type { AuthErrorReason } from "../web/mail-oauth";
 
 import { pluralCategory } from "./locale";
@@ -104,6 +105,12 @@ export interface NoticeTexts {
     autoFew: (category: string, labels: number, minimum: number) => string;
     auto: (items: string) => string;
     autoNone: string;
+    // F110 stage 12 (D15, fixed phrases only): the evidence line of a category on `auto`, and the line of a paused one.
+    autoOn: (category: string, proof: string, check: string) => string;
+    autoPaused: (category: string, reason: string) => string;
+    proof: { go: string; noGo: string; none: string };
+    check: { pass: string; fail: string; inconclusive: string; noResult: string; none: string };
+    pauseReason: Record<TripReason, string>;
     review: (count: number) => string;
   };
 }
@@ -289,6 +296,17 @@ export const noticeTexts = {
       autoFew: (category, labels, minimum) => `${category} fewer than ${minimum} labels (${labels})`,
       auto: (items) => `Auto: ${items}`,
       autoNone: "Auto: no category on auto",
+      autoOn: (category, proof, check) => `${category}: auto on · proof ${proof} · check ${check}`,
+      autoPaused: (category, reason) => `${category}: paused (${reason})`,
+      proof: { go: "go", noGo: "no-go", none: "none" },
+      check: { pass: "pass", fail: "fail", inconclusive: "inconclusive", noResult: "no result", none: "none" },
+      pauseReason: {
+        corrections: "you corrected its moves",
+        important_hidden: "it hid a mail you needed",
+        model_switch: "the AI model changed",
+        evidence_changed: "new test results",
+        history_fail: "the check of your last 30 days failed",
+      },
       review: (count) => `/review: ${count} replied ${count === 1 ? "mail waits" : "mails wait"} for a check.`,
     },
   },
@@ -458,6 +476,23 @@ export const noticeTexts = {
       autoFew: (category, labels, minimum) => `${category} mniej niż ${minimum} etykiet (${labels})`,
       auto: (items) => `Automat: ${items}`,
       autoNone: "Automat: żadna kategoria nie działa sama",
+      autoOn: (category, proof, check) => `${category}: automat włączony · dowód ${proof} · sprawdzenie ${check}`,
+      autoPaused: (category, reason) => `${category}: wstrzymane (${reason})`,
+      proof: { go: "go", noGo: "no-go", none: "brak" },
+      check: {
+        pass: "zaliczone",
+        fail: "niezaliczone",
+        inconclusive: "niejednoznaczne",
+        noResult: "brak wyniku",
+        none: "brak",
+      },
+      pauseReason: {
+        corrections: "poprawiono jego ruchy",
+        important_hidden: "ukrył ważną wiadomość",
+        model_switch: "zmienił się model AI",
+        evidence_changed: "nowe wyniki testów",
+        history_fail: "sprawdzenie ostatnich 30 dni nie przeszło",
+      },
       review: (count) => `/review: ${PL_REVIEW[pluralCategory("pl", count)](count)} na sprawdzenie.`,
     },
   },

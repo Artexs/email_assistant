@@ -1191,6 +1191,21 @@ export const pl: Record<TextKey, string> = {
   tgc_title: "Nowe zasady Telegrama: otwarte sprawy",
   tgc_confirm: "Potwierdź",
   tgc_confirmed_toast: "Potwierdzono nowe zasady Telegrama.",
+  // F110 stage 23: the newsletters card of the Rules page (flag bulk_unsubscribe)
+  nl_title: "Newslettery",
+  nl_help:
+    "Nadawcy newsletterów i powiadomień z ostatnich 30 dni. Nadawcy spamu i podejrzani nadawcy nie są na liście.",
+  nl_mailbox_label: "Skrzynka",
+  nl_empty: "W ostatnich 30 dniach nie było nadawców newsletterów.",
+  nl_load_error: "Nie udało się wczytać newsletterów.",
+  nl_latest: "Ostatnia: {time}",
+  nl_open_link: "Otwórz stronę wypisania",
+  nl_open_link_for: "Otwórz stronę wypisania dla {sender} (nowa karta)",
+  nl_none: "Brak linku do wypisania",
+  nl_requested: "Wypisanie zlecone",
+  nl_done: "Wypisano",
+  nl_failed: "Nie udało się",
+  nl_failed_open: "Nie udało się — otwórz stronę wypisania",
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).
@@ -1220,4 +1235,10 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
   lp_working_days: { one: "1 dzień roboczy", few: "{count} dni robocze", many: "{count} dni roboczych" },
   // F116 stage 22
   lset_wait_days: { one: "1 dzień roboczy", few: "{count} dni robocze", many: "{count} dni roboczych" },
+  // F110 stage 23: mails of a newsletter sender
+  nl_count: {
+    one: "1 e-mail w ciągu 30 dni",
+    few: "{count} e-maile w ciągu 30 dni",
+    many: "{count} e-maili w ciągu 30 dni",
+  },
 };

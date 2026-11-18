@@ -131,6 +131,9 @@ export function weekStatsExample(overrides: Partial<WeekStats> = {}): WeekStats 
     recall: 0.5,
     wilsonLower: 0.3,
     decision: "no-go",
+    global: null,
+    history: null,
+    trip: null,
   } as const;
   return {
     weekStart: "2026-11-16",

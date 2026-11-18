@@ -51,6 +51,44 @@ function autoItems(week: WeekStats, texts: CoreTexts): string[] {
   return items;
 }
 
+// F110 stage 12 (PD-066, D15): one line per bar category with the evidence of its `auto`. A category with an active trip in any
+// mailbox reads "paused (reason)"; else a category with `auto` on reads proof and check, from the row with the most kept labels.
+// One line per category, so the lines never grow with the number of mailboxes. A row with null keys (flag off, no reader) adds nothing.
+function evidenceItems(week: WeekStats, texts: CoreTexts): string[] {
+  const t = texts.notices.weekly;
+  const items: string[] = [];
+  for (const category of barCategories) {
+    const rows = week.m8.filter((row) => row.category === category);
+    const name = t.category[category];
+    const paused = rows.find((row) => row.trip?.tripped === true && row.trip.reason !== null);
+    if (paused?.trip?.reason) {
+      items.push(t.autoPaused(name, t.pauseReason[paused.trip.reason]));
+      continue;
+    }
+    const on = rows
+      .filter((row) => row.auto)
+      .reduce<
+        (typeof rows)[number] | undefined
+      >((best, next) => (best === undefined || next.kept > best.kept ? next : best), undefined);
+    if (on?.global === undefined || on.global === null) continue;
+    const proof =
+      on.global.decision === "go" ? t.proof.go : on.global.decision === "none" ? t.proof.none : t.proof.noGo;
+    const outcome = on.history?.outcome;
+    const check =
+      outcome === undefined
+        ? t.check.none
+        : outcome === "pass"
+          ? t.check.pass
+          : outcome === "fail"
+            ? t.check.fail
+            : outcome === "inconclusive"
+              ? t.check.inconclusive
+              : t.check.noResult;
+    items.push(t.autoOn(name, proof, check));
+  }
+  return items;
+}
+
 export function renderWeeklyReport(
   view: { week: WeekStats; timeZone: string; answeredWaiting: number },
   texts: CoreTexts
@@ -120,6 +158,7 @@ export function renderWeeklyReport(
 
   const items = autoItems(week, texts);
   lines.push(items.length === 0 ? t.autoNone : t.auto(items.join("; ")));
+  lines.push(...evidenceItems(week, texts));
 
   if (view.answeredWaiting > 0) lines.push(t.review(view.answeredWaiting));
   return { text: lines.join("\n"), buttons: [] };

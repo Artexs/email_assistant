@@ -26,6 +26,7 @@ export {
   type RangeMetrics,
   type RangeMetricsInput,
   type UrgentNoticeReader,
+  type TrustEvidenceReader,
   type WeekStatsDeps,
 } from "./metrics";
 export { activityRoutes, statsRoutes, type ActivityRouteDeps, type StatsRouteDeps } from "./routes";
