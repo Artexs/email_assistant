@@ -2,7 +2,7 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
-// The provider scan (decision D11 of `spec/features/active/F141-*/plan.md`). A provider id, a model id, a provider env key, a
+// The provider scan (the one-LLM-provider ticket in `spec/features/active/`). A provider id, a model id, a provider env key, a
 // provider list in a usage text or a provider host may be written only in the registry files. Every other file that
 // names one is in `ALLOWED_SITES` with its reason, and an entry whose file no longer has a match fails the test: a
 // removed site must leave the list.
@@ -11,7 +11,7 @@ const REPO_ROOT = join(import.meta.dir, "../../../../..");
 
 const SCAN_ROOTS = ["apps/server/src", "packages/core/src", "apps/web/src", "tools"];
 
-/** Path prefixes that may name providers. `packages/core/src/llm-providers.ts` does not exist before F141 stage 02. */
+/** Path prefixes that may name providers. `packages/core/src/llm-providers.ts` does not exist until the core catalog stage. */
 export const REGISTRY_PATHS = ["apps/server/src/platform/llm/providers/", "packages/core/src/llm-providers.ts"];
 
 /** File path -> reason. `old site: stage NN` leaves the list in that stage; `stays: <reason>` is a permanent exception. */
