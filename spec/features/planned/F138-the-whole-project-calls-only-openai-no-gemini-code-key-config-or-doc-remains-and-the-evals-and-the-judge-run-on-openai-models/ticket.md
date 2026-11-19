@@ -32,7 +32,7 @@ Every LLM call of the product, the evals and the judge goes to OpenAI. The Gemin
 
 ## Slices
 
-One worker job per stage, in order 01 → 02 → {03, 04, 05 in parallel} → 06 (`plan.md` § Stages and § How to run). Stage 02 is the only `bun.lock` change; no migration. Owner step O1 (the OpenAI project limit) comes before stage 06. Risky: 01, 02, 04, 06.
+One worker job per stage, in order 01 → 02 → {03, 04, 05 in parallel} → 06 (`plan.md` § Stages and § How to run). Stage 02 is the only `bun.lock` change; no migration. Owner step O1 (the OpenAI project limit) comes before stage 06. Risky: 01, 02, 06.
 
 ## Sequenced
 
