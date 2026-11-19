@@ -119,7 +119,7 @@ test("T10 the changelog page shows released versions with a date and no operator
   }
 });
 
-test("T6 the security page has its heading, a checklist whose links reach claim anchors, and every claim row", async ({
+test("the security page has its heading, a checklist whose links reach claim anchors, and every claim row", async ({
   page,
 }) => {
   await open(page, `${DOCS_BASE}/security/`);

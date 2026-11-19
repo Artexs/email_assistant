@@ -91,7 +91,7 @@ describe("the built /security/ page", () => {
     const visible = (source: string): string =>
       decode(source.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<[^>]*>/g, " "));
     expect(visible(main())).not.toMatch(/\b[A-Z][A-Z0-9]*_[A-Z0-9_]{2,}\b/);
-    // The service rows show the registry as it stands (plan question Q11 in `spec/features/active/F121-e10b-public-pages-and-demo/questions.md`): the consent text of
+    // The service rows show the registry as it stands (the open question about flag-gated registry rows, in the plan of the public pages): the consent text of
     // Telegram names "drafts that wait for approval", which is also the heading of a panel page that a flag gates.
     const withoutServices = main().replace(/<tr id="subprocessor-[^"]*"[\s\S]*?<\/tr>/g, " ");
     expect(flaggedTextProblems(visible(withoutServices))).toEqual([]);
