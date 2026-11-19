@@ -108,7 +108,8 @@ export function scoreDrafter(
     for (const [name, value] of Object.entries(grade.scores)) {
       sums[name] = (sums[name] ?? 0) + value;
       const counts = (scoreCounts[name] ??= [0, 0, 0]);
-      counts[Math.min(2, Math.max(0, value))] += 1;
+      const slot = Math.min(2, Math.max(0, Math.round(value)));
+      counts[slot] = (counts[slot] ?? 0) + 1;
     }
     for (const [name, value] of Object.entries(grade.checks))
       if (!value) checkFalse[name] = (checkFalse[name] ?? 0) + 1;
