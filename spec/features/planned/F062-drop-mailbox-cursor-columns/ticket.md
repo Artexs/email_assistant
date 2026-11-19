@@ -26,7 +26,7 @@ The sync keeps the cursor of each folder only in its folder row. The two mail co
 
 - `bun run db:check-migrations` passes; the contract migration carries `-- contract: v<the expand release>`.
 - An integration test shows that a write through either column name is visible under the other name while the trigger exists.
-- After stage 04, the guard test finds no `inbox_uid`, `undo_pending_at` or `UndoPending` in `apps/`, `packages/`, `tools/`, `scripts/` outside migrations and `schema.ts`.
+- After stage 04, the guard test finds no `inbox_uid`, `undo_pending_at` or `UndoPending` in `apps/`, `packages/`, `tools/`, `scripts/` outside its allow list (stage 04 step 3).
 - After stage 05, `schema.ts` has no `inbox_uid`, `undo_pending_at`, and `Mailboxes` has no `uidvalidity` or `last_uid`.
 - ADR 0014 records that this ticket closed the rollback window of the sort-folder sync.
 

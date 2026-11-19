@@ -15,7 +15,7 @@ No code in the repository names the old emails columns. A unit test keeps it so.
 3. **Guard test** `apps/server/src/platform/db/retired-columns.test.ts` (a unit test, no DB):
    - It reads every `.ts`, `.tsx`, `.astro`, `.js` and `.sql` file under `apps/`, `packages/`, `tools/` and `scripts/` (skip `node_modules`, `dist`, build output).
    - Retired names (case-sensitive, word bounded where shown): `\binbox_uid\b`, `\bundo_pending_at\b`, `undoPendingAt`, `UndoPending`, `\binboxUid\b`.
-   - Allowed: `apps/server/src/platform/db/schema.ts`; `apps/server/src/modules/privacy/export-map.ts` (the excluded entries, until stage 05); the guard test itself; for `inboxUid` only, `mail/imap/probe-move.ts` and `imap-probe-move.test.ts` (D9).
+   - Allowed: `apps/server/src/platform/db/schema.ts`; `apps/server/src/modules/privacy/export-map.ts` (the excluded entries, until stage 05); the guard test itself; the stage-01 trigger test `apps/server/test/integration/emails-renamed-columns-schema.test.ts` (it writes the old names on purpose; stage 05 keeps it for its absence check); for `inboxUid` only, `mail/imap/probe-move.ts` and `imap-probe-move.test.ts` (D9).
    - The allow list is one exported-in-file constant `RETIRED_COLUMN_ALLOW` so stage 05 can shrink it.
    - A finding prints `<path>:<line> <name>`; the test fails on any finding.
 4. **Docs.**
