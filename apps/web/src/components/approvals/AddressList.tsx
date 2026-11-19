@@ -15,7 +15,8 @@ export function AddressList({ entries }: { entries: readonly string[] }) {
           // The same address cannot stand twice in one list; the index keeps the key unique for any stored text.
           <Fragment key={`${index}:${entry}`}>
             {index > 0 && ", "}
-            {text}
+            {/* Isolated: a direction override in the text cannot reverse the text around it. */}
+            <bdi>{text}</bdi>
             {unusual && (
               <span className="ml-2 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 align-middle text-xs">
                 <TriangleAlert aria-hidden="true" className="size-3 shrink-0" />

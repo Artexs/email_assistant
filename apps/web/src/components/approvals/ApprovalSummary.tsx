@@ -56,16 +56,25 @@ export function SummaryFooter({ item, now }: { item: SummaryItem; now: Date }) {
   );
 }
 
+const TO_MARK = "\u0000";
+
 export function ApprovalSummary({ item, now, titleAs: Title = "p", footer = "inline" }: ApprovalSummaryProps) {
   const { view } = item;
   // The title spells the first recipient out like the To line does: a lookalike domain shows as punycode.
   const to = recipientLabel({ name: view.recipient.name, address: addressText(view.recipient.address).text });
+  // The recipient stands in its own `bdi`: a direction override in a name cannot reverse the title.
+  const titleParts = t(KIND_TITLES[view.kind], { to: TO_MARK }).split(TO_MARK);
   const inactive = view.recipientInactive ? ` ${t("appr_inactive")}` : "";
   // A reply always shows its To line (the view lists To and Cc together only when there is a Cc).
   const toList = view.to ?? (view.kind === "reply" ? [view.recipient.address] : undefined);
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <Title className="break-words font-medium">{`${t(KIND_TITLES[view.kind], { to })}${inactive}`}</Title>
+      <Title className="break-words font-medium">
+        {titleParts[0]}
+        <bdi>{to}</bdi>
+        {titleParts[1]}
+        {inactive}
+      </Title>
       {view.synthetic && (
         <div>
           <Badge variant="outline">{t("appr_test_mail")}</Badge>

@@ -7,18 +7,19 @@ export const enReplyPanel = {
   rp_mode_from: "This reply goes to the sender.",
   rp_mode_all: "This reply goes to the sender. The other recipients of the mail get a copy (Cc).",
   rp_mode_reply_to: "This reply goes to the Reply-To address of the mail, not to the sender.",
-  rp_address_unusual: "Check this address: it has characters that look like other letters.",
+  rp_address_unusual:
+    "Check this address: it has characters outside the basic Latin alphabet; some look like other letters.",
   rp_sent_hidden: "I cannot see your sent mail; check you did not answer already.",
   rp_instruction_label: "Tell the assistant what to change",
   rp_instruction_help: "Write one line. The assistant writes a new version.",
   rp_instruction_count: "{n} / {max}",
   rp_redraft: "Redraft",
   rp_redraft_left: "Redrafts left for this mail: {n}",
-  rp_redraft_none: "No redrafts left for this mail",
+  rp_redraft_none: "The limit of new versions for this mail is used up.",
   rp_reply_all: "Reply all",
-  rp_reply_all_adds: "Adds to Cc:",
+  rp_reply_all_adds: "Cc adds:",
   rp_use_reply_to: "Use Reply-To",
-  rp_use_reply_to_to: "Sends to this address instead of the sender:",
+  rp_use_reply_to_to: "The reply goes to this address instead of the sender:",
   rp_drafting: "Drafting…",
   rp_redraft_done: "The new version is ready.",
   rp_poll_timeout: "The draft takes longer than usual. Reload the page in a moment.",
@@ -30,13 +31,13 @@ export const enReplyPanel = {
   rp_err_no_reply_to: "This mail has no other Reply-To address.",
   rp_err_no_others: "This mail has no other recipients.",
   rp_err_bad_recipient: "An address of this mail cannot be used. Write this reply in your mail client.",
-  rp_err_unchanged: "The draft already goes to these recipients.",
+  rp_err_unchanged: "The draft is already addressed to these recipients.",
   rp_err_not_editable: "This draft cannot be changed.",
   rp_err_instruction: "Write one line of 1 to 300 characters.",
   rp_err_drafts_off: "Reply drafts are off for this mailbox. Turn them on in the mailbox settings.",
   rp_err_redraft_limit: "This draft has 5 new versions already. Edit it here.",
   // Why no draft was made (409 `blocked`)
-  rp_blocked_not_checked: "This mail is not checked yet. Try again in a few minutes.",
+  rp_blocked_not_checked: "This mail was not checked. No draft.",
   rp_blocked_category: "This mail does not need a reply.",
   rp_blocked_junk_source: "This mail came from the spam folder. No draft.",
   rp_blocked_not_a_person: "This mail is automatic or from a mailing list. No draft.",
@@ -63,12 +64,13 @@ export const enReplyPanel = {
   rp_result_closed: "This draft was closed; nothing changed.",
   rp_result_changed: "Another version replaced this draft meanwhile. Use the newest version.",
   rp_result_off: "Reply drafts are off for this mailbox. Turn them on in the mailbox settings.",
+  rp_result_org_off: "Reply drafts are off for your organization.",
   rp_result_mail_gone: "The mail is not available any more.",
   rp_result_generic: "No draft was made.",
   rp_result_superseded: "A newer mail in this thread has a draft already.",
   // The state of a draft that the system closed (an expired send)
-  rp_end_answered: "You already answered this mail. Nothing was sent.",
-  rp_end_sent_by_user: "It looks like you sent this reply from your mail client. Nothing was sent.",
+  rp_end_answered: "You already answered this mail. The system sent nothing.",
+  rp_end_sent_by_user: "It looks like you sent this reply from your mail client. The system sent nothing.",
   rp_end_newer_mail:
     "A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow.",
   rp_end_original_moved:
@@ -76,9 +78,10 @@ export const enReplyPanel = {
   rp_end_suspicious:
     "The mail was marked as suspicious after the draft was made. Nothing was sent. Read the mail with care; a new draft may follow.",
   rp_end_policy_changed: "A setting was changed after the draft was made. Nothing was sent.",
-  rp_end_draft_changed: "You edited this draft in your mail client. Send it from there. The system sent nothing.",
+  rp_end_draft_changed:
+    "The copy of this draft was changed in your mail client. Send it from there. The system sent nothing.",
   rp_end_draft_missing:
-    "The draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client). Nothing was sent.",
+    "The draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client). The system sent nothing.",
   // The Draft reply button of an activity row
   rp_draft_reply: "✍️ Draft reply",
   rp_open_draft: "Open the draft",

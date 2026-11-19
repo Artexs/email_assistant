@@ -56,12 +56,16 @@ const detail = (patch: Partial<ApprovalDetail> = {}, view: Partial<View> = {}): 
   ...patch,
 });
 
-const panel = (d: ApprovalDetail) =>
+// The `bdi` tags around the addresses are tested on their own; the other tests read the text.
+const panelRaw = (d: ApprovalDetail) =>
   renderToStaticMarkup(
     <ApprovalDetailPanel detail={d} now={NOW}>
       {null}
     </ApprovalDetailPanel>
   );
+
+const plain = (html: string) => html.replace(/<\/?bdi>/g, "");
+const panel = (d: ApprovalDetail) => plain(panelRaw(d));
 
 // The attribute, not the `disabled:` classes of the button styles.
 const OFF = /\sdisabled=""/;
@@ -153,6 +157,25 @@ describe("the detail of a reply", () => {
     expect(panel(checked)).toContain("Edit here, or edit and send in your mail client.");
   });
 
+  test("every address and the title recipient stand in a `bdi`: a direction override cannot reverse the text around it", () => {
+    const override = "\u202Eevil@client.test";
+    const html = panelRaw(
+      detail(
+        {},
+        {
+          to: [override],
+          cc: ["b@y.test"],
+          replyTo: ["office@client.test"],
+          recipient: { name: "\u202EAnna", address: "anna@client.test" },
+        }
+      )
+    );
+    expect(html).toContain(`<bdi>${override}</bdi>`);
+    expect(html).toContain("<bdi>b@y.test</bdi>");
+    expect(html).toContain("<bdi>office@client.test</bdi>");
+    expect(html).toContain("Reply to <bdi>");
+  });
+
   test("a delegation keeps its quote as a heading with the text open", () => {
     const html = panel(detail({ kind: "delegation" }, { kind: "delegation" }));
     expect(html).not.toContain("<details");
@@ -162,10 +185,17 @@ describe("the detail of a reply", () => {
   test("a draft that the system closed says why; a timeout and a send in another state say nothing more", () => {
     const expired = detail({ state: "expired", expiresAt: null, endReason: "newer_mail" });
     expect(panel(expired)).toContain("A newer mail arrived in this thread. Nothing was sent.");
+    expect(panel({ ...expired, endReason: "answered" })).toContain(
+      "You already answered this mail. The system sent nothing."
+    );
+    expect(panel({ ...expired, endReason: "draft_changed" })).toContain(
+      "The copy of this draft was changed in your mail client."
+    );
+    expect(panel({ ...expired, endReason: undefined })).not.toContain("sent nothing");
     expect(panel({ ...expired, endReason: undefined })).not.toContain("Nothing was sent");
     setLocaleForTest("pl");
     expect(panel({ ...expired, endReason: "answered" })).toContain(
-      "Na tę wiadomość już odpowiedziano. Nic nie wysłano."
+      "Na tę wiadomość już odpowiedziano. System nic nie wysłał."
     );
   });
 });
@@ -212,7 +242,7 @@ describe("Approve and Edit of a reply", () => {
 });
 
 describe("the controls of a reply", () => {
-  const controls = (d: ApprovalDetail, props: { waiting?: boolean; busy?: boolean; text?: string } = {}) =>
+  const controlsRaw = (d: ApprovalDetail, props: { waiting?: boolean; busy?: boolean; text?: string } = {}) =>
     renderToStaticMarkup(
       <ReplyControls
         detail={d}
@@ -223,6 +253,8 @@ describe("the controls of a reply", () => {
         onRecipients={() => undefined}
       />
     );
+  const controls = (d: ApprovalDetail, props: { waiting?: boolean; busy?: boolean; text?: string } = {}) =>
+    plain(controlsRaw(d, props));
   const buttonOf = (html: string, name: string) => new RegExp(`<button[^>]*>${name}</button>`).exec(html)?.[0] ?? "";
 
   test("the line field has a label, a counter and the redrafts left; Redraft is off while the line is empty", () => {
@@ -245,9 +277,20 @@ describe("the controls of a reply", () => {
     expect(controls(detail(), { text: "x".repeat(301) })).toContain("301 / 300");
   });
 
+  test("the addresses that Reply all adds stand in a `bdi` each", () => {
+    const html = controlsRaw(detail({ replyAllAdds: ["b@y.test", "c@z.test"] }, { canReplyAll: true }));
+    expect(html).toContain("<bdi>b@y.test</bdi>, <bdi>c@z.test</bdi>");
+  });
+
+  test("an item with no count reads as five redrafts left in the text and in the button", () => {
+    const html = controls(detail({ redraftsLeft: undefined }), { text: "krócej" });
+    expect(html).toContain("Redrafts left for this mail: 5");
+    expect(buttonOf(html, "Redraft")).not.toMatch(OFF);
+  });
+
   test("no redrafts left: the text says so and Redraft is off", () => {
     const html = controls(detail({ redraftsLeft: 0 }));
-    expect(html).toContain("No redrafts left for this mail");
+    expect(html).toContain("The limit of new versions for this mail is used up.");
     expect(html).not.toContain("Redrafts left for this mail:");
     expect(buttonOf(html, "Redraft")).toMatch(OFF);
   });
@@ -267,10 +310,10 @@ describe("the controls of a reply", () => {
       )
     );
     expect(html).toContain("Reply all");
-    expect(html).toContain("Adds to Cc:");
+    expect(html).toContain("Cc adds:");
     expect(html).toContain("b@y.test, c@z.test");
     expect(html).toContain("Use Reply-To");
-    expect(html).toContain("Sends to this address instead of the sender:");
+    expect(html).toContain("The reply goes to this address instead of the sender:");
     expect(html).toContain("office@client.test");
     expect(buttonOf(html, "Reply all")).toContain('aria-pressed="false"');
   });
@@ -281,7 +324,7 @@ describe("the controls of a reply", () => {
     expect(none).not.toContain("Use Reply-To");
     const all = controls(detail({ recipientsMode: "all", replyAllAdds: undefined }, { canReplyAll: undefined }));
     expect(buttonOf(all, "Reply all")).toContain('aria-pressed="true"');
-    expect(all).not.toContain("Adds to Cc:");
+    expect(all).not.toContain("Cc adds:");
   });
 
   test("a call on its way turns the recipient buttons off", () => {

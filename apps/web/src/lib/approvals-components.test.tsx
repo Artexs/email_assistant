@@ -39,6 +39,9 @@ const item = (patch: Partial<Parameters<typeof ApprovalSummary>[0]["item"]> = {}
   ...patch,
 });
 
+// The markup without the `bdi` tags that isolate each address: the tests of the words read the text.
+const plain = (html: string) => html.replace(/<\/?bdi>/g, "");
+
 const summary = (patch: Parameters<typeof item>[0] = {}) =>
   renderToStaticMarkup(<ApprovalSummary item={item(patch)} now={NOW} />);
 
@@ -63,18 +66,20 @@ describe("ApprovalSummary sender line", () => {
 
 describe("ApprovalSummary of a follow-up (F116 stage 11)", () => {
   const followUp = (patch: Partial<View> = {}) =>
-    summary({
-      view: view({
-        kind: "follow_up",
-        recipient: { name: null, address: "anna@example.test" },
-        sender: null,
-        dueDate: null,
-        to: ["anna@example.test", "boss@example.test"],
-        cc: ["jan@example.test", "ewa@example.test"],
-        followUpNumber: 2,
-        ...patch,
-      }),
-    });
+    plain(
+      summary({
+        view: view({
+          kind: "follow_up",
+          recipient: { name: null, address: "anna@example.test" },
+          sender: null,
+          dueDate: null,
+          to: ["anna@example.test", "boss@example.test"],
+          cc: ["jan@example.test", "ewa@example.test"],
+          followUpNumber: 2,
+          ...patch,
+        }),
+      })
+    );
 
   test("spells out every To and Cc address and the number, and has no From line", () => {
     const html = followUp();
@@ -104,7 +109,7 @@ describe("ApprovalSummary of a follow-up (F116 stage 11)", () => {
 describe("ApprovalSummary", () => {
   test("shows the title with the recipient spelled out, the sender warning, the subject, the due date and the time left", () => {
     const html = summary();
-    expect(html).toContain("Delegation to Anna Nowak &lt;anna@example.com&gt;");
+    expect(html).toContain("Delegation to <bdi>Anna Nowak &lt;anna@example.com&gt;</bdi>");
     expect(html).toContain("From: Boss &lt;boss@example.net&gt;");
     expect(html).toContain("External sender");
     expect(html).toContain("Subject: Budget");
@@ -142,7 +147,7 @@ describe("ApprovalSummary", () => {
 
   test("the Polish summary has no English text", () => {
     setLocaleForTest("pl");
-    const html = summary({ state: "held", heldBy: null });
+    const html = plain(summary({ state: "held", heldBy: null }));
     expect(html).toContain("Zlecenie: Anna Nowak");
     expect(html).toContain("Nadawca zewnętrzny");
     expect(html).toContain("Zatwierdzone, wkrótce zostanie wysłane");

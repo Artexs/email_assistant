@@ -6,7 +6,7 @@ import { closeSendReasons } from "../../src/modules/actions/close";
 
 import { testDb } from "./helpers";
 import { as } from "./web-helpers";
-import { replyWebKit, type ReplyWorld } from "./web-reply-kit";
+import { post, replyWebKit, type ReplyWorld } from "./web-reply-kit";
 
 // What the panel reads for the reply kind beyond the approvals routes: the `reply` key of the activity rows (the "Draft reply" button
 // and the link to the open draft) and the `endReason` of a send that the system closed.
@@ -136,5 +136,26 @@ describe("the addresses that Reply all would add", () => {
 
     await kit.addresses(made.emailId, { to: [w.box.address] });
     expect(await addsOf(w, made.sendId)).toBeUndefined();
+  });
+
+  test("4b. after Reply all the new version lists none (its Cc has them already), and the old version is superseded", async () => {
+    const w = await kit.setup();
+    const made = await kit.draftOf(w.box, { from: "anna@client.test" });
+    await kit.addresses(made.emailId, { to: [w.box.address, "b@y.test"], cc: ["c@z.test"] });
+    expect(await addsOf(w, made.sendId)).toEqual(["b@y.test", "c@z.test"]);
+
+    const done = await w.app.request(`/api/approvals/${made.sendId}/recipients`, post("owner", { mode: "all" }));
+    expect(done.status).toBe(200);
+    const { id } = (await done.json()) as { id: string };
+
+    expect(id).not.toBe(made.sendId);
+    expect(await addsOf(w, id)).toBeUndefined();
+    const item = (await (await w.app.request(`/api/approvals/${id}`, as("owner"))).json()) as {
+      recipientsMode: string;
+      view: { cc: string[]; canReplyAll?: true };
+    };
+    expect(item.recipientsMode).toBe("all");
+    expect(item.view.cc).toEqual(["b@y.test", "c@z.test"]);
+    expect(item.view.canReplyAll).toBeUndefined();
   });
 });

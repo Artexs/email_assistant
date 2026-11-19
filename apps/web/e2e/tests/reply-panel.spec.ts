@@ -47,7 +47,12 @@ const activityRow = (page: Page, subject: string) => page.locator("li[data-email
 const REQUEST = "0190f5a0-0000-7000-8000-0000000000e1";
 
 // The answers of the drafter, from the browser: the request is `drafting` once, then `done` with the id of the new version.
-async function fakeDrafter(page: Page, newSendId: string, posts: { redraft: number; request: number }, drafting = 1) {
+async function fakeDrafter(
+  page: Page,
+  newSendId: string,
+  posts: { redraft: number; request: number; reads?: number },
+  drafting = 1
+) {
   await page.route("**/api/approvals/*/redraft", async (route) => {
     posts.redraft += 1;
     await route.fulfill({ status: 202, json: { requestId: REQUEST } });
@@ -60,6 +65,7 @@ async function fakeDrafter(page: Page, newSendId: string, posts: { redraft: numb
   let reads = 0;
   await page.route(`**/api/replies/requests/${REQUEST}`, async (route) => {
     reads += 1;
+    posts.reads = reads;
     await route.fulfill({
       json:
         reads <= drafting
@@ -192,6 +198,27 @@ test("T6: a mail with an open draft links to it; a flagged mail says why there i
   await expect(flagged.getByRole("alert")).toHaveText(en.rp_blocked_suspicious);
   await expect(flagged.getByRole("link", { name: /^Open the draft/ })).toHaveCount(0);
   await expectNoA11yViolations(page);
+  expect(errors).toEqual([]);
+});
+
+test("T6b: a row that leaves the list while its draft waits stops polling", async ({ context, page }) => {
+  const errors = await startSession(context, page);
+  const posts = { redraft: 0, request: 0, reads: 0 };
+  // The request stays `drafting` for good: only the end of the page or of the row can stop the poll.
+  await fakeDrafter(page, org().sendIds.plainTwo, posts, 1_000);
+  await page.goto("/activity");
+  const row = activityRow(page, P.clean.subject);
+  await row.getByRole("button", { name: en.rp_draft_reply_for.replace("{subject}", P.clean.subject) }).click();
+  await expect(row.getByText(en.rp_drafting)).toBeVisible();
+  await expect.poll(() => posts.reads, { timeout: 10_000 }).toBeGreaterThanOrEqual(2);
+
+  // The category filter removes the row: the component unmounts and its wait ends.
+  await page.getByRole("combobox", { name: en.act_filter_category }).click();
+  await page.getByRole("option", { name: en.act_cat_spam, exact: true }).click();
+  await expect(row).toHaveCount(0);
+  const seen = posts.reads;
+  await page.waitForTimeout(5_000);
+  expect(posts.reads).toBe(seen);
   expect(errors).toEqual([]);
 });
 

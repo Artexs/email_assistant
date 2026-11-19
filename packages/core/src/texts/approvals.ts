@@ -288,8 +288,9 @@ export const approvalTexts = {
         policy_changed: (subject) => `⌛ Not sent: the setting was changed · ${subject}`,
         loop_closed: (subject) => `⌛ Not sent: the open loop was closed · ${subject}`,
         draft_changed: (subject) => `✏️ You edited this draft in your mail client. Send it from there. · ${subject}`,
-        answered: (subject) => `⌛ You already answered this mail. Nothing was sent. · ${subject}`,
-        sent_by_user: (subject) => `⌛ It looks like you sent it from your mail client. Nothing was sent. · ${subject}`,
+        answered: (subject) => `⌛ You already answered this mail. The system sent nothing. · ${subject}`,
+        sent_by_user: (subject) =>
+          `⌛ It looks like you sent it from your mail client. The system sent nothing. · ${subject}`,
         newer_mail: (subject) =>
           `⌛ A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow. · ${subject}`,
         original_moved: (subject) =>
@@ -456,9 +457,9 @@ export const approvalTexts = {
         policy_changed: (subject) => `⌛ Nie wysłano: ustawienie zostało zmienione · ${subject}`,
         loop_closed: (subject) => `⌛ Nie wysłano: sprawa została zamknięta · ${subject}`,
         draft_changed: (subject) => `✏️ Szkic został zmieniony w programie pocztowym. Wyślij go stamtąd. · ${subject}`,
-        answered: (subject) => `⌛ Na tę wiadomość już odpowiedziano. Nic nie wysłano. · ${subject}`,
+        answered: (subject) => `⌛ Na tę wiadomość już odpowiedziano. System nic nie wysłał. · ${subject}`,
         sent_by_user: (subject) =>
-          `⌛ Wygląda na to, że odpowiedź wysłano z programu pocztowego. Nic nie wysłano. · ${subject}`,
+          `⌛ Wygląda na to, że odpowiedź wysłano z programu pocztowego. System nic nie wysłał. · ${subject}`,
         newer_mail: (subject) =>
           `⌛ W tym wątku pojawiła się nowsza wiadomość. Nic nie wysłano. Przeczytaj nowszą wiadomość; może pojawić się nowy szkic. · ${subject}`,
         original_moved: (subject) =>

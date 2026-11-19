@@ -88,6 +88,9 @@ describe("the text of a request that ended with no new version", () => {
     expect(resultTextKey("needs_facts")).toBe("rp_result_needs_facts");
     expect(resultTextKey("llm_cap")).toBe("rp_result_llm_cap");
     expect(resultTextKey("switch_off")).toBe("rp_result_off");
+    expect(resultTextKey("not_assist")).toBe("rp_result_off");
+    // The org flag has no switch in the mailbox settings: its text does not send the user there.
+    expect(resultTextKey("feature_off")).toBe("rp_result_org_off");
     expect(resultTextKey("answered")).toBe("rp_blocked_answered");
     expect(resultTextKey("hasOwnProperty")).toBe("rp_result_generic");
     expect(resultTextKey("brand_new_code")).toBe("rp_result_generic");

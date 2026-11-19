@@ -2,7 +2,7 @@ import type { ApprovalDetail, ReplyRecipientsBody } from "@ea/core/web";
 import { useId, useState, type FormEvent } from "react";
 
 import { t } from "../../i18n";
-import { instructionState, redraftState } from "../../lib/replies-view";
+import { instructionState, redraftState, redraftsLeftOf } from "../../lib/replies-view";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -74,7 +74,9 @@ export function ReplyControls({
           {t("rp_instruction_count", { n: line.length, max: line.max })}
         </p>
         <p id={ids.left} className="text-sm text-muted-foreground">
-          {redraft.reason === null ? t("rp_redraft_left", { n: detail.redraftsLeft ?? 0 }) : t(redraft.reason)}
+          {redraft.reason === null
+            ? t("rp_redraft_left", { n: redraftsLeftOf(detail.redraftsLeft) })
+            : t(redraft.reason)}
         </p>
         <p role="status" className="text-sm">
           {waiting ? t("rp_drafting") : ""}

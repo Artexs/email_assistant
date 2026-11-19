@@ -77,7 +77,7 @@ const RESULT_TEXTS: Record<string, TextKey> = {
   internal: "rp_result_internal",
   closed: "rp_result_closed",
   changed: "rp_result_changed",
-  feature_off: "rp_result_off",
+  feature_off: "rp_result_org_off",
   switch_off: "rp_result_off",
   not_assist: "rp_result_off",
   mail_gone: "rp_result_mail_gone",
@@ -165,6 +165,11 @@ export function instructionState(text: string): InstructionState {
   };
 }
 
+// The redrafts left for a mail. An item without the number (an old answer) counts as all five: the page and the button read one rule.
+export function redraftsLeftOf(value: number | undefined): number {
+  return value ?? MAX_REDRAFTS;
+}
+
 export interface RedraftState {
   // The button is on: the line is accepted, redrafts are left, and no request waits.
   enabled: boolean;
@@ -179,7 +184,7 @@ export function redraftState(input: {
   line: string | null;
   waiting: boolean;
 }): RedraftState {
-  const left = input.redraftsLeft ?? MAX_REDRAFTS;
+  const left = redraftsLeftOf(input.redraftsLeft);
   if (left <= 0) return { enabled: false, reason: "rp_redraft_none" };
   return { enabled: input.line !== null && !input.waiting, reason: null };
 }
