@@ -9,6 +9,13 @@ Maintenance tools of the test audit (not product code, not run in CI). Own `tsco
 - **Coverage run** (`coverage.sh`, `lcov.ts`, CLI `coverage-cli.ts`): `bash scripts/test-audit/coverage.sh <out dir>` writes `<out dir>/unit/lcov.info` and `<out dir>/int/lcov.info`. Run it twice (`<out>/run-1`, `<out>/run-2`), then `bun scripts/test-audit/coverage-cli.ts --run1 <out>/run-1 --run2 <out>/run-2 --data <ticket folder>/audit/data` writes `coverage-baseline.tsv` (run 1) and `coverage-noise.tsv` (files whose unit ∪ int hit lines differ between the runs).
 - **Join** (`join.ts`, `join-format.ts`, CLI `join-cli.ts`): `bun scripts/test-audit/join-cli.ts --in <dir with unit.xml and int.xml> --data <ticket folder>/audit/data` reads `cases-static.tsv` and writes `cases.tsv` (scan columns plus `junit_count`, `time_s`, `assertions`, `skipped`), `junit-cases.tsv` and `timing-summary.md`.
 
+## Coverage notes
+
+- Bun 1.4.4 writes the int lcov (with the preload of `bunfig.toml`) without error: 854 source files in the stage 02 run (N2 holds).
+- The lcov file lists helper files under `apps/server/test/` too; only `*.test.*` and `*.spec.*` files are dropped.
+- A flaky case (a 5 s timeout under load) fails a run but Bun still writes its lcov file; `coverage.sh` runs both suites, then exits 1.
+- Stage 02 noise: two runs on one commit differ in 1 source file (`apps/server/src/platform/auth-two-factor.ts`, 2 lines).
+
 ## Join notes
 
 - Scan data and the timing run must come from the same commit: run `scan-cli.ts` again at the commit of the timing run.
