@@ -52,6 +52,12 @@ describe("pushPayloadSchema", () => {
     );
   });
 
+  test("3. the id and the item id are at most 64 characters (a longer one would break the 256-byte budget)", () => {
+    expect(pushPayloadSchema.safeParse({ ...ok, id: "a".repeat(64), itemId: "b".repeat(64) }).success).toBe(true);
+    expect(pushPayloadSchema.safeParse({ ...ok, id: "a".repeat(65) }).success).toBe(false);
+    expect(pushPayloadSchema.safeParse({ ...ok, itemId: "b".repeat(65) }).success).toBe(false);
+  });
+
   test("4. the test payload of the device API passes; every push kind passes; the longest payload stays under 256 bytes", () => {
     // The literal of `POST /api/me/push/test` (apps/server/src/modules/channels/push/routes.ts).
     expect(

@@ -207,6 +207,25 @@ describe("docs/legal", () => {
     expect(missingIds(ids, records)).toEqual([]);
   });
 
+  test("2b. the Recipients row of each record names the right sub-processors", () => {
+    const section = (heading: string): string => {
+      const start = records.indexOf(heading);
+      const next = records.indexOf("\n## ", start + 1);
+      return records.slice(start, next === -1 ? undefined : next);
+    };
+    const recipientsOf = (markdown: string): string[] => {
+      const row = markdown.split("\n").find((line) => /^\| Recipients\b/.test(line)) ?? "";
+      // The ids before "Services that get no personal data" are the recipients with personal data.
+      const head = row.split("Services that get no personal data")[0] ?? "";
+      const known = new Set(subprocessors.map((service) => service.id));
+      return backticked(head).filter((token) => known.has(token));
+    };
+    // Record A (provider as controller): the services that get the data of members. Record B (provider as processor): every service with personal data.
+    expect(recipientsOf(section("## Record A")).sort()).toEqual(["auth-smtp", "tailscale", "telegram", "web-push"]);
+    const withData = subprocessors.filter((service) => service.personalData).map((service) => service.id);
+    expect(recipientsOf(section("## Record B")).sort()).toEqual([...withData].sort());
+  });
+
   test("3. dpia.md and breach-procedure.md hold their ## headings, in order", () => {
     expect(headingsOf(text("dpia.md"))).toEqual([...DPIA_HEADINGS]);
     expect(headingsOf(text("breach-procedure.md"))).toEqual([...BREACH_HEADINGS]);
