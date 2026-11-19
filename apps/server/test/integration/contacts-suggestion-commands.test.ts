@@ -625,6 +625,19 @@ describe("acceptSuggestion: the sender is protected now", () => {
     });
   });
 
+  test("22b a domain row that nothing names (no activity, rule or delegate): the own domain of the mailbox and a lost Sent coverage still block it", async () => {
+    await withRollback(db, async (trx) => {
+      const own = await suggestOrg(trx);
+      await withSentCoverage(trx, own);
+      const ownDomain = own.address.slice(own.address.lastIndexOf("@"));
+      const ownId = await insertSuggestion(trx, own, { value: ownDomain, scope: "domain", kind: "blocklist" });
+      await expectWithdrawn(trx, own, ownId);
+      const bare = await suggestOrg(trx);
+      const bareId = await insertSuggestion(trx, bare, { value: "@nobody.pl", scope: "domain", kind: "blocklist" });
+      await expectWithdrawn(trx, bare, bareId);
+    });
+  });
+
   test("23 the re-check reads the row's own sender only: a protected neighbour on the domain does not block an address row", async () => {
     await withRollback(db, async (trx) => {
       const { org, id } = await blocklistOrg(trx);

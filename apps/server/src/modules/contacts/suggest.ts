@@ -266,11 +266,11 @@ function inputOf(
 
 interface Standing {
   rules: SenderRule[];
-  // Every address that the activity, a rule or an active delegate names.
+  // The addresses of the activity.
   byAddress: ReadonlyMap<string, SuggestionInput>;
   byDomain: ReadonlyMap<string, SuggestionInput[]>;
   inputs: SuggestionInput[];
-  // The facts of an address that none of these names: no counts, but the rules, the delegates and the own domains apply.
+  // The facts of an address or domain that the activity does not show: no counts, but the rules, the delegates and the own domains apply.
   bare(address: string): SuggestionInput;
 }
 
@@ -287,12 +287,11 @@ async function standingOf(
   const delegates = new Set((await listDelegateAddresses(trx, ctx, { activeOnly: true })).map(normalizeSenderAddress));
   const ownDomains = new Set(mailboxes.map((box) => registrableDomain(hostOf(box.address))));
   const senders = activity.map((item) => inputOf(item, rules, delegates, ownDomains));
-  const seen = new Map(senders.map((item) => [item.address, item]));
+  const byAddress = new Map(senders.map((item) => [item.address, item]));
   // The domain protections also see the people that the user's rules and delegates name and that sent nothing in the window:
   // a domain whitelist must not override a block rule, a domain blocklist must not block a VIP, a whitelisted sender or an
   // active delegate. These entries have no counts, so they never become a candidate themselves.
-  const inputs = [...senders, ...ruleAndDelegateMembers(seen, rules, delegates, ownDomains)];
-  const byAddress = new Map(inputs.map((item) => [item.address, item]));
+  const inputs = [...senders, ...ruleAndDelegateMembers(byAddress, rules, delegates, ownDomains)];
   const byDomain = new Map<string, SuggestionInput[]>();
   for (const item of inputs) byDomain.set(item.domain, [...(byDomain.get(item.domain) ?? []), item]);
   return {
