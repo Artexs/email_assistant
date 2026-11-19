@@ -21,7 +21,7 @@ async function main(): Promise<number> {
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    const result = await exportOrganization(db, { ...args, now: new Date() });
+    const result = await exportOrganization(db, { ...args, credentialsKey: config.CREDENTIALS_KEY, now: new Date() });
     if (result.kind !== "written") {
       log.error("org_export_refused", { reason: result.kind });
       return 1;
