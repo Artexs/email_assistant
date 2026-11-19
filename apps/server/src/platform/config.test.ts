@@ -132,6 +132,15 @@ describe("loadConfig", () => {
     expect(configError({ ...fullEnv, TEST_MAILBOX_ADDRESS: "nope" }).keys).toContain("TEST_MAILBOX_ADDRESS");
   });
 
+  test("accepts a comma-separated list in TEST_MAILBOX_ADDRESS and rejects a broken one", () => {
+    expect(loadConfig({ ...fullEnv, TEST_MAILBOX_ADDRESS: "a@x.test, b@x.test" }).TEST_MAILBOX_ADDRESS).toBe(
+      "a@x.test, b@x.test"
+    );
+    for (const bad of ["a@x.test,", ",a@x.test", "a@x.test,nope", "a@x.test b@x.test"]) {
+      expect(configError({ ...fullEnv, TEST_MAILBOX_ADDRESS: bad }).keys).toContain("TEST_MAILBOX_ADDRESS");
+    }
+  });
+
   test("parses OPERATOR_CONTACT, treats empty as unset and rejects a non-address", () => {
     expect(loadConfig({ ...fullEnv, OPERATOR_CONTACT: "ops@example.test" }).OPERATOR_CONTACT).toBe("ops@example.test");
     expect(loadConfig({ ...fullEnv, OPERATOR_CONTACT: "" }).OPERATOR_CONTACT).toBeUndefined();

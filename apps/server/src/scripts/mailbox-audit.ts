@@ -2,13 +2,9 @@ import { format, parseArgs } from "node:util";
 
 import { z } from "zod";
 
-import { auditExitCode, auditMailbox, configureMailHosts } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
-import { loadConfig, mailAllowLocal } from "../platform/config";
-import { createSecretBox } from "../platform/crypto";
-import { assertAppRole, createDb } from "../platform/db";
+import { auditExitCode, auditMailbox } from "../modules/mail";
 
-const out = createCliOutput("mailbox-audit");
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
 
 const usage = [
   "usage: bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>",
@@ -17,10 +13,10 @@ const usage = [
   "  Exit 0: no difference in INBOX. Exit 2: lost or duplicate INBOX mail. Exit 1: error. cross never changes the code.",
 ].join("\n");
 
-function readOptions() {
+function readOptions(argv: string[]) {
   try {
     const { values } = parseArgs({
-      args: process.argv.slice(2),
+      args: argv,
       options: {
         "org-id": { type: "string" },
         "mailbox-id": { type: "string" },
@@ -41,21 +37,16 @@ function readOptions() {
   }
 }
 
-async function main(): Promise<number> {
-  const options = readOptions();
+// Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
+export async function run(argv: string[], deps: CliDeps): Promise<number> {
+  const { out } = deps;
+  const options = readOptions(argv);
   if (!options) {
     out.fail(usage);
     return 1;
   }
-
-  const config = loadConfig();
-
-  configureMailHosts({ allowLocal: mailAllowLocal(config) });
-  const db = createDb(config.DATABASE_URL);
   try {
-    await assertAppRole(db);
-    const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
-    const results = await auditMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, options.since);
+    const results = await auditMailbox(deps, { orgId: options.orgId }, options.mailboxId, options.since);
     for (const { key, counts } of results) {
       if (counts === null) {
         out.print(`folder=${key} not on the server`);
@@ -71,16 +62,11 @@ async function main(): Promise<number> {
     }
     return auditExitCode(results.find((result) => result.key === "inbox")?.counts);
   } catch (error) {
-    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
+    out.fail(oauthReasonLine(error) ?? `failed: ${error instanceof Error ? error.message : format(error)}`);
     return 1;
-  } finally {
-    await db.destroy();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  process.exit(await runMailboxCli("mailbox-audit", run));
+}

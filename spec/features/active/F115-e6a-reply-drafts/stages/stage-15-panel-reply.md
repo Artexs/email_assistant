@@ -48,3 +48,11 @@ Own e2e DB first (name `f115_s15_e2e`). Never `web:dev`.
 
 - `ApprovalItem.sentVisible` for a reply: read it from `isSentVisible(db, ctx, mailboxId)` (`mail` module; the org flag `sent_sync` and the switch of the mailbox), as `approvalViewFor` does for the card view field `sentVisible: false`.
 - The sweep closes open replies (`answered`, `newer_mail`, `original_moved`, `suspicious`, `policy_changed`) with no result notice for a waiting reply; the panel list shows them as expired with that `status_reason`.
+
+## First commit of this stage (carry-over from the stage 14 review, PASS 35982907, and the stage 14 hand-over)
+- Panel texts (en and pl, informal "ty"): the 400 codes `too_many_recipients`, `no_reply_to`, `no_others`, `bad_recipient`, `unchanged`, `not_editable` and the 409 codes `blocked` (with `reason`), `changed`, `closed`, `redraft_limit`, `drafts_off`.
+- Block the redraft button while a request waits (parallel redrafts with different lines all get 202 and the same `requestId`; only the first line is stored).
+- Show Cc and Reply-To entries that are not ASCII (IDN homoglyph) as punycode or with a mark, before Send.
+- `view.replyTo` in `notices/approval.ts` should skip own mailboxes and their `+tag` forms, as `otherReplyTo` does.
+- Docs: the `getReplyRequest` apiDoc summary says "Reads only the request row" but `superseded` also reads the open sends of the thread; the Entry points table in `docs/capabilities/drafts-and-send.md` lists `ownAddressKey` and `bareAddress` under `replies/recipients.ts`, they live in `triage/payloads.ts`.
+- Optional tests: pin `REPLY_INSTRUCTION_RAW_MAX`; the `superseded` branch (newest open send; no open send gives `sendId: null`).

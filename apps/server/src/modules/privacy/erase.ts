@@ -3,7 +3,7 @@ import { sql, type Transaction } from "kysely";
 import { dsrAddressHash, tombstoneKeyHash } from "../../platform/crypto";
 import { withTenantScope, type DB, type Db } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
-import { deleteSenderContextRowsOf, lockProfilesOfOrg } from "../contacts";
+import { deleteSenderContextRowsOf, lockProfilesOfOrg, normalizedAddress } from "../contacts";
 
 import { DSR_ADDRESS_MAP, normalizeDsrAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
@@ -77,7 +77,7 @@ function cleanedValue(
   switch (rule) {
     case "recipients":
       return sql`array(
-        select u.v from unnest(${ref}) with ordinality as u(v, n) where lower(u.v) <> ${patterns.address} order by u.n
+        select u.v from unnest(${ref}) with ordinality as u(v, n) where ${normalizedAddress("u.v")} <> ${patterns.address} order by u.n
       )`;
     case "text": {
       const replaced = sql`regexp_replace(${ref}, ${patterns.text}, ${REMOVED}, 'gi')`;

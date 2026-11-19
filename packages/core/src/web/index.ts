@@ -19,6 +19,7 @@ export * from "./organization";
 export * from "./password";
 export * from "./profile";
 export * from "./push";
+export * from "./replies";
 export * from "./public-content";
 export * from "./review";
 export * from "./rules";

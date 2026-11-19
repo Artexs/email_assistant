@@ -16,6 +16,7 @@ export interface ApiDocSpec {
   params?: ZodType; // an object schema: each key is one path parameter
   query?: ZodType; // an object schema: each key is one query parameter
   ok: { status: 200 | 201 | 202; schema: ZodType } | { status: 204 }; // 204: an empty answer, no body
+  alsoOk?: { status: 200 | 201 | 202; schema: ZodType }; // a second success answer of the same route (a 200 beside the 202)
   // Every body is `{ error, … }` (`apiErrorSchema`); `schema` is a stricter shape of it, for a body with more fields.
   errors?: readonly { status: ApiErrorStatus; codes: readonly string[]; schema?: ZodType }[];
   public?: true; // the route needs no session: `security: []`
@@ -90,6 +91,7 @@ export function apiDoc(spec: ApiDocSpec): MiddlewareHandler {
     [spec.ok.status]:
       "schema" in spec.ok ? { description: "OK", content: json(spec.ok.schema) } : { description: "No content" },
   };
+  if (spec.alsoOk) responses[spec.alsoOk.status] = { description: "OK", content: json(spec.alsoOk.schema) };
   for (const [status, { codes, schema }] of errorAnswers(spec)) {
     responses[status] = { description: `Error codes: ${codes.join(", ")}`, content: json(schema ?? apiErrorSchema) };
   }

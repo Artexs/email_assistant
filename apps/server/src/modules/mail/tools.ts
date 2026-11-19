@@ -22,9 +22,8 @@ import { compareFolderWithDb, type AuditCounts } from "./audit";
 import { refreshFlags, type FlagsRefreshResult } from "./flags";
 import { openImapProvider, type ImapConnectOptions } from "./imap/client";
 import { assertTestAddress } from "./imap/probe-move";
-import { appendRaw } from "./imap/tools";
 import { LOCATE_CHUNK } from "./locate";
-import { openMailboxProvider } from "./open";
+import { openMailboxProvider, type OpenDeps } from "./open";
 import {
   INBOX,
   MailAuthError,
@@ -34,15 +33,8 @@ import {
   type MessageMeta,
   type OAuthTokens,
 } from "./port";
-import {
-  getCredentials,
-  getMailbox,
-  listEmailsByMessageIds,
-  listFolderEmailKeys,
-  listSyncFolders,
-  type MailboxRow,
-} from "./repo";
-import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
+import { getMailbox, listEmailsByMessageIds, listFolderEmailKeys, listSyncFolders, type MailboxRow } from "./repo";
+import { ownerSmokeFrom, renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN, type SeedMessage } from "./seed";
 import { fetchSince, type SyncDeps, type SyncResult } from "./sync";
 import {
   backfillInbox,
@@ -51,6 +43,7 @@ import {
   type HistoryBackfillOutcome,
 } from "./sync-backfill";
 import { contentHash, normalizeMessageId } from "./sync-rules";
+import { isTestAddress } from "./test-address";
 
 // Operator tools for the 48-hour run (`mailbox:seed`, `mailbox:audit`, `mailbox:signals`, `testmail-target deliver`).
 
@@ -59,6 +52,10 @@ const log = createLog("mail");
 export interface ToolDeps {
   db: Db | Transaction<DB>;
   secrets: SecretBox;
+  /** Opens the IMAP provider. Absent: the real one. A test passes a fake. */
+  openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider>;
+  /** The access tokens of OAuth mailboxes. The CLI composition passes them; without it an OAuth mailbox does not open. */
+  oauthTokens?: OAuthTokens;
 }
 
 async function getMailboxOrThrow(deps: ToolDeps, ctx: TenantContext, mailboxId: string): Promise<MailboxRow> {
@@ -67,67 +64,94 @@ async function getMailboxOrThrow(deps: ToolDeps, ctx: TenantContext, mailboxId: 
   return mailbox;
 }
 
-async function loadImapOptions(
-  deps: ToolDeps,
-  ctx: TenantContext,
-  mailboxId: string,
-  mailbox: MailboxRow
-): Promise<ImapConnectOptions> {
-  const credentials = await getCredentials(deps.db, ctx, mailboxId);
-  if (credentials === undefined) throw new HardError("mailbox has no stored password");
-  const password = deps.secrets.decrypt(
-    { ciphertext: credentials.encrypted_secret, keyVersion: credentials.key_version },
-    `mailbox:${mailboxId}`
-  );
+// Every tool opens a stored mailbox here, so no tool reads a stored secret itself: `openMailboxProvider` does (password or OAuth token).
+function openDepsOf(deps: ToolDeps): OpenDeps {
   return {
-    host: mailbox.imap_host,
-    port: mailbox.imap_port,
-    user: mailbox.address,
-    auth: { kind: "password", password },
+    db: deps.db,
+    secrets: deps.secrets,
+    openProvider: deps.openProvider ?? openImapProvider,
+    ...(deps.oauthTokens === undefined ? {} : { oauthTokens: deps.oauthTokens }),
   };
 }
 
+async function openToolProvider(deps: ToolDeps, ctx: TenantContext, mailboxId: string): Promise<MailProvider> {
+  return (await openMailboxProvider(openDepsOf(deps), ctx, mailboxId)).provider;
+}
+
+export interface SeedOwnerFrom {
+  /** The owner address: each `From` becomes its plus address `ea-smoke-<nn>`. */
+  address: string;
+  /** `nn` of the first message; the next ones count up. */
+  numberFrom: number;
+}
+
 /**
- * APPENDs `count` synthetic mails into INBOX or `folder` (or, with `messages`, each message once; `count` is then ignored). It refuses, before any connection, unless `testAddress`
- * is set and equals the mailbox address (case-insensitive), so it never writes into a real mailbox. `folder` is INBOX (default) or the path of a sync folder
+ * APPENDs `count` synthetic mails into INBOX or `folder` (or, with `messages`, each message once; `count` is then ignored). It refuses, before any connection, unless
+ * the mailbox address is one of `testAddress` (a comma-separated list, case-insensitive), so it never writes into a real mailbox. `folder` is INBOX (default) or the path of a sync folder
  * default; it must exist (the tool creates only INBOX).
+ *
+ * A mailbox with a real provider (`oauth_provider` set) takes only `ownerFrom`: every `From` becomes a plus address of the owner and `To` the mailbox,
+ * so a reply or a delegation reaches only the owner. Without it the seed refuses. `To` is always the mailbox address.
  */
 export async function seedMailbox(
   deps: ToolDeps,
   ctx: TenantContext,
   mailboxId: string,
-  opts: { count: number; testAddress: string | undefined; messages?: SeedMessage[]; folder?: string }
+  opts: {
+    count: number;
+    testAddress: string | undefined;
+    messages?: SeedMessage[];
+    folder?: string;
+    ownerFrom?: SeedOwnerFrom;
+  }
 ): Promise<number> {
   const mailbox = await getMailboxOrThrow(deps, ctx, mailboxId);
   const address = mailbox.address;
   if (opts.testAddress === undefined) throw new HardError("TEST_MAILBOX_ADDRESS is not set: seed refused");
-  if (opts.testAddress.trim().toLowerCase() !== address.toLowerCase()) {
+  if (!isTestAddress(address, opts.testAddress)) {
     throw new HardError("the mailbox is not the test mailbox (TEST_MAILBOX_ADDRESS): seed refused");
+  }
+  if (mailbox.oauth_provider !== null && opts.ownerFrom === undefined) {
+    throw new HardError("--from-owner is required for a real provider mailbox");
   }
   const folder = opts.folder ?? INBOX;
   if (folder !== INBOX && !SYNC_FOLDER_DEFAULTS.some((item) => item.path === folder)) {
     throw new HardError("the folder is not INBOX or a sync folder: seed refused");
   }
-  const create = folder === INBOX;
-  const imap = await loadImapOptions(deps, ctx, mailboxId, mailbox);
-  if (opts.messages !== undefined) {
-    for (const message of opts.messages) await appendRaw(imap, folder, renderSeedMessage(message), [], create);
-    return opts.messages.length;
-  }
-  for (let n = 0; n < opts.count; n += 1) {
-    const now = new Date();
-    const raw = renderSeedMessage({
-      messageId: `<seed-${randomUUID()}@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`,
-      from: "seed@ea-seed.test",
-      to: [address],
-      subject: `EA seed ${now.toISOString()}`,
-      date: now,
-      text: "Synthetic mail from mailbox:seed.",
-      headers: { "X-EA-Seed": "1" },
+  const source =
+    opts.messages ??
+    Array.from({ length: opts.count }, (): SeedMessage => {
+      const now = new Date();
+      return {
+        messageId: `<seed-${randomUUID()}@${SYNTHETIC_MESSAGE_ID_DOMAIN}>`,
+        from: "seed@ea-seed.test",
+        to: [address],
+        subject: `EA seed ${now.toISOString()}`,
+        date: now,
+        text: "Synthetic mail from mailbox:seed.",
+        headers: { "X-EA-Seed": "1" },
+      };
     });
-    await appendRaw(imap, folder, raw, [], create);
+  const owner = opts.ownerFrom;
+  // `To` is always the mailbox: the caller may not know its address (TEST_MAILBOX_ADDRESS can hold a list).
+  const messages = source.map((message, index) => ({
+    ...message,
+    to: [address],
+    ...(owner === undefined ? {} : { from: ownerSmokeFrom(message.from, owner.address, owner.numberFrom + index) }),
+  }));
+  const raws = messages.map((message) => Buffer.from(renderSeedMessage(message)));
+  const provider = await openToolProvider(deps, ctx, mailboxId);
+  try {
+    if (folder === INBOX) {
+      await provider.ensureFolder(INBOX);
+    } else if (!(await provider.listFolders()).some((entry) => entry.path === folder)) {
+      throw new MailFolderMissingError();
+    }
+    for (const raw of raws) await provider.appendMessage(folder, raw, [], new Date());
+  } finally {
+    await provider.close().catch(() => undefined);
   }
-  return opts.count;
+  return raws.length;
 }
 
 /**
@@ -140,9 +164,9 @@ export async function auditMailbox(
   mailboxId: string,
   since: Date
 ): Promise<{ key: SyncFolderKey; counts: AuditCounts | null }[]> {
-  const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
+  await getMailboxOrThrow(deps, ctx, mailboxId);
   const folders = await listSyncFolders(deps.db, ctx, mailboxId, { enabledOnly: true });
-  const provider = await openImapProvider(imap);
+  const provider = await openToolProvider(deps, ctx, mailboxId);
   const found = new Map<string, MessageMeta[] | null>();
   try {
     for (const folder of folders) {
@@ -209,13 +233,12 @@ export function authservIdOf(authResults: string): string {
 
 /** Read-only: counts the IMAP flags and captured headers of INBOX mail since `since`. Counts and server names only. */
 export async function signalsOfMailbox(
-  deps: ToolDeps & { openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider> },
+  deps: ToolDeps,
   ctx: TenantContext,
   mailboxId: string,
   since: Date
 ): Promise<MailboxSignals> {
-  const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
-  const provider = await (deps.openProvider ?? openImapProvider)(imap);
+  const provider = await openToolProvider(deps, ctx, mailboxId);
   const signals: MailboxSignals = {
     mails: 0,
     answered: 0,
@@ -272,16 +295,13 @@ export async function signalsOfMailbox(
 }
 
 export interface BackfillDeps extends ToolDeps {
-  openProvider?: (opts: ImapConnectOptions) => Promise<MailProvider>;
   isOwnActionId: SyncDeps["isOwnActionId"];
-  /** The access tokens of OAuth mailboxes. The composition root wires them; the `history` purpose needs them for an OAuth mailbox. */
-  oauthTokens?: OAuthTokens;
 }
 
 /**
  * One-off, read-only: stores INBOX mail of the last `days` days that the regular sync missed (`backfilled_at`).
  *
- * `purpose` `backfill` (default, the operator CLI) opens the mailbox with its stored password and throws a refusal.
+ * `purpose` `backfill` (default, the operator CLI) opens the mailbox through `openMailboxProvider` and throws a refusal.
  * `purpose` `history` (the history check) stores the mail as `skipped` / `history_check` and returns every refusal as a value. It opens the mailbox
  * through `openMailboxProvider`, so an OAuth mailbox logs in with its access token; a refused login is the refusal `auth_refused`.
  */
@@ -305,8 +325,7 @@ export async function backfillMailbox(
 ): Promise<SyncResult | HistoryBackfillOutcome> {
   const since = new Date(opts.now.getTime() - opts.days * 24 * 3_600_000);
   if (opts.purpose === "history") return backfillHistory(deps, ctx, mailboxId, since, opts.now);
-  const imap = await loadImapOptions(deps, ctx, mailboxId, await getMailboxOrThrow(deps, ctx, mailboxId));
-  const provider = await (deps.openProvider ?? openImapProvider)(imap);
+  const provider = await openToolProvider(deps, ctx, mailboxId);
   try {
     return await backfillInbox(
       { db: deps.db, provider, isOwnActionId: deps.isOwnActionId, now: () => opts.now },
@@ -329,16 +348,7 @@ export async function refreshFlagsOfMailbox(
   mailboxId: string,
   now: () => Date
 ): Promise<FlagsRefreshResult> {
-  const { provider } = await openMailboxProvider(
-    {
-      db: deps.db,
-      secrets: deps.secrets,
-      openProvider: deps.openProvider ?? openImapProvider,
-      ...(deps.oauthTokens === undefined ? {} : { oauthTokens: deps.oauthTokens }),
-    },
-    ctx,
-    mailboxId
-  );
+  const provider = await openToolProvider(deps, ctx, mailboxId);
   try {
     // The caller of this one-off read does not look for moved mail: it leaves the gone mail to the regular refresh.
     return await refreshFlags({ db: deps.db, provider, now, touchGone: false }, ctx, mailboxId);
@@ -359,16 +369,7 @@ async function backfillHistory(
   if (early !== null) return { kind: "refused", reason: early };
   let provider: MailProvider;
   try {
-    ({ provider } = await openMailboxProvider(
-      {
-        db: deps.db,
-        secrets: deps.secrets,
-        openProvider: deps.openProvider ?? openImapProvider,
-        ...(deps.oauthTokens === undefined ? {} : { oauthTokens: deps.oauthTokens }),
-      },
-      ctx,
-      mailboxId
-    ));
+    provider = await openToolProvider(deps, ctx, mailboxId);
   } catch (error) {
     // A refused login (a password that no longer works, an OAuth grant that the provider blocks) ends the check at once; a network
     // or storage fault stays an error, so the job counts an attempt.
@@ -387,9 +388,7 @@ async function backfillHistory(
   }
 }
 
-export interface DeliverDeps extends ToolDeps {
-  openProvider?: (imap: ImapConnectOptions) => Promise<MailProvider>;
-}
+export type DeliverDeps = ToolDeps;
 
 export interface DeliverInput {
   testAddress: string | undefined;
@@ -452,8 +451,7 @@ export async function deliverTestMail(
   const syncedMessageIds = new Set(rows.map((row) => row.message_id_header.trim()));
   const since = new Date(Math.min(...input.wanted.map((item) => item.sentAt.getTime())) - DAY_MS);
 
-  const imap = await loadImapOptions(deps, ctx, mailboxId, mailbox);
-  const provider = await (deps.openProvider ?? openImapProvider)(imap);
+  const provider = await openToolProvider(deps, ctx, mailboxId);
   try {
     const info = await provider.serverInfo();
     const paths: Partial<Record<SortFolderKey, string>> = {};

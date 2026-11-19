@@ -128,8 +128,8 @@ describe("upsertPushSubscription", () => {
       const endpoint = endpointOf("same");
       const one = await subscribe(trx, o, o.userId, first, { endpoint, deviceLabel: "Old label" });
       const two = await subscribe(trx, o, o.userId, second, { endpoint, deviceLabel: "New label" });
-      expect(one).toEqual({ id: expect.any(String), created: true });
-      expect(two).toEqual({ id: one?.id ?? "", created: false });
+      expect(one).toEqual({ id: expect.any(String), created: true, sessionChanged: true });
+      expect(two).toEqual({ id: one?.id ?? "", created: false, sessionChanged: true });
       const rows = await trx.selectFrom("push_subscriptions").selectAll().where("org_id", "=", o.orgId).execute();
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({
@@ -163,6 +163,13 @@ describe("upsertPushSubscription", () => {
       expect(await subscribe(trx, o, o.userId, newer, { endpoint, rebindOnly: true })).toEqual({
         id: made?.id ?? "",
         created: false,
+        sessionChanged: true,
+      });
+      // The same session again (a second page load): the device stays bound, and the result says that no binding changed.
+      expect(await subscribe(trx, o, o.userId, newer, { endpoint, rebindOnly: true })).toEqual({
+        id: made?.id ?? "",
+        created: false,
+        sessionChanged: false,
       });
     });
   });

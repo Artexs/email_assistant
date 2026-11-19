@@ -1,5 +1,6 @@
 import {
   approvalViewOf,
+  bareAddress,
   buildOutgoingMessage,
   draftPayloadSchema,
   draftVersion,
@@ -134,7 +135,15 @@ export async function approvalViewFor(
     const from = email.from_address?.toLowerCase() ?? null;
     const mail = (await replyFactsOf(db, ctx, [emailId])).get(emailId);
     const replyTo = mail?.replyTo ?? [];
-    const others = [...new Set(replyTo.map((address) => address.toLowerCase()))]
+    // Bare addresses only (a stored entry may hold a display name): the line shows what a tap on Use Reply-To would send to.
+    const others = [
+      ...new Set(
+        replyTo.flatMap((entry) => {
+          const bare = bareAddress(entry);
+          return bare === null ? [] : [bare.toLowerCase()];
+        })
+      ),
+    ]
       .filter((address) => address !== from && address.length <= 320)
       .slice(0, 5);
     if (others.length > 0) view.replyTo = others;
