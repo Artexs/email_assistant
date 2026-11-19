@@ -1,10 +1,12 @@
 # F121 stage 01 — Publication hold and claim check
 
+Needs: nothing new; it reads `deploy-gate.ts`, `docs-deploy.yml` and `docs/legal/claims.md` at HEAD. May run next to 07 and 08.
+
 Part of [`../plan.md`](../plan.md). `[risky]` publication path. Decisions D1, D2. Interfaces: `interfaces.md` § Docs app (stage 01).
 
-Carry-over reads: ADR 0030 § Built, `apps/docs/scripts/deploy-gate.ts` and its test (the script-level test that starts the real script), `.github/workflows/docs-deploy.yml`, `apps/docs/src/in-place.ts` (`REPO_URL`, `docsGitRef`), `apps/docs/integrations/link-check.ts`, `apps/docs/src/flagged-text.test.ts`, `docs/legal/claims.md` (header and the source cells).
+Carry-over reads: ADR 0030 § Built, the deploy gate and its script-level test, `apps/docs/src/in-place.ts` (`REPO_URL`, `docsGitRef`), the link check integration, `flagged-text.test.ts`.
 
-This stage lands before any F121 page: it is the hold that keeps new pages off the site.
+It lands before any F121 page: it is the hold that keeps new pages off the site.
 
 ## Step 1 — The hold
 
@@ -14,8 +16,7 @@ This stage lands before any F121 page: it is the hold that keeps new pages off t
 - `OWNER_REVIEW_PENDING = ["index", "security", "pricing", "reference/api", "reference/autonomy-evidence"]`. An id without a page yet is allowed now; stage 12 checks each id is a page.
 - `main` gets the list as a parameter whose default is the imported constant. No env override, no CLI flag: nothing outside a commit can lift the hold.
 - Pushed tag: the hold is checked after every other rule (older tag still "not the newest"; missing changelog release still the red `changelog_missing`). Held → `deploy: false`, reason `skip: owner_review_pending <ids>`, no `error`.
-- Manual run: a new boolean input `publish_held_pages` (default `false`). List not empty and input false → the same skip. Input true → deploy (the owner's own act; also the rollback path). List empty → the input does not matter.
-- The skip prints its reason to the log like the other skips.
+- Manual run: a new boolean input `publish_held_pages` (default `false`; today `workflow_dispatch` has no input). It reaches the gate as env, like the `GATE_*` values, never inside the script text. List not empty and input false → the same skip. Input true → deploy (the owner's own act; also the rollback path). List empty → the input does not matter.
 
 **Test.**
 1. Newest tag `v0.3.0`, changelog has `0.3.0`, pending `["security"]` → `deploy: false`, reason `skip: owner_review_pending security`, no error.
