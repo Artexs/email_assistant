@@ -4,6 +4,7 @@ import {
   assessSuspicious,
   freeMailDomains,
   isLookalike,
+  isSharedHostingDomain,
   registrableDomain,
   registrableDomainShared,
   suspiciousReasons,
@@ -364,5 +365,24 @@ describe("freeMailDomains", () => {
     ]) {
       expect(freeMailDomains).toContain(domain);
     }
+  });
+});
+
+describe("isSharedHostingDomain", () => {
+  test("a tenant host of a shared suffix counts; an ordinary or a two-level domain does not", () => {
+    expect(isSharedHostingDomain("github.io")).toBe(true);
+    expect(isSharedHostingDomain("someone.github.io")).toBe(true);
+    expect(isSharedHostingDomain("app.herokuapp.com")).toBe(true);
+    expect(isSharedHostingDomain("acme.pl")).toBe(false);
+    expect(isSharedHostingDomain("mail.acme.com.pl")).toBe(false);
+  });
+});
+
+describe("onmicrosoft.com is a shared hosting suffix", () => {
+  test("the tenants stay apart and the suffix is shared", () => {
+    expect(isSharedHostingDomain("evil1.onmicrosoft.com")).toBe(true);
+    expect(isSharedHostingDomain("onmicrosoft.com")).toBe(true);
+    expect(registrableDomainShared("evil1.onmicrosoft.com")).toBe("evil1.onmicrosoft.com");
+    expect(registrableDomainShared("evil2.onmicrosoft.com")).not.toBe(registrableDomainShared("evil1.onmicrosoft.com"));
   });
 });

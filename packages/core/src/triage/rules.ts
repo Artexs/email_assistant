@@ -1,3 +1,5 @@
+import { normalizeSenderAddress } from "../contacts/address";
+
 import { classifierCategories, DELEGATION_CATEGORY, type Category } from "./categories";
 
 export const senderRuleKinds = ["whitelist", "blocklist", "vip"] as const;
@@ -47,16 +49,25 @@ function patternMatches(pattern: string, address: string): boolean {
   return domain === pattern || domain.endsWith(`.${pattern}`);
 }
 
+// The sender and every rule pattern go through the one address rule of the sender profiles (`normalizeSenderAddress`), so a
+// rule made from a profile address (a Greek final sigma, a Turkish dotted capital I) matches the real sender, and a rule that
+// the user types in another case matches too. Plain ASCII, the common case, skips the fold.
+const ASCII_PRINTABLE = /^[\u0020-\u007e]*$/;
+function normalizeForMatch(value: string | null): string {
+  const text = value ?? "";
+  return ASCII_PRINTABLE.test(text) ? text.trim().toLowerCase() : normalizeSenderAddress(text);
+}
+
 export function matchSender(
   fromAddress: string | null,
   rules: readonly SenderRule[]
 ): { whitelisted: boolean; blocklisted: boolean; vip: boolean } {
-  const address = normalize(fromAddress);
+  const address = normalizeForMatch(fromAddress);
   const result = { whitelisted: false, blocklisted: false, vip: false };
   if (!address.includes("@")) return result;
 
   for (const rule of rules) {
-    if (!patternMatches(normalize(rule.pattern), address)) continue;
+    if (!patternMatches(normalizeForMatch(rule.pattern), address)) continue;
     if (rule.kind === "blocklist") result.blocklisted = true;
     if (rule.kind === "whitelist") result.whitelisted = true;
     if (rule.kind === "vip") {

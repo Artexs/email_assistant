@@ -27,11 +27,19 @@ export async function senderFlags(db: DbOrTrx, ctx: TenantContext): Promise<Send
   return { context, suggestions, contactWait };
 }
 
-// Sent coverage of one mailbox: the profile can say "the user never wrote to this sender" only when Sent mail is tracked and its
-// first pass is done. True when the flag `sent_sync` is on, the mailbox switch is on and `first_pass_at` is set. The
-// suggestion engine passes it to `suggestionsFor`: without it no blocklist suggestion is made.
-export async function sentCoverage(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+// How old the last Sent pass may be for the profile to say "the user never wrote to this sender". The Sent pass runs with the
+// mail sync (every few minutes), so a pass older than a day means that it fails or the mailbox does not sync.
+export const SENT_COVERAGE_FRESH_MS = 24 * 60 * 60 * 1000;
+
+// Sent coverage of one mailbox at `now`: the profile can say "the user never wrote to this sender" only when Sent mail is
+// tracked and current. True when the flag `sent_sync` is on, the mailbox switch is on, `first_pass_at` is set, the last Sent
+// pass is not older than a day and it ended with no error code. A pass that ends `folder_missing`, `no_folder` or `failed`
+// reads no Sent mail, but it still sets `last_pass_at`: the error code is what shows it. The suggestion engine passes the
+// result to `suggestionsFor`: without it no blocklist suggestion is made and an open one is withdrawn.
+export async function sentCoverage(db: DbOrTrx, ctx: TenantContext, mailboxId: string, now: Date): Promise<boolean> {
   if (!(await isFeatureOn(db, ctx, "sent_sync"))) return false;
   const state = await getSentSyncState(db, ctx, mailboxId);
-  return state !== undefined && state.enabled && state.firstPassAt !== null;
+  if (state === undefined || !state.enabled || state.firstPassAt === null) return false;
+  if (state.lastErrorCode !== null || state.lastPassAt === null) return false;
+  return now.getTime() - state.lastPassAt.getTime() <= SENT_COVERAGE_FRESH_MS;
 }

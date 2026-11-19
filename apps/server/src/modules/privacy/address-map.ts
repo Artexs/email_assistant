@@ -62,7 +62,7 @@ export const DSR_ADDRESS_MAP: Readonly<Record<string, Readonly<Record<string, Ad
     sender_lower: "delete",
   },
   // The address or `@domain` of an OPEN rule suggestion (sender context): a third-party address. The erase of the address deletes the row;
-  // a domain pattern never equals one address, so it stays (the person's profile rows go by their hash, see the privacy stage).
+  // a domain pattern never equals one address, so it stays (the person's profile rows go by their hash, `deleteSenderContextRowsOf` in `modules/contacts/privacy.ts`).
   sender_suggestions: {
     pattern: "delete",
   },

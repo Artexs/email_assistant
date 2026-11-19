@@ -414,8 +414,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
   ),
   schema_migrations: { export: false, reason: "the migration ledger, not data of the organization" },
   // The count-only profile of a contact under a keyed hash, and the rule suggestions made from it (sender context): no address of a
-  // third party in the profile; an open suggestion holds the address or domain it names. The address join of the export comes
-  // with the privacy stage of the ticket folder.
+  // third party in the profile; an open suggestion holds the address or domain it names. The export adds the plain `address` of a
+  // profile row where the organization still holds it (`senderAddressesOfProfiles`).
   sender_profiles: byOrg(
     "id",
     "org_id",

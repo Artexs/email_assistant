@@ -54,6 +54,8 @@ export const auditEvents = {
   mailboxSyncFolderChanged: "mailbox.sync_folder_changed", // data: mailbox_id, folder_key, enabled
   ruleAdded: "rule.added", // data: rule_id, kind, scope, mailbox_id when scope is "mailbox"
   ruleRemoved: "rule.removed", // data: the same
+  suggestionAccepted: "suggestion.accepted", // data: mailbox_id, kind, scope, via; never the pattern or the key
+  suggestionDismissed: "suggestion.dismissed", // data: the same
   orgTimezoneChanged: "org.timezone_changed", // data: from, to
   orgStyleChanged: "org.style_changed", // data: set
   orgPlanChanged: "org.plan_changed", // data: from, to, max_from, max_to, trial_ends_at
