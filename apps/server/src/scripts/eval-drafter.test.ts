@@ -241,7 +241,7 @@ describe("runDrafterEval", () => {
     const second = await run(injectionArgs(), { deps: { injectionFile: casesFile(injectionCases.slice(0, 2)) } });
     expect(second.code).toBe(0);
     expect(second.calls.judge).toBe(2);
-    expect(stateFiles().sort()).toEqual([judgedName, oldName].sort());
+    expect(stateFiles().sort()).toEqual([judgedName as string, oldName].sort());
   });
 
   test("the budget is reached after one case: exit 2; a rerun resumes and drafts only the second case", async () => {
