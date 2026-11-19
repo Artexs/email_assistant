@@ -1,6 +1,6 @@
 # Backups
 
-> Checked against the code at `cf125cf`, 2026-11-14.
+> Checked against the code at `cf125cf`, 2026-11-14. Limits rechecked after the first drill on the VPS, 2026-11-19.
 
 ## What it does now
 
@@ -46,7 +46,7 @@ The backup holds the whole database. Files: `BACKUP_DIR/ea-<UTC time>.dump.age` 
 
 ## Limits
 
-- No timed restore drill has run yet: the first one is F114 stage 09 on the VPS (PD-054; target RPO 24 h and RTO 2 h). `restore.sh` is tested with stub commands only, so its real run on Docker is not shown yet.
+- The first timed restore drill ran on the VPS on 2026-11-19: `restore.sh` 173 s, 9 min wall time (PD-054; target RPO 24 h and RTO 2 h). The next drill is due 2027-05-19.
 - The alert for a late or failed backup (`slo_backup_age`, F114 stage 04) reads the status file, so it cannot see a backup that never started when the host itself is off (then the Healthchecks.io ping check, with a grace of 2 h, is the second sign) or a status file that is stale for another reason: a restore that copies back an old file would hide a failed run until the age passes 26 h.
 - The Healthchecks.io check and the value of `BACKUP_PING_URL` on the VPS are made by the owner (step U2); the repo holds no URL.
 - The backup holds the database only. The file `.env` is not in it, so a restore on a new host also needs `CREDENTIALS_KEY` (it decrypts the stored mailbox passwords) and the other secrets from the owner's own copy.
