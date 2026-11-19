@@ -9,6 +9,7 @@ import { DSR_ADDRESS_MAP, normalizeDsrAddress, replaceAddress } from "./address-
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
 import { addressPatterns, findOpenActions, matchSubject, rowCondition, type AddressPatterns } from "./dsr-match";
 import { blankDigestsNamingLoops, eraseManyMailOutbox } from "./outbox";
+import { checkAddressRule, type RuleCheck } from "./rule-check";
 
 const DEADLOCK_CODE = "40P01";
 const FOREIGN_KEY_CODE = "23503";
@@ -55,6 +56,8 @@ export type DsrEraseResult =
   | { kind: "own_address" }
   | { kind: "bad_address" }
   | { kind: "confirm_mismatch" }
+  // The database lower-cases a letter of the address (or a trim character) unlike the program: nothing changed.
+  | { kind: "rule_mismatch"; codePoints: number[] }
   | { kind: "open_actions"; actionIds: string[] }
   // A foreign key that the erase did not expect stopped it (a bug): nothing changed.
   | { kind: "blocked"; constraint: string };
@@ -186,7 +189,7 @@ async function insertTombstones(trx: Transaction<DB>, orgId: string, dedupKeys: 
 }
 
 // The erase of one person's data, on the owner's instruction. One transaction, so a failure
-// at any point changes nothing. Order: lock the organization; lock the sync folders (sync and backfill apply their chunks
+// at any point changes nothing. Order: the input checks and the rule check; lock the organization; lock the sync folders (sync and backfill apply their chunks
 // under this lock, so a chunk planned before the erase meets the tombstone) and the Sent state rows (the Sent pass does
 // the same); match; refuse; lock the mails that go;
 // tombstones (mails and sent mails); delete the chain actions, the mails and the sent mails; kept pending sent mails
@@ -202,11 +205,16 @@ async function eraseInScope(
     credentialsKey: string;
     step?: EraseStep;
     now?: Date;
+    ruleCheck?: RuleCheck;
   }
 ): Promise<DsrEraseResult> {
   const address = normalizeDsrAddress(input.address);
   if (address === null) return { kind: "bad_address" };
   if (normalizeDsrAddress(input.confirm) !== address) return { kind: "confirm_mismatch" };
+  // Before any lock or read (F137 D7): the equality match is exact for this address only when the database and the
+  // program lower-case its letters alike. Else nothing changes and no audit row is written.
+  const rule = await (input.ruleCheck ?? checkAddressRule)(db, address);
+  if (!rule.ok) return { kind: "rule_mismatch", codePoints: rule.codePoints };
   const now = input.now ?? new Date();
   const { orgId } = input;
 

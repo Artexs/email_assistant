@@ -9,6 +9,7 @@ import { auditEvents, recordAudit, type AuditData } from "../audit";
 import { normalizeDsrAddress } from "./address-map";
 import { matchSubject, type DsrMatch } from "./dsr-match";
 import { writeEncryptedFile } from "./encrypted-file";
+import { checkAddressRule, type RuleCheck } from "./rule-check";
 
 const MAIL_BATCH = 200;
 
@@ -83,6 +84,8 @@ export type DsrFindResult =
   | { kind: "not_found" }
   | { kind: "own_address" }
   | { kind: "bad_address" }
+  // The database lower-cases a letter of the address (or a trim character) unlike the program: nothing is read.
+  | { kind: "rule_mismatch"; codePoints: number[] }
   | { kind: "exists" };
 
 // The report file: the whole mail of each mail that goes, in batches. For kept rows only table, column and id.
@@ -131,7 +134,7 @@ async function* reportChunks(
 // The dry run for one address. One `REPEATABLE READ READ ONLY` transaction reads the match
 // and the optional report, so the counts and the file are one snapshot. The one audit row (`dsr.find`) comes after the
 // file is complete; if it fails the file goes too. The address is in the report file only, which is encrypted.
-// A refusal writes no audit row. The module logs nothing: the CLI prints ids, counts and sizes.
+// A refusal (`rule_mismatch` too) writes no audit row. The module logs nothing: the CLI prints ids, counts and sizes.
 async function findInScope(
   db: Db,
   input: {
@@ -140,10 +143,14 @@ async function findInScope(
     credentialsKey: string;
     report?: { recipient: string; out: string };
     now?: Date;
+    ruleCheck?: RuleCheck;
   }
 ): Promise<DsrFindResult> {
   const address = normalizeDsrAddress(input.address);
   if (address === null) return { kind: "bad_address" };
+  // Before any other read: on a database that lower-cases this address unlike the program the match is not exact.
+  const rule = await (input.ruleCheck ?? checkAddressRule)(db, address);
+  if (!rule.ok) return { kind: "rule_mismatch", codePoints: rule.codePoints };
   const now = input.now ?? new Date();
 
   const result = await db

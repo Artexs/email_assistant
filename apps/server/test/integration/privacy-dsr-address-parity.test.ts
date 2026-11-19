@@ -5,12 +5,25 @@ import {
   ADDRESS_TRIM_CHARS,
   normalizeSenderAddress,
 } from "@ea/core";
-import { afterAll, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
-import { divergentCodePoints, normalizedAddress } from "../../src/modules/contacts";
-import { addressRegex, matchesAddress, normalizeDsrAddress } from "../../src/modules/privacy";
+import { refreshMailboxProfiles } from "../../src/modules/contacts";
 
+import { divergentCodePoints, normalizedAddress } from "../../src/modules/contacts";
+import {
+  addressRegex,
+  addressRuleConflicts,
+  checkAddressRule,
+  eraseSubjectData,
+  findSubjectData,
+  formatRuleCheck,
+  matchesAddress,
+  normalizeDsrAddress,
+} from "../../src/modules/privacy";
+
+import { KEY, newOrg, NO_TEST, NOW } from "./contacts-fixtures";
+import { seedSenderActivity } from "./fixtures";
 import { testDb } from "./helpers";
 
 // The SQL form of the address rule (`normalizedAddress`) and the program form (`normalizeSenderAddress`) agree on the
@@ -263,5 +276,176 @@ describe("the text pattern and the equality match", () => {
     `.execute(db);
     expect(result.rows).toHaveLength(texts.length);
     expect(result.rows.filter((row) => row.hit).map((row) => hex(row.p))).toEqual([]);
+  });
+});
+
+// The run-time check of the address rule (F137 D7): the divergent code points that matter for the asked address.
+describe("the rule check", () => {
+  const A7CE = { cp: 0xa7ce, js: "\uA7CF", db: "\uA7CE" };
+
+  test("a divergent code point that is a letter of the address conflicts; another address does not", () => {
+    expect(addressRuleConflicts("\uA7CFx@x.test", [A7CE])).toEqual([0xa7ce]);
+    expect(addressRuleConflicts("anna@x.test", [A7CE])).toEqual([]);
+  });
+
+  test("a database that lowers more than the program conflicts through its form (G2)", () => {
+    const lowersMore = [{ cp: 0x1e9e, js: "\u1E9E", db: "\u00DF" }];
+    expect(addressRuleConflicts("stra\u00DFe@x.de", lowersMore)).toEqual([0x1e9e]);
+    expect(addressRuleConflicts("strasse@x.de", lowersMore)).toEqual([]);
+  });
+
+  test("a trim difference (empty program form) conflicts with any address", () => {
+    const trim = [{ cp: 0x09, js: "", db: "\t" }];
+    expect(addressRuleConflicts("anna@x.test", trim)).toEqual([0x09]);
+    expect(addressRuleConflicts("\uA7CFx@x.test", trim)).toEqual([0x09]);
+  });
+
+  test("formatRuleCheck: the count, then one line per code point; an empty form shows as a dash", () => {
+    expect(formatRuleCheck([A7CE])).toEqual(["rule check 1", "U+A7CE js a7cf db a7ce"]);
+    expect(formatRuleCheck([])).toEqual(["rule check 0"]);
+    expect(
+      formatRuleCheck([
+        { cp: 0x09, js: "", db: "\t" },
+        { cp: 0x49, js: "i\u0307", db: "i" },
+      ])
+    ).toEqual(["rule check 2", "U+0009 js - db 9", "U+0049 js 69,307 db 69"]);
+  });
+
+  test("default check on the test database: a plain address passes; an address with a divergent letter refuses", async () => {
+    expect(await checkAddressRule(db, "anna@x.test")).toEqual({ ok: true });
+    const divergent = await divergentCodePoints(db);
+    const letter = divergent.find(({ js }) => js !== "");
+    if (letter === undefined) {
+      process.stdout.write("rule check: no divergent letter on this database, the refusal assert is skipped\n");
+      return;
+    }
+    const result = await checkAddressRule(db, `${letter.js}x@x.test`);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.codePoints).toContain(letter.cp);
+  });
+});
+
+// Find and erase call the check first (F137 stage 04): a refusal changes nothing and writes no audit row.
+describe("find and erase with the rule check", () => {
+  const orgIds: string[] = [];
+  const userIds: string[] = [];
+  afterEach(async () => {
+    if (orgIds.length > 0) await db.deleteFrom("organizations").where("id", "in", orgIds).execute();
+    if (userIds.length > 0) await db.deleteFrom("users").where("id", "in", userIds).execute();
+    orgIds.length = 0;
+    userIds.length = 0;
+  });
+
+  const FAIL = async () => ({ ok: false as const, codePoints: [0xa7ce] });
+  const ADDRESS = "anna@x.test";
+
+  // An organization with one mail From `anna@x.test` and its profile row; committed.
+  async function seedAnna() {
+    const org = await db.transaction().execute(async (trx) => {
+      const made = await newOrg(trx);
+      await seedSenderActivity(trx, made.ctx, made.mailboxId, { address: ADDRESS, mails: [{ at: NOW }] });
+      return made;
+    });
+    orgIds.push(org.ctx.orgId);
+    const owner = await db
+      .selectFrom("memberships")
+      .select("user_id")
+      .where("org_id", "=", org.ctx.orgId)
+      .executeTakeFirst();
+    if (owner) userIds.push(owner.user_id);
+    await refreshMailboxProfiles({ db, credentialsKey: KEY, testMail: NO_TEST }, org.ctx, org.mailboxId, { now: NOW });
+    return org;
+  }
+
+  const state = async (orgId: string) => ({
+    mails: Number(
+      (await sql<{ n: string }>`select count(*) as n from emails where org_id = ${orgId}::uuid`.execute(db)).rows[0]?.n
+    ),
+    profiles: Number(
+      (await sql<{ n: string }>`select count(*) as n from sender_profiles where org_id = ${orgId}::uuid`.execute(db))
+        .rows[0]?.n
+    ),
+    tombstones: Number(
+      (await sql<{ n: string }>`select count(*) as n from dsr_tombstones where org_id = ${orgId}::uuid`.execute(db))
+        .rows[0]?.n
+    ),
+  });
+  const auditCount = async (orgId: string, event: string) =>
+    Number(
+      (
+        await sql<{
+          n: string;
+        }>`select count(*) as n from audit_log where org_id = ${orgId}::uuid and event = ${event}`.execute(db)
+      ).rows[0]?.n
+    );
+
+  test("find with a failing check: rule_mismatch, no dsr.find audit row", async () => {
+    const org = await seedAnna();
+    const result = await findSubjectData(db, {
+      orgId: org.ctx.orgId,
+      address: ADDRESS,
+      credentialsKey: KEY,
+      ruleCheck: FAIL,
+    });
+    expect(result).toEqual({ kind: "rule_mismatch", codePoints: [0xa7ce] });
+    expect(await auditCount(org.ctx.orgId, "dsr.find")).toBe(0);
+  });
+
+  test("erase with a failing check: rule_mismatch; mail, profile and tombstones stay; no dsr.erase audit row", async () => {
+    const org = await seedAnna();
+    const before = await state(org.ctx.orgId);
+    expect(before.mails).toBeGreaterThan(0);
+    expect(before.profiles).toBeGreaterThan(0);
+    const result = await eraseSubjectData(db, {
+      orgId: org.ctx.orgId,
+      address: ADDRESS,
+      confirm: ADDRESS,
+      credentialsKey: KEY,
+      ruleCheck: FAIL,
+    });
+    expect(result).toEqual({ kind: "rule_mismatch", codePoints: [0xa7ce] });
+    expect(await state(org.ctx.orgId)).toEqual(before);
+    expect(await auditCount(org.ctx.orgId, "dsr.erase")).toBe(0);
+  });
+
+  test("default check, an address with a divergent letter: find and erase refuse and change nothing", async () => {
+    const letter = (await divergentCodePoints(db)).find(({ js }) => js !== "");
+    if (letter === undefined) {
+      process.stdout.write("rule check: no divergent letter on this database, the refusal assert is skipped\n");
+      return;
+    }
+    const org = await seedAnna();
+    const before = await state(org.ctx.orgId);
+    const address = `${letter.js}x@x.test`;
+    const base = { orgId: org.ctx.orgId, address, credentialsKey: KEY };
+    const found = await findSubjectData(db, base);
+    expect(found.kind).toBe("rule_mismatch");
+    const erased = await eraseSubjectData(db, { ...base, confirm: address });
+    expect(erased.kind).toBe("rule_mismatch");
+    expect(await state(org.ctx.orgId)).toEqual(before);
+    expect(await auditCount(org.ctx.orgId, "dsr.find")).toBe(0);
+    expect(await auditCount(org.ctx.orgId, "dsr.erase")).toBe(0);
+  });
+
+  test("erase with the default check on the same data: erased", async () => {
+    const org = await seedAnna();
+    const result = await eraseSubjectData(db, {
+      orgId: org.ctx.orgId,
+      address: ADDRESS,
+      confirm: ADDRESS,
+      credentialsKey: KEY,
+    });
+    expect(result.kind).toBe("erased");
+    expect(await auditCount(org.ctx.orgId, "dsr.erase")).toBe(1);
+  });
+
+  test("the input checks come first: a bad address and a confirm that differs are not rule_mismatch", async () => {
+    const org = await seedAnna();
+    const base = { orgId: org.ctx.orgId, credentialsKey: KEY, ruleCheck: FAIL };
+    expect(await eraseSubjectData(db, { ...base, address: "bad", confirm: "bad" })).toEqual({ kind: "bad_address" });
+    expect(await eraseSubjectData(db, { ...base, address: ADDRESS, confirm: "other@x.test" })).toEqual({
+      kind: "confirm_mismatch",
+    });
+    expect(await findSubjectData(db, { ...base, address: "bad" })).toEqual({ kind: "bad_address" });
   });
 });

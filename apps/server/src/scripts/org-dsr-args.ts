@@ -5,14 +5,16 @@ import { z } from "zod";
 import { isAgeRecipient } from "../modules/privacy";
 
 export const usage =
-  "usage: bun run org:dsr --org-id <uuid> --address <address> (--find [--recipient <age1...> --out <path>] | --erase --confirm <address>)";
+  "usage: bun run org:dsr --org-id <uuid> (--address <address> (--find [--recipient <age1...> --out <path>] | --erase --confirm <address>) | --rule-check)";
 
 export type OrgDsrArgs =
   | { mode: "find"; orgId: string; address: string; report?: { recipient: string; out: string } }
-  | { mode: "erase"; orgId: string; address: string; confirm: string };
+  | { mode: "erase"; orgId: string; address: string; confirm: string }
+  | { mode: "rule_check"; orgId: string };
 
 // A uuid, an address and one mode are required. `--recipient` and `--out` come together and only with `--find`;
 // `--confirm` is required with `--erase` and refused with `--find`. Both modes in one call is a usage error.
+// `--rule-check` stands alone with `--org-id` (it needs no address); any other option with it is a usage error.
 // The address is not checked here: a bad one is a refusal (`bad_address`), not a usage error. null on any usage error.
 export function parseOrgDsrArgs(argv: string[]): OrgDsrArgs | null {
   let values;
@@ -27,6 +29,7 @@ export function parseOrgDsrArgs(argv: string[]): OrgDsrArgs | null {
         confirm: { type: "string" },
         recipient: { type: "string" },
         out: { type: "string" },
+        "rule-check": { type: "boolean" },
       },
       strict: true,
       allowPositionals: false,
@@ -34,8 +37,12 @@ export function parseOrgDsrArgs(argv: string[]): OrgDsrArgs | null {
   } catch {
     return null;
   }
-  const { "org-id": orgId, address, find, erase, confirm, recipient, out } = values;
+  const { "org-id": orgId, address, find, erase, confirm, recipient, out, "rule-check": ruleCheck } = values;
   if (orgId === undefined || !z.uuid().safeParse(orgId).success) return null;
+  if (ruleCheck === true) {
+    const others = [address, find, erase, confirm, recipient, out];
+    return others.every((value) => value === undefined) ? { mode: "rule_check", orgId } : null;
+  }
   if (address === undefined || address.trim() === "") return null;
   if (find === true && erase === true) return null;
   if (erase === true) {

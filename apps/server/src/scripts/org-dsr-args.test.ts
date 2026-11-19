@@ -53,4 +53,11 @@ describe("parseOrgDsrArgs", () => {
   test("a bad address is no usage error", () => {
     expect(parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.", "--find"])).not.toBeNull();
   });
+
+  test("--rule-check with --org-id alone is the rule_check mode; any other option is a usage error", () => {
+    expect(parseOrgDsrArgs(["--org-id", ID, "--rule-check"])).toEqual({ mode: "rule_check", orgId: ID });
+    expect(parseOrgDsrArgs(["--org-id", ID, "--rule-check", "--address", "p@x.test"])).toBeNull();
+    expect(parseOrgDsrArgs(["--org-id", ID, "--rule-check", "--find"])).toBeNull();
+    expect(parseOrgDsrArgs(["--rule-check"])).toBeNull();
+  });
 });

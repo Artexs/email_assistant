@@ -1,4 +1,5 @@
-import { dsrIsEmpty, eraseSubjectData, findSubjectData } from "../modules/privacy";
+import { divergentCodePoints } from "../modules/contacts";
+import { dsrIsEmpty, eraseSubjectData, findSubjectData, formatRuleCheck } from "../modules/privacy";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { errorFields } from "../platform/errors";
@@ -12,6 +13,21 @@ function line(text: string): void {
   process.stdout.write(`${text}\n`);
 }
 
+// The database lower-cases a letter of the address unlike the program. Stdout gets the count only; `--rule-check` lists
+// the code points. Nothing changed.
+function ruleMismatch(count: number): number {
+  line(`rule mismatch ${count}`);
+  log.error("org_dsr_refused", { reason: "rule_mismatch" });
+  return 1;
+}
+
+// `--rule-check`: the code points where the database and the program lower-case differently. No address, so the output
+// goes with the request record. Exit 0.
+async function ruleCheck(db: Db) {
+  for (const text of formatRuleCheck(await divergentCodePoints(db))) line(text);
+  return 0;
+}
+
 // Prints counts, table.column names and sizes, never the address. A find that matches nothing prints a
 // warning on stderr and still exits 0: the operator checks the spelling. Returns the exit code.
 async function find(args: Extract<OrgDsrArgs, { mode: "find" }>, db: Db) {
@@ -21,6 +37,7 @@ async function find(args: Extract<OrgDsrArgs, { mode: "find" }>, db: Db) {
     credentialsKey: loadConfig().CREDENTIALS_KEY,
     report: args.report,
   });
+  if (result.kind === "rule_mismatch") return ruleMismatch(result.codePoints.length);
   if (result.kind !== "found") {
     log.error("org_dsr_refused", { reason: result.kind });
     return 1;
@@ -63,6 +80,7 @@ async function erase(args: Extract<OrgDsrArgs, { mode: "erase" }>, db: Db) {
     log.error("org_dsr_refused", { reason: "blocked" });
     return 1;
   }
+  if (result.kind === "rule_mismatch") return ruleMismatch(result.codePoints.length);
   if (result.kind !== "erased") {
     log.error("org_dsr_refused", { reason: result.kind });
     return 1;
@@ -93,6 +111,7 @@ async function main(): Promise<number> {
   const db = createDb(loadConfig().DATABASE_URL);
   try {
     await assertAppRole(db);
+    if (args.mode === "rule_check") return await ruleCheck(db);
     return args.mode === "erase" ? await erase(args, db) : await find(args, db);
   } catch (error) {
     log.error("org_dsr_failed", { ...errorFields(error) });
