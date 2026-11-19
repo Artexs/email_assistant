@@ -54,7 +54,10 @@ function mapStatus(status: number, response: Response): PushResult {
   return { kind: "refused", status };
 }
 
-/** Never throws. A refusal before the request has status 0 and no request was made. */
+/**
+ * Does not throw for a bad endpoint, a bad key, a payload that is too large (a refusal with status 0: no request was made), a
+ * network failure or a timeout (`retry`). Any other error is a bug in this code and is thrown on (the sender logs it and tries the row later).
+ */
 export async function sendWebPush(
   sub: PushTarget,
   payload: Uint8Array,
