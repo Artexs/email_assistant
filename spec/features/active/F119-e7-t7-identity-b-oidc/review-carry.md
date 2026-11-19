@@ -64,3 +64,19 @@ I restored the file (`cmp` showed no difference), and the three tests passed aga
 - `apps/server` `bun run typecheck` (`tsc --noEmit`): exit 0.
 - `bunx prettier --check` on the changed files: only `docs/capabilities/web-panel.md` warns, and the base `ee67f9cd` warns the same (old formatting, not a finding).
 - `git status` after the review: only this file is new.
+
+## Response
+
+- B1: fixed. `web-panel.md` (§ limits and rule 4), `tenancy-and-plans.md` (line 117 and the lock bullet at line 51), ADR 0026 Accepted gaps and `known-alerts.md` (`reset_request_refused_sso`) now state the rule: the public reset request is refused with the generic answer for an SSO-only member; only the operator's `web:invite --user-id` gives a password. The ADR and `tenancy-and-plans.md` no longer say that no test runs a full callback against a waiting write: both name `web-sso-callback-lock.test.ts`. A grep of `docs/` for "no code refuses", "set a password through a reset" and "No test runs a full callback" finds only `docs/owner-decisions.md:397-398`, which the coordinator owns and I did not edit.
+- N1: accepted, no change (review confirms the lock claim).
+- N2: accepted, no change. Limit noted: the third lock test uses raw SQL for the removal.
+- N3: accepted, no change.
+- N4: fixed. `holdFeaturesTable` is released in `try/finally` in the first two tests, and the held removal of the third test is released and awaited in `finally`. `release()` is safe to call twice.
+- N5: accepted, no change.
+- N6: accepted, no change (timing not measured).
+- N7: fixed, not skipped. `setSsoProvider` (the `new` path only) calls `deleteResetLinksOfPasswordlessMembers` in the same transaction: it deletes `auth_verifications` rows whose `value` is the id of a member of the organization who has no `credential` account. Better Auth hashes the identifier, so the user id in `value` is the only link (the same method as `endPasswordSessionsAndChallenges`). It is safe because a member with no password has no two-factor challenge or trusted device (turning two-factor on needs the password), so these rows are reset links. Side effect: an unused `web:invite` link of such a member goes too; the operator makes a new one. No audit field was added (the existing audit data stays as it is); the count goes to the log line `sso_reset_links_removed`. Tests in `sso-provider-service.test.ts`: members with no password lose their links, a member with a password and another organization keep theirs; a later `--set` with a new secret deletes nothing; a set that fails on `domain_taken` deletes nothing.
+- N8: accepted. One sentence in the ADR 0026 Accepted gaps names it (a member of several organizations whose provider organization is not the oldest, or a provider with no proved domain or the flag off, gets neither SSO nor the reset; `web:invite --user-id` helps).
+- N9: accepted, no change.
+- N10: accepted, no change.
+- N11: accepted, no change (the stage-15 text describes the effect).
+- U1 to U3: not acted on. The full unit and integration runs are in `/tmp/f119-carry2/`.
