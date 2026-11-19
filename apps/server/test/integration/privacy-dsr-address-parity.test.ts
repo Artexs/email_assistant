@@ -22,7 +22,6 @@ import {
   matchesAddress,
   normalizeDsrAddress,
 } from "../../src/modules/privacy";
-
 import { resetRuleCheckCache } from "../../src/modules/privacy/rule-check";
 
 import { KEY, newOrg, NO_TEST, NOW } from "./contacts-fixtures";
