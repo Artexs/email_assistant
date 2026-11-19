@@ -66,6 +66,13 @@ describe("the style card (F115 stage 11)", () => {
     expect(html).toContain(t("rs_samples_note"));
     expect(en.rs_samples).toBe("Show 3 sample drafts");
     expect(en.rs_samples_note).toBe("Samples are not saved in Drafts and cannot be sent.");
+    // The English texts of the review fixes are fixed here, as the Polish ones are in `i18n/reply-style.test.ts`.
+    expect(en.rs_samples_help).toBe(
+      "Writes replies to up to 3 of your newest mails from the last 7 days that need an answer. You can ask once a day for each mailbox."
+    );
+    expect(en.rs_samples_none).toBe("No mail from the last 7 days can get a sample.");
+    expect(en.rs_samples_limit).toBe("Samples for this mailbox were already asked for today. Try again later.");
+    expect(en.rs_samples_no_draft).toBe("The assistant wrote no sample for this mail.");
     expect(/<button[^>]*disabled=""[^>]*>Show 3 sample drafts</.test(html)).toBe(true);
   });
 
