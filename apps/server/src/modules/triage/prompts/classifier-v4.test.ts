@@ -100,7 +100,7 @@ describe("classifier-v4 prompt", () => {
       expect(profileRule(system)).toHaveLength(1);
       expect(lines[lines.length - 1]).toBe(profileRule(system)[0] as string);
       // Before the rule: the v3 text of the same parts without `history` (the profile replaces it).
-      const v3Parts = parts.filter((part): part is ClassifierV3Part => part !== "profile" && part !== "history");
+      const v3Parts = parts.filter((part) => part !== "profile" && part !== "history") as ClassifierV3Part[];
       expect(system).toBe(`${v3.buildSystem(classifierCategories, v3Parts)}\n${profileRule(system)[0]}`);
     }
     expect(profileRule(v4.buildSystem(classifierCategories, ["list", "history"]))).toEqual([]);
