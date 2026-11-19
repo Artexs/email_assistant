@@ -34,7 +34,7 @@ const turn = (trx: Transaction<DB>, ctx: TenantContext, flag: FlagName, enabled:
 
 async function setup(trx: Transaction<DB>, flags: { context: boolean; suggestions: boolean }) {
   await isolateChannels(trx);
-  const { orgA } = await seedWeek(trx);
+  const { orgA, orgB } = await seedWeek(trx);
   await trx.updateTable("users").set({ locale: "pl" }).where("id", "=", orgA.ownerId).execute();
   await setDigestTimes(trx, orgA.ctx, orgA.ownerId, ["09:00"]);
   await linkChat(trx, orgA.ctx, orgA.ownerId, randomChatId(), new Date("2026-11-01T10:00:00Z"));
@@ -42,7 +42,8 @@ async function setup(trx: Transaction<DB>, flags: { context: boolean; suggestion
   await turn(trx, orgA.ctx, "sender_context", flags.context);
   await turn(trx, orgA.ctx, "sender_suggestions", flags.suggestions);
   const org: Org = { ctx: orgA.ctx, mailboxId: orgA.mailboxId, address: "" };
-  return { org, ownerId: orgA.ownerId };
+  const other: Org = { ctx: orgB.ctx, mailboxId: orgB.mailboxId, address: "" };
+  return { org, other, ownerId: orgA.ownerId };
 }
 
 async function weeklyRow(trx: Transaction<DB>, orgId: string, baseUrl: string | undefined) {
@@ -120,6 +121,17 @@ describe("the suggestion line of the weekly report", () => {
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", org.mailboxId).execute();
       const { view } = await weeklyRow(trx, org.ctx.orgId, BASE);
       expect(view).not.toHaveProperty("suggestions");
+    });
+  });
+
+  test("6 the open rows of another organization do not count", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, other } = await setup(trx, { context: true, suggestions: true });
+      await insertSuggestion(trx, org, { value: "a@acme.pl", kind: "vip" });
+      await insertSuggestion(trx, other, { value: "b@acme.pl", kind: "vip" });
+      await insertSuggestion(trx, other, { value: "c@acme.pl", kind: "vip" });
+      const { view } = await weeklyRow(trx, org.ctx.orgId, BASE);
+      expect(view.suggestions).toEqual({ open: 1, panelUrl: "https://panel.example.test/rules" });
     });
   });
 });
