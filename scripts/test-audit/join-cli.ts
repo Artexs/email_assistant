@@ -25,4 +25,4 @@ const result = joinCases(parseStaticTsv(staticText), timed);
 await Bun.write(`${data}/cases.tsv`, casesToTsv(columns, result));
 await Bun.write(`${data}/junit-cases.tsv`, junitCasesToTsv(result.cases));
 await Bun.write(`${data}/timing-summary.md`, timingSummary(result));
-process.stdout.write(`${`rows ${result.rows.length}, JUnit cases ${result.cases.length}`}\n`);
+process.stdout.write(`rows ${result.rows.length}, JUnit cases ${result.cases.length}\n`);

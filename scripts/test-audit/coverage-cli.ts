@@ -51,4 +51,4 @@ for (const file of [...new Set([...both.keys(), ...second.keys()])].sort()) {
   if (differing > 0) noise.push([file, differing].join("\t"));
 }
 await Bun.write(`${data}/coverage-noise.tsv`, `${["file\tdiffering_lines", ...noise].join("\n")}\n`);
-process.stdout.write(`${`baseline ${lines.length} files, noise ${noise.length} files`}\n`);
+process.stdout.write(`baseline ${lines.length} files, noise ${noise.length} files\n`);
