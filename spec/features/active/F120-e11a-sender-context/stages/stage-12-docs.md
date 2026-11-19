@@ -38,3 +38,14 @@ First commit of this stage (small, with a mutation log each):
 - N4: `moveFocus.current` in the suggestions card is cleared only when `data` changes; clear it when the reload fails, so a later poll does not move focus.
 - N5: docs say "a 404 hides the card and stops its requests"; with the flag off and N mailboxes the card sends N list requests. Fix the doc line or stop after the first 404 for the flag.
 - TG3 (cosmetic): the select lists mailboxes that answered 404 (mutation w02).
+
+## Carry-over from the stage 11 review (PASS a1e1cfd1)
+
+First commit of this stage:
+- NOTE 1: `evals/results/2026-11-19-f120-v4-dev-summary.md` says spend $0.4149. The five dev runs sum to $0.4130 (report cost lines and ledger). Correct the figure.
+- NOTE 2: `docs/capabilities/triage.md` line 3 still names `5ba3e0bc`. Update it to the checked commit. List `senderProfile` in the `ClassifierExtras` bullet of rule 18.
+- TEST GAP 3: add an integration test that the triage job hands `readProfile` to `loadClassifierExtras` (review mutations m20 `main.ts` and m21 `classify-input.ts` survived).
+- TEST GAP 4: `gateFileSchema.promptParts` must accept `profile` (m22 survived). Add a test.
+- TEST GAP 1/2: pin the v3 text to a fixed expected text for all 8 part combinations (m12 survived).
+- TEST GAP 5/6: a behaviour test for the v4 report `promptParts`, and one for the place of `PROFILE_RULE` (m23b, m27 survived).
+- NOTE 4: `PROFILE_RULE` ("Relation known … means a real contact: it is not spam") is strong. Do not ship it without a new owner decision.

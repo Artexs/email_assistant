@@ -52,6 +52,21 @@ describe("classifierExtrasOfCase", () => {
     expect(classifierExtrasOfCase(phishing, miniScenario).senderHistory).toBeNull();
   });
 
+  test("5. the profile passes the whole story of the sim case; the history keeps its three fields; a flagged case has no profile", () => {
+    const story = { ...history, received: 8, answered: 6, userMailsTo: 4, relation: "known", bulkSignals: ["list_id"] };
+    const extras = classifierExtrasOfCase(makeCase("c6", { senderHistory: story }), miniScenario);
+    expect(extras.senderProfile).toMatchObject({ relation: "known", answered: 6, userMailsTo: 4, received: 8 });
+    expect(extras.senderHistory).toEqual({ days: 90, received: 8, corrections: { info: 1 } });
+
+    const phishing = makeCase(
+      "c7",
+      { senderHistory: story, hardCases: ["phishing_delegation"] },
+      { from: "Billing <billing@vendor-k.test>" }
+    );
+    expect(classifierExtrasOfCase(phishing, miniScenario).senderProfile).toBeNull();
+    expect(classifierExtrasOfCase(makeCase("c8", {}), miniScenario).senderProfile).toBeNull();
+  });
+
   test("a case with no sim facts gives empty extras", () => {
     const bare = evalCaseSchema.parse({
       id: "c3",
@@ -67,6 +82,7 @@ describe("classifierExtrasOfCase", () => {
       attachments: [],
       isList: false,
       senderHistory: null,
+      senderProfile: null,
       urgency: null,
     });
   });

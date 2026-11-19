@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 
-import { buildTriageAnalysisSchema, type Category, markUntrustedText, type TriageAnalysis } from "@ea/core";
+import {
+  buildTriageAnalysisSchema,
+  type Category,
+  markUntrustedText,
+  type SenderHistory,
+  type TriageAnalysis,
+} from "@ea/core";
 
 import { type LlmClient, LlmOutputError, type LlmUsage } from "../../platform/llm";
 
@@ -38,6 +44,9 @@ export interface ClassifierExtras {
     // The `true_category` of the user's "wrong" feedback.
     corrections: Partial<Record<Category, number>>;
   } | null;
+  // The stored profile of this sender (`classifier-v4` part `profile`): counts and codes, no address and no name. Null for a
+  // flagged mail, a sender with no stored row and every prompt without the part.
+  senderProfile: SenderHistory | null;
   // The user's urgency profile. `today` is a local date (YYYY-MM-DD); deadlines are due within today−1 … today+30.
   urgency: {
     today: string;
@@ -46,7 +55,13 @@ export interface ClassifierExtras {
   } | null;
 }
 
-export const EMPTY_EXTRAS: ClassifierExtras = { attachments: [], isList: false, senderHistory: null, urgency: null };
+export const EMPTY_EXTRAS: ClassifierExtras = {
+  attachments: [],
+  isList: false,
+  senderHistory: null,
+  senderProfile: null,
+  urgency: null,
+};
 
 function markedOrNull(text: string | null): string | null {
   const marked = text === null ? "" : markUntrustedText(text).trim();

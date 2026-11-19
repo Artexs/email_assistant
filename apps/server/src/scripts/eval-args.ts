@@ -6,17 +6,18 @@ import { z } from "zod";
 import {
   type ClassifierPromptChoice,
   type ClassifierVersion,
-  type ClassifierV3Part,
+  type ClassifierPart,
+  classifierParts,
   classifierV3Parts,
   classifierVersionIds,
   optionalParts,
   productionClassifierChoice,
+  versionHasParts,
 } from "../modules/triage";
 import { openAiReasoningEfforts } from "../platform/config";
 import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
-const v3Version: ClassifierVersion = "classifier-v3";
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
 
 // The bare `--sim` command meets the 10 minute exit: 1,417 calls at 240 per minute take about 6 minutes.
@@ -33,8 +34,8 @@ export const evalUsage = [
   "       bun run eval --sim <scenario> --part dev|holdout|week [--provider …] [--model …] [--reasoning-effort …]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
-  "                    [--prompt-version classifier-v2|classifier-v3 (default: the production prompt)]",
-  "                    [--prompt-parts urgency,history,list|none (only with classifier-v3; none = attachments only; default: the production parts when v3 is in production, else none)]",
+  "                    [--prompt-version classifier-v2|classifier-v3|classifier-v4 (default: the production prompt)]",
+  "                    [--prompt-parts urgency,history,list,profile|none (only with classifier-v3 or classifier-v4; profile only with classifier-v4; none = attachments only; default: the production parts when v3 is in production, else none)]",
   "                    (the history part gives the model the sim's generated received count and corrections: the persona group's ideal mix, not the model's own past labels)",
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
   "       bun run eval --sim <scenario> --part dev|holdout|week --suspicious [--out <file.md>]   (suspicious-mail rules, no LLM)",
@@ -152,12 +153,13 @@ const simOnly = [
 const isSentPart = (value: string): value is SentPart => (sentParts as readonly string[]).includes(value);
 
 // `none` is attachments only. Undefined means a usage error: an empty or unknown name, or `none` with a name.
-function parsePromptParts(text: string): ClassifierV3Part[] | undefined {
+function parsePromptParts(text: string, version: ClassifierVersion): ClassifierPart[] | undefined {
   const names = text.split(",").map((name) => name.trim());
   if (names.length === 1 && names[0] === "none") return [];
-  const known = new Set<string>(classifierV3Parts);
+  // v3 has no `profile`.
+  const known = new Set<string>(version === "classifier-v4" ? classifierParts : classifierV3Parts);
   if (!names.every((name) => known.has(name))) return undefined;
-  return optionalParts(names as ClassifierV3Part[]);
+  return optionalParts(names as ClassifierPart[]);
 }
 
 // Without `--prompt-parts`, v3 runs the production parts when v3 is the production pointer, else `none`.
@@ -168,8 +170,8 @@ export function resolvePrompt(
 ): ClassifierPromptChoice | undefined {
   const chosen = version ?? production.version;
   if (partsText === undefined) return chosen === production.version ? production : { version: chosen, parts: [] };
-  if (chosen !== v3Version) return undefined;
-  const parts = parsePromptParts(partsText);
+  if (!versionHasParts(chosen)) return undefined;
+  const parts = parsePromptParts(partsText, chosen);
   return parts === undefined ? undefined : { version: chosen, parts };
 }
 

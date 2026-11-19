@@ -16,7 +16,7 @@ import { z } from "zod";
 
 import type { CaseResult, CasesEvalReport } from "./eval";
 import { endpointSuffix, num, pct, table } from "./eval-format";
-import { classifierV3Parts } from "./prompts";
+import { classifierParts } from "./prompts";
 
 // The gate file only ever carries this bar and this minimum support: a looser run writes none.
 export const GATE_BAR = 0.98;
@@ -227,8 +227,8 @@ export const gateFileSchema = z.object({
   model: z.string(),
   reasoningEffort: z.string().nullable(),
   promptVersion: z.string(),
-  // The optional parts of a `classifier-v3` run, sorted. Absent in a file of an older prompt version.
-  promptParts: z.array(z.enum(classifierV3Parts)).optional(),
+  // The optional parts of a `classifier-v3` or `classifier-v4` run, sorted. Absent in a file of an older prompt version.
+  promptParts: z.array(z.enum(classifierParts)).optional(),
   bar: z.number(),
   minKept: z.number(),
   categories: z.object({

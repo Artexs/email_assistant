@@ -27,7 +27,7 @@ Decisions (P = product, D = design):
 - **F2** (same cluster): a prototype of D3 (case-sensitive `~`, class per letter, `A-Z` in the boundaries) over the 66 probes × 40 accepted addresses: 0 misses, 0 over-matches.
 - **F3** JS fold table: 1,479 targets, 2,968 forms; more than one source form for `i`, `k`, `å`, `ǆ`, `ǉ`, `ǌ`, `ǳ`, `θ`, `σ`, `ω`. Every target is stable under the fold (review N2 confirms).
 - **F4** The F135 review (`.limen/jobs/2026-11-19-f135-review-erase-address-rule-6006ca65/result`): the findings that this ticket fixes.
-- **F5** Profile hashes come from JS (`contacts/profiles.ts`), so D1 orphans no profile row.
+- **F5 (see stage 03 carry-over N1: true for the reader only)** Profile hashes come from JS (`contacts/profiles.ts`), so D1 orphans no profile row.
 
 ## Not verified
 

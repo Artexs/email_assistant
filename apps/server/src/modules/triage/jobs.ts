@@ -20,7 +20,7 @@ import {
 import { getOrganization, isOrgSuspended } from "../tenancy";
 
 import type { LlmPause } from "./pause";
-import { finishTriageError, HARD_ERROR_TRIES, triageOne, type TriageMailbox } from "./service";
+import { finishTriageError, HARD_ERROR_TRIES, triageOne, type TriageDeps, type TriageMailbox } from "./service";
 import { loadSuspiciousContext } from "./suspicious-context";
 
 const log = createLog("triage");
@@ -49,6 +49,8 @@ export interface TriageJobDeps {
   now(): Date;
   // The operator notice of a reached cap. Called on every capped mail, never awaited: it must not block the loop.
   onCapReached?: (ctx: TenantContext, mailboxId: string, dayStart: Date) => void;
+  // The profile reader of the composition root (`classifier-v4` part `profile`).
+  readProfile?: TriageDeps["readProfile"];
   // Only for tests of an error outside the LLM call.
   triageOne?: typeof triageOne;
 }

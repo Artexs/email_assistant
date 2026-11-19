@@ -4,7 +4,7 @@ import type { TenantContext } from "../../platform/db";
 import { isTestMail, listThreadContext, type StoredEmail, type TestMailRule } from "../mail";
 
 import type { ClassifierEmail, ClassifierExtras } from "./classifier";
-import { loadClassifierExtras } from "./extras-reader";
+import { type ClassifierExtrasInput, loadClassifierExtras } from "./extras-reader";
 import { type ClassifierPromptChoice, classifierVersions, productionClassifierChoice } from "./prompts";
 import type { TriageMailbox } from "./service";
 
@@ -13,6 +13,8 @@ export interface ClassifierInputDeps {
   testMail: TestMailRule;
   /** Absent: the production prompt. */
   prompt?: ClassifierPromptChoice;
+  /** The profile reader of the composition root (`classifier-v4` part `profile`). */
+  readProfile?: ClassifierExtrasInput["readProfile"];
 }
 
 export async function buildClassifierInput(
@@ -40,6 +42,7 @@ export async function buildClassifierInput(
         timezone: mailbox.timezone,
         testMail: deps.testMail,
         suspicious: suspiciousReasons,
+        ...(deps.readProfile === undefined ? {} : { readProfile: deps.readProfile }),
       })
     : undefined;
   const classifierEmail: ClassifierEmail = {

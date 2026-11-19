@@ -109,6 +109,7 @@ export {
 export type { GateFile, SimMeta, SimReportInput } from "./eval-sim-report";
 export {
   CLASSIFIER_V3_PARTS,
+  classifierParts,
   classifierV3Parts,
   classifierVersionIds,
   classifierVersions,
@@ -117,8 +118,15 @@ export {
   prompts,
   promptLabel,
   rolesWithoutPrompt,
+  versionHasParts,
 } from "./prompts";
-export type { ClassifierPromptChoice, ClassifierV3Part, ClassifierVersion, PromptEntry } from "./prompts";
+export type {
+  ClassifierPart,
+  ClassifierPromptChoice,
+  ClassifierV3Part,
+  ClassifierVersion,
+  PromptEntry,
+} from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
 export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";

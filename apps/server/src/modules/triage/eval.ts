@@ -23,11 +23,11 @@ import { BUDGET_STOP_REASON, runPool, type EvalBudget } from "./eval-pool";
 import { toPrediction, type CaseResult, type CaseUsage, type CasesEvalReport } from "./eval-results";
 import { judgeRow, runCase, type Deps } from "./eval-run-case";
 import {
-  classifierVersions,
   optionalParts,
+  versionHasParts,
   productionClassifierChoice,
   type ClassifierPromptChoice,
-  type ClassifierV3Part,
+  type ClassifierPart,
 } from "./prompts";
 
 // The case types, the state-line parser and the case input builders live in `eval-results.ts` and `eval-case.ts`; callers keep importing them from here.
@@ -68,8 +68,8 @@ function average(values: number[]): number | null {
 // `done`: results from an earlier run. A result without an error (also a blocked one) is not run again.
 // After STOP_AFTER_ERRORS LLM cases in a row end in an error, the run stops: a spent quota fails every call.
 // `concurrency` calls run at once; with a `budget` the run also stops when the next call could pass the cap.
-function promptPartsOf(choice: ClassifierPromptChoice): ClassifierV3Part[] | null {
-  return choice.version === classifierVersions["classifier-v3"].version ? optionalParts(choice.parts) : null;
+function promptPartsOf(choice: ClassifierPromptChoice): ClassifierPart[] | null {
+  return versionHasParts(choice.version) ? optionalParts(choice.parts) : null;
 }
 
 export async function runEval(

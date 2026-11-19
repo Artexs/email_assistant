@@ -1,4 +1,4 @@
-import { type Category, categorySchema, localDateTime, type UrgencyProfile } from "@ea/core";
+import { type Category, categorySchema, localDateTime, type SenderHistory, type UrgencyProfile } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -6,7 +6,7 @@ import { getEmailHeaders, mailKindFilter, type ClaimedEmail, type TestMailRule, 
 
 import type { ClassifierExtras } from "./classifier";
 import { deadlinesInWindow } from "./classifier-extras";
-import type { ClassifierV3Part } from "./prompts";
+import type { ClassifierPart } from "./prompts";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -18,14 +18,17 @@ export interface ClassifierExtrasInput {
   // The mailbox of the mail. `urgencyProfile` comes from the batch read of the settings row (triage rule 9).
   mailbox: { id: string; urgencyProfile: UrgencyProfile | null };
   email: Pick<ClaimedEmail, "id" | "from_address" | "received_at" | "message_id_header">;
-  // The parts of the production prompt; no `history` part means no history query.
-  parts: readonly ClassifierV3Part[];
+  // The parts of the production prompt; no `history` part means no history query, no `profile` part no profile read.
+  parts: readonly ClassifierPart[];
   // The IANA zone of the organization: `today` of the urgency context is the local date of the mail.
   timezone: string;
   // Test mail has the history of test mail only; real mail the history of real mail only.
   testMail: TestMailRule;
   // The codes of `assessSuspicious`. A flagged mail gets no history (a forged address must not inherit one).
   suspicious: readonly string[];
+  // The stored profile of one sender in one mailbox (`classifier-v4` part `profile`); the composition root passes the contacts
+  // reader. Absent: no profile. `senderLower` is the trimmed, lower-case address.
+  readProfile?: (ctx: TenantContext, mailboxId: string, senderLower: string) => Promise<SenderHistory | null>;
 }
 
 // The counts of earlier mail of one sender in this mailbox: `received` and the user's corrections. Counts only: no subject,
@@ -112,6 +115,17 @@ export async function loadClassifierExtras(
     urgency = { today, topics: profile.topics, deadlines: deadlinesInWindow(today, profile.deadlines) };
   }
 
+  // A flagged mail gets no profile (a forged address must not inherit one), as it gets no history.
+  let senderProfile: ClassifierExtras["senderProfile"] = null;
+  if (
+    parts.includes("profile") &&
+    input.readProfile !== undefined &&
+    input.suspicious.length === 0 &&
+    email.from_address !== null
+  ) {
+    senderProfile = await input.readProfile(ctx, input.mailbox.id, email.from_address.trim().toLowerCase());
+  }
+
   return {
     attachments: (headers?.attachments ?? [])
       .filter((item) => !item.inline)
@@ -119,6 +133,7 @@ export async function loadClassifierExtras(
       .map((item) => ({ name: item.name, type: item.type, size: item.size })),
     isList: headers !== undefined && (headers.listId !== null || headers.listUnsubscribe !== null),
     senderHistory,
+    senderProfile,
     urgency,
   };
 }

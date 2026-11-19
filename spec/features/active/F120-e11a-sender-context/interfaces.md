@@ -45,3 +45,4 @@ Meanings (90-day window, D4): `received` incoming mails; `by_category` newest `t
 ## Triage hook (stage 11)
 
 `ClassifierExtras.senderProfile: SenderHistory | null`; `loadClassifierExtras` takes `readProfile?: (ctx, mailboxId, senderLower) => Promise<SenderHistory | null>` from `composition.ts`.
+- Stage 11 (built; `notes/2026-11-19-f120-s11-classifier-profile.md`): `senderProfileReader({ db, credentialsKey, now })` in `composition.ts` is the `readProfile` that `main.ts` passes to `createTriageJob` (it returns null with `sender_context` off); `TriageDeps`, `ClassifyStoredDeps` and `ClassifierInputDeps` carry `readProfile?`. Parts: `classifierParts` and `ClassifierPart` in `prompts/parts.ts`. Result: no dev win, the prompt stays v2.

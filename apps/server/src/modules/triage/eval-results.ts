@@ -19,7 +19,7 @@ import type { LlmProviderId, LlmUsage } from "../../platform/llm";
 import type { DraftKind } from "./eval-case";
 import { endpointSuffix } from "./eval-format";
 import { summarizeJudge, type CaseJudge } from "./eval-judge";
-import type { ClassifierV3Part } from "./prompts";
+import type { ClassifierPart } from "./prompts";
 import type { MailKind } from "./repo";
 
 // The usage of one eval case. State files of earlier runs have no role or prompt version.
@@ -75,8 +75,8 @@ export interface CasesEvalReport extends EvalReportBase {
   host: string | null;
   reasoningEffort: string | null;
   promptVersion: string;
-  // The optional parts of a `classifier-v3` run in the type's order; null for another version.
-  promptParts: ClassifierV3Part[] | null;
+  // The optional parts of a `classifier-v3` or `classifier-v4` run in the type's order; null for another version.
+  promptParts: ClassifierPart[] | null;
   cases: CaseResult[];
   // Spend of the earlier results and the new ones, by the run's price table. Zero without a budget.
   cost: { spentUsd: number; capUsd: number | null; stoppedByBudget: boolean };
