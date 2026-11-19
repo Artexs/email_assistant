@@ -17,10 +17,20 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-19
+
 ### For users
 
 - en: The privacy policy now names the browser push services (Google FCM, Mozilla, Apple, Microsoft) and the two Telegram levels, "Counts and links only" and "Full". The terms and the data processing agreement now also mention push devices. You accept the new terms once, at your next sign-in.
   pl: Polityka prywatności wymienia teraz usługi push przeglądarek (Google FCM, Mozilla, Apple, Microsoft) oraz dwa poziomy Telegrama: „Tylko liczby i linki” i „Pełna treść”. Regulamin i umowa powierzenia danych wspominają też o urządzeniach push. Nowy regulamin akceptujesz raz, przy następnym logowaniu.
+
+### Added
+
+- Phone channel, second part (flags `web_push`, `telegram_minimal`): the Settings cards for the Telegram detail level and for routing each notice group to Telegram, push or both; the owner lock for the minimal level; push notices and the minimal Telegram text render for every notice kind. The detail tables and the lock API behind them are in.
+
+### Fixed
+
+- The data request find and erase now match an address in every letter case, also for letters that the database and the program lower-case differently (for example a dotless i or a Greek final sigma), and no longer match another person's address that only looks similar. The erase scrubs the same texts that the find lists.
 
 ### Changed
 

@@ -57,3 +57,11 @@ Rule: back up first, tag `ea-server:pre-<ticket>`, deploy a CI-checked pinned co
 
 - CHANGELOG entries written, `Release v0.2.1` = `a1d7b054`, CI green on it, tag `v0.2.1` pushed (19:5x CET). Contents: Sent-pass 60 s budget (stage 13a), legal page drafts, Polish docs pages, plus flagged-off code of F107, F110, F112, F115, F116. Migration `20261117120001_history_model_failing.sql` (contract v0.1.0, deployed). Master later got F115 stage 03's migration `20261117130001`; it is NOT in v0.2.1 (not landed yet).
 - NOT DEPLOYED: `ssh home_vm` fails with "No route to host" (192.168.1.198, ping 100 % loss) at ~20:00 CET. Retry; run `nohup bash -c "deploy/release.sh v0.2.1; echo RELEASE_RC=\$?" > /tmp/release-v0.2.1.log 2>&1 &` in `~/email_assistant`; the script backs up and keeps `previous` (v0.2.0) as the rollback target. Then the 30-minute watch (`docs/release-checklist.md` step 10). `sent_sync` stays off until the owner says so.
+
+## Release v0.3.1 (2026-11-19, 15:38 UTC)
+
+- VPS now at tag `v0.3.1` = `2a86a004` (green CI run on that commit). Before: `v0.3.0` = `105fb0c0`. Rollback target `v0.3.0` (`deploy/rollback.sh`). No migration. `release ok v0.3.1 previous v0.3.0`.
+- Brings: phone settings cards (F118 s12), docs and legal drafts (F118 s13, F120 s12), the data request case-form match (F137 s03). The owner accepts the new terms (`2026-11-19`) once at the next sign-in.
+- Checks (server start 15:38:24Z): health 200; `EA_RELEASE=v0.3.1`; 0 error lines; `sync_done` present; `ops:alerts` shows only resolved alerts.
+- Before this: master CI was red on 2026-11-19 13:36 UTC because `stats-week-cli.test.ts` ran six `bun` starts in a row against a 5 s limit; fixed in `349307a4` (parallel starts).
+- F029 stage 05: v0.3.0 (server start 2026-11-19 09:48:21Z) carried stage 04. At 15:15Z: 30 `flags_refreshed`, 0 `user_moves_failed`, 0 `user_moves_found`/`user_moves_retry`, 30 `user_moves_checked`. The 24 h checks are due after 09:48Z on 2026-11-20; v0.3.1 restarted the server at 15:38Z, so count from 15:38:24Z for the rest.

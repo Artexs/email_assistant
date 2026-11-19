@@ -55,15 +55,17 @@ async function run(args: string[], env: Record<string, string> = {}) {
 describe("stats:week CLI", () => {
   test("a week that is not a Monday, a bad id or a stray argument print the usage and exit 1", async () => {
     const orgId = crypto.randomUUID();
-    for (const args of [
+    const argLists = [
       ["--org-id", orgId, "--week", "2026-11-17"],
       ["--org-id", orgId, "--week", "2026-02-30"],
       ["--org-id", "not-a-uuid"],
       ["--org-id", orgId, "--mailbox-id", "x"],
       ["--org-id", orgId, "stray"],
       [],
-    ]) {
-      const result = await run(args);
+    ];
+    // One bun start costs about a second; six in a row used 3 s of the 5 s test limit and failed in a loaded CI run.
+    const results = await Promise.all(argLists.map((args) => run(args)));
+    for (const result of results) {
       expect(result.code).toBe(1);
       expect(result.stderr).toContain(`[stats-week] ${usage}`);
       expect(result.stdout).toBe("");
