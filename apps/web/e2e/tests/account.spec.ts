@@ -122,6 +122,13 @@ test("change the password and sign out everywhere", async ({ page, context, brow
   await expect(page).toHaveURL(/\/onboarding$/);
   expect((await page.request.get("/api/me")).status()).toBe(200);
 
+  // Later specs (the Telegram detail spec) sign in as this member with the seed password: put it back.
+  const restored = await page.request.post("/api/auth/change-password", {
+    headers: { origin: E2E_BASE_URL },
+    data: { currentPassword: newPassword, newPassword: member.password, revokeOtherSessions: false },
+  });
+  expect(restored.status()).toBe(200);
+
   await page.goto("/settings");
   await page.getByRole("button", { name: en.acct_sign_out_all }).click();
   await expect(page).toHaveURL(/\/login$/);
