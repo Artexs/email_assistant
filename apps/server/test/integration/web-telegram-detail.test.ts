@@ -14,7 +14,13 @@ import { sql } from "kysely";
 import { createOutboxSender, queueNotice } from "../../src/modules/channels";
 import { createFakeChannel } from "../../src/modules/channels/fake/channel";
 import { insertMailbox } from "../../src/modules/mail/repo";
-import { isOrgSuspended, upsertOrgFeature } from "../../src/modules/tenancy";
+import { changeTelegramDetail, changeTelegramLock } from "../../src/modules/channels/telegram-detail";
+import {
+  isOrgSuspended,
+  setMemberTelegramDetail,
+  setTelegramMinimalLocked,
+  upsertOrgFeature,
+} from "../../src/modules/tenancy";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { apiRouters } from "../../src/web";
@@ -464,6 +470,43 @@ describe("PATCH /api/organization/telegram-lock", () => {
     );
     expect(members.map((res) => res.status)).toEqual(Array.from({ length: 8 }, () => 200));
     expect(await auditOf("member.telegram_detail_changed")).toHaveLength(1);
+  });
+});
+
+describe("two writers of one row", () => {
+  // Writer A holds the row in an open transaction; writer B must wait for it and then see the value that A stored: B changes nothing,
+  // so it writes no audit row. Without the row lock B reads the old value, passes, and writes a second audit row.
+  test("20. a writer of the lock waits for the open writer of the same row, then sees its value", async () => {
+    await flag(org.orgId, true);
+    const first = await db.transaction().execute(async (trx) => {
+      await setTelegramMinimalLocked(trx, { orgId: org.orgId }, true);
+      const second = changeTelegramLock(db, { orgId: org.orgId }, org.ownerId, true, NOW);
+      const early = await Promise.race([
+        second.then(() => "done"),
+        new Promise((done) => setTimeout(done, 80, "waiting")),
+      ]);
+      expect(early).toBe("waiting");
+      return { second };
+    });
+    expect(await first.second).toEqual({ locked: true });
+    expect(await auditOf("org.telegram_lock_changed")).toEqual([]);
+  });
+
+  test("21. a writer of the member level waits for the open writer of the same row, then sees its value", async () => {
+    await flag(org.orgId, true);
+    await setDetail(org.ownerId, "minimal");
+    const result = await db.transaction().execute(async (trx) => {
+      await setMemberTelegramDetail(trx, { orgId: org.orgId }, org.ownerId, "full");
+      const second = changeTelegramDetail(db, { orgId: org.orgId }, org.ownerId, { detail: "full", ...CURRENT }, NOW);
+      const early = await Promise.race([
+        second.then(() => "done"),
+        new Promise((done) => setTimeout(done, 80, "waiting")),
+      ]);
+      expect(early).toBe("waiting");
+      return { second };
+    });
+    expect((await result.second).kind).toBe("ok");
+    expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
   });
 });
 
