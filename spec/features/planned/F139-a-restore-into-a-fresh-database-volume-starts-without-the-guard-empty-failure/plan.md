@@ -11,12 +11,12 @@ Ticket acceptance: the stub test fails on the old script and passes on the new o
 ### Decisions
 
 - **D1 — The wait signal is TCP readiness inside the container.** After `up -d --wait db`, `restore.sh` polls `pg_isready -q -h 127.0.0.1 -U postgres -d email_assistant` through `"${C[@]}" exec -T db … </dev/null` until it exits 0. Reason: the image's init server starts with `listen_addresses=''` (socket only); the final server listens on `*`. So a TCP answer is proof that the init ended, on every volume state. `deploy/restore-test.sh` already uses this probe. Rejected: (a) two real queries with a pause: a timing guess; both queries can hit the init server while `db-init/roles.sh` runs, and the pause adds time on every run. (b) A wait for the log line `PostgreSQL init process complete`: the line comes only on a fresh volume, the `local` log driver and the image version can change it, and the final server is not ready at that line yet.
-- **D2 — Bound: 60 probes, `sleep 1` between them, about 60 s.** The same bound as `restore-test.sh`. A probe that exits non-zero for any reason (no answer, the container restarts, `exec` fails) counts as "not ready". After the last failed probe the script exits 1 at step `db-ready` with the stderr line `restore: the database did not answer on TCP in 60 s`. No `pg_tables` query, no build, no `pg_restore` follows.
-- **D3 — The Compose health check stays as it is (default, owner to confirm).** Reason: a changed `healthcheck` recreates the live `db` container at the next release (a short DB restart), F108 stage 01 says no Compose change runs next to it, and the stub test cannot prove a health check. Rejected: `pg_isready -h 127.0.0.1` in `deploy/compose.yaml` (it fixes every `up --wait db` at once, but with the costs above). `deploy/README.md` § First install step 4 gets the same TCP wait as a runbook command, because step 5 (`db:migrate` over TCP) has the same race on a fresh volume.
+- **D2 — Bound: 60 probes, `sleep 1` between them, at least 60 s.** The same bound as `restore-test.sh`. A probe that exits non-zero for any reason (no answer, the container restarts, `exec` fails) counts as "not ready". After the last failed probe the script exits 1 at step `db-ready` with the stderr line `restore: the database did not answer on TCP after 60 probes` (each `exec` adds its own time, so the text names probes, not seconds). No `pg_tables` query, no build, no `pg_restore` follows.
+- **D3 — The Compose health check stays as it is (default, owner to confirm).** Reason: a changed `healthcheck` recreates the live `db` container at the next release (a short DB restart), F108 stage 01 says no Compose change runs next to it, and the stub test cannot prove a health check. Rejected: `pg_isready -h 127.0.0.1` in `deploy/compose.yaml` (it fixes every `up --wait db` at once, but with the costs above). No other path needs the wait (ticket scope bullet 2): `restore.sh` is the only script that queries a fresh volume over the socket; New host runs `restore.sh`; First install step 5 runs `db:migrate`, which is `dbmate --wait` over TCP and so waits for the final server by itself (`package.json`); `release.sh` and `rollback.sh` run on a live volume.
 - **D4 — Step name and output.** The wait is its own step `db-ready`, between step `db` and step `guard-empty`, so the failure line reads `restore failed at db-ready`. On success the script prints one stdout line `db ready probes=<n>` (`n` = count of probes, 1 when the server was ready at once). The drill record uses it to show that the init phase was seen.
 - **D5 — The wait is one shell function `wait_db_tcp` in `deploy/restore.sh`**, called once in `restore()` for both targets (drill and new-host). The production-on-VPS ticket (F108, stages 01 and 05) keeps the call and its place: after `up -d --wait db`, before `guard-empty` (its `interfaces.md`).
 - **D6 — Tests stub `sleep`.** The test puts a recording `sleep` stub first on `PATH`, so no test waits a real second (styleguide: no fixed sleep over 100 ms in a test). The script has no env knob for the pause.
-- **D7 — The drill rerun is a record (owner rule 2026-11-20).** Stage 02 runs when a release carries stage 01 (the board names v0.4.2). If no such release exists when stage 01 lands, the coordinator files a follow-up ticket for the rerun and closes F139.
+- **D7 — The drill rerun is a record (owner rule 2026-11-20).** Stage 02 runs when a release carries stage 01 (the board names v0.4.2). Such a release is cut after stage 01 lands, so in practice: when stage 01 lands, the coordinator files a follow-up ticket with the text of stage 02 and closes F139; `docs/known-alerts.md` stays at "drill rerun pending" until that ticket runs.
 
 ### Edge cases (answers)
 
@@ -46,6 +46,7 @@ Ticket acceptance: the stub test fails on the old script and passes on the new o
 
 - A gap or a deviation from a decision is a question in the final message, not a choice.
 - Format only the files of the stage. Do not touch `deploy/compose*.yaml` (D3).
+- Cross-ticket test rule: F108 stage 05 may change the shared new-host fixture of `deploy/test/restore.test.ts` (a split-env host), but not the bodies of the F139 tests 1–5 (coordinator edit to F108 stage 05, see the plan's final message).
 - No secret, password or dump byte in a log, an output line or a record.
 
 ## Proof
@@ -84,12 +85,12 @@ Land stage 01 with `--keep-open`, then F108 stage 05 may start. Stage 02: the co
 
 - Scouts: 2 (`scouts.md`).
 - [written] plan.md, stages/stage-01-tcp-wait.md, stages/stage-02-vps-drill-rerun.md, questions.md.
-- Word counts (`wc -w`, before the review): plan.md 1172, stage-01 683, stage-02 439.
+- Word counts (`wc -w`, after the review fixes): plan.md 1361, stage-01 679, stage-02 473.
 
 ## Cold review
 
-Pending.
+One round, `claude-opus-5-5` at `high` (the plan touches the deploy and VPS restore path, `spec/build.md` standing models). Verdict PASS, 0 blocking, 7 notes (`plan-review-1.md`). The reviewer reproduced the race and the TCP fix on a live `postgres:17` container. Fixed: N1 (stage 02 leftover-volume cleanup), N2 (test 4b call list), N3 (cross-ticket fixture rule above), N4 (First install line dropped; D3 reason corrected: `dbmate --wait`), N5 (message names probes), N6 (README in the land-conflict rule), N7 (D7 says the follow-up is the normal path).
 
 ## Log
 
-- 2026-11-19: plan written at 334ce691.
+- 2026-11-19: plan written at 334ce691; cold review PASS, 7 notes fixed.
