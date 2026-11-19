@@ -62,7 +62,7 @@ function parseConsentVersion(version: string | null): { date: string; suffix: nu
   if (!match?.[1]) return null;
   return { date: match[1], suffix: match[2] === undefined ? 0 : Number(match[2]) };
 }
-// `detail` absent = `minimal` (flag `telegram_minimal` on); the flag off ignores it. `full` needs the current consent text.
+// `detail` absent = the stored level stays (the column default is `minimal`); the flag `telegram_minimal` off ignores it, also a bad value. `full` needs the current consent text.
 export const telegramLinkBodySchema = z.object({
   consentVersion: z.string().min(1).max(32),
   detail: telegramDetailSchema.optional(),

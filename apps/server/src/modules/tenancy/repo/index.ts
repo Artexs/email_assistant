@@ -1,5 +1,6 @@
 export {
   getOrganization,
+  getOrganizationForShare,
   getOrgPlan,
   insertOrganization,
   isOrgSuspended,

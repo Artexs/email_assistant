@@ -10,6 +10,7 @@ import {
   type TelegramState,
 } from "@ea/core";
 import { Hono, type MiddlewareHandler } from "hono";
+import { z } from "zod";
 
 import type { Db } from "../../platform/db";
 import { parseBody, requireOwner, type ApiEnv } from "../../platform/http";
@@ -72,13 +73,14 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     if (deps.botUsername === null) return c.json({ error: "telegram_off" }, 409);
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
-    const body = await parseBody(c, telegramLinkBodySchema);
+    // `detail` is read raw: with the flag off a bad value is ignored, with the flag on `linkDetailOf` answers 400 for it.
+    const body = await parseBody(c, telegramLinkBodySchema.extend({ detail: z.unknown().optional() }));
+    // The same order as the PATCH route: the lock first, then the consent. `full` is refused while the owner locks `minimal`.
+    const asked = await linkDetailOf(deps.db, ctx, body.detail);
+    if (asked.kind === "locked") return c.json({ error: "telegram_detail_locked" }, 409);
     if (body.consentVersion !== TELEGRAM_CONSENT_VERSION) {
       return c.json({ error: "telegram_consent_outdated" }, 409);
     }
-    // `full` is refused while the owner locks `minimal`: no consent row, no token.
-    const asked = await linkDetailOf(deps.db, ctx, body.detail);
-    if (asked !== undefined && "locked" in asked) return c.json({ error: "telegram_detail_locked" }, 409);
     let username: string;
     try {
       username = await deps.botUsername();
@@ -86,14 +88,19 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
       log.warn("telegram_get_me_failed", { ...telegramErrorFields(error) });
       return c.json({ error: "telegram_unreachable" }, 502);
     }
-    // The consent row, the chosen detail level and the token go together: no token without the row. With the flag `telegram_minimal`
-    // off the level is not read, stored or checked (`asked` is `undefined`).
+    // The consent row, the chosen detail level and the token go together: no token without the row. The lock is checked again here
+    // under `FOR SHARE`, so an owner who locks while the link is made cannot be passed. With the flag `telegram_minimal` off the
+    // level is not read, stored or checked; with no `detail` in the body the stored level stays.
     const now = deps.now();
-    const { token, expiresAt } = await deps.db.transaction().execute(async (trx) => {
+    const made = await deps.db.transaction().execute(async (trx) => {
+      const again = await linkDetailOf(trx, ctx, body.detail, { share: true });
+      if (again.kind === "locked") return undefined;
       await recordTelegramConsent(trx, ctx, userId, now);
-      if (asked !== undefined && "detail" in asked) await storeTelegramDetail(trx, ctx, userId, asked.detail, now);
+      if (again.kind === "store") await storeTelegramDetail(trx, ctx, userId, again.detail, now);
       return createLinkToken(trx, ctx, userId, now);
     });
+    if (made === undefined) return c.json({ error: "telegram_detail_locked" }, 409);
+    const { token, expiresAt } = made;
     log.info("telegram_link_made", { user_id: userId });
     c.header("Cache-Control", "no-store");
     const linkAnswer: TelegramLink = {
