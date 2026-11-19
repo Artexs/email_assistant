@@ -40,3 +40,7 @@ One worker job per stage, in order: 01 → 02 → 03 → 04 (only if 01 fails) �
 ## Notes
 
 Source row: §2.1 # 17. Defaults: `questions.md`. Scout packets: `scouts.md`.
+
+## Status note (2026-11-19)
+
+The owner stopped this work: the own-model path (offline mode, internal GPU, LM Studio) is not used now. Moved from active to planned as "want to do". Job s05 was not resumed after the PC crash.
