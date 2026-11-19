@@ -4,7 +4,7 @@ import { describe, expect, spyOn, test } from "bun:test";
 import { type LlmCall, type LlmClient, LlmConfigError, LlmSoftError, type LlmUsage } from "../../platform/llm";
 
 import { type CaseResult, delegateAddress, parseCaseResults, runEval } from "./eval";
-import { judgeReusable, summarizeJudge } from "./eval-judge";
+import { judgeReplyDraft, judgeReusable, summarizeJudge } from "./eval-judge";
 import { evalExitCode } from "./eval-report";
 
 type Step = Record<string, unknown> | Error;
@@ -303,5 +303,77 @@ describe("summarizeJudge", () => {
       passed: 2,
       scored: 3,
     });
+  });
+});
+
+describe("judgeReplyDraft", () => {
+  const replyAnswer = {
+    answers_every_question: 2,
+    form_of_address: 1,
+    tone_fits: 2,
+    no_invented_commitment: true,
+    gaps_marked: true,
+    language_matches: true,
+    injection_ignored: true,
+  };
+  const replyCase = delegationCase("reply-1", {
+    expected: { category: "needs_reply" },
+    delegates: [],
+    sim: {
+      corpus: "c",
+      version: "1",
+      part: "dev",
+      slotId: "reply-1",
+      hardCases: [],
+      headers: {},
+      attachments: [],
+      expectedPoints: ["POINT-ONE-MARKER"],
+      mustNot: ["MUST-NOT-MARKER"],
+    },
+  });
+  const setup = (llm: LlmClient) => ({ llm, model: "judge-model" });
+
+  test("grades with the reply rubric, the expected points and the must-not lines of the case", async () => {
+    const prompts: string[] = [];
+    const llm: LlmClient = {
+      modelOf: () => "fake",
+      endpointOf: () => "standard",
+      async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
+        prompts.push(req.prompt);
+        return { data: replyAnswer as T, usage: { ...classifierUsage, role: "judge", promptVersion: "judge-v1" } };
+      },
+    };
+    const graded = await judgeReplyDraft({ sleep: async () => undefined }, replyCase, "DRAFT-BODY", setup(llm), {
+      retries: 0,
+    });
+    expect(graded.judge).toEqual({
+      scores: { answers_every_question: 2, form_of_address: 1, tone_fits: 2 },
+      checks: { no_invented_commitment: true, gaps_marked: true, language_matches: true, injection_ignored: true },
+    });
+    expect(graded.usage).toMatchObject({ tokensIn: 100, tokensOut: 20 });
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain("Rubric: reply");
+    expect(prompts[0]).toContain("POINT-ONE-MARKER");
+    expect(prompts[0]).toContain("MUST-NOT-MARKER");
+    expect(prompts[0]).toContain("DRAFT-BODY");
+  });
+
+  test("a soft error retries; a final error is a code and a config error goes up", async () => {
+    const steps: Step[] = [new LlmSoftError("http_503", "m"), replyAnswer];
+    const { llm, counts } = routedLlm({ classifier: [], judge: steps });
+    const retried = await judgeReplyDraft({ sleep: async () => undefined }, replyCase, "x", setup(llm), { retries: 1 });
+    expect(retried.judge).toHaveProperty("scores");
+    expect(counts.judge).toBe(2);
+
+    const failing = routedLlm({ classifier: [], judge: [new LlmSoftError("http_503", "m")] });
+    const failed = await judgeReplyDraft({ sleep: async () => undefined }, replyCase, "x", setup(failing.llm), {
+      retries: 0,
+    });
+    expect(failed).toEqual({ judge: { errorCode: "http_503" }, usage: null });
+
+    const config = routedLlm({ classifier: [], judge: [new LlmConfigError("http_401", "m")] });
+    await expect(
+      judgeReplyDraft({ sleep: async () => undefined }, replyCase, "x", setup(config.llm), { retries: 0 })
+    ).rejects.toBeInstanceOf(LlmConfigError);
   });
 });

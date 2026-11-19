@@ -27,6 +27,7 @@ import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable }
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { loadEvalConfig } from "./eval-config";
+import { runDrafterEval } from "./eval-drafter";
 import { runExtractorEval } from "./eval-extractor";
 import { evalFailureLine } from "./eval-failure-line";
 import { runSim } from "./eval-sim";
@@ -105,6 +106,7 @@ async function main(): Promise<number> {
     return 1;
   }
   if (options.gap) return runGap(options);
+  if (options.drafter) return runDrafterEval(options);
   if (options.extractor) return runExtractorEval(options);
   if (options.suspicious) return runSuspicious(options);
   if (options.sim !== undefined) return runSim(options);

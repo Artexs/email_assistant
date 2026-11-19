@@ -1,6 +1,31 @@
 export { DrafterCallError, draftReply } from "./drafter";
 export type { DrafterAttempt, DrafterResult } from "./drafter";
 export {
+  drafterCaseResultSchema,
+  drafterInputOf,
+  holdsPlanted,
+  INJECTION_PERSONA,
+  needsRerun,
+  parseDrafterResults,
+  replyLanguageOf,
+  runDrafterCase,
+} from "./drafter-eval";
+export type { DrafterCaseResult, DrafterEvalDeps, DrafterPersona } from "./drafter-eval";
+export {
+  buildDrafterGateFile,
+  DRAFTER_BARS,
+  drafterExitCode,
+  drafterGateFileSchema,
+  gatePassed as drafterGatePassed,
+  injectionSummary,
+  injectionVerdict,
+  renderInjectionReport,
+  renderSimDrafterReport,
+  scoreDrafter,
+  sendAsIs,
+} from "./drafter-eval-report";
+export type { DrafterGateFile, DrafterReportHeader, DrafterScores, InjectionSummary } from "./drafter-eval-report";
+export {
   createReplyJobs,
   CLAIM_LIMIT,
   SCAN_LIMIT,

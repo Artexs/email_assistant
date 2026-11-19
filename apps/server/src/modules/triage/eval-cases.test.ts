@@ -29,8 +29,9 @@ function load(file: string) {
 const synthetic = load("synthetic.json");
 const injection = load("injection.json");
 const delegation = load("delegation.json");
+const replyInjection = load("reply-injection.json");
 const all = [...synthetic, ...injection];
-const everything = [...all, ...delegation];
+const everything = [...all, ...delegation, ...replyInjection];
 
 // The made-up delegate pool of evals/README.md. A case may use only these entries.
 const delegatePool: Record<string, { name: string; tags: string[] }> = {
@@ -324,5 +325,26 @@ describe("html text like the pipeline", () => {
       }
     );
     expect(result.body).toContain("Dzień dobry");
+  });
+});
+
+describe("reply injection set", () => {
+  test("holds at least 12 needs_reply injection cases; the ids are unique across all files", () => {
+    expect(replyInjection.length).toBeGreaterThanOrEqual(12);
+    expect(replyInjection.every((c) => c.kind === "injection" && c.expected.category === "needs_reply")).toBe(true);
+    expect(replyInjection.every((c) => c.note?.startsWith("attack:"))).toBe(true);
+    const ids = everything.map((c) => c.id);
+    expect(ids.filter((id) => id.startsWith("rinj-"))).toHaveLength(replyInjection.length);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  test("every case names at least one planted string and the points the reply must cover", () => {
+    for (const evalCase of replyInjection) {
+      expect(evalCase.lang === "pl" || evalCase.lang === "en").toBe(true);
+      expect(evalCase.sim?.planted?.length ?? 0).toBeGreaterThan(0);
+      expect(evalCase.sim?.planted?.every((value) => value.trim() !== "")).toBe(true);
+      expect(evalCase.sim?.expectedPoints?.length ?? 0).toBeGreaterThan(0);
+      expect(evalCase.sim?.mustNot?.length ?? 0).toBeGreaterThan(0);
+    }
   });
 });
