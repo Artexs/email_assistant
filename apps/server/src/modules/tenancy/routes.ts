@@ -114,7 +114,14 @@ export function tenancyRoutes(deps: TenancyRouteDeps): Hono<ApiEnv> {
   app.get("/organization", tenancyDocs.getOrganization, async (c) => {
     const row = await getOrganization(deps.db, c.get("ctx"));
     if (!row) return c.json({ error: "not_found" }, 404);
-    const settings: OrganizationSettings = { ...organizationView(row), timezones: Intl.supportedValuesOf("timeZone") };
+    const settings: OrganizationSettings = {
+      ...organizationView(row),
+      timezones: Intl.supportedValuesOf("timeZone"),
+      // The owner's lock of the Telegram detail level: shown only while the flag is on, as the other keys of a feature that is off.
+      ...((await isFeatureOn(deps.db, c.get("ctx"), "telegram_minimal"))
+        ? { telegramMinimalLocked: row.telegram_minimal_locked }
+        : {}),
+    };
     return c.json(settings);
   });
 

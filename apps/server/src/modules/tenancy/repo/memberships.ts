@@ -273,3 +273,27 @@ export async function listTelegramDetailsOf(
   }
   return details;
 }
+
+// The own Telegram detail level. Returns the value that was stored before, or undefined when the member has no row.
+export async function setMemberTelegramDetail(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  userId: string,
+  detail: NoticeDetail
+): Promise<NoticeDetail | undefined> {
+  const before = await db
+    .selectFrom("memberships")
+    .select("telegram_detail")
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .forUpdate()
+    .executeTakeFirst();
+  if (before === undefined) return undefined;
+  await db
+    .updateTable("memberships")
+    .set({ telegram_detail: detail })
+    .where("org_id", "=", ctx.orgId)
+    .where("user_id", "=", userId)
+    .execute();
+  return noticeDetailSchema.parse(before.telegram_detail);
+}

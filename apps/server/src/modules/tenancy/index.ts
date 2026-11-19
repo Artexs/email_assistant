@@ -28,6 +28,8 @@ export {
   setMemberNoticeRoutes,
   setMemberQuietHours,
   setMemberReportChannel,
+  setMemberTelegramDetail,
+  setTelegramMinimalLocked,
   setUserLocale,
   setUserTerms,
   upsertOrgFeature,

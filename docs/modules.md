@@ -346,6 +346,8 @@ Built in S5. The routers are mounted under `/api` (`api.route("/", …)` in `app
 | `GET /channels/telegram`                                                                 | member   | `channels`   | S5b   |
 | `POST /channels/telegram/link`                                                           | member   | `channels`   | S5b   |
 | `DELETE /channels/telegram/link`                                                         | member   | `channels`   | S5b   |
+| `PATCH /me/telegram-detail` (flag `telegram_minimal`)                                    | member   | `channels`   | F118  |
+| `PATCH /organization/telegram-lock` (flag `telegram_minimal`)                            | owner    | `channels`   | F118  |
 | `POST /onboarding/keep-mode`                                                             | owner    | `tenancy`    | S5b   |
 | `GET /organization`                                                                      | member   | `tenancy`    | S5c   |
 | `PATCH /organization`                                                                    | owner    | `tenancy`    | S5c   |

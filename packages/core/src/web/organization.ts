@@ -46,7 +46,11 @@ export const organizationViewSchema = z.object({
 
 export type OrganizationView = z.infer<typeof organizationViewSchema>;
 
-export const organizationSettingsSchema = organizationViewSchema.extend({ timezones: z.array(z.string()) });
+export const organizationSettingsSchema = organizationViewSchema.extend({
+  timezones: z.array(z.string()),
+  // The owner's lock of the Telegram detail level `minimal`. Absent while the flag `telegram_minimal` is off for the organization.
+  telegramMinimalLocked: z.boolean().optional(),
+});
 export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>;
 
 export const digestTimesBodySchema = z

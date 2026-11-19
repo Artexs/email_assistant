@@ -1,5 +1,10 @@
 import { z } from "./zod";
 
+// The Telegram detail level of a member (ADR 0032 point 5): `full` is the message with its text and buttons, `minimal` is counts and
+// panel links. The same two words as `noticeDetails`.
+export const telegramDetailSchema = z.enum(["full", "minimal"]);
+export type TelegramDetail = z.infer<typeof telegramDetailSchema>;
+
 export const telegramStateSchema = z.object({
   available: z.boolean(),
   linked: z.boolean(),
@@ -8,6 +13,12 @@ export const telegramStateSchema = z.object({
   // The consent version of the session user that an unlink did not withdraw. null: no consent row, or the chat is not linked.
   // The panel asks for a new confirmation while `consentCovers(consentVersion, TELEGRAM_CONSENT_VERSION)` is false.
   consentVersion: z.string().nullable(),
+  // With the flag `telegram_minimal` off for the organization none of the three keys is in the answer (the feature is off).
+  // `detail`: the stored choice of the member. `effectiveDetail`: what Telegram gets now (the lock of the organization wins over `full`).
+  // `locked`: the owner locked `minimal`; the stored choice stays for the unlock.
+  detail: telegramDetailSchema.optional(),
+  effectiveDetail: telegramDetailSchema.optional(),
+  locked: z.boolean().optional(),
 });
 export type TelegramState = z.infer<typeof telegramStateSchema>;
 
@@ -51,8 +62,32 @@ function parseConsentVersion(version: string | null): { date: string; suffix: nu
   if (!match?.[1]) return null;
   return { date: match[1], suffix: match[2] === undefined ? 0 : Number(match[2]) };
 }
-export const telegramLinkBodySchema = z.object({ consentVersion: z.string().min(1).max(32) });
+// `detail` absent = `minimal` (flag `telegram_minimal` on); the flag off ignores it. `full` needs the current consent text.
+export const telegramLinkBodySchema = z.object({
+  consentVersion: z.string().min(1).max(32),
+  detail: telegramDetailSchema.optional(),
+});
 export type TelegramLinkBody = z.infer<typeof telegramLinkBodySchema>;
+
+// PATCH /me/telegram-detail: `full` needs `consentVersion` = the current consent text (it records the consent); `minimal` needs none.
+export const telegramDetailBodySchema = z.object({
+  detail: telegramDetailSchema,
+  consentVersion: z.string().min(1).max(32).optional(),
+});
+export type TelegramDetailBody = z.infer<typeof telegramDetailBodySchema>;
+
+export const telegramDetailAnswerSchema = z.object({
+  detail: telegramDetailSchema,
+  effectiveDetail: telegramDetailSchema,
+  locked: z.boolean(),
+});
+export type TelegramDetailAnswer = z.infer<typeof telegramDetailAnswerSchema>;
+
+// PATCH /organization/telegram-lock (owner): lock `minimal` for every member, or lift the lock.
+export const telegramLockBodySchema = z.object({ locked: z.boolean() });
+export type TelegramLockBody = z.infer<typeof telegramLockBodySchema>;
+export const telegramLockAnswerSchema = z.object({ locked: z.boolean() });
+export type TelegramLockAnswer = z.infer<typeof telegramLockAnswerSchema>;
 
 // The body and the answer of POST /telegram/consent: a linked user confirms the current consent text.
 export const telegramConsentBodySchema = z.object({ version: z.string().min(1).max(32) });

@@ -138,3 +138,20 @@ export async function insertOrganization(
     .returning("id")
     .executeTakeFirstOrThrow();
 }
+
+/** The owner's lock of the Telegram detail level `minimal` of the organization. Returns the value stored before, or undefined when there is no row. */
+export async function setTelegramMinimalLocked(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  locked: boolean
+): Promise<boolean | undefined> {
+  const before = await db
+    .selectFrom("organizations")
+    .select("telegram_minimal_locked")
+    .where("id", "=", ctx.orgId)
+    .forUpdate()
+    .executeTakeFirst();
+  if (before === undefined) return undefined;
+  await db.updateTable("organizations").set({ telegram_minimal_locked: locked }).where("id", "=", ctx.orgId).execute();
+  return before.telegram_minimal_locked;
+}

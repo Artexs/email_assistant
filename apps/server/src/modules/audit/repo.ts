@@ -117,6 +117,8 @@ export const auditEvents = {
   pushSubscribed: "push.subscribed", // actor: the user; data: push_subscription_id, created, via; never an endpoint or a key
   pushRemoved: "push.removed", // actor: the user; data: push_subscription_id, via
   pushTestSent: "push.test_sent", // actor: the user; data: devices (the count of devices tried); the rate limit counts these rows
+  memberTelegramDetailChanged: "member.telegram_detail_changed", // actor: the user; data: detail (full | minimal) only
+  orgTelegramLockChanged: "org.telegram_lock_changed", // actor: the owner; data: locked (boolean) only
   webMemberSessionsEnded: "web.member_sessions_ended", // actor: cli; data: user_id, count, only_sso
 } as const;
 

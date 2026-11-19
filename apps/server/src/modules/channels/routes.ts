@@ -2,23 +2,34 @@ import {
   notifyPatchSchema,
   TELEGRAM_CONSENT_VERSION,
   telegramConsentBodySchema,
+  telegramDetailBodySchema,
   telegramLinkBodySchema,
+  telegramLockBodySchema,
   type TelegramConsent,
   type TelegramLink,
   type TelegramState,
 } from "@ea/core";
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 
 import type { Db } from "../../platform/db";
-import { parseBody, type ApiEnv } from "../../platform/http";
+import { parseBody, requireOwner, type ApiEnv } from "../../platform/http";
 import { createLog } from "../../platform/log";
 import { auditEvents, recordAudit } from "../audit";
+import { isFeatureOn } from "../tenancy";
 
 import { channelDocs } from "./api-docs";
 import { ownConsentVersion } from "./consent";
 import { createLinkToken, unlinkUser } from "./linking";
 import { changeNotify, notifyViewOf } from "./notify-settings";
 import { getChatLinkForUser } from "./repo";
+import {
+  changeTelegramDetail,
+  changeTelegramLock,
+  linkDetailOf,
+  recordTelegramConsent,
+  storeTelegramDetail,
+  telegramDetailOfMember,
+} from "./telegram-detail";
 import { telegramErrorFields } from "./telegram/errors";
 
 const log = createLog("channels");
@@ -33,6 +44,12 @@ export interface ChannelRouteDeps {
 export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
   const app = new Hono<ApiEnv>();
 
+  // The flag comes first: with it off the detail and lock routes are a 404 for every role (docs/code-patterns.md, Add a user command).
+  const detailFlagFirst: MiddlewareHandler<ApiEnv> = async (c, next) => {
+    if (!(await isFeatureOn(deps.db, c.get("ctx"), "telegram_minimal"))) return c.json({ error: "not_found" }, 404);
+    await next();
+  };
+
   app.get("/channels/telegram", channelDocs.getTelegram, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");
@@ -46,6 +63,7 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
       linkedAt: link?.linkedAt.toISOString() ?? null,
       botUsername,
       consentVersion,
+      ...(await telegramDetailOfMember(deps.db, ctx, userId)),
     };
     return c.json(state);
   });
@@ -58,6 +76,9 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     if (body.consentVersion !== TELEGRAM_CONSENT_VERSION) {
       return c.json({ error: "telegram_consent_outdated" }, 409);
     }
+    // `full` is refused while the owner locks `minimal`: no consent row, no token.
+    const asked = await linkDetailOf(deps.db, ctx, body.detail);
+    if (asked !== undefined && "locked" in asked) return c.json({ error: "telegram_detail_locked" }, 409);
     let username: string;
     try {
       username = await deps.botUsername();
@@ -65,15 +86,12 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
       log.warn("telegram_get_me_failed", { ...telegramErrorFields(error) });
       return c.json({ error: "telegram_unreachable" }, 502);
     }
-    // The consent row and the token go together: no token without the row.
+    // The consent row, the chosen detail level and the token go together: no token without the row. With the flag `telegram_minimal`
+    // off the level is not read, stored or checked (`asked` is `undefined`).
     const now = deps.now();
     const { token, expiresAt } = await deps.db.transaction().execute(async (trx) => {
-      await recordAudit(trx, ctx, {
-        event: auditEvents.webTelegramConsent,
-        actor: userId,
-        data: { via: "web", version: TELEGRAM_CONSENT_VERSION },
-        at: now,
-      });
+      await recordTelegramConsent(trx, ctx, userId, now);
+      if (asked !== undefined && "detail" in asked) await storeTelegramDetail(trx, ctx, userId, asked.detail, now);
       return createLinkToken(trx, ctx, userId, now);
     });
     log.info("telegram_link_made", { user_id: userId });
@@ -101,6 +119,26 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     });
     log.info("telegram_consent_confirmed", { user_id: userId });
     const answer: TelegramConsent = { version: TELEGRAM_CONSENT_VERSION };
+    return c.json(answer);
+  });
+
+  // The own Telegram detail level. The row is the one of the session user: no body names another. `full` records the consent.
+  app.patch("/me/telegram-detail", detailFlagFirst, channelDocs.patchTelegramDetail, async (c) => {
+    const ctx = c.get("ctx");
+    const { userId } = c.get("session");
+    const body = await parseBody(c, telegramDetailBodySchema);
+    const result = await changeTelegramDetail(deps.db, ctx, userId, body, deps.now());
+    if (result.kind === "not_found") return c.json({ error: "not_found" }, 404);
+    if (result.kind === "locked") return c.json({ error: "telegram_detail_locked" }, 409);
+    if (result.kind === "consent_outdated") return c.json({ error: "telegram_consent_outdated" }, 409);
+    return c.json(result.answer);
+  });
+
+  // The owner locks `minimal` for the organization. The flag first, then the role. Member values stay for the unlock.
+  app.patch("/organization/telegram-lock", detailFlagFirst, requireOwner, channelDocs.patchTelegramLock, async (c) => {
+    const body = await parseBody(c, telegramLockBodySchema);
+    const answer = await changeTelegramLock(deps.db, c.get("ctx"), c.get("session").userId, body.locked, deps.now());
+    if (answer === undefined) return c.json({ error: "not_found" }, 404);
     return c.json(answer);
   });
 
