@@ -30,6 +30,18 @@
 
 Code checks: 78 of 78 drafter runs passed them (100.0%).
 
+### Judge gain over the code checks
+
+- Drafts that passed every code check: 78. Graded: 78. The judge flags 28 of them (a score 0 or a check false): 35.9%. The code checks alone would let all 78 through.
+
+| score | 0 | 1 | 2 | mean |
+| --- | --- | --- | --- | --- |
+| answers_every_question | 6 | 51 | 21 | 1.19 |
+| form_of_address | 21 | 24 | 33 | 1.15 |
+| tone_fits | 2 | 12 | 64 | 1.79 |
+
+These counts are the baseline of a tone gain (`tone_fits`) with no loss on facts (`answers_every_question`, `no_invented_commitment`).
+
 ### Judge (rubric reply)
 
 | item | value |
