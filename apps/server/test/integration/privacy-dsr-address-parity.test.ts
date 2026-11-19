@@ -16,6 +16,15 @@ afterAll(async () => {
 
 const TRIM_CODE_POINTS = [...ADDRESS_TRIM_CHARS].map((char) => char.codePointAt(0) as number);
 
+// The letters that Bun (Unicode 16 and 17) lowers and the glibc of the image `postgres:17` does not: U+A7CE, U+A7D2,
+// U+A7D4 and U+16EA0 to U+16EB8.
+const KNOWN_POSTGRES_17_LETTERS: number[] = [
+  0xa7ce,
+  0xa7d2,
+  0xa7d4,
+  ...Array.from({ length: 0x16eb8 - 0x16ea0 + 1 }, (_, index) => 0x16ea0 + index),
+];
+
 const hex = (text: string): string =>
   [...text].map((char) => `U+${(char.codePointAt(0) as number).toString(16).toUpperCase().padStart(4, "0")}`).join(",");
 
@@ -51,9 +60,25 @@ describe("the SQL form and the program form of the address rule", () => {
       []
     );
     // Letters that a newer Unicode table of Bun lowers and an older C library of the database does not (the image
-    // `postgres:17` shows 28, a newer C library shows 0). Printed, not asserted: the run-time check refuses such an address.
+    // `postgres:17` shows 28, a newer C library shows 0). The run-time check refuses such an address.
     process.stdout.write(`address rule: ${divergent.length} divergent code points, query and compare ${elapsed} ms\n`);
     expect(elapsed).toBeLessThan(10_000);
+  });
+
+  test("every code point: on postgres 17 the divergent set is inside the 28 known letters", async () => {
+    const version = Number((await sql<{ v: string }>`show server_version_num`.execute(db)).rows[0]?.v);
+    const divergent = await divergentCodePoints(db);
+    const listed = divergent.map(({ cp }) => cp);
+    if (version < 170000 || version >= 180000) {
+      // Another server version: another C library, another answer. Printed only.
+      process.stdout.write(`address rule: server ${version}, divergent ${listed.map((cp) => cp.toString(16))}\n`);
+      return;
+    }
+    const known = new Set(KNOWN_POSTGRES_17_LETTERS);
+    const unknown = divergent.filter(({ cp }) => !known.has(cp));
+    expect(unknown.map(({ cp, js, db: dbForm }) => `U+${cp.toString(16)} js ${hex(js)} db ${hex(dbForm)}`)).toEqual([]);
+    // No trim difference and nothing below U+0530, whatever the known set holds.
+    expect(listed.filter((cp) => cp < 0x0530 || TRIM_CODE_POINTS.includes(cp))).toEqual([]);
   });
 
   test("framed whitespace: each character of the trim set around an address is cut in SQL", async () => {
