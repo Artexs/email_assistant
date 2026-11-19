@@ -213,6 +213,11 @@ describe("suggestion routes: accept and dismiss", () => {
       ...(await auditOf(box.org.orgId, auditEvents.ruleAdded)),
     ];
     expect(events).toHaveLength(4);
+    const accepted = await auditOf(box.org.orgId, auditEvents.suggestionAccepted);
+    expect(accepted.map((event) => event.data)).toEqual([
+      { mailbox_id: box.mine.mailboxId, kind: "vip", scope: "address", via: "web" },
+      { mailbox_id: box.mine.mailboxId, kind: "whitelist", scope: "domain", via: "web" },
+    ]);
     expect(events.every((event) => event.actor === box.org.ownerId)).toBe(true);
     expect(JSON.stringify(events)).not.toMatch(/acme|corp/);
     expect(logs.lines.join("\n")).not.toMatch(/acme|corp/);
@@ -263,7 +268,9 @@ describe("suggestion routes: accept and dismiss", () => {
     expect(await rowOf(id)).toEqual({ status: "dismissed", pattern: null });
     expect(await rulesOf(box)).toEqual([]);
     const audit = await auditOf(box.org.orgId, auditEvents.suggestionDismissed);
-    expect(audit).toHaveLength(1);
+    expect(audit.map((event) => event.data)).toEqual([
+      { mailbox_id: box.mine.mailboxId, kind: "vip", scope: "address", via: "web" },
+    ]);
     expect(JSON.stringify(audit)).not.toContain("acme");
   });
 
