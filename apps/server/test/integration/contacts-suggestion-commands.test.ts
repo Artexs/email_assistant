@@ -5,6 +5,7 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
 import { auditEvents } from "../../src/modules/audit";
+import { insertSenderRule } from "../../src/modules/config/repo";
 import {
   acceptSuggestion,
   countOpenSuggestions,
@@ -24,9 +25,13 @@ import {
   NO_TEST,
   NOW,
   secondMailbox,
+  seed,
+  spamMails,
+  withSentCoverage,
   type Org,
   type Trx,
 } from "./contacts-fixtures";
+import { insertDelegate } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // Accept and Dismiss of a suggestion, and the readers of the open ones. Most tests run in a transaction that rolls back; the
@@ -44,7 +49,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const deps = (trx: Trx | typeof db): SuggestionDeps => ({ db: trx, now: () => NOW });
+const deps = (trx: Trx | typeof db): SuggestionDeps => ({ db: trx, now: () => NOW, testMail: NO_TEST });
 
 interface Seeded extends Org {
   userId: string;
@@ -213,7 +218,7 @@ describe("acceptSuggestion", () => {
     });
   });
 
-  test("9 a mailbox that is not active (paused, auth_error, host_blocked) answers not_found to Accept; the row stays open", async () => {
+  test("9 a mailbox that is not active (paused, auth_error, host_blocked) answers not_found to Accept and to Dismiss; the row stays open", async () => {
     for (const status of ["paused", "auth_error", "host_blocked"] as const) {
       await withRollback(db, async (trx) => {
         const org = await suggestOrg(trx);
@@ -222,8 +227,10 @@ describe("acceptSuggestion", () => {
         expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("not_found");
         expect(await rowOf(trx, id)).toMatchObject({ status: "open", pattern: "anna@acme.pl" });
         expect(await rulesOf(trx, org)).toEqual([]);
-        // Dismiss is harmless on a frozen mailbox and still works.
-        expect(await dismissSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("dismissed");
+        // Dismiss answers as Accept does: the frozen mailbox has no current suggestions, and the row stays open.
+        expect(await dismissSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("not_found");
+        expect(await rowOf(trx, id)).toMatchObject({ status: "open", pattern: "anna@acme.pl" });
+        expect(await auditOf(trx, org, auditEvents.suggestionDismissed)).toEqual([]);
       });
     }
   });
@@ -456,6 +463,95 @@ describe("listOpenSuggestions and countOpenSuggestions", () => {
       await setOrgFeature(trx, org.ctx, { flag: "sender_suggestions", enabled: false, actor: "cli", now: NOW });
       expect(await listOpenSuggestions(trx, org.ctx, org.mailboxId)).toEqual([]);
       expect(await countOpenSuggestions(trx, org.ctx, org.mailboxId)).toBe(0);
+    });
+  });
+});
+
+// Accept re-checks the protections of the engine (a delegate, an answer, a Sent mail to the sender) at the time of the tap: a
+// row made before the sender became protected ends as `withdrawn` and makes no rule.
+describe("acceptSuggestion: the sender is protected now", () => {
+  const SPAMMER = "spam@acme.pl";
+
+  // An open blocklist row for the spammer with the activity behind it and Sent coverage.
+  async function blocklistOrg(trx: Trx) {
+    const org = await suggestOrg(trx);
+    await withSentCoverage(trx, org);
+    await seed(trx, org, SPAMMER, spamMails());
+    const id = await insertSuggestion(trx, org, { value: SPAMMER, kind: "blocklist" });
+    return { org, id };
+  }
+
+  async function expectWithdrawn(trx: Trx, org: Seeded, id: string) {
+    const rulesBefore = await rulesOf(trx, org);
+    expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("not_available");
+    expect(await rowOf(trx, id)).toMatchObject({ status: "withdrawn", pattern: null, ended_by: null });
+    expect(await rulesOf(trx, org)).toEqual(rulesBefore);
+    expect(await auditOf(trx, org, auditEvents.suggestionAccepted)).toEqual([]);
+    expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("already");
+  }
+
+  test("11 control: with no protection the blocklist row is accepted and the rule exists", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await blocklistOrg(trx);
+      expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("accepted");
+      expect((await rulesOf(trx, org)).map((rule) => `${rule.kind}:${rule.pattern}`)).toEqual([`blocklist:${SPAMMER}`]);
+    });
+  });
+
+  test("12 an active delegate added after the row was made: Accept answers not_available, ends the row as withdrawn, no rule", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await blocklistOrg(trx);
+      await insertDelegate(trx, org.ctx, { email: SPAMMER });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("13 an inactive delegate does not protect the sender", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await blocklistOrg(trx);
+      await insertDelegate(trx, org.ctx, { email: SPAMMER, active: false });
+      expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("accepted");
+    });
+  });
+
+  test("14 a Sent mail to the sender after the row was made protects the sender", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await suggestOrg(trx);
+      await withSentCoverage(trx, org);
+      await seed(trx, org, SPAMMER, spamMails(), [{ at: ago(1), to: [SPAMMER] }]);
+      const id = await insertSuggestion(trx, org, { value: SPAMMER, kind: "blocklist" });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("15 a VIP rule for the sender added after the row was made protects the sender", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await blocklistOrg(trx);
+      await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: SPAMMER, kind: "vip" });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("16 a domain blocklist row: an active delegate on the domain protects it", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await suggestOrg(trx);
+      await withSentCoverage(trx, org);
+      for (const address of ["x@acme.pl", "y@acme.pl"]) await seed(trx, org, address, spamMails());
+      const id = await insertSuggestion(trx, org, { value: "@acme.pl", scope: "domain", kind: "blocklist" });
+      await insertDelegate(trx, org.ctx, { email: "ola@acme.pl" });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("17 a blocklist row whose Sent coverage is gone is not available", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await blocklistOrg(trx);
+      await trx
+        .updateTable("mailbox_sent_sync")
+        .set({ last_pass_at: ago(3) })
+        .where("mailbox_id", "=", org.mailboxId)
+        .execute();
+      await expectWithdrawn(trx, org, id);
     });
   });
 });

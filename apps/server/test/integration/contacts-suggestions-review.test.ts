@@ -356,7 +356,7 @@ describe("a rule that an accepted suggestion makes matches the real sender", () 
         await refresh(trx, org);
         const [row] = await openOf(trx, org);
         expect(row).toBeDefined();
-        const result = await acceptSuggestion({ db: trx, now: () => NOW }, org.ctx, {
+        const result = await acceptSuggestion({ db: trx, now: () => NOW, testMail: NO_TEST }, org.ctx, {
           id: row?.id ?? "",
           actor: "cli",
           via: "cli",

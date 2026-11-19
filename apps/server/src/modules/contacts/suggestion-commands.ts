@@ -10,9 +10,10 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
 import { addSenderRule } from "../config";
+import type { TestMailRule } from "../mail";
 
 import { senderFlags } from "./flags";
-import { rulePatternOf } from "./suggest";
+import { rulePatternOf, suggestionBlockedNow } from "./suggest";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -20,6 +21,8 @@ export interface SuggestionDeps {
   // A plain `Db` opens one transaction; a `Transaction` (a test) is the transaction.
   db: DbOrTrx;
   now(): Date;
+  // The rule of test mail: Accept reads the sender activity again, and test mail never counts.
+  testMail: TestMailRule;
 }
 
 export type SuggestionVia = "web" | "cli";
@@ -31,7 +34,7 @@ export interface SuggestionCommand {
   via: SuggestionVia;
 }
 
-export type AcceptResult = "accepted" | "already" | "rule_limit" | "not_found";
+export type AcceptResult = "accepted" | "already" | "rule_limit" | "not_available" | "not_found";
 export type DismissResult = "dismissed" | "already" | "not_found";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -101,7 +104,9 @@ async function isActiveMailbox(trx: Transaction<DB>, ctx: TenantContext, mailbox
 // transaction: lock the row, then `addSenderRule` (`added` or `exists` both end the row as `accepted`), then the audit row.
 // The audit data holds the mailbox, kind, scope and channel, never the pattern or the key. `not_found` also answers a flag
 // that is off, another organization's id, and a mailbox that is not `active` (its profile is frozen, so the advice is not
-// current; the row stays open and expires). At the rule limit the row stays open and nothing is written.
+// current; the row stays open and expires). At the rule limit the row stays open and nothing is written. `not_available`: the
+// sender is protected now (a delegate, an answer, a rule or a suspicious mail that came after the row was made); the row ends
+// as `withdrawn`, like the pass would end it, and no rule is made.
 export async function acceptSuggestion(
   deps: SuggestionDeps,
   ctx: TenantContext,
@@ -119,6 +124,16 @@ export async function acceptSuggestion(
       // No rule can be made from it: the row ends and the owner never sees it again.
       await endRow(trx, ctx, row, "withdrawn", { actor: command.actor, now });
       return "not_found";
+    }
+    const blocked = await suggestionBlockedNow(
+      trx,
+      ctx,
+      { mailboxId: row.mailbox_id, kind: row.kind, scope: row.scope, pattern: row.pattern },
+      { now, testMail: deps.testMail }
+    );
+    if (blocked) {
+      await endRow(trx, ctx, row, "withdrawn", { actor: command.actor, now });
+      return "not_available";
     }
     const added = await addSenderRule(trx, ctx, {
       mailboxId: row.mailbox_id,
@@ -152,6 +167,8 @@ export async function dismissSuggestion(
     const row = await lockRow(trx, ctx, command.id);
     if (row === undefined) return "not_found";
     if (row.status !== "open") return "already";
+    // As Accept: a mailbox that is not `active` has no current suggestions, so the row is not the owner's to act on.
+    if (!(await isActiveMailbox(trx, ctx, row.mailbox_id))) return "not_found";
     await endRow(trx, ctx, row, "dismissed", { actor: command.actor, now });
     await recordAudit(trx, ctx, {
       actor: command.actor,
