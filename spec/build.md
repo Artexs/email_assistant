@@ -18,13 +18,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
-- `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
-- `F110-e4-b-earn-trust` (🟠 ACTIVE): E4-B Earn trust
 - `F107-e7-t4-papers-and-cost` (🟠 ACTIVE): E7-T4 Papers and cost
-- `F102-e4-a-act-from-the-panel` (🟠 ACTIVE): E4-A Act from the panel
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
 - `F029-sync-return-of-a-later-copy` (🟠 ACTIVE): Sync sees every user move of a known mail: a later identical copy, and a move below a folder's cursor
 
@@ -81,13 +78,13 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F135-the-data-request-erase-finds-mail-of-a-sender-whose-address-has-a-greek-final-sigma-or-a-turkish-dotted-capital-i-the-database-and-the-program-lower-case-it-alike` (🟢 PROVEN): the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike); landed 2026-11-19
 - `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟢 PROVEN): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers; landed 2026-11-19
 - `F131-the-large-files-named-in-quality-pass-1-are-split-by-aggregate-findings-4-to-7` (🟢 PROVEN): the large files named in quality pass 1 are split by aggregate (findings 4 to 7); landed 2026-11-19
+- `F119-e7-t7-identity-b-oidc` (🟢 PROVEN): E7-T7 Identity B (OIDC); landed 2026-11-19
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
+- `F110-e4-b-earn-trust` (🟢 PROVEN): E4-B Earn trust; landed 2026-11-19
 - `F104-e5a-read-sent` (🟢 PROVEN): E5a Read Sent; landed 2026-11-19
-- `F071-limen-transition` (🟢 PROVEN): Move the agent workflow to Limen; landed 2026-11-19
-- `F133-the-small-duplicates-and-stale-statements-of-quality-pass-1-are-cleaned-findings-9-to-18` (🟢 PROVEN): the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18); landed 2026-11-18
-- `F132-comments-carry-no-bare-ticket-or-decision-codes-quality-pass-1-finding-8` (🟢 PROVEN): comments carry no bare ticket or decision codes (quality pass 1, finding 8); landed 2026-11-18
-- 2026-11: 91 landed. spec/features/done/2026-11/
+- `F102-e4-a-act-from-the-panel` (🟢 PROVEN): E4-A Act from the panel; landed 2026-11-19
+- 2026-11: 94 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-19: do not wait, run in parallel
 

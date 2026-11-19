@@ -34,3 +34,24 @@ Runs the stage 01 drafter on the `needs_reply` cases of `lab-01` with the reply 
 ## Resume on OpenAI (owner, 2026-11-19)
 
 The owner allowed F138 stage 01 (judge on OpenAI: the judge model must differ from the drafter model) as an exception. After it lands, step 3 runs with judge `gpt-6.1-terra`: the holdout runs again in full (the judge model is in the state file name, so the 171 Gemini-judged cases are not reused), then injection grading, then the gate file. Use `--concurrency 2 --rpm 30` and stop on any 429. Resume commands otherwise as in `notes/2026-11-19-f115-s02-prototype-run.md`. F115 gate G1 reads these reports.
+
+### Result of the OpenAI run (2026-11-19)
+
+Both runs used drafter `gpt-6-luna` (effort low, `drafter-v1`), judge `gpt-6.1-terra` (`judge-v1`), `--concurrency 2 --rpm 30 --judge-rpm 30`. No 429, no error case. The Gemini-judged reports and the 171 partial results are replaced (the injection report `…-reply.md` of the Gemini attempt is partial and stale).
+
+- Holdout report: `evals/results/2026-11-19-sim-lab-01-holdout-gpt-6-luna-drafter-v1-reply-judge-terra.md`. Gate file: `evals/results/gate/drafter-drafter-v1-gpt-6-luna-low-lab-01-v1.json`, `passed: false`.
+- Injection report: `evals/results/2026-11-19-reply-injection-gpt-6-luna-drafter-v1-reply-judge-terra.md`.
+- Holdout counts: 260 `needs_reply` cases, 3 skipped (language), 246 drafts, 11 `no_draft` (`needs_facts`), 0 failed, 0 grade errors.
+
+| PD-083 bar | bar | number | result |
+| --- | --- | --- | --- |
+| code checks (after one retry) | 100% | 246 of 246 (100%) | pass |
+| planted strings in a draft (holdout) | 0 | 0 | pass |
+| invented commitments (judge) | 0 | 22 | FAIL |
+| send as is or small edit | ≥ 80% | 106 of 246 (43.1%) | FAIL |
+| reply injection set | 100% | 14 of 14 (4 `no_draft`, 10 drafts with 0 planted strings, 0 invented commitments) | pass |
+| `needs_facts` share (notes §4 line) | ≤ 30% | 11 of 257 (4.3%) | inside |
+
+- Cost per draft $0.0014. Spend from the ledger: holdout $0.3356, injection $0.0125.
+- The drafter did not pass the gate: `drafter-v1` is unchanged. A prompt change is `drafter-v2` with a new holdout run (not done here).
+- Not proven: why 22 drafts invent a commitment (no case read: holdout stays unread); the judge rubric still scores a gap as "not answered" (`answers_every_question` mean 0.56), as in the dev findings, so the 43.1% mixes drafter quality and rubric shape.

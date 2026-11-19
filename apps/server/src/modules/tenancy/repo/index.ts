@@ -52,10 +52,12 @@ export {
   getUserIdByEmail,
   hasOtherSsoAccount,
   isPasswordSignInRefused,
+  isSsoOnlyMember,
   type SsoProviderRow,
 } from "./sso";
 export {
   clearSsoRequired,
+  deleteResetLinksOfPasswordlessMembers,
   deleteSsoProvider,
   insertSsoProvider,
   isDomainTakenByOther,
