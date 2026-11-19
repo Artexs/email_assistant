@@ -268,6 +268,8 @@ describe("--drafter", () => {
     expect(parseEvalArgs(["--set", "reply-injection"])).toBeUndefined();
     expect(parseEvalArgs(["--set", "reply-injection", "--judge"])).toBeUndefined();
     expect(parseEvalArgs(["--set", "all", "--drafter", "--judge"])).toBeUndefined();
+    // The injection set is a gate: it always needs the judge.
+    expect(parseEvalArgs(["--set", "reply-injection", "--drafter"])).toBeUndefined();
   });
 
   test("--drafter and --extractor, or any other mode, is a usage error", () => {

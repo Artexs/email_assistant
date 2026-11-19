@@ -169,6 +169,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
   const holdout = options.part === "holdout";
   const needsReply = source.cases.filter((c) => c.expected.category === "needs_reply");
   const cases = options.limit === undefined ? needsReply : needsReply.slice(0, options.limit);
+  const languageById = new Map(cases.map((c) => [c.id, c.lang]));
   const plantedIds = new Set(cases.filter((c) => (c.sim?.planted ?? []).length > 0).map((c) => c.id));
   cli.print(
     `${source.data}: ${cases.length} needs_reply cases (${source.cases.length - needsReply.length} of other labels left out)`
@@ -279,7 +280,11 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     });
 
     const results = cases.flatMap((c) => outcome.results.get(c.id) ?? []);
-    const scores = scoreDrafter(results, { judgeRan: options.judge, planted: (id) => plantedIds.has(id) });
+    const scores = scoreDrafter(results, {
+      judgeRan: options.judge,
+      planted: (id) => plantedIds.has(id),
+      languageOf: (id) => languageById.get(id) ?? "other",
+    });
     const complete = outcome.stoppedReason === null && results.length === cases.length;
     const header: DrafterReportHeader = {
       title: `Reply drafter eval: ${source.key}`,

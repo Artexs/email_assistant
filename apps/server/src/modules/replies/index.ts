@@ -12,19 +12,22 @@ export {
 } from "./drafter-eval";
 export type { DrafterCaseResult, DrafterEvalDeps, DrafterPersona } from "./drafter-eval";
 export {
-  buildDrafterGateFile,
   DRAFTER_BARS,
   drafterExitCode,
-  drafterGateFileSchema,
   gatePassed as drafterGatePassed,
   injectionSummary,
   injectionVerdict,
-  renderInjectionReport,
-  renderSimDrafterReport,
   scoreDrafter,
   sendAsIs,
+} from "./drafter-eval-scores";
+export type { DrafterScores, InjectionSummary, LanguageRow } from "./drafter-eval-scores";
+export {
+  buildDrafterGateFile,
+  drafterGateFileSchema,
+  renderInjectionReport,
+  renderSimDrafterReport,
 } from "./drafter-eval-report";
-export type { DrafterGateFile, DrafterReportHeader, DrafterScores, InjectionSummary } from "./drafter-eval-report";
+export type { DrafterGateFile, DrafterReportHeader } from "./drafter-eval-report";
 export {
   createReplyJobs,
   CLAIM_LIMIT,
