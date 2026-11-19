@@ -173,7 +173,7 @@ export interface OpenSuggestion {
   createdAt: Date;
 }
 
-// The open suggestions of one mailbox, oldest first. Empty while the flag `sender_suggestions` is off, and for a mailbox that is
+// The open suggestions of one mailbox, newest first. Empty while the flag `sender_suggestions` is off, and for a mailbox that is
 // not `active`: the profile behind the reasons is frozen there.
 export async function listOpenSuggestions(
   db: DbOrTrx,
@@ -194,8 +194,8 @@ export async function listOpenSuggestions(
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
     .where("status", "=", "open")
-    .orderBy("created_at")
-    .orderBy("id")
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
     .execute();
   const items: OpenSuggestion[] = [];
   for (const row of rows) {
@@ -214,4 +214,19 @@ export async function listOpenSuggestions(
 
 export async function countOpenSuggestions(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<number> {
   return (await listOpenSuggestions(db, ctx, mailboxId)).length;
+}
+
+// The open suggestions of the organization, summed over its active mailboxes (the weekly report line). 0 while the flag
+// `sender_suggestions` is off. The count only: no address leaves this function.
+export async function countOpenSuggestionsOfOrg(db: DbOrTrx, ctx: TenantContext): Promise<number> {
+  if (!(await senderFlags(db, ctx)).suggestions) return 0;
+  const row = await db
+    .selectFrom("sender_suggestions as s")
+    .innerJoin("mailboxes as m", (join) => join.onRef("m.id", "=", "s.mailbox_id").onRef("m.org_id", "=", "s.org_id"))
+    .select((eb) => eb.fn.countAll<string>().as("n"))
+    .where("s.org_id", "=", ctx.orgId)
+    .where("s.status", "=", "open")
+    .where("m.status", "=", "active")
+    .executeTakeFirstOrThrow();
+  return Number(row.n);
 }

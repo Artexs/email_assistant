@@ -75,6 +75,8 @@ const WRITE_ROUTES = [
   "POST /api/replies",
   "POST /api/review/label",
   "POST /api/rules",
+  "POST /api/suggestions/:id/accept",
+  "POST /api/suggestions/:id/dismiss",
   "POST /api/telegram/consent",
   "POST /api/trust/:mailboxId/history-check",
   "POST /api/trust/:mailboxId/recommended",

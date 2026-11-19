@@ -90,7 +90,12 @@ function evidenceItems(week: WeekStats, texts: CoreTexts): string[] {
 }
 
 export function renderWeeklyReport(
-  view: { week: WeekStats; timeZone: string; answeredWaiting: number },
+  view: {
+    week: WeekStats;
+    timeZone: string;
+    answeredWaiting: number;
+    suggestions?: { open: number; panelUrl?: string | undefined } | undefined;
+  },
   texts: CoreTexts
 ): OutMessage {
   const { week, timeZone } = view;
@@ -161,5 +166,8 @@ export function renderWeeklyReport(
   lines.push(...evidenceItems(week, texts));
 
   if (view.answeredWaiting > 0) lines.push(t.review(view.answeredWaiting));
+  if (view.suggestions !== undefined && view.suggestions.open > 0) {
+    lines.push(t.suggestions.line(view.suggestions.open, view.suggestions.panelUrl ?? null));
+  }
   return { text: lines.join("\n"), buttons: [] };
 }

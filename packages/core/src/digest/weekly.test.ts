@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { weekStatsExample } from "../metrics/fixtures";
+import { noticeViewSchemas } from "../notices/views";
 import { textTables } from "../texts";
 import { barCategories } from "../triage/metrics";
 import type { WeekStats } from "../web/stats";
@@ -286,5 +287,45 @@ describe("renderWeeklyReport", () => {
       const quiet = withLoops({ delegation: tally(2, 1, 2), waiting: none, promised: none, delegated: none });
       expect(lines(quiet, en).some((line) => line.startsWith("Of which loops"))).toBe(false);
     });
+  });
+});
+
+// The line of the open rule suggestions (flag `sender_suggestions`): a count and a link, or a fixed phrase.
+describe("the suggestion line of the weekly report", () => {
+  const lineOf = (suggestions: { open: number; panelUrl?: string } | undefined, texts: typeof en): string[] =>
+    renderWeeklyReport({ week: weekStatsExample(), timeZone, answeredWaiting: 0, suggestions }, texts)
+      .text.split("\n")
+      .filter((line) => line.startsWith("💡"));
+  const link = "https://panel.example.test/rules";
+
+  test("English: one line with the count and the link; the verb follows the plural form", () => {
+    expect(lineOf({ open: 2, panelUrl: link }, en)).toEqual([`💡 2 rule suggestions wait for you · ${link}`]);
+    expect(lineOf({ open: 1, panelUrl: link }, en)).toEqual([`💡 1 rule suggestion waits for you · ${link}`]);
+    expect(lineOf({ open: 5 }, en)).toEqual(["💡 5 rule suggestions wait for you · check them in the panel"]);
+    expect(lineOf({ open: 1 }, en)).toEqual(["💡 1 rule suggestion waits for you · check it in the panel"]);
+  });
+
+  test("Polish: the count follows a colon, so no noun takes a plural form", () => {
+    for (const open of [1, 2, 5, 22]) {
+      expect(lineOf({ open, panelUrl: link }, pl)).toEqual([`💡 Sugestie reguł do przejrzenia: ${open} · ${link}`]);
+    }
+    expect(lineOf({ open: 3 }, pl)).toEqual(["💡 Sugestie reguł do przejrzenia: 3 · sprawdź w panelu"]);
+  });
+
+  test("0 open rows, and a view with no key, print no line", () => {
+    expect(lineOf({ open: 0, panelUrl: link }, en)).toEqual([]);
+    expect(lineOf(undefined, en)).toEqual([]);
+    expect(lineOf(undefined, pl)).toEqual([]);
+  });
+
+  test("a view queued before the key (no `suggestions`) still parses and renders; a bad link or an extra key does not parse", () => {
+    const view = { week: weekStatsExample(), timeZone, answeredWaiting: 0 };
+    const schema = noticeViewSchemas.weekly_report;
+    expect(schema.safeParse(view).success).toBe(true);
+    expect(schema.safeParse({ ...view, suggestions: { open: 2, panelUrl: link } }).success).toBe(true);
+    expect(schema.safeParse({ ...view, suggestions: { open: 2, panelUrl: "javascript:alert(1)" } }).success).toBe(
+      false
+    );
+    expect(schema.safeParse({ ...view, suggestions: { open: 2, address: "a@acme.pl" } }).success).toBe(false);
   });
 });
