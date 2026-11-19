@@ -23,7 +23,7 @@ import {
 } from "./contacts-fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// Carry-over tests of the stage 05 re-review: the safety net of the suggestion INSERT skips the CHECK error only, and a block
+// Carry-over tests of the re-review of the suggestion engine: the safety net of the suggestion INSERT skips the CHECK error only, and a block
 // rule for one address does not protect its domain.
 const db = testDb();
 const orgIds: string[] = [];
