@@ -10,6 +10,7 @@ import { ApiError } from "./api";
 import {
   acceptOutcome,
   dismissOutcome,
+  focusHeadingAfterReload,
   pickMailbox,
   reasonLines,
   suggestionActionPath,
@@ -225,5 +226,13 @@ describe("pickMailbox", () => {
     expect(pickMailbox(boxes, new Set(["a", "b", "c"]), "b")).toEqual({ open: [], mailbox: undefined });
     expect(pickMailbox(boxes, new Set(), "b").mailbox).toEqual({ id: "b" });
     expect(pickMailbox([], new Set(), null).mailbox).toBeUndefined();
+  });
+});
+
+describe("focusHeadingAfterReload", () => {
+  test("the heading gets the focus after a load that worked, and not after a failed load or with no wish", () => {
+    expect(focusHeadingAfterReload(true, null)).toBe(true);
+    expect(focusHeadingAfterReload(true, new Error("offline"))).toBe(false);
+    expect(focusHeadingAfterReload(false, null)).toBe(false);
   });
 });
