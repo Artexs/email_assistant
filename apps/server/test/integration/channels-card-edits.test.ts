@@ -103,6 +103,8 @@ describe("queueCardEdits", () => {
         outcome: "approved",
         at: at.toISOString(),
         timeZone: "Europe/Warsaw",
+        // The minimal edit links to the send when the stored card has no link.
+        sendId: w.sendId,
       });
     });
     await withRollback(db, async (trx) => {
