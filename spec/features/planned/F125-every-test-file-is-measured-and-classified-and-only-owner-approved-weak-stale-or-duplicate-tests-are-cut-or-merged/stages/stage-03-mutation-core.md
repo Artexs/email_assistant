@@ -1,6 +1,6 @@
 # F125 stage 03 — Audit tool: mutation run of `packages/core`
 
-Part of [`../plan.md`](../plan.md). Phase A: no test file and no production code changes. Needs stage 02 landed (`junit-cases.tsv`, for the join). May run at the same time as stages 05 and 06.
+Part of [`../plan.md`](../plan.md). Phase A: no test file and no production code changes. Needs stage 02: `audit/data/junit-cases.tsv` (the join of F4). May run next to 05 and 06. Spawn with `--timeout 2h`: core has 2,760 JUnit cases at 1927d052 (787 in the 2-min F3 probe).
 
 Goal of the stage: a reproducible mutation run of `packages/core` outside the repo, and per-case data: kills, unique kills, greedy-cover membership; per source file: score and survived mutants (D4, D5, F3).
 

@@ -1,6 +1,6 @@
 # F125 stage 07 — Report, approval groups and the test-quality rule
 
-Part of [`../plan.md`](../plan.md). Phase A. Needs stages 04–06 landed. Gets a review job before the land (plan § Review). After the land the coordinator stops for gate G1.
+Part of [`../plan.md`](../plan.md). Phase A. Needs stage 04: `audit/review-core-web-tools.md`; stage 05: `audit/review-server-unit.md`, `audit/data/unit-int-pairs.tsv`; stage 06: `audit/review-int-e2e.md`; stages 01–03: the `audit/data/*.tsv` they wrote. Gets a review job before the land (plan § Review). After the land the coordinator stops for gate G1.
 
 Goal of the stage: the owner gets one file to decide from (`audit/report.md`, § Report shape), and the agents get a short test-quality rule.
 

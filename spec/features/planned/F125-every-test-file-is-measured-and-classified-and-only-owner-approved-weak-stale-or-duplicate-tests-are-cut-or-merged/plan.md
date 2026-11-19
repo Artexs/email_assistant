@@ -1,6 +1,6 @@
 # F125 · Test audit: measure, classify, cut only what the owner approves — plan
 
-> **Status 2026-11-14 — planned.** Plan base: 54fe78f. Stages 01–07 written; the cut stages (08+) are written after gate G1 by a planner job.
+> **Status 2026-11-14 — planned.** Plan base: 1927d052, refreshed 2026-11-19 ([`plan-refresh-1.md`](plan-refresh-1.md); first base 54fe78f). Stages 01–07 written; the cut stages (08+) are written after gate G1 by a planner job.
 
 ## Input
 
@@ -18,7 +18,7 @@ The approach check (the proposed method, the alternatives, why) is in `notes/202
 ### Product decisions
 
 - **P1** This ticket serves signal quality and repo size. Speed is the parallel-runs ticket (F124): the probe shows that the count of tests is not what makes the suites slow (F124 `plan.md` F2–F6).
-- **P2** The owner approves the cuts (owner, 2026-11-14). The approval unit is a **group** of rows with one rule and one action, not a single row: about 4,000 cases are too many to approve one by one. The owner may also reject single rows inside an approved group.
+- **P2** The owner approves the cuts (owner, 2026-11-14). The approval unit is a **group** of rows with one rule and one action, not a single row: at least 12,800 cases (F1; the int part is a call-site count, its JUnit count is higher) are too many to approve one by one. The owner may also reject single rows inside an approved group.
 - **P3** A cut never loses what the suite catches today. Proof per cut stage: the killed core mutants stay killed, and the covered lines per source file do not drop (D9).
 - **P4** Gaps (code changes that no test catches) are reported, not fixed here. They become a follow-up ticket proposal in the report.
 - **P5** A test-quality rule for agents is part of this ticket. Reason: agents wrote about 60k test lines in 7 days; without a rule, new weak tests come back.
@@ -29,10 +29,10 @@ The approach check (the proposed method, the alternatives, why) is in `notes/202
 - **D2** The phase B stages are written after G1 by a `--role planner` job from the approved groups (How to run step 7). Each cut stage follows § Cut stage rules below, so that planner only turns groups into stages.
 - **D3** The audit tool lives in `scripts/test-audit/` (TypeScript, run with `bun`), with its own `tsconfig.json` and unit tests run explicitly (`bun test scripts/test-audit`). Not a workspace. Reason: a new workspace changes `bun.lock`, and `deploy/Dockerfile` copies only the listed workspace `package.json` files (line 9), so `bun install --frozen-lockfile` in the image build could break. The tool stays in the repo after F125, so a later audit and the cut stages reuse it. Its tests run in the F125 stage proofs only, not in CI: it is a maintenance tool, not product code (review 1, note).
 - **D4** Mutation testing runs in a work folder outside the repo and outside `/tmp` (`${XDG_CACHE_HOME:-$HOME/.cache}/ea-test-audit/mutation.XXXXXX`; `/tmp` is a shared tmpfs that ran out of inodes on 2026-11-14, `notes/2026-11-14-handoff-after-compaction.md`), removed by an `EXIT` trap: `scripts/test-audit/mutation.sh` copies `packages/core/src`, `packages/core/tsconfig.json` and `tsconfig.base.json` to the work folder, writes a `package.json` with pinned `@stryker-mutator/core@10.1.1`, `@hughescr/stryker-bun-runner@1.6.0`, `typescript@5.9.3` and `zod` (the version of `packages/core/package.json`), installs, and runs Stryker with `disableBail: true` (every killing test is recorded, F3). Reason: no new dependency and no `bun.lock` change in the repo; this is stricter than the owner default "a dev dependency in `packages/core`" (log as a default for the owner). Rejected: a dev dependency in the repo (lock conflicts with parallel jobs, an image risk).
-- **D5** Mutation only for `packages/core` (pure logic, 787 cases, 2 min, F3). Not for `apps/server` (DB, IMAP, preload; too slow and not proven to work) and not for `apps/web`. Rejected: a full-repo mutation run.
+- **D5** Mutation only for `packages/core` (pure logic; 787 cases and 2 min in the F3 probe; 2,760 JUnit cases at 1927d052, so expect a longer run, stage 03 measures it). Not for `apps/server` (DB, IMAP, preload; too slow and not proven to work) and not for `apps/web`. Rejected: a full-repo mutation run.
 - **D6** Coverage: `bun test --coverage --coverage-reporter=lcov` for the unit paths and for the int paths, separately, serial. Used only as a baseline and a guard (D9), not to decide redundancy. Reason: coverage shows what runs, not what is checked. Rejected: "remove a file, and coverage stays the same, so it is redundant".
-- **D7** Static scan with the TypeScript compiler API (`typescript` is a root dev dependency). Per test case it records the flags of § Flags. Key of a case: `file:line` of its `test(`/`it(` call, the same key as the JUnit `file` and `line` attributes.
-- **D8** Reader review by workers. A worker reads each flagged case (and the groups it belongs to), decides the action by § Rules for the classes, and writes a row with evidence. A case with no flag is `KEEP (not read)`. The report states how many cases were read. Reason: a script cannot judge "this test checks something real"; a reader of every case (4,000) does not fit in jobs.
+- **D7** Static scan with the TypeScript compiler API (`typescript` is a root dev dependency). Per test case it records the flags of § Flags. Key of a case: `file:line` of its `test(`/`it(` call, the same key as the JUnit `file` and `line` attributes. Exception: a case in a shared suite module (`apps/server/test/contract/*.ts`) has the module key; Bun reports it with the runner `file` and the module `line`, so stage 02 joins it by line and name (plan review 2, item 1).
+- **D8** Reader review by workers. A worker reads each flagged case (and the groups it belongs to), decides the action by § Rules for the classes, and writes a row with evidence. A case with no flag is `KEEP (not read)`. The report states how many cases were read. Reason: a script cannot judge "this test checks something real"; a reader of every case (at least 12,800, F1) does not fit in jobs.
 - **D9** Cut proof (per cut stage). The "before" numbers are measured at the cut stage's own base commit (a fresh run of the tools), never taken from the committed phase A data. Coverage is the **union** of the unit and int hit lines per source file (an int case and its unit twin cover the same lines). Per action:
 
   | Action | JUnit case count | Core mutants (stage in `packages/core`) | Union lcov hit lines per source file |
@@ -72,8 +72,8 @@ Hard keep rules (they win over every flag):
 - **K1** A core case with a unique kill (the only case that kills some mutant). `MERGE-TABLE` is allowed if the table keeps its inputs.
 - **K2** Registry, enum and completeness checks ("every kind", "one case per kind", "the list is fixed", a test that iterates a registry or enum). Mutation testing cannot see their value: they guard the next change, not the current code. Probe: 23 core cases with zero kills are mostly of this kind (F3).
 - **K3** Security, privacy and the safety rules of `spec/vision.md`: tenant isolation, RLS, auth, lockout, secrets, "no leak" marker checks, log redaction, no send without approval, LLM text never a recipient, folder or command, whitelisted mail never spam.
-- **K4** Contract suites that run the same cases against a fake and a real adapter: the suite module `apps/server/test/contract/mail-provider.ts` and the test file that runs it (`apps/server/test/integration/imap-contract.test.ts`). They are duplicates by design.
-- **K5** A case whose comment or name names a bug, an incident, an alert of `docs/known-alerts.md` (empty on 2026-11-14) or a ticket folder. A quarantined case (`// Quarantined YYYY-MM-DD … Fix: spec/features/…`, for example `mail-folders-cli.test.ts:41`, `main-start-log.test.ts:13`) is K5: its own ticket fixes it; never `FIX-NEVER-RUNS` or a cut.
+- **K4** Contract suites that run the same cases against a fake and a real adapter: the suite modules in `apps/server/test/contract/` (`mail-provider.ts`, `mail-sender.ts`) and every test file that runs them (at 1927d052: `imap-contract.test.ts`, `smtp-send.test.ts`, `graph-send.test.ts` in `apps/server/test/integration/`; `mail/fake/fake.test.ts`, `mail/fake/sender.test.ts` in `apps/server/src/modules/`). They are duplicates by design. The conditional `test.skip` inside `mail-sender.ts` (an adapter that cannot refuse a login) is K4, not `FIX-NEVER-RUNS`.
+- **K5** A case whose comment or name names a bug, an incident, an alert of `docs/known-alerts.md` (empty on 2026-11-14) or a ticket folder. A quarantined case (`// Quarantined YYYY-MM-DD … Fix: spec/features/…`; none at 1927d052, the two of 54fe78f are fixed) is K5: its own ticket fixes it; never `FIX-NEVER-RUNS` or a cut.
 - **K6** The only test of a behaviour that a `docs/capabilities/` page states.
 
 Classes:
@@ -82,7 +82,7 @@ Classes:
 - **`REWRITE-WEAK`**: `S1`, `S2` or `S3` where a stricter assertion is possible (an exact value). Write the proposed assertion in the row.
 - **`DELETE-STALE`**: tests code, a flag or a behaviour that no longer exists, or tests only a fake (`S8`) whose real counterpart has its own test. Name the evidence (a missing symbol, a dropped ticket, a capability page).
 - **`MOVE-TO-UNIT`**: an int case whose behaviour is pure logic that a unit test in `packages/core` or `apps/server/src` can check without the DB or IMAP. Only if a unit test of the same behaviour does not exist yet; else `DELETE-DUP`.
-- **`FIX-NEVER-RUNS`**: an `S7` case that is skipped in CI too. Known: `apps/server/test/integration/e2e-seed.test.ts:89` `describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")`; the CI `ci` job sets no E2E URL (`.github/workflows/ci.yml`), so the case runs nowhere (F6). Propose: run it in the `e2e` job, or delete it. Not for quarantined cases (K5).
+- **`FIX-NEVER-RUNS`**: an `S7` case that is skipped in CI too. Known: `apps/server/test/integration/e2e-seed.test.ts:90` `describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")`; the CI `ci` job sets no E2E URL, and the `e2e` job sets them but runs only `test:e2e` (`.github/workflows/ci.yml`), so the case runs nowhere (F6). Also: a test file in no suite path of `package.json` (`not-run`; at 1927d052 `tools/mail-oauth-spike/*.test.ts`, 2 files). Propose: run it in the `e2e` job, or delete it. Not for quarantined cases (K5).
 - **`GAP`**: a cluster of survived core mutants (stage 03) in one function: the report lists the function and the mutant count.
 - **`KEEP`**: the rest. A flagged case that a K rule keeps names the rule.
 
@@ -107,12 +107,12 @@ Classes:
 
 ## Facts checked
 
-- **F1** Counts move fast (core grew from 787 to 834 JUnit cases and the repo from 321 to 334 test files between 54fe78f and 2d2b3f5, the same day). Each stage prints its own counts; the numbers here are only for scale. Counts, 2026-11-14, HEAD 54fe78f: 321 test files (`git ls-files '*.test.*' '*.spec.*'`), 73,477 lines. JUnit: unit 2,262 cases in 177 files (`packages/core` 787, `apps/server/src` 1,261, `apps/web/src` 154, `tools/fake-telegram/src` 57, `apps/web/integrations` 3); int 1,683 cases in 135 files (`apps/server/test` 1,680, `tools/fake-telegram/test` 3; 1 skipped). Playwright: 13 spec files in `apps/web/e2e/tests/` (at 2d2b3f5), about 41 `test(` calls (grep). Total about 3,990 cases. The handoff count (about 3,400, grep of `it(`/`test(`) was low.
+- **F1** Counts move fast (about 325 test files at 54fe78f, 977 at 1927d052). Each stage prints its own counts; the numbers here are only for scale. Recount at 1927d052, per path, with the commands: `plan-refresh-1.md` § Recount. Unit JUnit: 7,030 cases in 492 files, 0 skipped, 17 cases ≥ 1 s (`packages/core` 2,760, `apps/server/src` 2,807). Int (not run): 434 files, 5,533 call sites; JUnit is higher (`each`, loops, shared contract modules). Playwright: 39 files, 232 calls. In no suite: `tools/mail-oauth-spike/*.test.ts`. Total at least 12,800 cases. At 54fe78f: unit 2,262, int 1,683, about 41 e2e.
 - **F2** `bun test --reporter=junit --reporter-outfile=<f>` (Bun 1.4.4) writes per case `name`, `classname`, `time`, `file`, `line`, `assertions`, and `<skipped />` (probe /tmp/ta, 2026-11-14).
 - **F3** Mutation probe, 2026-11-14, temp copy of `packages/core` (HEAD 54fe78f), Node 26.13.1, Bun 1.4.4, `@stryker-mutator/core` 10.1.1, `@hughescr/stryker-bun-runner` 1.6.0 (peer `typescript <7`, `@stryker-mutator/core ^9 || ^10`; npm 2026-11-14), TypeScript 5.9.3: config `{ appendPlugins: ['@hughescr/stryker-bun-runner'], testRunner: 'bun', mutate: ['src/**/*.ts', '!src/**/*.test.ts'], reporters: ['json', 'clear-text'], concurrency: 8, disableBail: true }`. Result: 5,230 mutants, score 85.53 % (killed 4,455, timeout 18, survived 672, no coverage 85), 2 m 2 s wall on 16 cores. Of 787 cases: 23 kill no mutant (mostly registry and schema checks, K2), 397 kill mutants but none uniquely; a greedy set of 449 cases kills every mutant that the 787 kill. A few mutants log "no killing test identifiable — emitting empty killedBy" (static mutants). The `digest/` folder alone: 12 s, score 87.15 %.
 - **F4** The JSON report (`reports/mutation/mutation.json`) has `files.<path>.mutants[]` with `id`, `mutatorName`, `replacement`, `location` (`start`/`end` line and column), `static`, `status`, `coveredBy`, and `killedBy` (on killed mutants), and `testFiles.<path>.tests[]` with `id`, `name` (`<file> > <describe> > <test>`) and `location.start.line` (probe F3). Paths are relative to the temp folder (`src/…`); prefix `packages/core/` to join. Join to `cases.tsv` by file, the last ` > ` part of the Stryker name equal to the JUnit `name`, and the nearest line: in the probe the Stryker line was the JUnit line + 1 (`ai-text.test.ts` "below the threshold": JUnit 31, Stryker 32, the `test(` call on line 31). A case that does not join gets the key `unjoined` and a row in the stage's final message.
 - **F5** `bunfig.toml` `[test] preload = ["./apps/server/test/preload.ts"]`. The core copy in F3 had no bunfig and passed 787/787 (core needs no preload).
-- **F6** `.github/workflows/ci.yml`: the `ci` job env has no `E2E_DATABASE_URL`/`E2E_MIGRATOR_DATABASE_URL`; `e2e-seed.test.ts:89` skips there (and in the local int run, F1: 1 skipped).
+- **F6** `.github/workflows/ci.yml` (checked at 1927d052): the `ci` job env has no `E2E_DATABASE_URL`/`E2E_MIGRATOR_DATABASE_URL`; `e2e-seed.test.ts:90` skips there (and in the local int run). The `e2e` job sets both URLs but runs only `test:e2e`. The parallel-Playwright ticket (F136, not planned yet) may set per-job E2E URLs in `scripts/limen-prepare.sh`: then the case runs in Limen jobs, still not in CI. Stage 06 reads `ci.yml` and `limen-prepare.sh` at its own base for the evidence.
 - **F7** `docs/known-alerts.md` holds only its template (2026-11-14). `backend/` no longer exists (`CLAUDE.md` still names it).
 - **F8** `deploy/Dockerfile` line 9 copies `tools/fake-telegram/package.json` by name; root `package.json` workspaces are `apps/*`, `packages/*`, `tools/*` (D3).
 
@@ -122,7 +122,7 @@ Classes:
 - **N2** `bun test --coverage` with the int suite and its preload on Bun 1.4.4. Checked by: stage 02 Step 2. If it fails, the cut proof uses unit lcov and mutation only; the stage writes that in the README.
 - **N3** The share of reader decisions that are right. The owner's marks at G1 are the check; the report shows evidence per row so the owner can sample.
 - **N5** Lcov stability between two runs on one commit (int tests with time-driven code). Checked by: stage 02 Step 2 runs coverage twice and writes `coverage-noise.tsv`.
-- **N4** How many cases the scan flags (it decides the reader workload). Stage 01 prints the counts; if a stage has more than 150 flagged items, the reader stage reads the 150 with the highest priority (§ Reader method, step 2) and lists the rest as `not read`.
+- **N4** How many cases the scan flags (it decides the reader workload). Stage 01 prints the counts; if a stage has more than 150 flagged items, the reader stage reads the 150 with the highest priority (§ Reader method, step 2) and lists the rest as `not read`. Rough estimate at 1927d052 (`plan-refresh-1.md` § Cap check; AST probe of S1, S2, S5–S7, a regex S8 count from plan review 2, the unit S9 count, core S10/S11 scaled from F3): stage 04 about 380 items, stage 05 about 120, stage 06 about 210 plus int S9 (unknown before stage 02). The cap stays 150 per job with at most two continuations (450 per stage): stage 04 needs one or two continuations, stage 05 zero or one, stage 06 one or two; above 450 only the fastest S9 cases of stage 06 stay `not read` (S9 is read last, slowest first). Default, owner to confirm: `questions.md` Q5.
 
 ## Done when
 
@@ -177,7 +177,7 @@ Phase A:
 - [ ] [Stage 01 — Audit tool: static scan of every test case](stages/stage-01-static-scan.md)
 - [ ] [Stage 02 — Audit tool: timings, coverage baseline, `cases.tsv`](stages/stage-02-timings-and-coverage.md)
 - [ ] [Stage 03 — Audit tool: mutation run of `packages/core`](stages/stage-03-mutation-core.md)
-- [ ] [Stage 04 — Reader review: `packages/core`, `apps/web`, `tools`](stages/stage-04-review-core-web-tools.md)
+- [ ] [Stage 04 — Reader review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools`](stages/stage-04-review-core-web-tools.md)
 - [ ] [Stage 05 — Reader review: `apps/server/src` unit tests](stages/stage-05-review-server-unit.md)
 - [ ] [Stage 06 — Reader review: integration and e2e tests](stages/stage-06-review-int-e2e.md)
 - [ ] [Stage 07 — Report, approval groups and the test-quality rule](stages/stage-07-report-and-rule.md)
@@ -188,7 +188,7 @@ Phase B: stages 08+ written by a planner job after G1 (D2).
 
 ## How to run (coordinator)
 
-1. Move the ticket to `spec/features/active/` and commit before the first spawn. Run `scripts/plan-drift.sh <ticket folder> 54fe78f` first (plan-refresh rule until 21 Nov).
+1. Move the ticket to `spec/features/active/` and commit before the first spawn. Run `scripts/plan-drift.sh <ticket folder> 1927d052` first (plan-refresh rule until 21 Nov).
 2. Spawn stage 01 (standing models of `spec/build.md` TRACK):
    ```
    limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high \
@@ -196,8 +196,8 @@ Phase B: stages 08+ written by a planner job after G1 (D2).
      --prepare 'bash scripts/limen-prepare.sh' --label "test audit scan · F125" \
      'Implement F125 stage 01. Read spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/ticket.md, plan.md and stages/stage-01-static-scan.md; build every step of that stage. Final proof: the Phase A command of plan.md § Proof with NN=01. In the final message, list as proven only what a saved log shows.'
    ```
-   Order: 01 → 02 → (03, 05 and 06 at the same time) → 04 (needs 03) → 07 (needs 04–06). Each later stage needs the data files of the stages before it in `master`.
-3. Land each stage with `limen land --keep-open` before you spawn the stages that need it. Use `--timeout 2h` for 04, 05 and 06.
+   Order: 01 → 02 → (03, 05 and 06 at the same time) → 04 (needs 03) → 07 (needs 04–06). The `Needs` line of each stage names the data file it reads. Each later stage needs those files in `master`.
+3. Land each stage with `limen land --yes --keep-open` before you spawn the stages that need it. Use `--timeout 2h` for 02, 03, 04, 05 and 06 (02 runs the int suite serially three times, about 3.5 times the cases of 54fe78f; 03 mutates 2,760 core cases).
 4. A reader stage that ends with `not read` items: spawn a continuation job with the same stage file and the instruction "continue: read the next 150 `not read` items and append to the review file". At most two continuations per stage; the rest stays `not read` in the report. Then spawn stage 07, its review job, and land it.
 5. **Stop (G1).** Tell the owner: "The test audit report is ready: `spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/audit/report.md`. Mark each group ok / no / ask." Do not build further until the owner has marked it. Add an entry to `docs/owner-decisions.md` only for defaults taken in phase A (D4 is one: mutation outside the repo instead of a dev dependency).
 6. If the parallel-runs ticket (F124) has not landed yet, wait for it before phase B.
@@ -216,6 +216,8 @@ Phase B: stages 08+ written by a planner job after G1 (D2).
 - [x] stages/stage-06-review-int-e2e.md [written]
 - [x] stages/stage-07-report-and-rule.md [written]
 - [x] cold review (`plan-review-1.md`)
+- [x] refresh 1 to 1927d052 (`plan-refresh-1.md`), no scouts (refresh job). Words after the refresh and review 2: plan.md 5,194, stage 01 1,266, 02 1,038, 03 754, 04 621, 05 326, 06 626, 07 754. The plan predates the 2026-11-14 size rule in practice (plan.md and stages 01–03, 07 are over it); the refresh does not restructure it.
+- [x] cold review of refresh 1 (`plan-review-2.md`): Sonnet 5.5, no `[risky]` stage; FAIL with 1 blocking finding, all fixed (`plan-refresh-1.md` § Changes after plan review 2).
 
 ## Cold review
 
@@ -236,3 +238,4 @@ One round, 2026-11-14, Opus 5.5 high, scout job `2026-11-14-f125-plan-review-3dc
 ## Log
 
 - 2026-11-14: planned in an interactive owner session (Opus 5.5), from the probes in F1–F6.
+- 2026-11-19: refreshed to 1927d052 (`plan-refresh-1.md`): counts, new unit areas in stage 04, K4/K5/F6 facts, Needs lines, F136 overlap in stage 06.
