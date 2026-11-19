@@ -40,7 +40,7 @@ All numbers are over the drafts of the dev part (81 `needs_reply` cases, 1 skipp
 - Counts only of the 171 partial results (completion order, not a clean prefix; no gate file): 164 drafts, 7 `no_draft` (all `needs_facts`), 0 failed, 0 planted strings in a draft; of 151 graded drafts, 97 send as is (64%) and 5 with `no_invented_commitment` false; 13 judge errors.
 
 - Second day of the block, 2026-11-19 13:32 to 13:58 CET (after a machine crash): two more resume attempts. `gemini-3.5-flash-lite` answered 200 once, then 429 "per day" again; `gemini-3.8-flash` answered 503 "high demand" or timed out on every probe (`.f115s14-logs/gemini-probe-final.log`). Both attempts were stopped by SIGTERM: no new complete result. State now: 171 unique cases of 260, 163 drafts, 7 `no_draft`, 1 failed, 154 graded, 9 with a judge error (copy `.f115s14-logs/holdout-partial-state3.jsonl`). Their spend ($0.0042, 11 state lines) is in the ledger.
-- Next step: run the resume command above after the Gemini daily quota resets (about 09:15 CET on 2026-11-20), or with a paid Gemini key. It needs about 1,000 judge requests for the 89 open cases plus the retries; the free tier gives 500 a day, so it may need two days.
+- Next step: run the resume command above after the Gemini daily quota resets (about 09:15 CET on 2026-11-20), or with a paid Gemini key. It needs about 100 judge requests (89 open cases and 9 judge errors) plus the retries of 429 answers; the free tier gives 500 a day, so one quota day is enough when no other run uses the key.
 
 ## Injection run: drafts made, 10 of 14 not graded
 
