@@ -3,7 +3,7 @@ import { sql, type RawBuilder, type Transaction } from "kysely";
 import type { DB, Db } from "../../platform/db";
 import { normalizedAddress, senderContextRowsOf, type SenderContextRows } from "../contacts";
 
-import { addressRegex, DSR_ADDRESS_MAP, normalizeDsrAddress, type AddressRule } from "./address-map";
+import { addressRegex, DSR_ADDRESS_MAP, matchesAddress, normalizeDsrAddress, type AddressRule } from "./address-map";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -85,9 +85,9 @@ export function rowCondition(rule: AddressRule, column: string, patterns: Addres
     case "recipients":
       return sql<boolean>`exists (select 1 from unnest(${ref}) as v where ${normalizedAddress("v")} = ${address})`;
     case "text":
-      return sql<boolean>`${ref} ~* ${patterns.text}`;
+      return matchesAddress(ref, patterns.text);
     case "json":
-      return sql<boolean>`${ref}::text ~* ${patterns.json}`;
+      return matchesAddress(sql`${ref}::text`, patterns.json);
     case "equal":
     case "delete":
       return sql<boolean>`${normalizedAddress(`t.${column}`)} = ${address}`;
@@ -220,7 +220,7 @@ export async function findOpenActions(
       and a.status <> all (${[...ENDED_STATUSES]}::text[])
       and (
         (a.email_id = any (${goes}::uuid[]) and (a.status = 'applying' or a.type in ('send', 'create_draft')))
-        or (not coalesce(a.email_id = any (${goes}::uuid[]), false) and a.payload::text ~* ${regex})
+        or (not coalesce(a.email_id = any (${goes}::uuid[]), false) and ${matchesAddress(sql`a.payload::text`, regex)})
         or (a.id = any (${chain}::uuid[]) and a.status = 'applying')
       )
     order by a.id`.execute(db);

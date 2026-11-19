@@ -510,6 +510,42 @@ describe("address rule gaps: the branches of the mail match", () => {
     expect(left.map((row) => row.from_address)).toEqual([w.address]);
   });
 
+  // The scrub and the post-erase check use the same case forms as the equality match: the Kelvin sign, the capital sharp s
+  // and the Ohm sign are the person's address in kept text, and a dotless i is not.
+  test("the scrub removes the case forms of the address from kept text and leaves another person's text alone", async () => {
+    const KELVIN = "\u212a";
+    const SHARP = "\u00df";
+    const CAPITAL_SHARP = "\u1e9e";
+    const OMEGA = "\u03c9";
+    const OHM = "\u2126";
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    const people = ["kelvin@x.test", `stra${SHARP}e@x.de`, `${OMEGA}hm@x.test`, `${DOTLESS}lker@x.tr`];
+    for (const from_address of people) await addMail(w, { from_address });
+    const keptId = await db.transaction().execute((trx) =>
+      insertTestEmail(trx, w.ctx, w.mailboxId, {
+        received_at: ago(1),
+        from_address: "other@x.test",
+        to_addresses: ["ILKER@x.tr", "third@x.test"],
+        body_text: [
+          `a ${KELVIN}elvin@x.test`,
+          `b STRA${CAPITAL_SHARP}E@x.de`,
+          `c ${OHM}hm@x.test`,
+          "d ILKER@x.tr",
+        ].join("\n"),
+      })
+    );
+    for (const address of people) expect((await erase(w, address)).kind).toBe("erased");
+    expect(await senders(w)).toEqual(["other@x.test"]);
+    const kept = await db
+      .selectFrom("emails")
+      .select(["body_text", "to_addresses"])
+      .where("id", "=", keptId)
+      .executeTakeFirstOrThrow();
+    expect(kept.body_text).toBe("a [removed]\nb [removed]\nc [removed]\nd ILKER@x.tr");
+    // The recipient list compares by the rule too: `ILKER` is `ilker`, not the dotless `ılker` that was erased.
+    expect(kept.to_addresses).toEqual(["ILKER@x.tr", "third@x.test"]);
+  });
+
   test("near addresses keep their mail", async () => {
     const w = await orgOf(`box-${randomUUID()}@x.test`);
     const near = [

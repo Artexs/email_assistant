@@ -2,10 +2,12 @@ export { deleteOrganization, type OrgDeleteExpect, type OrgDeleteResult, type Or
 export {
   addressRegex,
   DSR_ADDRESS_MAP,
+  matchesAddress,
   MESSAGE_TABLES,
   normalizeDsrAddress,
   NO_PERSONAL_TABLES,
   NOT_PERSONAL,
+  replaceAddress,
   type AddressRule,
 } from "./address-map";
 export {
