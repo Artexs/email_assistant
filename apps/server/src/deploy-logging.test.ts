@@ -157,6 +157,28 @@ describe("deploy/check-logging.sh --drill (restore drill file set, F114 stage 07
     }
   });
 
+  test("12. both real drill files pass with migrate allowed; a copy where migrate has no profile fails", () => {
+    const real = (name: string): string => join(repoRoot, "deploy", name);
+    const ok = check(["--drill", real("compose.yaml"), real("compose.drill.yaml")]);
+    expect(ok.err).toBe("");
+    expect(ok.code).toBe(0);
+    expect(ok.out).toContain("migrate");
+
+    const live = readFileSync(real("compose.yaml"), "utf8");
+    const noProfile = live.replace(/( {2}migrate:\n(?:.*\n)*?) {4}profiles: \[cli\]\n/, "$1");
+    expect(noProfile).not.toBe(live);
+    mkdirSync(join(dir, "copy", "deploy"), { recursive: true });
+    writeFileSync(join(dir, "copy", "deploy", "compose.yaml"), noProfile);
+    writeFileSync(join(dir, "copy", "deploy", "compose.drill.yaml"), readFileSync(real("compose.drill.yaml"), "utf8"));
+    const bad = check([
+      "--drill",
+      join(dir, "copy", "deploy", "compose.yaml"),
+      join(dir, "copy", "deploy", "compose.drill.yaml"),
+    ]);
+    expect(bad.code).toBe(1);
+    expect(bad.err).toContain("migrate must have profiles [cli]");
+  });
+
   test("--drill without a file fails", () => {
     expect(check(["--drill"]).code).toBe(1);
   });
@@ -303,6 +325,53 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
     expect(services.cli?.healthcheck?.disable).toBe(true);
     expect(services.cli?.profiles).toEqual(["cli"]);
     expect(services.server?.profiles).toBeUndefined();
+  });
+});
+
+// The migrate one-off service alone holds the migrator URL in its own env (the server keeps it until
+// the contract release). The password comes from the interpolation file, planted with a sentinel.
+describe("deploy/compose.yaml service migrate", () => {
+  writeFileSync(
+    join(project, "deploy", "db.env"),
+    "POSTGRES_PASSWORD=sentinel-p-61\nMIGRATOR_PASSWORD=sentinel-m-61\nAPP_PASSWORD=sentinel-a-61\n"
+  );
+  const run = Bun.spawnSync(
+    [
+      "docker",
+      "compose",
+      "-f",
+      "deploy/compose.yaml",
+      "--env-file",
+      "deploy/db.env",
+      "--profile",
+      "cli",
+      "config",
+      "--no-env-resolution",
+      "--format",
+      "json",
+    ],
+    { cwd: project, env: { PATH: process.env.PATH ?? "", HOME: project } }
+  );
+  if (run.exitCode !== 0) throw new Error(`docker compose config exited ${run.exitCode}: ${run.stderr.toString()}`);
+  const services = (JSON.parse(run.stdout.toString()) as { services: Record<string, Record<string, unknown>> })
+    .services;
+
+  test("6. migrate has exactly the migrator URL and LOG_FORMAT, no env_file, ports or volumes, and the profile cli", () => {
+    const migrate = services.migrate ?? {};
+    expect(Object.keys((migrate.environment ?? {}) as object).sort()).toEqual(["LOG_FORMAT", "MIGRATOR_DATABASE_URL"]);
+    const url = new URL(((migrate.environment ?? {}) as Record<string, string>).MIGRATOR_DATABASE_URL ?? "");
+    expect(url.username).toBe("migrator");
+    expect(url.password).toBe("sentinel-m-61");
+    expect(migrate.env_file).toBeUndefined();
+    expect(migrate.ports).toBeUndefined();
+    expect(migrate.volumes).toBeUndefined();
+    expect(migrate.profiles).toEqual(["cli"]);
+    expect(migrate.command).toEqual(["bun", "run", "db:migrate"]);
+  });
+
+  test("7. server still carries the migrator URL (expand; the contract stage flips this test)", () => {
+    const env = (services.server?.environment ?? {}) as Record<string, string>;
+    expect(env.MIGRATOR_DATABASE_URL).toBeDefined();
   });
 });
 

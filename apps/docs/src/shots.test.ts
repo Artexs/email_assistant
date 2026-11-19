@@ -16,6 +16,7 @@ import {
   shotLocale,
   SHOT_MIN_BYTES,
   SHOT_TEXT_ALLOW,
+  DEMO_SHOTS,
   SHOTS,
   shotFeaturesProblem,
   shotsDir,
@@ -110,6 +111,22 @@ describe("shot helpers", () => {
   });
 });
 
+describe("alt texts per source (stage 07)", () => {
+  test("the demo list has the names and paths of the e2e list and its own alt text in each language", () => {
+    expect(DEMO_SHOTS.map((shot) => [shot.name, shot.path])).toEqual(SHOTS.map((shot) => [shot.name, shot.path]));
+    for (const [index, shot] of DEMO_SHOTS.entries()) {
+      expect(shot.alt).not.toBe(SHOTS[index]?.alt);
+      expect(shot.alt).toContain("demo");
+    }
+  });
+  test("shotView gives the alt text of its source; no source is the e2e text", () => {
+    const options = { on: false, exists: () => true };
+    expect(shotView("mailboxes", "en", options).desktop.alt).toContain("no mailbox yet");
+    expect(shotView("mailboxes", "en", { ...options, source: "e2e" }).desktop.alt).toContain("no mailbox yet");
+    expect(shotView("mailboxes", "en", { ...options, source: "demo" }).desktop.alt).toContain("paused demo mailbox");
+  });
+});
+
 describe("shotView", () => {
   const all = { on: true, exists: () => true };
   const none = { on: true, exists: () => false };
@@ -149,7 +166,9 @@ describe("shotView", () => {
 describe("wiring", () => {
   test("Shot.astro asks shotView with the mode and the files, and shows a box or the picture", () => {
     const component = read("apps/docs/src/components/Shot.astro");
-    expect(component).toContain("shotView(page, Astro.currentLocale, { on, exists: (name) => shotFileExists(name) })");
+    expect(component).toContain("shotView(page, Astro.currentLocale, {");
+    expect(component).toContain("exists: (name) => shotFileExists(name)");
+    expect(component).toContain("source: shotSourceKind()");
     expect(component).toContain("const on = shotsOn();");
     expect(component).toContain("<picture>");
     expect(component).toContain("<source media={SHOT_PHONE_MEDIA} srcset={shotUrl(view.phone.name)} />");

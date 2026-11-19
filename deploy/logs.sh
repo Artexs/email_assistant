@@ -8,6 +8,8 @@ set -euo pipefail
 
 # Run from the repo root whatever the caller's directory is (the Compose paths below are relative to it).
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+# shellcheck source=deploy/compose-lib.sh
+source deploy/compose-lib.sh
 
 usage() {
   echo "usage: bash deploy/logs.sh [--since <duration>] [--run <id>] [--request <id>] [--event <code>] [--level <debug|info|warn|error>] [--follow]" >&2
@@ -73,6 +75,7 @@ else
   if [ "$follow" -eq 1 ]; then
     follow_args=(--follow)
   fi
-  C=(docker compose -f deploy/compose.yaml --env-file .env)
+  ea_compose_init || exit 2
+  C=("${EA_COMPOSE[@]}")
   "${C[@]}" logs --no-log-prefix --since "$since" ${follow_args[@]+"${follow_args[@]}"} server | render
 fi

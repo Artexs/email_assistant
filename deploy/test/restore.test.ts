@@ -65,6 +65,7 @@ beforeEach(() => {
   mkdirSync(join(root, "deploy"));
   copyFileSync(join(DEPLOY, "restore.sh"), join(root, "deploy", "restore.sh"));
   chmodSync(join(root, "deploy", "restore.sh"), 0o755);
+  copyFileSync(join(DEPLOY, "compose-lib.sh"), join(root, "deploy", "compose-lib.sh"));
   writeFileSync(join(root, ".env"), "POSTGRES_PASSWORD=live-pg\n");
   writeFileSync(join(root, "age-identity.txt"), "AGE-SECRET-KEY-TEST\n");
   writeFileSync(join(root, "backup.dump.age"), "ciphertext\n");
@@ -276,7 +277,7 @@ describe("restore.sh drill", () => {
       "update mailboxes set status = 'paused'",
       "delete from ops_alerts",
       "delete from auth_sessions",
-      "run --rm -T cli bun run db:migrate",
+      "run --rm -T migrate",
       "run --rm -T cli bun run credentials:check",
       " up -d --no-build --wait",
     ];
@@ -492,6 +493,12 @@ describe("restore.sh new-host", () => {
     expect(text).not.toContain("ops_alerts");
     expect(text).toContain("delete from auth_sessions");
     expect(lines.filter((line) => line.includes("pg_restore"))[0]).toContain(`stdin=${DUMP.length} `);
+    // 10. the migrate step runs the `migrate` service; credentials:check stays in `cli`
+    const migrate = indexOfCall(lines, "run --rm -T migrate");
+    const creds = indexOfCall(lines, "run --rm -T cli bun run credentials:check");
+    expect(migrate).toBeGreaterThanOrEqual(0);
+    expect(creds).toBeGreaterThan(migrate);
+    expect(lines.some((line) => line.includes("db:migrate"))).toBe(false);
     const out = result.stdout.trim().split("\n");
     expect(out.at(-1)).toMatch(/^restore ok target=new-host seconds=\d+$/);
     expect(out.at(-2)).toContain("deleted <org id>");

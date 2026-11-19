@@ -32,9 +32,10 @@ describe("release identity files", () => {
   test("release.sh migrates through a service that compose.yaml has, with a profile, and never uses db:rollback", () => {
     const compose = Bun.YAML.parse(read("compose.yaml")) as { services: Record<string, { profiles?: string[] }> };
     const script = code("release.sh");
-    const match = /run --rm -T (\w+) bun run db:migrate/.exec(script);
+    const match = /run --rm -T (migrate)\b/.exec(script);
     expect(match).not.toBeNull();
-    expect(Object.keys(compose.services)).toContain(match?.[1] ?? "");
+    expect(compose.services.migrate?.profiles).toEqual(["cli"]);
+    expect(script).not.toContain("bun run db:migrate");
     expect(script).not.toContain("db:rollback");
     expect(code("rollback.sh")).not.toContain("db:");
   });
@@ -47,7 +48,7 @@ describe("release identity files", () => {
   });
 
   test("the scripts parse", () => {
-    for (const name of ["release.sh", "rollback.sh", "release-lib.sh"]) {
+    for (const name of ["release.sh", "rollback.sh", "release-lib.sh", "compose-lib.sh"]) {
       const result = Bun.spawnSync(["bash", "-n", join(deployDir, name)]);
       expect(result.exitCode, `${name}: ${result.stderr.toString()}`).toBe(0);
     }

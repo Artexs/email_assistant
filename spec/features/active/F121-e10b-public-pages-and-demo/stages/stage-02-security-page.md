@@ -45,3 +45,7 @@ Carry-over reads: notes §4.2, `docs/legal/claims.md`, `subprocessors` (`@ea/cor
 **Done when.** Tests 1–8 pass; the final message lists the left-out §4.2 rows with reasons; Proof prints `PROOF_OK`.
 
 **Out of scope.** Polish page (stage 05); ledger, registry or legal text edits (report gaps instead).
+
+## Coordinator amendment 2026-11-20 (F138 dropped)
+
+The owner dropped F138: Gemini stays in the code as an optional provider, off by default. Ignore every "Needs F138 stage 02/04" line and every test that says the built page holds no `gemini`. New rule: a public page names only the providers and sub-processors that run by default (the OpenAI provider and the hosting). It never says that Gemini is removed, and it never claims "only OpenAI" for the code. If a ledger row names Gemini, a claim may cite it only with its condition "optional, off by default". Replace the "no `gemini`" test by a test that the page holds no Gemini text outside such a condition. The pages stay held by `OWNER_REVIEW_PENDING`.
