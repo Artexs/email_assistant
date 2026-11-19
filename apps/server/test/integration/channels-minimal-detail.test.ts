@@ -30,7 +30,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-// The direct answers of the bot follow the detail level of the chat (plan D12). The level is a fake here: `telegramDetailOf` reads
+// The direct answers of the bot follow the detail level of the chat. The level is a fake here: `telegramDetailOf` reads
 // `deps.detailOf` and returns `full` without it, until the setting exists.
 const T = new Date("2026-11-06T10:00:00Z");
 const HOUR = 3_600_000;

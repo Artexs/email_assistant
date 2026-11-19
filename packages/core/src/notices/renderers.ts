@@ -252,10 +252,10 @@ export const noticeRenderers = {
   }),
   approval_edit: defineRenderer({
     schema: noticeViewSchemas.approval_edit,
-    // The edit line of a card: the stored text of the card plus one status line. The card is already in that chat (plan D12).
+    // The edit line of a card: the stored text of the card plus one status line. The card is already in that chat.
     telegram: {
       full: (view, opts) => approvalEdit(view, textsFor(opts.locale)),
-      // No button at the minimal level (plan D12): the Reject button of a held send is in the panel.
+      // No button at the minimal level: the Reject button of a held send is in the panel.
       minimal: (view, opts) => ({ ...approvalEdit(view, textsFor(opts.locale)), buttons: [] }),
     },
   }),

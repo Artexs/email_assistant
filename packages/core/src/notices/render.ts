@@ -42,7 +42,7 @@ export const noticeEditRenderers: {
   mail?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
   push?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
 } = {
-  // The edit holds the stored text of a card that is already in the chat plus one status line. `minimal` has no button (plan D12).
+  // The edit holds the stored text of a card that is already in the chat plus one status line. `minimal` has no button.
   telegram: {
     full: (input, opts) => approvalEdit(input, textsFor(opts.locale)),
     minimal: (input, opts) => ({ ...approvalEdit(input, textsFor(opts.locale)), buttons: [] }),

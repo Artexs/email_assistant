@@ -11,7 +11,7 @@ import { noticeKinds, type NoticeKind, type NoticeRenderOptions } from "./kinds"
 import { renderNotice, renderNoticeEdit } from "./render";
 import { noticeViewSchemas, type NoticeView } from "./views";
 
-// The privacy guard of the `minimal` Telegram render (ADR 0032 point 5, plan D12). Every string field that a view schema allows holds
+// The privacy guard of the `minimal` Telegram render (ADR 0032 point 5). Every string field that a view schema allows holds
 // the word CANARY; the text of a `minimal` render must hold none of them, no `@`, no URL of the view and no button.
 
 const id1 = "11111111-1111-4111-8111-111111111111";
@@ -234,7 +234,7 @@ describe("the canary fixtures", () => {
 });
 
 describe("minimal render of every kind", () => {
-  // `approval_edit` edits a card that is already in the chat: its text is the stored text of that card (plan D12), tested below.
+  // `approval_edit` edits a card that is already in the chat: its text is the stored text of that card, tested below.
   const kinds = noticeKinds.filter((kind) => kind !== "approval_edit");
 
   test.each(locales)("holds no planted string, no @, no URL of the view and no button, in %s", (locale) => {

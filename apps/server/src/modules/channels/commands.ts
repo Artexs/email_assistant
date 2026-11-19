@@ -98,7 +98,7 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const timeZone = organization.timezone;
   const clock = (at: Date): string => formatClock(at, timeZone, now, texts.locale);
 
-  // `minimal`: a mailbox is "Mailbox 1", "Mailbox 2" in the order of the list, never its address (plan D12, Q4).
+  // `minimal`: a mailbox is "Mailbox 1", "Mailbox 2" in the order of the list, never its address.
   const minimal = (await telegramDetailOf(deps, link)) === "minimal";
   const dayStart = quotaDayStart(now, QUOTA_TIMEZONE);
   const lines = [t.title(formatDay(now, timeZone, texts.locale), localDateTime(now, timeZone).time)];
