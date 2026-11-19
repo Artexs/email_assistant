@@ -39,3 +39,11 @@ Carry-over reads: `plan.md` D5, D9, D10; `interfaces.md`; `digest-and-notices.md
 
 ## Carry-over from the stage 02 review (2026-11-18)
 See `../review-2.md` (the lines for stage 08).
+
+## First commit of this stage (carry-over from the stage 07 review, PASS c0d7fe5d)
+- N1 (loop-consent bypass): when a push row ends `no_device`, plan D23 queues the Telegram row of that event. A withheld owner with a chat holds the real follow-up kind (`approval`, `send_result`) only as a push row; its Telegram row never existed. D23 would then send it to Telegram and bypass the loop-consent gate. Skip the Telegram fallback for rows with `loop_id` set, or run `splitByLoopConsent` again. Add a test.
+- N2 (burst after rebind): a device whose session expired and was bound again (`rebindOnly` keeps `created_at`) gets push rows for every urgent mail of the last 24 h that arrived while it was dead. Compare `eventAt` with the later of the device `created_at` and the session `created_at` (in `planFanOut` or the sender). Add a test.
+- N3 (decide, default = keep D20): a route change `urgent: telegram` to `both` writes push rows for urgent mails of the last 24 h on the next tick. Keep, and note it in the capability doc.
+- N8: a 404 or 410 from the push service ends `no_device` and is excluded from the operator failed counts. Keep a separate counter or log line for it so a systematic sender bug stays visible.
+- Optional tests (stage 07 survivors): M12 (`hasDevice` from live devices, not all devices), M06 (push-only members only in push-kind detectors), M26 (flag off in `queueMailboxRemovedNotices`), M28 (`countFailedOutboxSinceOfAll` excludes `no_device`), M15 (return order of ids), M14 (all rows of one event or none).
+- Cost: if load matters, read the flag once per detector run (stage 07 note).
