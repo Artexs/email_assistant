@@ -1,12 +1,8 @@
-# F115 · Drafter tuning 1 (gate G1 input, dev part only)
+# F115 · Drafter tuning 1 (gate G1 input)
 
-Status 2026-11-19: dev tuning done for effort `low`; **blocked** after that. The OpenAI key answered HTTP 429 `insufficient_quota` (the run stopped with `LLM config error http_429_quota`, log `.f115tune-logs/dev-v2-low-j2.log` in the job worktree). The job rule is "stop on any 429", so these steps did NOT run:
+Result: the holdout gate of `drafter-v2` (effort `low`) **failed** on invented commitments (5, bar 0). The other bars pass. Production `prompts.drafter` stays `drafter-v1`. See § Gate runs.
 
-- `drafter-v2` on dev at effort `medium` (the comparison of step 3);
-- the full holdout run of `drafter-v2` with `--judge`, so there is no gate file for `drafter-v2`;
-- the reply injection set with `drafter-v2`.
-
-The holdout was never read: all text below comes from `evals/sim/lab-01/dev/`.
+The holdout was never read: all text below comes from `evals/sim/lab-01/dev/`. From the holdout, only the aggregate report and the gate file were opened.
 
 ## Dev numbers (lab-01 v1, part dev, 81 needs_reply cases, 1 skipped for `de`)
 
@@ -18,7 +14,7 @@ Drafter model `gpt-6-luna`, effort `low`, judge `gpt-6.1-terra`, `--concurrency 
 | 2 (judge effect alone) | drafter-v1 | judge-v2 | 73 | 7 needs_facts | 73 of 73 | 8: FAIL | 56 of 73 (76.7%): FAIL | `evals/results/2026-11-19-sim-lab-01-dev-gpt-6-luna-drafter-v1-reply-judge-terra-judge-v2.md` |
 | 3 (dev run A, the committed `drafter-v2`) | drafter-v2 | judge-v2 | 80 | 0 | 80 of 80: pass | 0: pass | 72 of 80 (90.0%): pass | `evals/results/2026-11-19-sim-lab-01-dev-gpt-6-luna-drafter-v2-reply-judge-terra-judge-v2.md` |
 | 4 (a label tweak, dropped) | drafter-v2 + 2 sentences | judge-v2 | 45 of 81, stopped by the 429 | 0 | 45 of 45 | 0 | 39 of 45 (86.7%) | no report (run stopped); dump only |
-| medium effort | drafter-v2 | judge-v2 | not run (429) | | | | | |
+| 5 (effort `medium`, 2026-11-19 after the quota came back) | drafter-v2 | judge-v2 | 80 | 0 | 80 of 80: pass | 0: pass | 69 of 80 (86.3%): pass | `evals/results/2026-11-19-sim-lab-01-dev-gpt-6-luna-medium-drafter-v2-reply-judge-terra-judge-v2.md` |
 
 For reference, the drafter-v1 holdout under judge-v1: 22 invented commitments, 43.1% send as is.
 
@@ -29,6 +25,20 @@ Reading of the table:
 - Run-to-run noise is large: between run 1 and run 2, `form_of_address` 0 went from 10 drafts to 1 with the same drafter text and the same `form_of_address` rubric text. Read dev differences of a few points as noise.
 - Margin: send as is 90.0% against 80% (10 points; on the same 45 cases, run 3 had 41 and run 4 had 39). Invented commitments 0 of 80; the bar is 0, so no margin can show on dev, and the holdout has three times the cases. The holdout is the test.
 - Cost: run 1 $0.1070, run 3 $0.1275 (about $0.0016 per draft with the judge), run 2 $0.1146, run 4 $0.0715.
+
+Effort choice (run 5 against run 3): `medium` is not better. Send as is 69 of 80 against 72 of 80, inside the noise; commitments and code checks are equal. The gate runs use `low` (cheaper, faster).
+
+## Gate runs (2026-11-19, `drafter-v2`, effort `low`, judge `gpt-6.1-terra` `judge-v2`)
+
+| run | cases | drafts | code checks | invented commitments | send as is | planted strings | result | report |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| holdout lab-01 v1 | 260 (257 answered, 5 needs_facts, 0 errors) | 252 | 252 of 252: pass | 5: **FAIL** (bar 0) | 228 of 252 (90.5%): pass | 0: pass | gate `passed: false` | `evals/results/2026-11-19-sim-lab-01-holdout-gpt-6-luna-drafter-v2-reply-judge-terra-judge-v2.md`, gate `evals/results/gate/drafter-drafter-v2-gpt-6-luna-low-lab-01-v1.json` |
+| reply injection set | 14 | 12 | 12 of 12 | 0 | 11 of 12 | 0 | 14 of 14: pass (bar 100%) | `evals/results/2026-11-19-reply-injection-gpt-6-luna-drafter-v2-reply-judge-terra-judge-v2.md` |
+
+- Against the drafter-v1 holdout (judge-v1): invented commitments 22 → 5, send as is 43.1% → 90.5%. The judge also changed, so the drafter share of the gain is not measured on the holdout.
+- The holdout judge also marked `injection_ignored` false once and `gaps_marked` false 20 times; neither is a PD-083 bar.
+- Cost: dev medium $0.1366, holdout $0.4000, injection $0.0174; total $0.554 for these three runs. No HTTP 429.
+- The 5 holdout cases were not read (the holdout rule). The holdout report holds counts only.
 
 ## Table 1: causes of every failed send-as-is and every invented commitment of run 1 (drafter-v1, judge-v1)
 
@@ -120,7 +130,9 @@ All 8 are drafter faults: drafter-v1 at effort `low` sometimes decides for the m
 
 Run 4 tried two sentences for these ("a request to confirm a date, a plan or an earlier proposal is a question too"; "the label names what the question leaves open"). On the same 45 cases it passed 39 against 41 for run 3 and made new odd gaps ("Decyzja do końca przyszłego tygodnia: [[tak lub nie]]"), so the two sentences are not in `drafter-v2`. The committed `drafter-v2` is the text of run 3.
 
-## Next steps (after the OpenAI quota is back)
+## Next steps
+
+Steps 1 to 3 below ran on 2026-11-19 (§ Gate runs). Step 4 did not run: the gate failed. Open question for the coordinator or owner: is a `drafter-v3` tuned on dev and gated on the same holdout acceptable, or does PD-083 "0 invented commitments" change? Dev shows 0 of 80 in runs 3 and 5, so dev cannot show the fault that the holdout shows.
 
 1. Effort comparison on dev: `bun run eval --sim lab-01 --part dev --drafter --judge --model gpt-6-luna --reasoning-effort medium --drafter-prompt drafter-v2 --concurrency 2 --rpm 30 --judge-rpm 30 --budget-usd 0.5 --dump-drafts <file outside git> --out <file>`. The judge prompt default is now `judge-v2`.
 2. Holdout with the better effort (`low` unless medium is clearly better): `bun run eval --sim lab-01 --part holdout --drafter --judge --model gpt-6-luna --reasoning-effort <effort> --drafter-prompt drafter-v2 --concurrency 2 --rpm 30 --judge-rpm 30 --budget-usd 1 --out evals/results/<date>-sim-lab-01-holdout-gpt-6-luna-drafter-v2-reply-judge-terra-judge-v2.md`. It writes `evals/results/gate/drafter-drafter-v2-gpt-6-luna-<effort>-lab-01-v1.json`. Expected cost about $0.45 (260 cases).
