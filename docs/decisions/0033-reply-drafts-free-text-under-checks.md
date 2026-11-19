@@ -1,6 +1,6 @@
 # 0033 — Reply drafts: free LLM text under code checks; mail-client edits win
 
-- Status: proposed (E6 discovery, 2026-11-13). The E6a ticket sets "accepted" when it lands.
+- Status: accepted (F115, 2026-11-19). The quality gate of the drafter (PD-083, the holdout and the reply injection set) and the pilot (F115 stage 18) were not finished when the docs stage landed; see `docs/capabilities/reply-drafts.md` Limits.
 - Date: 2026-11-13
 - Amends: `docs/architecture.md` §4.5 (approval flow) and §7 "The template" rule. Replaces the plan of F043.
 

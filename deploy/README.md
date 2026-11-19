@@ -862,6 +862,81 @@ Roll back the code, not the migration. Do not run `db:rollback` on a live databa
 4. What stays: both tables, with their rows (the old code has no job that reads or deletes them). While the old release runs, its data-request erase does not know the tables, so it leaves the profiles of the person: erase again after the new release is back. A later start finds the profiles and ages them out by the 12-month rule.
 5. The migration by name, for a development database or a restored backup only: `20261118120001_sender_context.sql` (one `bun run db:rollback`). A broken migration gets a forward fix in a patch release or a restore from backup.
 
+## Reply drafts (F115)
+
+Capability page: `docs/capabilities/reply-drafts.md` (rules, limits, tests). For mail that needs an answer, the assistant writes a reply draft under code checks. The draft waits in the Drafts folder and goes out only after an owner taps Send. Two switches carry it, both default off: the org flag `reply_drafts` and the mailbox switch `reply_drafts` (mode `assist` and a password mailbox). The separate org flag `draft_copy_check` makes the Drafts copy check apply to the other draft kinds; a reply always checks.
+
+### Release
+
+1. Release with the flags off (`docs/release-checklist.md`). The migration `20261117130001_reply_drafts.sql` only adds things (two tables, three outbox kinds in a CHECK list, one backfill of the mailbox signature). The old release runs on the new schema until step 3 of Roll back.
+2. This release holds the new Telegram consent text (consent version `2026-11-19`, `TERMS_VERSION` `2026-11-19-2`). Every member accepts the terms again at the next sign-in. A member who linked Telegram earlier gets reply data in Telegram only after the Confirm card of the Telegram card in the panel records the new version; until then that owner sees the count and the panel link only.
+3. Keep `reply_drafts` OFF on every organization until this release (or a later one) runs on the server. An older release has no consent text for reply data: an owner with the flag on would get "Confirm the new Telegram terms in the panel" and no panel version could cover reply data.
+
+### Turn on (pilot organization first)
+
+1. The server needs `TRIAGE_LLM_SCOPE` on (the drafter job runs only then) and the role `drafter` set (`LLM_DRAFTER_PROVIDER`, `LLM_DRAFTER_MODEL`, `LLM_DRAFTER_REASONING`; an empty key falls back to the classifier). The quality gate of the model (holdout and reply injection reports) is pending: the model of the drafter is a config value that the owner decides.
+2. The flag: `$C run --rm cli bun run org:flag --org-id <uuid> --flag reply_drafts --on`. Check: `$C run --rm cli bun run org:flag --org-id <uuid>` shows `reply_drafts` `on`.
+3. The mailbox: the owner turns on the reply drafts switch in the style card of the settings page, or `$C run --rm cli bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name reply_drafts --value on`. The mailbox must be a password mailbox in `assist` mode; an OAuth mailbox refuses it (`refused: oauth_mailbox`).
+4. Wait for the job `replies.drafter` (every 15 s). Check: `bash deploy/logs.sh --since 1h --event reply_drafted` shows one line for each draft, and `bash deploy/logs.sh --since 1h --event reply_draft_error` and `--event reply_sweep_failed` show no line. A draft shows in the Drafts folder and in the panel at `/approvals`.
+5. Probe the Drafts copy before you turn on `draft_copy_check` for the other kinds: `$C run --rm cli bun run reply:check-copy --org-id <uuid> --action-id <draft id>` (read only), again after one hour; the two hashes must match (F115 stage 18, probe P1). Mail servers that re-encode a draft make the hash unstable: a reply send then ends `draft_missing` and the copy stays (`docs/known-alerts.md` `draft_copy_unhashed`).
+
+### Turn off
+
+- The flag off (no deploy): `org:flag --org-id <uuid> --flag reply_drafts --off`. No new draft, notice or sample; `approve` of a reply answers `feature_off`; the committer holds an approved reply; the sweep stops. An open reply send ends `expired` / `timeout` 7 days after its creation. `FEATURES_OFF=reply_drafts` in `.env` plus `$C up -d server` forces it off for every organization.
+- One mailbox: the switch off (`mailbox:settings switch ... --name reply_drafts --value off`, or the panel) closes every open reply of that mailbox as `policy_changed`, with its draft. A draft copy that is already in the Drafts folder stays there unless the server has UIDPLUS (then the close removes it when its hash matches).
+
+### Roll back
+
+Roll back the code, not the migration. Do not run `db:rollback` on a live database: its down part drops `reply_requests` and `mailbox_profiles` (the typed profiles are lost) and deletes the three notice kinds. The old code ignores both tables, but five things in the new data break it:
+
+- The old `claimDueOutbox` claims a whole batch and then checks the kind. A pending row of the kinds `replies_ready`, `reply_prompt` or `reply_result` fails that check for a release older than stage 03, so one row blocks the notice sender of every organization. A newer old release rejects the view of `replies_ready` (`bad_view`) and slices the review card key `approval:<id>:r<n>` into a bad send id (the sender throws `22P02`).
+- The view of a `weekly_report` is strict. Stage 16 added the key `replyDrafts` to its `week`; an older release rejects a row that holds it (`bad_view`).
+- A release older than stage 04 does not know the draft kind `reply`: its detector errors on every run for an open reply, and its committer ends an approved one `bad_payload`.
+- The panel read model has the new strict fields `endReason`, `replyAllAdds` (item and detail), `view.replyTo`, `view.gaps`, `view.sentVisible` and `reply` on each activity row, and the stats answer has `replyDrafts`. A browser tab that runs the newer page code rejects an answer without them; a tab that runs the older code rejects an answer with them (`z.strictObject`) until it reloads. The old server never sends them. No migration.
+- An older release does not know the callback codes `rd`, `ra`, `ru`, `dr` (they parse to null and answer "invalid"), the audit event `reply.requested` (free text column, harmless) and the routes `POST /api/replies`, `/api/approvals/:id/redraft`, `/recipients`, `GET /api/replies/requests/:id`, `GET`, `PUT /api/mailboxes/:id/profile`, the preview and the sample routes (404).
+
+1. Turn the flag off first: `org:flag --org-id <uuid> --flag reply_drafts --off`, or `FEATURES_OFF=reply_drafts`.
+2. Stop the server. Then, before the old image starts, run this block once (it is safe to run twice). The first statement is for every rollback to a release older than this one. The second statement is only for a rollback to a release older than stage 04 (a release from before the commit `a4065e84`, F115 stage 04): it ends every open reply as the expiry job does, with the reason `rollback`: the send `expired` (no result notice), its `ready` draft `expired` / `send_closed`, and one `action.expired` audit row for each. A draft that is already in the Drafts folder stays there; delete it by hand. Delete the second statement for a newer target. The whole block is one transaction:
+
+   ```sh
+   $C stop server
+   $C exec -T db psql -U postgres -d email_assistant -v ON_ERROR_STOP=1 <<'SQL'
+   BEGIN;
+   -- (a) notices that an older release cannot read
+   UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL
+   WHERE status IN ('pending', 'sending')
+     AND (kind IN ('replies_ready', 'reply_prompt', 'reply_result')
+          OR (kind = 'approval' AND dedup_key ~ '^approval:[0-9a-f-]{36}:r[0-9]+$')
+          OR (kind = 'weekly_report' AND view -> 'week' ? 'replyDrafts'));
+   -- (b) open reply drafts, for a target older than stage 04 only
+   WITH closed AS (
+     UPDATE actions SET status = 'expired', status_reason = 'rollback', locked_at = NULL, next_attempt_at = NULL,
+       result_notified_at = now(), updated_at = now()
+     WHERE type = 'send' AND payload ->> 'kind' = 'reply' AND status IN ('awaiting_approval', 'approved')
+     RETURNING id, org_id, email_id, depends_on_action_id
+   ), drafts AS (
+     UPDATE actions d SET status = 'expired', status_reason = 'send_closed', locked_at = NULL, updated_at = now()
+     FROM closed c
+     WHERE d.id = c.depends_on_action_id AND d.org_id = c.org_id AND d.type = 'create_draft'
+       AND d.reverses_action_id IS NULL AND d.status = 'ready'
+     RETURNING d.id, d.org_id, d.email_id
+   )
+   INSERT INTO audit_log (org_id, email_id, action_id, actor, event, reason_code, data)
+   SELECT org_id, email_id, id, 'system', 'action.expired', 'rollback', '{"action_type": "send", "reason": "rollback"}'::jsonb
+   FROM closed
+   UNION ALL
+   SELECT org_id, email_id, id, 'system', 'action.expired', 'send_closed', '{"action_type": "create_draft", "reason": "expired"}'::jsonb
+   FROM drafts;
+   COMMIT;
+   SQL
+   ```
+
+   The test `apps/server/test/integration/reply-drafts-rollback.test.ts` runs this block as it stands in this file on the development database (it strips `BEGIN` and `COMMIT` to keep its own rollback).
+
+3. Run `deploy/rollback.sh` (§ Roll back a release).
+4. What stays: the two tables with their rows, the drafts in the Drafts folder, the sent replies (a send that was `applied` is history), and `llm.call` rows. While the old release runs, its data-request erase does not know the two tables: erase again after the new release is back. A later start ages the instruction and the sample text out by the 90-day rule.
+5. The migration by name, for a development database or a restored backup only: `20261117130001_reply_drafts.sql` (one `bun run db:rollback`; it is not the newest migration, so older ones above it must be rolled back first). A broken migration gets a forward fix in a patch release or a restore from backup.
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.
