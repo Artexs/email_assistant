@@ -16,6 +16,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 
