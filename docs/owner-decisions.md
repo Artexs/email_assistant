@@ -742,3 +742,11 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: owner request in chat, 2026-11-19.
 - Undo: reopen F138 from `spec/features/dropped/2026-11/` and land the stage 02 branch after a refresh.
 - Source: `spec/features/dropped/2026-11/F138-*/outcome.md`.
+
+### 2026-11-19 · F141: one provider for the whole application, chosen by `LLM_PROVIDER` · scope · new
+
+- Decision: every role (classifier, drafter, extractor, judge) uses the one provider that `LLM_PROVIDER` names; roles pick a tier (`light`, `strong`), the provider row maps tiers to models. The per-role provider and model env keys go; an old key in `.env` fails config by name. Gemini and OpenAI stay; DeepSeek is added. This ticket replaces the dropped OpenAI-only ticket (F138).
+- Why: owner request in chat, 2026-11-19.
+- Undo: keep the per-role keys in the plan; the tier map works with them too.
+- Source: `spec/features/planned/F141-*/ticket.md`.
+

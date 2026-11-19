@@ -40,7 +40,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed, [risky], no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.
 - `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F136 lands): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
-- `F141-…-deepseek-…` (🔴 PLANNED, needs plan): a DeepSeek provider row and key, model tiers (`light`, `strong`) for every provider row (OpenAI, Gemini, DeepSeek), an audit that puts all provider code in the registry; dev, tests and evals only (no legal pages, no gate, no production switch: owner 2026-11-19).
+- `F141-…-deepseek-…` (🔴 PLANNED, needs plan): one `LLM_PROVIDER` for all roles (`openai`, `gemini`, `deepseek`), model tiers `light`/`strong` per provider, per-role provider and model env keys removed, an audit that puts all provider code in the registry; DeepSeek for dev, tests and evals only (no legal pages, no gate, no production switch: owner 2026-11-19).
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (history now; row 28 F122 is the last open row).
 
 ## PARKED
