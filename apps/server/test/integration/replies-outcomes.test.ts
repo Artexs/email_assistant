@@ -269,6 +269,7 @@ describe("replyOutcomeRows and the counts", () => {
       await request({ status: "failed", reason_code: "llm_error" });
       await request({ status: "failed", reason_code: "llm_cap", trigger: "sample" });
       await request({ status: "failed", reason_code: "timeout", updated_at: new Date(RANGE.end.getTime() + DAY_MS) });
+      await request({ status: "failed", reason_code: "timeout", updated_at: new Date(RANGE.start.getTime() - DAY_MS) });
       await request({ status: "done" });
       await request({ status: "cancelled", reason_code: "feature_off" });
 
