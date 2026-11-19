@@ -35,7 +35,7 @@ Template:
 | 0017 | Web access only through Tailscale Serve                                          | accepted                                            |
 | 0018 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
 | 0019 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
-| 0020 | Reserved by the S6 plan (`tasks/active/s6-pre-sale.md`)                          | reserved (E7 tickets F106–F108 use or release them) |
+| 0020 | Accounts: invite only, plan state, consent by mode, deletion                     | accepted (F107)                                     |
 | 0021 | Simulator stack: separate Compose project with GreenMail, fake Telegram          | accepted                                            |
 | 0022 | Report mail goes into the user's own INBOX by IMAP APPEND                        | accepted (F110)                                     |
 | 0023 | Every user action is a typed HTTP command described in OpenAPI                   | accepted (PD-035, F102)                             |

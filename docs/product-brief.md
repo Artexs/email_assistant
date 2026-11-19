@@ -69,6 +69,7 @@
   Before S5, ask 5–10 target customers which mail they use.
 - **Security and GDPR** are product features: password encryption, tenant isolation, data retention limits,
   EU data location (for customers: hosted EU server + Vertex AI EU), a data processing agreement with the LLM provider, account and data deletion.
+  The draft legal papers are in `docs/legal/README.md` (F107). The cost per mailbox is in `docs/cost-model.md`.
 - **Telegram privacy:** bot messages are not end-to-end encrypted and pass Telegram servers.
   Telegram gets notices, digest lines (sender, subject, AI summary) and the draft text for approval; never raw mail bodies. The mobile app can fix this later.
 - **Channel-neutral backend:** approvals and commands go through one backend API, so Telegram and a mobile app can share it.

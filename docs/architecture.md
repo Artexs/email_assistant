@@ -562,7 +562,7 @@ Tenancy:
   | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
   | LLM         | Gemini API free tier for the temporary pilot mailbox (ADR 0013: human review and training allowed by the free-tier terms, accepted). Paid tier (55-day abuse logging, no EU location) when billing goes on | Vertex AI EU endpoint; zero-data-retention setup          |
   | Server + DB | home VPS of the user                                                                                                                                                                                       | hosted EU VPS                                             |
-  | Papers      | —                                                                                                                                                                                                          | Privacy policy names Google as processor; DPA with Google |
+  | Papers      | Draft privacy policy, terms and DPA and the internal papers ([papers.md](capabilities/papers.md)), cost model in `docs/cost-model.md`                                                                      | Papers stay drafts until a lawyer reads them (ADR 0020)   |
 
   Changed 2026-11-14 (PD-001, F095 stage 01): no outside user is served now. The column "External customers (S6)" shows the plan for the day outside users come. Production stays on the home VPS (F108); the EU endpoint is an option in ADR 0035 (accepted for decisions 1–5, F111); the privacy policy and DPA belong to E7 (F107).
 

@@ -28,7 +28,7 @@
 ### Sell-ready MVP (+ S5, S6a, S6b)
 
 - Web panel (lite): login, connect mailbox, link Telegram, settings, rules, activity (built and deployed 2026-11-11, ADR 0016, 0017).
-- S6a customer core: plan state, suspend and resume, mailbox limit, retention (F077, deployed 2026-11-12). S6b login hardening (F082). Account data, papers and cost, VPS production: Stage 2 E7 (F106, F107, F108). No sign-up and no billing (PD-001, PD-047).
+- S6a customer core: plan state, suspend and resume, mailbox limit, retention (F077, deployed 2026-11-12). S6b login hardening (F082). Account data, papers and cost, VPS production: Stage 2 E7 (F106, F107, F108). Draft papers: `docs/legal/README.md`; cost model: `docs/cost-model.md`. No sign-up and no billing (PD-001, PD-047).
 
 ### Not in the MVP (Phase 2)
 
