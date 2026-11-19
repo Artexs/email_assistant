@@ -21,3 +21,11 @@ Carry-over reads: every landed F120 stage (git log), `docs/capabilities/README.m
 ## Done when
 
 `bun run lint` passes on the docs checks the repo has (`capability-map.test.ts`, docs guard tests). Then the Proof command.
+
+## First commit of this stage (carry-over from the stage 10 re-review, PASS 289b89fc)
+
+Fix `docs/capabilities/triage.md` rule 17 cost lines (line ~92):
+- The flag-off cost line is out of date: each batch also makes 1–2 `isFeatureOn` reads.
+- The "about 1.3 s at 100000 mails" figure was the total of both reads. `suspiciousSenderDomains` alone takes about 360 ms.
+- `userSentKey` counts all user Sent mail of any age on every batch (about 80 ms at 100000 rows); the doc calls it "cheap". State the number.
+Optional test gaps (low risk, add if cheap): a test for the default `SENT_RECIPIENT_MAX_MAILS = 5000`; a test that `sent_at` (not `internal_date`) bounds the 90-day window. Accepted note: if the user mails a typo domain more often than the real one, the real domain gets `lookalike_domain` (false alarm only, never lowers suspicion).

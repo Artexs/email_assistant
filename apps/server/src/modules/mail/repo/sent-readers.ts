@@ -1,3 +1,4 @@
+import { registrableDomainShared } from "@ea/core";
 import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
@@ -7,6 +8,9 @@ import { getSentSyncState, isSentErrorCode, type SentErrorCode } from "./sent-st
 import { notAutomaticSql, type DbOrTrx } from "./shared";
 
 const ANSWER_CHUNK = 500;
+
+// The most user Sent mails (the newest) that `sentRecipientDomains` reads.
+export const SENT_RECIPIENT_MAX_MAILS = 5000;
 
 export interface UserAnswer {
   answeredAt: Date;
@@ -139,4 +143,78 @@ export async function listSentHealth(db: DbOrTrx, ctx: TenantContext): Promise<S
       lastErrorCode: row.last_error_code,
     };
   });
+}
+
+export interface SentRecipientDomain {
+  // The registrable domain (lower case, `registrableDomainShared` of core: a tenant of a shared hosting suffix stays apart).
+  domain: string;
+  // Distinct user mails with a recipient on this domain.
+  mails: number;
+}
+
+export interface UserSentKey {
+  // The count of user Sent mails of the mailbox, any age.
+  count: number;
+  // The id of the newest one (by `sent_at`, then id), or null with no mail.
+  newestId: string | null;
+}
+
+// A cheap key for a cache of `sentRecipientDomains`: the count and the newest id of the user Sent mail of the mailbox. A new Sent
+// mail changes the count, also when its `sent_at` equals the newest (the Date header has whole seconds, so the order by id alone
+// could keep the same newest id). It returns a count and an id, never an address.
+export async function userSentKey(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<UserSentKey> {
+  const { rows } = await sql<{ count: number; newest_id: string | null }>`
+    SELECT count(*)::int AS count,
+      (SELECT n.id FROM sent_emails n
+        WHERE n.org_id = ${ctx.orgId} AND n.mailbox_id = ${mailboxId} AND n.origin = 'user'
+        ORDER BY n.sent_at DESC, n.id DESC LIMIT 1) AS newest_id
+    FROM sent_emails s
+    WHERE s.org_id = ${ctx.orgId} AND s.mailbox_id = ${mailboxId} AND s.origin = 'user'
+  `.execute(db);
+  const row = rows[0];
+  return { count: row?.count ?? 0, newestId: row?.newest_id ?? null };
+}
+
+// The registrable domains that the user wrote to: To or Cc of `origin = 'user'` Sent mail of this mailbox with `sent_at` at or after
+// `since`, not an automatic reply, counted once per mail. Only the newest `maxMails` such mails are read (the database cuts the rows
+// before they reach the process). Only domains with at least `minMails` mails; the most mailed first (ties by name), at most
+// `limit`. One statement. A mail that has two recipients on subdomains of one registrable domain counts once for that domain.
+// A recipient with no domain, and a row whose recipients the retention cleared, count for nothing. The result holds domains
+// and counts only, never an address.
+export async function sentRecipientDomains(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { since: Date; minMails: number; limit: number; maxMails?: number }
+): Promise<SentRecipientDomain[]> {
+  const { rows } = await sql<{ id: string; host: string }>`
+    SELECT DISTINCT m.id, lower(btrim(substring(a.addr FROM '@([^@]*)$'))) AS host
+    FROM (
+      SELECT s.id, s.to_addresses, s.cc_addresses
+      FROM sent_emails s
+      WHERE s.org_id = ${ctx.orgId}
+        AND s.mailbox_id = ${mailboxId}
+        AND s.origin = 'user'
+        AND s.sent_at >= ${opts.since}
+        AND ${sql.raw(notAutomaticSql("s.auto_submitted"))}
+      ORDER BY s.sent_at DESC, s.id DESC
+      LIMIT ${opts.maxMails ?? SENT_RECIPIENT_MAX_MAILS}
+    ) m
+    CROSS JOIN LATERAL unnest(m.to_addresses || m.cc_addresses) AS a(addr)
+    WHERE a.addr LIKE '%@%'
+  `.execute(db);
+  const mailsOf = new Map<string, Set<string>>();
+  for (const row of rows) {
+    if (row.host === "") continue;
+    const domain = registrableDomainShared(row.host);
+    if (domain === "") continue;
+    const ids = mailsOf.get(domain) ?? new Set<string>();
+    ids.add(row.id);
+    mailsOf.set(domain, ids);
+  }
+  return [...mailsOf]
+    .map(([domain, ids]) => ({ domain, mails: ids.size }))
+    .filter((row) => row.mails >= opts.minMails)
+    .sort((a, b) => b.mails - a.mails || (a.domain < b.domain ? -1 : 1))
+    .slice(0, opts.limit);
 }
