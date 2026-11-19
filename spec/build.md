@@ -90,3 +90,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F130-the-escalation-cascade-code-its-role-and-its-keys-are-removed-from-production-quality-pass-1-finding-2` (🟢 PROVEN): the escalation cascade code, its role and its keys are removed from production (quality pass 1, finding 2); landed 2026-11-18
 - `F112-e10a-docs-site` (🟢 PROVEN): E10a Docs site; landed 2026-11-18
 - 2026-11: 89 landed. spec/features/done/2026-11/
+
+## Owner rule 2026-11-19: do not wait, run in parallel
+
+Start every ready ticket and stage at once. Do not hold a start for another ticket. Only the VPS deploy runs one at a time, and only one migration is in build. Tell the owner about real conflicts.
