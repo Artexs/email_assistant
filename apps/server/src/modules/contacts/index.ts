@@ -1,5 +1,5 @@
 export { PROFILE_DAYS, readSenderActivity, type ReadActivityOptions, type SenderActivity } from "./activity";
-export { normalizedAddress } from "./address-sql";
+export { divergentCodePoints, normalizedAddress, type DivergentCodePoint } from "./address-sql";
 export { SENT_COVERAGE_FRESH_MS, sentCoverage, senderFlags, type SenderFlags } from "./flags";
 export {
   createContactsRefreshJob,

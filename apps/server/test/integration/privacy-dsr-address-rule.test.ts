@@ -45,6 +45,21 @@ const CASES: { name: string; stored: string; asked: string }[] = [
     stored: `${DOTTED}lker@x.tr`,
     asked: `${DOTTED}LKER@x.tr`,
   },
+  // A stored address that ends (or starts) in a character that the program `trim()` strips but the database `btrim` did
+  // not: the profile (hashed in the program) matched while the mail did not, so the erase left the mail and the next
+  // profile pass wrote the profile again.
+  ...[
+    ["tab", "\u0009"],
+    ["no-break space", "\u00a0"],
+    ["ideographic space", "\u3000"],
+    ["newline", "\u000a"],
+    ["byte order mark", "\ufeff"],
+  ].map(([label, mark]) => ({
+    name: `whitespace: ${label} after the stored address`,
+    stored: `anna@x.test${mark}`,
+    asked: "anna@x.test",
+  })),
+  { name: "whitespace: tab before the stored address", stored: "\u0009anna@x.test", asked: "anna@x.test" },
 ];
 
 interface World extends Org {

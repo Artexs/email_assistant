@@ -8,6 +8,14 @@
 // It assumes that the database lowers non-ASCII letters (a UTF-8 locale such as `en_US.utf8` or `C.UTF-8`).
 const COMBINING_DOT_ABOVE = "\u0307";
 
+// The code points that `String.prototype.trim()` strips, in code-point order: tab, line feed, vertical tab, form feed,
+// carriage return, space, no-break space, Ogham space mark, the en and em spaces to the hair space, line and paragraph
+// separator, narrow no-break space, medium mathematical space, ideographic space and the byte order mark. The program form
+// keeps `trim()`; the SQL form strips this set with `btrim(column, set)`, so both forms cut the same ends. A unit test pins
+// `trim()` to this string over every code point.
+export const ADDRESS_TRIM_CHARS =
+  "\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff";
+
 export function normalizeSenderAddress(address: string): string {
   return address.trim().toLowerCase().replaceAll("ς", "σ").replaceAll(`i${COMBINING_DOT_ABOVE}`, "i");
 }
