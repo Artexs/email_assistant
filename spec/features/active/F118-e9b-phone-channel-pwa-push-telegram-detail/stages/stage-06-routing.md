@@ -1,6 +1,6 @@
 # F118 stage 06 — Route rule and setting
 
-Part of [`../plan.md`](../plan.md). Needs checkpoint A (a real push worked). No migration (the column came in 02).
+Part of [`../plan.md`](../plan.md). Needs stage 05. Checkpoint A (a real push worked) has not run: the gate G-A moved to "before any deploy of F118 code to the VPS or any use of `web_push` in production" (owner decision 2026-11-19, `docs/owner-decisions.md`). No migration (the column came in 02).
 
 Carry-over reads: `plan.md` D6, D7; `interfaces.md` (`noticeGroups`, `effectiveRoute`); `channels/notify-settings.ts`, `packages/core/src/web/notify.ts`, `channels/routes.ts`.
 

@@ -143,16 +143,21 @@ export function pushRoutes(deps: PushRouteDeps): Hono<ApiEnv> {
           ...(body.rebindOnly === true ? { rebindOnly: true } : {}),
         });
         if (device === null) return null;
-        await recordAudit(trx, ctx, {
-          event: auditEvents.pushSubscribed,
-          actor: userId,
-          data: { push_subscription_id: device.id, created: device.created, via: "web" },
-          at: now,
-        });
-        return device;
+        // A page load (`rebindOnly`) that finds the device on this session changes no binding: no audit row, or every panel
+        // load would write one. A click, a new device and a re-bind to a new session are audited.
+        const noise = body.rebindOnly === true && !device.sessionChanged;
+        if (!noise) {
+          await recordAudit(trx, ctx, {
+            event: auditEvents.pushSubscribed,
+            actor: userId,
+            data: { push_subscription_id: device.id, created: device.created, via: "web" },
+            at: now,
+          });
+        }
+        return { id: device.id, noise };
       });
       if (result === null) return c.json({ error: "no_device" }, 404);
-      log.info("push_subscribed", { user_id: userId, push_subscription_id: result.id });
+      if (!result.noise) log.info("push_subscribed", { user_id: userId, push_subscription_id: result.id });
       const answer: PushSubscriptionAnswer = { id: result.id };
       return c.json(answer);
     } catch (error) {

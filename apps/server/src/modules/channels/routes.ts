@@ -111,14 +111,14 @@ export function channelRoutes(deps: ChannelRouteDeps): Hono<ApiEnv> {
     return c.body(null, 204);
   });
 
-  // The own quiet hours and report channel. The row is the one of the session user: no body names another.
+  // The own quiet hours, report channel and notice routes. The row is the one of the session user: no body names another.
   app.get("/me/notify", channelDocs.getNotify, async (c) => {
-    const view = await notifyViewOf(deps.db, c.get("ctx"), c.get("session").userId);
+    const view = await notifyViewOf(deps.db, c.get("ctx"), c.get("session").userId, deps.now());
     if (view === undefined) return c.json({ error: "not_found" }, 404);
     return c.json(view);
   });
 
-  // A group of keys needs its flag: quiet hours `user_quiet_hours`, the channel `report_mail`; with the flag off a write is a 404.
+  // A group of keys needs its flag: quiet hours `user_quiet_hours`, the channel `report_mail`, the routes `web_push`; with the flag off a write is a 404.
   app.patch("/me/notify", channelDocs.patchNotify, async (c) => {
     const ctx = c.get("ctx");
     const { userId } = c.get("session");

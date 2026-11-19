@@ -41,7 +41,7 @@ New kinds, each with an action or mail UUID: `reply_review` (start or next, `aft
 
 ## Routes (stage 14; `/api`, behind `approvals_page` and `reply_drafts`)
 
-- `POST /replies` `{ emailId, instruction? }` → 202 `{ requestId }`, or 200 `{ sendId }` when a draft is open; 409 `blocked` + `reason`, `feature_off`.
+- `POST /replies` `{ emailId, instruction? }` → 202 `{ requestId }`, or 200 `{ sendId }` when a draft is open; 409 `blocked` + `reason`, `not_found` (404 when a flag is off, not 409 `feature_off`).
 - `POST /approvals/:id/redraft` `{ instruction }` → 202 `{ requestId }`; 409 `changed` + `currentId`, `closed`, `redraft_limit`.
 - `POST /approvals/:id/recipients` `{ mode }` → `{ id, version }`; 409 `changed`, `closed`; 400 `too_many_recipients`, `no_reply_to`.
 - `GET /replies/requests/:id` → `{ status, reasonCode, sendId }` (`superseded` carries the open `sendId` of the thread).

@@ -42,8 +42,8 @@ const idSchema = z.uuid();
 // answer with the raw status; the read names it. A send that is not a send state for the page (`logged`, `ready`, `undone`: a plan
 // that never reached approval) has no name: undefined, and the route answers 404 as the detail route and approve do. A send that is
 // still waiting or was replaced is no closed send: HardError, never a made-up name.
-async function closedStateOf(
-  deps: ApprovalRouteDeps,
+export async function closedStateOf(
+  deps: Pick<ApprovalRouteDeps, "db" | "now">,
   ctx: TenantContext,
   sendId: string
 ): Promise<ApprovalClosedState | undefined> {
@@ -56,7 +56,7 @@ async function closedStateOf(
   return state as ApprovalClosedState;
 }
 
-function idOf(raw: string): string {
+export function idOf(raw: string): string {
   const parsed = idSchema.safeParse(raw);
   if (!parsed.success) throw new ValidationError([{ path: "id", code: "invalid_format", message: "invalid id" }]);
   return parsed.data;

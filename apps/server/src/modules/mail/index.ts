@@ -246,9 +246,11 @@ export { getSentSyncView, isSentVisible } from "./sent-view";
 export { markAutomaticAnswers } from "./sent-automatic";
 export { fetchSentTexts, SENT_BODY_TEXT_LIMIT, type SentTextResult } from "./sent-texts";
 export {
+  isOwnerAddress,
   isSyntheticMessageId,
   isTestMail,
   NO_TEST_SENDERS,
+  ownerSmokeFrom,
   renderSeedMessage,
   SYNTHETIC_MESSAGE_ID_DOMAIN,
   SYNTHETIC_MESSAGE_ID_LIKE,
@@ -263,6 +265,7 @@ export {
   type HistoryBackfillOutcome,
 } from "./sync-backfill";
 export { CursorMovedError, syncMailbox, type MailboxSyncResult, type SyncDeps, type SyncResult } from "./sync";
+export { isTestAddress, parseTestAddresses } from "./test-address";
 export {
   auditMailbox,
   backfillMailbox,
@@ -270,6 +273,7 @@ export {
   refreshFlagsOfMailbox,
   type BackfillDeps,
   seedMailbox,
+  type SeedOwnerFrom,
   signalsOfMailbox,
   SIGNALS_CONTENT_LIMIT,
   type MailboxSignals,

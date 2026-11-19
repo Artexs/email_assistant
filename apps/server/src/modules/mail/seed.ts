@@ -1,3 +1,5 @@
+import { splitAddress } from "@ea/core";
+
 export interface SeedMessage {
   messageId?: string;
   from: string;
@@ -132,4 +134,23 @@ export function renderSeedMessage(msg: SeedMessage): string {
     lines.push(header(name, value));
   }
   return `${lines.join("\r\n")}\r\n\r\n${body}`;
+}
+
+const OWNER_ADDRESS = /^[^\s@<>,;"]+@[^\s@<>,;"]+$/;
+
+/** True for a plain `local@domain` address that `ownerSmokeFrom` accepts as the owner address. */
+export function isOwnerAddress(value: string): boolean {
+  return OWNER_ADDRESS.test(value);
+}
+
+/**
+ * The `From` of a smoke mail: the owner address with the plus tag `ea-smoke-<nn>` (`nn` = `n`, two digits at least), and the display name of `from`.
+ * A reply or a delegation to it reaches only the owner. Pure. Throws on an owner address that is not `local@domain`.
+ */
+export function ownerSmokeFrom(from: string, owner: string, n: number): string {
+  if (!isOwnerAddress(owner)) throw new Error("The owner address is not local@domain");
+  const at = owner.lastIndexOf("@");
+  const address = `${owner.slice(0, at)}+ea-smoke-${String(n).padStart(2, "0")}${owner.slice(at)}`;
+  const { name } = splitAddress(from);
+  return name === null ? address : `${name} <${address}>`;
 }

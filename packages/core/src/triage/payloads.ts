@@ -146,21 +146,44 @@ export function sameAddresses(a: readonly string[], b: readonly string[]): boole
   return keys(a) === keys(b);
 }
 
+// The key of an address for the own-mailbox rule: lower case, and no `+tag` in the local part (`me+x@box` is a way to reach `me@box`).
+// Only the own-mailbox rule uses it: another person's `+tag` address stays a different address.
+export function ownAddressKey(address: string): string {
+  const key = address.trim().toLowerCase();
+  const at = key.lastIndexOf("@");
+  if (at < 1) return key;
+  const local = key.slice(0, at);
+  const plus = local.indexOf("+");
+  return `${plus < 1 ? local : local.slice(0, plus)}${key.slice(at)}`;
+}
+
+// The bare address of one stored address entry: the entry itself, or the part in `<…>` of `Name <address>` (the stored To, Cc and
+// Reply-To lists may hold the display name). null: the entry holds no address that a payload accepts (`addressSchema`). It never
+// reads the display name, so a name that looks like an address changes nothing.
+export function bareAddress(entry: string): string | null {
+  const text = entry.trim();
+  const angle = /^[^<>]*<([^<>]+)>$/u.exec(text);
+  const candidate = (angle?.[1] ?? text).trim();
+  return addressSchema.safeParse(candidate).success ? candidate : null;
+}
+
 export type ReplyRecipientsProblem = "cc_is_to" | "cc_duplicate" | "cc_own_mailbox";
 
 // The rules of the recipients of a reply that a schema cannot check (the writer calls it): no Cc equal to To, no
-// address twice in Cc, and no own mailbox in Cc. `ownAddresses` are the mailboxes of the organization. Lower-case compare.
+// address twice in Cc, and no own mailbox in Cc (a `+tag` variant of an own mailbox is an own mailbox: `ownAddressKey`). `ownAddresses` are
+// the mailboxes of the organization. Lower-case compare.
 export function replyRecipientsProblem(
   recipients: { to: readonly string[]; cc: readonly string[] },
   ownAddresses: readonly string[]
 ): ReplyRecipientsProblem | null {
-  const own = new Set(ownAddresses.map((address) => address.toLowerCase()));
+  const own = new Set(ownAddresses.map(ownAddressKey));
   const to = recipients.to.map((address) => address.toLowerCase());
   const seen = new Set<string>();
-  for (const address of recipients.cc.map((value) => value.toLowerCase())) {
+  for (const value of recipients.cc) {
+    const address = value.toLowerCase();
     if (to.includes(address)) return "cc_is_to";
     if (seen.has(address)) return "cc_duplicate";
-    if (own.has(address)) return "cc_own_mailbox";
+    if (own.has(ownAddressKey(value))) return "cc_own_mailbox";
     seen.add(address);
   }
   return null;

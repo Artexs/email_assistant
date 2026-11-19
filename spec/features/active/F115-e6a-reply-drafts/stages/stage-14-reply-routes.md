@@ -32,3 +32,8 @@ Typed `/api` routes for the panel, on top of the F102 approvals API. Every route
 
 ## Carry-over from the stage 13 review (2026-11-18)
 See `../review-13.md` (N2 residuals): decide Reply-To versus From for Reply all, the plus variant and alias of the own mailbox, and the display-name recipient with a visible button; write the decisions down.
+
+**Decided in stage 14 (2026-11-19; detail in `notes/2026-11-19-f115-s14-reply-routes.md`, capability page `docs/capabilities/drafts-and-send.md`):**
+- Reply all goes to the stored From and never to the Reply-To; Use Reply-To is the explicit tap; the panel shows `to`, `cc`, `replyTo` and `recipientsMode` before Send.
+- A `+tag` variant of an own mailbox is an own mailbox (`ownAddressKey`): left out of Reply all and Use Reply-To, refused in Cc.
+- A stored address with a display name counts as its bare address (`bareAddress`); an entry with no valid address is no recipient and shows no button; the rule and the service are one function.
