@@ -1,6 +1,6 @@
 # F121 stage 12 — Close-out: axe, docs, cold-read pack
 
-Needs stage 05: the pl security and pricing pages. Needs stage 06: the reference pages (and whether the evidence page exists). Needs stage 07: the image-path check and the seed source (ADR text). Needs stage 11: `DemoVideo`, `DEMO_VIDEO_SHA256`, the fetch step (ADR text). Playwright: lock rule until F136 lands.
+Needs stage 05: the pl security and pricing pages. Needs stage 06: the reference pages (and whether the evidence page exists). Needs stage 07: the image-path check and the seed source (ADR text). Needs stage 11: `DemoVideo`, `DEMO_VIDEO_SHA256`, the fetch step (ADR text). Needs stage 10: the `demo:record` script (the release checklist names it). Playwright: lock rule until F136 lands.
 
 Part of [`../plan.md`](../plan.md). Extra proof link: `flock /tmp/email-assistant-shared-tests.lock bun run docs:test > /tmp/f121-s12/site.log 2>&1` before `echo PROOF_OK`.
 
@@ -20,6 +20,7 @@ Carry-over reads: ADR 0030 § Built, `docs/code-patterns.md` § Docs site, `docs
 ## Step 2 — Docs
 
 **Decisions.**
+- `docs/release-checklist.md` (moved from stage 11): "When the demo flow changed: `bun run demo:record`; only a run that logs `demo_source demo` is a candidate (D10); the owner watches it, uploads it to the release `demo-video` and the coordinator commits its sha256 to `DEMO_VIDEO_SHA256` (G3)." The upload command (`gh release create demo-video …` or `gh release upload demo-video … --clobber`) goes to `deploy/README.md` § docs as an owner step.
 - ADR 0030 § Built: one F121 paragraph: the publication hold (D1), the claim check (D2), the image-path check, the video path (release asset `demo-video`, pinned by `DEMO_VIDEO_SHA256`, fetched in the deploy), the OpenAPI file in `docs/api/`.
 - `docs/code-patterns.md` § Docs site: a new public claim needs a ledger row and a proof path; `bun run api:spec` after a route change (the drift test says so); re-record the demo when the shown flow changes.
 - `docs/capabilities/web-panel.md` rule 6: the public copy of the OpenAPI file and its drift test.

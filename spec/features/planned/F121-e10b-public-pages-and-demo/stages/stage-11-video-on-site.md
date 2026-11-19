@@ -1,6 +1,6 @@
 # F121 stage 11 — Video on the site
 
-Needs stage 04: the home pages `index.mdx` and `pl/index.mdx` (the video place). Needs stage 01: the `publish_held_pages` input in `docs-deploy.yml` and the hold in `deployDecision` (both stages edit them). Needs stage 10: the `demo:record` script that the release checklist names. It uses a committed fixture video, not a stage 10 output. Playwright: lock rule until F136 lands.
+Needs stage 04: the home pages `index.mdx` and `pl/index.mdx` (the video place). Needs stage 01: the `publish_held_pages` input in `docs-deploy.yml` and the hold in `deployDecision` (both stages edit them). It uses a committed fixture video, not a stage 10 output: May run next to 09 and 10 (the release-checklist line that names `demo:record` is in stage 12). Playwright: lock rule until F136 lands.
 
 Part of [`../plan.md`](../plan.md). `[risky]` deploy workflow: a new download step with a token. Decisions D8, P4, P5. Review before the land. Extra proof link: `flock /tmp/email-assistant-shared-tests.lock bun run docs:test > /tmp/f121-s11/site.log 2>&1` before `echo PROOF_OK`.
 
@@ -37,10 +37,6 @@ Carry-over reads: `.github/workflows/docs-deploy.yml`, `apps/docs/scripts/workfl
 5. `workflows.test.ts`: the fetch step runs before the build, with `GH_TOKEN` from `github.token`; build-job permissions unchanged.
 6. Public-content scan: a `.vtt` in the built site with `jan@firma.pl` fails the build.
 7. Deploy gate: tag `demo-video` → `skip: … not a release tag`.
-
-## Step 3 — Release checklist and owner commands
-
-**Decisions.** `docs/release-checklist.md`: "When the demo flow changed: `bun run demo:record`; the owner watches it, uploads it to the release `demo-video` and the coordinator commits its sha256 to `DEMO_VIDEO_SHA256` (G3)." The upload command (`gh release create demo-video …` or `gh release upload demo-video … --clobber`) goes to `deploy/README.md` § docs as an owner step.
 
 **Check.** `bun test apps/docs/scripts apps/docs/src apps/docs/integrations`, `bun run docs:build`, the browser check under the lock.
 

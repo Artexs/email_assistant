@@ -1,6 +1,6 @@
 # F121 stage 01 — Publication hold and claim check
 
-Needs: nothing new; it reads `deploy-gate.ts`, `docs-deploy.yml` and `docs/legal/claims.md` at HEAD. May run next to 08.
+Needs: nothing new; it reads `deploy-gate.ts`, `docs-deploy.yml` and `docs/legal/claims.md` at HEAD. May run next to 07 and 08.
 
 Part of [`../plan.md`](../plan.md). `[risky]` publication path. Decisions D1, D2. Interfaces: `interfaces.md` § Docs app (stage 01).
 

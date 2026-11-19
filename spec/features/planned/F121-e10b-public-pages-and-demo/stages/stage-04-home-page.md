@@ -33,12 +33,14 @@ Carry-over reads: `docs/product/stage-2/03-product-frame.md` §2 (thesis, three 
 
 Mutation: remove the link from one bullet → test 2 fails; link `/securty/` → the link check fails.
 
-**Check.** `bun test apps/docs/src`, `bun run docs:stale --strict`, `bun run docs:build`, `flock /tmp/email-assistant-shared-tests.lock bun run docs:test`.
-
-**Done when.** Tests 1–4 pass; Proof prints `PROOF_OK`.
-
 ## Step 3 — Pricing links to security
 
 Add one line with a link to `/security/` on the English pricing page (stage 03 left it out so it could land before stage 02). Stage 05 writes the Polish pricing page with the same links.
+
+5. The built `/pricing/` HTML holds a link that resolves to `/security/`. Mutation: remove the line → test 5 fails.
+
+**Check.** `bun test apps/docs/src`, `bun run docs:stale --strict`, `bun run docs:build`, `flock /tmp/email-assistant-shared-tests.lock bun run docs:test` (Playwright: lock rule until F136 lands).
+
+**Done when.** Tests 1–5 pass; Proof prints `PROOF_OK`.
 
 **Out of scope.** Polish security and pricing (stage 05); the video (stage 11); renaming the product (Q7).

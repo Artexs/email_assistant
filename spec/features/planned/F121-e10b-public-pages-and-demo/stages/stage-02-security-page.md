@@ -1,20 +1,20 @@
 # F121 stage 02 — Security and data page (en)
 
-Needs stage 01: `publicClaims`, `claimProblems`, `proofUrl`, the `claimCheck` integration, `OWNER_REVIEW_PENDING` holding `security`. Needs F138 stage 02: `subprocessors.ts` without the row `gemini`. May run next to 03 (shared sidebar: merge, re-prove).
+Needs stage 01: `publicClaims`, `claimProblems`, `proofUrl`, the `claimCheck` integration, `OWNER_REVIEW_PENDING` holding `security`. Needs F138 stage 02: `subprocessors.ts` without the row `gemini`. May run next to 03 (shared sidebar: merge, re-prove). Playwright (`docs:test`): lock rule until F136 lands.
 
-Part of [`../plan.md`](../plan.md). `[risky]` security claims: an overclaim here is the main risk of the epic. Decisions P2, D2, Q9, Q11.
+Part of [`../plan.md`](../plan.md). `[risky]` security claims: an overclaim is the main risk of the epic. P2, D2, Q9, Q11.
 
-Carry-over reads: `E10-discovery-notes.md` §4.2, `docs/legal/claims.md`, the registry `subprocessors` (`@ea/core/web`), `usedWhenText` in `apps/web/src/lib/legal-tables.ts`, ADR 0015, 0017, 0024, 0030, PD-101 text in `docs/product/stage-2/03-product-frame.md` §2.
+Carry-over reads: notes §4.2, `docs/legal/claims.md`, `subprocessors` (`@ea/core/web`), ADR 0015, 0017, 0024, 0030, PD-101 (`03-product-frame.md` §2).
 
 ## Step 1 — Claim rows
 
 **Decisions.**
-- Start from the 13 rows of notes §4.2; keep a row only when it passes the stage 01 check (strong ledger rows, proofs named in them). Write the claim no stronger than its ledger row; reuse the ledger's wording where it fits.
-- Order (buyer questions): never sends alone → where mail is stored → what the AI provider receives → Telegram → backups → logs → Healthchecks → retention → export and delete → Undo → panel on a private network.
-- Buyer facts that only weak rows hold (training, processing location; ledger C033, C036 at the plan base): not in the table. They go to "What this product does not promise" as an outside statement with its date and source link, worded "The provider states …; this project has not checked the contract." (Q9.)
+- Start from the 13 rows of notes §4.2; keep a row only when it passes the stage 01 check. Write the claim no stronger than its ledger row; reuse its wording.
+- Order: never sends alone → mail storage → what the AI provider receives → Telegram → backups → logs → Healthchecks → retention → export and delete → Undo → private-network panel.
+- Buyer facts that only weak rows hold (training, processing location; ledger C033, C036 at the plan base): not in the table. They go to "What this product does not promise" worded "The provider states …; this project has not checked the contract.", with date and source link (Q9).
 - A claim that a default-off flag changes is left out (owner rule); stage 01 scans the claim text.
 - `condition` in plain words, no env names. `pl` text written now.
-- No claim cites a ledger row about the removed Gemini provider (C038, C139–C141 at the base) and no claim text names it (P2).
+- No claim cites a ledger row that F138 stage 04 rewrites (the Gemini rows C038, C139–C141 and the recipient lists C182, C184, C196 at the base), so F138 ledger edits cannot break the claim check; no claim text names Gemini (P2).
 
 **Test.**
 1. `claimProblems(publicClaims, repoRoot(), ledger)` = `[]` at HEAD.
@@ -28,15 +28,15 @@ Carry-over reads: `E10-discovery-notes.md` §4.2, `docs/legal/claims.md`, the re
 **Decisions.**
 - Checklist: 5–7 one-line items, each a link to `#claim-<id>`.
 - Table: claim; proof links (`proofUrl`, text = file name); condition or "—".
-- Sub-processors (review 1 B3): every registry row through `subprocessorView(row, lang)`, with its "used when" condition (`usedWhenText`), like the privacy page. Rows and texts of flag-gated features (`web-push`; the reply-draft data in `openai` and `telegram`) show as the registry says: a list of recipients is a disclosure, not a feature page (Q11, default). A field whose value holds `<` … `>` (a placeholder such as `<to confirm: location>` or `<SMTP provider>`) renders as "Not confirmed yet" / "Jeszcze nie potwierdzone"; a placeholder `termsUrl` renders no link. No raw placeholder reaches the HTML.
+- Sub-processors (review 1 B3): every registry row through `subprocessorView(row, lang)`, with a "used when" text that `subprocessorView` makes from `activeWhen` in plain words, en and pl, and no env key name (review 2 N5: `usedWhenText` prints keys and is not importable). For example: `always` → "Always"; `env` → "When the operator sets up this service"; `llmProvider` → "When the install uses this AI provider"; `host` → "When the server makes backups". Flag-gated rows and texts (`web-push`, reply-draft data) show as the registry says (Q11). A field that holds `<` … `>` (`<to confirm: location>`, `<SMTP provider>`) renders as "Not confirmed yet" / "Jeszcze nie potwierdzone"; a placeholder `termsUrl` renders no link.
 - "Hosts of this site": GitHub Pages; GitHub logs visitor IPs; no cookies, no analytics, no user data (ADR 0030).
-- "What this product does not promise": no certification or audit, no legal review, no EU-only AI processing by default (PD-101), no end-to-end encryption of Telegram notices, drafts can be wrong, plus the weak buyer facts above.
+- "Does not promise": no certification or audit, no legal review, no EU-only AI by default (PD-101), no end-to-end encryption of Telegram notices, drafts can be wrong, the weak buyer facts above.
 - Front matter `capabilities` set. No competitor, person or host name.
 
 **Test.**
-4. `subprocessorView` on a row with `location.en = "<to confirm: country>"` → `"Not confirmed yet"`; `termsUrl = "<to confirm: …>"` → `termsUrl: null`; a clean row unchanged.
-5. Built HTML of `/security/` (read `dist` in a unit test after `docs:build`, or in `docs:test`): one table row per claim with the claim text equal to `publicClaims[i].text.en`; one sub-processor row per registry row; the page holds no `&lt;to confirm` and no `<to confirm`.
-8. The same built HTML holds no `gemini` (case-insensitive). Mutation: add a row named `Google Gemini API` to a test registry → test 8 fails.
+4. `subprocessorView` on a row with `location.en = "<to confirm: country>"` → `"Not confirmed yet"`; `termsUrl = "<to confirm: …>"` → `termsUrl: null`; a clean row unchanged; each `activeWhen` kind gives its text, and an `env` row's text does not hold its `key`.
+5. Built HTML of `/security/` (`dist` after `docs:build`, or in `docs:test`): one table row per claim with the claim text equal to `publicClaims[i].text.en`; one sub-processor row per registry row; the page holds no `&lt;to confirm` and no `<to confirm`.
+8. The same built HTML holds no `gemini` (case-insensitive).
 6. Browser check: heading, ≥ 5 checklist links that resolve to anchors; axe zero violations.
 7. Mutation: a row with a proof outside its ledger row → `docs:build` fails `proof_not_in_ledger`; restore.
 

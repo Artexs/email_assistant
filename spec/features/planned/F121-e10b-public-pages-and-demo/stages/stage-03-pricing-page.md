@@ -1,6 +1,6 @@
 # F121 stage 03 — Pricing page (en)
 
-Needs stage 01: `OWNER_REVIEW_PENDING` holding `pricing`. Reads `costToRun`, `pilotCost` and `docs/cost-model.md`, landed (F107 stage 08). May run next to 02 (shared sidebar: merge, re-prove).
+Needs stage 01: `OWNER_REVIEW_PENDING` holding `pricing`. Reads `costToRun`, `pilotCost` and `docs/cost-model.md`, landed (F107 stage 08). May run next to 02 (shared sidebar: merge, re-prove). Playwright (`docs:test`): lock rule until F136 lands.
 
 Part of [`../plan.md`](../plan.md). Decisions P3, D3.
 
@@ -12,10 +12,12 @@ At the base: `costToRun(mailsPerDay, { mailboxesPerHost?, pilot? })` returns `{ 
 
 **Goal.** One source for the price and the cost table.
 
-**Files.** `packages/core/src/site.ts` (`PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH = 25`) and its test; new `apps/docs/src/pricing.ts` and test.
+**Files.** `packages/core/src/site.ts` (`PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH = 25`) and its test; `packages/core/src/metrics/cost-model.ts` (`roundedCostRow`) and its test; `apps/server/src/cost-model-doc.test.ts`; new `apps/docs/src/pricing.ts` and test.
 
 **Decisions.**
-- `costRows(compute = costToRun)` calls `compute(n)` for n = 50, 100, 200 at the default host size; each value rounded to 2 decimals, half up, the same way as the doc test (so 0.355 → 0.36); `marginUsd = round2(price − round2(totalUsd))`, so total + margin = price on the page (review 1 N7). One rounding helper, exported from `pricing.ts`.
+- One rounding and margin rule for the page and the doc (review 2 N3): `roundedCostRow(cost, priceUsd)` in `cost-model.ts` (interfaces.md) rounds each value half up to the cent (0.355 → 0.36, as the doc test does today) and sets `marginUsd = round2(price − round2(totalUsd))`, so total + margin = price (review 1 N7). `cost-model-doc.test.ts` drops its own `round2` and price constant and calls it with `PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH`; the doc numbers do not change at the base.
+- `costRows(compute = costToRun)` calls `roundedCostRow(compute(n), price)` for n = 50, 100, 200 at the default host size.
+- Each cell is rounded on its own, so the parts can differ from the total by a cent (100 mails: 0.43 + 0.36 + 0.05 vs 0.83). A line under the table says so: "Each amount is rounded to the cent, so the parts may not add up to the total." (review 2 N2).
 - `basis` of the rows: one value for the table (all rows share the pilot block). `estimate` shows a note: "Estimate: the measured data is too small." `measured` shows the measurement weeks from `pilotCost.weeks` and the date `measuredOn`. The page never shows `pilotCost.models` (P3: no model names).
 
 **Test.**
@@ -40,7 +42,7 @@ Mutation: change the price constant to 26 → test 4 fails; round half to even �
 - No currency conversion; USD on the page.
 
 **Test.**
-5. Built HTML of `/pricing/`: each table cell equals the formatted `costRows()` value of its row and column (a renderer that shows the wrong field fails); the host-size line shows the constant.
+5. Built HTML of `/pricing/`: each table cell equals the formatted `costRows()` value of its row and column (a renderer that shows the wrong field fails); the host-size line shows the constant; the rounding line is there.
 6. Browser check: the banner text, the price `$25`, 3 body rows; axe zero violations.
 7. The page holds no `<form>`, no `input` (browser check) and no `gemini` (case-insensitive).
 

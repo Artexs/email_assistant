@@ -68,3 +68,15 @@ commits after the base that touch the named paths:
 - `publicContentScan` allows `example.com` and `.test` addresses (e2e seed passes the stage 10 scan).
 - No landed ticket did a step of this plan (no `publish-gate.ts`, `claims.ts`, `pricing.ts`, `api-spec.ts`, `view.ts`, `apps/web/e2e/demo/` at HEAD).
 - All Build after tickets (F100, F107, F110, F113, F114) are in `done/`.
+
+## Changes after review 2
+
+See [plan-review-2-response.md](plan-review-2-response.md): D11 (`apps/web/e2e/lib/`, `setupDemoOrg`), `roundedCostRow` and the rounding line (stage 03), plain "used when" text (stage 02), no citation of the ledger rows that F138 stage 04 rewrites, stage 04 test 5, stage 10 C3 demo DB and `not for upload`, stage 11 checklist step moved to stage 12 (stage 11 no longer needs 10), coordinator steps C3 and C4, Q11 label.
+
+## Edits outside the folder (coordinator, step C4)
+
+1. `ticket.md` (this folder), § Acceptance: replace the line `` `bun run demo:record --seed <file>` writes an MP4 of 100–130 s and captions in en and pl. `` with `` `bun run demo:record` writes an MP4 of 100–130 s and captions in en and pl (e2e seed; the demo-seed video is the follow-up ticket's). ``
+2. `ticket.md`, § Sequenced, `Build after:` line: replace `F107 (E7-T4; stage 03 of this plan needs its stage 08 \`costToRun\`)` with `F107 (E7-T4)`. Add one line: `Stage needs: stage 02 needs F138 stage 02 (registry without the gemini row); stage 10 needs coordinator step C3 (demo DB).`
+3. `ticket.md`, § Sequenced, `Gate:` line: replace `Before stage 09: coordinator step C1 (demo week run and export, 5–12 days lead; start it at the build start).` with `C1 (demo week) gates no stage (owner, 2026-11-20); it starts after the F113 day run day-20261120-215c ends.`
+4. New ticket (`limen ticket new`), proposed title: "The demo video and the docs screenshots come from the synthetic demo-week export". Outcome: after C1, the stage 09 spike is done for the demo source (its column in `apps/web/e2e/demo/README.md`), `DEMO_STEPS` live flags and captions are fixed for it, and `bun run demo:record --seed <C1 file>` logs `demo_source demo` and writes an MP4 of 100–130 s with en and pl captions; owner gates G2 (commit the seed) and G3 (upload, pin `DEMO_VIDEO_SHA256`) of F121 move to it, default: prepare, do not publish. Build after: F121 stages 07, 10, 11 landed; C1 export exists at `~/.local/share/email-assistant/demo/demo-seed-day5.json`. Drops the `f121_demo` DB (C3) when it closes.
+5. F136 (parallel Playwright): its last stage removes the lock rule from the open F121 stage files 02–05, 07, 10, 11, 12 and the F121 plan.md § Rules line.

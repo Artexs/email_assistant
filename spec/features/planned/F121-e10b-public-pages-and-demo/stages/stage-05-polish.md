@@ -1,6 +1,6 @@
 # F121 stage 05 — Polish security and pricing, strict set
 
-Needs stage 02: `security.mdx`, `ClaimsTable` and `Subprocessors` with `lang`, the `pl` texts of `publicClaims`. Needs stage 03: `pricing.mdx`, `CostTable` with `lang`. Needs stage 04: the security link on `pricing.mdx` and `pl/index.mdx` (tone, front matter).
+Needs stage 02: `security.mdx`, `ClaimsTable` and `Subprocessors` with `lang`, the `pl` texts of `publicClaims`. Needs stage 03: `pricing.mdx`, `CostTable` with `lang`. Needs stage 04: the security link on `pricing.mdx` and `pl/index.mdx` (tone, front matter). Playwright (`docs:test`): lock rule until F136 lands.
 
 Part of [`../plan.md`](../plan.md). New user-facing Polish text: Opus review before the land. Decision 6 (epic).
 

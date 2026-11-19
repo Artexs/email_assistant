@@ -12,7 +12,7 @@ For each of the 8 steps (connect a mailbox; shadow days passed; the "what I woul
 
 ## Step 2 — Steps and captions
 
-**Files.** New `apps/web/e2e/demo/steps.ts` and test.
+**Files.** New `apps/web/e2e/lib/demo/steps.ts` and its bun test (D11: `test:unit` holds `apps/web/e2e/lib`; add the path if stage 07 has not).
 
 **Decisions.**
 - `DEMO_STEPS` (interfaces.md): 8 steps in the decision-12 order; `seconds` = the planned length, sum 105–125; `caption` 1–2 short lines in en and pl; a not-live step's caption names the day ("Day 3: …"); `live` from the spike.
@@ -28,7 +28,7 @@ Mutation: drop the `endMs <= startMs` check → test 2 fails.
 
 ## Step 3 — Encoder arguments and the demo database guard
 
-**Files.** New `apps/web/e2e/demo/encode.ts`, `apps/web/e2e/demo/db-guard.ts` and tests.
+**Files.** New `apps/web/e2e/lib/demo/encode.ts`, `db-guard.ts` and tests.
 
 **Decisions.**
 - `ffmpegArgs({ input, output, trimStartMs })`: a fixed list: `-ss` trim, H.264 (`libx264`, `-crf 28`, `-pix_fmt yuv420p`, `-movflags +faststart`), `-an` (no audio).
@@ -40,7 +40,7 @@ Mutation: drop the `endMs <= startMs` check → test 2 fails.
 
 Mutation: remove the `_demo` suffix rule → test 5 fails.
 
-**Check.** `bun test apps/web/e2e/demo`.
+**Check.** `bun test apps/web/e2e/lib`.
 
 **Done when.** Tests 1–5 pass; the spike table is in the final message and the README; Proof prints `PROOF_OK`.
 
