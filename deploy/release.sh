@@ -95,7 +95,7 @@ main() {
   # Forward only: there is no db:rollback (F114 P5). `compose run` has no --no-build flag; it builds only when the image is
   # missing, and step 6 has just made it.
   step=migrate
-  EA_RELEASE="$tag" "${COMPOSE_CMD[@]}" run --rm -T cli bun run db:migrate
+  EA_RELEASE="$tag" "${COMPOSE_CMD[@]}" run --rm -T migrate
 
   step=up
   EA_RELEASE="$tag" "${COMPOSE_CMD[@]}" up -d --no-build --wait

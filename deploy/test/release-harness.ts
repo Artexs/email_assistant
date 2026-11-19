@@ -19,6 +19,7 @@ import { join } from "node:path";
 //   images          the tags `docker images ea-server` prints, one per line
 //   git-status      the output of `git status --porcelain`
 //   missing-tag, not-ancestor   make `git rev-parse` of a tag and `git merge-base --is-ancestor` fail
+//   no-compose-lib  `git cat-file -e <commit>:deploy/compose-lib.sh` fails (the target commit predates the helper)
 //   package-version the version `git show <tag>:package.json` prints (default: the tag without `v`)
 //   curl-fail       `/health` answers 000
 //   df-values       free bytes, one value per `df` call (the last one repeats); default 10 GiB
@@ -58,7 +59,7 @@ export function createHarness(): Harness {
   const stubs = join(root, "stubs");
   mkdirSync(stubs);
   mkdirSync(join(root, "deploy", "release-state"), { recursive: true });
-  for (const name of ["release.sh", "rollback.sh", "release-lib.sh"]) {
+  for (const name of ["release.sh", "rollback.sh", "release-lib.sh", "compose-lib.sh"]) {
     copyFileSync(join(DEPLOY, name), join(root, "deploy", name));
   }
   chmodSync(join(root, "deploy", "release.sh"), 0o755);
@@ -97,6 +98,7 @@ case "$1" in
       *HEAD*) echo "commit-head" ;;
     esac ;;
   merge-base) [[ -f "$S/not-ancestor" ]] && exit 1 ;;
+  cat-file) [[ -f "$S/no-compose-lib" ]] && exit 1 ;;
   show)
     tag="\${2%%:*}"
     version="\${tag#v}"; [[ -f "$S/package-version" ]] && version="$(cat "$S/package-version")"

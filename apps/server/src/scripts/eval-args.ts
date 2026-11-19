@@ -23,8 +23,11 @@ import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
-// `reply-injection` is the set of the drafter run (`--drafter`); the classifier run takes none of it.
-const drafterSets = [...sets, "reply-injection"] as const;
+// `reply-injection` and `reply-commitment` are the sets of the drafter run (`--drafter`); the classifier run takes
+// neither of them.
+const replySets = ["reply-injection", "reply-commitment"] as const;
+const drafterSets = [...sets, ...replySets] as const;
+export type ReplySet = (typeof replySets)[number];
 
 // The bare `--sim` command meets the 10 minute exit: 1,417 calls at 240 per minute take about 6 minutes.
 export const SIM_DEFAULT_CONCURRENCY = 8;
@@ -50,8 +53,8 @@ export const evalUsage = [
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
   "                    (the open-loops extractor on the sent-mail bank; the part sent-holdout needs --extractor, and --extractor needs a sent part)",
   "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
-  "       bun run eval --set reply-injection --drafter --judge [--model …] [--out <file.md>]",
-  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev)]`,
+  "       bun run eval --set reply-injection|reply-commitment --drafter --judge [--model …] [--out <file.md>]",
+  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev|week or --set reply-commitment)]`,
   `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
@@ -152,7 +155,7 @@ const extractorAllowed = new Set<string>([
   "limit",
   "out",
 ]);
-// The options of a drafter run: `--sim <scenario> --part dev|holdout|week` or `--set reply-injection`.
+// The options of a drafter run: `--sim <scenario> --part dev|holdout|week` or `--set reply-injection|reply-commitment`.
 const drafterAllowed = new Set<string>([
   ...extractorAllowed,
   "drafter",
@@ -209,21 +212,23 @@ export function resolvePrompt(
 
 type ParsedData = Omit<z.infer<typeof optionsSchema>, "part"> & { part?: SimPart; sentPart?: SentPart };
 
-// `--drafter` runs the reply drafter on `--sim <scenario> --part dev|holdout|week` or on `--set reply-injection`; any
-// other combination is a usage error. The injection set has no corpus and always needs the judge.
+// `--drafter` runs the reply drafter on `--sim <scenario> --part dev|holdout|week` or on `--set reply-injection` or
+// `--set reply-commitment`; any other combination is a usage error. The two sets have no corpus and always need the judge.
 function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): EvalOptions | undefined {
   if (data.extractor || data.suspicious || data.real || data.gap) return undefined;
   if (Object.keys(values).some((key) => !drafterAllowed.has(key))) return undefined;
   if (!data.judge && (data["judge-provider"] || data["judge-model"] || data["judge-rpm"] || data["judge-prompt"]))
     return undefined;
   const sim = data.sim !== undefined;
-  const injection = data.set === "reply-injection";
-  // Exactly one source: a corpus part (never a sent part) or the injection set.
-  if (sim === injection) return undefined;
+  const set = (replySets as readonly string[]).includes(data.set);
+  // Exactly one source: a corpus part (never a sent part) or one reply set.
+  if (sim === set) return undefined;
   if (sim && (data.part === undefined || data.sentPart !== undefined || values.set !== undefined)) return undefined;
-  if (injection && (data.part !== undefined || data.sentPart !== undefined || !data.judge)) return undefined;
-  // Draft texts leave the run only for the dev part: the holdout stays unread, and the week part is no tuning data.
-  if (data["dump-drafts"] !== undefined && data.part !== "dev") return undefined;
+  if (set && (data.part !== undefined || data.sentPart !== undefined || !data.judge)) return undefined;
+  // Draft texts leave the run only for made-up tuning data: the dev and week parts and the dev-only commitment set.
+  // The holdout stays unread; the injection set is a bar, not tuning data.
+  const dumpAllowed = data.part === "dev" || data.part === "week" || data.set === "reply-commitment";
+  if (data["dump-drafts"] !== undefined && !dumpAllowed) return undefined;
   return {
     ...data,
     prompt: productionClassifierChoice(),
@@ -298,7 +303,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
     }
     if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
     if (data.drafter) return parseDrafterArgs(data, values);
-    if (data.set === "reply-injection") return undefined;
+    if ((replySets as readonly string[]).includes(data.set)) return undefined;
     if (data.extractor || data.sentPart !== undefined) {
       // A sent part runs only with --extractor and the other way round; the classifier options mean nothing here.
       if (data.sim === undefined || data.sentPart === undefined || !data.extractor) return undefined;

@@ -16,8 +16,17 @@ if (Bun.which("jq") === null) {
   throw new Error("deploy-logs.test.ts needs jq on PATH (install jq, then run again)");
 }
 
-const run = (args: string[], stdin = "", env: Record<string, string> = {}, cwd = repoRoot) => {
-  const result = Bun.spawnSync(["bash", script, ...args], {
+// A copy of the script with an own `.env`, so the Compose path works in a checkout without one (CI).
+const fakeRoot = join(dir, "root");
+Bun.spawnSync(["mkdir", "-p", join(fakeRoot, "deploy")]);
+for (const name of ["logs.sh", "compose-lib.sh"]) {
+  writeFileSync(join(fakeRoot, "deploy", name), await Bun.file(join(repoRoot, "deploy", name)).text());
+}
+writeFileSync(join(fakeRoot, ".env"), "");
+const fakeScript = join(fakeRoot, "deploy", "logs.sh");
+
+const run = (args: string[], stdin = "", env: Record<string, string> = {}, cwd = repoRoot, scriptPath = script) => {
+  const result = Bun.spawnSync(["bash", scriptPath, ...args], {
     cwd,
     env: { ...process.env, ...env },
     stdin: new TextEncoder().encode(stdin),
@@ -93,13 +102,13 @@ describe("deploy/logs.sh", () => {
       `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >&2\nprintf '%s\\n' '${json({ event: "from_docker", run_id: "r-9" })}'\n`
     );
     chmodSync(fake, 0o755);
-    const result = run(["--since", "2h", "--follow", "--run", "r-9"], "", { PATH: `${bin}:${process.env.PATH ?? ""}` });
+    const result = run(["--since", "2h", "--follow", "--run", "r-9"], "", { PATH: `${bin}:${process.env.PATH ?? ""}` }, repoRoot, fakeScript);
     expect(result.code).toBe(0);
     expect(result.err).toContain(
       "compose -f deploy/compose.yaml --env-file .env logs --no-log-prefix --since 2h --follow server"
     );
     expect(result.out).toBe("2026-11-20T10:00:00.000Z info [mail] from_docker run_id=r-9\n");
-    const plain = run([], "", { PATH: `${bin}:${process.env.PATH ?? ""}` });
+    const plain = run([], "", { PATH: `${bin}:${process.env.PATH ?? ""}` }, repoRoot, fakeScript);
     expect(plain.err).toContain("logs --no-log-prefix --since 1h server");
   });
 
@@ -123,9 +132,9 @@ describe("deploy/logs.sh", () => {
     const fake = join(bin, "docker");
     writeFileSync(fake, `#!/usr/bin/env bash\nprintf '%s\\n' "$PWD" >&2\n`);
     chmodSync(fake, 0o755);
-    const result = run([], "", { PATH: `${bin}:${process.env.PATH ?? ""}` }, tmpdir());
+    const result = run([], "", { PATH: `${bin}:${process.env.PATH ?? ""}` }, tmpdir(), fakeScript);
     expect(result.code).toBe(0);
-    expect(result.err.trim()).toBe(repoRoot);
+    expect(result.err.trim()).toBe(fakeRoot);
   });
 
   test("--follow gives jq --unbuffered; without --follow it does not", () => {
@@ -136,7 +145,7 @@ describe("deploy/logs.sh", () => {
     chmodSync(join(bin, "docker"), 0o755);
     chmodSync(join(bin, "jq"), 0o755);
     const env = { PATH: `${bin}:${process.env.PATH ?? ""}` };
-    expect(run(["--follow"], "", env).err).toContain("--unbuffered");
-    expect(run([], "", env).err).not.toContain("--unbuffered");
+    expect(run(["--follow"], "", env, repoRoot, fakeScript).err).toContain("--unbuffered");
+    expect(run([], "", env, repoRoot, fakeScript).err).not.toContain("--unbuffered");
   });
 });

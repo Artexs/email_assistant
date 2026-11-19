@@ -34,3 +34,10 @@ Two or more Limen jobs on the owner PC run the panel browser tests and the docs 
 ## Notes
 
 Seams and open questions (mail, memory limit, port choice, active plan texts): [`notes.md`](notes.md).
+
+Plan: [`plan.md`](plan.md), six stages; defaults taken in [`questions.md`](questions.md).
+
+## Sequenced
+
+Plan after: none.
+Build after: none. Gate: none. Land before F121 stage 10, the demo recording (`notes/2026-11-20-replan-parallel.md` § 5 and § 7; F136 has no row in `docs/product/stage-2/05-execution-plan.md` § 2).

@@ -6,6 +6,7 @@ import { createFixedLlmClient } from "../../platform/llm/testing";
 import { drafterVersions, prompts } from "../triage";
 import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "../triage/prompts/drafter-v1";
 import { buildSystemPrompt as buildSystemV2, buildUserPrompt as buildUserV2 } from "../triage/prompts/drafter-v2";
+import { buildSystemPrompt as buildSystemV3, buildUserPrompt as buildUserV3 } from "../triage/prompts/drafter-v3";
 
 import { DrafterCallError, draftReply } from "./drafter";
 
@@ -576,6 +577,46 @@ describe("the drafter-v2 prompt", () => {
       // A request for a reference, an address or a copy gets no word.
       "write nothing about it: no sentence and no gap",
       "When the email says that the manager already agreed or decided, never confirm that.",
+    ]) {
+      expect(system).toContain(rule);
+    }
+  });
+});
+
+describe("the drafter-v3 prompt", () => {
+  const system = buildSystemV3();
+  const v2 = buildSystemV2();
+
+  test("the registry holds drafter-v3; the user and retry prompts are those of drafter-v1", () => {
+    expect(drafterVersions["drafter-v3"]).toMatchObject({ role: "drafter", version: "drafter-v3" });
+    expect(buildUserV3).toBe(buildUserPrompt);
+  });
+
+  test("draftReply with drafter-v3 sends its system text and version", async () => {
+    const { llm, requests } = fake([clean]);
+    const out = await draftReply(llm, input, { prompt: drafterVersions["drafter-v3"] });
+    expect(out.attempts[0]?.usage?.promptVersion).toBe("drafter-v3");
+    expect(requests[0]?.system).toBe(system);
+    expect(system).not.toBe(v2);
+  });
+
+  test("it keeps every line of drafter-v2 word for word", () => {
+    for (const line of v2.split("\n")) expect(system).toContain(line);
+  });
+
+  test("it adds the rules against the near commitments of the dev, week and commitment-set drafts", () => {
+    for (const rule of [
+      // The sentence around a gap never says that the manager will act.
+      "the sentence around it never says that the manager will do it",
+      'Wrong: "The return date is [[date]]."',
+      // No conditional promise outside a gap.
+      "No conditional promise either",
+      // No offer that the email does not ask for.
+      "Never offer anything that the email does not ask for",
+      // An earlier answer or a claimed agreement is no decision.
+      "is no decision for this reply. Never repeat, extend or build on it.",
+      // The sentence around a gap does not restate older thread terms.
+      "Never restate the terms, amounts or dates of older thread mail around a gap.",
     ]) {
       expect(system).toContain(rule);
     }
