@@ -54,3 +54,9 @@ RUNNING F115-s14 reply routes for the panel · F115 · id 2026-11-18-f115-s14-re
 
 ### Open items for the owner
 VPS machine; model API key (F115 s02, F120 s11); F118 checkpoint A (phone); F116 stage 25 pilot (gate G1); owner decision 42; sent_sync pilot word; F113 week run; F111 O1 and O2; F117 U1; F119 U1; F128 panel check; a Polish wording review of the F115 s12 and s13, F118 s04 and s05, F120 s08 and F133 texts.
+
+## 2026-11-19 10:50 release v0.3.0 deployed
+- VPS was v0.2.0; v0.2.1 never deployed. One release v0.3.0 (commit 105fb0c0, CI green) caught it up. Backup `ea-20261119T094238Z.dump.age`. Rollback target v0.2.0 (3e60a7f5): `deploy/rollback.sh`.
+- `release ok v0.3.0 previous v0.2.0`; server healthy, EA_RELEASE=v0.3.0, 7 migrations ran. All new flags OFF. Watch window started 09:48Z (30 min).
+- VPS checkout is on master (ff to 105fb0c0). Release log on VPS: /tmp/release-v0.3.0.log.
+- Next: per-ticket VPS checks (F110 s26, F104 s13, F029 s05, F102 s20, F107 s07, F114 s09, F113) after the watch is clean.

@@ -305,3 +305,148 @@ describe("one address rule in the data request match", () => {
     expect(await mailCount(w)).toBe(2);
   });
 });
+
+// Gaps of the address rule that a mutation of the match code survived. Each test reads the stored form and the asked
+// form through `\u` escapes: SIGMA is U+03A3, sigma is U+03C3, FINAL is U+03C2, DOTTED is U+0130, DOTLESS is U+0131.
+describe("address rule gaps: the branches of the mail match", () => {
+  const DOTLESS = "\u0131";
+  const FULLWIDTH_I = "\uff49";
+  const ALPHA = "\u03b1";
+  const NU = "\u03bd";
+
+  // An organization with one mailbox at `own`; committed (the erase runs its own transaction).
+  async function orgOf(own: string): Promise<Org> {
+    const org = await db.transaction().execute((trx) => newOrg(trx, { flag: false, address: own }));
+    orgIds.push(org.ctx.orgId);
+    return org;
+  }
+
+  const addMail = (w: Org, extra: { from_address: string; to_addresses?: string[]; cc_addresses?: string[] }) =>
+    db.transaction().execute((trx) => insertTestEmail(trx, w.ctx, w.mailboxId, { received_at: ago(1), ...extra }));
+
+  const find = (w: Org, address: string) =>
+    findSubjectData(db, { orgId: w.ctx.orgId, address, credentialsKey: KEY, now: NOW });
+
+  const erase = (w: Org, address: string) =>
+    eraseSubjectData(db, { orgId: w.ctx.orgId, address, confirm: address, credentialsKey: KEY, now: NOW });
+
+  const senders = async (w: Org): Promise<string[]> =>
+    (await db.selectFrom("emails").select("from_address").where("org_id", "=", w.ctx.orgId).execute())
+      .map((row) => row.from_address ?? "")
+      .sort();
+
+  test("only party besides the own mailboxes: the person is a recipient, the own mailbox has another case form", async () => {
+    const w = await orgOf(`box${FINAL}@x.gr`);
+    const goes = await addMail(w, { from_address: `BOX${SIGMA}@x.gr`, to_addresses: [`anna${FINAL}@x.gr`] });
+    await addMail(w, { from_address: "other@x.test" });
+    const found = await find(w, `ANNA${SIGMA}@x.gr`);
+    expect(found.kind).toBe("found");
+    if (found.kind !== "found") return;
+    expect(found.counts.mails).toBe(1);
+    expect((await erase(w, `ANNA${SIGMA}@x.gr`)).kind).toBe("erased");
+    const left = await db.selectFrom("emails").select("id").where("org_id", "=", w.ctx.orgId).execute();
+    expect(left.map((row) => row.id)).not.toContain(goes);
+    expect(await senders(w)).toEqual(["other@x.test"]);
+  });
+
+  test("only party besides the own mailboxes: the person is in Cc", async () => {
+    const w = await orgOf(`box${FINAL}@x.gr`);
+    await addMail(w, {
+      from_address: `box${sigma}@x.gr`,
+      to_addresses: [`box${FINAL}@x.gr`],
+      cc_addresses: [`ANNA${SIGMA}@x.gr`],
+    });
+    await addMail(w, { from_address: "other@x.test" });
+    expect((await erase(w, `anna${sigma}@x.gr`)).kind).toBe("erased");
+    expect(await senders(w)).toEqual(["other@x.test"]);
+  });
+
+  test("a dotted capital I that JavaScript lower-cased: an unsubscribe request is found and erased", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    // The way `triage/newsletter-unsubscribe.ts` writes `sender_lower`: `i` and the combining dot above.
+    const stored = `${DOTTED}LKER@x.tr`.trim().toLowerCase();
+    expect(stored).toBe(`i${COMBINING_DOT}lker@x.tr`);
+    await db
+      .insertInto("unsubscribe_requests")
+      .values({
+        org_id: w.ctx.orgId,
+        mailbox_id: w.mailboxId,
+        sender_lower: stored,
+        sender_domain: "x.tr",
+        method: "one_click",
+        status: "requested",
+        created_at: NOW,
+      })
+      .execute();
+    const found = await find(w, "ILKER@x.tr");
+    expect(found.kind).toBe("found");
+    if (found.kind !== "found") return;
+    expect(found.counts.mentions["unsubscribe_requests.sender_lower"]).toBe(1);
+    expect((await erase(w, "ILKER@x.tr")).kind).toBe("erased");
+    const rows = await db.selectFrom("unsubscribe_requests").select("id").where("org_id", "=", w.ctx.orgId).execute();
+    expect(rows).toEqual([]);
+  });
+
+  test("a dotted capital I that JavaScript lower-cased: the e-mail of a member is an own address", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    const owner = await db
+      .selectFrom("memberships")
+      .select("user_id")
+      .where("org_id", "=", w.ctx.orgId)
+      .executeTakeFirstOrThrow();
+    userIds.push(owner.user_id);
+    // The way `tenancy/members.ts` writes `users.email`. The tag keeps the e-mail unique in the database.
+    const tag = randomUUID().slice(0, 8);
+    await db
+      .updateTable("users")
+      .set({ email: `${DOTTED}LKER${tag}@x.tr`.trim().toLowerCase() })
+      .where("id", "=", owner.user_id)
+      .execute();
+    expect((await find(w, `${DOTTED}lker${tag}@x.tr`)).kind).toBe("own_address");
+  });
+
+  test("a real plus tag stays a separate address: its mails and the recipient list stay", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    await addMail(w, { from_address: `anna${sigma}+tag@x.gr` });
+    await addMail(w, { from_address: `ANNA${SIGMA}@x.gr` });
+    const keptId = await addMail(w, { from_address: "other@x.test", to_addresses: [`anna${sigma}+tag@x.gr`] });
+    expect((await erase(w, `anna${sigma}@x.gr`)).kind).toBe("erased");
+    expect(await senders(w)).toEqual([`anna${sigma}+tag@x.gr`, "other@x.test"]);
+    const kept = await db
+      .selectFrom("emails")
+      .select("to_addresses")
+      .where("id", "=", keptId)
+      .executeTakeFirstOrThrow();
+    expect(kept.to_addresses).toEqual([`anna${sigma}+tag@x.gr`]);
+  });
+
+  test("a longer address keeps its mail", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    await addMail(w, { from_address: `anna${sigma}@x.gr.pl` });
+    await addMail(w, { from_address: `anna${FINAL}@x.gr` });
+    expect((await erase(w, `anna${sigma}@x.gr`)).kind).toBe("erased");
+    expect(await senders(w)).toEqual([`anna${sigma}@x.gr.pl`]);
+  });
+
+  test("near addresses keep their mail", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    const near = [
+      "annas@x.gr",
+      `${ALPHA}${NU}${NU}${ALPHA}@x.gr`,
+      `anna${sigma}+tag@x.gr`,
+      `${DOTLESS}lker@x.tr`,
+      "ilker.@x.tr",
+      "i.lker@x.tr",
+      `${FULLWIDTH_I}lker@x.tr`,
+      "ilker@x.tr.",
+      "ilker@xn--x.tr",
+      `anna${sigma}@x.gr.pl`,
+    ];
+    await addMail(w, { from_address: `anna${FINAL}@x.gr` });
+    await addMail(w, { from_address: "ILKER@x.tr" });
+    for (const from_address of near) await addMail(w, { from_address });
+    expect((await erase(w, `ANNA${SIGMA}@x.gr`)).kind).toBe("erased");
+    expect((await erase(w, `${DOTTED}lker@X.TR`)).kind).toBe("erased");
+    expect(await senders(w)).toEqual([...near].sort());
+  });
+});
