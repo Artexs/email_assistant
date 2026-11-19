@@ -1,8 +1,8 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
-// Where the docs shots (and, in stage 10, the demo recording) take their data from: the demo organization when its seed file is
-// there, else the e2e seed. Pure apart from the file check, which a test fills with a fake.
+// Where the docs shots and the demo recording take their data from: the demo organization when its seed file is there,
+// else the e2e seed. Pure apart from the file check, which a test fills with a fake.
 export const DEFAULT_DEMO_SEED_FILE = resolve(import.meta.dirname, "../demo/demo-seed.json");
 
 export type ShotSource = { kind: "demo"; file: string } | { kind: "e2e" };
