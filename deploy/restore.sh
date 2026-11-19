@@ -12,6 +12,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+# shellcheck source=deploy/compose-lib.sh
+source deploy/compose-lib.sh
 
 # A caller variable must not change which stack the script talks to.
 unset COMPOSE_FILE COMPOSE_PROJECT_NAME COMPOSE_PROFILES COMPOSE_ENV_FILES
@@ -105,8 +107,9 @@ set_compose() {
     [[ -f "$DRILL_ENV" ]] || refuse "$DRILL_ENV does not exist; run deploy/restore.sh --target drill --init-env <live .env>"
     C=(docker compose -p "$DRILL_PROJECT" -f deploy/compose.yaml -f deploy/compose.drill.yaml --env-file "$DRILL_ENV")
   else
-    [[ -f .env ]] || refuse ".env does not exist; make it first (deploy/README.md § First install)"
-    C=(docker compose -f deploy/compose.yaml --env-file .env)
+    [[ -f deploy/db.env || -f .env ]] || refuse ".env does not exist; make it first (deploy/README.md § First install)"
+    ea_compose_init || exit 2
+    C=("${EA_COMPOSE[@]}")
   fi
 }
 
@@ -225,7 +228,7 @@ restore() {
   psql_db -c "delete from auth_sessions" >/dev/null
 
   step=migrate
-  "${C[@]}" run --rm -T cli bun run db:migrate </dev/null
+  "${C[@]}" run --rm -T migrate </dev/null
 
   # The key of this host must open every stored mailbox secret before the server starts.
   step=credentials

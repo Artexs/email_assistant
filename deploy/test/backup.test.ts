@@ -46,6 +46,7 @@ beforeEach(() => {
   mkdirSync(join(root, "deploy", "backup-status"), { recursive: true });
   mkdirSync(stubs);
   copyFileSync(SCRIPT, join(root, "deploy", "backup.sh"));
+  copyFileSync(join(import.meta.dir, "..", "compose-lib.sh"), join(root, "deploy", "compose-lib.sh"));
   writeFileSync(join(root, ".env"), "");
   // `docker compose ... exec -T db pg_dump ...`: print the magic and some bytes
   stub("docker", `printf 'PGDMPfake-dump-body'`);
@@ -252,5 +253,49 @@ describe("deploy/backup.sh B2 retry and lock", () => {
     expect(status().result).toBe("ok");
     // The lock is free after the first run ends.
     expect(run().code).toBe(0);
+  });
+});
+
+describe("deploy/backup.sh Compose env file (F108 stage 01)", () => {
+  test("5. with deploy/db.env present the docker call reads it, and the backup is ok", () => {
+    writeFileSync(join(root, "deploy", "db.env"), "POSTGRES_PASSWORD=x\n");
+    stub("docker", `echo "$*" >>"${root}/docker.calls"\nprintf 'PGDMPfake-dump-body'`);
+    const { code, stdout } = run();
+    expect(code).toBe(0);
+    expect(stdout).toContain("backup ok");
+    const calls = readFileSync(join(root, "docker.calls"), "utf8");
+    expect(calls).toContain("--env-file deploy/db.env");
+    expect(calls).not.toContain("--env-file .env");
+  });
+
+  test("5c. a run that loses the lock exits 75 and writes nothing, also on a host with neither env file", async () => {
+    stub("docker", `sleep "\${STUB_DOCKER_SLEEP:-0}"\nprintf 'PGDMPfake-dump-body'`);
+    const first = Bun.spawn(["bash", join(root, "deploy", "backup.sh")], {
+      cwd: root,
+      env: { PATH: `${stubs}:${process.env.PATH ?? ""}`, HOME: root, STUB_DOCKER_SLEEP: "3" },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const lockFile = join(root, "deploy", "backup-status", "backup.lock");
+    for (let i = 0; i < 50 && !existsSync(lockFile); i++) await Bun.sleep(100);
+    expect(existsSync(lockFile)).toBe(true);
+    // The first run has read .env by now; take it away and write a marker status
+    await Bun.sleep(500);
+    rmSync(join(root, ".env"));
+    const marker = '{"result":"ok","at":"2026-01-01T00:00:00Z","name":"x","bytes":1,"last_ok_at":"2026-01-01T00:00:00Z"}\n';
+    writeFileSync(join(root, "deploy", "backup-status", "status.json"), marker);
+    const second = run();
+    expect(second.code).toBe(75);
+    expect(readFileSync(join(root, "deploy", "backup-status", "status.json"), "utf8")).toBe(marker);
+    await first.exited;
+  });
+
+  test("5b. with neither .env nor deploy/db.env the run fails (not 75) and writes failed", () => {
+    rmSync(join(root, ".env"));
+    const { code, output } = run();
+    expect(code).not.toBe(0);
+    expect(code).not.toBe(75);
+    expect(output).toContain("compose: no deploy/db.env and no .env");
+    expect(status().result).toBe("failed");
   });
 });
