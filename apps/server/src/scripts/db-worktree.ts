@@ -103,33 +103,45 @@ async function migrate(migratorUrl: string): Promise<boolean> {
   return (await child.exited) === 0;
 }
 
-async function dropDatabase(adminPostgresUrl: string, database: string): Promise<number> {
-  return withClient(adminPostgresUrl, async (client) => {
-    const mark = await markOf(client, database);
-    if (!mark.exists) {
+async function dropOne(client: Client, database: string): Promise<number> {
+  const mark = await markOf(client, database);
+  if (!mark.exists) {
+    out.print(`no database ${database}`);
+    return exitDone;
+  }
+  if (!hasWorktreeMark(mark.comment)) {
+    out.fail(refusal(database));
+    return exitFailure;
+  }
+  try {
+    await client.query(`DROP DATABASE ${quoted(database)}`);
+  } catch (error) {
+    const state = sqlState(error);
+    if (state === "55006") {
+      out.fail(`database ${database} is in use: stop the server and the tests that use it`);
+      return exitFailure;
+    }
+    if (state === "3D000") {
       out.print(`no database ${database}`);
       return exitDone;
     }
-    if (!hasWorktreeMark(mark.comment)) {
-      out.fail(refusal(database));
-      return exitFailure;
-    }
-    try {
-      await client.query(`DROP DATABASE ${quoted(database)}`);
-    } catch (error) {
-      const state = sqlState(error);
-      if (state === "55006") {
-        out.fail(`database ${database} is in use: stop the server and the tests that use it`);
-        return exitFailure;
-      }
-      if (state === "3D000") {
-        out.print(`no database ${database}`);
-        return exitDone;
-      }
-      throw error;
-    }
-    out.print(`dropped ${database}`);
-    return exitDone;
+    throw error;
+  }
+  out.print(`dropped ${database}`);
+  return exitDone;
+}
+
+// `bun test --parallel` makes one database per test worker, `<name>_w<n>` (`apps/server/test/worker-db.ts`). A drop of the
+// base database drops them too, each with its own mark check. The name holds only [a-z0-9_] (`worktreeDatabaseName`).
+async function dropDatabase(adminPostgresUrl: string, database: string): Promise<number> {
+  return withClient(adminPostgresUrl, async (client) => {
+    const workers = await client.query<{ datname: string }>(
+      "SELECT datname FROM pg_database WHERE datname ~ $1 ORDER BY datname",
+      [`^${database}_w[0-9]+$`]
+    );
+    let code = await dropOne(client, database);
+    for (const worker of workers.rows) code = Math.max(code, await dropOne(client, worker.datname));
+    return code;
   });
 }
 
