@@ -81,6 +81,27 @@ function languageRows(scores: DrafterScores): [string, string][] {
     });
 }
 
+// What the judge adds to the code checks, and the score counts that a later tone change is measured against.
+function judgeGainLines(scores: DrafterScores): string[] {
+  const names = Object.keys(scores.scoreCounts).sort();
+  return [
+    "### Judge gain over the code checks",
+    "",
+    `- Drafts that passed every code check: ${scores.drafts}. Graded: ${scores.graded}. The judge flags ${scores.judgeFlagged} of them (a score 0 or a check false): ${pct(ratio(scores.judgeFlagged, scores.graded))}. The code checks alone would let all ${scores.drafts} through.`,
+    "",
+    ...table(
+      ["score", "0", "1", "2", "mean"],
+      names.map((name) => {
+        const [zero, one, two] = scores.scoreCounts[name] as [number, number, number];
+        const total = zero + one + two;
+        return [name, zero, one, two, total === 0 ? "n/a" : ((one + 2 * two) / total).toFixed(2)];
+      })
+    ),
+    "These counts are the baseline of a tone gain (`tone_fits`) with no loss on facts (`answers_every_question`, `no_invented_commitment`).",
+    "",
+  ];
+}
+
 function replyDraftLines(scores: DrafterScores): string[] {
   const mean = (name: string): string =>
     scores.scoreMeans[name] === undefined ? "n/a" : scores.scoreMeans[name].toFixed(2);
@@ -105,6 +126,7 @@ function replyDraftLines(scores: DrafterScores): string[] {
     ),
     `Code checks: ${scores.codeChecks.passed} of ${scores.codeChecks.of} drafter runs passed them (${pct(ratio(scores.codeChecks.passed, scores.codeChecks.of))}).`,
     "",
+    ...(scores.judgeRan ? judgeGainLines(scores) : []),
     ...(scores.judgeRan
       ? [
           "### Judge (rubric reply)",

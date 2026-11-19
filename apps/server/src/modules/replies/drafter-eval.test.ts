@@ -406,6 +406,19 @@ describe("scoreDrafter", () => {
     expect(gate(result("x", { outcome: "no_draft", reasonCode: "needs_facts", judge: null }))).toBe(true);
   });
 
+  test("score counts and the drafts that the judge flags although the code checks passed", () => {
+    const rows = [
+      result("a"),
+      result("b", withChecks({ gaps_marked: false })),
+      result("c", withChecks({}, { answers_every_question: 0, form_of_address: 1, tone_fits: 2 })),
+      result("d", { outcome: "no_draft", reasonCode: "needs_facts", judge: null }),
+    ];
+    const scores = scoreDrafter(rows, { judgeRan: true, planted: () => false });
+    expect(scores.judgeFlagged).toBe(2);
+    expect(scores.scoreCounts.answers_every_question).toEqual([1, 0, 2]);
+    expect(scores.scoreCounts.tone_fits).toEqual([0, 0, 3]);
+  });
+
   test("the language diagnostic counts language_matches false and the send-as-is rate without that check", () => {
     const rows = [
       result("a"),
@@ -538,6 +551,9 @@ describe("reports", () => {
     expect(text).toContain("`needs_facts` share of answered cases: 2 of 3 (66.7%); line: 30.0% (above the line)");
     expect(text).toContain("cost per draft: $0.0300");
     expect(text).toContain("send as is or small edit | 1/1 (100.0%)");
+    expect(text).toContain("### Judge gain over the code checks");
+    expect(text).toContain("| tone_fits | 0 | 0 | 1 | 2.00 |");
+    expect(text).toContain("The judge flags 0 of them");
     expect(text).toContain(
       "language all: drafts / language_matches false / send as is / send as is without that check | 1 / 0 / 1 / 1"
     );

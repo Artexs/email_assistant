@@ -52,6 +52,10 @@ export interface DrafterScores {
   calls: number;
   // By the language of the case: a diagnostic of the judge, not a bar.
   byLanguage: Record<string, LanguageRow>;
+  // For each rubric score: how many graded drafts got 0, 1 and 2. The baseline for a tone gain (a later style change).
+  scoreCounts: Record<string, [number, number, number]>;
+  // Graded drafts that passed every code check (all do) and that the judge still flags: a score 0 or a check false.
+  judgeFlagged: number;
 }
 
 export const ratio = (part: number, whole: number): number | null => (whole === 0 ? null : part / whole);
@@ -98,9 +102,14 @@ export function scoreDrafter(
 
   const grades = drafts.flatMap((r) => gradedOf(r) ?? []);
   const sums: Record<string, number> = {};
+  const scoreCounts: Record<string, [number, number, number]> = {};
   const checkFalse: Record<string, number> = {};
   for (const grade of grades) {
-    for (const [name, value] of Object.entries(grade.scores)) sums[name] = (sums[name] ?? 0) + value;
+    for (const [name, value] of Object.entries(grade.scores)) {
+      sums[name] = (sums[name] ?? 0) + value;
+      const counts = (scoreCounts[name] ??= [0, 0, 0]);
+      counts[Math.min(2, Math.max(0, value))] += 1;
+    }
     for (const [name, value] of Object.entries(grade.checks))
       if (!value) checkFalse[name] = (checkFalse[name] ?? 0) + 1;
   }
@@ -141,6 +150,10 @@ export function scoreDrafter(
     needsFactsShare: ratio(noDraft.needs_facts ?? 0, answered.length),
     calls: results.reduce((sum, r) => sum + r.calls, 0),
     byLanguage,
+    scoreCounts,
+    judgeFlagged: grades.filter(
+      (grade) => Object.values(grade.scores).some((v) => v < 1) || Object.values(grade.checks).some((v) => !v)
+    ).length,
   };
 }
 
