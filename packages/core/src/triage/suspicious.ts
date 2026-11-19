@@ -23,7 +23,11 @@ export interface SuspiciousInput {
   attachments: { name: string | null; type: string }[];
   isList: boolean; // List-Id or List-Unsubscribe
   senderKnown: boolean;
+  // The domains of known senders (own, delegate, VIP, whitelist). A look-alike target, and a sender on one is never a look-alike.
   knownDomains: string[];
+  // Domains the user wrote to. A look-alike TARGET only: a sender on one gets no exemption (the user may have mistyped an
+  // address), and it never makes the sender known. Default: none.
+  sentDomains?: string[];
   protectedNames: string[];
 }
 
@@ -47,9 +51,24 @@ export const freeMailDomains: readonly string[] = [
   "tlen.pl",
   "proton.me",
   "protonmail.com",
+  "pm.me",
   "gmx.de",
   "gmx.net",
+  "gmx.com",
   "web.de",
+  "vp.pl",
+  "autograf.pl",
+  "onet.eu",
+  "yahoo.pl",
+  "yahoo.co.uk",
+  "outlook.pl",
+  "hotmail.co.uk",
+  "me.com",
+  "aol.com",
+  "msn.com",
+  "mail.com",
+  "tutanota.com",
+  "zoho.com",
 ];
 
 // A built-in list of two-level suffixes, not a public-suffix library.
@@ -198,6 +217,37 @@ export function registrableDomain(host: string): string {
   return TWO_LEVEL_SUFFIXES.has(lastTwo) ? labels.slice(-3).join(".") : lastTwo;
 }
 
+// Shared hosting suffixes. The built-in rule has no private suffixes, so `evil.github.io` would be "registrable" as
+// `github.io`. For these suffixes `registrableDomainShared` keeps one more label (`evil.github.io`).
+const SHARED_SUFFIXES: ReadonlySet<string> = new Set([
+  "github.io",
+  "pages.dev",
+  "vercel.app",
+  "netlify.app",
+  "blogspot.com",
+  "herokuapp.com",
+  "azurewebsites.net",
+  "web.app",
+  "firebaseapp.com",
+  "onrender.com",
+]);
+
+// `registrableDomain`, except that a tenant of a shared hosting suffix stays apart: `a.herokuapp.com` and `b.herokuapp.com` are
+// two domains. For every other host the result is the same as `registrableDomain`.
+export function registrableDomainShared(host: string): string {
+  const base = registrableDomain(host);
+  if (!SHARED_SUFFIXES.has(base)) return base;
+  const baseLabels = base.split(".");
+  const labels = foldHost(host).split(".");
+  return labels.length <= baseLabels.length ? base : labels.slice(-(baseLabels.length + 1)).join(".");
+}
+
+// True when the registrable domain of `host` is a shared hosting suffix (`github.io`, `a.herokuapp.com`): a rule on it would
+// cover every tenant of the host, so the suggestion engine never makes a domain rule for it.
+export function isSharedHostingDomain(host: string): boolean {
+  return SHARED_SUFFIXES.has(registrableDomain(host));
+}
+
 function domainOfAddress(address: string): string | null {
   const at = address.lastIndexOf("@");
   if (at < 0) return null;
@@ -273,13 +323,18 @@ function isOneEditApart(a: string, b: string): boolean {
 
 const MIN_LABEL_LENGTH = 5;
 
-function isLookalike(senderDomain: string, knownDomains: string[]): boolean {
+// `knownDomains` are the base list: a sender on one is never a look-alike, and each is a target. `targetDomains` are targets
+// only: a sender on one gets no exemption, and a domain is never compared with itself. A domain that is one of the targets
+// and is not in `knownDomains` can still be flagged for looking like another target.
+export function isLookalike(senderDomain: string, knownDomains: string[], targetDomains: string[] = []): boolean {
   const known = knownDomains.map(registrableDomain);
   if (known.includes(senderDomain)) return false;
+  const targets = [...known, ...targetDomains.map(registrableDomain)];
 
   const senderLabel = senderDomain.split(".")[0] ?? "";
   const senderSkeleton = skeleton(senderDomain);
-  for (const other of known) {
+  for (const other of targets) {
+    if (other === senderDomain) continue;
     if (skeleton(other) === senderSkeleton) return true;
     const otherLabel = other.split(".")[0] ?? "";
     if (
@@ -384,7 +439,8 @@ export function assessSuspicious(input: SuspiciousInput): SuspiciousReason[] {
 
   // A known sender gets only `auth_fail` and `risky_attachment`.
   if (!input.senderKnown) {
-    if (senderDomain !== null && isLookalike(senderDomain, input.knownDomains)) reasons.push("lookalike_domain");
+    if (senderDomain !== null && isLookalike(senderDomain, input.knownDomains, input.sentDomains))
+      reasons.push("lookalike_domain");
     if (isDisplayNameSpoof(input.fromAddress, input.fromName, input.protectedNames)) {
       reasons.push("display_name_spoof");
     }

@@ -3,7 +3,10 @@ import { describe, expect, test } from "bun:test";
 import {
   assessSuspicious,
   freeMailDomains,
+  isLookalike,
+  isSharedHostingDomain,
   registrableDomain,
+  registrableDomainShared,
   suspiciousReasons,
   type SuspiciousInput,
 } from "./suspicious";
@@ -293,5 +296,84 @@ describe("freeMailDomains", () => {
     for (const domain of ["gmail.com", "interia.pl", "wp.pl", "web.de", "protonmail.com"]) {
       expect(freeMailDomains).toContain(domain);
     }
+  });
+});
+
+describe("sentDomains: look-alike targets that never exempt themselves", () => {
+  test("a sender on a Sent domain is not exempt from the look-alike check against other targets", () => {
+    expect(isLookalike("acmec0rp.pl", ["acmecorp.pl"], ["acmec0rp.pl"])).toBe(true);
+    expect(isLookalike("acmec0rp.pl", [], ["acmec0rp.pl"])).toBe(false);
+  });
+
+  test("a Sent domain is a target for other senders; a base domain still exempts itself", () => {
+    expect(isLookalike("kontrahemt.pl", [], ["kontrahent.pl"])).toBe(true);
+    expect(isLookalike("kontrahent.pl", ["kontrahent.pl"], ["kontrahent.pl"])).toBe(false);
+    expect(isLookalike("kontrahemt.pl", [], [])).toBe(false);
+  });
+
+  test("assessSuspicious reads sentDomains as targets, and without it as before", () => {
+    const base = { fromAddress: "x@kontrahemt.pl" };
+    expect(assessSuspicious(input({ ...base, sentDomains: ["kontrahent.pl"] }))).toEqual(["lookalike_domain"]);
+    expect(assessSuspicious(input(base))).toEqual([]);
+    expect(assessSuspicious(input({ fromAddress: "x@kontrahent.pl", sentDomains: ["kontrahent.pl"] }))).toEqual([]);
+  });
+});
+
+describe("registrableDomainShared", () => {
+  test("agrees with registrableDomain except for tenants of a shared hosting suffix", () => {
+    for (const host of [
+      "mail.kontrahent.pl",
+      "a.b.firma.com.pl",
+      "x.co.uk",
+      "WWW.Example.COM",
+      "xn--pypal-4ve.com",
+      "pl",
+    ]) {
+      expect(registrableDomainShared(host)).toBe(registrableDomain(host));
+    }
+    expect(registrableDomainShared("a.b.someone.github.io")).toBe("someone.github.io");
+    expect(registrableDomainShared("a.herokuapp.com")).toBe("a.herokuapp.com");
+    expect(registrableDomainShared("b.herokuapp.com")).toBe("b.herokuapp.com");
+    expect(registrableDomainShared("herokuapp.com")).toBe("herokuapp.com");
+    expect(registrableDomain("a.herokuapp.com")).toBe("herokuapp.com");
+  });
+});
+
+describe("freeMailDomains", () => {
+  test("holds the common Polish and international free-mail domains", () => {
+    for (const domain of [
+      "vp.pl",
+      "autograf.pl",
+      "onet.eu",
+      "yahoo.pl",
+      "outlook.pl",
+      "me.com",
+      "aol.com",
+      "msn.com",
+      "mail.com",
+      "pm.me",
+      "proton.me",
+      "protonmail.com",
+      "tutanota.com",
+      "zoho.com",
+      "hotmail.co.uk",
+      "yahoo.co.uk",
+      "gmx.com",
+      "gmx.net",
+      "gmx.de",
+      "web.de",
+    ]) {
+      expect(freeMailDomains).toContain(domain);
+    }
+  });
+});
+
+describe("isSharedHostingDomain", () => {
+  test("a tenant host of a shared suffix counts; an ordinary or a two-level domain does not", () => {
+    expect(isSharedHostingDomain("github.io")).toBe(true);
+    expect(isSharedHostingDomain("someone.github.io")).toBe(true);
+    expect(isSharedHostingDomain("app.herokuapp.com")).toBe(true);
+    expect(isSharedHostingDomain("acme.pl")).toBe(false);
+    expect(isSharedHostingDomain("mail.acme.com.pl")).toBe(false);
   });
 });

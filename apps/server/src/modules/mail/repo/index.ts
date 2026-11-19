@@ -158,7 +158,12 @@ export {
   getSentSummary,
   listSentHealth,
   listUserAnswers,
+  userSentKey,
+  SENT_RECIPIENT_MAX_MAILS,
+  sentRecipientDomains,
   type SentHealthRow,
+  type SentRecipientDomain,
+  type UserSentKey,
   type SentSummary,
   type UserAnswer,
 } from "./sent-readers";
