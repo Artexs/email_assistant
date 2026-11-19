@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-12
+landed: 2026-11-19
 ---
 
 # F071 · Move the agent workflow to Limen
