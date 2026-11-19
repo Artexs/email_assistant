@@ -7,11 +7,11 @@ import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
 import { createOrganizationWithOwner, insertMembership, isSsoOnlyMember } from "../../src/modules/tenancy";
+import { createAuth, RESET_REQUEST_ANSWER, type AuthHandle } from "../../src/platform/auth";
+import { createAuthMailTasks, type AuthMail, type AuthMailer, type AuthMailResult } from "../../src/platform/auth-mail";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import { createApp } from "../../src/platform/http";
-import { createAuth, RESET_REQUEST_ANSWER, type AuthHandle } from "../../src/platform/auth";
-import { createAuthMailTasks, type AuthMail, type AuthMailer, type AuthMailResult } from "../../src/platform/auth-mail";
 import { setLogLevel } from "../../src/platform/log";
 import { auditWebEvent, authMailFailedHandler, termsAcceptedHandler, webDeps } from "../../src/web";
 

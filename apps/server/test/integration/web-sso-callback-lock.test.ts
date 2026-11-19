@@ -19,7 +19,7 @@ import { createApp } from "../../src/platform/http";
 import { setLogLevel } from "../../src/platform/log";
 import { webDeps } from "../../src/web";
 import { startFakeOidc, type FakeOidc } from "../fake-oidc";
-import { fakeOidcConfig, nextIp, ssoSignIn, SSO_TEST_ORIGIN, type SsoSignInResult } from "../sso-helpers";
+import { fakeOidcConfig, ssoSignIn, SSO_TEST_ORIGIN, type SsoSignInResult } from "../sso-helpers";
 
 import { testDb } from "./helpers";
 
