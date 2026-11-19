@@ -271,7 +271,8 @@ describe("telegram link consent", () => {
       expect(res.status).toBe(400);
     }
     // The text before the attachment names went to Telegram is outdated too.
-    for (const consentVersion of ["2000-01-01", "2026-11-14"]) {
+    // The text before the reply drafts were named is outdated too (an old link version gives 409; the new one links, next test).
+    for (const consentVersion of ["2000-01-01", "2026-11-14", "2026-11-15.2"]) {
       const old = await app.request(LINK, as("owner", { method: "POST", body: { consentVersion } }));
       expect(old.status).toBe(409);
       expect(await old.json()).toEqual({ error: "telegram_consent_outdated" });
@@ -282,6 +283,8 @@ describe("telegram link consent", () => {
 
   test("the current version makes one token and one consent row", async () => {
     const { app, org } = await setup();
+    // The literal pins the version of the text that names reply data (`REPLY_CONSENT_SINCE`).
+    expect(VALID.consentVersion).toBe("2026-11-19");
     const res = await app.request(LINK, as("owner", { method: "POST", body: VALID }));
     expect(res.status).toBe(200);
     expect(telegramLinkSchema.parse(await res.json()).url).toStartWith("https://t.me/");

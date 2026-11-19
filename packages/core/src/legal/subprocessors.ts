@@ -41,8 +41,8 @@ export const subprocessors: readonly Subprocessor[] = [
       pl: "Model AI, który sortuje pocztę i pisze szkice odpowiedzi",
     },
     dataReceived: {
-      en: "mail text, subject, sender for triage and drafts",
-      pl: "treść, temat i nadawca wiadomości do sortowania i szkiców",
+      en: "mail text, subject, sender for triage and drafts; for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization",
+      pl: "treść, temat i nadawca wiadomości do sortowania i szkiców; do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji",
     },
     location: {
       en: "No EU region is used (standard endpoint, ADR 0015). <to confirm: country>",
@@ -80,8 +80,8 @@ export const subprocessors: readonly Subprocessor[] = [
     },
     // The items of the consent text `tg_consent_text` (apps/web/src/i18n), no more, no less.
     dataReceived: {
-      en: "the sender and subject of mails, the names (or file types) and sizes of their attachments, the AI's short reason or summary, the texts of drafts that wait for approval with the quoted part of the original mail, the names of delegates and the addresses of the mailboxes; with open loops: who you wait for, a short description of what you asked or promised, the due date, the subject of the mail, and follow-up drafts with their recipients",
-      pl: "nadawca i temat wiadomości, nazwy (lub typy plików) i rozmiary ich załączników, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, imiona i nazwiska wykonawców oraz adresy skrzynek; przy otwartych sprawach: na kogo czekasz, krótki opis tego, o co prosisz lub co obiecujesz, termin, temat wiadomości oraz szkice przypomnień z ich adresatami",
+      en: "the sender and subject of mails, the names (or file types) and sizes of their attachments, the AI's short reason or summary, the texts of drafts that wait for approval with the quoted part of the original mail, reply drafts that the AI writes for you, the Reply-To addresses of the original mail that a review card shows, and the addresses of the other recipients of a mail (To, Cc) when a reply goes to them, the names of delegates and the addresses of the mailboxes; with open loops: who you wait for, a short description of what you asked or promised, the due date, the subject of the mail, and follow-up drafts with their recipients",
+      pl: "nadawca i temat wiadomości, nazwy (lub typy plików) i rozmiary ich załączników, krótkie uzasadnienie lub podsumowanie AI, treść szkiców czekających na zatwierdzenie wraz z cytowaną częścią oryginalnej wiadomości, szkice odpowiedzi, które AI pisze dla Ciebie, adresy Reply-To oryginalnej wiadomości, które pokazuje karta do przeglądu, oraz adresy pozostałych odbiorców wiadomości (Do, DW), gdy trafia do nich odpowiedź, imiona i nazwiska wykonawców oraz adresy skrzynek; przy otwartych sprawach: na kogo czekasz, krótki opis tego, o co prosisz lub co obiecujesz, termin, temat wiadomości oraz szkice przypomnień z ich adresatami",
     },
     location: {
       en: "Outside the EU; data can be processed outside the European Economic Area (consent text).",

@@ -12,7 +12,7 @@ export interface NewTermsProps {
   onConfirm(): void;
 }
 
-// "New Telegram terms: open loops": the consent text and one Confirm button for a linked user whose consent is older than the
+// "New Telegram terms": the consent text and one Confirm button for a linked user whose consent is older than the
 // current text. It renders nothing for a current consent.
 export function NewTerms({ state, features, busy, onConfirm }: NewTermsProps) {
   if (!needsNewTerms(state, features)) return null;
