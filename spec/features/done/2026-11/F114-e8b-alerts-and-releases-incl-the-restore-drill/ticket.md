@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-19
 ---
 
 # F114 · E8b Alerts and releases (incl. the restore drill)

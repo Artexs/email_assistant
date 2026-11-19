@@ -175,7 +175,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${model} effort=${effort ?? "-"}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
   );
 
-  // `--rpm` is the classifier provider's rate; the judge provider keeps the configured rate (`--judge-rpm` overrides).
+  // `--rpm` is the classifier provider's rate (the judge too, on the same provider); `--judge-rpm` limits only the judge role.
   const limited = simRoleTable(table, {
     rpm: options.rpm as number,
     judge: options.judge,
@@ -193,6 +193,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
       // The version and the sorted parts: two variants never share a state file.
       promptVersion: promptLabel(options.prompt),
       set: `sim-${scenario}-v${loaded.version}-${part}`,
+      judgeModel: judgeRow?.model,
     })
   );
   mkdirSync(dirname(stateFile), { recursive: true });
@@ -205,7 +206,7 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   }
 
   let newSpendUsd = 0;
-  // The judge is on another provider than the classifier: a call is priced at the endpoint of its provider.
+  // The judge model differs from the classifier model: a call is priced at the endpoint of the judge's provider.
   const endpointOfModel = (usedModel: string) =>
     judgeRow !== undefined && usedModel === judgeRow.model && usedModel !== model
       ? table.providers[judgeRow.provider].endpoint

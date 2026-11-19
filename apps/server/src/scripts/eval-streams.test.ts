@@ -15,6 +15,7 @@ import { readSlots, writeJson } from "../platform/sim-files";
 import { type ClassifierDeps, runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
 import { evalFailureLine } from "./eval-failure-line";
+import { JUDGE_SAME_MODEL } from "./eval-judge-setup";
 import { runSim, type SimDeps } from "./eval-sim";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
@@ -191,9 +192,10 @@ describe("eval --sim streams", () => {
     expect(stdout).toEqual([]);
   });
 
-  test("a judge on the classifier's provider: the setup problem on stderr", async () => {
-    const code = await sim({ extra: ["--judge"] });
+  test("a judge with the model under test: the setup problem on stderr", async () => {
+    const code = await sim({ extra: ["--judge", "--judge-model", MODEL] });
     expect(code).toBe(1);
+    expect(stderr).toEqual([`[eval] ${JUDGE_SAME_MODEL}`]);
     expect(stderr.length).toBe(1);
     expect(stderr[0]?.startsWith("[eval] ")).toBe(true);
     expect(stdout).toEqual([]);

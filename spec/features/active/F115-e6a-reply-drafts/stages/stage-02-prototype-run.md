@@ -31,6 +31,6 @@ Runs the stage 01 drafter on the `needs_reply` cases of `lab-01` with the reply 
 - **Done when:** the reports and the gate file are committed, or the final message says step 3 waits for the coordinator; the Proof prints `PROOF_OK`.
 - **Out of scope:** product wiring, any DB change.
 
-## Moved 2026-11-19 (F138)
+## Resume on OpenAI (owner, 2026-11-19)
 
-Step 3 (holdout and injection runs) now runs in F138 stage 06. The judge is `gpt-6.1-terra` (ADR 0037 model rule), not Gemini. The old "provider must differ (PD-026)" rule is replaced by the rule that the judge model differs from the drafter model. F115 gate G1 reads the F138 stage 06 reports. This stage is landed; do not run step 3 here.
+The owner allowed F138 stage 01 (judge on OpenAI: the judge model must differ from the drafter model) as an exception. After it lands, step 3 runs with judge `gpt-6.1-terra`: the holdout runs again in full (the judge model is in the state file name, so the 171 Gemini-judged cases are not reused), then injection grading, then the gate file. Use `--concurrency 2 --rpm 30` and stop on any 429. Resume commands otherwise as in `notes/2026-11-19-f115-s02-prototype-run.md`. F115 gate G1 reads these reports.

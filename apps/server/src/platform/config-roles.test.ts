@@ -4,6 +4,7 @@ import { llmRoles } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { ConfigError, llmRoleTable, loadConfig } from "./config";
+import { DEFAULT_JUDGE_MODEL } from "./config-llm";
 import type { LlmProviderSettings, LlmRoleSettings } from "./llm";
 
 const fullEnv = {
@@ -72,18 +73,29 @@ describe("llmRoleTable", () => {
     }
   });
 
-  test("2: without role keys every role equals the classifier row", () => {
+  test("2: without role keys every role but the judge equals the classifier row; the judge has the default model", () => {
     const table = llmRoleTable(loadConfig(openaiEnv));
-    for (const role of llmRoles) expect(table.roles[role]).toEqual(table.roles.classifier);
+    for (const role of llmRoles.filter((r) => r !== "judge")) expect(table.roles[role]).toEqual(table.roles.classifier);
+    expect(table.roles.judge).toEqual({
+      ...table.roles.classifier,
+      model: DEFAULT_JUDGE_MODEL,
+      reasoningEffort: "none",
+    });
   });
 
   test("3: a role on another provider takes that provider's values", () => {
     const table = llmRoleTable(
-      loadConfig({ ...openaiEnv, GEMINI_API_KEY: "g-key", LLM_JUDGE_PROVIDER: "gemini", GEMINI_TIMEOUT_MS: "15000" })
+      loadConfig({
+        ...openaiEnv,
+        GEMINI_API_KEY: "g-key",
+        LLM_JUDGE_PROVIDER: "gemini",
+        LLM_JUDGE_MODEL: "g-judge",
+        GEMINI_TIMEOUT_MS: "15000",
+      })
     );
     expect(table.roles.judge).toEqual({
       provider: "gemini",
-      model: "gemini-3.5-flash-lite",
+      model: "g-judge",
       timeoutMs: 15000,
       rpm: null,
       reasoningEffort: null,
@@ -116,7 +128,7 @@ describe("llmRoleTable", () => {
     const table = llmRoleTable(
       loadConfig({ ...openaiEnv, LLM_JUDGE_PROVIDER: "", LLM_JUDGE_MODEL: "", LLM_JUDGE_RPM: "" })
     );
-    expect(table.roles.judge).toEqual(table.roles.classifier);
+    expect(table.roles.judge).toEqual({ ...table.roles.classifier, model: DEFAULT_JUDGE_MODEL });
   });
 
   test("9: overrides", () => {
@@ -137,9 +149,10 @@ describe("llmRoleTable", () => {
       rpm: null,
       reasoningEffort: null,
     });
+    // `--judge-provider` drops the role's env keys (`LLM_JUDGE_MODEL` too): the default judge model applies.
     expect(table.roles.judge).toEqual({
       provider: "openai",
-      model: "gpt-6-luna",
+      model: DEFAULT_JUDGE_MODEL,
       timeoutMs: 30000,
       rpm: null,
       reasoningEffort: "none",
