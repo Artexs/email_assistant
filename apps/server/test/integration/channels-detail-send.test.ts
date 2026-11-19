@@ -495,6 +495,30 @@ describe("the readers", () => {
     });
   });
 
+  test("11b. one user in two organizations that both have the flag on: each organization gives its own level", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await world(trx, { member: "full" });
+      const c = await world(trx, { member: "minimal" });
+      await trx
+        .insertInto("memberships")
+        .values({ org_id: c.orgId, user_id: a.userId, role: "assistant", telegram_detail: "minimal" })
+        .execute();
+      const claimed = [
+        { orgId: a.orgId, userId: a.userId },
+        { orgId: c.orgId, userId: a.userId },
+      ];
+      const gate = createDetailGate({ db: trx, claimed });
+      expect(await gate.detailOf({ orgId: a.orgId, userId: a.userId })).toBe("full");
+      expect(await gate.detailOf({ orgId: c.orgId, userId: a.userId })).toBe("minimal");
+      // The lock of one organization does not reach the other.
+      await setLock(trx, c, true);
+      await setMember(trx, c, a.userId, "full");
+      const locked = createDetailGate({ db: trx, claimed });
+      expect(await locked.detailOf({ orgId: a.orgId, userId: a.userId })).toBe("full");
+      expect(await locked.detailOf({ orgId: c.orgId, userId: a.userId })).toBe("minimal");
+    });
+  });
+
   test("12. the gate reads the members once per batch, and not at all while the flag is off", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, { member: "minimal" });
