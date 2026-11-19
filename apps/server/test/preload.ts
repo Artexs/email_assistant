@@ -18,5 +18,5 @@ setLogFormat("text");
 process.env.FEATURES_OFF = "";
 configureFeatures({ off: [] });
 
-// `test:int` runs 4 files at once: each worker process gets its own database (F124).
+// `test:int` runs 4 files at once: each worker process gets its own database.
 await useWorkerDatabase();

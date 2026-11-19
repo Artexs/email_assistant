@@ -177,7 +177,7 @@ describe("createOrganizationWithOwner", () => {
 describe("org:create CLI", () => {
   function runOrgCreate(args: string[]) {
     // `env: process.env`: without it Bun starts the child with the environment of this process at its start, not with
-    // the worker database that the preload put in `process.env` (F124).
+    // the worker database that the preload put in `process.env`.
     return Bun.spawn(["bun", orgCreateScript, ...args], {
       cwd: repoRoot,
       env: process.env,

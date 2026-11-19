@@ -131,3 +131,4 @@ One round, 2026-11-14, Opus 5.5 high, scout job `2026-11-14-f124-plan-review-57a
 ## Log
 
 - 2026-11-14: planned in an interactive owner session (Opus 5.5), from the probes in F2–F6.
+- 2026-11-20: stage 02 measured on master e04c4ca0: the suites are bigger than the plan says. Int: 434 files, 5,924 tests (plan: 135, 1,682); unit: 502 files, 7,031 tests. With `--parallel=4` on one shared DB the int run had 13 to 26 failures (plan: 1) and took 5.5 to 6.5 min with load average 14 to 19 from other jobs (plan: 56 s). Causes found: DDL of the migration Down/Up tests (ACCESS EXCLUSIVE locks, 5 to 9 `deadlock detected` per run) and tests that count rows of all organizations. Fix built: one DB per test worker (`apps/server/test/worker-db.ts`) plus narrow filters in 5 tests. One int run after that: 0 fail. The 5-run proof, the `taskset` runs and the time limits (unit under 12 s, int under 80 s) were not run; see `stage-02-open.md`.

@@ -311,7 +311,7 @@ function elsewhere(seed: DemoSeed): DemoSeed {
 const owner = (): string => `${MARK}-dev-${randomUUID()}@dev.test`;
 
 // Counts of the rows this file owns: its users, its fixture organizations and the import organizations. Other test files
-// run at the same time on the same DB (`bun test --parallel`), so a count over the whole DB changes under this test (F124).
+// run at the same time on the same DB (`bun test --parallel`), so a count over the whole DB changes under this test.
 async function snapshot() {
   const mine = sql`select o.id from organizations o
     where o.name = ${IMPORT_ORG_NAME}

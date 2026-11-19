@@ -35,7 +35,7 @@ async function isMigrated(migratorUrl: string): Promise<boolean> {
 
 /**
  * `bun test --parallel=N` runs N files at once on one database: a test that counts rows of all organizations, or a
- * Down section that takes an ACCESS EXCLUSIVE lock, then sees or blocks the other files (F124). Each worker process runs
+ * Down section that takes an ACCESS EXCLUSIVE lock, then sees or blocks the other files. Each worker process runs
  * its files one after the other, so one database per worker (`BUN_TEST_WORKER_ID`) gives every file the same view as a
  * serial run. The worker database is made and migrated once, then kept for the next run. Switched on by
  * `EA_TEST_WORKER_DB=1` (the `test:int` script); a serial run keeps the database of `.env`.
