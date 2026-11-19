@@ -35,7 +35,7 @@ const log = createLog("channels");
 
 // A row that waits for the flag `web_push` is looked at again after this time, with no attempt counted.
 export const PUSH_FLAG_WAIT_MS = 15 * 60_000;
-/** How long a push service keeps a message for an offline device: as long as the life of a row. */
+/** The life of a row and of a message at the push service. A message gets what is left of it: `PUSH_TTL_SECONDS` minus the row age. */
 export const PUSH_TTL_SECONDS = 86_400;
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_PER_USER_LIMIT = 3;
@@ -218,7 +218,8 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
           secret.target,
           Buffer.from(text, "utf8"),
           {
-            ttl: PUSH_TTL_SECONDS,
+            // A row held by quiet hours must not live a full day at the push service: the message ends when the row would.
+            ttl: Math.max(0, PUSH_TTL_SECONDS - Math.floor((now.getTime() - row.createdAt.getTime()) / 1000)),
             urgency: noticeGroupOf(row.kind) === "updates" ? "normal" : "high",
             topic: pushTopicOf(row.id),
           },
