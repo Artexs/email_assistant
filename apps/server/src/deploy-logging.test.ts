@@ -328,7 +328,7 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
   });
 });
 
-// Stage 01 of the production-on-the-VPS ticket, tests 6 and 7: the migrate one-off service alone holds the migrator URL in its own env (the server keeps it until
+// The migrate one-off service alone holds the migrator URL in its own env (the server keeps it until
 // the contract release). The password comes from the interpolation file, planted with a sentinel.
 describe("deploy/compose.yaml service migrate", () => {
   writeFileSync(
