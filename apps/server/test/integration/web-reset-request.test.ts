@@ -1,13 +1,19 @@
-import { randomInt, randomUUID } from "node:crypto";
+import { randomBytes, randomInt, randomUUID } from "node:crypto";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
-import { createOrganizationWithOwner, insertMembership } from "../../src/modules/tenancy";
+import { createOrganizationWithOwner, insertMembership, isSsoOnlyMember } from "../../src/modules/tenancy";
+import { loadConfig } from "../../src/platform/config";
+import { createSecretBox } from "../../src/platform/crypto";
+import { createApp } from "../../src/platform/http";
 import { createAuth, RESET_REQUEST_ANSWER, type AuthHandle } from "../../src/platform/auth";
 import { createAuthMailTasks, type AuthMail, type AuthMailer, type AuthMailResult } from "../../src/platform/auth-mail";
 import { setLogLevel } from "../../src/platform/log";
-import { auditWebEvent, authMailFailedHandler, termsAcceptedHandler } from "../../src/web";
+import { auditWebEvent, authMailFailedHandler, termsAcceptedHandler, webDeps } from "../../src/web";
 
 import { testDb } from "./helpers";
 
@@ -76,6 +82,8 @@ function makeAuth(options: {
   mailer: AuthMailer;
   onFailed?: Parameters<typeof createAuthMailTasks>[0]["onFailed"];
   ttl?: number;
+  // The web wiring passes the SSO-only check; a CLI handle (`web:invite`) does not.
+  ssoOnly?: boolean;
 }) {
   const tasks = createAuthMailTasks({
     mailer: options.mailer,
@@ -90,6 +98,7 @@ function makeAuth(options: {
     onEvent: auditWebEvent(db),
     onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
     resetLinkTtlSeconds: options.ttl ?? 3_600,
+    ...(options.ssoOnly ? { ssoOnlyMember: (userId: string) => isSsoOnlyMember(db, userId) } : {}),
     sendResetPassword: async ({ userId, email, url }) => {
       tasks.start({ kind: "reset", userId, to: email, url });
     },
@@ -226,6 +235,130 @@ describe("reset request", () => {
       logSpy.mockRestore();
       errorSpy.mockRestore();
     }
+  });
+});
+
+// An SSO-only member (no password account, a member of an organization with a provider) gets no password from the public
+// reset request: the generic answer, no mail, no token. A member of an organization with no provider keeps the reset mail
+// (an invite that was not used yet), and so does a member that has a password already.
+describe("reset request of an SSO-only member", () => {
+  async function addProvider(orgId: string): Promise<void> {
+    await db
+      .insertInto("sso_providers")
+      .values({
+        provider_id: orgId,
+        org_id: orgId,
+        issuer: "https://idp.x.test",
+        domain: `d${randomUUID().replaceAll("-", "")}.x.test`,
+        oidc_config: "{}",
+      })
+      .execute();
+  }
+
+  async function addCredential(userId: string): Promise<void> {
+    await sql`INSERT INTO auth_accounts (account_id, provider_id, user_id, password)
+      VALUES (${userId}, 'credential', ${userId}::uuid, 'x')`.execute(db);
+  }
+
+  async function tokensOf(userId: string): Promise<number> {
+    const { rows } = await sql<{ n: number }>`
+      SELECT count(*)::int AS n FROM auth_verifications WHERE value = ${userId}`.execute(db);
+    return rows[0]?.n ?? 0;
+  }
+
+  test("no password account and a provider in the organization: the generic answer, no mail, no token", async () => {
+    const { email, orgId, userId } = await createOwner();
+    await addProvider(orgId);
+    const { mailer, sent } = fakeMailer();
+    const { handle, tasks } = makeAuth({ mailer, ssoOnly: true });
+    const response = await request(handle, email);
+    await tasks.idle();
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe(ANSWER);
+    expect(sent).toHaveLength(0);
+    expect(await tokensOf(userId)).toBe(0);
+  });
+
+  test("the same member with a password account gets the mail", async () => {
+    const { email, orgId, userId } = await createOwner();
+    await addProvider(orgId);
+    await addCredential(userId);
+    const { mailer, sent } = fakeMailer();
+    const { handle, tasks } = makeAuth({ mailer, ssoOnly: true });
+    expect((await request(handle, email)).status).toBe(200);
+    await tasks.idle();
+    expect(sent).toHaveLength(1);
+    expect(await tokensOf(userId)).toBe(1);
+  });
+
+  test("no password account and no provider in the organization: the mail is sent (an invite not used yet)", async () => {
+    const { email, userId } = await createOwner();
+    const { mailer, sent } = fakeMailer();
+    const { handle, tasks } = makeAuth({ mailer, ssoOnly: true });
+    expect((await request(handle, email)).status).toBe(200);
+    await tasks.idle();
+    expect(sent).toHaveLength(1);
+    expect(await tokensOf(userId)).toBe(1);
+  });
+
+  test("the production wiring (webDeps) refuses the SSO-only member and still writes a token for a member with a password", async () => {
+    const dist = mkdtempSync(join(tmpdir(), "ea-reset-sso-only-dist-"));
+    writeFileSync(join(dist, "404.html"), "not found page");
+    // Reset by e-mail is open (the four SMTP keys); the SMTP port refuses at once, so a mail is never sent. A token row shows that the request was not refused.
+    const web = webDeps(
+      loadConfig({
+        ...process.env,
+        WEB_BASE_URL: BASE_URL,
+        WEB_AUTH_SECRET: "x".repeat(40),
+        WEB_DIST: dist,
+        AUTH_SMTP_HOST: "127.0.0.1",
+        AUTH_SMTP_PORT: "1",
+        AUTH_SMTP_USER: "u",
+        AUTH_SMTP_PASSWORD: "p",
+        AUTH_MAIL_FROM: "noreply@x.test",
+      }),
+      db,
+      {
+        secrets: createSecretBox(randomBytes(32).toString("base64"), 1),
+        actionsScope: { kind: "off" },
+        sendScope: { kind: "off" },
+        botUsername: null,
+      }
+    );
+    if (web === null) throw new Error("webDeps returned null");
+    const app = createApp({ checkDb: async () => true, web: { ...web, connInfo: (c) => c.req.header("x-client-ip") } });
+    const call = (email: string) =>
+      app.request("/api/auth/request-password-reset", {
+        method: "POST",
+        headers: { origin: BASE_URL, "content-type": "application/json", "x-client-ip": nextIp() },
+        body: JSON.stringify({ email, redirectTo: `${BASE_URL}/setup` }),
+      });
+    try {
+      const only = await createOwner();
+      await addProvider(only.orgId);
+      const withPassword = await createOwner();
+      await addProvider(withPassword.orgId);
+      await addCredential(withPassword.userId);
+      const [a, b] = [await call(only.email), await call(withPassword.email)];
+      expect([a.status, b.status]).toEqual([200, 200]);
+      expect(await a.text()).toBe(await b.text());
+      expect(await tokensOf(only.userId)).toBe(0);
+      expect(await tokensOf(withPassword.userId)).toBe(1);
+    } finally {
+      await web.close();
+      rmSync(dist, { recursive: true, force: true });
+    }
+  });
+
+  test("a handle without the check (the operator's web:invite) makes the link for an SSO-only member", async () => {
+    const { email, orgId, userId } = await createOwner();
+    await addProvider(orgId);
+    const { mailer, sent } = fakeMailer();
+    const { handle, tasks } = makeAuth({ mailer });
+    expect((await request(handle, email)).status).toBe(200);
+    await tasks.idle();
+    expect(sent).toHaveLength(1);
+    expect(await tokensOf(userId)).toBe(1);
   });
 });
 

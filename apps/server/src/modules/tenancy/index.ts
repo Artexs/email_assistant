@@ -16,6 +16,7 @@ export {
   isBreakGlassOwner,
   isOrgSuspended,
   isPasswordSignInRefused,
+  isSsoOnlyMember,
   listBreakGlassOrgIdsOfUser,
   listMemberships,
   listMembershipsOfUser,

@@ -52,6 +52,7 @@ export {
   getUserIdByEmail,
   hasOtherSsoAccount,
   isPasswordSignInRefused,
+  isSsoOnlyMember,
   type SsoProviderRow,
 } from "./sso";
 export {

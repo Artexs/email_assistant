@@ -85,8 +85,20 @@ export interface AuthDeps {
   // and the reset request are refused like a wrong password (ADR 0026 point 6). Absent = never refused (the CLIs and old tests).
   // Not caught: an error fails the request (500) and nothing changes (fail closed).
   passwordSignInRefused?: (userId: string) => Promise<boolean>;
+  // True = the user is an SSO-only member (no password account, a member of an organization with a provider): the reset
+  // request gets the generic answer, no mail and no token, so the public request cannot give the member a password
+  // (the company would lose its control of the access, and a person that left the company would keep it). The operator's
+  // `web:invite --user-id` link still works. Absent = never refused. Not caught: an error fails the request (fail closed).
+  ssoOnlyMember?: (userId: string) => Promise<boolean>;
   // The audit row of an SSO sign-in or refusal. It never throws into Better Auth.
   onSsoEvent?: (event: SsoEvent) => Promise<void>;
+}
+
+// The reset request is refused for a member that "SSO required" refuses and for an SSO-only member.
+function resetRefusal(deps: AuthDeps): ((userId: string) => Promise<boolean>) | undefined {
+  const { passwordSignInRefused, ssoOnlyMember } = deps;
+  if (!passwordSignInRefused && !ssoOnlyMember) return undefined;
+  return async (userId) => (await passwordSignInRefused?.(userId)) === true || (await ssoOnlyMember?.(userId)) === true;
 }
 
 export type Auth = ReturnType<typeof createBetterAuth>;
@@ -412,7 +424,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
             log.info("reset_request_limited");
             return ctx.json(RESET_REQUEST_ANSWER);
           }
-          if (deps.passwordSignInRefused && (await isSsoRequiredResetRequest(ctx, deps.passwordSignInRefused))) {
+          const resetRefused = resetRefusal(deps);
+          if (resetRefused && (await isSsoRequiredResetRequest(ctx, resetRefused))) {
             return ctx.json(RESET_REQUEST_ANSWER);
           }
         }
