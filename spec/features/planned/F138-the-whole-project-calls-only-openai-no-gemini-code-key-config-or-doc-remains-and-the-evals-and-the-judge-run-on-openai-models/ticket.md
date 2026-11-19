@@ -30,8 +30,19 @@ Every LLM call of the product, the evals and the judge goes to OpenAI. The Gemin
 - The privacy pages and the sub-processor registry name only the providers that receive data.
 - Full proof chain passes; no migration unless a settings table holds a Gemini value.
 
+## Slices
+
+One worker job per stage, in order 01 → 02 → {03, 04, 05 in parallel} → 06 (`plan.md` § Stages and § How to run). Stage 02 is the only `bun.lock` change; no migration. Owner step O1 (the OpenAI project limit) comes before stage 06. Risky: 01, 02, 04, 06.
+
+## Sequenced
+
+- Plan after: the reply drafts ticket F115 (its stage 02 eval harness) and the private model ticket F111 (endpoint kinds). Both have `stages/`.
+- Build after: F115 stage 02 landed (its eval harness and dev report; its holdout and injection runs move to stage 06 here). No ticket must be in `done/` first.
+- Gate: O1 before stage 06. Plan base 6aecc639.
+
 ## Notes
 
 - Owner request 2026-11-19: use only OpenAI. Reason: the Gemini free quota (500 calls a day) stopped the F115 stage 02 real run at 171 of 260 cases.
 - Needs an OpenAI key for the judge and eval runs on the owner's account (the VPS key already exists; check whether the eval budget allows the extra calls before the first run).
 - Plan first: run the planner job (`plan-task`). Order: before F115 stage 02 resumes, since it replaces the Gemini run.
+- Plan: `plan.md`, `stages/`, defaults in `questions.md`, scout packets in `scouts.md`. F076, F072 and F023 become obsolete (plan D12).
