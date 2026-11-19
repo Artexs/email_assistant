@@ -8,6 +8,7 @@ import type { ClassifierV3Part } from "./classifier-v3";
 import * as classifierV4 from "./classifier-v4";
 import * as drafterV1 from "./drafter-v1";
 import * as drafterV2 from "./drafter-v2";
+import * as drafterV3 from "./drafter-v3";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
 import * as judgeV2 from "./judge-v2";
@@ -95,6 +96,12 @@ export const drafterVersions = {
     version: drafterV2.PROMPT_VERSION,
     buildSystem: drafterV2.buildSystemPrompt,
     buildUser: drafterV2.buildUserPrompt,
+  },
+  "drafter-v3": {
+    role: "drafter",
+    version: drafterV3.PROMPT_VERSION,
+    buildSystem: drafterV3.buildSystemPrompt,
+    buildUser: drafterV3.buildUserPrompt,
   },
 } as const satisfies Record<string, DrafterPrompt>;
 export type DrafterVersion = keyof typeof drafterVersions;

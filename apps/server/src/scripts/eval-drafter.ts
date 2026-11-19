@@ -58,6 +58,7 @@ const simRoot = resolve(import.meta.dir, "../../../../evals/sim");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
 const gateDir = resolve(import.meta.dir, "../../../../evals/results/gate");
 const injectionFile = resolve(import.meta.dir, "../../../../evals/cases/reply-injection.json");
+const commitmentFile = resolve(import.meta.dir, "../../../../evals/cases/reply-commitment.json");
 
 const STOP_AFTER_ERRORS = 3;
 const ERROR_STOP_REASON = "errors in a row (quota, overload or bad answers), resume later";
@@ -72,6 +73,7 @@ export interface DrafterEvalCliDeps {
   runsDir?: string;
   gateDir?: string;
   injectionFile?: string;
+  commitmentFile?: string;
 }
 
 interface Source {
@@ -85,16 +87,18 @@ interface Source {
   manifestSha?: string | null;
 }
 
-// The needs_reply cases of an incoming part, with the persona of the corpus executive; or the reply injection set.
+// The needs_reply cases of an incoming part, with the persona of the corpus executive; or one reply set (injection, or
+// the dev-only commitment traps) with a fixed persona.
 async function loadSource(options: EvalOptions, deps: DrafterEvalCliDeps): Promise<Source> {
   if (options.sim === undefined) {
-    const file = deps.injectionFile ?? injectionFile;
+    const commitment = options.set === "reply-commitment";
+    const file = commitment ? (deps.commitmentFile ?? commitmentFile) : (deps.injectionFile ?? injectionFile);
     const cases = z.array(evalCaseSchema).parse(JSON.parse(readFileSync(file, "utf8")));
     return {
       cases,
       persona: INJECTION_PERSONA,
-      key: "reply-injection",
-      data: `reply injection set, ${cases.length} cases`,
+      key: commitment ? "reply-commitment" : "reply-injection",
+      data: `${commitment ? "reply commitment set (dev only)" : "reply injection set"}, ${cases.length} cases`,
     };
   }
   const scenario = options.sim;
@@ -138,8 +142,9 @@ function dumpLine(result: DrafterCaseResult, c: EvalCase | undefined, draft: str
   };
 }
 
-// `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection --drafter --judge`: the reply
-// drafter on every needs_reply case (the label, not a prediction: the drafter is measured alone), graded by the judge.
+// `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection|reply-commitment --drafter
+// --judge`: the reply drafter on every needs_reply case (the label, not a prediction: the drafter is measured alone),
+// graded by the judge.
 // Exit 0: done (and the gate or the injection bar passed); 1: a usage or setup error, a failed gate, an injection set under
 // 100% or over 10% error cases; 2: the run stopped (cap or errors), resume it.
 export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliDeps = {}): Promise<number> {
@@ -350,13 +355,15 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       capUsd: cap,
       date: startedAt.toISOString().slice(0, 10),
     };
-    const injection = options.sim === undefined ? injectionSummary(results) : undefined;
+    const injection = options.set === "reply-injection" ? injectionSummary(results) : undefined;
+    // Case ids appear for tuning data only: the dev part and the dev-only commitment set.
+    const listIds = options.part === "dev" || options.set === "reply-commitment";
     const markdown =
       injection === undefined
         ? renderSimDrafterReport({
             header,
             scores,
-            ...(options.part === "dev"
+            ...(listIds
               ? {
                   ids: {
                     failed: results.filter((r) => r.outcome === "failed" || r.outcome === "error").map((r) => r.id),
@@ -382,8 +389,8 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
 
     // The gate file comes from a full, judged holdout run only.
     let gate = false;
-    if (injection !== undefined) {
-      cli.print("no gate file: the injection set is not a holdout");
+    if (options.sim === undefined) {
+      cli.print(`no gate file: the ${source.key} set is not a holdout`);
     } else if (!holdout) {
       cli.print("no gate file: part is not holdout");
     } else if (options.limit !== undefined) {
