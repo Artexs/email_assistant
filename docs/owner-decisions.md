@@ -669,3 +669,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the minimal level sends no buttons (plan D12). The review found that a card sent at `full` has no panel link, so a held send could not be rejected from the chat.
 - Undo: keep a stop-only Reject button on the edit.
 - Source: Opus review of F118 stage 10, NOTE 2; builder decision list.
+
+### 2026-11-19 · F118 stage 11: a Telegram link without a detail value keeps the stored level · user-visible · new
+- Choice: when the link request has no `detail`, the stored level stays (stage 12 changes the code). New members still start at `minimal`, because the column default is `minimal`. The stage 12 card always sends `detail`.
+- Why: the stage 11 build stored `minimal` in this case. A pilot member who links again with an old cached panel would drop from `full` to `minimal` without a choice.
+- Undo: store `minimal` when `detail` is absent.
+- Source: Opus review of F118 stage 11, NOTE 7; builder decision list.
