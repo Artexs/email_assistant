@@ -12,6 +12,8 @@ import {
   classifierVersionIds,
   type DrafterVersion,
   drafterVersionIds,
+  type JudgeVersion,
+  judgeVersionIds,
   optionalParts,
   productionClassifierChoice,
   versionHasParts,
@@ -50,6 +52,7 @@ export const evalUsage = [
   "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
   "       bun run eval --set reply-injection --drafter --judge [--model …] [--out <file.md>]",
   `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev)]`,
+  `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
   "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge model must differ from the drafter model (default judge gpt-6.1-terra); the injection set needs --judge)",
@@ -94,6 +97,7 @@ const optionsSchema = z.object({
   "prompt-parts": z.string().min(1).optional(),
   "drafter-prompt": z.enum(drafterVersionIds as [DrafterVersion, ...DrafterVersion[]]).optional(),
   "dump-drafts": z.string().min(1).optional(),
+  "judge-prompt": z.enum(judgeVersionIds as [JudgeVersion, ...JudgeVersion[]]).optional(),
   judge: z.boolean().default(false),
   "judge-provider": z.enum(llmProviderIds).optional(),
   "judge-model": z.string().min(1).optional(),
@@ -128,7 +132,7 @@ const casesOnly = [
 ] as const;
 // A sim run takes its set and state file from the corpus, and has no DB.
 // The drafter options belong to `--drafter` only.
-const drafterOnly = ["drafter-prompt", "dump-drafts"] as const;
+const drafterOnly = ["drafter-prompt", "dump-drafts", "judge-prompt"] as const;
 const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly, ...drafterOnly] as const;
 // The options of `--sim <scenario> --part sent-dev|sent-holdout --extractor`.
 const extractorAllowed = new Set<string>([
@@ -210,7 +214,8 @@ type ParsedData = Omit<z.infer<typeof optionsSchema>, "part"> & { part?: SimPart
 function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): EvalOptions | undefined {
   if (data.extractor || data.suspicious || data.real || data.gap) return undefined;
   if (Object.keys(values).some((key) => !drafterAllowed.has(key))) return undefined;
-  if (!data.judge && (data["judge-provider"] || data["judge-model"] || data["judge-rpm"])) return undefined;
+  if (!data.judge && (data["judge-provider"] || data["judge-model"] || data["judge-rpm"] || data["judge-prompt"]))
+    return undefined;
   const sim = data.sim !== undefined;
   const injection = data.set === "reply-injection";
   // Exactly one source: a corpus part (never a sent part) or the injection set.
@@ -272,6 +277,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "prompt-parts": { type: "string" },
         "drafter-prompt": { type: "string" },
         "dump-drafts": { type: "string" },
+        "judge-prompt": { type: "string" },
       },
       strict: true,
     });

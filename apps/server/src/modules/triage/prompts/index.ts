@@ -7,8 +7,10 @@ import * as classifierV3 from "./classifier-v3";
 import type { ClassifierV3Part } from "./classifier-v3";
 import * as classifierV4 from "./classifier-v4";
 import * as drafterV1 from "./drafter-v1";
+import * as drafterV2 from "./drafter-v2";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
+import * as judgeV2 from "./judge-v2";
 import { type ClassifierPart, isV3Part, optionalParts } from "./parts";
 
 /** The prompt of one role in one version; the builders differ per role. */
@@ -88,9 +90,41 @@ export const drafterVersions = {
     buildSystem: drafterV1.buildSystemPrompt,
     buildUser: drafterV1.buildUserPrompt,
   },
+  "drafter-v2": {
+    role: "drafter",
+    version: drafterV2.PROMPT_VERSION,
+    buildSystem: drafterV2.buildSystemPrompt,
+    buildUser: drafterV2.buildUserPrompt,
+  },
 } as const satisfies Record<string, DrafterPrompt>;
 export type DrafterVersion = keyof typeof drafterVersions;
 export const drafterVersionIds = Object.keys(drafterVersions) as DrafterVersion[];
+
+/** One judge prompt version: every version has the rubric items, the schema and the user prompt of `judge-v1`. */
+export interface JudgePrompt {
+  role: "judge";
+  version: PromptVersion<"judge">;
+  buildSystem: typeof judgeV1.buildSystemPrompt;
+  buildUser: typeof judgeV1.buildUserPrompt;
+}
+
+// Every judge version that can run: the drafter eval picks one with `--judge-prompt`. The other evals use `prompts.judge`.
+export const judgeVersions = {
+  "judge-v1": {
+    role: "judge",
+    version: judgeV1.PROMPT_VERSION,
+    buildSystem: judgeV1.buildSystemPrompt,
+    buildUser: judgeV1.buildUserPrompt,
+  },
+  "judge-v2": {
+    role: "judge",
+    version: judgeV2.PROMPT_VERSION,
+    buildSystem: judgeV2.buildSystemPrompt,
+    buildUser: judgeV2.buildUserPrompt,
+  },
+} as const satisfies Record<string, JudgePrompt>;
+export type JudgeVersion = keyof typeof judgeVersions;
+export const judgeVersionIds = Object.keys(judgeVersions) as JudgeVersion[];
 
 export const CLASSIFIER_V3_PARTS: readonly ClassifierV3Part[] = ["attachments"];
 
@@ -110,12 +144,7 @@ export const prompts = {
     buildSystem: extractorV1.buildSystemPrompt,
     buildUser: extractorV1.buildUserPrompt,
   },
-  judge: {
-    role: "judge",
-    version: judgeV1.PROMPT_VERSION,
-    buildSystem: judgeV1.buildSystemPrompt,
-    buildUser: judgeV1.buildUserPrompt,
-  },
+  judge: judgeVersions["judge-v2"],
 } as const satisfies { [R in LlmRole]?: PromptEntry<R> };
 
 export interface ClassifierPromptChoice {

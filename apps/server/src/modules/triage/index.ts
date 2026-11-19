@@ -117,6 +117,8 @@ export {
   classifierVersions,
   drafterVersionIds,
   drafterVersions,
+  judgeVersionIds,
+  judgeVersions,
   optionalParts,
   productionClassifierChoice,
   prompts,
@@ -131,6 +133,8 @@ export type {
   ClassifierVersion,
   DrafterPrompt,
   DrafterVersion,
+  JudgePrompt,
+  JudgeVersion,
   PromptEntry,
 } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";

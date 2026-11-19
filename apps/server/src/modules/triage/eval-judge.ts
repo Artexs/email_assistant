@@ -16,6 +16,7 @@ import { createLog } from "../../platform/log";
 import type { CaseResult, CaseUsage } from "./eval";
 import { type AttemptHooks, RETRY_WAITS_MS } from "./eval-pool";
 import { judgeDraft, judgePassed } from "./judge";
+import type { JudgePrompt } from "./prompts";
 
 const log = createLog("eval");
 
@@ -163,7 +164,7 @@ export async function judgeReplyDraft(
   deps: { sleep: (ms: number) => Promise<void> },
   c: EvalCase,
   draft: string,
-  setup: Pick<JudgeSetup, "llm" | "model">,
+  setup: Pick<JudgeSetup, "llm" | "model"> & { prompt?: JudgePrompt },
   input: { retries: number },
   attempts?: AttemptHooks
 ): Promise<{ judge: ReplyJudge; usage: CaseUsage | null }> {
@@ -179,7 +180,7 @@ export async function judgeReplyDraft(
         ...(c.sim?.mustNot === undefined ? {} : { mustNot: c.sim.mustNot }),
         nonce: randomBytes(16).toString("hex"),
       },
-      { model: setup.model }
+      { model: setup.model, ...(setup.prompt === undefined ? {} : { prompt: setup.prompt }) }
     )
   );
   if (!("ok" in graded)) return { judge: { errorCode: graded.errorCode }, usage: null };

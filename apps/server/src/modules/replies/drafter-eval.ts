@@ -10,7 +10,14 @@ import {
   type LlmUsage,
   softCodes,
 } from "../../platform/llm";
-import { type AttemptHooks, type CaseUsage, type DrafterPrompt, judgeReplyDraft, RETRY_WAITS_MS } from "../triage";
+import {
+  type AttemptHooks,
+  type CaseUsage,
+  type DrafterPrompt,
+  type JudgePrompt,
+  judgeReplyDraft,
+  RETRY_WAITS_MS,
+} from "../triage";
 
 import { DrafterCallError, draftReply } from "./drafter";
 
@@ -137,8 +144,8 @@ export function drafterInputOf(c: EvalCase, persona: DrafterPersona, language: "
 export interface DrafterEvalDeps {
   llm: LlmClient;
   sleep(ms: number): Promise<void>;
-  // The judge role of the run, or undefined when the run has no `--judge`.
-  judge?: { llm: LlmClient; model: string };
+  // The judge role of the run, or undefined when the run has no `--judge`. `prompt` undefined is `prompts.judge`.
+  judge?: { llm: LlmClient; model: string; prompt?: JudgePrompt };
   // Gets the text of each draft. Only a dev run with `--dump-drafts` passes it; the state file never holds the text.
   onDraft?(id: string, body: string): void;
 }

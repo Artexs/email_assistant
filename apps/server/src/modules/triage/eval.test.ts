@@ -924,6 +924,15 @@ describe("evalStateFileName", () => {
     expect(new Set([name([]), name(["history"]), name(["urgency"]), name(["history", "urgency"])]).size).toBe(4);
   });
 
+  // A judge-v2 run never reuses the grades of a judge-v1 run; the judge-v1 names stay as they were.
+  test("the judge version is in the name after the judge model, except judge-v1", () => {
+    const judged = (judgeVersion?: string) =>
+      evalStateFileName({ ...base, model: "gpt-6-luna", judgeModel: "gpt-6.1-terra", judgeVersion });
+    expect(judged()).toBe("gpt-6-luna-classifier-v2-all-judge-gpt-6.1-terra.jsonl");
+    expect(judged("judge-v1")).toBe(judged());
+    expect(judged("judge-v2")).toBe("gpt-6-luna-classifier-v2-all-judge-gpt-6.1-terra-judge-v2.jsonl");
+  });
+
   test("subset suffix and unsafe characters", () => {
     expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v2-all-pc3.jsonl");
   });

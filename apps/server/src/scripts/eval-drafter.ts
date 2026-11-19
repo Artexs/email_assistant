@@ -27,6 +27,7 @@ import {
   evalStateFileName,
   firstEstimateUsd,
   gateFileName,
+  judgeVersions,
   prompts,
   runPool,
 } from "../modules/triage";
@@ -163,6 +164,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
   const judgeRow = options.judge ? table.roles.judge : undefined;
   const drafterPrompt =
     options["drafter-prompt"] === undefined ? prompts.drafter : drafterVersions[options["drafter-prompt"]];
+  const judgePrompt = options["judge-prompt"] === undefined ? prompts.judge : judgeVersions[options["judge-prompt"]];
   const { endpoint, host } = llmEndpointFields(table, "drafter");
   const own = endpoint === "own";
   if (own && options.judge) {
@@ -224,7 +226,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     return 1;
   }
   cli.print(
-    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${row.model} effort=${row.reasoningEffort ?? "-"} prompt=${drafterPrompt.version}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
+    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${row.model} effort=${row.reasoningEffort ?? "-"} prompt=${drafterPrompt.version}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model} ${judgePrompt.version}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
   );
 
   // `--rpm` is the rate of the drafter provider for this process only (the judge too, on the same provider); `--judge-rpm` limits only the judge role.
@@ -247,6 +249,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       promptVersion: drafterPrompt.version,
       set: `drafter-${source.key}`,
       judgeModel: judgeRow?.model,
+      judgeVersion: judgeRow === undefined ? undefined : judgePrompt.version,
     })
   );
   mkdirSync(dirname(stateFile), { recursive: true });
@@ -300,7 +303,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
           {
             llm,
             sleep: deps.sleep ?? ((ms) => new Promise((done) => setTimeout(done, ms))),
-            ...(judgeRow === undefined ? {} : { judge: { llm, model: judgeRow.model } }),
+            ...(judgeRow === undefined ? {} : { judge: { llm, model: judgeRow.model, prompt: judgePrompt } }),
             ...(dumpFile === undefined ? {} : { onDraft: (id: string, body: string) => drafts.set(id, body) }),
           },
           c,
@@ -338,7 +341,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       judge:
         judgeRow === undefined
           ? null
-          : { provider: judgeRow.provider, model: judgeRow.model, promptVersion: prompts.judge.version },
+          : { provider: judgeRow.provider, model: judgeRow.model, promptVersion: judgePrompt.version },
       planned: cases.length,
       complete,
       stoppedReason: outcome.stoppedReason,

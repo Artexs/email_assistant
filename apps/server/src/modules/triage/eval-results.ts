@@ -124,11 +124,18 @@ export function evalStateFileName(opts: {
   perCategory?: number;
   /** The judge model of a `--judge` run. */
   judgeModel?: string;
+  /** The judge prompt of a `--judge` run; `judge-v1` adds nothing, so the names of the judge-v1 runs stay. */
+  judgeVersion?: string;
 }): string {
   const effort = opts.reasoningEffort === null ? "" : `-${opts.reasoningEffort}`;
   const perCategory = opts.perCategory === undefined ? "" : `-pc${opts.perCategory}`;
   const version = opts.promptVersion.replace(/[^\w.-]/g, "_");
-  const judge = opts.judgeModel === undefined ? "" : `-judge-${opts.judgeModel.replace(/[^\w.-]/g, "_")}`;
+  const judgeVersion =
+    opts.judgeVersion === undefined || opts.judgeVersion === "judge-v1"
+      ? ""
+      : `-${opts.judgeVersion.replace(/[^\w.-]/g, "_")}`;
+  const judge =
+    opts.judgeModel === undefined ? "" : `-judge-${opts.judgeModel.replace(/[^\w.-]/g, "_")}${judgeVersion}`;
   return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${version}-${opts.set}${perCategory}${judge}${endpointSuffix(opts.endpoint)}.jsonl`;
 }
 

@@ -402,6 +402,27 @@ describe("runDrafterEval on a corpus part", () => {
     expect(existsSync(join(tmp, "gate"))).toBe(false);
   });
 
+  test("--drafter-prompt and --judge-prompt pick the prompts; their versions name the gate file, the state file and the report", async () => {
+    const fake = fakeClient();
+    const prompts: string[] = [];
+    const client = fake.client;
+    fake.client = {
+      ...client,
+      generate: (req) => {
+        prompts.push(`${req.role}:${req.promptVersion}`);
+        return client.generate(req);
+      },
+    };
+    await holdout({ fake, extra: ["--drafter-prompt", "drafter-v2", "--judge-prompt", "judge-v1"] });
+    expect(new Set(prompts)).toEqual(new Set(["drafter:drafter-v2", "judge:judge-v1"]));
+    expect(readdirSync(join(tmp, "gate"))).toEqual(["drafter-drafter-v2-gpt-6-luna-none-mini-v1.json"]);
+    expect(readdirSync(join(tmp, "runs")).filter((file) => file.endsWith(".jsonl"))).toEqual([
+      "gpt-6-luna-none-drafter-v2-drafter-sim-mini-v1-holdout-judge-gpt-6.1-terra.jsonl",
+    ]);
+    expect(stdout).toContain("drafter-v2");
+    expect(stdout).toContain("judge-v1");
+  });
+
   test("a dev run with --dump-drafts writes each draft with its grade; the state file still holds no text", async () => {
     const dump = join(tmp, "dump.jsonl");
     const result = await holdout({ part: "dev", extra: ["--dump-drafts", dump] });
