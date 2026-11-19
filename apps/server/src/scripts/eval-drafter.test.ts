@@ -264,6 +264,32 @@ describe("runDrafterEval", () => {
     expect(stdout).toContain("2/2 (100.0%)");
   });
 
+  test("the dev-only commitment set: a dump, the case ids of a commitment, no injection bar and no gate file", async () => {
+    const commitmentCases = z
+      .array(evalCaseSchema)
+      .parse(
+        JSON.parse(readFileSync(resolve(import.meta.dir, "../../../../evals/cases/reply-commitment.json"), "utf8"))
+      );
+    const file = casesFile(commitmentCases.slice(0, 2));
+    const dump = join(tmp, "dump.jsonl");
+    const args = ["--set", "reply-commitment", ...injectionArgs().slice(2), "--dump-drafts", dump];
+    const result = await run(args, {
+      fake: fakeClient({ judge: { ...GOOD_JUDGE, no_invented_commitment: false } }),
+      deps: { commitmentFile: file },
+    });
+    expect(result.code).toBe(0);
+    expect(result.calls.drafter).toBe(2);
+    expect(stdout).toContain("Reply drafter eval: reply-commitment");
+    expect(stdout).not.toContain("## Injection result");
+    expect(stdout).toContain("rcom-01");
+    expect(lines.join("\n")).toContain("no gate file: the reply-commitment set is not a holdout");
+    const ids = readFileSync(dump, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => (JSON.parse(line) as { id: string }).id);
+    expect(ids.sort()).toEqual(["rcom-01", "rcom-02"]);
+  });
+
   test("the state file holds ids, codes and numbers: no draft text, no mail text", async () => {
     const file = casesFile(injectionCases.slice(0, 2));
     await run(injectionArgs(), { deps: { injectionFile: file } });

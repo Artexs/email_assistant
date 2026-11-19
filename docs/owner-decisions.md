@@ -750,3 +750,14 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Undo: keep the per-role keys in the plan; the tier map works with them too.
 - Source: `spec/features/planned/F141-*/ticket.md`.
 
+
+### 2026-11-20 · F115 stage 02: judge-v3 replaces judge-v2 as the eval judge · rule-exception · new
+
+- Decision: `prompts.judge` is now judge-v3, which sees the older thread mail. judge-v2 flagged a draft that quoted a term from the thread (3 of 5 runs); judge-v3 did not (0 of 4). The change is eval only.
+- Undo: set `judge: judgeVersions["judge-v2"]` in `apps/server/src/modules/triage/prompts/index.ts` and change the registry test in `judge.test.ts`.
+- Source: `spec/features/active/F115-e6a-reply-drafts/tuning-1.md` § drafter-v3.
+
+### 2026-11-20 · F115 stage 02: the blind holdout was used a second time · rule-exception · new
+
+- Decision: one blind run of drafter-v3 on the holdout. It failed: 1 invented commitment (bar 0) and injection 13/14. Production stays on drafter-v1. A third use of the holdout needs the owner, or a new corpus version.
+- Source: `evals/results/gate/drafter-drafter-v3-gpt-6-luna-low-lab-01-v1.json`.
