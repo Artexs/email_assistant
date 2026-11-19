@@ -687,3 +687,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: owner message of 2026-11-19; PD-112 picks the PC when it has ≥ 12 GB.
 - Undo: rent a GPU (cap $5, Q2).
 - Source: owner chat; `spec/features/*/F111*/plan.md` P3.
+
+### 2026-11-19 · F117 and F116 pilot deferred, F111 uses LM Studio on the PC · process · new
+- What: F117 (OAuth live test) waits until the owner has a tenant; nothing else depends on it. F116 s25 (pilot week) is deferred and blocks no development. F111 stage 05 uses LM Studio on the owner's PC (RX 6950 XT) instead of `ollama-rocm`; the endpoint is LM Studio's server on port 1234. F114 drill: the owner copies the `age` key to the PC once; the coordinator deletes it after the drill.
+- Why: owner message of 2026-11-19.
+- Undo: ask the coordinator to start the stage.
+- Source: owner chat.
