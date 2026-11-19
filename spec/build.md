@@ -17,7 +17,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟠 ACTIVE): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers
 - `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟠 ACTIVE): E9b Phone channel (PWA, push, Telegram detail)
@@ -86,6 +85,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F135-the-data-request-erase-finds-mail-of-a-sender-whose-address-has-a-greek-final-sigma-or-a-turkish-dotted-capital-i-the-database-and-the-program-lower-case-it-alike` (🟢 PROVEN): the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike); landed 2026-11-19
+- `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟢 PROVEN): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers; landed 2026-11-19
 - `F131-the-large-files-named-in-quality-pass-1-are-split-by-aggregate-findings-4-to-7` (🟢 PROVEN): the large files named in quality pass 1 are split by aggregate (findings 4 to 7); landed 2026-11-19
 - `F133-the-small-duplicates-and-stale-statements-of-quality-pass-1-are-cleaned-findings-9-to-18` (🟢 PROVEN): the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18); landed 2026-11-18
 - `F132-comments-carry-no-bare-ticket-or-decision-codes-quality-pass-1-finding-8` (🟢 PROVEN): comments carry no bare ticket or decision codes (quality pass 1, finding 8); landed 2026-11-18
@@ -94,5 +94,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F128-turning-two-factor-sign-in-off-or-making-new-backup-codes-needs-a-code-from-the-authenticator-app-not-only-the-password` (🟢 PROVEN): turning two-factor sign-in off or making new backup codes needs a code from the authenticator app, not only the password; landed 2026-11-16
 - `F127-the-two-factor-text-in-the-account-card-renders-as-one-word-per-line` (🟢 PROVEN): the two-factor text in the Account card renders as one word per line; landed 2026-11-15
 - `F109-e3b-improve` (🟢 PROVEN): E3b Improve; landed 2026-11-15
-- `F106-e7-t3-account-data-delete-export-dsr` (🟢 PROVEN): E7-T3 Account data (delete, export, DSR); landed 2026-11-15
-- 2026-11: 85 landed. spec/features/done/2026-11/
+- 2026-11: 86 landed. spec/features/done/2026-11/

@@ -211,6 +211,10 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ...reasons(["email_headers.auto_submitted", "email_headers.precedence"], "one header token, no address"),
   ...reasons(["email_headers.links"], "link host names only, no address"),
   ...reasons(
+    ["email_headers.dkim_signatures"],
+    "the signing domain and the signed header names of each DKIM-Signature header (a domain is a domain, a header name is a token); never the signature value; no address"
+  ),
+  ...reasons(
     ["emails.dedup_key", "emails.message_id_header", "emails.in_reply_to", "emails.references_header"],
     "a Message-ID: random part and the host of the sender's system, no address of a person"
   ),

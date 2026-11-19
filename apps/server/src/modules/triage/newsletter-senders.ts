@@ -3,7 +3,7 @@
 // A link in a mail is untrusted text. This module reads two facts from the stored headers (is there an `https` link, does the
 // header allow one-click) and returns flags. The URL itself does not leave the headers; the unsubscribe step reads it again and checks it
 // before any request.
-import { DAY_MS, hasTrustedAlignedDkimPass } from "@ea/core";
+import { DAY_MS, dkimSignaturesSchema, hasCoveredDkimPass } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -22,8 +22,10 @@ export interface NewsletterSender {
   latestAt: Date;
   latestEmailId: string;
   /**
-   * The newest mail has `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, an `https` link in `List-Unsubscribe`, and
-   * a `dkim=pass` for the From domain (or a parent) in an `Authentication-Results` header of a trusted authserv-id.
+   * The newest mail has `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, an `https` link in `List-Unsubscribe`, a
+   * `dkim=pass` for the From domain (or a parent) in an `Authentication-Results` header of a trusted authserv-id, and
+   * every `DKIM-Signature` header of that domain names `List-Unsubscribe` and `List-Unsubscribe-Post` in `h=` (RFC 8058;
+   * `hasCoveredDkimPass`). A mail stored before the signatures were captured has no proof: link-only.
    */
   oneClick: boolean;
   /** The newest mail has an `https` link in `List-Unsubscribe` (the user may open it; the server does nothing). */
@@ -41,6 +43,8 @@ interface Row {
   auth_results: string | null;
   list_unsubscribe: string | null;
   list_unsubscribe_post: boolean | null;
+  /** null: the mail was stored before the signatures were captured (or retention cleared them). */
+  dkim_signatures: unknown;
 }
 
 // The first `https` URI of `List-Unsubscribe` (`<https://host/path>`, separated by commas) that the view may offer: it has a host and
@@ -102,7 +106,7 @@ export async function listNewsletterSenders(
     )
     SELECT DISTINCT ON (m.sender)
       m.sender, m.id AS email_id, m.received_at, s.n::text AS n,
-      h.from_name, h.auth_results, h.list_unsubscribe, h.list_unsubscribe_post
+      h.from_name, h.auth_results, h.list_unsubscribe, h.list_unsubscribe_post, h.dkim_signatures
     FROM mails m
     JOIN senders s ON s.sender = m.sender
     LEFT JOIN email_headers h ON h.email_id = m.id AND h.org_id = m.org_id
@@ -123,6 +127,8 @@ export async function listNewsletterSenders(
       const linkUrl = firstHttpsUnsubscribeUrl(row.list_unsubscribe);
       const hasLink = linkUrl !== null;
       const fromDomain = row.sender.slice(row.sender.lastIndexOf("@") + 1);
+      // A stored value of another shape is no proof (null).
+      const parsed = dkimSignaturesSchema.safeParse(row.dkim_signatures);
       return {
         senderLower: row.sender,
         fromName: row.from_name,
@@ -132,7 +138,12 @@ export async function listNewsletterSenders(
         oneClick:
           row.list_unsubscribe_post === true &&
           hasLink &&
-          hasTrustedAlignedDkimPass(row.auth_results, opts.trustedAuthservIds, fromDomain),
+          hasCoveredDkimPass(
+            row.auth_results,
+            opts.trustedAuthservIds,
+            fromDomain,
+            parsed.success ? parsed.data : null
+          ),
         hasLink,
         linkUrl,
       };

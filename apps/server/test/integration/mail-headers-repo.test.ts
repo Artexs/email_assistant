@@ -25,6 +25,7 @@ const CAPTURE: CapturedHeaders = {
   authResults: "mx.top.example; dmarc=fail header.from=evil.test; spf=fail",
   listUnsubscribe: "<https://u.test/x>, <mailto:u@u.test>",
   listUnsubscribePost: true,
+  dkimSignatures: [{ d: "list.test", h: ["from", "list-unsubscribe", "list-unsubscribe-post"] }],
   listId: "News <news.list.test>",
   autoSubmitted: "auto-replied",
   precedence: "bulk",
@@ -97,6 +98,9 @@ describe("email headers repository", () => {
       );
       expect((await getEmailHeaders(trx, org.ctx, oldId))?.listUnsubscribePost).toBeNull();
       expect((await getEmailHeaders(trx, org.ctx, newId))?.listUnsubscribePost).toBe(false);
+      // A row stored before the signatures were captured has no proof (null); a captured `[]` is kept as `[]`.
+      expect((await getEmailHeaders(trx, org.ctx, oldId))?.dkimSignatures).toBeNull();
+      expect((await getEmailHeaders(trx, org.ctx, newId))?.dkimSignatures).toEqual(CAPTURE.dkimSignatures);
     });
   });
 
@@ -155,6 +159,8 @@ describe("email headers repository", () => {
         listUnsubscribe: null,
         // A flag, not text: retention keeps it with the counts.
         listUnsubscribePost: true,
+        // The signing domain and header names go with the other header texts.
+        dkimSignatures: null,
         listId: null,
         attachments: [],
         links: [],
