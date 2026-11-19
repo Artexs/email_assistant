@@ -72,6 +72,16 @@ export function statsLines(stats: WeekStats): string[] {
       ` llm_usd_week ${num(m7.llmUsdWeek, 4)} llm_calls ${m7.llmCalls} unpriced_calls ${m7.unpricedCalls}` +
       ` mailboxes ${m7.mailboxes} hosting_usd_month ${num(m7.hostingUsdMonth)} backup_usd_month ${num(m7.backupUsdMonth)}`,
   ];
+  // The draft outcomes of the reply drafts: one line while any count is above 0, so a week with the feature off prints none.
+  const { replyDrafts } = stats;
+  if (Object.values(replyDrafts).some((count) => count > 0)) {
+    lines.push(
+      `reply_drafts made ${replyDrafts.made} sent_by_tap ${replyDrafts.sent_by_tap} sent_by_user ${replyDrafts.sent_by_user}` +
+        ` rejected ${replyDrafts.rejected} expired ${replyDrafts.expired} newer_mail ${replyDrafts.newer_mail}` +
+        ` answered ${replyDrafts.answered} original_moved ${replyDrafts.original_moved}` +
+        ` draft_changed ${replyDrafts.draft_changed} no_draft ${replyDrafts.no_draft} failed ${replyDrafts.failed}`
+    );
+  }
   for (const row of stats.m8) {
     const shown = row.kept >= EVIDENCE_MIN_LABELS;
     lines.push(

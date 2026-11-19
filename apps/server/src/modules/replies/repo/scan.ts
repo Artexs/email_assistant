@@ -58,6 +58,39 @@ export async function scanReplyCandidates(
   return rows.map((row) => ({ emailId: row.id, threadKey: row.thread_key, folder: row.folder }));
 }
 
+// The newest triaged `needs_reply` mail of one mailbox that was received in the last 7 days, newest first (the pool of the sample
+// drafts). Unlike the scan it does not skip a mail that has an `auto` request. The caller checks the rules of the sample trigger.
+export async function listSampleCandidates(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  opts: { now: Date; limit: number; testOnly: TestMailRule | null }
+): Promise<ReplyScanRow[]> {
+  const youngest = new Date(opts.now.getTime() - SCAN_MAX_AGE_DAYS * DAY_MS);
+  let query = db
+    .selectFrom("emails")
+    .select(["emails.id", "emails.thread_key", "emails.folder"])
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("emails.mailbox_id", "=", mailboxId)
+    .where("emails.status", "=", "triaged")
+    .where("emails.received_at", ">=", youngest)
+    .where(
+      sql<string | null>`(
+        select t.category from triage_results t
+        where t.org_id = emails.org_id and t.email_id = emails.id
+        order by t.created_at desc, t.id desc limit 1)`,
+      "=",
+      "needs_reply"
+    );
+  if (opts.testOnly !== null) query = query.where(mailKindFilter("synthetic", opts.testOnly));
+  const rows = await query
+    .orderBy("emails.received_at", "desc")
+    .orderBy("emails.id", "desc")
+    .limit(opts.limit)
+    .execute();
+  return rows.map((row) => ({ emailId: row.id, threadKey: row.thread_key, folder: row.folder }));
+}
+
 // True when the mail is test mail (a synthetic Message-ID, or a sender of the test rule).
 export async function isTestMail(
   db: DbOrTrx,

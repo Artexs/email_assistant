@@ -44,6 +44,19 @@ function week(patch: Partial<WeekStats> = {}): WeekStats {
       perMailboxMonthUsd: 0.4112,
       targetUsd: 5,
     },
+    replyDrafts: {
+      made: 0,
+      sent_by_tap: 0,
+      sent_by_user: 0,
+      rejected: 0,
+      expired: 0,
+      newer_mail: 0,
+      answered: 0,
+      original_moved: 0,
+      draft_changed: 0,
+      no_draft: 0,
+      failed: 0,
+    },
     m8: [],
     ...patch,
   };
@@ -149,6 +162,19 @@ describe("statsRows", () => {
     const gate = { ...NO_TRUST, recall: 0.9, decision: "go" as const };
     const rows = statsRows([
       week({
+        replyDrafts: {
+          made: 0,
+          sent_by_tap: 0,
+          sent_by_user: 0,
+          rejected: 0,
+          expired: 0,
+          newer_mail: 0,
+          answered: 0,
+          original_moved: 0,
+          draft_changed: 0,
+          no_draft: 0,
+          failed: 0,
+        },
         m8: [
           { mailboxId: MAILBOX, category: "spam", auto: false, kept: 40, precision: 0.975, wilsonLower: 0.9, ...gate },
           {

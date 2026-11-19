@@ -101,6 +101,7 @@ export {
   listHiddenMoveRows,
   listMistakeRows,
   listRejectRows,
+  listReplyPairRows,
   type HiddenMoveRowWithMail,
 } from "./metrics";
 export {

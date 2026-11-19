@@ -312,3 +312,99 @@ test("T8: the card passes axe and the keyboard reaches every field and button in
     en.rs_preview,
   ]);
 });
+
+const SAMPLE_IDS = [
+  "0190f5a0-0000-7000-8000-0000000000a1",
+  "0190f5a0-0000-7000-8000-0000000000a2",
+  "0190f5a0-0000-7000-8000-0000000000a3",
+];
+const SAMPLE_BODIES = [
+  "Dzień dobry,\nTak, wtorek pasuje.",
+  "Dzień dobry,\nTak, środa pasuje.",
+  "<b>Dzień dobry,</b>\nTak.",
+];
+const samples = (state: "pending" | "done") => ({
+  items: SAMPLE_IDS.map((requestId, index) => ({
+    requestId,
+    status: state,
+    reasonCode: null,
+    subject: `Temat ${index + 1}`,
+    body: state === "done" ? (SAMPLE_BODIES[index] ?? null) : null,
+  })),
+});
+
+test("T9: Show 3 sample drafts shows three sample texts as text; the button is off while they are written and after", async ({
+  context,
+  page,
+}) => {
+  // The e2e server has the model off, so the answers of both sample routes are faked here; the integration test
+  // `web-reply-samples.test.ts` runs the real routes and the drafter job with a fake model.
+  let reads = 0;
+  let asked = 0;
+  await page.route("**/api/mailboxes/*/reply-samples", async (route) => {
+    if (route.request().method() === "POST") {
+      asked += 1;
+      await route.fulfill({ status: 202, json: { requestIds: SAMPLE_IDS, count: 3 } });
+      return;
+    }
+    reads += 1;
+    // No run yet at the load of the card; the first poll after the tap sees the requests waiting, the second sees them done.
+    await route.fulfill({ json: reads === 1 ? { items: [] } : samples(reads === 2 ? "pending" : "done") });
+  });
+  await startSession(context, page, "owner");
+  const button = card(page).getByRole("button", { name: en.rs_samples, exact: true });
+  await expect(button).toBeEnabled();
+  await expect(card(page).getByText(en.rs_samples_note).first()).toBeVisible();
+
+  await button.click();
+  await expect(button).toBeDisabled();
+  await expect(card(page).getByText(en.rs_samples_waiting)).toBeVisible();
+  const bodies = card(page).locator("[data-sample-body]");
+  await expect(bodies).toHaveCount(3, { timeout: 15_000 });
+  expect(await bodies.allTextContents()).toEqual(SAMPLE_BODIES);
+  await expect(card(page).getByText(t("rs_samples_mail", { subject: "Temat 2" }))).toBeVisible();
+  // A model text is untrusted: markup in it shows as text.
+  await expect(card(page).locator("[data-sample] b")).toHaveCount(0);
+  await expect(button).toBeDisabled();
+  expect(asked).toBe(1);
+  await expectNoA11yViolations(page);
+
+  // Today's run stays: a reload shows the texts again and does not ask for a new run.
+  await page.reload();
+  await expect(card(page).locator("[data-sample-body]")).toHaveCount(3);
+  await expect(card(page).getByRole("button", { name: en.rs_samples, exact: true })).toBeDisabled();
+  expect(asked).toBe(1);
+});
+
+test("T10: the answers of a refused run have their own texts, the real route answers llm_off, and an OAuth mailbox gets the reason", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  const button = card(page).getByRole("button", { name: en.rs_samples, exact: true });
+  // The real route: the e2e server has the model off.
+  await button.click();
+  await expect(card(page).getByRole("alert")).toHaveText(en.rs_samples_llm_off);
+
+  const answers: { status: number; json: unknown; text: string }[] = [
+    { status: 409, json: { error: "sample_limit" }, text: en.rs_samples_limit },
+    { status: 409, json: { error: "blocked", reason: "oauth_mailbox" }, text: en.rs_samples_oauth },
+    { status: 202, json: { requestIds: [], count: 0 }, text: en.rs_samples_none },
+  ];
+  for (const answer of answers) {
+    await page.route("**/api/mailboxes/*/reply-samples", (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({ status: answer.status, json: answer.json })
+        : route.fallback()
+    );
+    await button.click();
+    await expect(card(page).getByRole("alert")).toHaveText(answer.text);
+    await page.unroute("**/api/mailboxes/*/reply-samples");
+  }
+
+  // A mailbox with a provider: the reason, no button.
+  await page.goto(`/settings?mailbox=${org().oauth.id}`);
+  await expect(card(page)).toBeVisible();
+  await expect(card(page).getByText(en.rs_samples_oauth)).toBeVisible();
+  await expect(card(page).getByRole("button", { name: en.rs_samples, exact: true })).toHaveCount(0);
+});

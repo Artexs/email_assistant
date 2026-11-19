@@ -37,6 +37,7 @@ export {
   type ReplyTrigger,
   type UserRequestView,
 } from "./repo/requests";
+export { replyOutcomeRows } from "./repo/outcomes";
 export { loadReplyFacts, type LoadedReplyFacts } from "./facts";
 export { clearReplyTexts } from "./retention";
 export { replyDocs } from "./api-docs";
@@ -62,3 +63,12 @@ export {
   type SetRecipientsResult,
 } from "./service";
 export { draftableMails } from "./draftable";
+export {
+  listSamples,
+  SAMPLE_POOL,
+  sampleReplies,
+  type ReplySampleScope,
+  type SampleDeps,
+  type SampleItem,
+  type SampleRepliesResult,
+} from "./samples";

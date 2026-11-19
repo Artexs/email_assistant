@@ -35,6 +35,7 @@ import { getMailboxSettings, listSenderRules } from "../config";
 import { listDelegationDueRows } from "../delegation";
 import { loopDueRows } from "../loops";
 import { listMailboxes, type TestMailRule } from "../mail";
+import { replyOutcomeRows } from "../replies";
 import { getOrganization, isFeatureOn } from "../tenancy";
 import { listHandledRows, listTruthRows, realGoNoGoRows } from "../triage";
 
@@ -143,7 +144,7 @@ async function readMetricRows(
   const llmRange = opts.llmRange ?? q.range;
   // Loops are read only for an organization with the flag `open_loops` on: off, the loops are hidden.
   const loopsOn = opts.withLoops && (await isFeatureOn(db, ctx, "open_loops"));
-  const [truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls] = await Promise.all([
+  const [truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls, replies] = await Promise.all([
     listTruthRows(db, ctx, q),
     listDelegationDueRows(db, ctx, q),
     loopsOn ? loopDueRows(db, ctx, { range: q.range, mailboxId: q.mailboxId, testMail: q.testMail }) : null,
@@ -153,8 +154,9 @@ async function readMetricRows(
     listHandledRows(db, ctx, q),
     deps.urgentNotices(db, ctx, q),
     listLlmCallRows(db, ctx, { range: llmRange, mailboxId: q.mailboxId }),
+    replyOutcomeRows(db, ctx, q),
   ]);
-  return { truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls };
+  return { truth, delegations, loops, moves, rejects, mistakes, handled, urgent, llmCalls, replies };
 }
 
 /** One week of one organization; `mailboxId` null = all mailboxes. `not_found` when the mailbox is not the organization's. */
@@ -189,6 +191,7 @@ export async function weekStats(
       handled: rows.handled,
       urgent: rows.urgent,
       llmCalls: rows.llmCalls,
+      replies: rows.replies,
       gates,
       mailboxes: scope.filter((mailbox) => mailbox.status === "active").length,
     },

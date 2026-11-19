@@ -14,6 +14,7 @@ const empty = {
   handled: [],
   urgent: [],
   llmCalls: [],
+  replies: { pairs: [], requests: [] },
   gates: [],
   mailboxes: 1,
 };
@@ -39,6 +40,23 @@ describe("weekStatsSchema", () => {
   test("refuses an extra key, at the top and inside a metric", () => {
     expect(weekStatsSchema.safeParse({ ...stats, subject: "x" }).success).toBe(false);
     expect(weekStatsSchema.safeParse({ ...stats, m4: { ...stats.m4, subject: "x" } }).success).toBe(false);
+  });
+
+  test("the reply draft counts are all zero for an empty week, a stored week with no key reads all zero, and a bad count is refused", () => {
+    expect(stats.replyDrafts.made).toBe(0);
+    expect(Object.values(stats.replyDrafts).every((count) => count === 0)).toBe(true);
+    const old: Partial<typeof stats> = { ...stats };
+    delete old.replyDrafts;
+    expect(weekStatsSchema.parse(old).replyDrafts).toEqual(stats.replyDrafts);
+    expect(weekStatsSchema.safeParse({ ...stats, replyDrafts: { ...stats.replyDrafts, made: -1 } }).success).toBe(
+      false
+    );
+    expect(weekStatsSchema.safeParse({ ...stats, replyDrafts: { ...stats.replyDrafts, subject: 1 } }).success).toBe(
+      false
+    );
+    const partial: Partial<typeof stats.replyDrafts> = { ...stats.replyDrafts };
+    delete partial.made;
+    expect(weekStatsSchema.safeParse({ ...stats, replyDrafts: partial }).success).toBe(false);
   });
 
   test("refuses a negative count and a bad week start", () => {

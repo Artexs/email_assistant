@@ -51,6 +51,7 @@ function rows(): WeekRows {
     ],
     urgent: [urgentRow({ receivedAt, noticeAt: new Date(receivedAt.getTime() + 120_000) }), urgentRow({ receivedAt })],
     llmCalls: [llmCallRow(), llmCallRow({ model: "unknown-model" })],
+    replies: { pairs: [], requests: [] },
     gates: [gateRow(), gateRow({ precision: null, kept: 0, decision: "no-go: too few" })],
     mailboxes: 2,
   };
@@ -84,6 +85,24 @@ describe("buildWeekStats", () => {
     expect(weekStatsSchema.parse(stats)).toEqual(stats);
   });
 
+  test("the reply draft counts of the rows reach the stats", () => {
+    const stats = buildWeekStats(
+      {
+        ...rows(),
+        replies: {
+          pairs: [
+            { status: "applied", reason: null },
+            { status: "expired", reason: "answered" },
+          ],
+          requests: [{ status: "no_draft" }],
+        },
+      },
+      { weekStart, mailboxId, timeZone, now }
+    );
+    expect(stats.replyDrafts).toMatchObject({ made: 2, sent_by_tap: 1, answered: 1, no_draft: 1 });
+    expect(weekStatsSchema.parse(stats)).toEqual(stats);
+  });
+
   test("an empty week passes the schema", () => {
     const empty: WeekRows = {
       truth: [],
@@ -95,6 +114,7 @@ describe("buildWeekStats", () => {
       handled: [],
       urgent: [],
       llmCalls: [],
+      replies: { pairs: [], requests: [] },
       gates: [],
       mailboxes: 0,
     };

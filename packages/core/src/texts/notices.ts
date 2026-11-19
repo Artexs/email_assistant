@@ -145,6 +145,17 @@ export interface NoticeTexts {
     review: (count: number) => string;
     // The line of the rule suggestions that wait: a count and the link to the Rules page (null: no link, a fixed phrase instead).
     suggestions: { line: (open: number, link: string | null) => string };
+    // The line of the reply drafts of the week (shown only when a draft was made): the counts of the six ends.
+    replyDrafts: {
+      line: (counts: {
+        made: number;
+        sentByTap: number;
+        sentByUser: number;
+        rejected: number;
+        expired: number;
+        closed: number;
+      }) => string;
+    };
   };
 }
 
@@ -365,6 +376,10 @@ export const noticeTexts = {
         line: (open, link) =>
           `💡 ${open} rule ${open === 1 ? "suggestion waits" : "suggestions wait"} for you · ${link ?? (open === 1 ? "check it in the panel" : "check them in the panel")}`,
       },
+      replyDrafts: {
+        line: (c) =>
+          `✍️ Reply drafts: ${c.made} made · ${c.sentByTap} sent by tap · ${c.sentByUser} sent by you · ${c.rejected} rejected · ${c.expired} expired · ${c.closed} closed`,
+      },
     },
   },
   pl: {
@@ -573,6 +588,11 @@ export const noticeTexts = {
       review: (count) => `/review: ${PL_REVIEW[pluralCategory("pl", count)](count)} na sprawdzenie.`,
       suggestions: {
         line: (open, link) => `💡 Sugestie reguł do przejrzenia: ${open} · ${link ?? "sprawdź w panelu"}`,
+      },
+      // The verbs have one form for every number (impersonal past), so no plural table is needed.
+      replyDrafts: {
+        line: (c) =>
+          `✍️ Szkice odpowiedzi: przygotowano ${c.made} · wysłano stuknięciem ${c.sentByTap} · wysłano przez ciebie ${c.sentByUser} · odrzucono ${c.rejected} · wygasło ${c.expired} · zamknięto ${c.closed}`,
       },
     },
   },

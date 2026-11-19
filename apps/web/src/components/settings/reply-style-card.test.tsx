@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { setLocaleForTest, t } from "../../i18n";
+import { en } from "../../i18n/en";
 
 import { ModeCard } from "./ModeCard";
 import { ReplyStyleForm } from "./ReplyStyleCard";
@@ -23,13 +24,16 @@ const profile = (over: Partial<ProfileView> = {}): ProfileView => ({
   ...over,
 });
 
-function form(over: { isOwner?: boolean; replyDraftsOn?: boolean; view?: ProfileView } = {}): string {
+function form(
+  over: { isOwner?: boolean; replyDraftsOn?: boolean; view?: ProfileView; samplesBlocked?: boolean } = {}
+): string {
   return renderToStaticMarkup(
     <ReplyStyleForm
       mailboxId={ID}
       view={over.view ?? profile()}
       isOwner={over.isOwner ?? true}
       replyDraftsOn={over.replyDraftsOn ?? true}
+      samplesBlocked={over.samplesBlocked ?? false}
       onSaved={() => undefined}
     />
   );
@@ -46,7 +50,7 @@ describe("the style card (F115 stage 11)", () => {
     for (const key of ["rs_name_label", "rs_signature_label", "rs_style_label", "rs_form_title"] as const) {
       expect(html).toContain(t(key));
     }
-    expect(buttons(html)).toEqual([t("rs_apply"), t("save"), t("rs_preview")]);
+    expect(buttons(html)).toEqual([t("rs_apply"), t("save"), t("rs_preview"), t("rs_samples")]);
     expect(html).toContain(t("rs_apply_help"));
     expect(html).toContain(t("rs_preview_help"));
     expect(html).not.toContain("readOnly");
@@ -54,6 +58,25 @@ describe("the style card (F115 stage 11)", () => {
     expect(/<button[^>]*disabled=""[^>]*>Save</.test(html)).toBe(true);
     expect(html).toContain('value="Anna Nowak"');
     expect(html).toContain(t("sig_counter", { count: 7, max: 1000 }));
+  });
+
+  test("the sample button sits on the card with its note; it waits for the first read of today's run", () => {
+    const html = form();
+    expect(html).toContain(t("rs_samples_help"));
+    expect(html).toContain(t("rs_samples_note"));
+    expect(en.rs_samples).toBe("Show 3 sample drafts");
+    expect(en.rs_samples_note).toBe("Samples are not saved in Drafts and cannot be sent.");
+    expect(/<button[^>]*disabled=""[^>]*>Show 3 sample drafts</.test(html)).toBe(true);
+  });
+
+  test("an OAuth mailbox gets the reason instead of the sample button; a member and the flag off get neither", () => {
+    const oauth = form({ samplesBlocked: true });
+    expect(oauth).toContain(t("rs_samples_oauth"));
+    expect(buttons(oauth)).not.toContain(t("rs_samples"));
+    for (const html of [form({ isOwner: false }), form({ replyDraftsOn: false })]) {
+      expect(html).not.toContain(t("rs_samples_help"));
+      expect(html).not.toContain(t("rs_samples_oauth"));
+    }
   });
 
   test("a member sees the texts read-only: no button, no select, no guided form", () => {

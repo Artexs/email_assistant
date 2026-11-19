@@ -329,3 +329,69 @@ describe("the suggestion line of the weekly report", () => {
     expect(schema.safeParse({ ...view, suggestions: { open: 2, address: "a@acme.pl" } }).success).toBe(false);
   });
 });
+
+// The line of the reply drafts of the week: shown only when a draft was made; "closed" is the sum of the four closes of a changed mail.
+describe("the reply draft line of the weekly report", () => {
+  const counts = {
+    made: 9,
+    sent_by_tap: 3,
+    sent_by_user: 1,
+    rejected: 2,
+    expired: 1,
+    newer_mail: 1,
+    answered: 2,
+    original_moved: 3,
+    draft_changed: 4,
+    no_draft: 7,
+    failed: 6,
+  };
+  const lineOf = (replyDrafts: WeekStats["replyDrafts"], texts: typeof en): string[] =>
+    renderWeeklyReport({ week: weekStatsExample({ replyDrafts }), timeZone, answeredWaiting: 0 }, texts)
+      .text.split("\n")
+      .filter((line) => line.startsWith("✍️"));
+
+  test("English: the six figures, and closed is newer mail + answered + moved + changed", () => {
+    expect(lineOf(counts, en)).toEqual([
+      "✍️ Reply drafts: 9 made · 3 sent by tap · 1 sent by you · 2 rejected · 1 expired · 10 closed",
+    ]);
+  });
+
+  test("Polish: the verbs have one form for every number", () => {
+    expect(lineOf(counts, pl)).toEqual([
+      "✍️ Szkice odpowiedzi: przygotowano 9 · wysłano stuknięciem 3 · wysłano przez ciebie 1 · odrzucono 2 · wygasło 1 · zamknięto 10",
+    ]);
+    for (const made of [1, 2, 5, 22]) {
+      expect(lineOf({ ...counts, made }, pl)[0]).toContain(`przygotowano ${made} ·`);
+    }
+  });
+
+  test("the line is hidden when no draft was made, even when other counts are set", () => {
+    expect(lineOf({ ...counts, made: 0 }, en)).toEqual([]);
+    expect(lineOf({ ...counts, made: 0 }, pl)).toEqual([]);
+    expect(lineOf(weekStatsExample().replyDrafts, en)).toEqual([]);
+  });
+
+  test("the suggestion line and the reply draft line stand together", () => {
+    const text = renderWeeklyReport(
+      { week: weekStatsExample({ replyDrafts: counts }), timeZone, answeredWaiting: 0, suggestions: { open: 2 } },
+      en
+    ).text;
+    expect(text).toContain("💡 2 rule suggestions wait for you");
+    expect(text).toContain("✍️ Reply drafts: 9 made");
+  });
+
+  test("a view queued before the key has no `replyDrafts` and still parses with all zero", () => {
+    const old: Partial<WeekStats> = weekStatsExample();
+    delete old.replyDrafts;
+    const parsed = noticeViewSchemas.weekly_report.safeParse({ week: old, timeZone, answeredWaiting: 0 });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.week.replyDrafts.made).toBe(0);
+    expect(
+      noticeViewSchemas.weekly_report.safeParse({
+        week: { ...old, replyDrafts: { ...counts, extra: 1 } },
+        timeZone,
+        answeredWaiting: 0,
+      }).success
+    ).toBe(false);
+  });
+});
