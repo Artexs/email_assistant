@@ -9,6 +9,7 @@ import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope 
 import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
 import {
   approvalRoutes,
+  replyApprovalRoutes,
   cardEditHooks,
   channelRoutes,
   getChatLinkForUser,
@@ -455,6 +456,16 @@ export function apiRouters(
         hooks: delegationHooks({ db }),
         uidplus: uidplusOf(db),
         sender: { db, credentialsKey: config.CREDENTIALS_KEY },
+      })
+    );
+    api.route(
+      "/",
+      replyApprovalRoutes({
+        db,
+        now,
+        sendScope: extras.sendScope,
+        hooks: delegationHooks({ db }),
+        uidplus: uidplusOf(db),
       })
     );
     api.route("/", delegateRoutes({ db, now }));

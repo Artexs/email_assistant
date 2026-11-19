@@ -23,6 +23,7 @@ export {
   countRedrafts,
   createReplyRequest,
   findOpenRequest,
+  getUserRequest,
   listEndedRequestsVia,
   finishReplyRequest,
   listReplyRequestsOfEmail,
@@ -32,7 +33,9 @@ export {
   type NewReplyRequest,
   type ReplyRequestEnd,
   type ReplyRequestRow,
+  replyVersionFacts,
   type ReplyTrigger,
+  type UserRequestView,
 } from "./repo/requests";
 export { loadReplyFacts, type LoadedReplyFacts } from "./facts";
 export { clearReplyTexts } from "./retention";
