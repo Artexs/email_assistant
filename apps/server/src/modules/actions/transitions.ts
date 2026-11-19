@@ -6,8 +6,9 @@
 // - `ACTION_ENTRIES`: how a new row gets its first status.
 // - `ACTION_EDGES`: the edges that callers use (design map). One row per (writer, from, to).
 // - `WRITER_GUARDS`: the guard of each writer variant, as the repository code writes it.
-// - `LATENT_EDGES`: edges that a guard admits and no caller uses.
-// Rule (test A): the edges that the guards admit = `ACTION_EDGES` + `LATENT_EDGES`, compared per type.
+// Rule (test A): the edges that the guards admit = `ACTION_EDGES`, compared per type. A guard admits no edge that
+// no caller uses, with one exception: the map cannot tell an original `create_draft` row from a reverse row (see
+// the comment at the draft rows of `WRITER_GUARDS`).
 // Callers are file names (no line numbers: lines move).
 import type { ActionType } from "@ea/core";
 
@@ -75,14 +76,6 @@ export interface WriterGuard {
   held?: "blocks";
 }
 
-export interface LatentEdge {
-  writer: ActionWriter;
-  from: ActionStatus;
-  to: ActionStatus;
-  types: readonly ActionType[];
-  why: string;
-}
-
 export interface PairRule {
   id: string;
   when: string;
@@ -100,12 +93,31 @@ const ALL_TYPES: readonly ActionType[] = [...NON_SEND, "send"];
 
 export const ACTION_ENTRIES: readonly ActionEntry[] = [
   // `triage/service.ts` takes the status from `actionStatusFor`; `delegation/chaser.ts` hard-codes it.
-  { status: "ready", types: NON_SEND, writer: "createPlanned", callers: ["triage/service.ts", "delegation/chaser.ts"] },
+  {
+    status: "ready",
+    types: NON_SEND,
+    writer: "createPlanned",
+    callers: [
+      "triage/service.ts",
+      "delegation/chaser.ts",
+      "loops/delegate.ts",
+      "loops/follow-up-draft.ts",
+      "delegation/remind.ts",
+      "replies/write.ts",
+    ],
+  },
   {
     status: "awaiting_approval",
     types: ["send"],
     writer: "createPlanned",
-    callers: ["triage/service.ts", "delegation/chaser.ts"],
+    callers: [
+      "triage/service.ts",
+      "delegation/chaser.ts",
+      "loops/delegate.ts",
+      "loops/follow-up-draft.ts",
+      "delegation/remind.ts",
+      "replies/write.ts",
+    ],
   },
   { status: "logged", types: ALL_TYPES, writer: "createPlanned", callers: ["triage/service.ts"] },
   // The reverse row of an undo (mailbox types) or of a draft whose send ended (`create_draft`).
@@ -385,27 +397,28 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     variant: "default",
     // A send needs `approved` with `approved_at`; the other types start from `ready` or `approved`.
     from: {
-      move: ["ready", "approved"],
-      mark_read: ["ready", "approved"],
-      flag: ["ready", "approved"],
-      save_summary: ["ready", "approved"],
-      create_draft: ["ready", "approved"],
+      create_draft: ["ready"],
       send: ["approved"],
     },
     to: ["applying"],
   },
   // One row per target: a guard can depend on the target. `finishAction` narrows `from` with its `opts.from`
   // (default `ready`, `applying`), so a call without `opts.from` never admits `approved`. A send is never `ready`.
+  // Known blind spot: the map has no field that tells an original `create_draft` row from a reverse row (the row of
+  // an undo or of a send that ended). A draft edge that is for originals only, or for reverse rows only, stays open
+  // for the other kind: original `ready` -> `applied` or `failed` (`finishAction`), reverse `ready` -> `applying`
+  // (`markApplying`), reverse `ready` -> `expired` (`finishAction`), reverse `applied` -> `undone` (`markUndone`).
+  // No caller uses one of them; all were open before the guards closed the other latent edges.
   {
     writer: "finishAction",
     variant: `to "applied"`,
     from: {
-      move: ["ready", "applying"],
-      mark_read: ["ready", "applying"],
-      flag: ["ready", "applying"],
-      save_summary: ["ready", "applying"],
+      move: ["ready"],
+      mark_read: ["ready"],
+      flag: ["ready"],
+      save_summary: ["ready"],
       create_draft: ["ready", "applying"],
-      send: ["applying", "approved"],
+      send: ["applying"],
     },
     to: ["applied"],
   },
@@ -413,12 +426,11 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     writer: "finishAction",
     variant: `to "failed"`,
     from: {
-      move: ["ready", "applying"],
-      mark_read: ["ready", "applying"],
-      flag: ["ready", "applying"],
-      save_summary: ["ready", "applying"],
+      move: ["ready"],
+      mark_read: ["ready"],
+      flag: ["ready"],
       create_draft: ["ready", "applying"],
-      send: ["applying", "approved"],
+      send: ["approved", "applying"],
     },
     to: ["failed"],
   },
@@ -426,12 +438,8 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     writer: "finishAction",
     variant: `to "expired"`,
     from: {
-      move: ["ready", "applying"],
-      mark_read: ["ready", "applying"],
-      flag: ["ready", "applying"],
-      save_summary: ["ready", "applying"],
       create_draft: ["ready", "applying"],
-      send: ["applying", "approved"],
+      send: ["approved"],
     },
     to: ["expired"],
   },
@@ -440,11 +448,10 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     writer: "releaseAction",
     variant: `toStatus "ready"`,
     from: {
-      move: ["ready", "approved", "applying"],
-      mark_read: ["ready", "approved", "applying"],
-      flag: ["ready", "approved", "applying"],
-      save_summary: ["ready", "approved", "applying"],
-      create_draft: ["ready", "approved", "applying"],
+      move: ["ready"],
+      mark_read: ["ready"],
+      flag: ["ready"],
+      create_draft: ["ready", "applying"],
     },
     to: ["ready"],
   },
@@ -452,11 +459,6 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     writer: "releaseAction",
     variant: `toStatus "approved"`,
     from: {
-      move: ["ready", "approved", "applying"],
-      mark_read: ["ready", "approved", "applying"],
-      flag: ["ready", "approved", "applying"],
-      save_summary: ["ready", "approved", "applying"],
-      create_draft: ["ready", "approved", "applying"],
       send: ["approved", "applying"],
     },
     to: ["approved"],
@@ -465,12 +467,8 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     writer: "releaseAction",
     variant: `toStatus "applying"`,
     from: {
-      move: ["ready", "approved", "applying"],
-      mark_read: ["ready", "approved", "applying"],
-      flag: ["ready", "approved", "applying"],
-      save_summary: ["ready", "approved", "applying"],
-      create_draft: ["ready", "approved", "applying"],
-      send: ["approved", "applying"],
+      create_draft: ["applying"],
+      send: ["applying"],
     },
     to: ["applying"],
   },
@@ -500,124 +498,16 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
   },
   { writer: "setRejected", variant: `from "approved"`, from: { send: ["approved"] }, to: ["rejected"], held: "blocks" },
   {
-    // No type guard: only the status `applied` is checked.
+    // Only the types that an undo or a reverse draft reverts (`MAILBOX`, `create_draft`).
     writer: "markUndone",
     variant: "default",
     from: {
       move: ["applied"],
       mark_read: ["applied"],
       flag: ["applied"],
-      save_summary: ["applied"],
       create_draft: ["applied"],
-      send: ["applied"],
     },
     to: ["undone"],
-  },
-];
-
-// --- Latent edges ----------------------------------------------------------------------------------------------
-// A guard admits each edge below. No caller uses it. Closing them is the runtime follow-up task.
-
-export const LATENT_EDGES: readonly LatentEdge[] = [
-  // markApplying admits more edges than it should (see `why`).
-  {
-    writer: "markApplying",
-    from: "ready",
-    to: "applying",
-    types: [...MAILBOX, "save_summary"],
-    why: "L2: only a draft starts through markApplying",
-  },
-  {
-    writer: "markApplying",
-    from: "approved",
-    to: "applying",
-    types: NON_SEND,
-    why: "L2: only a send is `approved`; setApproved needs type send",
-  },
-  // finishAction with its default `from`, and with `from: ["approved"]`.
-  {
-    writer: "finishAction",
-    from: "ready",
-    to: "expired",
-    types: [...MAILBOX, "save_summary"],
-    why: "L3/L8: `send_closed` is for a draft only (E8, E22)",
-  },
-  {
-    writer: "finishAction",
-    from: "ready",
-    to: "failed",
-    types: ["save_summary"],
-    why: "L8: only mailbox types and reverse drafts fail from `ready`",
-  },
-  {
-    writer: "finishAction",
-    from: "applying",
-    to: "applied",
-    types: [...MAILBOX, "save_summary"],
-    why: "only a draft or a send is `applying`",
-  },
-  {
-    writer: "finishAction",
-    from: "applying",
-    to: "failed",
-    types: [...MAILBOX, "save_summary"],
-    why: "only a draft or a send is `applying`",
-  },
-  {
-    writer: "finishAction",
-    from: "applying",
-    to: "expired",
-    types: [...MAILBOX, "save_summary", "send"],
-    why: "L6: `send_closed` is for a draft only",
-  },
-  {
-    writer: "finishAction",
-    from: "approved",
-    to: "applied",
-    types: ["send"],
-    why: "L5: the only caller with `from: [approved]` passes `failed`",
-  },
-  // releaseAction has no type guard, and its target is a parameter.
-  {
-    writer: "releaseAction",
-    from: "ready",
-    to: "ready",
-    types: ["save_summary"],
-    why: "apply.ts skips `save_summary` before the release",
-  },
-  {
-    writer: "releaseAction",
-    from: "applying",
-    to: "ready",
-    types: [...MAILBOX, "save_summary"],
-    why: "L1: only a draft goes `applying` -> `ready`",
-  },
-  { writer: "releaseAction", from: "approved", to: "ready", types: NON_SEND, why: "L1" },
-  { writer: "releaseAction", from: "ready", to: "approved", types: NON_SEND, why: "L1" },
-  { writer: "releaseAction", from: "approved", to: "approved", types: NON_SEND, why: "L1: only a send is `approved`" },
-  {
-    writer: "releaseAction",
-    from: "applying",
-    to: "approved",
-    types: NON_SEND,
-    why: "L1: only a send goes back to `approved`",
-  },
-  { writer: "releaseAction", from: "ready", to: "applying", types: NON_SEND, why: "L1" },
-  { writer: "releaseAction", from: "approved", to: "applying", types: ALL_TYPES, why: "L1" },
-  {
-    writer: "releaseAction",
-    from: "applying",
-    to: "applying",
-    types: [...MAILBOX, "save_summary"],
-    why: "L1: only a draft or a send is `applying`",
-  },
-  // markUndone has no type guard.
-  {
-    writer: "markUndone",
-    from: "applied",
-    to: "undone",
-    types: ["send", "save_summary"],
-    why: "L4/L7: no type guard, no caller",
   },
 ];
 

@@ -148,7 +148,7 @@ const STALE_LOCK = new Date(STALE_BEFORE.getTime() - 60_000);
 // A guard with `held: "blocks"` is also driven with a fresh lock (not changed) and a stale lock (changed);
 // every other guard in "free" mode must ignore a fresh lock.
 async function checkWriter(guard: WriterGuard, call: WriterCall, options: CheckOptions): Promise<void> {
-  const types = [...(Object.keys(guard.from) as ActionType[]), ...(options.extraTypes ?? [])];
+  const types = [...new Set([...(Object.keys(guard.from) as ActionType[]), ...(options.extraTypes ?? [])])];
   const lockMode = options.lock ?? "token";
   const mainLock = lockMode === "token" ? TOKEN : lockMode === "fresh" ? FRESH_LOCK : null;
   expect(types.length).toBeGreaterThan(0);
@@ -249,6 +249,7 @@ describe("transitions map: markApplying", () => {
       (trx, ctx, row, token) => markApplying(trx, ctx, row.id, token),
       {
         next: "applying",
+        extraTypes: actionTypes,
       }
     );
   });
@@ -270,11 +271,13 @@ describe("transitions map: finishAction", () => {
 
   for (const { next, finish } of nexts) {
     for (const { name, from } of narrowings) {
+      // `to "applied"` with `from ["approved"]` admits nothing (a send applies from `applying`): the closed-edge test covers it.
+      if (next === "applied" && from?.length === 1 && from[0] === "approved") continue;
       test(`to "${next}", ${name}: the admitted set is the row narrowed by opts.from`, async () => {
         await checkWriter(
           guardOf("finishAction", `to "${next}"`),
           (trx, ctx, row, token) => finishAction(trx, ctx, row.id, token, finish, from ? { from } : undefined),
-          { next, narrow: from ?? ["ready", "applying"] }
+          { next, narrow: from ?? ["ready", "applying"], extraTypes: actionTypes }
         );
       });
     }
@@ -298,8 +301,8 @@ describe("transitions map: releaseAction", () => {
           }),
         {
           next: toStatus,
-          // A send is never `ready`: the guard refuses the row (no `23514` from the CHECK).
-          ...(toStatus === "ready" ? { extraTypes: ["send"] as const } : {}),
+          // Every type is driven. A send is never `ready`: the guard refuses it (no `23514` from the CHECK).
+          extraTypes: actionTypes,
         }
       );
     });
@@ -441,8 +444,160 @@ describe("transitions map: markUndone", () => {
     await checkWriter(
       guardOf("markUndone", "default"),
       (trx, ctx, row) => markUndone(trx, ctx, row.id, { at: WRITE_AT, reason: "undo" }),
-      { next: "undone", lock: "free" }
+      { next: "undone", lock: "free", extraTypes: actionTypes }
     );
+  });
+});
+
+// --- Closed latent edges ----------------------------------------------------------------------------------------
+// Moves that a guard once admitted and no caller uses. Each one must now return `false` and leave the row unchanged.
+
+type ClosedWriter = "markApplying" | "finishAction" | "releaseAction" | "markUndone";
+
+interface ClosedRow {
+  writer: ClosedWriter;
+  from: ActionStatus;
+  to: ActionStatus;
+  types: readonly ActionType[];
+}
+
+const MAILBOX_TYPES: readonly ActionType[] = ["move", "mark_read", "flag"];
+const MAILBOX_SUMMARY: readonly ActionType[] = [...MAILBOX_TYPES, "save_summary"];
+
+const CLOSED: readonly ClosedRow[] = [
+  { writer: "markApplying", from: "ready", to: "applying", types: MAILBOX_SUMMARY },
+  { writer: "markApplying", from: "approved", to: "applying", types: NON_SEND_TYPES },
+  { writer: "finishAction", from: "ready", to: "expired", types: MAILBOX_SUMMARY },
+  { writer: "finishAction", from: "ready", to: "failed", types: ["save_summary"] },
+  { writer: "finishAction", from: "applying", to: "applied", types: MAILBOX_SUMMARY },
+  { writer: "finishAction", from: "applying", to: "failed", types: MAILBOX_SUMMARY },
+  { writer: "finishAction", from: "applying", to: "expired", types: [...MAILBOX_SUMMARY, "send"] },
+  { writer: "finishAction", from: "approved", to: "applied", types: ["send"] },
+  { writer: "releaseAction", from: "ready", to: "ready", types: ["save_summary"] },
+  { writer: "releaseAction", from: "applying", to: "ready", types: MAILBOX_SUMMARY },
+  { writer: "releaseAction", from: "approved", to: "ready", types: NON_SEND_TYPES },
+  { writer: "releaseAction", from: "ready", to: "approved", types: NON_SEND_TYPES },
+  { writer: "releaseAction", from: "approved", to: "approved", types: NON_SEND_TYPES },
+  { writer: "releaseAction", from: "applying", to: "approved", types: NON_SEND_TYPES },
+  { writer: "releaseAction", from: "ready", to: "applying", types: NON_SEND_TYPES },
+  { writer: "releaseAction", from: "approved", to: "applying", types: actionTypes },
+  { writer: "releaseAction", from: "applying", to: "applying", types: MAILBOX_SUMMARY },
+  { writer: "markUndone", from: "applied", to: "undone", types: ["send", "save_summary"] },
+];
+
+const CLOSED_KEYS = CLOSED.flatMap((row) => row.types.map((type) => ({ ...row, type })));
+
+const FINISH_AT = new Date("2026-11-11T11:00:00Z");
+const finishFor = (to: ActionStatus): Parameters<typeof finishAction>[4] => {
+  if (to === "applied") return { status: "applied", at: FINISH_AT };
+  if (to === "failed") return { status: "failed", at: FINISH_AT, reason: "hard_error" };
+  if (to === "expired") return { status: "expired", at: FINISH_AT, reason: "send_closed" };
+  throw new Error(`finishAction does not write ${to}`);
+};
+const releaseTo = (toStatus: "ready" | "approved" | "applying") => ({
+  toStatus,
+  nextAttemptAt: null,
+  countAttempt: false,
+  now: NOW,
+});
+
+// The real writer, with every other condition true, so that only the guard can refuse the row.
+function callWriter(
+  writer: ClosedWriter,
+  to: ActionStatus,
+  from: ActionStatus,
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  id: string
+): Promise<boolean> {
+  switch (writer) {
+    case "markApplying":
+      return markApplying(trx, ctx, id, TOKEN);
+    case "finishAction":
+      // The explicit `from` makes the row the only filter.
+      return finishAction(trx, ctx, id, TOKEN, finishFor(to), { from: [from as "ready" | "approved" | "applying"] });
+    case "releaseAction":
+      return releaseAction(trx, ctx, id, TOKEN, releaseTo(to as "ready" | "approved" | "applying"));
+    case "markUndone":
+      return markUndone(trx, ctx, id, { at: WRITE_AT, reason: "undo" });
+  }
+}
+
+describe("transitions map: closed latent edges", () => {
+  test("the table holds 70 keys", () => {
+    expect(CLOSED.length).toBe(18);
+    expect(CLOSED_KEYS.length).toBe(70);
+    expect(new Set(CLOSED_KEYS.map((k) => `${k.writer} ${k.type} ${k.from} ${k.to}`)).size).toBe(70);
+  });
+
+  test("each closed move returns false and leaves the row unchanged (cases 1-8 are rows of the table)", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const ctx = { orgId };
+      const emailId = await insertTestEmail(trx, ctx, mailboxId);
+      for (const { writer, from, to, type } of CLOSED_KEYS) {
+        const label = `${writer} ${type}: ${from} -> ${to}`;
+        const id = await insertAction(trx, ctx, emailId, {
+          type,
+          status: from,
+          lockedAt: TOKEN,
+          approvedAt: type === "send" ? TOKEN : null,
+        });
+        const changed = await callWriter(writer, to, from, trx, ctx, id);
+        const after = await trx
+          .selectFrom("actions")
+          .select(["status", "locked_at"])
+          .where("id", "=", id)
+          .executeTakeFirstOrThrow();
+        expect({ label, changed }).toEqual({ label, changed: false });
+        expect({ label, status: after.status, locked: after.locked_at?.getTime() }).toEqual({
+          label,
+          status: from,
+          locked: TOKEN.getTime(),
+        });
+      }
+    });
+  });
+
+  // Controls: the guard still admits these (the first three are used moves, the last two are the known blind spot).
+  test("controls: used moves still change the row; the original/reverse blind spot stays open", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const ctx = { orgId };
+      const emailId = await insertTestEmail(trx, ctx, mailboxId);
+      const row = (type: ActionType, status: ActionStatus, reversesActionId: string | null = null) =>
+        insertAction(trx, ctx, emailId, {
+          type,
+          status,
+          lockedAt: TOKEN,
+          approvedAt: type === "send" ? TOKEN : null,
+          reversesActionId,
+        });
+      const statusOf = async (id: string) =>
+        (await trx.selectFrom("actions").select("status").where("id", "=", id).executeTakeFirstOrThrow()).status;
+
+      // 9. A send that fails from `approved` (a held send that cannot start).
+      const nine = await row("send", "approved");
+      expect(await finishAction(trx, ctx, nine, TOKEN, finishFor("failed"), { from: ["approved"] })).toBe(true);
+      expect(await statusOf(nine)).toBe("failed");
+      // 10. A send that expires from `approved`.
+      const ten = await row("send", "approved");
+      expect(await finishAction(trx, ctx, ten, TOKEN, finishFor("expired"), { from: ["approved"] })).toBe(true);
+      expect(await statusOf(ten)).toBe("expired");
+      // 11. A draft that is released from `applying` back to `ready` (before the APPEND).
+      const eleven = await row("create_draft", "applying");
+      expect(await releaseAction(trx, ctx, eleven, TOKEN, releaseTo("ready"))).toBe(true);
+      expect(await statusOf(eleven)).toBe("ready");
+      // 12. Blind spot: an original draft `ready` -> `applied` through `finishAction` (no caller).
+      const twelve = await row("create_draft", "ready");
+      expect(await finishAction(trx, ctx, twelve, TOKEN, finishFor("applied"))).toBe(true);
+      expect(await statusOf(twelve)).toBe("applied");
+      // 13. Blind spot: a reverse draft `ready` -> `applying` through `markApplying` (no caller).
+      const original = await row("create_draft", "applied");
+      const thirteen = await row("create_draft", "ready", original);
+      expect(await markApplying(trx, ctx, thirteen, TOKEN)).toBe(true);
+      expect(await statusOf(thirteen)).toBe("applying");
+    });
   });
 });
 
