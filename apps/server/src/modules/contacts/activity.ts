@@ -4,6 +4,7 @@ import {
   isNoreplyAddress,
   matchSender,
   normalizeSenderAddress,
+  registrableDomain,
   relationOf,
   type Category,
   type SenderHistory,
@@ -70,11 +71,30 @@ export interface SenderActivity {
   relation: SenderRelation;
 }
 
+// One address, or one registrable domain with its subdomains.
+export type ActivityScope = { address: string } | { domain: string };
+
 export interface ReadActivityOptions {
   now: Date;
   // Test mail never counts.
   testMail: TestMailRule;
+  // Read the activity of this address or domain only (the re-check of Accept). The reply delays and the delegation counts are
+  // left out: the suggestion rules do not read them, and the Sent-wide delay read is the costly one.
+  only?: ActivityScope;
 }
+
+const escapeLike = (value: string): string => value.replace(/[\\%_]/g, "\\$&");
+
+// The SQL condition of a scope on an address expression; empty without a scope. A domain scope is a prefilter (host equals the
+// domain or ends with `.domain`); the exact registrable domain is checked on the rows afterwards.
+function scopeCondition(only: ActivityScope | undefined, address: ReturnType<typeof normalizedAddress>) {
+  if (only === undefined) return sql``;
+  if ("address" in only) return sql`AND ${address} = ${only.address}`;
+  const domain = escapeLike(only.domain);
+  return sql`AND (${address} LIKE ${`%@${domain}`} OR ${address} LIKE ${`%.${domain}`})`;
+}
+
+const hostOf = (address: string): string => address.slice(address.lastIndexOf("@") + 1);
 
 // `Auto-Submitted` other than `no` marks an automatic mail (RFC 3834). The column is a trusted literal.
 const notAutomatic = (column: string) =>
@@ -158,6 +178,8 @@ interface FeedbackRow {
   n: number;
 }
 
+const skipped = <T>(): { rows: T[] } => ({ rows: [] });
+
 interface RepliedRow {
   addr: string;
   n: number;
@@ -190,7 +212,7 @@ export async function readSenderActivity(
   mailboxId: string,
   options: ReadActivityOptions
 ): Promise<SenderActivity[]> {
-  const { now, testMail } = options;
+  const { now, testMail, only } = options;
   const since = new Date(now.getTime() - PROFILE_DAYS * DAY_MS);
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const before7 = new Date(now.getTime() - 7 * DAY_MS);
@@ -205,6 +227,7 @@ export async function readSenderActivity(
       AND emails.received_at <= ${now}
       AND emails.from_address_lower IS NOT NULL
       AND emails.from_address_lower <> ''
+      ${scopeCondition(only, normalizedAddress("emails.from_address_lower"))}
       AND ${mailKindFilter("real", testMail)}
   `;
   // The newest triage result and the newest feedback row of each mail of the window. One `DISTINCT ON` pass over the mailbox
@@ -312,12 +335,16 @@ export async function readSenderActivity(
       AND s.internal_date <= ${now}
       AND ${notAutomatic("s.auto_submitted")}
       AND a.addr LIKE '%@%'
+      ${scopeCondition(only, normalizedAddress("a.addr"))}
     GROUP BY ${normalizedAddress("a.addr")}
   `.execute(db);
 
   // The user's delay is the first Sent reply after the mail whose `parent_message_id` is the Message-ID of the mail; it goes
   // to the sender (or has no stored recipient). A delay of 0 or less (clock skew) is no sample.
-  const userDelays = await sql<DelayRow>`
+  const userDelays =
+    only !== undefined
+      ? skipped<DelayRow>()
+      : await sql<DelayRow>`
     WITH win AS (${win})
     SELECT addr, count(*)::int AS n, percentile_cont(0.5) WITHIN GROUP (ORDER BY hours) AS median
     FROM (
@@ -331,6 +358,7 @@ export async function readSenderActivity(
           AND s.origin = 'user'
           AND s.parent_message_id = w.message_id_header
           AND s.sent_at > w.received_at
+          AND s.sent_at >= ${since}
           AND ${notAutomatic("s.auto_submitted")}
           AND (cardinality(s.to_addresses || s.cc_addresses) = 0 OR EXISTS (
             SELECT 1 FROM unnest(s.to_addresses || s.cc_addresses) AS r(x) WHERE ${normalizedAddress("r.x")} = w.addr
@@ -356,6 +384,7 @@ export async function readSenderActivity(
         AND s.origin = 'user'
         AND s.parent_message_id = w.message_id_header
         AND s.sent_at > w.received_at
+        AND s.sent_at >= ${since}
         AND ${notAutomatic("s.auto_submitted")}
     )
     GROUP BY w.addr
@@ -363,7 +392,10 @@ export async function readSenderActivity(
 
   // Their delay is the time from a Sent mail to the incoming mail that names its Message-ID in In-Reply-To (a whole id, as
   // `replyMatch`; `<id>` tokens when there are any, else bare words). One sample per incoming mail: the newest Sent mail it names.
-  const theirDelays = await sql<DelayRow>`
+  const theirDelays =
+    only !== undefined
+      ? skipped<DelayRow>()
+      : await sql<DelayRow>`
     WITH win AS (${win}), own_sent AS MATERIALIZED (
       SELECT s.id, s.sent_at, regexp_replace(btrim(s.message_id), '^<|>$', '', 'g') AS ref
       FROM sent_emails s
@@ -393,7 +425,10 @@ export async function readSenderActivity(
     GROUP BY addr
   `.execute(db);
 
-  const delegations = await sql<DelegationRow>`
+  const delegations =
+    only !== undefined
+      ? skipped<DelegationRow>()
+      : await sql<DelegationRow>`
     SELECT ${normalizedAddress("d.email")} AS addr, count(*)::int AS n
     FROM delegations dn
     JOIN delegates d ON d.id = dn.delegate_id AND d.org_id = dn.org_id
@@ -490,5 +525,8 @@ export async function readSenderActivity(
       userMailsTo: item.userMailsTo,
     });
   }
-  return [...byAddress.values()].sort((a, b) => (a.address < b.address ? -1 : a.address > b.address ? 1 : 0));
+  const items = [...byAddress.values()].filter(
+    (item) => only === undefined || "address" in only || registrableDomain(hostOf(item.address)) === only.domain
+  );
+  return items.sort((a, b) => (a.address < b.address ? -1 : a.address > b.address ? 1 : 0));
 }

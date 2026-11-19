@@ -20,6 +20,7 @@ import { waitFor } from "../wait-for";
 import {
   ago,
   KEY,
+  mails,
   insertSuggestion,
   newOrg,
   NO_TEST,
@@ -106,7 +107,7 @@ describe("acceptSuggestion", () => {
     });
   });
 
-  test("2 Accept when the rule exists already ends the row as accepted and makes no second rule", async () => {
+  test("2 Accept when a rule of the same kind covers the row already: not_available, the row ends as withdrawn, no second rule (as the pass does)", async () => {
     await withRollback(db, async (trx) => {
       const org = await suggestOrg(trx);
       await trx
@@ -114,9 +115,9 @@ describe("acceptSuggestion", () => {
         .values({ org_id: org.ctx.orgId, mailbox_id: org.mailboxId, pattern: "anna@acme.pl", kind: "vip" })
         .execute();
       const id = await insertSuggestion(trx, org, { value: "anna@acme.pl", kind: "vip" });
-      expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("accepted");
+      expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("not_available");
       expect(await rulesOf(trx, org)).toHaveLength(1);
-      expect((await rowOf(trx, id)).status).toBe("accepted");
+      expect(await rowOf(trx, id)).toMatchObject({ status: "withdrawn", pattern: null });
     });
   });
 
@@ -190,6 +191,7 @@ describe("acceptSuggestion", () => {
   test("7 a domain suggestion becomes a rule with no `@`; a rule with `@` would never match", async () => {
     await withRollback(db, async (trx) => {
       const org = await suggestOrg(trx);
+      await withSentCoverage(trx, org);
       const id = await insertSuggestion(trx, org, { value: "@acme.pl", scope: "domain", kind: "blocklist" });
       expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id, "cli"))).toBe("accepted");
       expect(await rulesOf(trx, org)).toEqual([{ pattern: "acme.pl", kind: "blocklist", mailbox_id: org.mailboxId }]);
@@ -357,11 +359,6 @@ describe("two taps at once", () => {
 
   test("5d a profile pass that wants to withdraw a row waits for a tap that holds it, and leaves the accepted row as it is", async () => {
     const org = await committedOrg();
-    // The pass would withdraw this row (a VIP rule of the whole organization covers it), but the Accept comes first.
-    await db
-      .insertInto("sender_rules")
-      .values({ org_id: org.ctx.orgId, mailbox_id: null, pattern: "anna@acme.pl", kind: "vip" })
-      .execute();
     const id = await insertSuggestion(db, org, { value: "anna@acme.pl", kind: "vip" });
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolveGate) => {
@@ -375,6 +372,12 @@ describe("two taps at once", () => {
       return out;
     });
     await waitFor(() => held, "the accept holds the row");
+    // The pass would withdraw this row (a VIP rule of the whole organization covers it, added after the Accept checked the sender),
+    // but the Accept holds the row first.
+    await db
+      .insertInto("sender_rules")
+      .values({ org_id: org.ctx.orgId, mailbox_id: null, pattern: "anna@acme.pl", kind: "vip" })
+      .execute();
     let done = false;
     const pass = refreshMailboxProfiles({ db, credentialsKey: KEY, testMail: NO_TEST }, org.ctx, org.mailboxId, {
       now: NOW,
@@ -553,5 +556,94 @@ describe("acceptSuggestion: the sender is protected now", () => {
         .execute();
       await expectWithdrawn(trx, org, id);
     });
+  });
+
+  // The state of the review counter-examples: the row is 20 days old, its counted mails are 95 and 96 days old, so the 90-day
+  // activity does not show the sender any more. Only the rules, the delegates and the Sent coverage can protect it.
+  const agedOutSpam = () =>
+    [95, 96].map((day) => ({
+      at: ago(day),
+      category: "info" as const,
+      feedback: [{ verdict: "wrong" as const, trueCategory: "spam" as const }],
+    }));
+
+  async function agedOutOrg(trx: Trx, coverage = true) {
+    const org = await suggestOrg(trx);
+    if (coverage) await withSentCoverage(trx, org);
+    await seed(trx, org, SPAMMER, agedOutSpam());
+    const id = await insertSuggestion(trx, org, { value: SPAMMER, kind: "blocklist", createdAt: ago(20) });
+    return { org, id };
+  }
+
+  test("18 P1 the activity no longer shows the sender, and an active delegate has the address: not_available, no rule", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await agedOutOrg(trx);
+      await insertDelegate(trx, org.ctx, { email: SPAMMER });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("19 P2 the activity no longer shows the sender, and the Sent coverage is gone: not_available, no rule", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await agedOutOrg(trx, false);
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("20 P2b the activity no longer shows the sender, and a VIP rule names it: not_available, never a vip and a blocklist rule together", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await agedOutOrg(trx);
+      await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: SPAMMER, kind: "vip" });
+      await expectWithdrawn(trx, org, id);
+      expect((await rulesOf(trx, org)).map((rule) => `${rule.kind}:${rule.pattern}`)).toEqual([`vip:${SPAMMER}`]);
+    });
+  });
+
+  test("21 P3 a rule of the same kind covers the row and the sender has activity: not_available (the pass withdraws it too)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await suggestOrg(trx);
+      await seed(trx, org, "anna@acme.pl", mails(8, 6));
+      await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "anna@acme.pl", kind: "vip" });
+      const id = await insertSuggestion(trx, org, { value: "anna@acme.pl", kind: "vip" });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("22 a domain row whose senders are out of the window: an active delegate on the domain protects it", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await suggestOrg(trx);
+      await withSentCoverage(trx, org);
+      for (const address of ["x@acme.pl", "y@acme.pl"]) await seed(trx, org, address, agedOutSpam());
+      const id = await insertSuggestion(trx, org, {
+        value: "@acme.pl",
+        scope: "domain",
+        kind: "blocklist",
+        createdAt: ago(20),
+      });
+      await insertDelegate(trx, org.ctx, { email: "ola@acme.pl" });
+      await expectWithdrawn(trx, org, id);
+    });
+  });
+
+  test("23 the re-check reads the row's own sender only: a protected neighbour on the domain does not block an address row", async () => {
+    await withRollback(db, async (trx) => {
+      const { org, id } = await blocklistOrg(trx);
+      await seed(trx, org, "neighbour@acme.pl", mails(8, 6), [{ at: ago(1), to: ["neighbour@acme.pl"] }]);
+      await insertDelegate(trx, org.ctx, { email: "other@acme.pl" });
+      expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("accepted");
+    });
+  });
+
+  test("24 test mail does not protect: a Sent mail to a configured test sender does not block its row; without the setting it does", async () => {
+    for (const testMail of [{ senders: [SPAMMER] }, NO_TEST]) {
+      await withRollback(db, async (trx) => {
+        const org = await suggestOrg(trx);
+        await withSentCoverage(trx, org);
+        await seed(trx, org, SPAMMER, spamMails(), [{ at: ago(1), to: [SPAMMER] }]);
+        const id = await insertSuggestion(trx, org, { value: SPAMMER, kind: "blocklist" });
+        const result = await acceptSuggestion({ ...deps(trx), testMail }, org.ctx, cmd(org, id));
+        expect(result).toBe(testMail.senders.length > 0 ? "accepted" : "not_available");
+      });
+    }
   });
 });

@@ -222,6 +222,20 @@ describe("the real app", () => {
     expect(specProblems(spec, HIDDEN_ROUTES)).toEqual([]);
   });
 
+  test("the 409 answers of the suggestion routes name their codes", async () => {
+    const spec = await openApiSpec(realApp());
+    const conflict = (path: string) =>
+      JSON.stringify(
+        (spec.paths as Record<string, { post?: { responses?: Record<string, unknown> } }>)[path]?.post?.responses?.[
+          "409"
+        ]
+      );
+    for (const code of ["already", "rule_limit", "not_available"]) {
+      expect(conflict("/api/suggestions/{id}/accept")).toContain(code);
+    }
+    expect(conflict("/api/suggestions/{id}/dismiss")).toContain("already");
+  });
+
   test("the operations of the file plus the hidden keys are the route keys of the app", async () => {
     const app = realApp();
     const keys = routeKeys(app);
