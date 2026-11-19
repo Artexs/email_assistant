@@ -1,26 +1,30 @@
-# F125 stage 04 — Reader review: `packages/core`, `apps/web`, `tools/fake-telegram`
+# F125 stage 04 — Reader review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools`
 
-Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stages 01–03 landed. May run at the same time as stages 05 and 06. Spawn with `--timeout 2h`. At most 150 items for the whole stage (all three sections), committed every 50 (`plan.md` § Reader method).
+Part of [`../plan.md`](../plan.md). Phase A, read-only on tests. Needs stage 01: `audit/data/groups.tsv`; stage 02: `audit/data/cases.tsv`; stage 03: `audit/data/mutation-tests.tsv`, `mutation-survived.tsv`. May run next to 05 and 06. Spawn with `--timeout 2h`. At most 150 items per job for the whole stage (all sections), committed every 50 (`plan.md` § Reader method). Estimate at 1927d052: about 280 items (`plan.md` N4), so expect one continuation job (How to run step 4).
 
 Goal of the stage: one review row per flagged item of the area, by `plan.md` § Reader method, § Rules for the classes and the K rules.
 
-## Step 1 — Core (`packages/core`, 787 cases)
+## Step 1 — Core (`packages/core`, 2,760 JUnit cases in 165 files at 1927d052)
 
 - **Input:** `audit/data/cases.tsv` rows with `file` under `packages/core/`; `mutation-tests.tsv`; `mutation-survived.tsv`.
 - **Extra rules for core:**
   - A case with `unique_kills > 0` is K1. It may be `MERGE-TABLE`, never `DELETE-DUP`.
-  - `S11` (zero kills): check K2 first (registry, enum, schema list); a schema check of a Zod enum (`accepts owner and assistant`, `rejects other values`) is K2. Known in the probe: `web/errors.test.ts` 6 of 9 cases, `tenancy.test.ts` 3 of 3 (F3).
+  - `S11` (zero kills): check K2 first (registry, enum, schema list); a schema check of a Zod enum (`accepts owner and assistant`, `rejects other values`) is K2. Known in the 54fe78f probe: `web/errors.test.ts` 6 of 9 cases, `tenancy.test.ts` 3 of 3 (F3).
   - `S10` items (one per test file): compare the file's `S10` cases with its `in_cover` cases. `DELETE-DUP` only when a named `in_cover` case checks the same behaviour with the same input class. Different inputs of one rule (edge values, Polish vs English) are `MERGE-TABLE` candidates, not duplicates.
 - **GAP rows:** group `mutation-survived.tsv` by source file and function (read the source around each line). A function with 5 or more survived or no-coverage mutants → one `GAP` row: file, function, count, two example mutants (line, mutator, replacement).
 - **Output:** `audit/review-core-web-tools.md` § Core.
 
-## Step 2 — Web (`apps/web/src`, `apps/web/integrations`, 157 cases) and tools (`tools/fake-telegram`, 60 cases)
+## Step 2 — Web, docs, deploy and tools
+
+Unit JUnit counts at 1927d052 (F1): web `apps/web/src/lib` 920, `apps/web/src/i18n` 54, `apps/web/integrations` 19; docs site `apps/docs/src` 139, `apps/docs/integrations` 64, `apps/docs/scripts` 119; `deploy/test` 89; `tools/fake-telegram/src` 59; `tools/mail-oauth-spike` 2 files in no suite.
 
 - **Input:** `cases.tsv` rows of these folders.
 - **Extra rules:**
-  - `apps/web/src/lib/activity-text.test.ts` ties `en.ts` keys to core functions (`docs/code-patterns.md` § Web app): K2.
+  - `apps/web/src/lib/activity-text.test.ts`, describe "words tied to the Telegram source": web texts equal the core texts per locale (`docs/code-patterns.md` § Web app): K2. The other describes of that file are judged like any case.
+  - `deploy/test` and `apps/docs/scripts` test shell scripts, workflow and config files by reading or running them: `S8` is expected there, not a `DELETE-STALE` reason. Their checks of deploy and secret rules (no `.env`, no secret, no migrate in rollback) are K3.
+  - `tools/mail-oauth-spike/*.test.ts` runs in no suite (`not-run`): `FIX-NEVER-RUNS` (add to a suite) or `DELETE-STALE` when the spike code is gone or unused; name the evidence.
   - `tools/fake-telegram` is a test tool. Its tests guard the fake that the e2e and int suites use. `S8` (no production import) is expected there: not a `DELETE-STALE` reason.
-- **Output:** `audit/review-core-web-tools.md` § Web and § Tools.
+- **Output:** `audit/review-core-web-tools.md` § Web, § Docs, § Deploy and § Tools.
 
 ## Step 3 — Summary
 

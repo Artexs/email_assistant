@@ -1,6 +1,6 @@
 # F125 stage 02 — Audit tool: timings, coverage baseline, `cases.tsv`
 
-Part of [`../plan.md`](../plan.md). Phase A: no test file and no production code changes. Needs stage 01 landed (`cases-static.tsv`).
+Part of [`../plan.md`](../plan.md). Phase A: no test file and no production code changes. Needs stage 01: `audit/data/cases-static.tsv` and the scan key of `scripts/test-audit/scan.ts`. Spawn with `--timeout 2h`: the serial int run holds about 3.5 times the cases of 54fe78f (183 s then), and Step 2 runs it twice more with coverage.
 
 Goal of the stage: every scan row gets its run time and the S9 flag, and a line-coverage baseline per source file exists for the cut proof (D6, D9).
 
@@ -23,7 +23,7 @@ Goal of the stage: every scan row gets its run time and the S9 flag, and a line-
   2. Nested `<testsuite>` elements do not change the case rows.
   3. `suitePaths` on the current `test:unit` and on the F124 form with `--parallel=4` gives the same paths.
 - **Check:** `bun test scripts/test-audit`; `bash scripts/test-audit/run-suites.sh /tmp/f125-s02`.
-- **Done when:** both XML files exist; unit about 2,262 and int about 1,683 cases (F1).
+- **Done when:** both XML files exist; unit about 7,030 cases (F1, 1927d052; more if tests landed since) and int at least 5,533 cases (the int call sites, F1; `each` rows add more). Write both counts in the final message.
 
 ## Step 2 — Coverage baseline
 

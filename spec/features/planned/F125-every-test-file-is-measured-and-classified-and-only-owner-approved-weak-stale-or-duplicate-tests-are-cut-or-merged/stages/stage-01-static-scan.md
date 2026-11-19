@@ -1,6 +1,6 @@
 # F125 stage 01 — Audit tool: static scan of every test case
 
-Part of [`../plan.md`](../plan.md). Phase A: no test file and no production code changes.
+Part of [`../plan.md`](../plan.md). Phase A: no test file and no production code changes. Needs: nothing from another stage or ticket (first stage). Writes `scripts/test-audit/scan.ts` (`CaseRow`, the scan key) and `audit/data/cases-static.tsv`, `groups.tsv`, `scan-summary.md`, which stages 02 and 04–06 read.
 
 Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case of the repo with the static flags S1–S8 of `plan.md` § Flags, and the B and T groups. Later stages join timings (stage 02) and mutation data (stage 03) to these rows.
 
@@ -37,7 +37,7 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
   export function assignGroups(rows: CaseRow[], bodies: Map<string, { body: string; shape: string }>): void;
   ```
 - **Rules:**
-  - Files: `git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts'` minus `scripts/test-audit/` (the tool's own tests). `kind`: `int` for `apps/server/test/` and `tools/fake-telegram/test/`; `e2e` for `apps/web/e2e/`; else `unit`.
+  - Files: `git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts'` minus `scripts/test-audit/` (the tool's own tests). `kind`: `int` for `apps/server/test/` and `tools/fake-telegram/test/`; `e2e` for `apps/web/e2e/` and `apps/docs/e2e/`; else `unit` (a unit file in no suite path, such as `tools/mail-oauth-spike/`, gets `not-run` in stage 02).
   - A case is a call whose callee is `test` or `it`, or a member chain on them (`.each(...)`, `.skip`, `.only`, `.todo`, `.if(...)`, `.skipIf(...)`, `.concurrent`, `.serial`), with a string or template first argument. Playwright `test(` and `test.describe(` count the same.
   - `describePath` from enclosing `describe(`/`test.describe(` calls (and their `.skip`/`.skipIf` forms, whose condition also goes to `skipCondition`).
   - Asserting helper: build one `ts.Program` over all test files with `tsconfig.base.json` options; a call in the body whose callee declaration (through imports, `checker.getAliasedSymbol`) holds `expect(` in its body, up to 3 calls deep, counts as one expect call. Any `expect(`, `expect.assertions(`, `expect.hasAssertions(` in the body counts.
@@ -66,9 +66,9 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
 
 - **Files:** `spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/audit/data/cases-static.tsv`, `.../audit/data/groups.tsv`, `.../audit/data/scan-summary.md`.
 - **Command:** `bun scripts/test-audit/scan-cli.ts --out spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/audit/data`.
-- **Format:** TSV with a header row; columns in the order of `CaseRow`; arrays joined with `,`; tabs and newlines in names replaced by a space. `groups.tsv`: `group`, `type` (B/T), `files`, `cases`, `keys`. `scan-summary.md`: total rows; rows per `kind` and per area (`packages/core`, `apps/server/src`, `apps/server/test`, `apps/web/src`, `apps/web/e2e`, `tools/fake-telegram`); count per flag per area; group counts; the 20 biggest groups.
+- **Format:** TSV with a header row; columns in the order of `CaseRow`; arrays joined with `,`; tabs and newlines in names replaced by a space. `groups.tsv`: `group`, `type` (B/T), `files`, `cases`, `keys`. `scan-summary.md`: total rows; rows per `kind` and per area (`packages/core`, `apps/server/src`, `apps/server/test`, `apps/web/src`, `apps/web/integrations`, `apps/web/e2e`, `apps/docs`, `deploy/test`, `tools/fake-telegram`, `tools/mail-oauth-spike`; the stage 04–06 split of `plan.md` § Stages); count per flag per area; group counts; the 20 biggest groups.
 - **Output rules:** the CLI writes with `Bun.write` and prints one line per file written (`process.stdout.write`), no `console.log`.
-- **Check:** one row per call site, so the count is lower than the JUnit count (an `each` table or a loop is one row and many JUnit cases; core at 2d2b3f5: 627 call sites, 834 JUnit cases). Independent count (3,576 at 2d2b3f5): `git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts' | grep -v '^scripts/test-audit/' | xargs grep -cE '^\s*(test|it)(\.[a-zA-Z]+)*(\([^)]*\))?\(' ` summed; the scan count must be within 5 % of it (a multi-line or nested call can differ). Write both numbers in the final message. The real join check is stage 02 Step 3.
+- **Check:** one row per call site, so the count is lower than the JUnit count (an `each` table or a loop is one row and many JUnit cases; core at 1927d052: 2,090 call sites by the grep below, 2,760 JUnit cases). Independent count (11,700 at 1927d052, 977 files): `git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts' | grep -v '^scripts/test-audit/' | xargs grep -cE '^\s*(test|it)(\.[a-zA-Z]+)*(\([^)]*\))?\(' ` summed; the scan count must be within 5 % of it (a multi-line or nested call can differ). Write both numbers in the final message. The real join check is stage 02 Step 3.
 - **Done when:** the three files are committed; the final message gives the count per flag and per area (N4) and names every area with more than 150 flagged items.
 
 ## Done when
