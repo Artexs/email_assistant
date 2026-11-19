@@ -293,7 +293,8 @@ const hostBlockedView = z.strictObject({
 // and sends no new one. EXCEPTION to "a view holds no phrase of ours" (docs/code-patterns.md, Notices are facts): `original`
 // is the stored text of the target card (`outbox.text`), as the edit after a tap uses it ("the edit after a tap keeps the
 // stored text"), so it holds our own phrases and mail text, up to one message. It follows the retention of `outbox.text`.
-// `heldBy` is only for `approved_held`; `actionId` (the send) gives that outcome the Reject button.
+// `heldBy` is only for `approved_held`; `actionId` (the send) gives that outcome the Reject button. `sendId` is the send that the
+// card asks about: the `minimal` edit links to it in the panel when the card has no link (a card sent at `full`).
 const approvalEditView = z.strictObject({
   original: z.string().min(1).max(MESSAGE_MAX_CHARS),
   outcome: z.enum(["approved", "approved_held", "rejected", "changed", "expired"]),
@@ -301,6 +302,7 @@ const approvalEditView = z.strictObject({
   timeZone,
   heldBy: z.enum(["scope", "paused", "auth_error", "host_blocked"]).optional(),
   actionId: id.optional(),
+  sendId: id.optional(),
 });
 
 // Mail of a VIP or whitelisted sender waits while the AI is paused. The sender address only: no

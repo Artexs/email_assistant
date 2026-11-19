@@ -23,6 +23,25 @@ function linkLine(opts: NoticeRenderOptions, path: string): string {
   return panelLinkOf(opts.webBaseUrl, path) ?? minimalTexts(opts.locale).openPanel;
 }
 
+/**
+ * The edit of a card at the `minimal` level: no button, and the panel link of the item when the stored text of the card has
+ * none (a card that went out at `full` has no link, and the member can no longer reject it in the chat). `original` is the card's
+ * own text, already in the chat; the link line is a fixed phrase of ours and holds no view string.
+ */
+export function minimalEdit(
+  edited: OutMessage,
+  original: string,
+  path: string | undefined,
+  opts: Pick<NoticeRenderOptions, "locale" | "webBaseUrl">
+): OutMessage {
+  const plain = { ...edited, buttons: [] };
+  if (path === undefined) return plain;
+  const link = panelLinkOf(opts.webBaseUrl, path);
+  const line = link ?? minimalTexts(opts.locale).openPanel;
+  if (original.includes(line)) return plain;
+  return { ...plain, text: `${edited.text}\n${line}` };
+}
+
 /** The text that answers /review for a member with `minimal`: the review lives in the panel. */
 export function minimalReviewMessage(opts: Pick<NoticeRenderOptions, "locale" | "webBaseUrl">): OutMessage {
   return { text: minimalTexts(opts.locale).reviewInPanel(panelLinkOf(opts.webBaseUrl, "/review")), buttons: [] };

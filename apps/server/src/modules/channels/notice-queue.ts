@@ -58,8 +58,13 @@ export async function queueNotice<K extends NoticeKind>(
     (input.channel === undefined || input.channel === "telegram") && input.only !== "push"
       ? await detailOfUser(db, ctx, input.userId)
       : "full";
-  const rendered = renderNotice(input.kind, view, { channel: "telegram", detail, locale: input.locale });
-  if (!rendered.ok) throw new NoticeViewError(input.kind);
+  // The check covers `full` always (the member can pick `full`, or the lock can go, before the send) and the level of the member now
+  // when it is `minimal`: a view that renders at one level but not at the other never enters the outbox.
+  for (const level of detail === "minimal" ? (["full", "minimal"] as const) : (["full"] as const)) {
+    if (!renderNotice(input.kind, view, { channel: "telegram", detail: level, locale: input.locale }).ok) {
+      throw new NoticeViewError(input.kind);
+    }
+  }
   const base = {
     userId: input.userId,
     kind: input.kind,

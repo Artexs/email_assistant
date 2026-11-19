@@ -546,4 +546,32 @@ describe("minimal weekly report, loop consent and card edit", () => {
     const full = renderNotice("approval_edit", view, { ...options("en"), detail: "full" });
     expect(full.ok && full.message.buttons).toEqual([[{ text: "✖️ Reject", data: `ar:${id1}` }]]);
   });
+
+  test("the minimal edit adds the panel link of the send when the stored text has none, once, and never at full", () => {
+    const view = { ...(stored("approval_edit") as object), sendId: id1 };
+    const link = `${base}/approvals?id=${id1}`;
+    const withBase = renderNotice("approval_edit", view, options("en", base));
+    expect(withBase.ok && withBase.message.text.endsWith(`\n${link}`)).toBe(true);
+    expect(withBase.ok && withBase.message.buttons).toEqual([]);
+    // No base URL: the fixed line, no URL.
+    const noBase = renderNotice("approval_edit", view, options("pl"));
+    expect(noBase.ok && noBase.message.text.endsWith("\nOtwórz panel")).toBe(true);
+    // A card that has the link already (it went out at minimal) gets no second one.
+    const had = { ...view, original: `Card\n${link}` };
+    const again = renderNotice("approval_edit", had, options("en", base));
+    expect(again.ok && again.message.text.split(link)).toHaveLength(2);
+    // A view with no send id (queued before the field) has no link line; the full level never has one.
+    const old = renderNotice("approval_edit", stored("approval_edit"), options("en", base));
+    expect(old.ok && old.message.text).not.toContain("/approvals");
+    const full = renderNotice("approval_edit", view, { ...options("en", base), detail: "full" });
+    expect(full.ok && full.message.text).not.toContain("/approvals");
+  });
+
+  test("renderNoticeEdit takes the panel path of the card and adds it at minimal only", () => {
+    const input = { ...noticeViewSchemas.approval_edit.parse(stored("approval_edit")), panelPath: "/approvals" };
+    const minimal = renderNoticeEdit(input, options("en", base));
+    expect(minimal.text.endsWith(`\n${base}/approvals`)).toBe(true);
+    expect(minimal.buttons).toEqual([]);
+    expect(renderNoticeEdit(input, { ...options("en", base), detail: "full" }).text).not.toContain(base);
+  });
 });

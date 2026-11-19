@@ -83,6 +83,8 @@ export async function queueCardEdits(
         ...(input.heldBy === undefined ? {} : { heldBy: input.heldBy }),
         // The Reject button of the held card names the send.
         ...(input.outcome === "approved_held" ? { actionId: input.sendId } : {}),
+        // The `minimal` edit links to the send in the panel when the card has no link.
+        sendId: input.sendId,
       },
       now: input.at,
       createdAt: queuedAt,

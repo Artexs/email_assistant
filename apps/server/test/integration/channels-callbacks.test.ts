@@ -563,6 +563,61 @@ describe("approval taps", () => {
     });
   });
 
+  // A card that went out at `full` (the stored text has no panel link) and a member who is at `minimal` now: the edit has no button
+  // and adds the panel link of the send, so the member can still reject a held send in the panel (owner decision, stage 10 NOTE 2).
+  const BASE = "https://ea.example.ts.net";
+  async function minimalMember(trx: Transaction<DB>, s: Awaited<ReturnType<typeof approvalSetup>>): Promise<void> {
+    await setOrgFeature(trx, s.ctx, { flag: "telegram_minimal", enabled: true, actor: "cli", now: T });
+    await trx
+      .updateTable("memberships")
+      .set({ telegram_detail: "minimal" })
+      .where("org_id", "=", s.a.orgId)
+      .where("user_id", "=", s.o1)
+      .execute();
+  }
+
+  test("(5g2) a card sent at full, the member at minimal now: the edit has no button and ends with the panel link of the send", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx, { sendScope: () => ({ kind: "off" }) });
+      await minimalMember(trx, s);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback({ ...s.deps, webBaseUrl: BASE }, s.owner1, `ap:${sendId}`);
+
+      expect(tap.edit?.buttons).toEqual([]);
+      expect(tap.edit?.text.startsWith(`${ORIGINAL}\n\n`)).toBe(true);
+      expect(tap.edit?.text.endsWith(`\n${BASE}/approvals?id=${sendId}`)).toBe(true);
+    });
+  });
+
+  test("(5g3) the stored card has the link already: the edit holds it once; without a base URL the line is Open the panel", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      await minimalMember(trx, s);
+      const one = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      const link = `${BASE}/approvals?id=${one.sendId}`;
+      await queueFor(trx, s.ctx, s.o1, "approval", one.sendId, one.emailId, `📤 Card\n${link}`);
+      const tap = await handleCallback({ ...s.deps, webBaseUrl: BASE }, s.owner1, `ap:${one.sendId}`);
+      expect(tap.edit?.text.split(link)).toHaveLength(2);
+
+      const two = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", two.sendId, two.emailId);
+      const plain = await handleCallback(s.deps, s.owner1, `ap:${two.sendId}`);
+      expect(plain.edit?.text.endsWith("\nOpen the panel")).toBe(true);
+    });
+  });
+
+  test("(5g4) at full, or with the flag off, the edit has no link line (the text of before)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx);
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+      const tap = await handleCallback({ ...s.deps, webBaseUrl: BASE }, s.owner1, `ap:${sendId}`);
+      expect(tap.edit).toEqual({ text: `${ORIGINAL}\n\n⏳ Approved 11:00, sending.`, buttons: [] });
+    });
+  });
+
   test("(5e) a tap on a card that was never sent answers and gives no edit", async () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);

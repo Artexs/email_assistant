@@ -4,6 +4,7 @@ import { approvalEdit } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, type OutMessage, outButtonsSchema } from "../digest/message";
 import { textsFor } from "../texts";
 
+import { minimalEdit } from "./minimal";
 import type { NoticeDetail, NoticeKind, NoticeRenderOptions } from "./kinds";
 import { type NoticeRenderer, noticeRenderers } from "./renderers";
 
@@ -32,7 +33,8 @@ export function renderNotice(kind: NoticeKind, view: unknown, opts: NoticeRender
   return { ok: true, message };
 }
 
-export type NoticeEditInput = Parameters<typeof approvalEdit>[0];
+// `panelPath`: the panel path of the card's item (`noticePath`). Only the `minimal` edit reads it: it adds the link when the card has none.
+export type NoticeEditInput = Parameters<typeof approvalEdit>[0] & { panelPath?: string };
 
 export const noticeEditRenderers: {
   telegram: {
@@ -45,7 +47,8 @@ export const noticeEditRenderers: {
   // The edit holds the stored text of a card that is already in the chat plus one status line. `minimal` has no button.
   telegram: {
     full: (input, opts) => approvalEdit(input, textsFor(opts.locale)),
-    minimal: (input, opts) => ({ ...approvalEdit(input, textsFor(opts.locale)), buttons: [] }),
+    minimal: (input, opts) =>
+      minimalEdit(approvalEdit(input, textsFor(opts.locale)), input.original, input.panelPath, opts),
   },
 };
 

@@ -316,8 +316,11 @@ async function switchMailboxes(deps: CommandDeps, link: LinkedChat, change: Stat
   const ctx = { orgId: link.orgId, userId: link.userId };
   const changed: string[] = [];
   const extra: string[] = [];
-  for (const mailbox of await listMailboxes(deps.db, ctx)) {
-    const address = cutText(mailbox.address, ADDRESS_MAX);
+  // `minimal`: a mailbox is "Mailbox 1", "Mailbox 2" in the order of the list, never its address (as `/status`).
+  const minimal = (await telegramDetailOf(deps, link)) === "minimal";
+  const mailboxes = await listMailboxes(deps.db, ctx);
+  for (const [index, mailbox] of mailboxes.entries()) {
+    const address = minimal ? minimalTexts(link.locale).mailboxName(index + 1) : cutText(mailbox.address, ADDRESS_MAX);
     const skip = skipText(mailbox, address, texts);
     if (skip !== null) {
       extra.push(skip);

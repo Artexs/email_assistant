@@ -1,5 +1,7 @@
 import {
   formatClock,
+  noticeKinds,
+  noticePath,
   renderNoticeEdit,
   type AnsweredCallback,
   type ApprovalEditOutcome,
@@ -61,6 +63,15 @@ type ApprovalCallback = Exclude<
   Callback,
   FeedbackCallback | AnsweredCallback | LoopCallback | DelegateCallback | ReplyCallback
 >;
+
+// The panel path of the card that a tap edits, from its dedup key (`<kind>:<id>`): an approval card links to its send, any other
+// card to the page of its kind.
+function panelPathOfCard(dedupKey: string, sendId: string | null): string | undefined {
+  const [prefix = "", rest = ""] = dedupKey.split(":");
+  const kind = noticeKinds.find((candidate) => candidate === prefix);
+  if (kind === undefined) return undefined;
+  return noticePath(kind, kind === "approval" ? (sendId ?? rest) : null);
+}
 
 function statusText(taps: CoreTexts["bot"]["taps"], status: string): string | undefined {
   const texts: Record<string, string> = {
@@ -131,9 +142,15 @@ export async function handleApprovalCallback(
         : await findApprovalCardOfTap(deps.db, ctx, link.userId, cardOf, source.messageId);
     if (row === undefined || row.text === null || row.text === "") return undefined;
     // The level of the member now: at `minimal` the edit has no button, also on a card that went out at `full`.
+    // At `minimal` a card without a panel link gets the link line, so the member can still decide in the panel.
     return renderNoticeEdit(
-      { original: row.text, outcome, at: now, timeZone, ...extra },
-      { channel: row.channel, detail: await detailOfUser(deps.db, ctx, link.userId), locale: row.locale }
+      { original: row.text, outcome, at: now, timeZone, panelPath: panelPathOfCard(dedupKey, cardOf), ...extra },
+      {
+        channel: row.channel,
+        detail: await detailOfUser(deps.db, ctx, link.userId),
+        locale: row.locale,
+        ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
+      }
     );
   };
 

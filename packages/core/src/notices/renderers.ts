@@ -32,8 +32,8 @@ import { textsFor } from "../texts";
 
 import { noticeFactsOf } from "./facts";
 import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
-import { minimalOf, renderMinimalDigest, renderMinimalLoopConsent, renderMinimalWeekly } from "./minimal";
-import { type PushKind, pushPayloadSchema } from "./push";
+import { minimalEdit, minimalOf, renderMinimalDigest, renderMinimalLoopConsent, renderMinimalWeekly } from "./minimal";
+import { noticePath, type PushKind, pushPayloadSchema } from "./push";
 import { type NoticeView, noticeViewSchemas } from "./views";
 
 // One renderer per kind. A channel key holds one function per detail level. `mail` is optional: only the four kinds of
@@ -255,8 +255,14 @@ export const noticeRenderers = {
     // The edit line of a card: the stored text of the card plus one status line. The card is already in that chat.
     telegram: {
       full: (view, opts) => approvalEdit(view, textsFor(opts.locale)),
-      // No button at the minimal level: the Reject button of a held send is in the panel.
-      minimal: (view, opts) => ({ ...approvalEdit(view, textsFor(opts.locale)), buttons: [] }),
+      // No button at the minimal level: the Reject button of a held send is in the panel, and the edit adds the link to it.
+      minimal: (view, opts) =>
+        minimalEdit(
+          approvalEdit(view, textsFor(opts.locale)),
+          view.original,
+          view.sendId === undefined ? undefined : noticePath("approval", view.sendId),
+          opts
+        ),
     },
   }),
   not_triaged: defineRenderer({
