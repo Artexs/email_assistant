@@ -699,3 +699,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: owner message of 2026-11-19: "skip F117 or build it without my account", "the age key is on your machine", "continue F116".
 - Undo: move F117 back from `dropped/` to `active/` and run its stage 01 spike kit with a test account; G1 can be re-run later with real data.
 - Source: owner chat.
+
+### 2026-11-19 · Only active tickets; bypass owner steps where simple · process · new
+
+- Decision: work only on `spec/features/active/` until all close; planned jobs stopped (F062, F068, F122 plan, F124, F125, F138 stage 01). F104 U1 ("Track my sent mail") set by the coordinator with `mailbox:settings sent-sync --value on`. F114 U3: `OPERATOR_TELEGRAM_CHAT_ID` in the VPS `.env` set to the owner's existing chat with the bot (the one `chat_links` row of the live org); U2 (Healthchecks ping) stays open, the in-app backup-age alert covers it. F115 stage 02 runs resume on Gemini on 2026-11-20 instead of moving to F138.
+- Why: owner message of 2026-11-19: "your only job is to find a reason why you can't start them. Fix it or bypass and start those tickets".
+- Undo: `mailbox:settings sent-sync --value off`; remove `OPERATOR_TELEGRAM_CHAT_ID` from the VPS `.env` (backup `.env.bak-20261119-operator`).
+- Source: owner chat.
