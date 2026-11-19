@@ -57,7 +57,7 @@ One row per `plan-task` run. "Plan name" is the working name until `plan-task` g
 | 24 | E9b Phone channel (PWA, push, Telegram detail) | E09 | ≈ 14 | E4-A, E4-B | — | F118 |
 | 25 | E7-T7 Identity B (OIDC) | E07 notes §11 | 16 | E7-T2, E7-T6 | Stage 1 is the spike (done 2026-11-14); second pass passed by the coordinator on a default (owner-decisions) | F119 |
 | 26 | E11a Sender context | E11 | ≈ 10 | E3a, E5a, E4-B | — | F120 |
-| 27 | E10b Public pages and demo | E10 | ≈ 8 | E2b, E3a, E4-B, E7-T4, E8b | — | F121 |
+| 27 | E10b Public pages and demo | E10 | 12 | E2b, E3a, E4-B, E7-T4, E8b | — | F121 |
 | 28 | E6b Style from Sent | E06 | ≈ 4 | E6a, E5a | Gated: only if the E2a judge shows a gain | F122 |
 | — | E12 Native mobile app | E12 | — | — | Deferred: discovery only after the E9b PWA is in use | — |
 
