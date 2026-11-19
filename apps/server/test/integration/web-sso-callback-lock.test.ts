@@ -123,7 +123,7 @@ async function ssoOrg(): Promise<SsoOrg> {
   return { orgId, domain, email, userId };
 }
 
-// Holds an exclusive lock on `org_features` until `release()`: the resolver of the callback cannot read the flag, so the callback stays in flight.
+// Holds an exclusive lock on `org_features` until `release()` (safe to call twice, so a test can release in `finally`): the resolver of the callback cannot read the flag, so the callback stays in flight.
 async function holdFeaturesTable(): Promise<{ release: () => Promise<void> }> {
   let release!: () => void;
   const released = new Promise<void>((resolve) => (release = resolve));
@@ -170,34 +170,42 @@ async function counts(org: SsoOrg): Promise<{ links: number; ssoSessions: number
 test("an unlink that starts while a callback is in flight waits, then removes the link and the session the callback made", async () => {
   const org = await ssoOrg();
   const hold = await holdFeaturesTable();
-  const callback = callbackOf(org);
-  // The callback reaches the resolver (blocked on the table lock), so it holds the provider row.
-  await waitForLockWaiters(1);
-  const unlink = unlinkSso(db, { orgId: org.orgId }, { userId: org.userId, actor: "test", now: NOW });
-  await waitForLockWaiters(2);
-  expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 1 });
+  try {
+    const callback = callbackOf(org);
+    // The callback reaches the resolver (blocked on the table lock), so it holds the provider row.
+    await waitForLockWaiters(1);
+    const unlink = unlinkSso(db, { orgId: org.orgId }, { userId: org.userId, actor: "test", now: NOW });
+    await waitForLockWaiters(2);
+    expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 1 });
 
-  await hold.release();
-  const signedIn = await callback;
-  expect(signedIn.location).toBe("/app");
-  expect(signedIn.sessionCookie).not.toBeNull();
-  // The unlink ran after the callback commit: it saw the link, so it ended the link and the session.
-  expect(await unlink).toEqual({ kind: "unlinked", sessionsEnded: 1 });
-  expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 1 });
+    await hold.release();
+    const signedIn = await callback;
+    expect(signedIn.location).toBe("/app");
+    expect(signedIn.sessionCookie).not.toBeNull();
+    // The unlink ran after the callback commit: it saw the link, so it ended the link and the session.
+    expect(await unlink).toEqual({ kind: "unlinked", sessionsEnded: 1 });
+    expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 1 });
+  } finally {
+    await hold.release();
+  }
 }, 30_000);
 
 test("a provider removal that starts while a callback is in flight waits, then removes the link and the session", async () => {
   const org = await ssoOrg();
   const hold = await holdFeaturesTable();
-  const callback = callbackOf(org);
-  await waitForLockWaiters(1);
-  const removal = removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW, confirmDomain: org.domain });
-  await waitForLockWaiters(2);
+  try {
+    const callback = callbackOf(org);
+    await waitForLockWaiters(1);
+    const removal = removeSsoProvider(db, { orgId: org.orgId }, { actor: "cli", now: NOW, confirmDomain: org.domain });
+    await waitForLockWaiters(2);
 
-  await hold.release();
-  expect((await callback).location).toBe("/app");
-  expect(await removal).toEqual({ kind: "removed", linksRemoved: 1, sessionsEnded: 1 });
-  expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 0 });
+    await hold.release();
+    expect((await callback).location).toBe("/app");
+    expect(await removal).toEqual({ kind: "removed", linksRemoved: 1, sessionsEnded: 1 });
+    expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 0 });
+  } finally {
+    await hold.release();
+  }
 }, 30_000);
 
 test("a callback that starts while the removal holds the provider row ends in an error: no link, no session", async () => {
@@ -214,13 +222,19 @@ test("a callback that starts while the removal holds the provider row ends in an
     await sql`DELETE FROM sso_providers WHERE org_id = ${org.orgId}::uuid`.execute(trx);
   });
   await locked;
-  const callback = callbackOf(org);
-  await waitForLockWaiters(1);
-  release();
-  await removal;
+  try {
+    const callback = callbackOf(org);
+    await waitForLockWaiters(1);
+    release();
+    await removal;
 
-  const result = await callback;
-  expect(result.sessionCookie).toBeNull();
-  expect(result.location).toContain("/login?sso=failed");
-  expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 0 });
+    const result = await callback;
+    expect(result.sessionCookie).toBeNull();
+    expect(result.location).toContain("/login?sso=failed");
+    expect(await counts(org)).toEqual({ links: 0, ssoSessions: 0, providers: 0 });
+  } finally {
+    // A failed wait must not leave the removal's lock open for the next test.
+    release();
+    await removal;
+  }
 }, 30_000);
