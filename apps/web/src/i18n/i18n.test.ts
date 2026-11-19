@@ -21,6 +21,7 @@ const SAME_IN_BOTH: TextKey[] = [
   "rp_instruction_count", // "{n} / {max}"
   "menu_title", // "Menu" in both languages
   "tg_title", // the product name "Telegram"
+  "nr_telegram", // the product name "Telegram", an option of the route select
   "tg_link_label", // "Link" in both languages
   "acct_language_pl", // each option is written in its own language
   "acct_language_en",

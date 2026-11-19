@@ -49,7 +49,7 @@ export const channelDocs = {
   postTelegramLink: apiDoc({
     operationId: "postTelegramLink",
     summary:
-      "Record the consent and make a one-time link to the bot. With the flag `telegram_minimal` on, `detail` (full or minimal; default minimal) is stored on the membership; `full` while the owner locks `minimal` answers 409 `telegram_detail_locked` and makes no token. With the flag off `detail` is ignored.",
+      "Record the consent and make a one-time link to the bot. With the flag `telegram_minimal` on, `detail` (full or minimal; a bad value is 400; absent keeps the stored level, which is minimal for a new member) is stored on the membership; `full` while the owner locks `minimal` answers 409 `telegram_detail_locked` and makes no token. With the flag off `detail` is ignored, also a bad value.",
     tags,
     body: telegramLinkBodySchema,
     ok: { status: 200, schema: telegramLinkSchema },

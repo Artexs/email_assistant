@@ -1,0 +1,68 @@
+import { telegramLockAnswerSchema } from "@ea/core/web";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { t } from "../../i18n";
+import { api } from "../../lib/api";
+import { canWrite } from "../../lib/can-write";
+import { errorText } from "../../lib/errors";
+import { useMe } from "../shell/MeProvider";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Label } from "../ui/label";
+import { Switch } from "../ui/switch";
+
+// The owner's lock of the Telegram detail level (the flag `telegram_minimal`: the server sends `telegramMinimalLocked` only then).
+// The owner has the switch; every other role sees the state and cannot change it. The lock changes no stored choice of a member.
+export function TelegramLockCard({
+  locked,
+  isOwnerRole,
+  onSaved,
+}: {
+  locked: boolean;
+  isOwnerRole: boolean;
+  onSaved(locked: boolean): void;
+}) {
+  const { me } = useMe();
+  const [working, setWorking] = useState(false);
+  const pending = working || !canWrite(me);
+
+  const change = async (next: boolean) => {
+    setWorking(true);
+    try {
+      const saved = await api("/api/organization/telegram-lock", telegramLockAnswerSchema, {
+        method: "PATCH",
+        body: { locked: next },
+      });
+      onSaved(saved.locked);
+      toast.success(t(saved.locked ? "tgl_on_toast" : "tgl_off_toast"));
+    } catch (failure) {
+      toast.error(t(errorText(failure)));
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  return (
+    <Card data-card="telegram-lock">
+      <CardHeader>
+        <CardTitle>{t("tgl_title")}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {isOwnerRole ? (
+          <>
+            <p className="text-sm text-muted-foreground">{t("tgl_help")}</p>
+            <div className="flex items-center gap-2">
+              <Switch id="tg-lock" checked={locked} disabled={pending} onCheckedChange={(next) => void change(next)} />
+              <Label htmlFor="tg-lock">{t("tgl_label")}</Label>
+            </div>
+          </>
+        ) : (
+          // The help speaks to the owner; the General section already says that only the owner changes the settings.
+          <p data-lock={locked ? "on" : "off"} className="text-sm font-medium">
+            {t(locked ? "tgl_state_on" : "tgl_state_off")}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

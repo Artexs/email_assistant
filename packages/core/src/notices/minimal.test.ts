@@ -567,6 +567,38 @@ describe("minimal weekly report, loop consent and card edit", () => {
     expect(full.ok && full.message.text).not.toContain("/approvals");
   });
 
+  test("the minimal edit keeps the text without the link line when the line would push it over the Telegram limit", () => {
+    const link = `${base}/approvals?id=${id1}`;
+    const editOf = (originalLength: number, sendId: string | undefined) =>
+      renderNotice(
+        "approval_edit",
+        { ...(stored("approval_edit") as object), original: "x".repeat(originalLength), sendId },
+        options("en", base)
+      );
+    // The edited text grows with the original one for one character each: find the length at which text, newline and link make 4096.
+    const probe = editOf(10, undefined);
+    const plainLength = probe.ok ? probe.message.text.length : -1;
+    const fits = 10 + 4096 - plainLength - 1 - link.length;
+    const at = editOf(fits, id1);
+    expect(at.ok && at.message.text.length).toBe(4096);
+    expect(at.ok && at.message.text.endsWith(link)).toBe(true);
+    const over = editOf(fits + 1, id1);
+    expect(over.ok && over.message.text.length).toBe(4096 - link.length);
+    expect(over.ok && over.message.text).not.toContain(link);
+    expect(over.ok && over.message.buttons).toEqual([]);
+    const tap = renderNoticeEdit(
+      {
+        ...noticeViewSchemas.approval_edit.parse({
+          ...(stored("approval_edit") as object),
+          original: "x".repeat(fits + 45),
+        }),
+        panelPath: "/approvals",
+      },
+      options("en", base)
+    );
+    expect(tap.text).not.toContain("/approvals");
+  });
+
   test("renderNoticeEdit takes the panel path of the card and adds it at minimal only", () => {
     const input = { ...noticeViewSchemas.approval_edit.parse(stored("approval_edit")), panelPath: "/approvals" };
     const minimal = renderNoticeEdit(input, options("en", base));

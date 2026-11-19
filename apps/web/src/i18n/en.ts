@@ -6,6 +6,7 @@ import { enApprovals } from "./texts/en-approvals";
 import { enReply } from "./texts/en-reply";
 import { enReplyPanel } from "./texts/en-reply-panel";
 import { enPhone } from "./texts/en-phone";
+import { enDetail } from "./texts/en-detail";
 import { enSuggestions } from "./texts/en-suggestions";
 
 // The texts are in `texts/en-<group>.ts`, one group per page area; the keys of two groups never repeat (`texts/groups.test.ts`).
@@ -19,6 +20,7 @@ export const en = {
   ...enReplyPanel,
   ...enPhone,
   ...enSuggestions,
+  ...enDetail,
 } as const;
 
 export type TextKey = keyof typeof en;

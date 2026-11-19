@@ -4,6 +4,7 @@ import {
   telegramLinkSchema,
   telegramStateSchema,
   formatClock,
+  type TelegramDetail,
   type TelegramLink as LinkState,
 } from "@ea/core/web";
 import { useEffect, useRef, useState } from "react";
@@ -23,16 +24,24 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
 import { NewTerms } from "./NewTerms";
+import { linkDetailBody, preselectedDetail, TelegramDetailChoice, TelegramDetailLinked } from "./TelegramDetail";
 
 export interface TelegramLinkProps {
   timeZone: string;
   onChange?: () => void;
 }
 
+// While the organization locks `minimal`, `full` cannot be the choice, whatever was picked before the lock came.
+function preselectedLocked(chosen: TelegramDetail, locked: boolean | undefined): TelegramDetail {
+  return locked === true ? "minimal" : chosen;
+}
+
 export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
   const [link, setLink] = useState<LinkState | null>(null);
   const [off, setOff] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  // The level the user picked in the link step; null until they pick one (then the stored level, `minimal` for a new member).
+  const [picked, setPicked] = useState<TelegramDetail | null>(null);
   const { me } = useMe();
   const [working, setBusy] = useState(false);
   // A paused organization takes no link and no unlink: the buttons are off.
@@ -69,18 +78,29 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     if (available === true) setOff(false);
   }, [available]);
 
+  // The choice shows with the flag `telegram_minimal` on: the server then adds `detail` to the state. The body carries it only then.
+  const detailOn = data?.detail !== undefined;
+  const chosen: TelegramDetail = picked ?? (data === null ? "minimal" : preselectedDetail(data));
+
   const makeLink = async () => {
     setBusy(true);
     try {
       setLink(
         await api("/api/channels/telegram/link", telegramLinkSchema, {
           method: "POST",
-          body: { consentVersion: TELEGRAM_CONSENT_VERSION },
+          body:
+            detailOn && data !== null
+              ? { consentVersion: TELEGRAM_CONSENT_VERSION, ...linkDetailBody(data, picked) }
+              : { consentVersion: TELEGRAM_CONSENT_VERSION },
         })
       );
     } catch (error) {
       if (error instanceof ApiError && error.code === "telegram_off") setOff(true);
-      else toast.error(t(errorText(error)));
+      else {
+        toast.error(t(errorText(error)));
+        // The lock may have changed since the state was read: read it again.
+        if (error instanceof ApiError && error.code === "telegram_detail_locked") reload();
+      }
     } finally {
       setBusy(false);
     }
@@ -137,6 +157,9 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     return (
       <div className="flex flex-col items-start gap-3">
         <NewTerms state={data} features={me?.features ?? []} busy={busy} onConfirm={() => void confirmTerms()} />
+        {data.detail !== undefined && (
+          <TelegramDetailLinked state={{ ...data, detail: data.detail }} busy={busy} onChanged={reload} />
+        )}
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm">
             {data.linkedAt === null
@@ -184,6 +207,15 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
     return (
       <div className="flex flex-col items-start gap-3">
         <p className="text-sm">{t("tg_intro")}</p>
+        {detailOn && (
+          <TelegramDetailChoice
+            name="tgd-link"
+            value={preselectedLocked(chosen, data.locked)}
+            locked={data.locked === true}
+            disabled={busy}
+            onChange={setPicked}
+          />
+        )}
         <h3 className="text-sm font-medium">{t("tg_consent_title")}</h3>
         <p className="text-sm text-muted-foreground">{t("tg_consent_text")}</p>
         <div className="flex items-start gap-2">
