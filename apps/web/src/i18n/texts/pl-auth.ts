@@ -205,7 +205,7 @@ export const plAuth = {
   legal_kept_days: "{days} od utworzenia lub ostatniej zmiany",
   legal_kept_after_close: "{days} po zamknięciu lub wykonaniu",
   legal_kept_after_expiry: "{days} po wygaśnięciu",
-  legal_kept_until_delete: "Do usunięcia skrzynki lub organizacji",
+  legal_kept_until_delete: "Do usunięcia skrzynki, członka lub organizacji",
   // the row of links on the sign-in page and in the Account card
   docs_links_label: "Dokumenty prawne",
   terms_dialog_title: "Zaakceptuj regulamin",

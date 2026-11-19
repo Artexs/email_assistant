@@ -5,7 +5,7 @@ import type { Texts } from "./texts";
 //   days             a fixed number of days after the row was made (or last changed)
 //   daysAfterClose   a fixed number of days after the row is closed or done
 //   afterExpiry      a fixed number of days after the row expires; a period of hours counts as 1 day (the upper bound)
-//   untilDelete      no job clears it: it goes with the mailbox or the organization (`docs/capabilities/account-data.md`)
+//   untilDelete      no job clears it: it goes with the mailbox, the member or the organization (`docs/capabilities/account-data.md`)
 export type Kept =
   | { kind: "orgSetting"; defaultDays: number }
   | { kind: "days"; days: number }
@@ -316,7 +316,7 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["push_subscriptions.*"],
     // The device is bound to a web session: the end of the session makes it inactive, and the member can remove it in the
-    // panel. No retention job clears the row: it goes with the member or with the organization.
+    // panel. No retention job clears the row: it goes with the member, the user or the organization.
     subjects: ["users"],
     kept: untilDelete,
   },

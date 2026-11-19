@@ -31,7 +31,7 @@ const headings: Record<LegalLang, string[]> = {
 };
 
 // Features that the policy must not describe until they ship.
-const plannedFeatures = /OAuth|Vertex|EU endpoint|endpoint w UE|sender profile|profil(e|i) nadawc|push notification/i;
+const plannedFeatures = /OAuth|Vertex|EU endpoint|endpoint w UE|sender profile|profil(e|i) nadawc/i;
 
 describe("the privacy policy sources", () => {
   for (const lang of legalLangs) {
@@ -64,6 +64,12 @@ describe("the privacy policy sources", () => {
 
     test(`${lang}: the text does not describe a planned feature`, () => {
       expect(source).not.toMatch(plannedFeatures);
+    });
+
+    // The phone channel: the push services are named, and so are the two Telegram levels (the registry row `web-push` has the details).
+    test(`4. ${lang}: the text names the push services and both Telegram levels`, () => {
+      for (const word of ["Google FCM", "Mozilla", "Apple", "Microsoft", "`minimal`", "`full`"])
+        expect({ word, found: source.includes(word) }).toEqual({ word, found: true });
     });
   }
 });

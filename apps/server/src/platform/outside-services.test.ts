@@ -50,6 +50,14 @@ describe("sub-processor registry and config", () => {
     }
   });
 
+  test("3b. the push services are the row `web-push`: it follows the private VAPID key, and both keys map to it", () => {
+    const row = subprocessors.find((entry) => entry.id === "web-push");
+    expect(row?.activeWhen).toEqual({ kind: "env", key: "VAPID_PRIVATE_KEY" });
+    expect(row?.personalData).toBe(true);
+    expect(OUTSIDE_SERVICE_KEYS.VAPID_PRIVATE_KEY).toBe("web-push");
+    expect(OUTSIDE_SERVICE_KEYS.VAPID_SUBJECT).toBe("web-push");
+  });
+
   test("4. an outside call to a host from mail text is a listed class with a reason, and its file still makes the call", () => {
     for (const [name, entry] of Object.entries(OUTSIDE_CALL_CLASSES)) {
       expect({ name, reason: entry.exempt.trim().length > 40 }).toEqual({ name, reason: true });

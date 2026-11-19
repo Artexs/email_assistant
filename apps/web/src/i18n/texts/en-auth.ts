@@ -199,7 +199,7 @@ export const enAuth = {
   legal_kept_days: "{days} after it is made or last changed",
   legal_kept_after_close: "{days} after it is closed or done",
   legal_kept_after_expiry: "{days} after it expires",
-  legal_kept_until_delete: "Until the mailbox or the organization is deleted",
+  legal_kept_until_delete: "Until the mailbox, the member or the organization is deleted",
   // the row of links on the sign-in page and in the Account card
   docs_links_label: "Legal documents",
   terms_dialog_title: "Accept the terms",

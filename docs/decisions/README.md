@@ -47,7 +47,7 @@ Template:
 | 0029 | The sync reads the Sent folder, read-only                                        | accepted                                            |
 | 0030 | Public docs site: static Starlight on GitHub Pages, synthetic content            | proposed                                            |
 | 0031 | Mailbox OAuth through the existing IMAP adapter; Microsoft sends by Graph        | proposed                                            |
-| 0032 | Phone channel: Web Push with ids and counts; Telegram detail per user            | proposed                                            |
+| 0032 | Phone channel: Web Push with ids and counts; Telegram detail per user            | accepted (F118)                                     |
 | 0033 | Reply drafts: free LLM text under code checks; mail-client edits win             | proposed                                            |
 | 0034 | Sender profiles hold counts under a keyed hash, never mail text                  | proposed                                            |
 | 0035 | LLM calls can go to an EU endpoint or to the buyer's own model; no PII sanitizer | accepted for decisions 1–5; decision 6 waits        |

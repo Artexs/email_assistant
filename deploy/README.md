@@ -191,6 +191,40 @@ A `409` in the log (the event `telegram_polling_conflict`, field `wait_ms`) mean
 
 For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the section "Login error (`auth_error`)". Alert texts and fixes: `docs/known-alerts.md`.
 
+## Phone notices and Telegram detail (F118)
+
+Two flags control this feature. Both are off by default, for every organization. `web_push` turns on the push channel, the phone notices card and the route selects. `telegram_minimal` turns on the Telegram level "Counts and links only" (`minimal`) and the lock of the owner. Rules: [`docs/capabilities/digest-and-notices.md`](../docs/capabilities/digest-and-notices.md) rules 3c to 3f. Decisions: [ADR 0032](../docs/decisions/0032-phone-channel-push-and-telegram-detail.md).
+
+### Make the keys (once)
+
+1. Make the VAPID pair on the VPS or on a machine that you trust: `bun run push:keys`. The command prints three bare lines: `VAPID_PUBLIC_KEY=...`, `VAPID_PRIVATE_KEY=...` and `VAPID_SUBJECT=mailto:<your address>`. Keep a copy in your password manager. No agent reads or prints these keys.
+2. Back up the file first: `cp -p .env .env.bak-vapid`. Paste the three lines as they are into the VPS `.env` (no prefix, no quotes). Replace `<your address>` with your real address: the push services see it in the token. Delete `.env.bak-vapid` when you are done: it holds every secret.
+3. Check that the lines exist, without printing them: `grep -c '^VAPID_' .env` prints `3`. All three keys or none: a set of one or two stops the server at start, and the log names the key, not its value. An empty set switches Web Push off.
+4. Start the new code: `deploy/release.sh v<x.y.z>` (it runs `db:migrate` first). The server needs outbound HTTPS on port 443 to the push services of the browsers of your members (for Chrome on Android: `fcm.googleapis.com`).
+
+A new pair ends every subscribed device (a browser keeps the old public key). A new `CREDENTIALS_KEY` drops every stored device too (§ First install). Members turn notices on again in Settings.
+
+### The phone
+
+The phone needs Tailscale to open the panel (§ Web panel). The push arrives without it: the push service of the browser carries it. Open the panel on the phone, install it (Chrome menu → "Install app"), then Settings → "Phone notices" → "Turn on notices on this device". iOS shows a push only for a panel on the Home Screen (iOS 16.4 or later); this is not tested. Notices stop on a device when its session ends (a sign-out, a lock, a password change; a company sign-in session ends after 12 hours); the next panel load re-binds it.
+
+### Turn it on (pilot organization first)
+
+1. The papers name the push services in the sub-processor table (`web-push`) and the new `TERMS_VERSION` makes every member accept the terms again at the next sign-in. Read the changed texts first (the legal pages are drafts, not legal advice).
+2. `$C run --rm cli bun run org:flag --org-id <org id> --flag web_push --on`, and the same with `--flag telegram_minimal --on`.
+3. Check: `$C run --rm cli bun run org:flag --org-id <org id>` shows both flags `on`.
+4. A member who had a Telegram chat before the migration keeps the level `full`; a member who links later starts at `minimal`. The owner can lock `minimal` for everyone in Settings.
+
+### Roll back
+
+Every step can stop with no harm to mail, Telegram or other organizations.
+
+1. Flags off (no deploy needed): `$C run --rm cli bun run org:flag --org-id <org id> --flag web_push --off` and the same with `telegram_minimal`. With `web_push` off the push sender waits, the cards and routes are absent and every notice goes to Telegram. With `telegram_minimal` off every member reads `full` again (the messages of before the setting).
+2. Remove a phone: Settings → "Phone notices" → "Remove" (before the flag goes off), or sign out on the phone. A removed device ends its open push rows `no_device`; a member with a chat gets the Telegram row of the event.
+3. Remove the keys: restore the backup of `.env` or delete the three `VAPID_*` lines, then `$C up -d --wait server`.
+4. Roll back the code only if the server itself misbehaves: `deploy/rollback.sh` (§ Roll back a release; it never rolls back the database, and the new columns and the table `push_subscriptions` are harmless to the old build). **Before a rollback, turn the flag `telegram_minimal` off first**: the code before the level at send time ignores `memberships.telegram_detail`, so a member who chose `minimal` would get `full` text. **Let the pending outbox rows drain before a rollback to code older than the minimal render:** the digest key `minimal` and the `approval_edit` key `sendId` are refused by the strict views of the older code, so those rows end `failed` / `bad_view` (they are digest text and card edits, not approvals). Check: `$C exec -T db psql -U postgres -d email_assistant -c "select count(*) from outbox where status in ('pending', 'sending')"` prints `0`, or accept the loss of those rows.
+5. The build before the push sender never claims a push row: a `pending` row of `channel = 'push'` stays as it is and no push reaches a phone. Close those rows after the rollback: `$C exec -T db psql -U postgres -d email_assistant -c "update outbox set status = 'failed', error_code = 'outdated', locked_at = null where channel = 'push' and status in ('pending', 'sending')"`.
+
 ## Web panel
 
 ### What it is
