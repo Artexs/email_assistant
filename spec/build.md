@@ -20,6 +20,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
 - `F119-e7-t7-identity-b-oidc` (🟠 ACTIVE): E7-T7 Identity B (OIDC)
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
+- `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F110-e4-b-earn-trust` (🟠 ACTIVE): E4-B Earn trust
 - `F107-e7-t4-papers-and-cost` (🟠 ACTIVE): E7-T4 Papers and cost
@@ -81,12 +82,12 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟢 PROVEN): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers; landed 2026-11-19
 - `F131-the-large-files-named-in-quality-pass-1-are-split-by-aggregate-findings-4-to-7` (🟢 PROVEN): the large files named in quality pass 1 are split by aggregate (findings 4 to 7); landed 2026-11-19
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
-- `F115-e6a-reply-drafts` (🟢 PROVEN): Mail that needs a reply gets a checked draft that waits for one tap; landed 2026-11-19
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
 - `F104-e5a-read-sent` (🟢 PROVEN): E5a Read Sent; landed 2026-11-19
 - `F071-limen-transition` (🟢 PROVEN): Move the agent workflow to Limen; landed 2026-11-19
 - `F133-the-small-duplicates-and-stale-statements-of-quality-pass-1-are-cleaned-findings-9-to-18` (🟢 PROVEN): the small duplicates and stale statements of quality pass 1 are cleaned (findings 9 to 18); landed 2026-11-18
-- 2026-11: 92 landed. spec/features/done/2026-11/
+- `F132-comments-carry-no-bare-ticket-or-decision-codes-quality-pass-1-finding-8` (🟢 PROVEN): comments carry no bare ticket or decision codes (quality pass 1, finding 8); landed 2026-11-18
+- 2026-11: 91 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-19: do not wait, run in parallel
 
