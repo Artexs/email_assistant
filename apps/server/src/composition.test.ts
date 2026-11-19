@@ -126,6 +126,30 @@ describe("the docs say what the report mail does (F110 stage 20 review)", () => 
   });
 });
 
+describe("the push sender is wired in main.ts (F118 stage 08)", () => {
+  const main = read("main.ts");
+
+  test("it is scheduled every 15 seconds, once, only with the VAPID keys, outside the Telegram block, and the shutdown waits for its run", () => {
+    expect(main.split('scheduler.add("channels.push", "*/15 * * * * *"')).toHaveLength(2);
+    expect(main).toContain("pushRun = pushSender.run();");
+    expect(main).toContain("const pushKeys = pushConfigOf(config);");
+    const start = main.indexOf("Promise.allSettled([");
+    expect(main.slice(start, main.indexOf("])", start))).toContain("pushRun");
+    // A push-only member needs no bot: the job sits before `if (config.TELEGRAM_BOT_TOKEN === undefined) {`.
+    const telegramBlock = main.indexOf("if (config.TELEGRAM_BOT_TOKEN === undefined) {");
+    expect(main.indexOf('scheduler.add("channels.push"')).toBeLessThan(telegramBlock);
+    // No keys, no job: the scheduler call sits in the `else` of the null check.
+    expect(main.indexOf("if (pushKeys === null) {")).toBeLessThan(main.indexOf('scheduler.add("channels.push"'));
+  });
+
+  test("the sender gets the box, the keys, the global fetch and the clock", () => {
+    const call = callOf(main, "createPushSender");
+    expect(call).toContain("box: secrets");
+    expect(call).toContain("keys: pushKeys");
+    expect(call).toContain("fetch,");
+  });
+});
+
 describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
   const main = read("main.ts");
 
