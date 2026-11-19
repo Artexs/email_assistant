@@ -60,3 +60,9 @@ mkdir -p /tmp/f111-s05 && bun run lint > /tmp/f111-s05/lint.log 2>&1 && bun run 
 ```
 
 Only result files and docs change: no `test:int:ci`. The final message lists the run times, the go/no-go per category for both models, and the stopped server PID.
+
+## First commit of this stage (carry-over from the stage 06 review, PASS 5a550ffd)
+- TG1: the guard test `apps/server/src/own-model-docs.test.ts` must compare the guide's classifier version with `prompts.classifier.version`, not only look for "classifier-v2".
+- TG4: when a `*-own.json` gate file exists, the test must check the guide's results table against the gate files (the early return hides this).
+- TG3 (optional): tie the "every 5 minutes" re-gate claim to the schedule in `main.ts`.
+- N3: the guide says gate files are provisional; only the classifier files are. Make the sentence say so.

@@ -373,6 +373,37 @@ describe("PUT /api/me/push/subscription and GET /api/me/push", () => {
     expect((await devicesOf(org.ownerId))[0]?.session_id).toBe(owner2);
   });
 
+  test("8b. a panel load of a session that already holds the device writes no audit row; a re-bind to a new session and a click do", async () => {
+    const { receiver, endpoint, id } = await register(owner);
+    const audited = async () => (await auditOf("push.subscribed")).map((r) => (r.data as { created: boolean }).created);
+    expect(await audited()).toEqual([true]);
+    const load = (cookie: string) =>
+      app().request(
+        "/api/me/push/subscription",
+        put(cookie, { ...subscriptionBody(receiver, endpoint), rebindOnly: true })
+      );
+
+    // The same session loads the panel three times: the device stays, the answer is the same, no audit row.
+    for (let i = 0; i < 3; i += 1) {
+      const res = await load(owner);
+      expect(pushSubscriptionAnswerSchema.parse(await res.json()).id).toBe(id);
+    }
+    expect(await audited()).toEqual([true]);
+
+    // A new session re-binds the device: one audit row. Its next loads write none.
+    expect((await load(owner2)).status).toBe(200);
+    expect(await audited()).toEqual([true, false]);
+    expect((await load(owner2)).status).toBe(200);
+    expect((await load(owner2)).status).toBe(200);
+    expect(await audited()).toEqual([true, false]);
+    expect((await devicesOf(org.ownerId))[0]?.session_id).toBe(owner2);
+
+    // The click (no `rebindOnly`) is a user action: audited each time, also from the session that holds the device.
+    const click = await app().request("/api/me/push/subscription", put(owner2, subscriptionBody(receiver, endpoint)));
+    expect(click.status).toBe(200);
+    expect(await audited()).toEqual([true, false, false]);
+  });
+
   test("an endpoint that the user registered in another organization answers 409 push_device_elsewhere", async () => {
     // The assistant is a member of the first organization and, later, of the second. The tenant is the first.
     const endpoint = `${CANARY_ENDPOINT}-elsewhere`;

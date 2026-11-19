@@ -1,7 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { simpleParser } from "mailparser";
 
-import { isSyntheticMessageId, isTestMail, NO_TEST_SENDERS, renderSeedMessage, type SeedMessage } from "./seed";
+import {
+  isSyntheticMessageId,
+  isTestMail,
+  NO_TEST_SENDERS,
+  ownerSmokeFrom,
+  renderSeedMessage,
+  type SeedMessage,
+} from "./seed";
 
 const base: SeedMessage = {
   messageId: "<a1@example.test>",
@@ -146,5 +153,28 @@ describe("isTestMail", () => {
     expect(
       isTestMail({ messageIdHeader: "<a@x.test>", fromAddress: "boss@firma.test" }, { senders: ["a@b.test"] })
     ).toBe(false);
+  });
+});
+
+describe("ownerSmokeFrom", () => {
+  test("keeps the display name and makes a plus address of the owner, two digits", () => {
+    expect(ownerSmokeFrom("Marek Zielinski <marek.zielinski@klient-alfa.test>", "owner@x.test", 3)).toBe(
+      "Marek Zielinski <owner+ea-smoke-03@x.test>"
+    );
+    expect(ownerSmokeFrom("Marek Zielinski <marek.zielinski@klient-alfa.test>", "owner@x.test", 20)).toBe(
+      "Marek Zielinski <owner+ea-smoke-20@x.test>"
+    );
+  });
+
+  test("a bare address gives a bare plus address; the outside domain never stays", () => {
+    const from = ownerSmokeFrom("seed@ea-seed.test", "owner@x.test", 1);
+    expect(from).toBe("owner+ea-smoke-01@x.test");
+    expect(from).not.toContain("ea-seed");
+  });
+
+  test("an owner address without local@domain throws", () => {
+    for (const bad of ["owner", "@x.test", "owner@", "a b@x.test", "A <a@x.test>", "a@x.test,b@x.test"]) {
+      expect(() => ownerSmokeFrom("A <a@b.test>", bad, 1)).toThrow("owner address");
+    }
   });
 });

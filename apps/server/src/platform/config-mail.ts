@@ -15,11 +15,12 @@ const mailOAuthKeys = {
 // The env keys of the mail module, the sends and the mailbox OAuth apps. `config.ts` spreads them into the schema.
 export const mailShape = {
   // Not `z.email()`: the GreenMail test address is `user@localhost`, with no dot in the domain.
+  // One address, or a comma-separated list (the provider smoke has two test mailboxes).
   TEST_MAILBOX_ADDRESS: z.preprocess(
     (v) => (v === "" ? undefined : v),
     z
       .string()
-      .regex(/^[^\s@]+@[^\s@]+$/)
+      .regex(/^[^\s@,]+@[^\s@,]+(\s*,\s*[^\s@,]+@[^\s@,]+)*$/)
       .optional()
   ),
   // off = no send; self = only to SEND_TEST_ADDRESSES; all = real recipients, always after an owner's tap.
