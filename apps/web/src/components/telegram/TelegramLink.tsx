@@ -24,7 +24,7 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
 import { NewTerms } from "./NewTerms";
-import { preselectedDetail, TelegramDetailChoice, TelegramDetailLinked } from "./TelegramDetail";
+import { linkDetailBody, preselectedDetail, TelegramDetailChoice, TelegramDetailLinked } from "./TelegramDetail";
 
 export interface TelegramLinkProps {
   timeZone: string;
@@ -88,9 +88,10 @@ export function TelegramLink({ timeZone, onChange }: TelegramLinkProps) {
       setLink(
         await api("/api/channels/telegram/link", telegramLinkSchema, {
           method: "POST",
-          body: detailOn
-            ? { consentVersion: TELEGRAM_CONSENT_VERSION, detail: preselectedLocked(chosen, data?.locked) }
-            : { consentVersion: TELEGRAM_CONSENT_VERSION },
+          body:
+            detailOn && data !== null
+              ? { consentVersion: TELEGRAM_CONSENT_VERSION, ...linkDetailBody(data, picked) }
+              : { consentVersion: TELEGRAM_CONSENT_VERSION },
         })
       );
     } catch (error) {

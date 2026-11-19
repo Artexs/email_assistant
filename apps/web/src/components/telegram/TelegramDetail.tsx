@@ -28,6 +28,19 @@ export function preselectedDetail(state: Pick<TelegramState, "detail" | "locked"
   return state.locked === true ? "minimal" : (state.detail ?? "minimal");
 }
 
+/**
+ * The `detail` part of the link body. Outside the lock it is the level the step shows (the stored one, or the pick). Under the lock the
+ * step shows `minimal` whatever is stored, and a stored `full` must survive until the lock ends: no `detail` goes out (the server keeps
+ * the stored level) unless the user actively picked `minimal` in this step.
+ */
+export function linkDetailBody(
+  state: Pick<TelegramState, "detail" | "locked">,
+  picked: Detail | null
+): { detail?: Detail } {
+  if (state.locked !== true) return { detail: picked ?? preselectedDetail(state) };
+  return picked === "minimal" ? { detail: "minimal" } : {};
+}
+
 interface ChoiceProps {
   name: string;
   value: Detail;
@@ -86,7 +99,9 @@ export function TelegramDetailLinked({ state, busy, onChanged }: LinkedProps) {
   const locked = state.locked === true;
   const shown = state.effectiveDetail ?? state.detail;
   const needsConsent = choice === "full" && state.detail !== "full";
-  const unchanged = choice === state.detail;
+  // Save needs a change from what the card shows: under the lock that is `minimal`, so a stored `full` is never overwritten by a save
+  // of the preselected choice.
+  const unchanged = choice === shown;
 
   const openDialog = () => {
     setChoice(preselectedDetail(state));

@@ -6,25 +6,25 @@ export const plDetail = {
   tgd_title: "Co dostaje Telegram",
   tgd_minimal_option: "Tylko liczby i linki (zalecane)",
   tgd_minimal_text:
-    "Telegram dostaje liczbę czekających pozycji i link do panelu. Bez nadawcy, tematu, streszczenia i szkicu.",
-  tgd_full_option: "Pełne",
+    "Telegram dostaje liczbę czekających pozycji i link do panelu. Bez nadawcy, tematu, streszczenia ani szkiców.",
+  tgd_full_option: "Pełna treść",
   tgd_full_text:
-    "Telegram dostaje nadawcę, temat, streszczenie AI i szkice, z przyciskami Wyślij. Telegram przechowuje te komunikaty na swoich serwerach.",
+    "Telegram dostaje nadawcę, temat, streszczenie AI i szkice, z przyciskami „Wyślij”. Telegram przechowuje te komunikaty na swoich serwerach.",
   tgd_locked: "Twoja organizacja dopuszcza tylko liczby i linki.",
   tgd_locked_now:
-    "Twoja organizacja ograniczyła Telegram do liczb i linków. Twój wybór, Pełne, wróci do działania, gdy blokada się skończy.",
+    "Twoja organizacja ograniczyła Telegram do liczb i linków. Twój wybór (pełna treść) znów zacznie obowiązywać po wyłączeniu blokady.",
   tgd_minimal_short: "Tylko liczby i linki",
-  tgd_full_short: "Pełne",
-  tgd_current_label: "Co Telegram dostaje teraz:",
+  tgd_full_short: "Pełna treść",
+  tgd_current_label: "Co teraz dostaje Telegram:",
   tgd_change: "Zmień",
   tgd_change_title: "Zmień, co dostaje Telegram",
   tgd_saved_toast: "Ustawienia Telegrama zapisane.",
 
   // The owner's lock card of Settings
-  tgl_title: "Szczegóły w Telegramie dla organizacji",
+  tgl_title: "Zakres danych w Telegramie (cała organizacja)",
   tgl_label: "Telegram: dla wszystkich tylko liczby i linki",
   tgl_help:
-    "Gdy ta opcja jest włączona, Telegram dostaje tylko liczby i linki, niezależnie od wyboru każdej osoby. Ich własne wybory wracają po wyłączeniu.",
+    "Gdy ta opcja jest włączona, Telegram dostaje tylko liczby i linki, niezależnie od tego, co kto wybrał. Po wyłączeniu blokady każdy znów dostaje to, co sam wybrał.",
   tgl_state_on: "W Twojej organizacji Telegram dostaje dla wszystkich tylko liczby i linki.",
   tgl_state_off: "Każda osoba wybiera sama, co dostaje Telegram.",
   tgl_on_toast: "Telegram dostaje teraz dla wszystkich tylko liczby i linki.",
@@ -33,13 +33,13 @@ export const plDetail = {
   // The notice routes card of Settings
   nr_title: "Dokąd trafiają komunikaty",
   nr_help:
-    "Dla każdego rodzaju komunikatów wybierz Telegram, telefon albo oba. Podsumowania i raporty zostają w Telegramie i poczcie.",
+    "Wybierz Telegram, telefon albo oba kanały dla każdej z trzech grup komunikatów. Podsumowania i raporty nie trafiają na telefon: przychodzą Telegramem albo pocztą, zgodnie z ustawieniem raportów.",
   nr_group_urgent: "Pilna poczta",
   nr_group_approvals: "Zatwierdzenia",
   nr_group_updates: "Aktualizacje",
   nr_telegram: "Telegram",
   nr_phone: "Telefon",
-  nr_both: "Oba",
+  nr_both: "Oba kanały",
   nr_default: "{value} (domyślnie)",
   nr_none_hint:
     "Nie masz połączonego Telegrama ani urządzenia z powiadomieniami. Połącz Telegram albo włącz powiadomienia na telefonie, żeby dostawać komunikaty.",

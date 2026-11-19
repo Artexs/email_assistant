@@ -13,8 +13,7 @@ import { readSeed } from "../seed";
 // and `web_push` are on for the seed organization only while a test needs them. The server keeps its real routes and its real store.
 test.describe.configure({ mode: "serial" });
 
-function setFlag(flag: "telegram_minimal" | "web_push", enabled: boolean): void {
-  const { orgId } = readSeed();
+function setFlag(flag: "telegram_minimal" | "web_push", enabled: boolean, orgId = readSeed().orgId): void {
   execFileSync(
     "bun",
     ["apps/server/src/scripts/org-flag.ts", "--org-id", orgId, "--flag", flag, enabled ? "--on" : "--off"],
@@ -64,7 +63,15 @@ async function asMember(browser: Browser): Promise<{ page: Page; close(): Promis
   return { page, close: () => context.close() };
 }
 
-test("flag off: no choice in the link step, no lock card, no route card", async ({ page }) => {
+test("flag off: no choice in the link step, no lock card, no route card, and no request for them", async ({ page }) => {
+  // The panel reads and writes the detail, the lock and the routes only with their flags on.
+  const requests: string[] = [];
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (/^\/api\/(me\/telegram-detail|organization\/telegram-lock|me\/notify|me\/push)/.test(path)) {
+      requests.push(`${request.method()} ${path}`);
+    }
+  });
   await page.goto("/mailboxes");
   const tick = page.getByLabel(en.tg_consent_label);
   await expect(tick).toBeVisible();
@@ -77,6 +84,8 @@ test("flag off: no choice in the link step, no lock card, no route card", async 
   await expect(page.locator("[data-card=timezone]")).toBeVisible();
   await expect(page.locator("[data-card=telegram-lock]")).toHaveCount(0);
   await expect(page.locator("[data-card=notice-routes]")).toHaveCount(0);
+  await page.waitForLoadState("networkidle");
+  expect(requests).toEqual([]);
 });
 
 test("flag on: minimal is preselected, full needs the tick, the linked card shows and changes the level", async ({
@@ -154,6 +163,7 @@ test("the owner locks minimal: the member sees the state, full is disabled in th
   const card = page.locator("[data-card=telegram-lock]");
   const lockSwitch = card.getByRole("switch", { name: en.tgl_label });
   await expect(lockSwitch).not.toBeChecked();
+  await expect(card.getByText(en.tgl_help)).toBeVisible();
   await expectNoA11yViolations(page, { include: "[data-card=telegram-lock]" });
 
   const member = await asMember(browser);
@@ -182,6 +192,9 @@ test("the owner locks minimal: the member sees the state, full is disabled in th
     await member.page.goto("/settings");
     const memberCard = member.page.locator("[data-card=telegram-lock]");
     await expect(memberCard.locator("[data-lock=on]")).toHaveText(en.tgl_state_on);
+    // The help speaks to the owner and the General section already says who may change it: the member card shows the state only.
+    await expect(memberCard.getByText(en.tgl_help)).toHaveCount(0);
+    await expect(memberCard.getByText(en.set_owner_only)).toHaveCount(0);
     await expect(memberCard.getByRole("switch")).toHaveCount(0);
     await expectNoA11yViolations(member.page, { include: "[data-card=telegram-lock]" });
 
@@ -231,5 +244,97 @@ test("web_push on: the member sets Urgent to Phone; the patch holds that key onl
     await expect(urgent.locator("option:checked")).toHaveText("Telegram (default)");
   } finally {
     await member.close();
+  }
+});
+
+// The lock changes no stored choice: a member who chose `full` keeps it through a re-link under the lock, and gets it back at the unlock.
+test("the lock does not overwrite a stored full: link with full, lock, re-link, unlock gives full again", async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  setFlag("telegram_minimal", true);
+  const chatId = projectOf() === "mobile" ? 5550113 : 5550114;
+  const setLock = async (locked: boolean) => {
+    const res = await page.request.patch("/api/organization/telegram-lock", { headers, data: { locked } });
+    expect(res.ok()).toBe(true);
+  };
+  const linked = page.locator("[data-section=telegram-detail-linked]");
+  const section = page.locator("[data-section=telegram-detail]");
+  const completeLink = async () => {
+    const url = page.getByLabel(en.tg_link_label, { exact: true });
+    await expect(url).toHaveValue(/^https:\/\/t\.me\/fake_ea_bot\?start=[A-Za-z0-9_-]{43}$/);
+    const token = (await url.inputValue()).split("start=")[1];
+    await createFakeTelegramClient(E2E_TELEGRAM_URL).send(`/start ${token}`, { chatId });
+    await expect(page.getByText(/Linked since/)).toBeVisible({ timeout: 10_000 });
+  };
+
+  // 1. Link with full.
+  await page.goto("/mailboxes");
+  await section.getByRole("radio", { name: en.tgd_full_option }).check();
+  await page.getByLabel(en.tg_consent_label).check();
+  await page.getByRole("button", { name: en.tg_link }).click();
+  await completeLink();
+  await expect(linked.locator("[data-detail=full]")).toHaveText(en.tgd_full_short);
+
+  // 2. The lock: the card shows what Telegram gets now (minimal) and says that the choice returns; the dialog cannot save a change.
+  await setLock(true);
+  await page.reload();
+  await expect(linked.locator("[data-detail=minimal]")).toHaveText(en.tgd_minimal_short);
+  await expect(linked.getByText(en.tgd_locked_now)).toBeVisible();
+  await linked.getByRole("button", { name: en.tgd_change }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("radio", { name: en.tgd_full_option })).toBeDisabled();
+  await expect(dialog.getByRole("radio", { name: en.tgd_minimal_option })).toBeChecked();
+  await expect(dialog.getByRole("button", { name: en.save })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  expect(((await (await page.request.get("/api/channels/telegram")).json()) as { detail: string }).detail).toBe("full");
+
+  // 3. Unlock, unlink, pick full in the link step, then the lock arrives: the step follows it (the poll runs every 30 seconds).
+  await setLock(false);
+  await page.reload();
+  await page.getByRole("button", { name: en.tg_unlink }).click();
+  await page.getByRole("dialog").getByRole("button", { name: en.tg_unlink }).click();
+  await expect(page.getByText(en.tg_unlinked_toast)).toBeVisible();
+  await expect(section.getByRole("radio", { name: en.tgd_full_option })).toBeChecked();
+  await section.getByRole("radio", { name: en.tgd_minimal_option }).check();
+  await section.getByRole("radio", { name: en.tgd_full_option }).check();
+  await setLock(true);
+  await expect(section.getByRole("radio", { name: en.tgd_full_option })).toBeDisabled({ timeout: 45_000 });
+  await expect(section.getByRole("radio", { name: en.tgd_minimal_option })).toBeChecked();
+  await expect(section.getByText(en.tgd_locked)).toBeVisible();
+
+  // 4. Link under the lock: the request carries no detail, the stored full stays, and the unlock gives it back.
+  await page.getByLabel(en.tg_consent_label).check();
+  const requested = page.waitForRequest(
+    (request) => request.url().endsWith("/api/channels/telegram/link") && request.method() === "POST"
+  );
+  await page.getByRole("button", { name: en.tg_link }).click();
+  expect((await requested).postDataJSON()).toEqual({ consentVersion: expect.any(String) });
+  await completeLink();
+  await expect(linked.locator("[data-detail=minimal]")).toHaveText(en.tgd_minimal_short);
+  expect(((await (await page.request.get("/api/channels/telegram")).json()) as { detail: string }).detail).toBe("full");
+  await setLock(false);
+  await page.reload();
+  await expect(linked.locator("[data-detail=full]")).toHaveText(en.tgd_full_short);
+});
+
+test("a suspended organization: the lock switch is disabled for the owner", async ({ browser }) => {
+  const { pausedOwner } = readSeed();
+  setFlag("telegram_minimal", true, pausedOwner.orgId);
+  const context = await browser.newContext({
+    extraHTTPHeaders: { "x-forwarded-for": nextAddress(projectOf() === "mobile" ? 420 : 520) },
+  });
+  try {
+    const page = await context.newPage();
+    await signInAs(page, pausedOwner);
+    await expect(page).toHaveURL(/\/onboarding$/);
+    await page.goto("/settings");
+    const card = page.locator("[data-card=telegram-lock]");
+    await expect(card.getByRole("switch", { name: en.tgl_label })).toBeDisabled();
+    await expectNoA11yViolations(page, { include: "[data-card=telegram-lock]" });
+  } finally {
+    await context.close();
+    setFlag("telegram_minimal", false, pausedOwner.orgId);
   }
 });

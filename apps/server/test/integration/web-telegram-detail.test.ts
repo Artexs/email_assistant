@@ -254,6 +254,26 @@ describe("the link step stores the detail level", () => {
   });
 });
 
+describe("the link under the lock keeps the stored level", () => {
+  test("26. a link without detail while the organization locks minimal keeps a stored full; the unlock gives full again", async () => {
+    await flag(org.orgId, true);
+    await setDetail(org.assistantId, "full");
+    await setLock(true);
+    const res = await app().request("/api/channels/telegram/link", post("assistant", CURRENT));
+    expect(res.status).toBe(200);
+    expect(await detailOf(org.assistantId)).toBe("full");
+    expect(await tokens()).toHaveLength(1);
+    expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
+    const read = async () =>
+      telegramStateSchema.parse(await (await app().request("/api/channels/telegram", as("assistant"))).json());
+    expect(await read()).toMatchObject({ detail: "full", effectiveDetail: "minimal", locked: true });
+    expect((await app().request("/api/organization/telegram-lock", patch("owner", { locked: false }))).status).toBe(
+      200
+    );
+    expect(await read()).toMatchObject({ detail: "full", effectiveDetail: "full", locked: false });
+  });
+});
+
 describe("GET /api/channels/telegram", () => {
   test("6. flag on: the stored level, the effective level and the lock; the lock wins over full and keeps the stored level", async () => {
     await flag(org.orgId, true);

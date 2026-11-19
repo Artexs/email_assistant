@@ -48,19 +48,19 @@ export function TelegramLockCard({
         <CardTitle>{t("tgl_title")}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">{t("tgl_help")}</p>
         {isOwnerRole ? (
-          <div className="flex items-center gap-2">
-            <Switch id="tg-lock" checked={locked} disabled={pending} onCheckedChange={(next) => void change(next)} />
-            <Label htmlFor="tg-lock">{t("tgl_label")}</Label>
-          </div>
-        ) : (
           <>
-            <p data-lock={locked ? "on" : "off"} className="text-sm font-medium">
-              {t(locked ? "tgl_state_on" : "tgl_state_off")}
-            </p>
-            <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>
+            <p className="text-sm text-muted-foreground">{t("tgl_help")}</p>
+            <div className="flex items-center gap-2">
+              <Switch id="tg-lock" checked={locked} disabled={pending} onCheckedChange={(next) => void change(next)} />
+              <Label htmlFor="tg-lock">{t("tgl_label")}</Label>
+            </div>
           </>
+        ) : (
+          // The help speaks to the owner; the General section already says that only the owner changes the settings.
+          <p data-lock={locked ? "on" : "off"} className="text-sm font-medium">
+            {t(locked ? "tgl_state_on" : "tgl_state_off")}
+          </p>
         )}
       </CardContent>
     </Card>

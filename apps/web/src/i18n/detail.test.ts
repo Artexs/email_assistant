@@ -11,9 +11,9 @@ describe("the Telegram detail, lock and route texts", () => {
   test("the English words that the stage fixes", () => {
     expect([en.tgd_minimal_option, en.tgd_minimal_text, en.tgd_full_option, en.tgd_full_text, en.tgd_locked]).toEqual([
       "Counts and links only (recommended)",
-      "Telegram gets how many items wait and a link to the panel. No sender, subject, summary or draft.",
+      "Telegram gets how many items wait and a link to the panel. No sender, subject, summary or drafts.",
       "Full",
-      "Telegram gets the sender, subject, AI summary and drafts, with Send buttons. Telegram stores these messages on its servers.",
+      'Telegram gets the sender, subject, AI summary and drafts, with "Send" buttons. Telegram stores these messages on its servers.',
       "Your organization allows only counts and links.",
     ]);
     expect(en.tgl_label).toBe("Telegram: counts and links only for everyone");
@@ -42,6 +42,25 @@ describe("the Telegram detail, lock and route texts", () => {
         expect([key, text.endsWith(".")]).toEqual([key, true]);
       }
     }
+  });
+
+  test("the Polish texts of the review fixes", () => {
+    expect([pl.tgd_full_option, pl.tgd_full_short, pl.tgd_current_label, pl.tgl_title, pl.nr_both]).toEqual([
+      "Pełna treść",
+      "Pełna treść",
+      "Co teraz dostaje Telegram:",
+      "Zakres danych w Telegramie (cała organizacja)",
+      "Oba kanały",
+    ]);
+    expect(pl.tgd_full_text).toContain("„Wyślij”");
+    expect(pl.tgd_locked_now).toBe(
+      "Twoja organizacja ograniczyła Telegram do liczb i linków. Twój wybór (pełna treść) znów zacznie obowiązywać po wyłączeniu blokady."
+    );
+    // The lock help promises that each person gets their own choice back; the member card does not show it (the owner wording).
+    expect(en.tgl_help).toContain("When the lock is turned off, each person gets their own choice again.");
+    // Digests and reports never go to the phone: the help names the report channel instead of "Telegram and mail".
+    expect(en.nr_help).toContain("Digests and reports never go to the phone");
+    expect(pl.nr_help).toContain("zgodnie z ustawieniem raportów");
   });
 
   test("the Polish texts that the stage fixes", () => {

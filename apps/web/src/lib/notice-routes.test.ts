@@ -57,7 +57,7 @@ describe("the notice route select model", () => {
 
   test("the labels are Polish in the Polish panel", () => {
     setLocaleForTest("pl");
-    expect(shown(view(), "urgent")).toBe("Oba (domyślnie)");
+    expect(shown(view(), "urgent")).toBe("Oba kanały (domyślnie)");
     expect(shown(view({ routes: { urgent: "push" } }), "urgent")).toBe("Telefon");
   });
 
