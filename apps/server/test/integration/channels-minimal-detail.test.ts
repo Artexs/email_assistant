@@ -246,7 +246,14 @@ describe("/status at the minimal level", () => {
       await addMailbox(trx, link.orgId);
       const base = (await statusMessage(depsAt(trx), link)).text;
       expect((await statusMessage(depsAt(trx, { detailOf: full }), link)).text).toBe(base);
-      expect(base).toContain("@");
+      // Today's lines, exactly: the address after the mailbox mark and in the approvals line.
+      const lines = base.split("\n");
+      const addresses = await trx.selectFrom("mailboxes").select("address").where("org_id", "=", link.orgId).execute();
+      expect(addresses).toHaveLength(2);
+      for (const { address } of addresses) {
+        expect(lines).toContain(`📮 ${address}`);
+        expect(lines.filter((line) => line.startsWith(`Approvals ${address}: `))).toHaveLength(1);
+      }
     });
   });
 });
