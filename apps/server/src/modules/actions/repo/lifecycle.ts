@@ -2,7 +2,21 @@ import { sql } from "kysely";
 
 import type { TenantContext } from "../../../platform/db";
 
+import { statusGuard, writerGuard } from "./guard";
 import type { DbOrTrx } from "./shared";
+
+// The guard rows, resolved at load: an unknown row throws at import.
+const MARK_APPLYING_GUARD = writerGuard("markApplying", "default");
+const FINISH_GUARDS = {
+  applied: writerGuard("finishAction", `to "applied"`),
+  failed: writerGuard("finishAction", `to "failed"`),
+  expired: writerGuard("finishAction", `to "expired"`),
+};
+const RELEASE_GUARDS = {
+  ready: writerGuard("releaseAction", `toStatus "ready"`),
+  approved: writerGuard("releaseAction", `toStatus "approved"`),
+  applying: writerGuard("releaseAction", `toStatus "applying"`),
+};
 
 // The first step of the apply step for a draft or a send: it commits before any APPEND or SMTP call.
 // `locked_at` stays: the claim token is valid through the step.
@@ -26,9 +40,9 @@ export async function markApplying(
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
     .where((eb) =>
-      eb.or([
-        eb.and([eb("type", "=", "send"), eb("status", "=", "approved"), eb("approved_at", "is not", null)]),
-        eb.and([eb("type", "<>", "send"), eb("status", "in", ["ready", "approved"])]),
+      eb.and([
+        statusGuard(eb, MARK_APPLYING_GUARD),
+        eb.or([eb("type", "<>", "send"), eb("approved_at", "is not", null)]),
       ])
     )
     .where("locked_at", "=", lockedAt)
@@ -51,7 +65,8 @@ export type FinishNext =
   // follow-up whose loop closed before the SMTP call.
   | { status: "expired"; at: Date; reason: "send_closed" | "loop_closed" };
 // `lockedAt` is the claim token: a stale run that lost its claim changes nothing.
-// `next.at` is the run clock: it sets `updated_at` (and `applied_at`). `from` lists the statuses that may finish.
+// `next.at` is the run clock: it sets `updated_at` (and `applied_at`). `opts.from` narrows the statuses of the guard row
+// of the target (default `ready`, `applying`).
 // `countAttempt` on a failure counts the try that failed (the third hard error leaves `attempts` = 3).
 export async function finishAction(
   trx: DbOrTrx,
@@ -94,7 +109,7 @@ export async function finishAction(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "in", [...(opts?.from ?? ["ready", "applying"])])
+    .where((eb) => statusGuard(eb, FINISH_GUARDS[next.status], opts?.from ?? ["ready", "applying"]))
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
@@ -126,7 +141,7 @@ export async function releaseAction(
     }))
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "in", ["ready", "approved", "applying"])
+    .where((eb) => statusGuard(eb, RELEASE_GUARDS[opts.toStatus]))
     .where("locked_at", "=", lockedAt)
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
