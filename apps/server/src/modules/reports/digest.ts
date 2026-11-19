@@ -13,6 +13,7 @@ import {
   type BriefRenderOptions,
   type DigestBrief,
   type DigestItem,
+  type DigestMinimalFacts,
   type DigestMailbox,
   type DigestShown,
   type DigestSpamReview,
@@ -99,6 +100,8 @@ export interface DigestRequest {
 export interface DigestBuilt {
   message: OutMessage;
   shown: DigestShown;
+  // The counts and the clock of the `minimal` Telegram render. The Telegram row stores them in its view.
+  minimal: DigestMinimalFacts;
 }
 
 // A digest that failed (never sent) does not move the start, so the next sent digest covers its mail.

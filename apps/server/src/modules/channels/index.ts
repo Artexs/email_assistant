@@ -91,6 +91,7 @@ export {
   resumeMailboxes,
   runCommand,
   statusMessage,
+  telegramDetailOf,
   type CommandDeps,
 } from "./commands";
 export { listUrgentCandidates, listUrgentNoticeTimes, type UrgentCandidate } from "./metrics-repo";

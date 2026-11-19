@@ -5,6 +5,9 @@ import {
   formatDay,
   llmPauseLine,
   localDateTime,
+  minimalDigestMessage,
+  minimalReviewMessage,
+  minimalTexts,
   localToInstant,
   nextDigestTime,
   parseDigestTimes,
@@ -15,6 +18,7 @@ import {
   textsFor,
   withAnsweredCheck,
   type CoreTexts,
+  type NoticeDetail,
   type OutMessage,
 } from "@ea/core";
 import type { Transaction } from "kysely";
@@ -34,7 +38,7 @@ import { countLlmCallsSince } from "../audit";
 import { getMailboxSettings } from "../config";
 import { countOpenDelegations } from "../delegation";
 import { countWaiting, listMailboxes, switchMailboxStatus, type MailboxSummary, type TestMailRule } from "../mail";
-import { buildDigestMessage, digestPeriodStart, llmPauseToShow, WAITING_WINDOW_MS } from "../reports";
+import { buildDigest, digestPeriodStart, llmPauseToShow, WAITING_WINDOW_MS } from "../reports";
 import { getMemberNotify, getMembership, getOrganization, isFeatureOn, isOrgSuspended } from "../tenancy";
 import { ANSWERED_CHECK_WINDOW_MS, listAnsweredCandidates, listForReview } from "../triage";
 
@@ -63,6 +67,9 @@ export interface CommandDeps {
   // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page, and the
   // spam review line of /digest links to the Activity list. Unset: no link, the panel text.
   webBaseUrl?: string;
+  // The detail level of the chat of a link: `full` (today) or `minimal` (counts and panel links, no mail text, no address). Absent
+  // reads `telegramDetailOf`; a test passes a fake level.
+  detailOf?(link: LinkedChat): Promise<NoticeDetail>;
 }
 
 const log = createLog("channels");
@@ -70,6 +77,11 @@ const log = createLog("channels");
 const ADDRESS_MAX = 60;
 
 const ACTIONS_WINDOW_MS = 24 * 3_600_000;
+
+// The detail level of a chat. Every member reads `full` until the setting exists (the column, the flag and the lock come later).
+export async function telegramDetailOf(deps: CommandDeps, link: LinkedChat): Promise<NoticeDetail> {
+  return deps.detailOf === undefined ? "full" : deps.detailOf(link);
+}
 
 export function helpMessage(link: LinkedChat): OutMessage {
   return { text: textsFor(link.locale).bot.help, buttons: [] };
@@ -86,11 +98,19 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   const timeZone = organization.timezone;
   const clock = (at: Date): string => formatClock(at, timeZone, now, texts.locale);
 
+  // `minimal`: a mailbox is "Mailbox 1", "Mailbox 2" in the order of the list, never its address (plan D12, Q4).
+  const minimal = (await telegramDetailOf(deps, link)) === "minimal";
   const dayStart = quotaDayStart(now, QUOTA_TIMEZONE);
   const lines = [t.title(formatDay(now, timeZone, texts.locale), localDateTime(now, timeZone).time)];
 
   const mailboxes = await listMailboxes(db, ctx);
   if (mailboxes.length === 0) lines.push(t.noMailbox);
+  const names = new Map(
+    mailboxes.map((mailbox, index) => [
+      mailbox.id,
+      minimal ? minimalTexts(link.locale).mailboxName(index + 1) : cutText(mailbox.address, ADDRESS_MAX),
+    ])
+  );
   for (const mailbox of mailboxes) {
     const settings = await getMailboxSettings(db, ctx, mailbox.id);
     const calls = await countLlmCallsSince(db, ctx, mailbox.id, dayStart);
@@ -103,7 +123,7 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
     const sync = mailbox.last_synced_at;
     const late = sync !== null && now.getTime() - sync.getTime() > SYNC_LATE_MS;
     lines.push(
-      `📮 ${cutText(mailbox.address, ADDRESS_MAX)}`,
+      `📮 ${names.get(mailbox.id)}`,
       t.mailboxLine(mode, statusText(mailbox, clock, texts)),
       t.lastSync(sync === null ? null : clock(sync), late),
       t.llmCalls(clock(dayStart), calls, llmDailyCap)
@@ -114,7 +134,7 @@ export async function statusMessage(deps: CommandDeps, link: LinkedChat): Promis
   lines.push(t.waiting(waiting), t.triage(deps.triageScope));
   const actions = await countActionsSince(db, ctx, { since: new Date(now.getTime() - ACTIONS_WINDOW_MS) });
   lines.push(t.actions(deps.actionsScope.kind, actions));
-  lines.push(...(await approvalLines(deps, ctx, mailboxes, texts, clock)));
+  lines.push(...(await approvalLines(deps, ctx, mailboxes, texts, clock, names)));
   lines.push(t.send(deps.sendScope.kind));
   const delegations = await countOpenDelegations(db, ctx);
   lines.push(t.delegations(delegations.open, delegations.overdue));
@@ -167,7 +187,8 @@ async function approvalLines(
   ctx: TenantContext,
   mailboxes: MailboxSummary[],
   texts: CoreTexts,
-  clock: (at: Date) => string
+  clock: (at: Date) => string,
+  names: ReadonlyMap<string, string>
 ): Promise<string[]> {
   const t = texts.bot.status;
   const line = (prefix: string, count: Awaited<ReturnType<typeof countApprovals>>, mailbox?: MailboxSummary) => {
@@ -189,7 +210,7 @@ async function approvalLines(
   for (const mailbox of mailboxes) {
     const send = sendFilterFor(deps.sendScope);
     const count = await countApprovals(deps.db, ctx, { send, mailboxId: mailbox.id });
-    lines.push(line(t.approvalsOf(cutText(mailbox.address, ADDRESS_MAX)), count, mailbox));
+    lines.push(line(t.approvalsOf(names.get(mailbox.id) ?? ""), count, mailbox));
   }
   return lines;
 }
@@ -214,7 +235,7 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
   const now = deps.now();
   const ctx = { orgId: link.orgId, userId: link.userId };
   const periodStart = await digestPeriodStart(deps.db, ctx, { userId: link.userId, linkedAt: link.linkedAt }, now);
-  return buildDigestMessage(deps.db, ctx, {
+  const built = await buildDigest(deps.db, ctx, {
     kind: "on_demand",
     periodStart,
     periodEnd: now,
@@ -228,6 +249,16 @@ export async function digestNowMessage(deps: CommandDeps, link: LinkedChat): Pro
       ? { replyDrafts: true }
       : {}),
   });
+  // `minimal`: counts, the clock and the link to the panel, no keyboard.
+  if ((await telegramDetailOf(deps, link)) === "minimal") {
+    return minimalDigestMessage(built.minimal, {
+      channel: "telegram",
+      detail: "minimal",
+      locale: link.locale,
+      webBaseUrl: deps.webBaseUrl,
+    });
+  }
+  return built.message;
 }
 
 // The /review page: behind the flag `review_command`; a seeded random sample of unlabelled real mail.
@@ -236,6 +267,10 @@ export async function reviewMessage(deps: CommandDeps, link: LinkedChat): Promis
   const texts = textsFor(link.locale);
   const ctx = { orgId: link.orgId, userId: link.userId };
   if (!(await isFeatureOn(deps.db, ctx, "review_command"))) return { text: texts.review.off, buttons: [] };
+  // `minimal`: the review lives in the panel; no mail, no summary.
+  if ((await telegramDetailOf(deps, link)) === "minimal") {
+    return minimalReviewMessage({ locale: link.locale, webBaseUrl: deps.webBaseUrl });
+  }
   const organization = await getOrganization(deps.db, ctx);
   if (organization === undefined) throw new HardError("organization not found");
   const mailboxIds = (await listMailboxes(deps.db, ctx)).map((mailbox) => mailbox.id);

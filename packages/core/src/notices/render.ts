@@ -4,7 +4,7 @@ import { approvalEdit } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, type OutMessage, outButtonsSchema } from "../digest/message";
 import { textsFor } from "../texts";
 
-import type { NoticeKind, NoticeRenderOptions } from "./kinds";
+import type { NoticeDetail, NoticeKind, NoticeRenderOptions } from "./kinds";
 import { type NoticeRenderer, noticeRenderers } from "./renderers";
 
 export type NoticeRenderResult = { ok: true; message: OutMessage } | { ok: false };
@@ -16,7 +16,10 @@ export function renderNotice(kind: NoticeKind, view: unknown, opts: NoticeRender
   const parsed = renderer.schema.safeParse(view);
   if (!parsed.success) return { ok: false };
   // A channel with no renderer (mail, before its renderer existed) never renders: the caller treats it as a bad view.
-  const render = renderer[opts.channel]?.[opts.detail];
+  // Only Telegram has a `minimal` render: a mail or push row with that detail never renders.
+  const byDetail: Partial<Record<NoticeDetail, (view: unknown, opts: NoticeRenderOptions) => OutMessage>> | undefined =
+    renderer[opts.channel];
+  const render = byDetail?.[opts.detail];
   if (render === undefined) return { ok: false };
   let message: OutMessage;
   try {
@@ -32,17 +35,27 @@ export function renderNotice(kind: NoticeKind, view: unknown, opts: NoticeRender
 export type NoticeEditInput = Parameters<typeof approvalEdit>[0];
 
 export const noticeEditRenderers: {
-  telegram: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
+  telegram: {
+    full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage;
+    minimal: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage;
+  };
   mail?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
   push?: { full: (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage };
 } = {
-  telegram: { full: (input, opts) => approvalEdit(input, textsFor(opts.locale)) },
+  // The edit holds the stored text of a card that is already in the chat plus one status line. `minimal` has no button (plan D12).
+  telegram: {
+    full: (input, opts) => approvalEdit(input, textsFor(opts.locale)),
+    minimal: (input, opts) => ({ ...approvalEdit(input, textsFor(opts.locale)), buttons: [] }),
+  },
 };
 
 // The edited message after a tap: the stored text of the card plus one status line. Throws like approvalEdit, and for a
 // channel that has no cards (mail).
 export function renderNoticeEdit(input: NoticeEditInput, opts: NoticeRenderOptions): OutMessage {
-  const render = noticeEditRenderers[opts.channel]?.[opts.detail];
+  const byDetail:
+    | Partial<Record<NoticeDetail, (input: NoticeEditInput, opts: NoticeRenderOptions) => OutMessage>>
+    | undefined = noticeEditRenderers[opts.channel];
+  const render = byDetail?.[opts.detail];
   if (render === undefined) throw new Error(`no card edit for channel ${opts.channel}`);
   return render(input, opts);
 }
