@@ -11,7 +11,7 @@ import {
 } from "@ea/core";
 
 import { isLlmError, type LlmClient, llmErrorCode, LlmOutputError, type LlmUsage } from "../../platform/llm";
-import { prompts } from "../triage";
+import { type DrafterPrompt, prompts } from "../triage";
 
 // One model call. The caller writes one `llm.call` row for each, so every call counts in the daily cap, also a call
 // that gave no usable answer. `outcome` is `ok` (the answer was read, whatever the checks said), `bad_output` (the
@@ -63,13 +63,14 @@ function allowedOf(input: DrafterInput): string[] {
  * prompt names the failure codes, never the failed text.
  * `maxCalls` (1 or 2, default 2) is the spend that the caller still has: with 1 there is no retry, and a first answer
  * that fails the checks ends the call as failed.
+ * `prompt` is the production prompt (`prompts.drafter`); only the drafter eval passes another version.
  */
 export async function draftReply(
   llm: LlmClient,
   input: DrafterInput,
-  opts: { maxCalls?: number } = {}
+  opts: { maxCalls?: number; prompt?: DrafterPrompt } = {}
 ): Promise<DrafterResult> {
-  const prompt = prompts.drafter;
+  const prompt = opts.prompt ?? prompts.drafter;
   const allowed = allowedOf(input);
   const maxCalls = Math.min(DRAFTER_MAX_CALLS, Math.max(1, Math.floor(opts.maxCalls ?? DRAFTER_MAX_CALLS)));
   const attempts: DrafterAttempt[] = [];

@@ -115,6 +115,10 @@ export {
   classifierV3Parts,
   classifierVersionIds,
   classifierVersions,
+  drafterVersionIds,
+  drafterVersions,
+  judgeVersionIds,
+  judgeVersions,
   optionalParts,
   productionClassifierChoice,
   prompts,
@@ -127,6 +131,10 @@ export type {
   ClassifierPromptChoice,
   ClassifierV3Part,
   ClassifierVersion,
+  DrafterPrompt,
+  DrafterVersion,
+  JudgePrompt,
+  JudgeVersion,
   PromptEntry,
 } from "./prompts";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
