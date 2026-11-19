@@ -42,3 +42,8 @@ Plain list for the owner. Each item says what to do, why, and what waits for it.
 - **Undo:** turn the switch off in the panel (this deletes the stored sent mail), or tell the coordinator to turn the flag off.
 - **What waits:** only F104 (the last stage). F116 open loops work without it, but see less.
 - **Added:** 2026-11-16.
+
+## Update 2026-11-19 (owner answers)
+
+- Item 1 (F111 O2): the owner uses LM Studio, not Ollama. `localhost:1234` serves `bielik-11b-v3.1-instruct` and `gemma-3-12b-it`. Done: F111 stage 05 runs on it. No owner step left.
+- Item 3 (F114 U1): the `age` key is on the PC at `~/.config/ea-backup/age-key.txt`. U1 done. U2 (Healthchecks URL) and U3 (operator Telegram group) stay with the owner.
