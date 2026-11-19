@@ -7,6 +7,7 @@ import {
   isOwnMailOf,
   mailOAuthRuntime,
   sendScope,
+  senderProfileReader,
   settingsDeps,
   trustEvidenceOf,
   uidplusOf,
@@ -284,6 +285,7 @@ if (scope !== null) {
     runningKey: gate.runningKey,
     trustedAuthservIds: mailTrustedAuthservIds(config),
     now: () => new Date(),
+    readProfile: senderProfileReader({ db, credentialsKey: config.CREDENTIALS_KEY, now: () => new Date() }),
     onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
   });
   scheduler.add("triage.worker", "*/15 * * * * *", () => {

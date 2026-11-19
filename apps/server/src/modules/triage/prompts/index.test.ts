@@ -61,9 +61,10 @@ describe("prompt registry", () => {
       attachments: [{ name: "plan.pdf", type: "application/pdf", size: 10 }],
       isList: true,
       senderHistory: { days: 30, received: 12, corrections: { info: 2 } },
+      senderProfile: null,
       urgency: { today: "2026-11-18", topics: [{ label: "Audit", keywords: ["audit"] }], deadlines: [] },
     };
-    const empty = { attachments: [], isList: false, senderHistory: null, urgency: null };
+    const empty = { attachments: [], isList: false, senderHistory: null, senderProfile: null, urgency: null };
     for (const id of classifierVersionIds) {
       const entry = classifierVersions[id];
       const build = (value: typeof extras | typeof empty) =>
