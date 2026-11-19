@@ -30,7 +30,9 @@ export function imageSources(html: string): string[] {
   const sources: string[] = [];
   const text = (value: string | undefined): string => (value ?? "").replaceAll("&amp;", "&");
   for (const style of html.matchAll(STYLE_ELEMENT)) sources.push(...cssImageSources(style[1] ?? ""));
-  for (const tag of html.replace(RAW_TEXT_ELEMENT, (element) => element.slice(0, element.indexOf(">") + 1)).matchAll(TAG)) {
+  for (const tag of html
+    .replace(RAW_TEXT_ELEMENT, (element) => element.slice(0, element.indexOf(">") + 1))
+    .matchAll(TAG)) {
     const name = (tag[1] ?? "").toLowerCase();
     const attributes = new Map<string, string>();
     for (const attribute of (tag[2] ?? "").matchAll(ATTRIBUTE)) {
@@ -54,7 +56,8 @@ export function imageSources(html: string): string[] {
       takeSrcset();
     } else if (name === "video") take("poster");
     else if (name === "link" && ICON_REL.test(attributes.get("rel") ?? "")) take("href");
-    else if (name === "meta" && IMAGE_META.test(attributes.get("property") ?? attributes.get("name") ?? "")) take("content");
+    else if (name === "meta" && IMAGE_META.test(attributes.get("property") ?? attributes.get("name") ?? ""))
+      take("content");
     const style = attributes.get("style");
     if (style !== undefined) sources.push(...cssImageSources(style));
   }

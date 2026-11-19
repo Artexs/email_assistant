@@ -5,7 +5,8 @@ import { dirname, join } from "node:path";
 
 import { checkImages, cssImageSources, imageSources } from "./image-check";
 
-const html = (body: string, head = "") => `<!doctype html><html><head><title>t</title>${head}</head><body>${body}</body></html>`;
+const html = (body: string, head = "") =>
+  `<!doctype html><html><head><title>t</title>${head}</head><body>${body}</body></html>`;
 
 describe("imageSources", () => {
   test("reads img src, every srcset entry, source, poster, icon links, image meta and CSS url() of images", () => {
@@ -19,9 +20,11 @@ describe("imageSources", () => {
     );
   });
   test("a CSS url() of a font or a data URI is not an image source", () => {
-    expect(cssImageSources(`@font-face{src:url(/f.woff2)} a{background:url(data:image/png;base64,AAA)} b{background:url("/x.png?v=1")}`)).toEqual([
-      "/x.png?v=1",
-    ]);
+    expect(
+      cssImageSources(
+        `@font-face{src:url(/f.woff2)} a{background:url(data:image/png;base64,AAA)} b{background:url("/x.png?v=1")}`
+      )
+    ).toEqual(["/x.png?v=1"]);
   });
 });
 
@@ -56,7 +59,12 @@ describe("checkImages", () => {
     expect(checkImages(dir).checked).toBe(5);
   });
   test("T5 the second srcset entry, a poster and a CSS url() outside the allowed places each fail", () => {
-    put("index.html", html(`<img srcset="/email_assistant/shots/a.png 1x, /email_assistant/x.png 2x" src="/email_assistant/shots/a.png">`));
+    put(
+      "index.html",
+      html(
+        `<img srcset="/email_assistant/shots/a.png 1x, /email_assistant/x.png 2x" src="/email_assistant/shots/a.png">`
+      )
+    );
     expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/x.png");
     put("index.html", html(`<video poster="/email_assistant/x.jpg"></video>`));
     expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/x.jpg");
