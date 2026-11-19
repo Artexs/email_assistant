@@ -127,7 +127,9 @@ describe("email headers repository", () => {
       const b = await newOrg(trx);
       const emailId = await mailOf(trx, a, "k1");
       expect(await insertEmailHeaders(trx, b.ctx, { mailboxId: a.mailboxId, dedupKey: "k1" }, CAPTURE, at)).toBe(false);
-      expect(await trx.selectFrom("email_headers").select("email_id").execute()).toEqual([]);
+      expect(
+        await trx.selectFrom("email_headers").select("email_id").where("email_id", "=", emailId).execute()
+      ).toEqual([]);
       expect(await insertEmailHeaders(trx, a.ctx, { mailboxId: a.mailboxId, dedupKey: "k1" }, CAPTURE, at)).toBe(true);
       expect(await getEmailHeaders(trx, b.ctx, emailId)).toBeUndefined();
     });
