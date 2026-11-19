@@ -31,13 +31,19 @@ All numbers are over the drafts of the dev part (81 `needs_reply` cases, 1 skipp
 3. **Dev numbers against the bars (final text, low effort):** code checks 100% (pass), planted strings 0 (pass), invented commitment 1 (bar 0: fail), send as is 64% (bar 80%: fail), `needs_facts` share 2 of 80 (inside the 30% line). Cost per draft about $0.0007.
 4. **Gemini quota.** The judge key answered 429 often during the holdout run (78 retries by 164 cases). A full holdout run then takes about 45 minutes at 12 rpm plus retries.
 
-## Holdout run: NOT complete
+## Holdout run: NOT complete (blocked by the Gemini quota)
 
-- Command (resumes from the saved state): `bun run eval --sim lab-01 --part holdout --drafter --judge --model gpt-6-luna --reasoning-effort low --judge-provider gemini --budget-usd 1 --out evals/results/2026-11-19-sim-lab-01-holdout-gpt-6-luna-drafter-v1-reply.md`. The state file `evals/.runs/gpt-6-luna-low-drafter-v1-drafter-sim-lab-01-v1-holdout.jsonl` (gitignored; copy in `.f115s14-logs/holdout-partial-state.jsonl`) holds 171 of 260 results. Cases whose judge call failed (13) run again on resume.
-- I stopped the process by its PID when the time ran out. The spend ledger got no line for the part of the run that was done (about $0.1 to $0.2, unrecorded). The stale lock file was removed.
-- Counts only of the 171 partial results (completion order, not a clean prefix, no gate file): 164 drafts, 7 `no_draft` (all `needs_facts`), 0 failed, 0 planted strings in a draft; of 151 graded drafts, 97 send as is (64%) and 5 with `no_invented_commitment` false; 13 judge errors.
-- The gate file `evals/results/gate/drafter-drafter-v1-gpt-6-luna-low-lab-01-v1.json` does not exist yet. A resume run writes it and the report.
+- Resume command (same state file; `--judge-rpm 8 --concurrency 4` lowers the 429 rate; `--budget-usd 1`): `bun run eval --sim lab-01 --part holdout --drafter --judge --model gpt-6-luna --reasoning-effort low --judge-provider gemini --judge-rpm 8 --concurrency 4 --budget-usd 1 --out evals/results/2026-11-19-sim-lab-01-holdout-gpt-6-luna-drafter-v1-reply.md`. It reads `evals/.runs/gpt-6-luna-low-drafter-v1-drafter-sim-lab-01-v1-holdout.jsonl` (gitignored; copy `.f115s14-logs/holdout-partial-state2.jsonl`: 171 unique results, 158 complete, 13 with a judge error that run again). It writes the report and the gate file `evals/results/gate/drafter-drafter-v1-gpt-6-luna-low-lab-01-v1.json`.
+- Cause, verified by a direct API call at about 12:10 on 2026-11-19: the Gemini free tier answers 429 for `gemini-3.5-flash-lite`: "Generate content requests per day limit exceeded on Free Tier, limit: 500", "retry in 21h10m". The daily quota resets at about 09:15 CET on 2026-11-20. The only other priced Gemini judge model, `gemini-3.8-flash`, answered 503 "high demand" or hung (timeout 25 s) on every probe for 20 minutes. Another judge model needs an `llmPrices` row; I did not invent one. The drafter provider (OpenAI) cannot also be the judge (PD-026).
+- The dev runs, the first holdout run and the injection run used the 500 requests of the day. Retries count as requests.
+- Ledger: the killed first holdout run is written to the ledger as $0.1028 (token cost of its 171 state results; 429-failed attempts are not billed). The second, resumed attempt added no completed grade; it was stopped by PID.
+- Counts only of the 171 partial results (completion order, not a clean prefix; no gate file): 164 drafts, 7 `no_draft` (all `needs_facts`), 0 failed, 0 planted strings in a draft; of 151 graded drafts, 97 send as is (64%) and 5 with `no_invented_commitment` false; 13 judge errors.
 
-## Not verified in this job
+## Injection run: drafts made, 10 of 14 not graded
 
-See the final message of the job: which parts of the PROOF chain ran.
+- Report `evals/results/2026-11-19-reply-injection-gpt-6-luna-drafter-v1-reply.md`: 4 `no_draft` (pass), 10 drafts with no grade (judge 429), 0 planted strings in a draft. The 100% bar is NOT measured.
+- To finish after the quota reset: `bun run eval --set reply-injection --drafter --judge --model gpt-6-luna --reasoning-effort low --judge-provider gemini --judge-rpm 8 --concurrency 4 --budget-usd 1 --out evals/results/2026-11-19-reply-injection-gpt-6-luna-drafter-v1-reply.md` (it drafts and grades the 10 cases again).
+
+## Judge gain numbers (E2a, for the style-from-Sent ticket)
+
+Every drafter report has `### Judge gain over the code checks`: the drafts that passed all code checks, how many the judge still flags, and the 0/1/2 counts and mean of each score (`tone_fits`, `form_of_address`, `answers_every_question`). The dev report is the baseline (tone, facts) a later style change is measured against. The holdout report will hold the same section after the resume.
