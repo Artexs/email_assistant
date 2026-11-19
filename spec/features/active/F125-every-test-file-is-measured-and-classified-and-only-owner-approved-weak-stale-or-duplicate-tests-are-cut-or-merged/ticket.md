@@ -6,7 +6,7 @@ opened: 2026-11-14
 
 ## Outcome
 
-The owner gets one report that classifies the about 3,950 test cases of the repo, with evidence for each candidate: its time, what it asserts, whether it catches a code change that no other test catches, and its duplicates. The owner approves groups of candidates. Only the approved groups are then cut, merged into table tests or rewritten, each with a before/after proof that nothing the suite caught is lost. A short test-quality rule in the agent styleguide stops new weak tests.
+The owner gets one report that classifies the at least 12,800 test cases of the repo (7,030 unit, about 5,500 integration and about 230 browser cases), with evidence for each candidate: its time, what it asserts, whether it catches a code change that no other test catches, and its duplicates. The owner approves groups of candidates. Only the approved groups are then cut, merged into table tests or rewritten, each with a before/after proof that nothing the suite caught is lost. A short test-quality rule in the agent styleguide stops new weak tests.
 
 ## Scope
 

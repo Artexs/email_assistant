@@ -52,3 +52,5 @@ Stage 01–03 files and tests (`compose-lib.sh` `ea_env_split_state`, `check-ser
 ## Proof
 
 The chain of [`../plan.md`](../plan.md) § Proof with `sNN` = `s05`; it ends with `PROOF_OK`.
+
+F139 note (plan review N3): this stage may change the shared new-host fixture of `deploy/test/restore.test.ts` to a split-env host, but not the bodies of the F139 tests 1–5.
