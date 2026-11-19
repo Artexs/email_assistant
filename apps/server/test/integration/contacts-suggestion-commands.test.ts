@@ -659,4 +659,21 @@ describe("acceptSuggestion: the sender is protected now", () => {
       });
     }
   });
+  test("25 a domain row and a recent Sent mail to a subdomain address: Accept answers not_available; with no such mail it is accepted", async () => {
+    for (const wroteToSubdomain of [false, true]) {
+      await withRollback(db, async (trx) => {
+        const org = await suggestOrg(trx);
+        await withSentCoverage(trx, org);
+        const spam = [3, 4, 5].map((day) => ({ at: ago(day), category: "spam" as const }));
+        for (const address of ["x@acme.pl", "y@acme.pl"]) await seed(trx, org, address, spam);
+        if (wroteToSubdomain) await seed(trx, org, "z@mail.acme.pl", [], [{ at: ago(1), to: ["z@mail.acme.pl"] }]);
+        const id = await insertSuggestion(trx, org, { value: "@acme.pl", scope: "domain", kind: "blocklist" });
+        if (wroteToSubdomain) {
+          await expectWithdrawn(trx, org, id);
+        } else {
+          expect(await acceptSuggestion(deps(trx), org.ctx, cmd(org, id))).toBe("accepted");
+        }
+      });
+    }
+  });
 });

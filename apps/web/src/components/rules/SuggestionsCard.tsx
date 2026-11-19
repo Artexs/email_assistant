@@ -8,6 +8,7 @@ import { kindTitles } from "../../lib/rules-view";
 import {
   acceptOutcome,
   dismissOutcome,
+  focusHeadingAfterReload,
   pickMailbox,
   reasonLines,
   suggestionActionPath,
@@ -109,10 +110,10 @@ function MailboxSuggestions({
   const heading = useRef<HTMLDivElement>(null);
   const moveFocus = useRef(false);
   useEffect(() => {
-    if (!moveFocus.current) return;
+    const wanted = moveFocus.current;
     moveFocus.current = false;
-    heading.current?.focus();
-  }, [data]);
+    if (focusHeadingAfterReload(wanted, error)) heading.current?.focus();
+  }, [data, error]);
 
   // The card shows once the first answer is in: with the flag off it never shows, and it does not flash.
   if (gone || (data === null && (error === null || loading))) return null;

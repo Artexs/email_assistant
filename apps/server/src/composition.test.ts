@@ -51,6 +51,18 @@ describe("the history job is wired in main.ts", () => {
   });
 });
 
+describe("the triage job gets the profile reader in main.ts (F120 stage 11)", () => {
+  const main = read("main.ts");
+
+  test("createTriageJob gets readProfile from senderProfileReader with the credentials key", () => {
+    const start = main.indexOf("createTriageJob({");
+    expect(start).toBeGreaterThan(-1);
+    expect(main.split("createTriageJob({")).toHaveLength(2);
+    const call = main.slice(start, main.indexOf("\n  });", start));
+    expect(call).toContain("readProfile: senderProfileReader({ db, credentialsKey: config.CREDENTIALS_KEY,");
+  });
+});
+
 describe("the sender profile job is wired in main.ts", () => {
   const main = read("main.ts");
 

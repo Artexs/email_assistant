@@ -101,8 +101,8 @@ async function isActiveMailbox(trx: Transaction<DB>, ctx: TenantContext, mailbox
 
 // Is the sender of the open row protected now? Read before the row lock, so the lock is held only for the writes. The row is read
 // without a lock first; a row that is not open, has no pattern, or sits in a mailbox that is not `active` is not checked (the
-// locked part answers it). A sender that turns protected between this read and the lock is not caught: the profile pass withdraws
-// the row within the hour.
+// locked part answers it). A sender that turns protected between this read and the lock is not caught: for example, a delegate
+// that commits while Accept waits for the row lock is not seen, so the rule is made and stays. It is not withdrawn within the hour.
 async function protectedNow(deps: SuggestionDeps, ctx: TenantContext, id: string, now: Date): Promise<boolean> {
   if (!(await senderFlags(deps.db, ctx)).suggestions) return false;
   const row = await lockRow(deps.db, ctx, id, false);

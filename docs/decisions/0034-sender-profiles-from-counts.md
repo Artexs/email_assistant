@@ -1,7 +1,7 @@
 # 0034 — Sender profiles hold counts under a keyed hash, never mail text
 
-- Status: proposed (E11 discovery, 2026-11-13; `docs/product/stage-2/epics/E11-contacts-and-context.md` § Discovery)
-- Date: 2026-11-13
+- Status: accepted (F120, 2026-11-19), with the amendment below. Proposed in the E11 discovery, 2026-11-13 (`docs/product/stage-2/epics/E11-contacts-and-context.md` § Discovery).
+- Date: 2026-11-13; accepted 2026-11-19
 
 ## Context
 
@@ -24,3 +24,13 @@ Today the system keeps no data per sender beyond the rules and delegates the use
 - The hash limits what a dump or an export shows. It is still personal data (pseudonymised, GDPR Art. 4(5)); the records of processing (S6e) list it.
 - The org secret becomes one more key to keep. If it is lost or rotated, the profiles are rebuilt from the 30-day pass of the history check (ADR 0028) and new mail; nothing is lost that cannot be derived again.
 - `docs/architecture.md` §5 (data model) and §7 (retention table) get the new table when E11a lands.
+
+## Amendment (F120, 2026-11-19)
+
+The build changed three points of the decision. The rest holds as written.
+
+1. **Address rows only (point 1; decision D2 of F120).** `sender_profiles` has one row for each mailbox and sender address, and no row for a sender domain. The domain counts that a suggestion needs live in memory during the profile pass. Reason: no reader needs a stored domain row, and fewer stored rows means less personal data. A domain suggestion (`sender_suggestions`, scope `domain`) holds its domain only while it is open.
+2. **The key (point 1; decision D3).** `key_hash` is HMAC-SHA256 with a key that HKDF derives from `CREDENTIALS_KEY`, and the organization id is part of the message (`senderKeyHash`, `apps/server/src/platform/crypto.ts`). The text "org secret" now means this derived key: there is no new secret and no link between organizations. A change of `CREDENTIALS_KEY` orphans the stored rows (the next pass writes new ones); they age out by retention, and a data-request erase cannot find them. This replaces the line in Consequences that the profiles are rebuilt from a secret that is lost or rotated: the rebuild is the next hourly pass, and the old rows stay until retention deletes them.
+3. **Recompute instead of increments (decision D1).** A profile is a derived snapshot. The hourly job `contacts.refresh` recomputes every row of a mailbox from the stored mail, Sent mail, flags and feedback of the last 90 days in one transaction, and writes only the rows that changed. Reason: increments cannot keep a rolling window, and a recompute is idempotent and safe after a crash. The 12-month retention of point 5 counts from the newest of `last_seen_at` and `last_user_mail_at`. Point 6 was not used: the table of E11a is the only one, and E3b built no minimal form of it.
+
+The capability page is `docs/capabilities/sender-context.md`.

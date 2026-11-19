@@ -775,6 +775,52 @@ Roll back the code, not the migrations. Do not run `db:rollback` on a live datab
 4. What stays: report mails already in INBOX (the old sync has no own-mail check for them and may triage one that it has not read yet), stored history mail (normal retention), and unsubscribe requests already sent. A later F110 start finds a policy with no `grant` and stamps it `legacy` again.
 5. The migrations by name, for a development database or a restored backup only (newest first, one `bun run db:rollback` each; the three migrations above are not the only ones after `trust_ladder`, so it cannot be rolled back alone): `20261117140001_unsubscribe_data.sql` drops `unsubscribe_requests` and `email_headers.list_unsubscribe_post`; `20261117120001_history_model_failing.sql` rewrites the reason `model_failing` to `stopped`; `20261115180001_trust_ladder.sql` drops the three trust tables and the four `memberships` columns. A broken migration gets a forward fix in a patch release or a restore from backup.
 
+## Sender context (F120)
+
+Capability page: `docs/capabilities/sender-context.md` (rules, limits, tests). The assistant keeps a count-only profile of each sender of a mailbox, under a keyed hash. Three feature flags carry it (default off, epic `E11a`, remove-by 2027-06-01): `sender_context`, `contact_wait` and `sender_suggestions`. The last two do nothing unless `sender_context` is on. The retention job and the data-request erase run in every organization with no flag.
+
+### Release
+
+1. Release with every flag off (`docs/release-checklist.md`). The migration `20261118120001_sender_context.sql` only adds things (two tables, one column, one value in a CHECK list): the old release runs on the new schema until step 1 of Roll back.
+2. Do not move the classifier prompt in the same release: `classifier-v4` has no win and the pointer stays `classifier-v2`.
+
+### Turn the flags on
+
+One flag at a time, one pilot organization first: `$C run --rm cli bun run org:flag --org-id <uuid> --flag <key> --on` (`--off` turns it off). The order:
+
+1. `sender_context`. The job `contacts.refresh` runs hourly at minute 7. To run it now: `$C run --rm cli bun run job:run contacts.refresh`. Wait one day. Check: `bash deploy/logs.sh --since 24h --event contacts_refresh_done` shows one line for each mailbox and hour with a small `duration_ms`, and `bash deploy/logs.sh --since 24h --event contacts_refresh_mailbox_failed` shows no line. The sender line in Activity and Approvals shows now.
+2. `contact_wait`. New open loops get the wait of their contact. Old loops keep their date.
+3. `sender_suggestions` last, on the word of the owner (it is the visible part). A blocklist suggestion needs `sent_sync` (current Sent coverage). The Rules page shows the Suggestions card and the weekly report gets one line.
+
+The known domains for the look-alike rule need `sender_context` and `suspicious_mail`. `suspicious_mail` stays off by the owner decision of 2026-11-15; with it on, the rule can add `lookalike_domain` to mail that was clean before, and that reason blocks drafts and follow-ups.
+
+`FEATURES_OFF=<key,key>` in `.env` plus `$C up -d server` forces flags off for every organization.
+
+### Roll back
+
+Roll back the code, not the migration. Do not run `db:rollback` on a live database: its down part drops both tables and the column `open_loops.usual_reply_days` (after it sets every `contact` loop to `default`). The old code ignores the two tables and the new column, but two things in the new data break it:
+
+- The old code reads `open_loops.due_source` as a strict enum of `stated` and `default` (`toLoopRow`, `loopItemSchema`). A loop with `contact` makes it throw.
+- The view schema of a `weekly_report` outbox row is strict. A pending row that holds the key `suggestions` makes the old notice sender throw, and the old `claimDueOutbox` claims the whole batch first, so one such row blocks the notice sender of every organization. This is the only strict view schema that F120 changed: the digest view keeps the rendered text, the loop ids and the line numbers, so the "usual reply" suffix of the brief adds no view key (`apps/server/src/sender-context-docs.test.ts` checks the list).
+
+1. Turn the flags off, in this order: `sender_suggestions`, `contact_wait`, `sender_context` (`org:flag --off`, or `FEATURES_OFF`).
+2. Stop the server. Then, before the old image starts, run this once (it is safe to run twice):
+
+   ```sh
+   $C stop server
+   $C exec -T db psql -U postgres -d email_assistant <<'SQL'
+   UPDATE open_loops SET due_source = 'default', usual_reply_days = NULL WHERE due_source = 'contact';
+   UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL
+   WHERE status IN ('pending', 'sending') AND kind = 'weekly_report' AND view ? 'suggestions';
+   SQL
+   ```
+
+   The due date of each loop stays as it was. A sent or failed `weekly_report` row is not read again, so it needs no change.
+
+3. Run `deploy/rollback.sh` (§ Roll back a release).
+4. What stays: both tables, with their rows (the old code has no job that reads or deletes them). While the old release runs, its data-request erase does not know the tables, so it leaves the profiles of the person: erase again after the new release is back. A later start finds the profiles and ages them out by the 12-month rule.
+5. The migration by name, for a development database or a restored backup only: `20261118120001_sender_context.sql` (one `bun run db:rollback`). A broken migration gets a forward fix in a patch release or a restore from backup.
+
 ## Reboot
 
 Run once: `sudo systemctl enable docker`.

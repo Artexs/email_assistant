@@ -91,6 +91,22 @@ describe("classifier-v4 prompt", () => {
     }
   });
 
+  test("5. the profile rule line is the last line of the system text, after the v3 rule lines, and only with the part", () => {
+    const profileRule = (system: string) =>
+      system.split("\n").filter((line) => line.startsWith("- The sender profile gives"));
+    for (const parts of [["profile"], ["list", "profile"], ["urgency", "history", "list", "profile"]] as const) {
+      const system = v4.buildSystem(classifierCategories, parts);
+      const lines = system.split("\n");
+      expect(profileRule(system)).toHaveLength(1);
+      expect(lines[lines.length - 1]).toBe(profileRule(system)[0] as string);
+      // Before the rule: the v3 text of the same parts without `history` (the profile replaces it).
+      const v3Parts = parts.filter((part) => part !== "profile" && part !== "history") as ClassifierV3Part[];
+      expect(system).toBe(`${v3.buildSystem(classifierCategories, v3Parts)}\n${profileRule(system)[0]}`);
+    }
+    expect(profileRule(v4.buildSystem(classifierCategories, ["list", "history"]))).toEqual([]);
+    expect(profileRule(v4.buildSystem(classifierCategories, []))).toEqual([]);
+  });
+
   test("the part list sorts, and the label names the version", () => {
     expect(optionalParts(["profile", "list", "attachments"])).toEqual(["list", "profile"]);
     expect(promptLabel({ version: "classifier-v4", parts: ["profile", "list"] })).toBe("classifier-v4[list,profile]");

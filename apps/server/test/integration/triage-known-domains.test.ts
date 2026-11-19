@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
-import { sentRecipientDomains } from "../../src/modules/mail";
+import { SENT_RECIPIENT_MAX_MAILS, sentRecipientDomains } from "../../src/modules/mail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { configureFeatures, setOrgFeature } from "../../src/modules/tenancy";
 import {
@@ -502,6 +502,46 @@ describe("the Sent domain list in detail", () => {
         await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since, minMails: 1, limit: 10, maxMails: 2 })
       ).toEqual([{ domain: "neu.pl", mails: 2 }]);
       expect(await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since, minMails: 1, limit: 10 })).toHaveLength(2);
+    });
+  });
+
+  test("the default read is the newest 5000 mails: older mail beyond that count is not read", async () => {
+    expect(SENT_RECIPIENT_MAX_MAILS).toBe(5000);
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      await sentTo(trx, s, ["a@alt.pl"], { days: 60 });
+      await sentTo(trx, s, ["a@alt.pl"], { days: 60 });
+      await seedSenderActivity(trx, s.ctx, s.mailboxId, {
+        sent: Array.from({ length: SENT_RECIPIENT_MAX_MAILS }, () => ({ at: ago(2), to: ["a@neu.pl"] })),
+      });
+      const read = await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since: ago(90), minMails: 1, limit: 10 });
+      expect(read).toEqual([{ domain: "neu.pl", mails: SENT_RECIPIENT_MAX_MAILS }]);
+    });
+  }, 60_000);
+
+  test("the 90 day window reads sent_at, not internal_date", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await scene(trx);
+      // Written long ago (`sent_at`) and stored lately (`internal_date`): outside the window.
+      await sentTo(trx, s, ["a@old.pl"], { days: 100 });
+      await sentTo(trx, s, ["a@old.pl"], { days: 100 });
+      await trx
+        .updateTable("sent_emails")
+        .set({ internal_date: ago(1) })
+        .where("mailbox_id", "=", s.mailboxId)
+        .execute();
+      // Written lately (`sent_at`) and stored long ago (`internal_date`): inside the window.
+      await sentTo(trx, s, ["a@new.pl"], { days: 3 });
+      await sentTo(trx, s, ["a@new.pl"], { days: 3 });
+      await trx
+        .updateTable("sent_emails")
+        .set({ internal_date: ago(100) })
+        .where("mailbox_id", "=", s.mailboxId)
+        .where("sent_at", ">", ago(10))
+        .execute();
+      expect(await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since: ago(90), minMails: 1, limit: 10 })).toEqual([
+        { domain: "new.pl", mails: 2 },
+      ]);
     });
   });
 });
