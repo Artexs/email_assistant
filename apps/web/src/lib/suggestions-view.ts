@@ -48,6 +48,17 @@ export function suggestionsGone(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404;
 }
 
+// The mailboxes whose list may show and the one that shows now. A mailbox whose list answered 404 (the flag is off, or the mailbox is
+// gone) is left out, the others stay; the chosen one wins while it is in; else the first one. No mailbox left: no card.
+export function pickMailbox<T extends { id: string }>(
+  mailboxes: readonly T[],
+  gone: ReadonlySet<string>,
+  chosen: string | null
+): { open: T[]; mailbox: T | undefined } {
+  const open = mailboxes.filter((item) => !gone.has(item.id));
+  return { open, mailbox: open.find((item) => item.id === chosen) ?? open[0] };
+}
+
 export interface ActionOutcome {
   toast: { kind: "success" | "error"; key: TextKey } | null;
   // The list of suggestions loads again.

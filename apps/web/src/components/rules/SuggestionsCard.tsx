@@ -1,5 +1,5 @@
 import { suggestionListSchema, suggestionResultSchema, type MailboxView, type SuggestionItem } from "@ea/core/web";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { t } from "../../i18n";
@@ -8,6 +8,7 @@ import { kindTitles } from "../../lib/rules-view";
 import {
   acceptOutcome,
   dismissOutcome,
+  pickMailbox,
   reasonLines,
   suggestionActionPath,
   suggestionsGone,
@@ -84,7 +85,7 @@ interface MailboxSuggestionsProps {
   onChoose(id: string): void;
   isOwner: boolean;
   isOwnerRole: boolean;
-  onGone(): void;
+  onGone(mailboxId: string): void;
   onRulesChanged(): void;
 }
 
@@ -100,16 +101,28 @@ function MailboxSuggestions({
   const { data, error, loading, reload } = useResource(() => api(suggestionsPath(mailbox.id), suggestionListSchema));
   const [pendingId, setPendingId] = useState<string | null>(null);
   const gone = suggestionsGone(error);
+  const mailboxId = mailbox.id;
   useEffect(() => {
-    if (gone) onGone();
-  }, [gone, onGone]);
+    if (gone) onGone(mailboxId);
+  }, [gone, mailboxId, onGone]);
+  // After an Accept or a Dismiss the row that held the focus is gone: the focus moves to the heading of the card, not to the page.
+  const heading = useRef<HTMLDivElement>(null);
+  const moveFocus = useRef(false);
+  useEffect(() => {
+    if (!moveFocus.current) return;
+    moveFocus.current = false;
+    heading.current?.focus();
+  }, [data]);
 
   // The card shows once the first answer is in: with the flag off it never shows, and it does not flash.
   if (gone || (data === null && (error === null || loading))) return null;
 
   const apply = (outcome: ActionOutcome) => {
     if (outcome.toast !== null) toast[outcome.toast.kind](t(outcome.toast.key));
-    if (outcome.reload) reload();
+    if (outcome.reload) {
+      moveFocus.current = true;
+      reload();
+    }
     if (outcome.rulesChanged) onRulesChanged();
   };
   const act = async (item: SuggestionItem, action: SuggestionAction) => {
@@ -127,7 +140,9 @@ function MailboxSuggestions({
   return (
     <Card data-card="suggestions">
       <CardHeader>
-        <CardTitle>{t("sg_title")}</CardTitle>
+        <CardTitle ref={heading} tabIndex={-1} className="outline-none">
+          {t("sg_title")}
+        </CardTitle>
         <p className="text-sm text-muted-foreground">{t("sg_help")}</p>
         {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("sg_member_note")}</p>}
       </CardHeader>
@@ -173,19 +188,20 @@ export interface SuggestionsCardProps {
 
 export function SuggestionsCard({ mailboxes, isOwner, isOwnerRole, onRulesChanged }: SuggestionsCardProps) {
   const [chosen, setChosen] = useState<string | null>(null);
-  const [gone, setGone] = useState(false);
-  // Derived in render: a mailbox that left the list falls back to the first one.
-  const mailbox = mailboxes.find((item) => item.id === chosen) ?? mailboxes[0];
-  if (mailbox === undefined || gone) return null;
+  // The mailboxes whose list answered 404 (the flag is off, or the mailbox is gone): each is left out, the others stay.
+  const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
+  const markGone = useCallback((id: string) => setGone((previous) => new Set(previous).add(id)), []);
+  const { open, mailbox } = pickMailbox(mailboxes, gone, chosen);
+  if (mailbox === undefined) return null;
   return (
     <MailboxSuggestions
       key={mailbox.id}
-      mailboxes={mailboxes}
+      mailboxes={open}
       mailbox={mailbox}
       onChoose={setChosen}
       isOwner={isOwner}
       isOwnerRole={isOwnerRole}
-      onGone={() => setGone(true)}
+      onGone={markGone}
       onRulesChanged={onRulesChanged}
     />
   );

@@ -54,12 +54,7 @@ interface LockedRow {
 
 // The row of this organization, locked until the end of the transaction: Accept and Dismiss on one row run one after the
 // other, and the profile pass (which updates only a row that is still open) waits for it too.
-async function lockRow(
-  trx: DbOrTrx,
-  ctx: TenantContext,
-  id: string,
-  lock: boolean = true
-): Promise<LockedRow | undefined> {
+async function lockRow(trx: DbOrTrx, ctx: TenantContext, id: string, lock = true): Promise<LockedRow | undefined> {
   if (!UUID.test(id)) return undefined;
   const query = trx
     .selectFrom("sender_suggestions")

@@ -10,6 +10,7 @@ import { ApiError } from "./api";
 import {
   acceptOutcome,
   dismissOutcome,
+  pickMailbox,
   reasonLines,
   suggestionActionPath,
   suggestionsGone,
@@ -47,9 +48,11 @@ describe("reason text", () => {
   test("3 a domain blocklist row names the number of senders; an address row does not", () => {
     expect(
       textOf(item({ kind: "blocklist", scope: "domain", pattern: "@acme.pl", reason: { corrected: 4, senders: 2 } }))
-    ).toBe("You marked 4 mails as spam in 90 days, from 2 senders of this domain, and never wrote to any of them.");
+    ).toBe(
+      "You marked 4 mails from 2 senders of this domain as spam in 90 days and did not write to any of them in that time."
+    );
     expect(textOf(item({ kind: "blocklist", reason: { corrected: 3 } }))).toBe(
-      "You marked 3 mails as spam in 90 days and never wrote to this sender."
+      "You marked 3 mails as spam in 90 days and did not write to this sender in that time."
     );
   });
 
@@ -71,9 +74,30 @@ describe("reason text", () => {
     expect(
       textOf(item({ kind: "blocklist", scope: "domain", pattern: "@acme.pl", reason: { corrected: 4, senders: 2 } }))
     ).toBe(
-      "Oznaczono 4 wiadomości jako spam w ciągu 90 dni, od 2 nadawców z tej domeny, i nigdy nie napisano do żadnego z nich."
+      "W ciągu 90 dni oznaczono jako spam 4 wiadomości od 2 nadawców z tej domeny i w tym czasie nie napisano do żadnego z nich."
     );
-    expect(textOf(item({ kind: "whitelist", reason: { rescued: 2 } }))).toContain("2 wiadomości");
+    expect(textOf(item({ kind: "blocklist", reason: { corrected: 3 } }))).toBe(
+      "W ciągu 90 dni oznaczono jako spam 3 wiadomości od tego nadawcy i w tym czasie nie napisano do niego."
+    );
+    expect(textOf(item({ kind: "whitelist", reason: { rescued: 2 } }))).toBe(
+      "W ciągu 90 dni przeniesiono ze spamu lub z powiadomień albo poprawiono kategorię 2 wiadomości."
+    );
+    expect(
+      textOf(item({ kind: "whitelist", scope: "domain", pattern: "@acme.pl", reason: { rescued: 5, senders: 3 } }))
+    ).toBe(
+      "W ciągu 90 dni przeniesiono ze spamu lub z powiadomień albo poprawiono kategorię 5 wiadomości od 3 nadawców z tej domeny."
+    );
+  });
+
+  test("the Polish chrome texts of the card", () => {
+    setLocaleForTest("pl");
+    expect(t("sg_help")).toBe(
+      "Asystent proponuje te reguły na podstawie Twojej poczty. Nic się nie zmieni, dopóki właściciel nie przyjmie sugestii. Odrzucona sugestia jest ukryta przez 90 dni."
+    );
+    expect(t("sg_empty")).toBe(
+      "Brak sugestii. Pojawiają się, gdy poczta wyraźnie na nie wskazuje: najwyżej 3 na skrzynkę w ciągu 7 dni."
+    );
+    expect(t("sg_dismissed_toast")).toBe("Sugestia ukryta na 90 dni.");
   });
 
   test("a row whose reason lacks its count has no line", () => {
@@ -109,10 +133,16 @@ describe("rows", () => {
     expect(html).toContain('aria-label="Dismiss the suggestion for anna@acme.pl"');
   });
 
+  test("while a tap is pending every button is disabled, so a second tap cannot start (the double-click guard)", () => {
+    const pending = renderToStaticMarkup(<SuggestionRows items={rows} canTap pendingId={rows[0]?.id ?? null} />);
+    expect(pending.match(/<button[^>]*\sdisabled=""/g)).toHaveLength(4);
+    expect(render(true).match(/<button[^>]*\sdisabled=""/g)).toBeNull();
+  });
+
   test("an empty list says when suggestions appear", () => {
     expect(renderToStaticMarkup(<SuggestionRows items={[]} />)).toContain(t("sg_empty"));
     expect(t("sg_empty")).toBe(
-      "No suggestions now. They appear when your mail shows a clear pattern; at most 3 a week."
+      "No suggestions now. They appear when your mail shows a clear pattern: at most 3 per mailbox in 7 days."
     );
   });
 });
@@ -175,6 +205,25 @@ describe("paths and answers", () => {
     expect(dismissOutcome(fail(409, "already"))).toEqual({ toast: null, reload: true, rulesChanged: false });
     expect(dismissOutcome(fail(404, "not_found"))).toMatchObject({ toast: { key: "err_not_found" }, reload: true });
     expect(dismissOutcome(fail(500, "internal")).reload).toBe(false);
-    expect(t("sg_dismissed_toast")).toBe("Hidden for 90 days");
+    expect(t("sg_dismissed_toast")).toBe("Suggestion hidden for 90 days.");
+  });
+});
+
+describe("pickMailbox", () => {
+  const boxes = [{ id: "a" }, { id: "b" }, { id: "c" }];
+
+  test("a mailbox whose list answered 404 is left out and the others stay", () => {
+    expect(pickMailbox(boxes, new Set(["a"]), null)).toEqual({
+      open: [{ id: "b" }, { id: "c" }],
+      mailbox: { id: "b" },
+    });
+    expect(pickMailbox(boxes, new Set(["a"]), "a").mailbox).toEqual({ id: "b" });
+    expect(pickMailbox(boxes, new Set(["a"]), "c").mailbox).toEqual({ id: "c" });
+  });
+
+  test("with no mailbox left there is no card; with none gone the chosen one shows", () => {
+    expect(pickMailbox(boxes, new Set(["a", "b", "c"]), "b")).toEqual({ open: [], mailbox: undefined });
+    expect(pickMailbox(boxes, new Set(), "b").mailbox).toEqual({ id: "b" });
+    expect(pickMailbox([], new Set(), null).mailbox).toBeUndefined();
   });
 });

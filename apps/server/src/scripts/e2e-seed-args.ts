@@ -582,9 +582,10 @@ export const E2E_NEWSLETTER_SENDERS = {
 } as const;
 export const E2E_NEWSLETTER_LINK = "https://unsub.news.example/u?id=42";
 
-// One organization per project for the suggestions spec (`suggestions.spec.ts`). The flags `sender_context` and `sender_suggestions`
-// are on; one mailbox with three open suggestions (see `e2e-suggestion-rows.ts`). The patterns are the identity of the rows; the
-// counts are the reason of each row. The order of the list is the newest first: `vip`, `blocklist`, `whitelist`.
+// One organization per project for the suggestions spec (`suggestions.spec.ts`). The flags `sender_context`, `sender_suggestions` and
+// `sent_sync` are on; one mailbox with three open suggestions and Sent coverage (see `e2e-suggestion-rows.ts`; the spec resets them
+// before each test with `e2e-suggestions.ts`). The patterns are the identity of the rows; the counts are the reason of each row. The
+// order of the list is the newest first: `vip`, `blocklist`, `whitelist`.
 export const E2E_SUGGESTIONS_OWNER_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-suggestions-owner-mobile@x.test",
   desktop: "e2e-suggestions-owner-desktop@x.test",

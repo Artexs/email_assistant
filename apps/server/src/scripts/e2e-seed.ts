@@ -724,8 +724,8 @@ async function main(): Promise<number> {
         };
       }
 
-      // One organization per project for the suggestions spec. The flags `sender_context` and `sender_suggestions` are on; one
-      // mailbox with three open suggestions. See `e2e-suggestion-rows.ts`.
+      // One organization per project for the suggestions spec. The flags `sender_context`, `sender_suggestions` and `sent_sync` are
+      // on; one mailbox with three open suggestions and Sent coverage. See `e2e-suggestion-rows.ts`.
       const suggestionIds = {} as Record<
         E2eProject,
         { orgId: string; ownerId: string; memberId: string; mailboxId: string }
@@ -743,7 +743,7 @@ async function main(): Promise<number> {
           displayName: `E2E Suggestions member ${project}`,
         });
         await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
-        for (const flag of ["sender_context", "sender_suggestions"] as const) {
+        for (const flag of ["sender_context", "sender_suggestions", "sent_sync"] as const) {
           await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: suggestionOwner.userId, setAt: new Date() });
         }
         const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eSuggestionsMailbox(project));
