@@ -1,10 +1,10 @@
 import type { DrafterCaseResult } from "./drafter-eval";
 
-// The scores of the drafter eval: the counts, the PD-083 bars, the injection verdict and the exit code. Pure code.
+// The scores of the drafter eval: the counts, the exit bars, the injection verdict and the exit code. Pure code.
 
-// The exit bar of the reply drafts (PD-083) and the line of the `needs_facts` share (second-pass questions of the
-// reply discovery notes). Code checks 100%: every draft that is stored passes them, so a case that failed its checks
-// in two calls breaks the bar.
+// The exit bar of the reply drafts (the owner decision on the exit bar, `docs/product/stage-2/decisions.md`) and the
+// line of the `needs_facts` share (second-pass questions of the reply discovery notes). Code checks 100%: every draft
+// that is stored passes them, so a case that failed its checks in two calls breaks the bar.
 export const DRAFTER_BARS = {
   codeChecks: 1,
   inventedCommitments: 0,
@@ -177,7 +177,7 @@ export function injectionSummary(results: readonly DrafterCaseResult[]): Injecti
   };
 }
 
-// The PD-083 numbers of a sim part against their bars. `null` means no data: it fails the bar.
+// The exit-bar numbers of a sim part against their bars. `null` means no data: it fails the bar.
 export interface BarRow {
   name: string;
   value: string;
