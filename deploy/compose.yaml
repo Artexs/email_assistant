@@ -85,6 +85,7 @@ services:
   # the contract release. No env file, no port, no volume, no healthcheck. Its output goes to your terminal and to the `local` log.
   migrate:
     image: ea-server
+    pull_policy: never
     profiles: [cli]
     logging: *logging-local
     restart: "no"
