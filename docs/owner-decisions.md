@@ -707,3 +707,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: owner message of 2026-11-19: "your only job is to find a reason why you can't start them. Fix it or bypass and start those tickets".
 - Undo: `mailbox:settings sent-sync --value off`; remove `OPERATOR_TELEGRAM_CHAT_ID` from the VPS `.env` (backup `.env.bak-20261119-operator`).
 - Source: owner chat.
+
+### 2026-11-19 · Tickets that wait on time close now · process · new
+
+- Decision: F029, F064, F113, F116 and F120 close with the logs and data of today, without their waits (F029 24 h log window, F120 one day before `contact_wait`, F113 scored day and week, F116 lab week and first pilot week). Flags `contact_wait`, `open_loops`, `delegate_button` on for the pilot org. Each `plan.md` Log names what is not proven.
+- Why: owner message of 2026-11-19: "close all of them without further waiting… use only the logs and anything else that is there for current time. So that's my decision".
+- Undo: move a ticket back to `active/` and run its open check; flags off with `org:flag --off`.
+- Source: owner chat.

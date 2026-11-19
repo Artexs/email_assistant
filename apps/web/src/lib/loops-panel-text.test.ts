@@ -60,7 +60,7 @@ const NEW_TEXTS: Record<string, { en: string; pl: string }> = {
     en: "Follow-ups are not drafted automatically.",
     pl: "Przypomnienia nie będą przygotowywane automatycznie.",
   },
-  tgc_title: { en: "New Telegram terms: open loops", pl: "Nowe zasady Telegrama: otwarte sprawy" },
+  tgc_title: { en: "New Telegram terms", pl: "Nowe zasady Telegrama" },
   tgc_confirm: { en: "Confirm", pl: "Potwierdź" },
   tgc_confirmed_toast: {
     en: "The new Telegram terms are confirmed.",

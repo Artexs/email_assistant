@@ -317,7 +317,7 @@ export const plApprovals = {
   lset_auto_help: "Szkice nadal czekają na Twoje zatwierdzenie, zanim zostaną wysłane.",
   lset_auto_on_toast: "Przypomnienia będą przygotowywane automatycznie.",
   lset_auto_off_toast: "Przypomnienia nie będą przygotowywane automatycznie.",
-  tgc_title: "Nowe zasady Telegrama: otwarte sprawy",
+  tgc_title: "Nowe zasady Telegrama",
   tgc_confirm: "Potwierdź",
   tgc_confirmed_toast: "Potwierdzono nowe zasady Telegrama.",
   // The evidence lines of the autonomy card and the block lines of the "Set anyway" dialog

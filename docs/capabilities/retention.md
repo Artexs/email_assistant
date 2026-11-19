@@ -1,6 +1,6 @@
 # Retention
 
-> Checked against the code at `cb3f73dd`, 2026-11-18.
+> Checked against the code at `05702e0c`, 2026-11-19.
 
 ## What it does now
 
@@ -49,6 +49,7 @@ The system keeps mail text only for a limited time. Once a day the job `platform
    - A `not_triaged` row holds the sender address in `outbox.view` and `outbox.text`; `clearOutboxTexts` clears both after 90 days, and the erase of the mail removes the row (kind `one_mail`).
 
 10. **Sender context (F120).** The two clearers run in `runOrg` for every organization, whatever the flags say: the data of a switched-off `sender_context` ages out too. `deleteOldProfiles` deletes a profile when `greatest(last_seen_at, last_user_mail_at)` is older than 365 days (`PROFILE_RETENTION_DAYS`; the data category `sender-context` states the same period): a contact that the user still writes to is still known. The table CHECK `sender_profiles_dates_check` gives every row one of the two dates, so no row escapes the rule. The rule never reads `refreshed_at`: that column is the time of the last change of the row (a repeat pass does not touch an unchanged row), so it says nothing about age. `deleteEndedSuggestions` first ends every open suggestion created more than 30 days ago (`SUGGESTION_OPEN_DAYS`) as `expired`: its `pattern` (the address or domain) is cleared and `ended_at` is the run time. Then it deletes every row that is not open and ended more than 90 days ago (`SUGGESTION_ENDED_DAYS`); a dismissed row hides its key until then. Both work in batches of 1 000 rows (`FOR UPDATE SKIP LOCKED`) and a repeat run changes nothing. The counts are `profile_rows` and `suggestion_rows` (rows expired plus rows deleted); the log holds no address and no hash.
+11. **Reply drafts (F115).** `clearReplyTexts` (table of rule 2) clears the instruction and the sample text 90 days after `created_at`, the same for every organization (not `data_retention_days`): `created_at` never moves, so a claim, a release or an end of the request cannot keep a text alive, and the function writes no `updated_at` (the Telegram answer of a request reads it). It has no status filter: an open request older than 90 days is dead. A repeat run changes nothing (a row with both texts null is not selected). The draft text of a reply lives in the payload of the `create_draft` and `send` actions and follows the action payload period (rules 2 and 4, `clearActionPayloads`: 90 days after its last change). `mailbox_profiles` (name, signature, writing style) has no retention function: it follows the mailbox (cascade) and the user's own edits. The legal category is `reply-texts` (`packages/core/src/legal/data-categories.ts`); `apps/server/src/legal-retention.test.ts` ties the number, the column and the papers together.
 
 ## Entry points
 

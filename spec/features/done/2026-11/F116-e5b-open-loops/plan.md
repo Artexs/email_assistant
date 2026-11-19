@@ -125,3 +125,5 @@ Model `claude-opus-5-5`: `[risky]` stages (migrations, sending to people, LLM, p
 ## Log
 
 - 2026-11-15 written.
+
+- 2026-11-19 stage 25 (coordinator, closed early by owner decision "close those tasks that wait for time"): G1 recorded on the defaults (owner-decisions 2026-11-19). Step 1 (lab week) not run: the F113 week needs a Monday start. Step 2: flags `sent_sync`, `open_loops`, `delegate_button` on for the pilot org (v0.4.1, which holds stage 24); "Track my sent mail" on (F104 stage 13). No loop exists yet; the first pilot week counts, N1 (a real follow-up tap) and the stop-rule watch are not measured. Rollback: the three flags off.

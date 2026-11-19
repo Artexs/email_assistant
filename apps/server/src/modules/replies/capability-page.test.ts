@@ -28,10 +28,11 @@ describe("docs/capabilities/drafts-and-send.md, the drafter job", () => {
     expect(page).toContain("does not compare the current folder");
   });
 
-  test("the Telegram review and the open consent step of stage 12", () => {
+  test("the Telegram review and the consent version of stage 17", () => {
     expect(page).toContain("**Telegram review (F115 stage 12).**");
     expect(page).toContain("`listSendsToNotify` skips payload kind `reply` for good");
     expect(page).toContain("`approval:<send>:r<n>`");
-    expect(page).toContain("**Open until stage 17:** `REPLY_CONSENT_SINCE` is a placeholder");
+    expect(page).toContain("**Consent version (stage 17).** `REPLY_CONSENT_SINCE` is `2026-11-19`");
+    expect(page).not.toContain("Open until stage 17");
   });
 });

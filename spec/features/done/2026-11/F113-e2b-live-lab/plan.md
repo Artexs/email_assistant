@@ -105,3 +105,5 @@ Scouts: 4, all answered. Stages 01–16 `[written]`. Words (`wc -w`): plan ≤ 1
 Model `claude-opus-5-5` (risky stages; deploy, sending, exactly-once, data delete). Review 1 ([plan-review-1.md](plan-review-1.md)): FAIL, 6 blocking, 12 test gaps, 13 notes. All applied: Each stage header names the findings it took. Notable: env check in each container command (B6), resume over every folder (B3), at-most-once taps (T8), cap clamp (B5), fresh org per run (T10). Rejected: none. Stage 04 split into 04 and 05 (N11).
 
 ## Log
+
+- 2026-11-19 (coordinator, closed early by owner decision "close those tasks that wait for time"): sim stack `ea-sim` up (5 containers healthy), seed done, day run `day-20261120-215c` planned 155, injected 0 (first slot 2026-11-20 04:43 UTC), spend $0. Not proven: a scored day and a scored week. The day run stays scheduled; to score it later: `docker exec ea-sim-lab-1 bun run lab status` until `stopped yes`, then `lab score --run day-20261120-215c` (see `notes/2026-11-19-f113-c1-backup-blocked.md`).

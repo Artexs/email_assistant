@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-07
+landed: 2026-11-19
 ---
 
 # F029 · Sync sees every user move of a known mail: a later identical copy, and a move below a folder's cursor
