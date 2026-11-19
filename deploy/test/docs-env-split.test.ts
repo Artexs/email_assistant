@@ -27,7 +27,10 @@ const operatorFiles = (): string[] =>
       /\.(md|sh|ya?ml|example)$/.test(name)
   );
 
-type Hit = { file: string; line: string };
+interface Hit {
+  file: string;
+  line: string;
+}
 
 function lineHits(files: string[], match: (line: string) => boolean): Hit[] {
   const hits: Hit[] = [];
