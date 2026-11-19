@@ -1,9 +1,11 @@
 // Astro integration: after the build, every image source of every page must point at a file the site owns (ADR 0030 point 4: an
 // image is a screenshot of the shot run, never one added by hand). A source passes when it is a `data:` URI or a same-site path
-// in the shots folder, in Starlight's own assets (`_astro/`), `favicon.svg` or `public/brand/`. Any other source fails the build with
-// `image_outside <src> in <page>`.
+// in the shots folder, `favicon.svg` or `public/brand/`. Any other source fails the build with `image_outside <src> in <page>`.
+// The Astro asset folder `_astro/` is not allowed: an image that a person adds in a content page or in `src/assets` is optimised
+// into it, so it would pass as the site's own. Today the build emits no image there (only `favicon.svg`, from `public/`).
 // Sources read: `<img src>`, every `srcset` entry, `<source src|srcset>`, `<video poster>`, an icon `<link href>`, `og:image` and
-// `twitter:image` `<meta content>`, and CSS `url()` of an image type (CSS files, `<style>` text and `style` attributes).
+// `twitter:image` `<meta content>`, an inline SVG `<image href|xlink:href>`, `<object data>`, `<embed src>`, `<input type=image src>`,
+// and every CSS `url()` (CSS files, `<style>` text and `style` attributes) except a data URI, a fragment reference and a font file.
 // The demo video files are media, not images: `.mp4` and `.vtt` are ignored.
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -15,14 +17,14 @@ import { ATTRIBUTE, htmlFiles, RAW_TEXT_ELEMENT, TAG } from "./link-check";
 
 const PLACEHOLDER_ORIGIN = "http://page.invalid";
 const MEDIA_FILE = /\.(mp4|vtt)$/i;
-const IMAGE_TYPE = /\.(png|jpe?g|gif|webp|avif|svg|ico|bmp|apng|tiff?)$/i;
+const FONT_FILE = /\.(woff2?|ttf|otf|eot)$/i;
 const CSS_URL = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s"']*))\s*\)/gi;
 const STYLE_ELEMENT = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi;
 const ICON_REL = /(^|\s)(icon|shortcut|apple-touch-icon|mask-icon|image_src)(\s|$)/i;
 const IMAGE_META = /^(og:image(:url|:secure_url)?|twitter:image(:src)?)$/i;
 
 // The site folders and files an image may come from (under the site base).
-const ALLOWED_FOLDERS = ["shots", "_astro", "brand"] as const;
+const ALLOWED_FOLDERS = ["shots", "brand"] as const;
 const ALLOWED_FILES = ["favicon.svg"] as const;
 
 // The image sources of an HTML page, in page order.
@@ -55,6 +57,12 @@ export function imageSources(html: string): string[] {
       take("src");
       takeSrcset();
     } else if (name === "video") take("poster");
+    else if (name === "image") {
+      take("href");
+      take("xlink:href");
+    } else if (name === "object") take("data");
+    else if (name === "embed") take("src");
+    else if (name === "input" && (attributes.get("type") ?? "").toLowerCase() === "image") take("src");
     else if (name === "link" && ICON_REL.test(attributes.get("rel") ?? "")) take("href");
     else if (name === "meta" && IMAGE_META.test(attributes.get("property") ?? attributes.get("name") ?? ""))
       take("content");
@@ -64,13 +72,15 @@ export function imageSources(html: string): string[] {
   return sources.filter((source) => source !== "");
 }
 
-// The `url()` values of a style text that name an image (a font or another file type is not an image).
+// The `url()` values of a style text, with or without an image extension. Skipped: a data URI, a reference to an id in the same
+// document (`url(#clip)`) and a font file (`@font-face` is not an image).
 export function cssImageSources(css: string): string[] {
   const sources: string[] = [];
   for (const match of css.matchAll(CSS_URL)) {
     const value = (match[1] ?? match[2] ?? match[3] ?? "").trim();
-    if (value === "" || value.startsWith("data:")) continue;
-    if (IMAGE_TYPE.test(value.split(/[?#]/)[0] ?? "")) sources.push(value);
+    if (value === "" || value.startsWith("data:") || value.startsWith("#")) continue;
+    if (FONT_FILE.test(value.split(/[?#]/)[0] ?? "")) continue;
+    sources.push(value);
   }
   return sources;
 }

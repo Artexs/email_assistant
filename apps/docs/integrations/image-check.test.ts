@@ -19,12 +19,20 @@ describe("imageSources", () => {
       ["/a.png", "/b.png", "/c.png", "/d.png", "/p.jpg", "/v.mp4", "/s.png", "/f.svg", "/o.png", "/h.webp"].sort()
     );
   });
-  test("a CSS url() of a font or a data URI is not an image source", () => {
+  test("a CSS url() of a font, a data URI or a fragment reference is not a source; any other value is, with or without an extension", () => {
     expect(
       cssImageSources(
-        `@font-face{src:url(/f.woff2)} a{background:url(data:image/png;base64,AAA)} b{background:url("/x.png?v=1")}`
+        `@font-face{src:url(/f.woff2)} a{background:url(data:image/png;base64,AAA)} b{background:url("/x.png?v=1")}` +
+          ` c{clip-path:url(#clip)} d{background:url(/email_assistant/img/photo)} e{cursor:url('/c.cur'), auto}`
       )
-    ).toEqual(["/x.png?v=1"]);
+    ).toEqual(["/x.png?v=1", "/email_assistant/img/photo", "/c.cur"]);
+  });
+  test("reads inline SVG image href and xlink:href, object data, embed src and input type=image src", () => {
+    const page = html(
+      `<svg><image href="/a.png"/><image xlink:href="/b.png"/></svg><object data="/c.svg" type="image/svg+xml"></object>` +
+        `<embed src="/d.svg"><input type="image" src="/e.png"><input type="text" src="/no.png"><input type=IMAGE src='/f.png'>`
+    );
+    expect(imageSources(page)).toEqual(["/a.png", "/b.png", "/c.svg", "/d.svg", "/e.png", "/f.png"]);
   });
 });
 
@@ -47,16 +55,16 @@ describe("checkImages", () => {
     put("index.html", html(`<img src="/email_assistant/other.png">`));
     expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/other.png in index.html");
   });
-  test("Starlight assets, favicon.svg, public/brand, data URIs and the demo media files pass", () => {
+  test("favicon.svg, public/brand, data URIs and the demo media files pass", () => {
     put(
       "index.html",
       html(
-        `<img src="/email_assistant/_astro/logo.abc.svg"><img src="/email_assistant/brand/mark.png"><img src="data:image/png;base64,AAA">` +
+        `<img src="/email_assistant/brand/mark.png"><img src="data:image/png;base64,AAA">` +
           `<video><source src="/email_assistant/demo/demo.mp4"><track src="/email_assistant/demo/demo.en.vtt"></video>`,
         `<link rel="icon" href="/email_assistant/favicon.svg">`
       )
     );
-    expect(checkImages(dir).checked).toBe(5);
+    expect(checkImages(dir).checked).toBe(4);
   });
   test("T5 the second srcset entry, a poster and a CSS url() outside the allowed places each fail", () => {
     put(
@@ -71,6 +79,42 @@ describe("checkImages", () => {
     put("index.html", html(`<p>ok</p>`));
     put("_astro/site.css", `a{background:url(/email_assistant/x.png)}`);
     expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/x.png in _astro/site.css");
+  });
+  test("an _astro image that comes from content fails: a webp in a page, an svg, a srcset entry and a CSS url() of the folder", () => {
+    for (const body of [
+      `<img src="/email_assistant/_astro/photo.AbC123.webp">`,
+      `<img src="/email_assistant/_astro/logo.abc.svg">`,
+      `<img src="/email_assistant/shots/a.png" srcset="/email_assistant/_astro/photo.AbC123_Z1.webp 2x">`,
+    ]) {
+      put("index.html", html(body));
+      expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/_astro/");
+    }
+    put("index.html", html(`<p>ok</p>`));
+    put("_astro/site.css", `a{background:url(/email_assistant/_astro/photo.AbC123.webp)}`);
+    expect(() => checkImages(dir)).toThrow(
+      "image_outside /email_assistant/_astro/photo.AbC123.webp in _astro/site.css"
+    );
+  });
+  test("the new element sources and an extension-less CSS url() fail outside the allowed places and pass inside", () => {
+    const outside = [
+      `<svg><image href="/email_assistant/x.png"/></svg>`,
+      `<svg><image xlink:href="/email_assistant/x.png"/></svg>`,
+      `<object data="/email_assistant/x.svg"></object>`,
+      `<embed src="/email_assistant/x.svg">`,
+      `<input type="image" src="/email_assistant/x.png">`,
+      `<div style="background:url(/email_assistant/photo)"></div>`,
+    ];
+    for (const body of outside) {
+      put("index.html", html(body));
+      expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/");
+      put("index.html", html(body.replaceAll("/email_assistant/", "/email_assistant/shots/")));
+      expect(checkImages(dir).checked).toBe(1);
+    }
+    put("index.html", html(`<p>ok</p>`));
+    put("_astro/site.css", `a{background:url(/email_assistant/photo)}`);
+    expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/photo in _astro/site.css");
+    put("_astro/site.css", `@font-face{src:url(/email_assistant/_astro/f.woff2)} a{clip-path:url(#c)}`);
+    expect(checkImages(dir).checked).toBe(0);
   });
   test("a path that climbs out of the shots folder, another origin and a base-less path fail", () => {
     for (const src of ["/email_assistant/shots/../x.png", "https://example.com/shots/x.png", "/shots/x.png", "x.png"]) {
