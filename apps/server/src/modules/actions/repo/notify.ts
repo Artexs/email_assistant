@@ -215,6 +215,8 @@ export interface FailedFollowUp {
   id: string;
   loopId: string;
   unknown: boolean;
+  // When the send failed: the time of the event for the push fan-out.
+  updatedAt: Date;
 }
 export async function listFailedFollowUps(
   db: DbOrTrx,
@@ -223,7 +225,7 @@ export async function listFailedFollowUps(
 ): Promise<FailedFollowUp[]> {
   const rows = await db
     .selectFrom("actions")
-    .select(["id", "loop_id", "status_reason"])
+    .select(["id", "loop_id", "status_reason", "updated_at"])
     .where("org_id", "=", ctx.orgId)
     .where("type", "=", "send")
     .where("status", "=", "failed")
@@ -234,7 +236,16 @@ export async function listFailedFollowUps(
     .limit(opts.limit)
     .execute();
   return rows.flatMap((row) =>
-    row.loop_id === null ? [] : [{ id: row.id, loopId: row.loop_id, unknown: row.status_reason === "outcome_unknown" }]
+    row.loop_id === null
+      ? []
+      : [
+          {
+            id: row.id,
+            loopId: row.loop_id,
+            unknown: row.status_reason === "outcome_unknown",
+            updatedAt: row.updated_at,
+          },
+        ]
   );
 }
 export async function markResultNotified(db: DbOrTrx, ctx: TenantContext, id: string, at: Date): Promise<boolean> {

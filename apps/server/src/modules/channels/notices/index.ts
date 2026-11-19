@@ -1,9 +1,10 @@
-import { type NoticeKind } from "@ea/core";
+import { pushKinds, type NoticeKind } from "@ea/core";
 
 import { errorFields } from "../../../platform/errors";
 import { listMailboxes } from "../../mail";
-import { getOrganization } from "../../tenancy";
-import { type LinkedChat } from "../port";
+import { getOrganization, isFeatureOn } from "../../tenancy";
+import { type NoticeRecipient } from "../notice-fan-out";
+import { listPushOnlyMembers, type PushOnlyMember } from "../push";
 import { listReportMembers, type ReportMember } from "../report-members";
 
 import { actionFailedDetector } from "./action-failed";
@@ -67,10 +68,20 @@ export const queuedBy = {
   autonomy_paused: "trust (through channels/notices/trust.ts)",
 } as const satisfies Partial<Record<NoticeKind, string>>;
 
+// A detector that queues push kinds only (and queues something): its kinds all have a push renderer. A detector with another
+// kind (a Telegram card, a report) or none (`follow-up-closed` edits cards) never sees a push-only member.
+export function servesPushOnly(detector: Detector): boolean {
+  const push: readonly NoticeKind[] = pushKinds;
+  return detector.kinds.length > 0 && detector.kinds.every((kind) => push.includes(kind));
+}
+
+const byUserId = (a: NoticeRecipient, b: NoticeRecipient) => (a.userId < b.userId ? -1 : a.userId > b.userId ? 1 : 0);
+
 async function detectForOrg(
   deps: NoticeDeps,
   orgId: string,
-  members: LinkedChat[],
+  chats: NoticeRecipient[],
+  pushOnly: NoticeRecipient[],
   reportMembers: ReportMember[],
   now: Date
 ): Promise<void> {
@@ -79,6 +90,7 @@ async function detectForOrg(
   const organization = await getOrganization(db, ctx);
   if (organization === undefined) throw new Error("organization not found");
   const mailboxes = await listMailboxes(db, ctx);
+  const everyone = [...chats, ...pushOnly].sort(byUserId);
   const run: OrgRun = {
     deps,
     db,
@@ -86,49 +98,79 @@ async function detectForOrg(
     now,
     timeZone: organization.timezone,
     resumedAt: organization.resumed_at,
-    members,
-    owners: members.filter((member) => member.role === "owner"),
+    members: chats,
+    owners: chats.filter((member) => member.role === "owner"),
     reportMembers,
     mailboxes,
     pausedMailboxIds: new Set(mailboxes.filter((mailbox) => mailbox.status === "paused").map((mailbox) => mailbox.id)),
   };
-  // An organization with no linked chat (only report-mail members) runs the weekly report only: the other detectors read the
-  // link times of the members and have nobody to notify. One detector that fails (a view that does not render, a database
-  // error) does not stop the later ones of the organization.
-  for (const detector of members.length === 0 ? mailOnlyDetectors : detectors) {
+  // An organization with no recipient (only report-mail members) runs the weekly report only: the other detectors read the
+  // link times of the members and have nobody to notify. An organization with push-only members and no chat runs the detectors
+  // of push kinds as well. One detector that fails (a view that does not render, a database error) does not stop the later ones
+  // of the organization.
+  const list =
+    chats.length > 0
+      ? detectors
+      : everyone.length === 0
+        ? mailOnlyDetectors
+        : detectors.filter((detector) => mailOnlyDetectors.includes(detector) || servesPushOnly(detector));
+  for (const detector of list) {
+    // A push-only member takes part in the detectors of push kinds only.
+    const members = servesPushOnly(detector) ? everyone : chats;
     try {
-      await detector.detect(run);
+      await detector.detect({ ...run, members, owners: members.filter((member) => member.role === "owner") });
     } catch (error) {
       log.error("notice_detector_failed", { kind: detector.name, org_id: orgId, ...errorFields(error) });
     }
   }
 }
 
+const recipientOfPushOnly = (member: PushOnlyMember): NoticeRecipient => ({
+  userId: member.userId,
+  role: member.role,
+  locale: member.locale,
+  since: member.since,
+  hasChat: false,
+});
+
 // Never throws. One organization that fails does not stop the next one.
 export async function detectNotices(deps: NoticeDeps): Promise<void> {
   try {
     const now = deps.now();
     // Every organization with a linked chat is visited. An organization with only report-mail members (no chat) is visited too,
-    // for the weekly report only: with the flag `report_mail` off that detector queues nothing for them.
-    const byOrg = new Map<string, { links: LinkedChat[]; members: ReportMember[] }>();
+    // for the weekly report only: with the flag `report_mail` off that detector queues nothing for them. An organization whose
+    // only recipients are push-only members (a live device, no chat, the flag `web_push` on) is visited for the push kinds.
+    const byOrg = new Map<string, { chats: NoticeRecipient[]; pushOnly: NoticeRecipient[]; members: ReportMember[] }>();
+    const entryOf = (orgId: string) => {
+      const entry = byOrg.get(orgId) ?? { chats: [], pushOnly: [], members: [] };
+      byOrg.set(orgId, entry);
+      return entry;
+    };
     for (const member of await listReportMembers(deps.db, { includeSuspended: false })) {
-      const entry = byOrg.get(member.orgId) ?? { links: [], members: [] };
+      const entry = entryOf(member.orgId);
       entry.members.push(member);
       if (member.chat !== null) {
-        entry.links.push({
-          orgId: member.orgId,
+        entry.chats.push({
           userId: member.userId,
           role: member.role,
-          chatId: member.chat.chatId,
-          linkedAt: member.chat.linkedAt,
           locale: member.locale,
+          since: member.chat.linkedAt,
+          hasChat: true,
         });
       }
-      byOrg.set(member.orgId, entry);
     }
-    for (const [orgId, { links, members }] of byOrg) {
+    const flagByOrg = new Map<string, boolean>();
+    for (const member of await listPushOnlyMembers(deps.db, { now })) {
+      let flagOn = flagByOrg.get(member.orgId);
+      if (flagOn === undefined) {
+        flagOn = await isFeatureOn(deps.db, { orgId: member.orgId }, "web_push");
+        flagByOrg.set(member.orgId, flagOn);
+      }
+      if (flagOn) entryOf(member.orgId).pushOnly.push(recipientOfPushOnly(member));
+    }
+    for (const [orgId, { chats, pushOnly, members }] of byOrg) {
       try {
-        await detectForOrg(deps, orgId, links, members, now);
+        await detectForOrg(deps, orgId, chats, pushOnly, members, now);
       } catch (error) {
         log.error("notices_org_failed", { org_id: orgId, ...errorFields(error) });
       }

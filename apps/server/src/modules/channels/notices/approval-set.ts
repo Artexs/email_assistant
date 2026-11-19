@@ -3,7 +3,7 @@ import { draftPayloadSchema, type DraftPayload } from "@ea/core";
 import { type TenantContext } from "../../../platform/db";
 import { getDraft, listSetsToNotify, markNotified } from "../../actions";
 import { getDelegation } from "../../delegation";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
@@ -11,7 +11,7 @@ import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detect
 async function detectApprovalSets(
   db: DbOrTrx,
   ctx: TenantContext,
-  owners: LinkedChat[],
+  owners: NoticeRecipient[],
   timeZone: string,
   now: Date
 ): Promise<void> {
@@ -53,6 +53,8 @@ async function detectApprovalSets(
               kind: "approval_set",
               dedupKey: `approval_set:${setId}`,
               emailId: firstEmailId,
+              // The set is ready when its newest send waits.
+              eventAt: new Date(Math.max(...sends.map((send) => send.updated_at.getTime()))),
               view: noticeView,
             },
             now

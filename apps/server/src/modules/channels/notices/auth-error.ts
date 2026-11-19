@@ -1,6 +1,6 @@
 import { type TenantContext } from "../../../platform/db";
 import { type MailboxSummary } from "../../mail";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 import { cancelPendingOutbox } from "../repo";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
@@ -8,7 +8,7 @@ import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 async function detectAuthError(
   db: DbOrTrx,
   ctx: TenantContext,
-  owners: LinkedChat[],
+  owners: NoticeRecipient[],
   mailbox: MailboxSummary,
   timeZone: string,
   now: Date
@@ -29,6 +29,7 @@ async function detectAuthError(
           kind: "auth_error",
           dedupKey: key,
           mailboxId: mailbox.id,
+          eventAt: mailbox.status_changed_at,
           view: {
             address: mailbox.address,
             mailboxId: mailbox.id,

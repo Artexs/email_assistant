@@ -39,6 +39,8 @@ async function noticeHolds(
             kind: "send_held",
             dedupKey: `${family}:${mailbox.id}:${day}`,
             mailboxId: mailbox.id,
+            // A hold has no start time of its own (every retry moves the row): the notice is of this run.
+            eventAt: run.now,
             view: {
               mailboxId: mailbox.id,
               address: mailbox.address,

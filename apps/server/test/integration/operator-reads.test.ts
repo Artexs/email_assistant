@@ -82,6 +82,7 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       await add("failed", null, at(-25 * HOUR));
       await add("failed", "outdated", at(-1 * HOUR));
       await add("failed", "expired", at(-1 * HOUR));
+      await add("failed", "no_device", at(-1 * HOUR));
       await add("sent", null, at(-1 * HOUR));
       expect(await countFailedOutboxSince(trx, ctxA, at(-24 * HOUR))).toBe(1);
       expect(await countFailedOutboxSince(trx, ctxB, at(-24 * HOUR))).toBe(0);

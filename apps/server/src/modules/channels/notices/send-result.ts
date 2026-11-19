@@ -13,10 +13,10 @@ import {
 import { auditEvents, findActionActor } from "../../audit";
 import { isSyntheticMessageId } from "../../mail";
 import { isFeatureOn, listMemberships } from "../../tenancy";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 
 import { panelListUrlOf } from "./approval";
-import { queueLoopConsentLines, splitByLoopConsent } from "./loop-consent";
+import { queueLoopConsentLines, splitByLoopConsent, type LoopGate } from "./loop-consent";
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 const SEND_KINDS: readonly DraftKind[] = draftKinds;
@@ -116,7 +116,7 @@ async function resultKindOf(
 async function detectSendResults(
   db: DbOrTrx,
   ctx: TenantContext,
-  owners: LinkedChat[],
+  owners: NoticeRecipient[],
   now: Date,
   webBaseUrl: string | undefined
 ): Promise<void> {
@@ -142,7 +142,12 @@ async function detectSendResults(
       const draftTo = Array.isArray(draftRow?.payload.to) ? stringOf(draftRow.payload.to[0]) : null;
       const result = await resultKindOf(db, ctx, row, draftRemoved, names);
       // A follow-up result names its first recipient (a sent mail): the consent gate splits the owners.
-      const gate = row.loop_id === null ? { covered: owners, withheld: [] } : await splitByLoopConsent(db, ctx, owners);
+      // The result is the change of the send row.
+      const eventAt = row.updated_at;
+      const gate: LoopGate =
+        row.loop_id === null
+          ? { covered: owners, withheld: [], pushWithheld: [] }
+          : await splitByLoopConsent(db, ctx, owners, { kind: "send_result", eventAt, now });
       const view = {
         actionId: row.id,
         sendKind,
@@ -156,8 +161,8 @@ async function detectSendResults(
         ...(mistakeButton && result.kind === "sent" ? { mistakeButton: true } : {}),
       };
       await inTransaction(db, async (trx) => {
-        for (const owner of gate.covered) {
-          await queue(
+        const queueFor = (owner: NoticeRecipient, only?: "push") =>
+          queue(
             trx,
             ctx,
             {
@@ -167,11 +172,14 @@ async function detectSendResults(
               dedupKey: `send_result:${row.id}`,
               ...(row.email_id === null ? {} : { emailId: row.email_id }),
               ...(row.loop_id === null ? {} : { loopId: row.loop_id }),
+              eventAt,
+              ...(only === undefined ? {} : { only }),
               view,
             },
             now
           );
-        }
+        for (const owner of gate.covered) await queueFor(owner);
+        for (const owner of gate.pushWithheld) await queueFor(owner, "push");
         await queueLoopConsentLines(trx, ctx, gate.withheld, {
           about: "result",
           panelUrl: panelBase === undefined ? undefined : panelListUrlOf(panelBase),

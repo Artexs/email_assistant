@@ -47,6 +47,8 @@ export const sentMissingDetector: Detector = {
               kind: "sent_missing",
               dedupKey: key,
               mailboxId: mailbox.id,
+              // The period became quiet enough for a notice 7 days after it began.
+              eventAt: new Date(quietSince.getTime() + SENT_MISSING_AFTER_MS),
               view: { address: mailbox.address, since: quietSince, now: run.now, timeZone: run.timeZone },
             },
             run.now

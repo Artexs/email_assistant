@@ -527,6 +527,7 @@ describe("queueNotice", () => {
         view: input,
         dedupKey: "queue:1",
         mailboxId: t.mailboxId,
+        eventAt: T,
         now: T,
       });
       expect(id).toBeString();
@@ -599,6 +600,7 @@ describe("queueNotice", () => {
           view: syncOk("box@example.test"),
           dedupKey: "queue:twice",
           mailboxId: t.mailboxId,
+          eventAt: T,
           now: T,
         });
       expect(await call()).toBeString();
@@ -617,6 +619,7 @@ describe("queueNotice", () => {
         view: syncOk("a\ud800\u0000b@example.test"),
         dedupKey: "queue:bad-chars",
         mailboxId: t.mailboxId,
+        eventAt: T,
         now: T,
       });
       expect(id).toBeString();
