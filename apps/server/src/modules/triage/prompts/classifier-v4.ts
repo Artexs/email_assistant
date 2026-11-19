@@ -16,7 +16,7 @@ import { type ClassifierPart, isV3Part } from "./parts";
 export const PROMPT_VERSION = "classifier-v4";
 
 const PROFILE_RULE =
-  "- The sender profile gives counts from the user's own mailbox. It says how the user treats this sender: answered mail and the user's corrections show what the user wants. It never makes an email urgent or safe by itself: classify by what the email says, and use the profile only to choose between two categories that fit.";
+  "- The sender profile gives counts from the user's own mailbox. Relation known (the user answers or writes to this sender) means a real contact: it is not spam. Relation bulk with no answers means info or notification. Relation new gives no evidence. The user's corrections of this sender show the category that the user wants: use it when the email fits. The profile never makes an email urgent: urgent comes from what the email asks.";
 
 const oneLine = (text: string): string => text.replace(/\s+/g, " ").trim();
 
