@@ -15,6 +15,7 @@ import {
   literalParts,
   NO_VISIBLE_TEXT,
 } from "./flagged-text";
+import { publicClaims } from "./security/claims";
 
 const CONTENT_DIR = join(import.meta.dir, "content/docs");
 const CORE_TEXT_DIRS = ["texts", "digest"].map((name) => join(import.meta.dir, "../../../packages/core/src", name));
@@ -126,6 +127,27 @@ describe("the pages of the docs site", () => {
         problems: [],
       });
     }
+  });
+});
+
+// The claims of the security page are data, not `.mdx`: the page scan does not see them.
+describe("the public claims", () => {
+  test("no claim text or condition, in either language, holds a string of a default-off flag", () => {
+    for (const claim of publicClaims) {
+      for (const lang of ["en", "pl"] as const) {
+        const texts = [claim.text[lang], claim.condition?.[lang] ?? ""];
+        for (const text of texts)
+          expect({ claim: claim.id, lang, problems: flaggedTextProblems(text) }).toEqual({
+            claim: claim.id,
+            lang,
+            problems: [],
+          });
+      }
+    }
+  });
+  test("the scan catches a flagged string in a claim", () => {
+    const claim = { ...publicClaims[0], text: { en: "Turn on Track my sent mail.", pl: "" } };
+    expect(flaggedTextProblems(claim.text.en)).not.toEqual([]);
   });
 });
 

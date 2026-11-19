@@ -47,13 +47,14 @@ afterAll(() => {
 });
 
 describe("astro.config.mjs", () => {
-  test("the integrations run in this order: Starlight, CSP, public content, in-place pages, links", () => {
+  test("the integrations run in this order: Starlight, CSP, public content, in-place pages, links, claims", () => {
     expect(integrations.map((integration) => integration.name)).toEqual([
       "@astrojs/starlight",
       "ea-csp-finalize",
       "ea-public-content",
       "ea-in-place-check",
       "ea-link-check",
+      "ea-claim-check",
       "ea-shots",
     ]);
   });
