@@ -1,12 +1,13 @@
 // The gate of `.github/workflows/docs-deploy.yml` (ADR 0030 point 2): does this run publish the docs?
 // A pushed tag publishes only when it is the newest plain `v<x.y.z>` tag. A manual run publishes any ref (a rollback to an old tag).
-// The workflow passes `GATE_EVENT`, `GATE_REF_TYPE` and `GATE_REF_NAME` as env (never inside the script text) and the output of
+// The workflow passes `GATE_EVENT`, `GATE_REF_TYPE`, `GATE_REF_NAME` and `GATE_PUBLISH_HELD` as env (never inside the script text) and the output of
 // `git tag --list 'v*'` on stdin. The script reads `CHANGELOG.md` itself. It writes `deploy=true|false` to `$GITHUB_OUTPUT`
 // and exits 1 on an `error`. A pushed release tag whose version has no `## [x.y.z]` release in the changelog is an error (a failed run, not a skip).
 import { appendFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ChangelogError, compareSemver, parseChangelog, UNRELEASED } from "@ea/core";
 import { createCliOutput } from "../../server/src/platform/cli";
+import { OWNER_REVIEW_PENDING, publishHoldReason } from "../src/publish-gate";
 
 export type GateEvent = "push" | "workflow_dispatch";
 export type GateRefType = "tag" | "branch";
@@ -41,8 +42,18 @@ export function newestRelease(tags: readonly string[]): string | null {
   return best;
 }
 
-/** `releases`: the versions (`x.y.z`, without `v`) of the released entries of `CHANGELOG.md`. */
-export function deployDecision(ref: GateRef, tags: readonly string[], releases: readonly string[]): GateDecision {
+/**
+ * `releases`: the versions (`x.y.z`, without `v`) of the released entries of `CHANGELOG.md`.
+ * `pending`: the page ids that wait for the owner (`OWNER_REVIEW_PENDING`). `publishHeld`: the dispatch input `publish_held_pages`.
+ * A run that would deploy but has a pending page is a skip, unless it is a manual run with `publishHeld`.
+ */
+export function deployDecision(
+  ref: GateRef,
+  tags: readonly string[],
+  releases: readonly string[],
+  pending: readonly string[],
+  publishHeld: boolean
+): GateDecision {
   if (ref.event !== "push" && ref.event !== "workflow_dispatch") {
     return { deploy: false, reason: "unknown event", error: `unknown event ${JSON.stringify(ref.event)}` };
   }
@@ -52,7 +63,9 @@ export function deployDecision(ref: GateRef, tags: readonly string[], releases: 
   if (ref.name.trim() === "") {
     return { deploy: false, reason: "no ref name", error: "empty ref name" };
   }
+  const held = publishHoldReason(pending);
   if (ref.event === "workflow_dispatch") {
+    if (held !== null && !publishHeld) return { deploy: false, reason: `skip: ${held}` };
     return { deploy: true, reason: `manual run on ${ref.type} ${ref.name}` };
   }
   // A push: only a tag publishes.
@@ -71,6 +84,8 @@ export function deployDecision(ref: GateRef, tags: readonly string[], releases: 
   if (newest !== ref.name) {
     return { deploy: false, reason: `skip: ${ref.name} is not the newest release (${newest})` };
   }
+  // The hold comes last: a bad tag and an old tag keep their own answers.
+  if (held !== null) return { deploy: false, reason: `skip: ${held}` };
   return { deploy: true, reason: `${ref.name} is the newest release` };
 }
 
@@ -87,7 +102,9 @@ export function releasedVersions(changelog: string): string[] {
 export async function main(
   env: Readonly<Record<string, string | undefined>>,
   readTags: () => Promise<string>,
-  readChangelog: () => string
+  readChangelog: () => string,
+  // A parameter, never env: nothing outside a commit lifts the hold.
+  pending: readonly string[] = OWNER_REVIEW_PENDING
 ): Promise<number> {
   const out = createCliOutput("deploy-gate");
   let releases: string[];
@@ -105,7 +122,9 @@ export async function main(
       name: env.GATE_REF_NAME ?? "",
     },
     (await readTags()).split("\n"),
-    releases
+    releases,
+    pending,
+    env.GATE_PUBLISH_HELD === "true"
   );
   if (decision.error !== undefined) {
     out.fail(`error: ${decision.error}`);

@@ -25,6 +25,11 @@ import { credentialsLine } from "../../apps/server/src/scripts/credentials-check
 //   config-json    what `docker compose config --format json` prints (default: project ea-drill, no port)
 //   counts         the rows the count query prints (default: organizations 2, users 3, mailboxes 1, emails 40)
 //   docker-fail    a substring of an argument list that makes `docker` exit 1
+//   init-probes    N: the first N TCP probes (`pg_isready -h 127.0.0.1`) fail; while N > 0 and the TCP probe has not passed, the
+//                  `pg_tables` query prints "the database system is shutting down" and fails, and the socket probe passes
+//                  (the init server of the Postgres image answers on the socket only). Default 0.
+//   never-ready    every TCP probe fails
+// A recording `sleep` stub (one `sleep <args>` line in calls.log) keeps the tests from waiting.
 
 const DEPLOY = join(import.meta.dir, "..");
 const DUMP = "PLAIN-DUMP-BYTES";
@@ -76,7 +81,20 @@ if [[ "$*" == *" config "* ]]; then
   if [[ -f "$S/config-json" ]]; then cat "$S/config-json"; else printf '%s' '${DRILL_CONFIG_OK}'; fi
   exit 0
 fi
-if [[ "$*" == *"pg_tables"* ]]; then cat "$S/tables" 2>/dev/null || echo 0; exit 0; fi
+if [[ "$*" == *pg_isready* ]]; then
+  if [[ "$*" != *"-h 127.0.0.1"* ]]; then exit 0; fi
+  if [[ -f "$S/never-ready" ]]; then exit 2; fi
+  n="$(cat "$S/probe-count" 2>/dev/null || echo 0)"; n=$((n + 1)); echo "$n" >"$S/probe-count"
+  if (( n <= $(cat "$S/init-probes" 2>/dev/null || echo 0) )); then exit 2; fi
+  echo ready >"$S/phase"
+  exit 0
+fi
+if [[ "$*" == *"pg_tables"* ]]; then
+  if (( $(cat "$S/init-probes" 2>/dev/null || echo 0) > 0 )) && [[ ! -f "$S/phase" ]]; then
+    echo "psql: error: connection to server on socket failed: FATAL:  the database system is shutting down" >&2; exit 2
+  fi
+  cat "$S/tables" 2>/dev/null || echo 0; exit 0
+fi
 if [[ "$*" == *"from organizations"* ]]; then
   if [[ -f "$S/counts" ]]; then cat "$S/counts"; else printf 'organizations 2\\nusers 3\\nmailboxes 1\\nemails 40\\n'; fi
   exit 0
@@ -87,6 +105,7 @@ if [[ "$*" == *"credentials:check"* ]]; then
 fi
 exit 0`
   );
+  stub("sleep", `echo "sleep $*" >>"$CALLS"`);
   stub("age", `echo "age $*" >>"$CALLS"\nprintf '%s' '${DUMP}'`);
   stub(
     "openssl",
@@ -115,6 +134,9 @@ const calls = (): string[] => {
 const dockerCalls = (): string[] => calls().filter((line) => line.startsWith("docker "));
 const indexOfCall = (lines: readonly string[], text: string, from = 0): number =>
   lines.findIndex((line, index) => index >= from && line.includes(text));
+const PROBE = "pg_isready -q -h 127.0.0.1 -U postgres -d email_assistant";
+const probeCalls = (): string[] => dockerCalls().filter((line) => line.includes(PROBE));
+const sleepCalls = (): string[] => calls().filter((line) => line.startsWith("sleep "));
 const writeDrillEnv = (): void => writeFileSync(join(root, "deploy", "drill.env"), "POSTGRES_PASSWORD=drill-pg\n");
 const lastLine = (text: string): string => text.trim().split("\n").at(-1) ?? "";
 
@@ -247,6 +269,7 @@ describe("restore.sh drill", () => {
     const order = [
       " config ",
       " up -d --wait db",
+      PROBE,
       "pg_tables",
       " build server",
       "pg_restore",
@@ -492,9 +515,83 @@ describe("restore.sh new-host", () => {
       dockerCalls().map(
         (line) => line.replace(/^docker compose -f deploy\/compose.yaml --env-file .env /, "").split(" ")[0]
       )
-    ).toEqual(["up", "exec"]);
+    ).toEqual(["up", "exec", "exec"]);
     expect(result.output).toContain("never goes over data");
     expect(dockerCalls().some((line) => line.includes("pg_restore"))).toBe(false);
+  });
+});
+
+describe("restore.sh waits for the final database server (step db-ready)", () => {
+  test("F139-1. a drill on a fresh volume waits for the TCP answer; init-probes=3 means 4 probes and 3 pauses", () => {
+    writeDrillEnv();
+    setSwitch("init-probes", "3\n");
+    const result = run(["--target", "drill", "--stdin"], { stdin: DUMP });
+    expect(result.output).not.toContain("restore failed at");
+    expect(result.code).toBe(0);
+    expect(result.stdout).toContain("db ready probes=4");
+    expect(lastLine(result.stdout)).toMatch(/^restore ok target=drill seconds=\d+$/);
+    const lines = dockerCalls();
+    const up = indexOfCall(lines, " up -d --wait db");
+    const firstTables = indexOfCall(lines, "pg_tables");
+    const probes = lines.map((line, index) => (line.includes(PROBE) ? index : -1)).filter((index) => index >= 0);
+    expect(probes).toHaveLength(4);
+    for (const index of probes) {
+      expect(index).toBeGreaterThan(up);
+      expect(index).toBeLessThan(firstTables);
+    }
+    expect(sleepCalls()).toEqual(["sleep 1", "sleep 1", "sleep 1"]);
+  });
+
+  test("F139-2. a new-host restore waits the same way", () => {
+    setSwitch("init-probes", "3\n");
+    const result = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
+    expect(result.output).not.toContain("restore failed at");
+    expect(result.code).toBe(0);
+    const lines = dockerCalls();
+    const firstTables = indexOfCall(lines, "pg_tables");
+    const probes = lines.map((line, index) => (line.includes(PROBE) ? index : -1)).filter((index) => index >= 0);
+    expect(probes).toHaveLength(4);
+    for (const index of probes) expect(index).toBeLessThan(firstTables);
+    expect(result.stdout).toContain("db ready probes=4");
+  });
+
+  test("F139-3. a server that never answers on TCP exits 1 at db-ready after 60 probes and 59 pauses, with no later step", () => {
+    writeDrillEnv();
+    setSwitch("never-ready", "1\n");
+    const result = run(["--target", "drill", "--stdin"], { stdin: DUMP });
+    expect(result.code).toBe(1);
+    expect(result.output).toContain("restore: the database did not answer on TCP after 60 probes");
+    expect(result.output).toContain("restore failed at db-ready");
+    expect(probeCalls()).toHaveLength(60);
+    expect(sleepCalls()).toHaveLength(59);
+    expect(dockerCalls().some((line) => line.includes("pg_tables"))).toBe(false);
+    expect(dockerCalls().some((line) => / build /.test(line))).toBe(false);
+    expect(dockerCalls().some((line) => line.includes("pg_restore"))).toBe(false);
+    expect(result.stdout).not.toContain("restore ok");
+  });
+
+  test("F139-4. a volume that holds data passes the wait at once (1 probe, no pause) and guard-empty refuses with exit 2", () => {
+    writeDrillEnv();
+    setSwitch("tables", "1\n");
+    const result = run(["--target", "drill", "--stdin"], { stdin: DUMP });
+    expect(result.code).toBe(2);
+    expect(result.output).toContain("--down");
+    expect(result.stdout).toContain("db ready probes=1");
+    expect(probeCalls()).toHaveLength(1);
+    expect(sleepCalls()).toHaveLength(0);
+    expect(dockerCalls().some((line) => line.includes("pg_restore"))).toBe(false);
+  });
+
+  test("F139-5. every probe reads no stdin and runs in project ea-drill", () => {
+    writeDrillEnv();
+    setSwitch("init-probes", "2\n");
+    expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code).toBe(0);
+    const probes = probeCalls();
+    expect(probes).toHaveLength(3);
+    for (const line of probes) {
+      expect(line, line).toContain(" -p ea-drill ");
+      expect(line, line).toMatch(/ stdin=0 /);
+    }
   });
 });
 

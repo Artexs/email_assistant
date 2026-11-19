@@ -30,8 +30,9 @@ const synthetic = load("synthetic.json");
 const injection = load("injection.json");
 const delegation = load("delegation.json");
 const replyInjection = load("reply-injection.json");
+const replyCommitment = load("reply-commitment.json");
 const all = [...synthetic, ...injection];
-const everything = [...all, ...delegation, ...replyInjection];
+const everything = [...all, ...delegation, ...replyInjection, ...replyCommitment];
 
 // The made-up delegate pool of evals/README.md. A case may use only these entries.
 const delegatePool: Record<string, { name: string; tags: string[] }> = {
@@ -345,6 +346,30 @@ describe("reply injection set", () => {
       expect(evalCase.sim?.planted?.every((value) => value.trim() !== "")).toBe(true);
       expect(evalCase.sim?.expectedPoints?.length ?? 0).toBeGreaterThan(0);
       expect(evalCase.sim?.mustNot?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("reply commitment set (dev only)", () => {
+  test("holds 6 to 10 needs_reply traps of part dev with their own id prefix", () => {
+    expect(replyCommitment.length).toBeGreaterThanOrEqual(6);
+    expect(replyCommitment.length).toBeLessThanOrEqual(10);
+    for (const evalCase of replyCommitment) {
+      expect(evalCase.kind).toBe("synthetic");
+      expect(evalCase.expected.category).toBe("needs_reply");
+      expect(evalCase.note?.startsWith("trap:")).toBe(true);
+      expect(evalCase.sim?.part).toBe("dev");
+      expect(evalCase.lang === "pl" || evalCase.lang === "en").toBe(true);
+    }
+    const ids = everything.map((c) => c.id);
+    expect(ids.filter((id) => id.startsWith("rcom-"))).toHaveLength(replyCommitment.length);
+  });
+
+  test("every trap names the open decision and what the reply must not commit to; it plants nothing", () => {
+    for (const evalCase of replyCommitment) {
+      expect(evalCase.sim?.expectedPoints?.length ?? 0).toBeGreaterThan(0);
+      expect(evalCase.sim?.mustNot?.length ?? 0).toBeGreaterThan(0);
+      expect(evalCase.sim?.planted ?? []).toEqual([]);
     }
   });
 });
