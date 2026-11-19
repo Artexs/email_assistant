@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import type { DkimSignature } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { hasHttpsUnsubscribeLink, listNewsletterSenders, NEWSLETTER_MAX_SENDERS } from "../../src/modules/triage";
@@ -36,7 +37,15 @@ interface Mail {
   authResults?: string | null;
   link?: string | null;
   post?: boolean | null;
+  /** The stored `dkim_signatures`; default: one signature of `c.example` that covers both list headers when `post` is true. */
+  signatures?: DkimSignature[] | null;
 }
+
+const FULL = ["from", "to", "subject", "list-unsubscribe", "list-unsubscribe-post"];
+const COVERING: DkimSignature[] = [{ d: "c.example", h: FULL }];
+// SQL NULL for a row from before the column, else the JSON array.
+const signaturesJson = (value: DkimSignature[] | null): string | null =>
+  value === null ? null : JSON.stringify(value);
 
 // A triaged mail with its header row. `post: null` stores the NULL of a row from before the column.
 async function mail(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, m: Mail): Promise<string> {
@@ -55,6 +64,7 @@ async function mail(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string,
       auth_results: m.authResults ?? null,
       list_unsubscribe: m.link ?? null,
       list_unsubscribe_post: m.post ?? null,
+      dkim_signatures: signaturesJson(m.signatures === undefined ? (m.post === true ? COVERING : null) : m.signatures),
       parts_known: true,
       captured_at: m.at ?? ago(HOUR),
     })
@@ -101,6 +111,60 @@ describe("listNewsletterSenders", () => {
         hasLink: true,
       });
       expect(bySender.get("d@c.example")).toMatchObject({ oneClick: false, hasLink: true });
+    });
+  });
+
+  test("6b: one-click needs a signature of the passing domain that covers both list headers", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctx } = await setup(trx);
+      const m = (from: string, signatures: DkimSignature[] | null) =>
+        mail(trx, ctx, a.mailboxId, { from, link: LINK, post: ONE_CLICK, authResults: PASS, signatures });
+      await m("covered@c.example", COVERING);
+      await m("nopost@c.example", [{ d: "c.example", h: ["from", "list-unsubscribe"] }]);
+      await m("nolink@c.example", [{ d: "c.example", h: ["from", "list-unsubscribe-post"] }]);
+      await m("bodyonly@c.example", [{ d: "c.example", h: ["from"] }]);
+      await m("other@c.example", [{ d: "esp.example", h: FULL }]);
+      await m("old@c.example", null);
+      await m("empty@c.example", []);
+      // A second signature of the same domain that does not cover: the verified one may be that one.
+      await m("two@c.example", [...COVERING, { d: "c.example", h: ["from"] }]);
+      await m("twook@c.example", [...COVERING, { d: "c.example", h: [...FULL, "date"] }]);
+      const flags = Object.fromEntries(
+        (await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED)).map((s) => [
+          s.senderLower.split("@")[0],
+          [s.oneClick, s.hasLink],
+        ])
+      );
+      expect(flags).toEqual({
+        covered: [true, true],
+        nopost: [false, true],
+        nolink: [false, true],
+        bodyonly: [false, true],
+        other: [false, true],
+        old: [false, true],
+        empty: [false, true],
+        two: [false, true],
+        twook: [true, true],
+      });
+    });
+  });
+
+  test("6c: a stored value of another shape is no proof", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctx } = await setup(trx);
+      const id = await mail(trx, ctx, a.mailboxId, {
+        from: "x@c.example",
+        link: LINK,
+        post: ONE_CLICK,
+        authResults: PASS,
+      });
+      await sql`UPDATE email_headers SET dkim_signatures = '[{"d":"c.example"}]'::jsonb WHERE email_id = ${id}`.execute(
+        trx
+      );
+      expect((await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED))[0]).toMatchObject({
+        oneClick: false,
+        hasLink: true,
+      });
     });
   });
 

@@ -1,3 +1,4 @@
+import type { DkimSignature } from "@ea/core";
 import type { Hono } from "hono";
 
 import { upsertOrgFeature } from "../../src/modules/tenancy";
@@ -81,7 +82,17 @@ export interface SenderMail {
   authResults?: string | null;
   link?: string | null;
   post?: boolean | null;
+  /** The stored `dkim_signatures`; default: one signature of `c.example` that covers both list headers when `post` is true. */
+  signatures?: DkimSignature[] | null;
 }
+
+const COVERING: DkimSignature[] = [
+  { d: "c.example", h: ["from", "to", "subject", "list-unsubscribe", "list-unsubscribe-post"] },
+];
+
+// SQL NULL for a row from before the column, else the JSON array.
+const signaturesJson = (value: DkimSignature[] | null): string | null =>
+  value === null ? null : JSON.stringify(value);
 
 /** A triaged mail with its header row, committed. */
 export async function addSenderMail(db: Db, orgId: string, mailboxId: string, m: SenderMail): Promise<string> {
@@ -101,6 +112,9 @@ export async function addSenderMail(db: Db, orgId: string, mailboxId: string, m:
         auth_results: m.authResults ?? null,
         list_unsubscribe: m.link ?? null,
         list_unsubscribe_post: m.post ?? null,
+        dkim_signatures: signaturesJson(
+          m.signatures === undefined ? (m.post === true ? COVERING : null) : m.signatures
+        ),
         parts_known: true,
         captured_at: at,
       })

@@ -68,7 +68,7 @@ export const TABLE_SPECS: Readonly<Record<DemoTable, TableSpec>> = {
     sort: "email_id",
     time: "captured_at",
     refs: { email_id: "emails" },
-    json: ["attachments", "links"],
+    json: ["attachments", "links", "dkim_signatures"],
   },
   triage_results: {
     id: "id",

@@ -1,3 +1,4 @@
+import { dkimCoversOneClickHeaders, type DkimSignature } from "./dkim-signature";
 import { registrableDomain, trustedAuthResults } from "./suspicious";
 
 // Shared hosting suffixes. The built-in registrable-domain rule has no private suffixes, so `evil.github.io` would be
@@ -71,26 +72,56 @@ function stripCommentsAndQuotes(text: string): string | null {
   return depth === 0 ? out : null;
 }
 
-// A `dkim=pass` result with `header.d` = the From domain or a parent of it (down to the registrable domain), read only
-// when the authserv-id of the topmost `Authentication-Results` value is trusted. False for any other input. This does not
-// prove that the signature covers the `List-Unsubscribe` headers, as RFC 8058 asks (accepted limit).
+// The `header.d` values (lower case, no trailing dot) of the `dkim=pass` results with `header.d` = the From domain or a
+// parent of it (down to the registrable domain), read only when the authserv-id of the topmost `Authentication-Results`
+// value is trusted. Empty for any other input.
+function trustedAlignedPassDomains(
+  authResults: string | null,
+  trustedAuthservIds: readonly string[],
+  fromDomain: string
+): string[] {
+  if (authResults === null || fromDomain.trim() === "") return [];
+  // Lex the raw text: only the ASCII `;`, `(` and `"` of the header count. A full-width `；` is text, whatever NFKC makes of it.
+  const lexed = stripCommentsAndQuotes(authResults.toLowerCase());
+  if (lexed === null) return [];
+  if (trustedAuthResults(lexed, trustedAuthservIds) === null) return [];
+  const aligned = alignedDomains(fromDomain);
+  const found: string[] = [];
+  // The first `;` part is the authserv-id. Each other part is one result; it is folded (NFKC) only after the split.
+  for (const raw of lexed.split(";").slice(1)) {
+    const part = raw.normalize("NFKC");
+    if (!/^\s*dkim\s*=\s*pass(?!\S)/.test(part)) continue;
+    const signer = /(?:^|\s)header\.d\s*=\s*([^\s;]+)/.exec(part)?.[1]?.replace(/\.+$/, "");
+    if (signer !== undefined && aligned.includes(signer)) found.push(signer);
+  }
+  return found;
+}
+
+// A trusted `dkim=pass` for the From domain (or a parent). This does NOT prove that the signature covers the
+// `List-Unsubscribe` headers: for that use `hasCoveredDkimPass`.
 export function hasTrustedAlignedDkimPass(
   authResults: string | null,
   trustedAuthservIds: readonly string[],
   fromDomain: string
 ): boolean {
-  if (authResults === null || fromDomain.trim() === "") return false;
-  // Lex the raw text: only the ASCII `;`, `(` and `"` of the header count. A full-width `；` is text, whatever NFKC makes of it.
-  const lexed = stripCommentsAndQuotes(authResults.toLowerCase());
-  if (lexed === null) return false;
-  if (trustedAuthResults(lexed, trustedAuthservIds) === null) return false;
-  const aligned = alignedDomains(fromDomain);
-  // The first `;` part is the authserv-id. Each other part is one result; it is folded (NFKC) only after the split.
-  for (const raw of lexed.split(";").slice(1)) {
-    const part = raw.normalize("NFKC");
-    if (!/^\s*dkim\s*=\s*pass(?!\S)/.test(part)) continue;
-    const signer = /(?:^|\s)header\.d\s*=\s*([^\s;]+)/.exec(part)?.[1];
-    if (signer !== undefined && aligned.includes(signer.replace(/\.+$/, ""))) return true;
-  }
-  return false;
+  return trustedAlignedPassDomains(authResults, trustedAuthservIds, fromDomain).length > 0;
+}
+
+// RFC 8058 asks that the signature covers `List-Unsubscribe` and `List-Unsubscribe-Post`. The trusted server verified
+// one signature and named its domain in `header.d`; it did not say which signature header it was, and a replayer can
+// add signature headers of the same domain. So the proof is this: there is a trusted aligned `dkim=pass`, and EVERY
+// signature header of that domain in the mail (`signatures`, from `dkimSignaturesOf`) names both headers in `h=`. Then
+// the verified one covers them, whichever it is. `null` (a mail stored before the signatures were captured) or no
+// signature of the domain gives false.
+export function hasCoveredDkimPass(
+  authResults: string | null,
+  trustedAuthservIds: readonly string[],
+  fromDomain: string,
+  signatures: readonly DkimSignature[] | null
+): boolean {
+  if (signatures === null) return false;
+  return trustedAlignedPassDomains(authResults, trustedAuthservIds, fromDomain).some((domain) => {
+    const ofDomain = signatures.filter((signature) => signature.d === domain);
+    return ofDomain.length > 0 && ofDomain.every((signature) => dkimCoversOneClickHeaders(signature.h));
+  });
 }
