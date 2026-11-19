@@ -310,14 +310,20 @@ function elsewhere(seed: DemoSeed): DemoSeed {
 
 const owner = (): string => `${MARK}-dev-${randomUUID()}@dev.test`;
 
+// Counts of the rows this file owns: its users, its fixture organizations and the import organizations. Other test files
+// run at the same time on the same DB (`bun test --parallel`), so a count over the whole DB changes under this test (F124).
 async function snapshot() {
+  const mine = sql`select o.id from organizations o
+    where o.name = ${IMPORT_ORG_NAME}
+      or o.id = any(${sql.val(orgIds)}::uuid[])
+      or exists (select 1 from memberships m join users u on u.id = m.user_id where m.org_id = o.id and u.email like ${`${MARK}-%`})`;
   const one = async (query: ReturnType<typeof sql<{ n: string }>>) => Number((await query.execute(db)).rows[0]?.n);
   return {
-    orgs: await one(sql`select count(*) as n from organizations`),
-    users: await one(sql`select count(*) as n from users`),
-    mailboxes: await one(sql`select count(*) as n from mailboxes`),
-    emails: await one(sql`select count(*) as n from emails`),
-    actions: await one(sql`select count(*) as n from actions`),
+    orgs: await one(sql`select count(*) as n from (${mine}) as t`),
+    users: await one(sql`select count(*) as n from users where email like ${`${MARK}-%`}`),
+    mailboxes: await one(sql`select count(*) as n from mailboxes where org_id in (${mine})`),
+    emails: await one(sql`select count(*) as n from emails where org_id in (${mine})`),
+    actions: await one(sql`select count(*) as n from actions where org_id in (${mine})`),
   };
 }
 

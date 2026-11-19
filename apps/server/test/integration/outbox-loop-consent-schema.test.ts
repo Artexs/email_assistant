@@ -6,11 +6,10 @@ import { noticeKinds } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import type { DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { createScratchDb } from "./scratch-db";
 
 // The notice kind `loop_consent` (migration `20261115190001_outbox_loop_consent.sql`).
 const db = testDb();
@@ -58,8 +57,9 @@ describe("F116 stage 11 schema: the kind loop_consent", () => {
   });
 
   test("Down deletes the loop_consent rows, keeps the other kinds and refuses the kind; Up adds it again", async () => {
-    const scratch = await createScratchDb();
-    const owner = scratch.owner;
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down section");
+    const owner = createDb(url);
     try {
       expect(downPart).toContain("DELETE FROM outbox WHERE kind = 'loop_consent'");
       await withRollback(owner, async (trx) => {
@@ -80,7 +80,7 @@ describe("F116 stage 11 schema: the kind loop_consent", () => {
         await insertRow(trx, o.orgId, o.userId, "loop_consent");
       });
     } finally {
-      await scratch.drop();
+      await owner.destroy();
     }
   });
 });

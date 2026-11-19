@@ -5,12 +5,11 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import type { DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { createScratchDb } from "./scratch-db";
 
 // The migration `20261117140001_unsubscribe_data.sql` (the column `email_headers.list_unsubscribe_post`
 // and the table `unsubscribe_requests`). The connection is the `app` role; the Down and Up sections run as the owner.
@@ -272,12 +271,13 @@ describe("email_headers.list_unsubscribe_post and the previous release", () => {
 
 describe("the Down and Up sections", () => {
   async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-    const scratch = await createScratchDb();
-    const owner = scratch.owner;
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
+    const owner = createDb(url);
     try {
       await withRollback(owner, run);
     } finally {
-      await scratch.drop();
+      await owner.destroy();
     }
   }
 

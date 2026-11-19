@@ -5,12 +5,11 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import type { Db, DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertDraftAndSend, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopActionPair, insertLoopRow } from "./loops-fixtures";
-import { createScratchDb } from "./scratch-db";
 
 // The migration `action_loop_anchor` :
 // the second anchor of an action, its CHECKs, composite keys, row-level security, and the Up and Down sections.
@@ -288,13 +287,14 @@ describe("migration: Down and Up", () => {
   const WITH_ANCHOR = { actionsLoop: 1, outboxLoop: 1, emailIdRequired: false, indexes: 2 };
   const WITHOUT_ANCHOR = { actionsLoop: 0, outboxLoop: 0, emailIdRequired: true, indexes: 0 };
 
-  async function withOwner(run: (owner: Db) => Promise<void>): Promise<void> {
-    const scratch = await createScratchDb();
-    const owner = scratch.owner;
+  async function withOwner(run: (owner: ReturnType<typeof createDb>) => Promise<void>): Promise<void> {
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
+    const owner = createDb(url);
     try {
       await run(owner);
     } finally {
-      await scratch.drop();
+      await owner.destroy();
     }
   }
 

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import type { DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 
 import {
   createOrgWithMailbox,
@@ -15,7 +15,6 @@ import {
 } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertAnalysisRow, insertLoopRow, insertSentRow } from "./loops-fixtures";
-import { createScratchDb } from "./scratch-db";
 
 // Constraints, keys, row-level security and the Down section of the loops migration
 // (`docs/capabilities/open-loops.md`).
@@ -545,8 +544,9 @@ async function schemaObjects(trx: Trx): Promise<{ tables: number; columns: numbe
 // shared test DB keeps its schema.
 describe("migration: Down and Up", () => {
   test("1: Down removes the new objects and keeps the old rows; Up adds them again", async () => {
-    const scratch = await createScratchDb();
-    const owner = scratch.owner;
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
+    const owner = createDb(url);
     try {
       expect(up).not.toMatch(/DROP\s+(TABLE|COLUMN|CONSTRAINT)|ALTER\s+COLUMN|RENAME/i);
       await withRollback(owner, async (trx) => {
@@ -592,7 +592,7 @@ describe("migration: Down and Up", () => {
         expect(settings.loop_wait_days).toBe(3);
       });
     } finally {
-      await scratch.drop();
+      await owner.destroy();
     }
   });
 });

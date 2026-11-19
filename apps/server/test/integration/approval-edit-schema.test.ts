@@ -5,11 +5,10 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import type { DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { createScratchDb } from "./scratch-db";
 
 // `actions.supersedes_action_id`, `outbox.edit_of_outbox_id` and the kind `approval_edit`.
 const db = testDb();
@@ -229,8 +228,9 @@ describe("F102 schema: outbox approval_edit", () => {
 // DB keeps its schema.
 describe("F102 migration: Down", () => {
   test("TG3: Down deletes the approval_edit rows, keeps the other kinds, and drops the columns and the keys", async () => {
-    const scratch = await createScratchDb();
-    const owner = scratch.owner;
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down section");
+    const owner = createDb(url);
     try {
       const file = readFileSync(
         join(import.meta.dir, "../../../../db/migrations/20261115130001_approval_edit.sql"),
@@ -272,7 +272,7 @@ describe("F102 migration: Down", () => {
         await insertCard(trx, o.orgId, o.userId, { kind: "host_blocked", mailbox_id: o.mailboxId });
       });
     } finally {
-      await scratch.drop();
+      await owner.destroy();
     }
   });
 });

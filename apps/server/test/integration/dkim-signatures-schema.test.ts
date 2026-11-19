@@ -4,12 +4,11 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import type { DB } from "../../src/platform/db";
+import { createDb, type DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { createScratchDb } from "./scratch-db";
 
 // The migration `20261119100001_dkim_signatures.sql`: the column `email_headers.dkim_signatures` (the signing domain and the
 // signed header names of each DKIM-Signature header). The connection is the `app` role; Down and Up run as the owner.
@@ -90,8 +89,9 @@ describe("email_headers.dkim_signatures", () => {
 
 describe("the Down and Up sections", () => {
   test("3: Down drops the column and keeps the header rows; Up makes it again with NULL", async () => {
-    const scratch = await createScratchDb();
-    const owner = scratch.owner;
+    const url = process.env.MIGRATOR_DATABASE_URL;
+    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
+    const owner = createDb(url);
     try {
       await withRollback(owner, async (trx) => {
         const o = await createOrgWithMailbox(trx);
@@ -121,7 +121,7 @@ describe("the Down and Up sections", () => {
         expect(again.dkim_signatures).toBeNull();
       });
     } finally {
-      await scratch.drop();
+      await owner.destroy();
     }
   });
 });
