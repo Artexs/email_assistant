@@ -17,13 +17,13 @@ An operator sets the provider name `deepseek` and its API key, restarts, and eve
 
 ## Out of scope
 
-- Removing the OpenAI provider: both rows stay, the operator picks one by name.
+- Removing a provider: the OpenAI, Gemini and DeepSeek rows all stay, the operator picks one by name.
 - Automatic fallback between providers, Vertex AI (both dropped), an own model server or the EU endpoint (F140).
 - Legal pages, the sub-processor row and a holdout gate for DeepSeek (owner, 2026-11-19: skipped). So the production switch on the VPS is out of scope too: real mail goes to DeepSeek (outside the EU) only after a new ticket adds the gate and the legal entries.
 
 ## Acceptance
 
-- With only `LLM_PROVIDER` and that provider's key set, every role runs on that provider's tier models, for `openai` and for `deepseek`; no `*_MODEL_*` key is needed.
+- With only `LLM_PROVIDER` and that provider's key set, every role runs on that provider's tier models, for `openai`, `gemini` and `deepseek`; no `*_MODEL_*` key is needed.
 - The gate file names the resolved model id, not the tier, so a provider switch needs a new gate run.
 - `bun run llm:check` with the DeepSeek provider and key passes for every role; with the key missing it fails with a message that names the key, never a value.
 - Each call writes one `llm.call` row with provider `deepseek`, the model, the tokens and a priced cost; `triage:cost` and `stats:week` show it.
@@ -31,8 +31,7 @@ An operator sets the provider name `deepseek` and its API key, restarts, and eve
 
 ## Sequenced
 
-- Plan after: the OpenAI-only ticket (F138) has stages and its stage 02 landed (the registry then has one row; this adds the second).
-- Build after: F138 in `done/` (its stages remove Gemini in the same registry and config files).
+- No ticket gates it: the Gemini removal ticket (F138) was dropped, so the registry keeps its `openai` and `gemini` rows and this adds `deepseek`.
 
 ## Notes
 
