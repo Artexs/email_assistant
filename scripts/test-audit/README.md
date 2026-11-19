@@ -14,7 +14,7 @@ Maintenance tools of the test audit (not product code, not run in CI). Own `tsco
 - Scan data and the timing run must come from the same commit: run `scan-cli.ts` again at the commit of the timing run.
 - Bun reports the line of the first argument of the outer call. For a `test.each` table (or a name on the next line) that is after the line of the scan key. The join takes the nearest earlier scan row of the file when its name pattern matches the JUnit name (`via` = span in the code); a row that starts in between blocks it.
 - A scan name is a pattern: `${…}`, `%s`-style marks and `$name` marks are wildcards. Bun leaves a `$name` unreplaced when the value is `undefined` and drops the space after it (`row $row→`), so those cases stay `unscanned`.
-- A call whose name is a variable (`test(name, …)` in a loop) has no scan row, so its JUnit cases are `unscanned`; at the stage 02 run that is 20 cases of 4 call sites in 4 files, plus the 3 `$row` cases above.
+- A call whose name is a variable (`test(name, …)` in a loop) has no scan row, so its JUnit cases are `unscanned`; at the stage 02 run that is 20 cases in 3 files, plus the 3 `$row` cases above.
 - The classname of a JUnit case lists the innermost describe first (`inner > outer`). A shared-module row joins when its `describePath` ends the outer-first path of the case.
 - A JUnit case with no scan row gets its own row in `cases.tsv` (flag `unscanned`, key `file:line`).
 
