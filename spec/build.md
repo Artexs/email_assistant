@@ -31,6 +31,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F029-sync-return-of-a-later-copy` (🟠 ACTIVE): Sync sees every user move of a known mail: a later identical copy, and a move below a folder's cursor
 
 ## NEXT
+- F138 (OpenAI only): plan landed, 6 stages (01 → 02 → {03, 04} → 05 → 06). Builds after F115 stage 02 lands; owner step O1 (OpenAI limit) and local C1 come before stage 06.
 
 
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2. Plan its §2.1 rows in order with `plan-task`; each planned ticket gets a `## Sequenced` section (tickets that must land first, and its gate) and a line here. Start the first line here whose `Sequenced` tickets are all landed and whose gate is done; no cap on parallel builds (owner decision 2026-11-13); only one migration in build at a time; file overlaps named in the plan gates are advisory: start the stages anyway, and when a land conflicts, resume the worker to merge `master` and re-prove; a ticket with a second-pass gate on numbers stops at that stage and asks the owner (§2.4). Owner checkpoints and owner steps (U1, U2, ...) are NOT a stop (owner decision 2026-11-13): after the review PASS of the stage before a checkpoint, build the next stages with the plan defaults. Owner decision 2026-11-13 (later): VPS, ssh and deploy steps are pre-approved; the coordinator does them (backup first, name the rollback target, verify after). Stop for the owner only when a step needs an API key or secret the coordinator cannot get itself.
@@ -59,7 +60,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🔴 PLANNED, plan landed, 7 read-only stages + cut stages after G1, no migration): a test audit report with approval groups, then owner-approved cuts; sequenced after none (cut stages after F124); gate G1 second pass after stage 07 (the owner marks `audit/report.md`; a real stop).
 - Order rule (owner, 2026-11-14): plan a ticket only after the tickets it needs (§2.1 "Needs") have landed; build it; then plan the next one that depends on it. Independent tickets may be planned in parallel with builds. Do not plan ahead of the code (F098 plan clashed with F091 code). Quota rule: set a `limen rule` wake at the quota reset time plus 2 minutes whenever jobs stop on the 5-hour limit; resume failed jobs with `limen continue` and the claude-bridge flags. Builders have no cap (owner), planners at most three at once; with 5 to 7 jobs the quota lasts about one hour per 5-hour window.
 - `F071-limen-transition` (🟠 ACTIVE): the agent workflow moves to Limen; epic none; sequenced after —; gate —.
-- `F023-gemini-billing-budget-alert` (🔴 PLANNED, plan landed): a Gemini Cloud Billing budget alert; `parked`: only if a paid Gemini project exists for the E2a judge (PD-067); epic E3.
 - `F029-sync-return-of-a-later-copy` (🟠 ACTIVE, plan landed, 5 stages, F029 + F064, no migration): sync returns a later copy when two copies are in one folder; `keep`: one sync ticket, plan together with F032 and F064 (F091 landed, so its gate on `modules/mail/` is open); epic none.
 - `F037-s3-assist-week-result` (🔴 PLANNED, plan landed): the S3 one-week assist result; `folded into F095` (E1 stage 09 runs it; the coordinator closes it); epic E1.
 - `F047-s4-pilot-week` (🔴 PLANNED, plan landed): S4 pilot week with real-mail checks of drafts, approvals, delegation; `folded into F095` (E1 stage 10 runs it; the coordinator closes it); epic E1.
@@ -69,8 +69,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F063-junk-llm-cap` (🔴 PLANNED, plan landed): a separate daily LLM limit for spam folder mail; `parked`: trigger is a spam wave in the weekly report of F100; epic none.
 - `F064-sync-return-to-other-folder` (🟠 ACTIVE, planned in F029 (one plan)): sync sees a user move into a synced folder below that folder's cursor; `keep`: one sync ticket, plan together with F029 and F032 (F091 landed); epic none.
 - `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed): `actions.status` writers read the transitions map at runtime; `keep`: F091 landed, so plan now (it moves the same writers); epic none.
-- `F072-llm-provider-fallback` (🔴 PLANNED, plan landed): automatic fallback between LLM providers; `parked`: out of Stage 2 (PD-067); the degraded-mode notice of F109 covers Stage 2; epic none.
-- `F076-vertex-ai-eu` (🔴 PLANNED, plan landed): the LLM calls run on Vertex AI in an EU region; `parked`: fallback of PD-110 only if OpenAI refuses the EU project (F111 gate); epic none.
 
 ## PARKED
 

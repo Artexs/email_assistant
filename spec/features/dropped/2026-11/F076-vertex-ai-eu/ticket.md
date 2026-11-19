@@ -23,3 +23,7 @@ The classifier and the writer call Gemini on Vertex AI in an EU region with cach
 ## Notes
 
 Dropped from S6 on 2026-11-12 (user: local production, "It's okay to use my current LLM provider"). The full old segment plan: [plan.md](plan.md). Facts V1–V3 and decisions D15–D17: `tasks/active/s6-pre-sale.md`.
+
+## Dropped 2026-11-19
+
+Obsolete: F138 removes Gemini and Vertex AI. No second LLM provider remains. The EU path, if OpenAI refuses the EU project, is an own model endpoint in the EU (F111).
