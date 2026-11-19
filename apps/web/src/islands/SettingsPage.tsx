@@ -24,6 +24,7 @@ import { ModeCard } from "../components/settings/ModeCard";
 import { ReplyStyleCard } from "../components/settings/ReplyStyleCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
 import { SignatureCard } from "../components/settings/SignatureCard";
+import { TelegramLockCard } from "../components/settings/TelegramLockCard";
 import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
 import { TimezoneCard } from "../components/settings/TimezoneCard";
 import { Button } from "../components/ui/button";
@@ -151,6 +152,13 @@ function GeneralSection({
       <>
         <SignatureCard organization={data} mailboxes={mailboxes} />
         <TimezoneCard organization={data} isOwner={isOwner} onSaved={saved} />
+        {data.telegramMinimalLocked !== undefined && (
+          <TelegramLockCard
+            locked={data.telegramMinimalLocked}
+            isOwnerRole={isOwnerRole}
+            onSaved={(locked) => mutate({ ...data, telegramMinimalLocked: locked })}
+          />
+        )}
       </>
     );
   }
