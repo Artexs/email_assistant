@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-19
 ---
 
 # F120 · The assistant knows who each sender is to the user and suggests rules from it
