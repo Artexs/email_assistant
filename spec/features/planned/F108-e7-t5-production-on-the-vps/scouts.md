@@ -1,0 +1,95 @@
+# F108 scouts
+
+Four Sonnet 5.5 scouts (thinking medium), started together on 2026-11-18 at plan base c68ce51e. Each packet is copied whole from the job log. A packet is a lead, not a fact; the planner re-read the code for each finding that a decision uses (see plan.md § Facts checked).
+
+| # | Question | Job id |
+| --- | --- | --- |
+| 1 | Env split: which keys the server gets, whether it holds the DB admin secrets, how migrations run, which services read which secrets; F021 | `2026-11-18-f108-scout-1-13b75f90` |
+| 2 | Backups: backup.sh, restore-test.sh, the status file, the failed-backup notice, the VPS schedule, what F114 covers | `2026-11-18-f108-scout-2-a5c8b48d` |
+| 3 | CI and the two timing tests; quarantine; F124/F125 | `2026-11-18-f108-scout-3-3541b75e` |
+| 4 | VPS release path, ADR 0019, architecture §10, .env.bak handling, org:invite/plan/delete | `2026-11-18-f108-scout-4-f3efdb4c` |
+
+## Packet of job `2026-11-18-f108-scout-1-13b75f90`
+
+Packet: Which env keys the server gets, whether it holds the DB admin secrets, how migrations run, and which services read which secrets (F021 / D25)
+Base: c68ce51e
+Verified: `git status --short | wc -l` -> 0 (worktree clean). I did not run compose, `docker compose exec server env`, or any test. Every finding below comes from reading files.
+Unknowns: I did not read the VPS `.env` or the running container. I do not know which keys the VPS `.env` actually holds. It is copied from `.env.example`, so the three DB passwords are likely present there. This is guessed.
+
+1. `deploy/compose.yaml:41` (server) — `env_file: ../.env` gives the server every key of `.env`. The `environment:` block overrides DATABASE_URL (role `app`), MIGRATOR_DATABASE_URL, PORT, WEB_DIST, LOG_FORMAT and BACKUP_STATUS_FILE. `.env.example:163-165` defines POSTGRES_PASSWORD, MIGRATOR_PASSWORD and APP_PASSWORD, so the server holds all three. It also holds the migrator URL, set explicitly at `compose.yaml:46` with `${MIGRATOR_PASSWORD}`. D25 is not done. — observed.
+2. No server runtime code reads these keys. Only the scripts `db-worktree*`, `e2e-activity` and `e2e-seed*` in `apps/server/src/scripts/` read them (grep of `apps/server/src` and `packages/core/src`, tests excluded). The server therefore does not need them. Removing them from its env needs no app code change, but see the cli point in item 2. — observed.
+2. Migrations on the VPS: `deploy/release.sh:98` runs `compose run --rm -T cli bun run db:migrate` before `up`. `cli` (`compose.yaml:77`) `extends: server`, so it has the same `env_file` and URLs. It is the one-off service, but it shares the server env. `package.json:100` defines `db:migrate` as `dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema --wait migrate`. `deploy/restore.sh:228` runs the same command. `rollback.sh` runs no migration. The image keeps dbmate as a dev dependency (`Dockerfile:11`). Any env split must keep the migrator URL for `cli` and drop it from `server`. — observed.
+3. Local dev: `package.json:92` `db:up` starts only `db`, using compose.yaml plus compose.dev.yaml. `.env.example:163-173` holds all three passwords. DATABASE_URL and MIGRATOR_DATABASE_URL point at `127.0.0.1:5433`. `bun run db:migrate` uses the root `.env`. The `dev` and `start` scripts run `apps/server/src/main.ts` with the same `.env`. CI (`.github/workflows/ci.yml:60-65`) creates the roles with `psql … -f db/roles.sql`, then runs `bun run db:migrate`. The job env sets MIGRATOR_DATABASE_URL at `ci.yml:42`. — observed.
+4. Other services: compose.yaml defines only `db`, `server`, `cli`, `victorialogs` and `vlagent`. There is no worker or bot service. The triage worker and the Telegram bot run inside the `server` process, so they share its whole env (TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, OPENAI_*, WEB_AUTH_SECRET, CREDENTIALS_KEY, VAPID_PRIVATE_KEY, and so on). `db` reads POSTGRES_PASSWORD, MIGRATOR_PASSWORD and APP_PASSWORD from the compose interpolation. `db-init/roles.sh` uses them to create the roles. `victorialogs` and `vlagent` have no secrets. `backup.sh:108` runs `compose exec -T db pg_dump -U postgres`. It never puts a DB password in the shell. `deploy/backup.env` holds only BACKUP_DIR, AGE_RECIPIENT, BACKUP_REMOTE, KEEP_DAYS, COMPOSE and BACKUP_PING_URL. The server reads only the backup status file, read-only. Drill: `compose.drill.yaml:26` replaces the env file with `drill.env`. `restore.sh:140-142` writes the three drill passwords there. — observed.
+5. F021 is dropped. `spec/features/dropped/2026-11/F021-server-env-scope/outcome.md` says it was absorbed by E7-T5 (F108). Its `plan.md` proposes splitting `.env` into a server env (APP_PASSWORD URL, CREDENTIALS_KEY, HEARTBEAT_URL, LOG_LEVEL) and a migrate/admin env. It also proposes running `db:migrate` in a one-off service or with `--env-file`. `tasks/planned/s6f-hosted-production.md:19` requires that `docker compose exec server env` shows no POSTGRES_PASSWORD or MIGRATOR_PASSWORD, and that migrations run in a one-off service with the migrator URL (D25). Step 2 `[risky]` in that file covers the server env list, the one-off migrate service, the local run, the VPS deploy (user's go) and the `env` key-name check. Its expected files are `deploy/compose.yaml`, `.env.example`, `deploy/README.md` and `docs/architecture.md`. — observed.
+
+Checks: `apps/server/src/deploy-logging.test.ts` (lines 188, 323) sets the three passwords as dummy env values for compose. `deploy/restore.sh` and `sim-runbook.test.ts:191` also use them. Nothing asserts the server env lacks POSTGRES_PASSWORD or MIGRATOR_PASSWORD. The `env` key-name check from the s6f step does not exist yet. A split also touches `compose.sim.yaml`, which sets the migrator URL for `server` and `lab` at lines 96 and 127. It also touches the drill override of `env_file` in `compose.drill.yaml` and the compose-config test in `deploy-logging.test.ts`. Those two files were not tested here.
+## Packet of job `2026-11-18-f108-scout-2-a5c8b48d`
+
+Packet: What backup.sh and restore-test.sh do at HEAD, who writes and reads the backup status file, whether a failed backup reaches the operator, how backup runs on the VPS, and what F114 covers.
+Base: c68ce51e
+Verified: `git status --short | wc -l` -> 0 (worktree clean). I read the files below. I did not run backup.sh or restore-test.sh, and I did not check the VPS or the bucket.
+Unknowns:
+- Whether the cron line, `deploy/backup.env` and the rclone remote exist on the VPS now. The repo only holds the runbook (README.md:863-868). Guessed: not checked.
+- The S6f ticket asks for a read-only upload check ("`rclone ls` names and sizes only"). No script in the repo does it. The write-only VPS key cannot list the bucket (README.md:861), so the check needs a read key. The README says that key lives on the owner's machine only (README.md:879).
+- The S6f ticket says "read and log the bucket lifecycle rule". The rule is only a README step in the Backblaze UI (README.md:839). Nothing in the repo reads it.
+- Drill and restore results: backups.md says no timed drill has run. F114 stage 09 is not done at HEAD, and the README says "Measured drill time: not measured yet" (README.md:888).
+
+1. `deploy/backup.sh` — The nightly job. It runs `pg_dump -Fc` in the `db` container, checks the `PGDMP` magic, encrypts with `age -r`, then runs `rclone copyto --no-check-dest` to `BACKUP_REMOTE`. It renames the file only after the copy, deletes local files older than `KEEP_DAYS`, and prints `backup ok <name> <bytes>`. One EXIT trap writes `deploy/backup-status/status.json` (`result`, `at`, `name`, `bytes`, `last_ok_at`). The write goes through a `.tmp` file and a rename, and a bad `backup.env` still writes `failed`. The same trap pings `BACKUP_PING_URL` after a good run and `<url>/fail` after a failed one, and the ping never changes the exit code. — observed
+2. `deploy/restore-test.sh <file>.dump.age <identity>` — It runs on the owner's machine, never on the VPS. It starts a throwaway `postgres:17` container with `--network none`, decrypts through a pipe into `pg_restore`, and prints counts for `organizations`, `users`, `mailboxes` and `emails`. It removes the container on exit. It is the old monthly restore test; the drill uses `deploy/restore.sh --target drill|new-host` (F114 stage 07/08). — observed
+3. Status file reader and operator notice — A failed backup already reaches the operator, with the F114 alert path (the capabilities file says stage 04). The `deploy/compose.yaml` server mounts `./backup-status` read-only at `/run/ea-backup`, with `BACKUP_STATUS_FILE=/run/ea-backup/status.json` (compose.yaml:55-58). Dev compose sets it empty, so the check is off (compose.dev.yaml:19). The job `ops.slo` (cron `30 */5 * * * *`, apps/server/src/main.ts:208) calls `checkBackupAge` (apps/server/src/modules/operator/slo-checks.ts:188). The check fires `slo_backup_age` when the file is missing or bad, `result` is `failed`, or the last good backup is older than `SLO_BACKUP_MAX_AGE_H` (default 26 h). The text is in slo-texts.ts:73. Dedup, a 6 h repeat and the resolved line are in `slo-job.ts` and `alerts-service.ts`. E08-operations.md:83 turns the S6f "failed backup → operator notice" into this alert, and S6f keeps the upload check and the status file. Files in `deploy/test/`: `backup.test.ts`, `compose-backup-status.test.ts`. — observed. I did not read the alert dedup or Telegram send code or run its tests, so that part is guessed.
+4. VPS schedule — A host crontab line, `30 3 * * * cd <repo> && deploy/backup.sh >> ~/ea-logs/backup.log 2>&1` (README.md:865). It is not a compose service, not a systemd timer and not an app job. rclone 1.75 or later sits in `~/bin`, and the remote is `b2` with a write-only key. `PATH=$HOME/bin:$PATH` is needed. The only check in the docs is one `backup ok` line a night in `~/ea-logs/backup.log`, plus the Healthchecks.io "backup" check (period 1 day, grace 2 h; owner step U2). The `platform.heartbeat` job is not a backup job. — observed (README.md:828-875, docs/capabilities/backups.md)
+5. F114 coverage — Stage 04 is the status file, the ping and the check; stage 05 is the release scripts (`release.sh` runs `backup.sh` first); stages 07/08 are `restore.sh` (drill and new host, `credentials:check` with `failed=0`, `compose.drill.yaml`, the VPS-lost runbook); stage 09 is the VPS run. Stage 09 covers a bootstrap backup that writes the first status file, V4 (`status.json` has `result=ok` and the server reads it), and the drill in the separate project `ea-drill`. Its pass check is before ≤ drill ≤ after for the four counts, the live containers unchanged, and `slo_backup_age` in the drill log (expected, no status file in the clone). It does not cover the rclone/B2 object check, the lifecycle-rule read, or the S6f "restore test on the dev machine" with `restore-test.sh`. E08-operations.md:83 says the drill proves the S6f restore test. — observed. The ticket says the stage 09 result is not written yet.
+
+Checks:
+- `deploy/test/backup.test.ts` and `deploy/test/compose-backup-status.test.ts` cover script and compose behavior with stubs (guessed from the file names; I did not read or run them).
+- `apps/server/src/modules/operator/slo-host-checks.test.ts` and `apps/server/test/integration/ops-slo-job.test.ts` cover the status-file check (guessed from their grep hit).
+- They miss the real B2 upload, the real cron and a real restore. backups.md says `restore.sh` has only stub tests.
+## Packet of job `2026-11-18-f108-scout-3-3541b75e`
+
+Packet: Are the two timing tests (runSend > 3, AgentMail fake > holdResponseNext) still flaky? What is the master CI state, what is quarantined, and does F124 or F125 own a fix?
+Base: c68ce51e
+Verified: `gh run list --branch master --workflow CI --limit 12 --json conclusion,createdAt,headSha` -> 7 runs are `"conclusion":"success"` (newest completed 2026-11-18T23:24:54Z); the 5 newest are still in progress, conclusion empty.
+Unknowns: Whether the 5 in-progress runs pass. I did not run `bun run test:unit:ci` on the tests. The "fixed" status comes from the alert entry and the code read, not from a CI run of those tests.
+1. `docs/known-alerts.md:568-576` — The alert is "fixed (4ad0fbd)". Cause: on Bun 1.3.14, `server.stop(true)` waited for a held handler. Fix: the fake's `stop()` releases held responses first. `.bun-version` is 1.4.4 since F094. — observed
+2. `apps/server/src/modules/testmail/send.test.ts:161` (`test("3: a lost response is repeated with the same key"`) and `agentmail/fake.test.ts:122` (`holdResponseNext: …`) — Both tests exist and have no `skip`. The `holdResponseNext` hold is 1000 ms in both. — observed
+3. `spec/build.md:13` — "no test is quarantined now". F123 and F126 were the flaky tests fixed on 2026-11-14. The last all-green run before that was 2026-11-13. A grep for `Quarantined 20` in `apps` and `packages` finds nothing. The quarantine rule is `docs/code-patterns.md:353`. — observed
+4. `spec/features/planned/F124-…/ticket.md:13` — F124 adds timeout seams for three real waits: `platform/auth-mail.ts`, `telegram/runtime.ts` (`getMe`), and the `scheduler.ts` tests. It does not name `runSend` or `holdResponseNext`. F125 (the test audit) does not name them either. A grep of both folders for `holdResponse|runSend|send.test|fake.test` returns nothing. So neither ticket owns a fix. — observed
+5. `.github/workflows/ci.yml` — One `ci` job runs lint, typecheck, `db:check-migrations`, `test:unit`, then more steps (not read past line 60). `ci.yml` has a `workflow_call` trigger, so `docs-deploy.yml` also runs it. — observed
+Checks: The `ci` job's `test:unit` step covers both tests on Bun 1.4.4; it misses the CI-Bun (1.3.14) hang, which no longer applies after the pin. `bun run test:unit:ci` would cover both tests on the pinned Bun, and I did not run it.
+## Packet of job `2026-11-18-f108-scout-4-f3efdb4c`
+
+Packet: How releases reach the home VPS; ADR 0019 state; architecture §10; `.env.bak` handling; `org:invite`, `org:plan` and `org:delete` at HEAD
+Base: c68ce51e
+Verified: `ls docs/decisions | grep -c 0019` -> `0` (also `git status --porcelain | wc -l` -> `0`)
+Unknowns:
+- The files do not say who runs `deploy/release.sh`. The queue note shows the release session or coordinator running it over `ssh home_vm`, in `~/email_assistant` (observed).
+- No "go rule" text was found in the release docs. The nearest text is the queue-note line "Rule: back up first, tag `ea-server:pre-<ticket>`, deploy a CI-checked pinned commit, verify, then record here" (observed). That line is old. `deploy/README.md:62` says the manual `pre-<ticket>` tag rule is gone. Owner approval is stated only for some steps, e.g. `deploy/README.md:239` "ask the owner first", and `sent_sync` waits for the owner's word. My grep of the F108 ticket and `tasks/planned/s6f-hosted-production.md` for "go rule" returned nothing. I did not read those two files in full.
+- I did not run any release script, test or `ssh`. The VPS state is not checked.
+
+1. `docs/release-checklist.md:1-26` — Every VPS deploy is a tagged release, 11 steps. Step 1: CI green on the tagged commit. Step 8: `bun run release:prepare`, commit, push, wait for green CI, then tag. Step 9: `deploy/release.sh v<x.y.z>` ends with `release ok <tag> previous <old>`. Step 10: watch 30 minutes (`ops:alerts`, error events, sync lines). Step 11: `deploy/rollback.sh`. — observed
+2. `deploy/release.sh:36-110` — Refuses (exit 2) on a dirty tree, a tag not on `origin/master`, a pending release, or the current tag. Then it does these steps in order:
+   - Backup: `deploy/backup.sh`, whose last stdout line must start with `backup ok`.
+   - Disk check: at least 3 GB free.
+   - `pending` mark in `deploy/release-state/state`.
+   - Keep the old image as `ea-server:<current>`.
+   - Checkout the tag, build, `db:migrate`, `up --wait`, verify.
+   - Write state, prune images.
+   It never rolls back by itself. — observed
+3. Rollback — `deploy/README.md:54-65`. `deploy/rollback.sh` needs no rebuild. It never runs `db:rollback` and never restores the database. It targets `current` if a release is pending, else `previous`. Without a target it exits 2. Roll back code only; a broken migration gets a forward fix in a patch release or a restore from backup. The checkout stays detached after a release. — observed
+4. `notes/2026-11-15-vps-deploy-queue.md` — Batches 1–4 were deployed 2026-11-15, the last as `v0.2.0` (`3e60a7f5`). v0.2.1 was tagged (`a1d7b054`) on 2026-11-17 but NOT deployed: `ssh home_vm` returned "No route to host". The note says to retry with `nohup bash -c "deploy/release.sh v0.2.1 ..."`. `sent_sync` stays off until the owner says so. — observed
+5. ADR 0019 does not exist as a file. `docs/decisions/README.md:37` lists it as "Reserved by the S6 plan … reserved (E7 tickets F106–F108 use or release them)". There is no title and no status beyond "reserved". F108 is meant to write it (`docs/product/stage-2/01-review.md:82`, `E07-platform-and-trust.md:18`). — observed
+6. `docs/architecture.md:632-642` §10 Deployment:
+   - Pilot: the home VPS with Compose (`db` and `server`), the web panel on `127.0.0.1:8080` behind Tailscale Serve (ADR 0017), and no inbound port.
+   - Sim stack (ADR 0021) and the docs site (ADR 0030) are described.
+   - Production (E7-T5, F108): "the home VPS (PD-001). A hosted EU VPS with the same Compose files is the path if outside users come later." — observed
+7. `.env.bak` handling is manual and documented only in `deploy/README.md`:
+   - Line 220: `cp -p .env .env.bak-s5e`, delete it when the panel works.
+   - Lines 241 and 245: `.env.bak-f069`.
+   - Line 401: restore the copy only if the `.env` edit broke another key.
+   - No script handles it. `release.sh` and `backup.sh` do not mention it. — observed
+8. Org commands at HEAD (all exist; `package.json:58-67` has the scripts `org:invite`, `org:plan` and `org:delete`):
+   - `org:invite`: `$C exec server bun run org:invite --org-name <name> --email <email> --display-name <name> [--lang pl|en] [--trial-days N]` (`deploy/README.md:247-253`). It prints a one-time setup link valid for 24 h. It fails with `user with this email already exists`.
+   - `org:plan`: `bun run org:plan --org-id <uuid> [--plan trial|active|suspended] [--trial-days N] [--max-mailboxes N]` (`apps/server/src/scripts/org-plan-args.ts:7`).
+   - `org:delete`: `$C run --rm cli bun run org:delete --org-id <id> --confirm "<org name>"` (`deploy/README.md:645-668`; `apps/server/src/scripts/org-delete.ts`). It needs no flag. The owner can also delete in Settings → Account when the flag `org_delete` is on. Exit 1 prints `busy, try again`. The ticket that builds delete is F106 (the README section is titled "Account data (F106)"). The queue note records F106 as closed after the v0.2.0 deploy, but v0.2.0 may not contain it; I did not check. — observed
+Checks: `apps/server/test/integration/org-cli.test.ts` and `org-invite-cli.test.ts` cover the org commands; I did not run them. `deploy/test/` holds release-script tests; I did not read or run them. Nothing here proves the VPS runs `v0.2.1` or that `org:delete` is deployed there.
