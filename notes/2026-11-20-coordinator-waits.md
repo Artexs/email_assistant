@@ -1,6 +1,6 @@
 # Why the coordinator blocks, and how to stop it (2026-11-20)
 
-Read-only study. No rule changed yet. The owner decides the proposal in § 4.
+The owner approved § 4 on 2026-11-20 (steps 1–6). Applied: § 6. Step 7 (a comment on Limen F961) is not done: the Limen repository has its own owner.
 
 ## 1. Cause
 
@@ -51,7 +51,14 @@ The owner's idea is correct: the worker owns the tests, the coordinator only mer
 
 Simpler variant: steps 1, 2, 4, 6 only. When master moved, land anyway and let CI on master catch a break, then revert. The data (0 failures in 74 checks) supports it, but it loses the insurance against a semantic merge break.
 
-## 5. Changes this needs
+## 6. Applied (2026-11-20)
+
+- `scripts/land-check.sh <job>`: `land now`, `started` or `running`; `--status` for the scan. Results: `.limen/land-checks/<job>.out` and `.log` (gitignored).
+- `.agents/limen/reminders.md`: Limen adds it to the first prompt of every job started after this change (`../limen/src/job/task-note.ts`, `noteStart`). It does not reach jobs that ran before. It replaces the copy of `worker.md` from § 5: an override would drift from the Limen default.
+- `spec/build.md`: TRACK "Land and review" (land check, CI) and the NEXT rules line (never block). NEXT is in the board digest of every coordinator turn; TRACK is not.
+- `scripts/coord-scan.sh`: land check results and the last 3 CI runs.
+
+## 5. Changes this needs (proposal; § 6 says what was applied)
 
 - `spec/build.md` TRACK "Land and review": replace the land check sentence and the CI sentence (owner choice, so the owner approves).
 - New `scripts/land-check.sh`; `scripts/coord-scan.sh` reads `.limen/land-checks/` and prints CI status.

@@ -102,7 +102,13 @@ describe("deploy/logs.sh", () => {
       `#!/usr/bin/env bash\nprintf '%s\\n' "$*" >&2\nprintf '%s\\n' '${json({ event: "from_docker", run_id: "r-9" })}'\n`
     );
     chmodSync(fake, 0o755);
-    const result = run(["--since", "2h", "--follow", "--run", "r-9"], "", { PATH: `${bin}:${process.env.PATH ?? ""}` }, repoRoot, fakeScript);
+    const result = run(
+      ["--since", "2h", "--follow", "--run", "r-9"],
+      "",
+      { PATH: `${bin}:${process.env.PATH ?? ""}` },
+      repoRoot,
+      fakeScript
+    );
     expect(result.code).toBe(0);
     expect(result.err).toContain(
       "compose -f deploy/compose.yaml --env-file .env logs --no-log-prefix --since 2h --follow server"
