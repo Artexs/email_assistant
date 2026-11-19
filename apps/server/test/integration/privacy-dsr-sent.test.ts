@@ -338,7 +338,7 @@ describe("data request for sent mail", () => {
     expect(await sentRows(w.orgId)).toEqual([]);
   });
 
-  test("4. audit rows hold the count and no address; the report holds the mails that go; the CLI prints counts only", async () => {
+  test("4. the find audit row holds the count and no address; the report holds the mails that go; the CLI prints counts only", async () => {
     const w = await seedWorld();
     const s1 = await addSent(w, {
       from: w.boss,
@@ -380,17 +380,29 @@ describe("data request for sent mail", () => {
     expect(cli.code).toBe(0);
     expect(cli.stdout).toContain("sent mails 2\n");
     expect(cli.stdout + cli.stderr).not.toContain(w.person);
+
+    const findAudit = await auditData(w.orgId, auditEvents.dsrFind);
+    expect(findAudit.at(0)).toMatchObject({ sent_mails: 2 });
+    for (const data of findAudit) expect(JSON.stringify(data)).not.toContain(w.person);
+  });
+
+  // The erase runs in its own case, so a case starts one `bun` process. Each start scans every code point for the rule
+  // check (about 0.7 s); two starts in a row used half of the 5 s test limit and failed in a loaded CI run.
+  test("4c. the erase audit row holds the count and no address; the CLI prints counts only", async () => {
+    const w = await seedWorld();
+    await addSent(w, { from: w.boss, to: [w.person], subject: "first", content: "stored", body: "text one" });
+    await addSent(w, { from: w.boss, to: [w.team], cc: [w.person], subject: "third" });
+    await addSent(w, { from: w.boss, to: [w.person, w.other] });
+
     const cliErase = await run(["--org-id", w.orgId, "--address", w.person, "--erase", "--confirm", w.person]);
     expect(cliErase.code).toBe(0);
     expect(cliErase.stdout).toContain("erased sent mails 2\n");
     expect(cliErase.stdout + cliErase.stderr).not.toContain(w.person);
 
-    const findAudit = await auditData(w.orgId, auditEvents.dsrFind);
-    expect(findAudit.at(0)).toMatchObject({ sent_mails: 2 });
     const eraseAudit = await auditData(w.orgId, auditEvents.dsrErase);
     expect(eraseAudit).toHaveLength(1);
     expect(eraseAudit[0]).toMatchObject({ sent_mails: 2 });
-    for (const data of [...findAudit, ...eraseAudit]) expect(JSON.stringify(data)).not.toContain(w.person);
+    expect(JSON.stringify(eraseAudit[0])).not.toContain(w.person);
   });
 
   test("4b. a person who is only in sent mail is a match: no empty count, no spelling warning", async () => {
@@ -399,11 +411,14 @@ describe("data request for sent mail", () => {
     const found = await match(w.orgId, w.person);
     expect(found.mails).toEqual([]);
     expect(dsrIsEmpty(dsrCounts(found))).toBe(false);
-    const cli = await run(["--org-id", w.orgId, "--address", w.person, "--find"]);
+    // The two starts do not depend on each other, so they run together (two in a row used half of the 5 s limit).
+    const [cli, nobody] = await Promise.all([
+      run(["--org-id", w.orgId, "--address", w.person, "--find"]),
+      run(["--org-id", w.orgId, "--address", `nobody-${randomUUID().slice(0, 8)}@x.test`, "--find"]),
+    ]);
     expect(cli.code).toBe(0);
     expect(cli.stdout).toContain("sent mails 1\n");
     expect(cli.stderr).not.toContain("warning");
-    const nobody = await run(["--org-id", w.orgId, "--address", `nobody-${randomUUID().slice(0, 8)}@x.test`, "--find"]);
     expect(nobody.stderr).toContain("warning: no match");
   });
 
