@@ -1,8 +1,10 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
 import { REPLY_POLL_INTERVAL_MS, REPLY_POLL_MAX_MS } from "@ea/core/web";
 
 import {
+  askSamples,
+  loadSamples,
   sampleFailureKey,
   samplesInProgress,
   waitForSamples,
@@ -97,5 +99,51 @@ describe("waitForSamples", () => {
     const run = deps([[item("done")]]);
     expect((await waitForSamples("m1", { deps: run.deps })).kind).toBe("done");
     expect(run.waits).toEqual([]);
+  });
+});
+
+describe("the calls", () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+  const MAILBOX = "0190f5a0-0000-7000-8000-0000000000d1";
+  const IDS = ["0190f5a0-0000-7000-8000-0000000000e1", "0190f5a0-0000-7000-8000-0000000000e2"];
+
+  function answer(status: number, body: unknown): { calls: { url: string; method: string | undefined }[] } {
+    const calls: { url: string; method: string | undefined }[] = [];
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, method: init?.method });
+      return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+    }) as unknown as typeof fetch;
+    return { calls };
+  }
+
+  test("a run is asked with a POST on the route of the mailbox; 202 gives the count", async () => {
+    const seen = answer(202, { requestIds: IDS, count: 2 });
+    expect(await askSamples(MAILBOX)).toEqual({ kind: "queued", count: 2 });
+    expect(seen.calls).toEqual([{ url: `/api/mailboxes/${MAILBOX}/reply-samples`, method: "POST" }]);
+    answer(202, { requestIds: [], count: 0 });
+    expect(await askSamples(MAILBOX)).toEqual({ kind: "queued", count: 0 });
+  });
+
+  test("a 409 is an answer with its own text: the day limit, no model, an OAuth mailbox; another error is thrown", async () => {
+    answer(409, { error: "sample_limit" });
+    expect(await askSamples(MAILBOX)).toEqual({ kind: "refused", key: "rs_samples_limit" });
+    answer(409, { error: "llm_off" });
+    expect(await askSamples(MAILBOX)).toEqual({ kind: "refused", key: "rs_samples_llm_off" });
+    answer(409, { error: "blocked", reason: "oauth_mailbox" });
+    expect(await askSamples(MAILBOX)).toEqual({ kind: "refused", key: "rs_samples_oauth" });
+    answer(409, { error: "something_else" });
+    await expect(askSamples(MAILBOX)).rejects.toThrow();
+    answer(500, { error: "internal" });
+    await expect(askSamples(MAILBOX)).rejects.toThrow();
+  });
+
+  test("the run of today is read with a GET and the items are kept as the server sent them", async () => {
+    const item = { requestId: IDS[0], status: "done", reasonCode: null, subject: null, body: "Tekst" };
+    const seen = answer(200, { items: [item] });
+    expect(await loadSamples(MAILBOX)).toEqual([item as SampleItem]);
+    expect(seen.calls).toEqual([{ url: `/api/mailboxes/${MAILBOX}/reply-samples`, method: "GET" }]);
   });
 });

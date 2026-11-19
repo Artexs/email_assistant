@@ -14,6 +14,7 @@ import {
   llmCallRows,
   MINUTE,
   NOW,
+  queueRequest,
   requestsOf,
   runJob,
   type FakeAnswer,
@@ -191,6 +192,22 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     } finally {
       kit.clock.now = NOW;
     }
+  });
+
+  test("the day limit belongs to one mailbox, and a tap or a redraft of the day does not use it up", async () => {
+    const w = await world();
+    await fourMails(w.box);
+    const second = await kit.addMailbox(w.org.orgId);
+    const secondBox: JobBox = { ...w.box, mailboxId: second.id, address: second.address };
+    await mail(secondBox);
+    // A tap request of the first mailbox, made today, is no sample run.
+    const tapped = await mail(w.box, { receivedAt: ago(50) });
+    await queueRequest(db, w.box, tapped, "tap");
+    expect((await ask(w)).status).toBe(202);
+    expect((await ask(w)).status).toBe(409);
+    // The second mailbox has its own run.
+    expect((await ask(w, "owner", second.id)).status).toBe(202);
+    expect((await requestsOf(db, secondBox)).map((r) => r.trigger)).toEqual(["sample"]);
   });
 
   test("two runs at the same time make one run", async () => {

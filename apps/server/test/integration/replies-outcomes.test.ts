@@ -11,7 +11,7 @@ import { redraftReply, replyOutcomeRows } from "../../src/modules/replies";
 import { weekStats } from "../../src/modules/reports";
 import type { DB } from "../../src/platform/db";
 
-import { testCapabilities } from "./fixtures";
+import { insertAction, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertReplyRequest } from "./reply-fixtures";
 import {
@@ -156,6 +156,15 @@ describe("replyOutcomeRows and the counts", () => {
       ]) {
         await pairIn(trx, box, state);
       }
+      // A send of another kind (a delegation) is no reply pair.
+      const other = await addReplyMail(trx, box);
+      await insertAction(trx, box.ctx, other, {
+        type: "send",
+        status: "applied",
+        approvedAt: NOW,
+        createdAt: NOW,
+        payload: { kind: "delegation" },
+      });
       expect(await countsOf(trx, box)).toMatchObject({
         made: 8,
         sent_by_user: 1,
@@ -263,7 +272,32 @@ describe("replyOutcomeRows and the counts", () => {
       await request({ status: "done" });
       await request({ status: "cancelled", reason_code: "feature_off" });
 
-      expect(await countsOf(trx, box)).toMatchObject({ made: 0, no_draft: 2, failed: 1 });
+      // A request on test mail, and a request of another mailbox when the query names one, are left out.
+      const testSender = `test-${randomUUID()}@x.test`;
+      await insertReplyRequest(trx, box.ctx, box.mailboxId, await addReplyMail(trx, box, { from: testSender }), {
+        trigger: "tap",
+        updated_at: NOW,
+        status: "failed",
+        reason_code: "llm_error",
+      });
+      expect(await countsOf(trx, box)).toMatchObject({ made: 0, no_draft: 2, failed: 2 });
+      expect(await countsOf(trx, box, { testMail: { senders: [testSender] } })).toMatchObject({
+        no_draft: 2,
+        failed: 1,
+      });
+      const otherMailbox = randomUUID();
+      await insertMailbox(trx, box.ctx, {
+        id: otherMailbox,
+        address: `other-${otherMailbox}@x.test`,
+        imapHost: "imap.x.test",
+        imapPort: 993,
+        smtpHost: "smtp.x.test",
+        smtpPort: 465,
+        capabilities: testCapabilities,
+        folderMap: {},
+      });
+      expect(await countsOf(trx, box, { mailboxId: otherMailbox })).toMatchObject({ no_draft: 0, failed: 0 });
+      expect(await countsOf(trx, box, { mailboxId: box.mailboxId })).toMatchObject({ no_draft: 2, failed: 2 });
     });
   });
 
