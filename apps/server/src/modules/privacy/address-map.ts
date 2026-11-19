@@ -1,4 +1,5 @@
-import { normalizeSenderAddress } from "@ea/core";
+import { addressCaseForms, addressCasedCodePoints, normalizeSenderAddress } from "@ea/core";
+import { sql, type Expression, type RawBuilder } from "kysely";
 
 // The registry of the columns that can hold the address of a third party (account data).
 //
@@ -349,14 +350,59 @@ export function normalizeDsrAddress(input: string): string | null {
 }
 
 // Characters that can stand next to an address inside one larger word: the RFC 5322 `atext` characters and the dot of
-// a local part, and letters (ASCII, then Latin, Greek and Cyrillic ranges that hold the non-ASCII letters; `[:alpha:]`
-// depends on the database locale, the ranges do not). The look-behind rejects the address inside a longer local part
-// (`o'p@x.test`, `=p@x.test`, `x/p@x.test`, `łp@x.test`). The ranges were widened after a review.
-const ATEXT = "a-z0-9._%+!#$&'*/=?^`{|}~-";
-const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\\u052f";
+// a local part, and letters. The pattern is case-sensitive, so the ASCII letters are both `a-z` and `A-Z`. The letters are
+// every code point that has a case form under the address rule (a capital, the Kelvin sign, a final sigma: `CASED`), the
+// Latin, Greek and Cyrillic ranges that hold the other non-ASCII letters, and the POSIX class (`[:alpha:]` depends on
+// the database locale, the ranges and the table do not). The combining marks are word characters too: the address
+// rule does not strip them, so `jose` + U+0301 + `bob@x.test` is another address than `bob@x.test` (the equality match
+// agrees). The look-behind rejects the address inside a longer local part (`o'p@x.test`, `=p@x.test`, `x/p@x.test`,
+// `łp@x.test`). The ranges were widened after a review.
+const ATEXT = "A-Za-z0-9._%+!#$&'*/=?^`{|}~-";
+const MARKS = "\\u0300-\\u036f\\u1ab0-\\u1aff\\u1dc0-\\u1dff\\u20d0-\\u20ff\\ufe20-\\ufe2f";
+const LETTER_RANGES = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\\u052f";
 
-// The Postgres regular expression for `text` and `json` columns (fact 5). Use it with `~*` here and with
-// `regexp_replace(…, 'gi')` in the erase. `jimbob@x.test`, `o'bob@x.test`, `bob@x.test.pl`, `bob@x.test_x` and
+// The code points of `addressCasedCodePoints` as the ranges of a bracket expression, built once.
+let casedClass: string | undefined;
+
+function casedRanges(): string {
+  if (casedClass === undefined) {
+    const points = addressCasedCodePoints();
+    const parts: string[] = [];
+    for (let at = 0; at < points.length; ) {
+      let end = at;
+      while (end + 1 < points.length && (points[end + 1] as number) === (points[end] as number) + 1) end++;
+      const first = String.fromCodePoint(points[at] as number);
+      const last = String.fromCodePoint(points[end] as number);
+      parts.push(end === at ? first : `${first}-${last}`);
+      at = end + 1;
+    }
+    casedClass = parts.join("");
+  }
+  return casedClass;
+}
+
+// A character that is special in a Postgres regular expression, or inside a bracket expression, gets a backslash.
+const escapeChar = (char: string): string => char.replace(/[!-/:-@[-`{-~]/u, "\\$&");
+
+// One character of the asked address as the pattern for every form of it that the rule folds to it. A letter with one
+// form is that character. A letter with more forms is a class of them; the forms of two code points (`i` and `I` with the
+// combining dot above) are alternatives of the class.
+function letterPattern(letter: string): string {
+  const forms = addressCaseForms(letter);
+  if (forms.length === 1) return escapeChar(letter);
+  const single = forms.filter((form) => [...form].length === 1);
+  const joined = forms.filter((form) => [...form].length > 1);
+  const set = `[${single.map(escapeChar).join("")}]`;
+  if (joined.length === 0) return set;
+  return `(?:${[set, ...joined.map((form) => [...form].map(escapeChar).join(""))].join("|")})`;
+}
+
+// The Postgres regular expression for `text` and `json` columns (fact 5). Run it with `matchesAddress` and
+// `replaceAddress`, never with the case-insensitive operator or the flag `i`: the pattern is case-sensitive and holds, for each letter of the
+// address, every form that the one address rule (`normalizeSenderAddress`) folds to it (`addressCaseForms`: `K` and the
+// Kelvin sign for `k`, `ẞ` for `ß`, `Σ`, `σ` and `ς` for `σ`, `I`, `İ` and `i` or `I` with a combining dot for `i`). So the
+// text match agrees with the equality match (`normalizedAddress`): a dotless `ı` is not an `i`, and `ſ` is not an `s`, which
+// a case-insensitive match did not know. `jimbob@x.test`, `o'bob@x.test`, `bob@x.test.pl`, `bob@x.test_x` and
 // `bob@x.testé` do not match `bob@x.test`; `bob@x.test.` (end of a sentence), `<bob@x.test>` and `"bob@x.test"` do.
 // The input must be normalized (`normalizeDsrAddress`).
 //
@@ -373,15 +419,23 @@ const LETTERS = "[:alpha:]\\u00c0-\\u00d6\\u00d8-\\u00f6\\u00f8-\\u024f\\u0370-\
 // needed (`\\np@x.test`: an escaped backslash and `np@x.test`); it never scrubs less. Found in testing: the plain
 // pattern left an address on its own line of a draft payload.
 export function addressRegex(address: string, opts: { json?: boolean } = {}): string {
-  // `\` before an ASCII punctuation character makes it an ordinary character in a Postgres regex.
-  const escaped = address
-    .replace(/[!-/:-@[-`{-~]/gu, "\\$&")
-    // The asked address is in the one address rule form (`σ`, plain `i`); the text holds any form that the rule folds to it.
-    .replaceAll("\u03c3", "[\u03c3\u03c2\u03a3]")
-    .replaceAll("i", "(?:i\u0307?|\u0130)");
+  const escaped = [...address].map(letterPattern).join("");
+  const word = `${LETTER_RANGES}${casedRanges()}${MARKS}`;
   // A quote or a brace is `atext`, so it joins the local part (`o'p@x.test`, `a{p@x.test`). At the start of the text or
   // after a character that is not `atext` it is punctuation around the address (`'p@x.test'`, `{p@x.test}`).
-  const starts = [`(?<![${LETTERS}${ATEXT}])`, "(?<=[a-z]=)", `(?<=(?:^|[^${LETTERS}${ATEXT}])['{])`];
+  const starts = [`(?<![${word}${ATEXT}])`, "(?<=[A-Za-z]=)", `(?<=(?:^|[^${word}${ATEXT}])['{])`];
   if (opts.json) starts.push("(?<=\\\\[nrtbf])");
-  return `(?:${starts.join("|")})${escaped}(?![a-z0-9_${LETTERS}-]|\\.[a-z0-9${LETTERS}])`;
+  return `(?:${starts.join("|")})${escaped}(?![A-Za-z0-9_${word}-]|\\.[A-Za-z0-9${word}])`;
+}
+
+// The test "the text `ref` holds the address" for a pattern of `addressRegex`. Find, scrub, the open-action test and the
+// post-erase check all run a pattern through this function and `replaceAddress`, so none of them can drift to a
+// case-insensitive match. `ref` is a text expression (`${column}::text` for a jsonb column).
+export function matchesAddress(ref: Expression<unknown>, pattern: string): RawBuilder<boolean> {
+  return sql<boolean>`${ref} ~ ${pattern}`;
+}
+
+// The text `ref` with every match of the pattern replaced by `replacement`.
+export function replaceAddress(ref: Expression<unknown>, pattern: string, replacement: string): RawBuilder<string> {
+  return sql<string>`regexp_replace(${ref}, ${pattern}, ${replacement}, 'g')`;
 }

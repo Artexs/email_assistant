@@ -27,7 +27,7 @@ Decisions (P = product, D = design):
 - **F2** (same cluster): a prototype of D3 (case-sensitive `~`, class per letter, `A-Z` in the boundaries) over the 66 probes × 40 accepted addresses: 0 misses, 0 over-matches.
 - **F3** JS fold table: 1,479 targets, 2,968 forms; more than one source form for `i`, `k`, `å`, `ǆ`, `ǉ`, `ǌ`, `ǳ`, `θ`, `σ`, `ω`. Every target is stable under the fold (review N2 confirms).
 - **F4** The F135 review (`.limen/jobs/2026-11-19-f135-review-erase-address-rule-6006ca65/result`): the findings that this ticket fixes.
-- **F5 (see stage 03 carry-over N1: true for the reader only)** Profile hashes come from JS (`contacts/profiles.ts`), so D1 orphans no profile row.
+- **F5 (corrected in stage 03, N1)** The reader (find and erase) hashes the asked address in JS, so it finds a profile row. The writer does not: `contacts/refresh.ts` hashes `item.address`, which comes from `normalizedAddress("emails.from_address_lower")` (`contacts/activity.ts`), so D1 changes its key for a stored From that had tab, NBSP, U+3000 or U+FEFF at an end. Such a sender gets a new profile row under the clean hash; the old row (keyed hash and dates, no address) stays until retention (365 days). No cleanup job (coordinator decision).
 
 ## Not verified
 

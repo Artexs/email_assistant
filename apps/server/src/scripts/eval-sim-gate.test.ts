@@ -269,4 +269,33 @@ describe("runSim prompt version and parts", () => {
     expect(file.promptVersion).toBe("classifier-v3");
     expect(file.promptParts).toEqual(["history", "list"]);
   });
+
+  test("a v4 dev run: the report names the sorted parts, the system text holds the profile rule and the user text the profile block", async () => {
+    const out = join(tmp, "report.md");
+    const r = await run(["--prompt-version", "classifier-v4", "--prompt-parts", "profile,list", "--out", out], {
+      part: "dev",
+    });
+    expect(r.code).toBe(0);
+    expect(r.requests.length).toBeGreaterThan(0);
+    for (const request of r.requests) {
+      expect(request.promptVersion).toBe("classifier-v4");
+      expect(request.system.split("\n").at(-1)).toContain("The sender profile gives counts");
+      expect(request.system).not.toContain("The sender history gives counts");
+    }
+    expect(
+      r.requests.some((request) => request.prompt.includes("Sender profile (counts from the user's mailbox"))
+    ).toBe(true);
+    expect(r.requests.every((request) => !request.prompt.includes("Sender history ("))).toBe(true);
+    expect(readFileSync(out, "utf8")).toContain("- prompt version: classifier-v4[list,profile]");
+  });
+
+  test("a v4 holdout run writes promptParts with profile into the gate file, sorted", async () => {
+    const r = await run(["--prompt-version", "classifier-v4", "--prompt-parts", "profile,list"]);
+    expect(r.files).toHaveLength(1);
+    const raw = JSON.parse(readFileSync(join(r.gateDir, r.files[0] as string), "utf8"));
+    expect(raw.promptParts).toEqual(["list", "profile"]);
+    const file = gateFileSchema.parse(raw);
+    expect(file.promptVersion).toBe("classifier-v4");
+    expect(file.promptParts).toEqual(["list", "profile"]);
+  });
 });

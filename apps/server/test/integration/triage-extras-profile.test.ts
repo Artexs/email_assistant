@@ -3,14 +3,23 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { senderProfileReader } from "../../src/composition";
-import { NO_TEST_SENDERS } from "../../src/modules/mail";
+import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
+import { claimEmails, NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setOrgFeature } from "../../src/modules/tenancy";
-import { loadClassifierExtras } from "../../src/modules/triage";
+import {
+  type ClassifierPromptChoice,
+  createLlmPause,
+  loadClassifierExtras,
+  noGateEvidence,
+  triageOne,
+  type TriageMailbox,
+} from "../../src/modules/triage";
 import { classifierVersions } from "../../src/modules/triage/prompts";
 import type { Db, TenantContext } from "../../src/platform/db";
+import type { LlmClient } from "../../src/platform/llm";
 
 import { ago, KEY, newOrg, NOW, refresh, type Org, type Trx } from "./contacts-fixtures";
-import { seedSenderActivity } from "./fixtures";
+import { insertTestEmail, noSuspiciousContext, pauseOtherMailboxes, seedSenderActivity } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // The profile reader of `classifier-v4` (part `profile`) in `loadClassifierExtras`. Each test fails when its guard is removed.
@@ -174,6 +183,115 @@ describe("loadClassifierExtras reads the profile for the part profile", () => {
       const other = await newOrg(trx);
       const crossOrg = await load(trx, other.ctx, on.mailboxId, { parts: ["profile"], reader: readerOf(trx) });
       expect(crossOrg.senderProfile).toBeNull();
+    });
+  });
+  // The job hands its reader down: `triageOne` -> `buildClassifierInput` -> `loadClassifierExtras`. Dropping the handoff at
+  // either hop leaves the prompt with no profile block, so each assertion below fails.
+  test("10. triageOne with the prompt v4[profile] and a reader: the LLM prompt holds the profile; with no reader it holds none", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const org = await seeded(trx);
+      await insertDefaultSettings(trx, org.ctx, org.mailboxId);
+      const settings = await getMailboxSettings(trx, org.ctx, org.mailboxId);
+      if (!settings) throw new Error("no settings");
+      const mailbox: TriageMailbox = {
+        id: org.mailboxId,
+        settingsVersion: settings.version,
+        mode: "shadow",
+        toolSwitches: { move: false, mark_read: false, flag: false, create_draft: false, move_unsure: false },
+        runningKey: noGateEvidence.runningKey,
+        policy: {},
+        rules: [],
+        movesSupported: false,
+        delegates: [],
+        timezone: "Europe/Warsaw",
+        junkFolder: null,
+        resumedAt: null,
+        suspicious: noSuspiciousContext,
+        urgencyProfile: null,
+      };
+      const prompt: ClassifierPromptChoice = { version: "classifier-v4", parts: ["profile"] };
+
+      async function run(reader: Reader | undefined): Promise<{ system: string; user: string }> {
+        const id = await insertTestEmail(trx, org.ctx, org.mailboxId, {
+          from_address: ANNA,
+          received_at: new Date(NOW.getTime() - 60_000),
+          subject: "Offer",
+          body_text: "Please look at the offer.",
+        });
+        const mails = await claimEmails(trx, org.ctx, org.mailboxId, {
+          now: NOW,
+          limit: 10,
+          staleBefore: new Date(NOW.getTime() - 5 * 60_000),
+          syntheticOnly: false,
+        });
+        const email = mails.find((mail) => mail.id === id);
+        if (!email) throw new Error("claim failed");
+        const seen: { system: string; user: string }[] = [];
+        const llm = {
+          modelOf: () => "fake-model",
+          endpointOf: () => "standard",
+          async generate(req) {
+            seen.push({ system: req.system, user: req.prompt });
+            return {
+              data: req.schema.parse({
+                category: "info",
+                confidence: 0.95,
+                reason_code: "newsletter",
+                reason: "test",
+                summary: "short summary",
+                fields: { due_date: null, language: "en", delegate_id: null, task: null, clarification: null },
+              }),
+              usage: {
+                role: req.role,
+                promptVersion: req.promptVersion,
+                model: "fake-model",
+                tokensIn: 100,
+                tokensOut: 20,
+                latencyMs: 300,
+                endpoint: "standard" as const,
+              },
+            };
+          },
+        } as LlmClient;
+        const outcome = await triageOne(
+          {
+            db: trx,
+            llm,
+            pause: createLlmPause(),
+            testMail: NO_TEST_SENDERS,
+            dailyCap: 1000,
+            now: () => NOW,
+            prompt,
+            ...(reader === undefined ? {} : { readProfile: reader }),
+          },
+          org.ctx,
+          mailbox,
+          email
+        );
+        expect(outcome.kind).toBe("triaged");
+        expect(seen).toHaveLength(1);
+        return seen[0] as { system: string; user: string };
+      }
+
+      const probe = spy(readerOf(trx));
+      const withReader = await run(probe.reader);
+      expect(probe.calls()).toBe(1);
+      expect(withReader.user).toContain("Sender profile (counts from the user's mailbox");
+      expect(withReader.user).toContain("- relation: known");
+      expect(withReader.user).toContain("answered 6 of 8");
+      // The mail's own From line holds the address (it is mail data); the profile block never does.
+      const block = withReader.user.slice(
+        withReader.user.indexOf("Sender profile ("),
+        withReader.user.indexOf("The email to classify:")
+      );
+      expect(block).not.toContain("@");
+      expect(withReader.system).toContain("The sender profile gives counts");
+
+      const without = await run(undefined);
+      expect(without.user).not.toContain("Sender profile (");
+      // The rule line belongs to the part, not to the mail: it stays.
+      expect(without.system).toContain("The sender profile gives counts");
     });
   });
 });

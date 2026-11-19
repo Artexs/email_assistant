@@ -7,11 +7,13 @@ import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import {
   addressRegex,
   DSR_ADDRESS_MAP,
+  matchesAddress,
   matchSubject,
   MESSAGE_TABLES,
   normalizeDsrAddress,
   NO_PERSONAL_TABLES,
   NOT_PERSONAL,
+  replaceAddress,
 } from "../../src/modules/privacy";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
 import type { DB } from "../../src/platform/db";
@@ -244,9 +246,11 @@ describe("DSR address map", () => {
     { address: "p@x.test", text: "line one\np@x.test\nline three", hit: true },
     { address: "p@x.test", text: "“p@x.test”", hit: true },
     { address: "p@x.test", text: "P@X.TEST", hit: true },
+    { address: "p@x.test", text: "<P@X.TEST>", hit: true },
     // A key and `=` in front (an authentication result): found. A bare `=` is a longer local part (below).
     { address: "p@x.test", text: "spf=pass smtp.mailfrom=p@x.test; dkim=pass", hit: true },
     { address: "p@x.test", text: "header.from=P@X.TEST", hit: true },
+    { address: "p@x.test", text: "SMTP.MAILFROM=P@X.TEST", hit: true },
     // A quote or a brace at the start of the text, or after a character that is not `atext`: punctuation, found.
     { address: "p@x.test", text: "'p@x.test'", hit: true },
     { address: "p@x.test", text: "{p@x.test}", hit: true },
@@ -259,6 +263,9 @@ describe("DSR address map", () => {
     { address: "p@x.test", text: "''p@x.test", hit: false },
     { address: "p@x.test", text: ".{p@x.test", hit: false },
     { address: "p@x.test", text: "jimp@x.test", hit: false },
+    { address: "p@x.test", text: "JIMP@X.TEST", hit: false },
+    { address: "bob@x.test", text: "JIMBOB@X.TEST", hit: false },
+    { address: "bob@x.test", text: "<BOB@X.TEST>", hit: true },
     { address: "p@x.test", text: "o'p@x.test", hit: false },
     { address: "p@x.test", text: "=p@x.test", hit: false },
     { address: "p@x.test", text: "x/p@x.test", hit: false },
@@ -285,11 +292,15 @@ describe("DSR address map", () => {
   test("the pattern: one row per form (inside a longer address, between other characters, metacharacters)", async () => {
     for (const row of PATTERN_ROWS) {
       const regex = addressRegex(row.address);
-      const found = (await sql<{ hit: boolean }>`select ${row.text} ~* ${regex} as hit`.execute(db)).rows[0]?.hit;
+      const found = (
+        await sql<{ hit: boolean }>`select ${matchesAddress(sql`${row.text}::text`, regex)} as hit`.execute(db)
+      ).rows[0]?.hit;
       expect({ ...row, hit: found }).toEqual(row);
       // The json pattern differs only in the escaped line breaks of a jsonb text form.
       const jsonFound = (
-        await sql<{ hit: boolean }>`select ${row.text} ~* ${addressRegex(row.address, { json: true })} as hit`.execute(
+        await sql<{
+          hit: boolean;
+        }>`select ${matchesAddress(sql`${row.text}::text`, addressRegex(row.address, { json: true }))} as hit`.execute(
           db
         )
       ).rows[0]?.hit;
@@ -300,7 +311,7 @@ describe("DSR address map", () => {
   test("the pattern also scrubs: regexp_replace with the same pattern keeps the neighbours", async () => {
     const regex = addressRegex("p@x.test");
     const scrub = async (text: string) =>
-      (await sql<{ out: string }>`select regexp_replace(${text}, ${regex}, '[removed]', 'gi') as out`.execute(db))
+      (await sql<{ out: string }>`select ${replaceAddress(sql`${text}::text`, regex, "[removed]")} as out`.execute(db))
         .rows[0]?.out;
     expect(await scrub("<p@x.test>, P@X.test. o'p@x.test p@x.testé")).toBe(
       "<[removed]>, [removed]. o'p@x.test p@x.testé"

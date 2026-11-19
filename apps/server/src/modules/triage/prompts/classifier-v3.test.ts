@@ -143,6 +143,72 @@ describe("classifier-v3 prompt", () => {
     );
   });
 
+  // The hashes come from the v3 text before the sender profile part changed the file and from the text after it: the same 8 pairs.
+  // The v3 and v4 comparison alone cannot catch a change that both files share.
+  test("the v3 system and user text of all 8 part combinations is pinned (a change of the text is a new version)", () => {
+    const pinned: [string, string, string][] = [
+      [
+        "none",
+        "52bf1044279d8527c6b11aa9b9e176d32a535b64dd84dafa14efbd63d18469bc",
+        "e7c3b736f59ad0e3cc7c4ed32060a2b502dac72482187361a23358631bf33c60",
+      ],
+      [
+        "list",
+        "fef4a66081be61e92187f2c4e31a47a9ffe77bb76edfee16dd5889d7c6b8f4e9",
+        "3ff94b539be877f862a25dba771a3a34a722da0dbec3035b04f95e4b2ea14cda",
+      ],
+      [
+        "history",
+        "006f6a995abd1291fa9ff8fbea37abea1e97adad9b59a7b4f9d785abd6206cee",
+        "2a2d4f885a8d9ab8b14fe76c2655bd70a4fc7be7044a2ceefa529c180f11bcec",
+      ],
+      [
+        "history,list",
+        "73560f35ac6ab3a9dcea40e479d27de0f42a138bba20dda75c75cad577c52426",
+        "c493fd37ea129c010605e08ce760511d044b2d4f6bc63ad50dfd7c264e2a91ad",
+      ],
+      [
+        "urgency",
+        "08ca811aa60d4ff5a2019bd1c01fe8d1198939b5c649e6941940fc821e4ad806",
+        "96b0b75f95eb852797ff9167fa53bc770d24993ac83535570435f8494863725d",
+      ],
+      [
+        "urgency,list",
+        "2a03bce7a384c82c257619fc9d043eaa6d8795fb0bc3c43482d056793f79ffb1",
+        "3ddcc6948b251f4d1d5b19df903265ba76b82377124be8b588e89bff1fa8a852",
+      ],
+      [
+        "urgency,history",
+        "20cca339a764f7e83ba3ec5e8a5f0fb94233637bb7b257c557990f4e36745778",
+        "d6ae23b457c98dc3ee6ac1b65ca09789de0ec6a73c234bfa08911b846a52cd02",
+      ],
+      [
+        "urgency,history,list",
+        "faef54f437391423c424763197ff799bc7f7635423381e189548bad6fed190e7",
+        "b1fe3237f3015271b7c0db99afe183bd3069ee3bd310dc7f36a2ed838a30bd18",
+      ],
+    ];
+    const rows: [string, string, string][] = [];
+    for (const urgency of [false, true]) {
+      for (const history of [false, true]) {
+        for (const list of [false, true]) {
+          const parts: ClassifierV3Part[] = [
+            ...(urgency ? (["urgency"] as const) : []),
+            ...(history ? (["history"] as const) : []),
+            ...(list ? (["list"] as const) : []),
+          ];
+          rows.push([
+            parts.join(",") || "none",
+            sha(buildSystemPrompt(classifierCategories, parts)),
+            sha(userV3(parts)),
+          ]);
+        }
+      }
+    }
+    // The loop order is urgency, history, list (outer to inner); the table is sorted the same way.
+    expect(rows).toEqual(pinned);
+  });
+
   test("the production pointer is classifier-v2 with no parts (stage 11 moves it)", () => {
     expect(productionClassifierChoice()).toEqual({ version: "classifier-v2", parts: [] });
   });

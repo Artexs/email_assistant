@@ -443,6 +443,109 @@ describe("address rule gaps: the branches of the mail match", () => {
     expect(await senders(w)).toEqual([`anna${sigma}@x.gr.pl`]);
   });
 
+  // Odd whitespace in the columns other than `emails.from_address`: each site of the match and of the scrub strips the
+  // same set as the program form. NBSP is U+00A0, IDEOGRAPHIC is U+3000.
+  const NBSP = "\u00a0";
+  const IDEOGRAPHIC = "\u3000";
+
+  test("whitespace: a To address and a Cc address with a trailing no-break space, only party besides the own mailboxes", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    await addMail(w, { from_address: w.address, to_addresses: [`anna@x.test${NBSP}`] });
+    await addMail(w, { from_address: w.address, to_addresses: [w.address], cc_addresses: [`anna@x.test${NBSP}`] });
+    await addMail(w, { from_address: "other@x.test" });
+    const found = await find(w, "anna@x.test");
+    expect(found.kind).toBe("found");
+    if (found.kind !== "found") return;
+    expect(found.counts.mails).toBe(2);
+    expect((await erase(w, "anna@x.test")).kind).toBe("erased");
+    expect(await senders(w)).toEqual(["other@x.test"]);
+  });
+
+  test("whitespace: a kept mail loses the padded form of the person from its recipient list", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    const keptId = await addMail(w, {
+      from_address: "other@x.test",
+      to_addresses: [`${IDEOGRAPHIC}Anna@X.test${NBSP}`, "third@x.test"],
+      cc_addresses: [`anna@x.test${NBSP}`],
+    });
+    expect((await erase(w, "anna@x.test")).kind).toBe("erased");
+    const kept = await db
+      .selectFrom("emails")
+      .select(["to_addresses", "cc_addresses"])
+      .where("id", "=", keptId)
+      .executeTakeFirstOrThrow();
+    expect(kept.to_addresses).toEqual(["third@x.test"]);
+    expect(kept.cc_addresses).toEqual([]);
+  });
+
+  test("whitespace: a sent mail from the person with a leading ideographic space goes", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    const sent = (from_address: string, to_addresses: string[]) =>
+      db
+        .insertInto("sent_emails")
+        .values({
+          org_id: w.ctx.orgId,
+          mailbox_id: w.mailboxId,
+          dedup_key: `mid:<s-${randomUUID()}@x.test>:h1`,
+          path: "Sent",
+          uidvalidity: 7,
+          uid: 1,
+          thread_key: "<s@x.test>",
+          origin: "user" as const,
+          content: "pending" as const,
+          sent_at: NOW,
+          internal_date: NOW,
+          from_address,
+          to_addresses,
+        })
+        .execute();
+    await sent(`${IDEOGRAPHIC}anna@x.test`, [w.address]);
+    await sent(w.address, ["other@x.test"]);
+    const found = await find(w, "anna@x.test");
+    expect(found.kind).toBe("found");
+    if (found.kind !== "found") return;
+    expect(found.counts.sent_mails).toBe(1);
+    expect((await erase(w, "anna@x.test")).kind).toBe("erased");
+    const left = await db.selectFrom("sent_emails").select("from_address").where("org_id", "=", w.ctx.orgId).execute();
+    expect(left.map((row) => row.from_address)).toEqual([w.address]);
+  });
+
+  // The scrub and the post-erase check use the same case forms as the equality match: the Kelvin sign, the capital sharp s
+  // and the Ohm sign are the person's address in kept text, and a dotless i is not.
+  test("the scrub removes the case forms of the address from kept text and leaves another person's text alone", async () => {
+    const KELVIN = "\u212a";
+    const SHARP = "\u00df";
+    const CAPITAL_SHARP = "\u1e9e";
+    const OMEGA = "\u03c9";
+    const OHM = "\u2126";
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    const people = ["kelvin@x.test", `stra${SHARP}e@x.de`, `${OMEGA}hm@x.test`, `${DOTLESS}lker@x.tr`];
+    for (const from_address of people) await addMail(w, { from_address });
+    const keptId = await db.transaction().execute((trx) =>
+      insertTestEmail(trx, w.ctx, w.mailboxId, {
+        received_at: ago(1),
+        from_address: "other@x.test",
+        to_addresses: ["ILKER@x.tr", "third@x.test"],
+        body_text: [
+          `a ${KELVIN}elvin@x.test`,
+          `b STRA${CAPITAL_SHARP}E@x.de`,
+          `c ${OHM}hm@x.test`,
+          `d ILKER@x.tr and ${DOTLESS}lker@x.tr`,
+        ].join("\n"),
+      })
+    );
+    for (const address of people) expect((await erase(w, address)).kind).toBe("erased");
+    expect(await senders(w)).toEqual(["other@x.test"]);
+    const kept = await db
+      .selectFrom("emails")
+      .select(["body_text", "to_addresses"])
+      .where("id", "=", keptId)
+      .executeTakeFirstOrThrow();
+    expect(kept.body_text).toBe("a [removed]\nb [removed]\nc [removed]\nd ILKER@x.tr and [removed]");
+    // The recipient list compares by the rule too: `ILKER` is `ilker`, not the dotless `ılker` that was erased.
+    expect(kept.to_addresses).toEqual(["ILKER@x.tr", "third@x.test"]);
+  });
+
   test("near addresses keep their mail", async () => {
     const w = await orgOf(`box-${randomUUID()}@x.test`);
     const near = [

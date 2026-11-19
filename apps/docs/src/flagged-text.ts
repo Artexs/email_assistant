@@ -27,6 +27,9 @@ export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>>
   urgency_editor: ["urg_title", "urg_topic_add"],
   bulk_unsubscribe: ["nl_open_link", "nl_none"],
   panel_review: ["title_review", "rv_thanks"],
+  sender_context: ["sender_rel_bulk", "sender_wrote"],
+  sender_suggestions: ["sg_help", "sg_member_note"],
+  contact_wait: ["lp_usual_reply", "lp_usual_reply_one"],
 };
 
 // Telegram texts and lines of the digest: literal parts of `packages/core/src/texts` and `digest`, English and Polish.
@@ -80,6 +83,8 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
     "Your reply request has a result",
     "Jest wynik Twojej prośby o odpowiedź",
   ],
+  sender_suggestions: ["suggestion waits", "suggestions wait", "Sugestie reguł do przejrzenia"],
+  contact_wait: ["usual reply:", "zwykle odpowiada w"],
   report_mail: [
     "[Email assistant]",
     "[Asystent poczty]",
@@ -99,12 +104,6 @@ export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
     "F115 stage 03b adds the flag and the switch only (`tool_switches.reply_drafts`, hidden while the flag is off): the text of the drafts, notices and cards comes in the stages 12 to 15",
   draft_copy_check:
     "only the committer reads it (`actions/send.ts`, F115 stage 08): a stopped send tells the user with the fixed result text `draft_changed`, which a reply draft shows whatever the flag says",
-  sender_context:
-    "F120 stage 02 adds the flag and the tables only: no reader or text exists yet (the sender line comes in the F120 stages 03 and 08)",
-  contact_wait:
-    "F120 stage 02 adds the flag and the `contact` loop source only: no reader exists yet (F120 stage 09); a loop shows days, never a flag text",
-  sender_suggestions:
-    "F120 stage 02 adds the flag and the table only: no route or card text exists yet (the F120 stages 06 and 07)",
   web_push:
     "F118 stage 02 adds the flag and the tables only: no route, sender or text exists yet (the device routes come in F118 stage 03, the sender in stage 08)",
 };

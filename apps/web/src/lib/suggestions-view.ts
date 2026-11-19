@@ -59,6 +59,12 @@ export function pickMailbox<T extends { id: string }>(
   return { open, mailbox: open.find((item) => item.id === chosen) ?? open[0] };
 }
 
+// After an Accept or a Dismiss the list loads again. When that load answers, the heading gets the focus only if the load worked.
+// A failed load keeps the old rows and the focus where it is, and the wish ends: a later poll must not move the focus.
+export function focusHeadingAfterReload(wanted: boolean, error: unknown): boolean {
+  return wanted && error === null;
+}
+
 export interface ActionOutcome {
   toast: { kind: "success" | "error"; key: TextKey } | null;
   // The list of suggestions loads again.
