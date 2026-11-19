@@ -19,6 +19,8 @@ import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
+// `reply-injection` is the set of the drafter run (`--drafter`); the classifier run takes none of it.
+const drafterSets = [...sets, "reply-injection"] as const;
 
 // The bare `--sim` command meets the 10 minute exit: 1,417 calls at 240 per minute take about 6 minutes.
 export const SIM_DEFAULT_CONCURRENCY = 8;
@@ -43,13 +45,18 @@ export const evalUsage = [
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
   "                    (the open-loops extractor on the sent-mail bank; the part sent-holdout needs --extractor, and --extractor needs a sent part)",
+  "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
+  "       bun run eval --set reply-injection --drafter --judge [--model …] [--out <file.md>]",
+  `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
+  "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
+  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge needs another provider than the drafter; the injection set needs --judge)",
 ].join("\n");
 
 const optionsSchema = z.object({
   provider: z.enum(llmProviderIds).optional(),
   model: z.string().min(1).optional(),
   "reasoning-effort": z.enum(openAiReasoningEfforts).optional(),
-  set: z.enum(sets).default("all"),
+  set: z.enum(drafterSets).default("all"),
   bar: z.coerce.number().min(0).max(1).default(0.98),
   "min-kept": z.coerce.number().int().positive().default(30),
   retries: z.coerce.number().int().min(0).default(4),
@@ -79,6 +86,7 @@ const optionsSchema = z.object({
   "fresh-lock": z.boolean().default(false),
   suspicious: z.boolean().default(false),
   extractor: z.boolean().default(false),
+  drafter: z.boolean().default(false),
   "prompt-version": z.enum(classifierVersionIds as [ClassifierVersion, ...ClassifierVersion[]]).optional(),
   "prompt-parts": z.string().min(1).optional(),
   judge: z.boolean().default(false),
@@ -133,8 +141,19 @@ const extractorAllowed = new Set<string>([
   "limit",
   "out",
 ]);
+// The options of a drafter run: `--sim <scenario> --part dev|holdout|week` or `--set reply-injection`.
+const drafterAllowed = new Set<string>([
+  ...extractorAllowed,
+  "drafter",
+  "set",
+  "judge",
+  "judge-provider",
+  "judge-model",
+  "judge-rpm",
+]);
 const simOnly = [
   "extractor",
+  "drafter",
   "part",
   "suspicious",
   "concurrency",
@@ -175,6 +194,29 @@ export function resolvePrompt(
   return parts === undefined ? undefined : { version: chosen, parts };
 }
 
+type ParsedData = Omit<z.infer<typeof optionsSchema>, "part"> & { part?: SimPart; sentPart?: SentPart };
+
+// `--drafter` runs the reply drafter on `--sim <scenario> --part dev|holdout|week` or on `--set reply-injection`; any
+// other combination is a usage error. The injection set has no corpus and always needs the judge.
+function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): EvalOptions | undefined {
+  if (data.extractor || data.suspicious || data.real || data.gap) return undefined;
+  if (Object.keys(values).some((key) => !drafterAllowed.has(key))) return undefined;
+  if (!data.judge && (data["judge-provider"] || data["judge-model"] || data["judge-rpm"])) return undefined;
+  const sim = data.sim !== undefined;
+  const injection = data.set === "reply-injection";
+  // Exactly one source: a corpus part (never a sent part) or the injection set.
+  if (sim === injection) return undefined;
+  if (sim && (data.part === undefined || data.sentPart !== undefined || values.set !== undefined)) return undefined;
+  if (injection && (data.part !== undefined || data.sentPart !== undefined || !data.judge)) return undefined;
+  return {
+    ...data,
+    prompt: productionClassifierChoice(),
+    concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
+    rpm: data.rpm ?? SIM_DEFAULT_RPM,
+    budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
+  };
+}
+
 // Undefined means a usage error.
 export function parseEvalArgs(args: string[]): EvalOptions | undefined {
   try {
@@ -210,6 +252,7 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "fresh-lock": { type: "boolean" },
         suspicious: { type: "boolean" },
         extractor: { type: "boolean" },
+        drafter: { type: "boolean" },
         judge: { type: "boolean" },
         "judge-provider": { type: "string" },
         "judge-model": { type: "string" },
@@ -235,6 +278,8 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
       return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
     }
     if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
+    if (data.drafter) return parseDrafterArgs(data, values);
+    if (data.set === "reply-injection") return undefined;
     if (data.extractor || data.sentPart !== undefined) {
       // A sent part runs only with --extractor and the other way round; the classifier options mean nothing here.
       if (data.sim === undefined || data.sentPart === undefined || !data.extractor) return undefined;

@@ -3,7 +3,14 @@ import { randomBytes } from "node:crypto";
 import { type DraftCheckCode, draftCodeChecks, type EvalCase, type PlannedAction, splitAddress } from "@ea/core";
 
 import { SoftError } from "../../platform/errors";
-import { LlmBlockedError, type LlmClient, LlmConfigError, llmErrorCode, type LlmProviderId } from "../../platform/llm";
+import {
+  LlmBlockedError,
+  type LlmClient,
+  LlmConfigError,
+  llmErrorCode,
+  type LlmProviderId,
+  type LlmUsage,
+} from "../../platform/llm";
 import { createLog } from "../../platform/log";
 
 import type { CaseResult, CaseUsage } from "./eval";
@@ -59,6 +66,41 @@ function draftOf(actions: PlannedAction[]): DraftToJudge | null {
   return null;
 }
 
+// One judge call with the retry rule of the classifier calls: soft errors retry after a wait, a config error goes up.
+// `{ errorCode }` is the final error; `usage` is what a good call used.
+async function judgeWithRetry(
+  deps: { sleep: (ms: number) => Promise<void> },
+  caseId: string,
+  retries: number,
+  attempts: AttemptHooks | undefined,
+  call: () => ReturnType<typeof judgeDraft>
+): Promise<{ ok: Awaited<ReturnType<typeof judgeDraft>> } | { errorCode: string }> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return { ok: await call() };
+    } catch (error) {
+      if (error instanceof LlmConfigError) throw error;
+      attempts?.failed();
+      if (!(error instanceof LlmBlockedError) && error instanceof SoftError && attempt < retries) {
+        if (attempts?.mayRetry() ?? true) {
+          const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
+          log.warn("eval_judge_retry", { case_id: caseId, attempts: attempt + 1, wait_ms: wait });
+          await deps.sleep(wait);
+          continue;
+        }
+      }
+      return { errorCode: llmErrorCode(error) };
+    }
+  }
+}
+
+const caseUsageOf = (usage: LlmUsage): CaseUsage => ({
+  model: usage.model,
+  tokensIn: usage.tokensIn,
+  tokensOut: usage.tokensOut,
+  latencyMs: usage.latencyMs,
+});
+
 // The judge pass of one case. No planned delegation or clarification draft: no call, `judge: null`.
 // Soft errors retry like the classifier calls; a final error is `{ errorCode }` and the classifier result stays.
 export async function judgeCaseDraft(
@@ -85,43 +127,64 @@ export async function judgeCaseDraft(
     planted: c.sim?.planted ?? [],
   });
 
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      const { result, usage } = await judgeDraft(
-        setup.llm,
-        {
-          kind: "delegation",
-          mail: { subject: c.subject, body: c.body },
-          draft: draft.text,
-          lang: c.lang,
-          nonce: randomBytes(16).toString("hex"),
-        },
-        { model: setup.model }
-      );
-      return {
-        judge: {
-          kind: "delegation",
-          codeFailed: code.failed,
-          scores: result.scores,
-          checks: result.checks,
-          passed: judgePassed(result, code.passed),
-        },
-        usage: { model: usage.model, tokensIn: usage.tokensIn, tokensOut: usage.tokensOut, latencyMs: usage.latencyMs },
-      };
-    } catch (error) {
-      if (error instanceof LlmConfigError) throw error;
-      attempts?.failed();
-      if (!(error instanceof LlmBlockedError) && error instanceof SoftError && attempt < input.retries) {
-        if (attempts?.mayRetry() ?? true) {
-          const wait = RETRY_WAITS_MS[Math.min(attempt, RETRY_WAITS_MS.length - 1)] as number;
-          log.warn("eval_judge_retry", { case_id: c.id, attempts: attempt + 1, wait_ms: wait });
-          await deps.sleep(wait);
-          continue;
-        }
-      }
-      return { judge: { kind: "delegation", errorCode: llmErrorCode(error) }, usage: null };
-    }
-  }
+  const graded = await judgeWithRetry(deps, c.id, input.retries, attempts, () =>
+    judgeDraft(
+      setup.llm,
+      {
+        kind: "delegation",
+        mail: { subject: c.subject, body: c.body },
+        draft: draft.text,
+        lang: c.lang,
+        nonce: randomBytes(16).toString("hex"),
+      },
+      { model: setup.model }
+    )
+  );
+  if (!("ok" in graded)) return { judge: { kind: "delegation", errorCode: graded.errorCode }, usage: null };
+  const { result, usage } = graded.ok;
+  return {
+    judge: {
+      kind: "delegation",
+      codeFailed: code.failed,
+      scores: result.scores,
+      checks: result.checks,
+      passed: judgePassed(result, code.passed),
+    },
+    usage: caseUsageOf(usage),
+  };
+}
+
+// What the drafter eval keeps of one reply grade: scores and flags only, never a draft text or a judge comment.
+export type ReplyJudge = { scores: Record<string, number>; checks: Record<string, boolean> } | { errorCode: string };
+
+// The `reply` rubric for the draft of a case. The case brings its expected points and its `mustNot` lines. The code
+// checks of the draft ran before (the drafter holds them), so `passed` is the rubric alone.
+export async function judgeReplyDraft(
+  deps: { sleep: (ms: number) => Promise<void> },
+  c: EvalCase,
+  draft: string,
+  setup: Pick<JudgeSetup, "llm" | "model">,
+  input: { retries: number },
+  attempts?: AttemptHooks
+): Promise<{ judge: ReplyJudge; usage: CaseUsage | null }> {
+  const graded = await judgeWithRetry(deps, c.id, input.retries, attempts, () =>
+    judgeDraft(
+      setup.llm,
+      {
+        kind: "reply",
+        mail: { subject: c.subject, body: c.body },
+        draft,
+        lang: c.lang,
+        ...(c.sim?.expectedPoints === undefined ? {} : { expectedPoints: c.sim.expectedPoints }),
+        ...(c.sim?.mustNot === undefined ? {} : { mustNot: c.sim.mustNot }),
+        nonce: randomBytes(16).toString("hex"),
+      },
+      { model: setup.model }
+    )
+  );
+  if (!("ok" in graded)) return { judge: { errorCode: graded.errorCode }, usage: null };
+  const { result, usage } = graded.ok;
+  return { judge: { scores: result.scores, checks: result.checks }, usage: caseUsageOf(usage) };
 }
 
 export interface JudgeSummary {

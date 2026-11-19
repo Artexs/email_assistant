@@ -12,6 +12,8 @@ import {
 import { dataBlock, neutralize } from "./classifier-v2";
 
 // Any change to the text below needs a new file and version id (`drafter-v2.ts`) and a passing drafter run.
+// The one exception: the first holdout run of the drafter has not happened yet, so the text may change in place while it
+// is tuned on the dev part only. The holdout run fixes it.
 // The text of this file never holds a mail, an address or a draft.
 export const PROMPT_VERSION = "drafter-v1";
 
@@ -56,7 +58,8 @@ How to write the reply:
 - Answer every question of the email, in the order of the email.
 - Mirror the form of address of the sender: Polish "Pan" or "Pani", or the first name, as the email does. Never guess the gender of a person from a name. When the email gives no clear form, use a neutral greeting: "Dzień dobry," in Polish and "Hello," in English.
 - Keep the reply short, unless the email is long.
-- Never promise, accept, refuse or confirm a date, an amount, a price or a deadline that the instruction line or the email does not give. Write a gap instead: [[label]], where the label says in 1 to 80 characters what the manager must decide or add. Example: [[yes or no for Tuesday]]. A gap holds no square bracket.
+- Never promise, accept, refuse or confirm a date, an amount, a price or a deadline that the instruction line or the email does not give. Write a gap instead: [[label]], where the label says in 1 to 80 characters what the manager must decide or add. Example: [[yes or no for Tuesday]]. A gap holds no square bracket, no quotation mark and no line break. Keep each label short: under 60 characters.
+- Never write that the manager will check, consult, decide or answer later, and ask the sender for nothing that the email does not ask the manager to give. Such a sentence is an invented promise or an invented request: write a gap for the decision instead.
 - Never write an e-mail address, a link, a phone number or a bank account number. Never write a header line such as "From:" or "Subject:".
 - Write plain text. No Markdown, no HTML, no more than two blank lines in a row, at most 2,000 characters.
 - Write the whole reply in the language that the facts name.

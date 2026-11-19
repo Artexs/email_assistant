@@ -240,3 +240,79 @@ describe("--extractor", () => {
     expect(parseEvalArgs(["--gap", "--extractor", "--sim-json", "a", "--real-json", "b"])).toBeUndefined();
   });
 });
+
+describe("--drafter", () => {
+  const sim = ["--sim", "lab-01", "--part", "dev", "--drafter"];
+  const set = ["--set", "reply-injection", "--drafter", "--judge"];
+
+  test("the reply injection set with the judge parses; the budget and rates are the run options", () => {
+    expect(parseEvalArgs([...set, "--budget-usd", "2"])).toMatchObject({
+      set: "reply-injection",
+      drafter: true,
+      judge: true,
+      budgetUsd: 2,
+      concurrency: SIM_DEFAULT_CONCURRENCY,
+      rpm: SIM_DEFAULT_RPM,
+    });
+    expect(parseEvalArgs([...set, "--model", "m", "--judge-provider", "gemini", "--out", "r.md"])).toMatchObject({
+      model: "m",
+      "judge-provider": "gemini",
+    });
+  });
+
+  test("an incoming part parses with and without the judge; a sent part does not", () => {
+    for (const part of ["dev", "holdout", "week"]) {
+      expect(parseEvalArgs(["--sim", "lab-01", "--part", part, "--drafter", "--judge"])).toMatchObject({
+        sim: "lab-01",
+        part,
+        drafter: true,
+        judge: true,
+      });
+    }
+    expect(parseEvalArgs(sim)).toMatchObject({ drafter: true, judge: false, budgetUsd: 1 });
+    for (const part of ["sent-dev", "sent-holdout"]) {
+      expect(parseEvalArgs(["--sim", "lab-01", "--part", part, "--drafter"])).toBeUndefined();
+    }
+  });
+
+  test("the old sets with the judge, and the injection set without --drafter, are usage errors", () => {
+    expect(parseEvalArgs(["--set", "all", "--judge"])).toBeUndefined();
+    expect(parseEvalArgs(["--set", "reply-injection"])).toBeUndefined();
+    expect(parseEvalArgs(["--set", "reply-injection", "--judge"])).toBeUndefined();
+    expect(parseEvalArgs(["--set", "all", "--drafter", "--judge"])).toBeUndefined();
+    // The injection set is a gate: it always needs the judge.
+    expect(parseEvalArgs(["--set", "reply-injection", "--drafter"])).toBeUndefined();
+  });
+
+  test("--drafter and --extractor, or any other mode, is a usage error", () => {
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev", "--drafter", "--extractor"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--extractor"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--suspicious"])).toBeUndefined();
+    expect(parseEvalArgs([...set, "--extractor"])).toBeUndefined();
+    expect(parseEvalArgs(["--drafter", "--real", "--org-id", org, "--mailbox-id", org])).toBeUndefined();
+    expect(parseEvalArgs(["--drafter", "--gap", "--sim-json", "a", "--real-json", "b"])).toBeUndefined();
+  });
+
+  test("--drafter needs exactly one source and refuses the classifier options", () => {
+    expect(parseEvalArgs(["--drafter"])).toBeUndefined();
+    expect(parseEvalArgs(["--drafter", "--judge"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--set", "reply-injection"])).toBeUndefined();
+    expect(parseEvalArgs([...set, "--sim", "lab-01", "--part", "dev"])).toBeUndefined();
+    expect(parseEvalArgs([...set, "--part", "dev"])).toBeUndefined();
+    for (const extra of [
+      ["--prompt-version", "classifier-v2"],
+      ["--prompt-parts", "none"],
+      ["--bar", "0.9"],
+      ["--min-kept", "10"],
+      ["--state", "x.jsonl"],
+      ["--per-category", "2"],
+    ]) {
+      expect(parseEvalArgs([...sim, ...extra])).toBeUndefined();
+    }
+  });
+
+  test("the judge options need --judge", () => {
+    expect(parseEvalArgs([...sim, "--judge-provider", "gemini"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--judge", "--judge-provider", "gemini"])).toBeDefined();
+  });
+});
