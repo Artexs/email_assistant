@@ -22,7 +22,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F107-e7-t4-papers-and-cost` (🟠 ACTIVE): E7-T4 Papers and cost
-- `F064-sync-return-to-other-folder` (🟠 ACTIVE): Sync: see a user move into a synced folder below that folder's cursor
 
 ## NEXT
 - F138 (OpenAI only): plan landed, 6 stages (01 → 02 → {03, 04} → 05 → 06). Builds after F115 stage 02 lands; owner step O1 (OpenAI limit) and local C1 come before stage 06.
@@ -83,7 +82,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F110-e4-b-earn-trust` (🟢 PROVEN): E4-B Earn trust; landed 2026-11-19
 - `F104-e5a-read-sent` (🟢 PROVEN): E5a Read Sent; landed 2026-11-19
 - `F102-e4-a-act-from-the-panel` (🟢 PROVEN): E4-A Act from the panel; landed 2026-11-19
-- 2026-11: 95 landed. spec/features/done/2026-11/
+- 2026-11: 96 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-19: do not wait, run in parallel
 

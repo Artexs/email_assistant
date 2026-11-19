@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-09
+landed: 2026-11-19
 ---
 
 # F064 · Sync: see a user move into a synced folder below that folder's cursor
