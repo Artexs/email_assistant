@@ -38,6 +38,8 @@ export const numberFieldNames = [
   "recipient_day",
   // outbox sender and testmail send
   "wait_ms",
+  // push sender: the HTTP status that a push service answered (a number, never its text)
+  "http_status",
   // mail sync: the time of one Sent pass
   "duration_ms",
   // sender profile pass: rows already equal (not written) and rows zeroed

@@ -64,6 +64,7 @@ export {
   type OperatorNotices,
 } from "./operator";
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
+export { createPushSender, PUSH_FLAG_WAIT_MS, PUSH_TTL_SECONDS, pushTopicOf, type PushSenderDeps } from "./push-sender";
 export { createReportMailSender, REPORT_MAIL_WAIT_MS, type ReportMailSenderDeps } from "./report-mail-sender";
 export { ReportMailError, type AppendOptions, type ReportMailbox, type ReportMailErrorKind } from "./report-mailbox";
 export { createImapReportMailbox, type ImapReportMailboxDeps } from "./report-mailbox-imap";

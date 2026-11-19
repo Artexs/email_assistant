@@ -40,8 +40,9 @@ export interface FanOutPlan {
 // - A kind with no push group (digest, reports, taps, the consent line): one Telegram row, as before. `only: "push"` leaves none.
 // - A kind with a group and the flag `web_push` off for the organization: one Telegram row, as before. No device counts.
 // - A kind with a group and the flag on: `effectiveRoute` says which channels. A member with neither a chat nor a device keeps the
-//   Telegram row of before (it ends `no_chat`). A push row goes to each live device that existed at `eventAt`: a new device gets
-//   no burst of old notices, so `eventAt` is required.
+//   Telegram row of before (it ends `no_chat`). A push row goes to each live device that was reachable at `eventAt` (the device and
+//   its session existed: `boundAt`): a new device, or a device bound again to a new session, gets no burst of old notices, so
+//   `eventAt` is required.
 // - `only` limits the rows to one channel. `only: "telegram"` reads nothing and needs no `eventAt`: the answer to a tap in Telegram
 //   stays in that chat. The loop-consent gate is a Telegram gate, so a gated owner gets the consent line on Telegram and the real
 //   kind with `only: "push"`.
@@ -61,7 +62,7 @@ export async function planFanOut(
   // The route sees every live device, not only the ones of the event: a member whose only device is newer than the event still
   // has a phone, so a Telegram row that the route drops stays dropped for the old event too (no row, no burst).
   const live = await listLiveDeviceIds(db, ctx, input.userId, input.now);
-  const devices = live.filter((device) => device.createdAt.getTime() <= eventAt.getTime());
+  const devices = live.filter((device) => device.boundAt.getTime() <= eventAt.getTime());
   const hasChat = (await getChatLinkForUser(db, ctx, input.userId)) !== undefined;
   const routes = (await getMemberNotify(db, ctx, input.userId))?.notice_routes ?? {};
   const route = effectiveRoute({ stored: routes[group], hasChat, hasDevice: live.length > 0, group });

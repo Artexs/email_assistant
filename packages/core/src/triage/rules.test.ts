@@ -197,3 +197,21 @@ describe("senderRuleOf (F110 stage 16)", () => {
       expect(readSenderRule(value)).toBeNull();
   });
 });
+
+describe("matchSender: the address rule of the sender profiles", () => {
+  test("a rule made from a folded Greek or Turkish address matches the real sender", () => {
+    // The profile keeps `αννασ@` and `ilker@`; the sender arrives as `αννας@` (final sigma) and `İlker@` (dotted capital I).
+    expect(matchSender("αννας@acme.pl", [{ pattern: "αννασ@acme.pl", kind: "vip" }]).vip).toBe(true);
+    expect(matchSender("ΑΝΝΑΣ@ACME.PL", [{ pattern: "αννασ@acme.pl", kind: "vip" }]).vip).toBe(true);
+    expect(matchSender("İlker@acme.pl", [{ pattern: "ilker@acme.pl", kind: "blocklist" }]).blocklisted).toBe(true);
+  });
+
+  test("a rule that the user types with the final sigma or the dotted capital I matches the folded address", () => {
+    expect(matchSender("αννασ@acme.pl", [{ pattern: "αννας@acme.pl", kind: "whitelist" }]).whitelisted).toBe(true);
+    expect(matchSender("ilker@acme.pl", [{ pattern: "İLKER@acme.pl", kind: "whitelist" }]).whitelisted).toBe(true);
+  });
+
+  test("another address does not match", () => {
+    expect(matchSender("αννας@other.pl", [{ pattern: "αννασ@acme.pl", kind: "vip" }]).vip).toBe(false);
+  });
+});

@@ -17,7 +17,7 @@ import {
   upsertPushSubscription,
 } from "../../src/modules/channels/push";
 import { insertMembership } from "../../src/modules/tenancy/repo";
-import { createSecretBox } from "../../src/platform/crypto";
+import { CryptoKeyVersionError, createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
 
@@ -307,6 +307,28 @@ describe("upsertPushSubscription", () => {
 });
 
 describe("listLiveDeviceIds and listDeviceViews", () => {
+  test("7a: boundAt is the later of the device start and the session start", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const early = new Date(NOW.getTime() - 5 * HOUR);
+      const late = new Date(NOW.getTime() - HOUR);
+      const mk = async (sessionStart: Date, deviceStart: Date) => {
+        const sessionId = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+        await sql`update auth_sessions set created_at = ${sessionStart} where id = ${sessionId}::uuid`.execute(trx);
+        return (await subscribe(trx, o, o.userId, sessionId, { now: deviceStart }))?.id ?? "";
+      };
+      const rebound = await mk(late, early); // the session is newer: the device was bound again
+      const fresh = await mk(early, late); // the device is newer
+      const live = await listLiveDeviceIds(trx, { orgId: o.orgId }, o.userId, NOW);
+      const times = (id: string) => {
+        const row = live.find((candidate) => candidate.id === id);
+        return [row?.createdAt.getTime(), row?.boundAt.getTime()];
+      };
+      expect(times(rebound)).toEqual([early.getTime(), late.getTime()]);
+      expect(times(fresh)).toEqual([late.getTime(), late.getTime()]);
+    });
+  });
+
   test("7: a device is live only with an unexpired session of its own user; the list holds no secret", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
@@ -329,7 +351,7 @@ describe("listLiveDeviceIds and listDeviceViews", () => {
       const ids = await listLiveDeviceIds(trx, { orgId: o.orgId }, o.userId, NOW);
       expect(ids.map((row) => row.id)).toEqual([live?.id ?? ""]);
       expect(ids[0]?.createdAt).toEqual(new Date(NOW.getTime() - 3000));
-      expect(Object.keys(ids[0] ?? {}).sort()).toEqual(["createdAt", "id"]);
+      expect(Object.keys(ids[0] ?? {}).sort()).toEqual(["boundAt", "createdAt", "id"]);
       expect([expired, edge, ended, foreign, theirs].map((made) => made?.created)).toEqual([
         true,
         true,
@@ -458,6 +480,25 @@ describe("loadDeviceSecret", () => {
         target: { endpoint, p256dh: `p256dh-${counter}`, auth: `auth-${counter}` },
       });
       expect(await loadDeviceSecret(trx, { orgId: o.orgId }, randomUUID(), box)).toBeNull();
+    });
+  });
+
+  test("12b: a secret of another key version throws and removes nothing: the device and its open rows stay", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const device = await subscribe(trx, o, o.userId, s);
+      const row = await pushRow(trx, o, device?.id ?? "");
+      const next = createSecretBox(randomBytes(32).toString("base64"), 2);
+      await expect(loadDeviceSecret(trx, { orgId: o.orgId }, device?.id ?? "", next)).rejects.toThrow(
+        CryptoKeyVersionError
+      );
+      expect(await deviceCount(trx, o.orgId)).toBe(1);
+      expect(await stateOf(trx, row)).toEqual({
+        status: "pending",
+        error_code: null,
+        push_subscription_id: device?.id ?? "",
+      });
     });
   });
 

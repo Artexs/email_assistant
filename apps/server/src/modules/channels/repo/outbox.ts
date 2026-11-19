@@ -40,6 +40,8 @@ export const outboxFailCodes = [
   "append_refused",
   // Push rows (phone channel): the device of the row was removed (sign-out, expiry, the user, a gone endpoint) before the push went out.
   "no_device",
+  // Push rows: the push service refused the message (a 4xx that does not mean a gone device). The device stays; its `last_error_code` holds the status.
+  "push_refused",
 ] as const;
 export type OutboxFailCode = (typeof outboxFailCodes)[number];
 export interface NewOutboxRow {
@@ -145,6 +147,11 @@ export interface ClaimedOutbox {
   channel: NoticeChannel;
   // The mailbox of a `mail` row (the report mailbox); null for a row that names none.
   mailboxId: string | null;
+  // The device of a `push` row; null for any other row, and for a push row whose device is gone.
+  pushSubscriptionId: string | null;
+  // The mail or the loop that the event is about (a loop notice has `loopId`, no mail).
+  emailId: string | null;
+  loopId: string | null;
   detail: NoticeDetail;
   locale: UserLocale;
   // null: the row holds facts only and the sender renders it (ADR 0032 point 5).
@@ -210,6 +217,9 @@ export async function claimDueOutbox(
       "o.view",
       "o.channel",
       "o.mailbox_id",
+      "o.push_subscription_id",
+      "o.email_id",
+      "o.loop_id",
       "o.detail",
       "o.locale",
       "o.text",
@@ -232,6 +242,9 @@ export async function claimDueOutbox(
       view: row.view,
       channel: z.enum(noticeChannels).parse(row.channel),
       mailboxId: row.mailbox_id,
+      pushSubscriptionId: row.push_subscription_id,
+      emailId: row.email_id,
+      loopId: row.loop_id,
       detail: z.enum(noticeDetails).parse(row.detail),
       locale: userLocaleSchema.parse(row.locale),
       text: row.text,

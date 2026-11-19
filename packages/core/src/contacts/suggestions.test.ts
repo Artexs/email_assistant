@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { suggestionsFor } from "./suggestions";
+import { addressSuggestionBlocked, domainSuggestionBlocked, suggestionsFor } from "./suggestions";
 import { suggestionReasonSchema, type SuggestionContext, type SuggestionInput } from "./types";
 
 // The key is a fixture id: the pattern itself with a prefix, so the tests read without a real hash.
@@ -309,5 +309,85 @@ describe("suggestionsFor: cap, order, skip", () => {
     for (const c of suggestionsFor(five, ctx({ createdLast7Days: -5 }))) {
       expect(suggestionReasonSchema.safeParse(c.reason).success).toBe(true);
     }
+  });
+});
+
+describe("suggestionsFor: eligible", () => {
+  test("a pattern that cannot become a rule is dropped before the cap, so it takes no slot", () => {
+    const inputs = [
+      sender("bad@x.pl", { received30: 10, answered30: 10 }),
+      ...["a", "b", "c"].map((name) => sender(`${name}@y.pl`, { received30: 8, answered30: 6 })),
+    ];
+    const out = suggestionsFor(inputs, ctx({ eligible: (pattern) => !pattern.startsWith("bad@") }));
+    expect(out.map((c) => c.pattern).sort()).toEqual(["a@y.pl", "b@y.pl", "c@y.pl"]);
+  });
+});
+
+describe("addressSuggestionBlocked", () => {
+  test("VIP: bulk, noreply, a suspicious mail, an own address or a VIP rule block it; a low ratio does not", () => {
+    const vip = (over: Partial<SuggestionInput>) => addressSuggestionBlocked("vip", sender("a@x.pl", over), true);
+    expect(vip({ received30: 100, answered30: 1 })).toBe(false);
+    expect(vip({ relation: "bulk" })).toBe(true);
+    expect(vip({ isNoreply: true })).toBe(true);
+    expect(vip({ suspicious90: 1 })).toBe(true);
+    expect(vip({ isVip: true })).toBe(true);
+    expect(vip({ isOwn: true })).toBe(true);
+  });
+
+  test("whitelist: a suspicious mail, a whitelist rule or a block rule block it", () => {
+    const white = (over: Partial<SuggestionInput>) =>
+      addressSuggestionBlocked("whitelist", sender("a@x.pl", over), true);
+    expect(white({ rescued90: 0 })).toBe(false);
+    expect(white({ suspicious90: 2 })).toBe(true);
+    expect(white({ isWhitelisted: true })).toBe(true);
+    expect(white({ isBlocklisted: true })).toBe(true);
+  });
+
+  test("whitelist and blocklist: when both rules are true now, both open rows are blocked", () => {
+    const both = { rescued90: 2, correctedToSpam90: 2 };
+    expect(addressSuggestionBlocked("whitelist", sender("a@x.pl", both), true)).toBe(true);
+    expect(addressSuggestionBlocked("blocklist", sender("a@x.pl", both), true)).toBe(true);
+    // Without Sent coverage the block rule is not true, so the whitelist stays.
+    expect(addressSuggestionBlocked("whitelist", sender("a@x.pl", both), false)).toBe(false);
+  });
+
+  test("blocklist: no Sent coverage, a known or delegate sender, an answer, a user mail or a rule block it", () => {
+    const block = (over: Partial<SuggestionInput>, coverage = true) =>
+      addressSuggestionBlocked("blocklist", sender("a@x.pl", { correctedToSpam90: 2, ...over }), coverage);
+    expect(block({})).toBe(false);
+    expect(block({}, false)).toBe(true);
+    expect(block({ relation: "known" })).toBe(true);
+    expect(block({ relation: "delegate" })).toBe(true);
+    expect(block({ isDelegate: true })).toBe(true);
+    expect(block({ answered90: 1 })).toBe(true);
+    expect(block({ userMailsTo90: 1 })).toBe(true);
+    expect(block({ isVip: true })).toBe(true);
+    expect(block({ isWhitelisted: true })).toBe(true);
+    expect(block({ isBlocklisted: true })).toBe(true);
+    // Fewer corrections than the rule needs: still not blocked (no flicker).
+    expect(block({ correctedToSpam90: 0 })).toBe(false);
+  });
+});
+
+describe("domainSuggestionBlocked", () => {
+  const member = (over: Partial<SuggestionInput> = {}) => sender("a@acme.pl", over);
+
+  test("a free-mail or own domain is always blocked", () => {
+    expect(domainSuggestionBlocked("whitelist", [member({ isFreeMailDomain: true })], true)).toBe(true);
+    expect(domainSuggestionBlocked("blocklist", [member({ isOwnDomain: true })], true)).toBe(true);
+  });
+
+  test("a blocklist needs Sent coverage and no protected member", () => {
+    expect(domainSuggestionBlocked("blocklist", [member()], true)).toBe(false);
+    expect(domainSuggestionBlocked("blocklist", [member()], false)).toBe(true);
+    expect(domainSuggestionBlocked("blocklist", [member(), member({ relation: "known" })], true)).toBe(true);
+    expect(domainSuggestionBlocked("blocklist", [member({ userMailsTo90: 1 })], true)).toBe(true);
+    expect(domainSuggestionBlocked("blocklist", [member({ isDelegate: true })], true)).toBe(true);
+  });
+
+  test("a whitelist is blocked by a suspicious or blocklisted member, not by Sent coverage", () => {
+    expect(domainSuggestionBlocked("whitelist", [member()], false)).toBe(false);
+    expect(domainSuggestionBlocked("whitelist", [member({ suspicious90: 1 })], true)).toBe(true);
+    expect(domainSuggestionBlocked("whitelist", [member({ isBlocklisted: true })], true)).toBe(true);
   });
 });

@@ -29,8 +29,35 @@ interface AddressHit {
   second: number;
 }
 
+// The "never" conditions of one address and kind: while one holds, no suggestion is made and an open one ends as `withdrawn`.
+// They are separate from the thresholds: a count or ratio below its threshold never withdraws an open suggestion.
+function vipNever(input: SuggestionInput): boolean {
+  return input.isOwn || input.isNoreply || input.isVip || input.relation === "bulk" || input.suspicious90 > 0;
+}
+
+function whitelistNever(input: SuggestionInput): boolean {
+  return input.isOwn || input.isWhitelisted || input.isBlocklisted || input.suspicious90 > 0;
+}
+
+// Without Sent coverage "never wrote to them" cannot be known. A sender that the user answered or wrote to is never a
+// block candidate, whatever the relation says.
+function blocklistNever(input: SuggestionInput, sentCoverage: boolean): boolean {
+  return (
+    !sentCoverage ||
+    input.isOwn ||
+    input.isVip ||
+    input.isWhitelisted ||
+    input.isBlocklisted ||
+    input.isDelegate ||
+    input.relation === "known" ||
+    input.relation === "delegate" ||
+    input.answered90 !== 0 ||
+    input.userMailsTo90 !== 0
+  );
+}
+
 function vipHit(input: SuggestionInput): AddressHit | null {
-  if (input.isOwn || input.isNoreply || input.isVip || input.relation === "bulk" || input.suspicious90 > 0) return null;
+  if (vipNever(input)) return null;
   // At least 60% answered: answered / received >= 6 / 10.
   const answeredEnough = input.answered30 >= VIP_MIN_ANSWERED && input.answered30 * 10 >= input.received30 * 6;
   const flaggedEnough = input.flagged30 >= VIP_MIN_FLAGGED;
@@ -45,18 +72,14 @@ function vipHit(input: SuggestionInput): AddressHit | null {
 }
 
 function whitelistHit(input: SuggestionInput): AddressHit | null {
-  if (input.isOwn || input.isWhitelisted || input.isBlocklisted || input.suspicious90 > 0) return null;
+  if (whitelistNever(input)) return null;
   if (input.rescued90 < WHITELIST_MIN_RESCUED) return null;
   return { input, reason: { rescued: input.rescued90 }, main: input.rescued90, second: 0 };
 }
 
 function blocklistHit(input: SuggestionInput, sentCoverage: boolean): AddressHit | null {
-  // Without Sent coverage "never wrote to them" cannot be known.
-  if (!sentCoverage) return null;
-  if (input.isOwn || input.isVip || input.isWhitelisted || input.isBlocklisted || input.isDelegate) return null;
-  if (input.relation === "known" || input.relation === "delegate") return null;
+  if (blocklistNever(input, sentCoverage)) return null;
   if (input.correctedToSpam90 < BLOCKLIST_MIN_CORRECTED) return null;
-  if (input.answered90 !== 0 || input.userMailsTo90 !== 0) return null;
   return { input, reason: { corrected: input.correctedToSpam90 }, main: input.correctedToSpam90, second: 0 };
 }
 
@@ -76,6 +99,27 @@ function protectedFromDomainBlock(input: SuggestionInput): boolean {
 // A domain whitelist never covers a sender with a suspicious mail or a block rule.
 function protectedFromDomainAllow(input: SuggestionInput): boolean {
   return input.suspicious90 > 0 || input.isBlocklisted;
+}
+
+// True when an OPEN suggestion of `kind` for this address must end now: a "never" condition holds, or the opposite signal
+// (whitelist against block) is true as well, so the signals disagree. Thresholds do not count: a ratio that drops below its
+// rule leaves the row open.
+export function addressSuggestionBlocked(kind: SuggestionKind, input: SuggestionInput, sentCoverage: boolean): boolean {
+  if (kind === "vip") return vipNever(input);
+  if (kind === "whitelist") return whitelistNever(input) || blocklistHit(input, sentCoverage) !== null;
+  return blocklistNever(input, sentCoverage) || whitelistHit(input) !== null;
+}
+
+// The same for an open suggestion of a whole domain; `members` are the addresses of that domain that the profile knows.
+// A domain that is free mail or an own domain never gets one; a blocklist needs Sent coverage, and no member may be protected.
+export function domainSuggestionBlocked(
+  kind: "whitelist" | "blocklist",
+  members: readonly SuggestionInput[],
+  sentCoverage: boolean
+): boolean {
+  if (members.some((input) => input.isFreeMailDomain || input.isOwnDomain)) return true;
+  if (kind === "blocklist") return !sentCoverage || members.some(protectedFromDomainBlock);
+  return members.some(protectedFromDomainAllow);
 }
 
 function rankAddress(kind: SuggestionKind, hit: AddressHit, ctx: SuggestionContext): Ranked {
@@ -163,7 +207,8 @@ export function suggestionsFor(inputs: readonly SuggestionInput[], ctx: Suggesti
   return ranked
     .filter(({ candidate: c }) => {
       const id = `${c.kind}:${c.scope}:${c.key}`;
-      return !ctx.dismissed.has(id) && !ctx.open.has(id);
+      // `eligible` drops a pattern that the caller cannot turn into a rule; the cap counts only what can be shown.
+      return !ctx.dismissed.has(id) && !ctx.open.has(id) && (ctx.eligible?.(c.pattern) ?? true);
     })
     .sort(byRank)
     .slice(0, room)

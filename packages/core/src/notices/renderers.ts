@@ -30,8 +30,10 @@ import { renderWeeklyReport } from "../digest/weekly";
 import { describeActions } from "../digest/would-do";
 import { textsFor } from "../texts";
 
+import { noticeFactsOf } from "./facts";
 import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
-import { noticeViewSchemas } from "./views";
+import { type PushKind, pushPayloadSchema } from "./push";
+import { type NoticeView, noticeViewSchemas } from "./views";
 
 // One renderer per kind. A channel key holds one function per detail level. `mail` is optional: only the four kinds of
 // `reportMailKinds` have one; for every other kind `renderNotice` answers `{ ok: false }` for a mail row.
@@ -39,7 +41,7 @@ export interface NoticeRenderer<S extends z.ZodType> {
   schema: S;
   telegram: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
   mail?: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
-  // The Web Push payload of a push kind (the fan-out and sender stages of the phone channel fill it): absent for every kind until then.
+  // The Web Push payload of a push kind (`pushOf`): absent for every other kind.
   push?: { full: (view: z.output<S>, opts: NoticeRenderOptions) => OutMessage };
 }
 
@@ -52,6 +54,20 @@ function mailOf<View>(telegram: { full: (view: View, opts: NoticeRenderOptions) 
   full: (view: View, opts: NoticeRenderOptions) => OutMessage;
 } {
   return { full: (view, opts) => ({ text: telegram.full(view, opts).text, buttons: [] }) };
+}
+
+// The push payload of a kind: `{ v, kind, count, itemId, lang }` as JSON (the sender adds `id`, the row id). It holds the two facts of
+// the view (`noticeFactsOf`) and the language, never a string of the view. The strict payload schema (without `id`) checks the
+// result: an item id that is too long makes the render fail, so the row ends `bad_view`.
+const pushPayloadBody = pushPayloadSchema.omit({ id: true });
+function pushOf<K extends PushKind>(kind: K): { full: (view: NoticeView<K>, opts: NoticeRenderOptions) => OutMessage } {
+  return {
+    full: (view, opts) => {
+      const { count, itemId } = noticeFactsOf(kind, view);
+      const payload = pushPayloadBody.parse({ v: 1, kind, count, itemId, lang: opts.locale });
+      return { text: JSON.stringify(payload), buttons: [] };
+    },
+  };
 }
 
 // The four report kinds: one Telegram renderer each; the mail renderer derives from it (`mailOf`).
@@ -75,6 +91,7 @@ export const noticeRenderers = {
   }),
   urgent: defineRenderer({
     schema: noticeViewSchemas.urgent,
+    push: pushOf("urgent"),
     telegram: {
       full: (view, opts) => {
         const texts = textsFor(opts.locale);
@@ -119,30 +136,37 @@ export const noticeRenderers = {
   }),
   auth_error: defineRenderer({
     schema: noticeViewSchemas.auth_error,
+    push: pushOf("auth_error"),
     telegram: { full: (view, opts) => renderAuthErrorNotice(view, textsFor(opts.locale)) },
   }),
   sync_stale: defineRenderer({
     schema: noticeViewSchemas.sync_stale,
+    push: pushOf("sync_stale"),
     telegram: { full: (view, opts) => renderSyncStaleNotice(view, textsFor(opts.locale)) },
   }),
   sync_ok: defineRenderer({
     schema: noticeViewSchemas.sync_ok,
+    push: pushOf("sync_ok"),
     telegram: { full: (view, opts) => renderSyncOkNotice(view, textsFor(opts.locale)) },
   }),
   action_failed: defineRenderer({
     schema: noticeViewSchemas.action_failed,
+    push: pushOf("action_failed"),
     telegram: { full: (view, opts) => renderActionFailedNotice(view, textsFor(opts.locale)) },
   }),
   approval: defineRenderer({
     schema: noticeViewSchemas.approval,
+    push: pushOf("approval"),
     telegram: { full: (view, opts) => renderApprovalRequest(view, textsFor(opts.locale)) },
   }),
   approval_set: defineRenderer({
     schema: noticeViewSchemas.approval_set,
+    push: pushOf("approval_set"),
     telegram: { full: (view, opts) => renderApprovalSetRequest(view, textsFor(opts.locale)) },
   }),
   send_result: defineRenderer({
     schema: noticeViewSchemas.send_result,
+    push: pushOf("send_result"),
     telegram: {
       full: (view, opts) => {
         const texts = textsFor(opts.locale);
@@ -158,10 +182,12 @@ export const noticeRenderers = {
   }),
   delegation_answered: defineRenderer({
     schema: noticeViewSchemas.delegation_answered,
+    push: pushOf("delegation_answered"),
     telegram: { full: (view, opts) => renderDelegationAnswered(view, textsFor(opts.locale)) },
   }),
   mailbox_removed: defineRenderer({
     schema: noticeViewSchemas.mailbox_removed,
+    push: pushOf("mailbox_removed"),
     telegram: {
       full: (view, opts) => {
         const texts = textsFor(opts.locale).notices;
@@ -182,6 +208,7 @@ export const noticeRenderers = {
   }),
   send_held: defineRenderer({
     schema: noticeViewSchemas.send_held,
+    push: pushOf("send_held"),
     telegram: { full: (view, opts) => renderSendHeldNotice(view, textsFor(opts.locale)) },
   }),
   weekly_report: defineRenderer({
@@ -191,6 +218,7 @@ export const noticeRenderers = {
   }),
   host_blocked: defineRenderer({
     schema: noticeViewSchemas.host_blocked,
+    push: pushOf("host_blocked"),
     telegram: { full: (view, opts) => renderHostBlockedNotice(view, textsFor(opts.locale)) },
   }),
   approval_edit: defineRenderer({
@@ -199,10 +227,12 @@ export const noticeRenderers = {
   }),
   not_triaged: defineRenderer({
     schema: noticeViewSchemas.not_triaged,
+    push: pushOf("not_triaged"),
     telegram: { full: (view, opts) => renderNotTriagedNotice(view, textsFor(opts.locale)) },
   }),
   sent_missing: defineRenderer({
     schema: noticeViewSchemas.sent_missing,
+    push: pushOf("sent_missing"),
     telegram: { full: (view, opts) => renderSentMissingNotice(view, textsFor(opts.locale)) },
   }),
   loop_consent: defineRenderer({
@@ -211,6 +241,7 @@ export const noticeRenderers = {
   }),
   replies_ready: defineRenderer({
     schema: noticeViewSchemas.replies_ready,
+    push: pushOf("replies_ready"),
     telegram: { full: (view, opts) => renderRepliesReadyNotice(view, textsFor(opts.locale)) },
   }),
   reply_prompt: defineRenderer({

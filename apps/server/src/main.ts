@@ -16,6 +16,7 @@ import {
   cardEditHooks,
   createImapReportMailbox,
   createOperatorNotices,
+  createPushSender,
   createReportMailSender,
   createTelegramRuntime,
 } from "./modules/channels";
@@ -44,6 +45,7 @@ import {
   mailAllowLocal,
   mailSyncCron,
   operatorChatId,
+  pushConfigOf,
   sendLimits,
   sloThresholds,
   mailTrustedAuthservIds,
@@ -445,6 +447,7 @@ log.info("job_scheduled", { job: "platform.retention" });
 let channelRun: Promise<void> = Promise.resolve();
 let digestRun: Promise<void> = Promise.resolve();
 let reportMailRun: Promise<void> = Promise.resolve();
+let pushRun: Promise<void> = Promise.resolve();
 // The report mail sender (ADR 0022): it APPENDs the `mail` rows into the user's own INBOX. It runs with or without the
 // Telegram runtime, because a mail-only member needs no bot. It never sends: no SMTP sender is built for it. Rows exist only when the flag
 // `report_mail` is on, and the sender checks the flag again before each APPEND.
@@ -465,6 +468,21 @@ scheduler.add("channels.report_mail", "*/15 * * * * *", () => {
   return reportMailRun;
 });
 log.info("job_scheduled", { job: "channels.report_mail" });
+// The push sender (E9b, ADR 0032): the `push` rows of the outbox go to the browsers of the members as Web Push messages. It needs the VAPID keys
+// and no Telegram bot: a push-only member has none. Without the keys the job does not exist and the rows would wait (they exist
+// only with the flag `web_push` on, which the panel allows only on a server that has the keys). The request uses the global `fetch`
+// (it honours `HTTPS_PROXY`, see `PushSenderDeps`); the sender checks the flag again for every row.
+const pushKeys = pushConfigOf(config);
+if (pushKeys === null) {
+  log.info("push_off");
+} else {
+  const pushSender = createPushSender({ db, box: secrets, keys: pushKeys, fetch, now: () => new Date() });
+  scheduler.add("channels.push", "*/15 * * * * *", () => {
+    pushRun = pushSender.run();
+    return pushRun;
+  });
+  log.info("job_scheduled", { job: "channels.push" });
+}
 if (config.TELEGRAM_BOT_TOKEN === undefined) {
   log.info("telegram_off");
 } else {
@@ -554,6 +572,7 @@ async function shutdown(): Promise<void> {
       channelRun,
       digestRun,
       reportMailRun,
+      pushRun,
       operatorRun,
       sloRun,
       retentionRun,

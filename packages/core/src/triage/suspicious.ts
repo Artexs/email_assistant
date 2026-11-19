@@ -230,6 +230,7 @@ const SHARED_SUFFIXES: ReadonlySet<string> = new Set([
   "web.app",
   "firebaseapp.com",
   "onrender.com",
+  "onmicrosoft.com",
 ]);
 
 // `registrableDomain`, except that a tenant of a shared hosting suffix stays apart: `a.herokuapp.com` and `b.herokuapp.com` are
@@ -240,6 +241,12 @@ export function registrableDomainShared(host: string): string {
   const baseLabels = base.split(".");
   const labels = foldHost(host).split(".");
   return labels.length <= baseLabels.length ? base : labels.slice(-(baseLabels.length + 1)).join(".");
+}
+
+// True when the registrable domain of `host` is a shared hosting suffix (`github.io`, `a.herokuapp.com`): a rule on it would
+// cover every tenant of the host, so the suggestion engine never makes a domain rule for it.
+export function isSharedHostingDomain(host: string): boolean {
+  return SHARED_SUFFIXES.has(registrableDomain(host));
 }
 
 function domainOfAddress(address: string): string | null {

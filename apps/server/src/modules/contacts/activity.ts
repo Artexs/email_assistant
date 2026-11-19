@@ -52,6 +52,9 @@ export interface SenderActivity {
   rescued90: number;
   // Mails whose newest triage result has suspicious reasons.
   suspicious90: number;
+  // Incoming mails of the window that the user answered with a Sent mail (`parent_message_id` = the mail's Message-ID), to any
+  // recipient: a reply to a Reply-To address counts too. In memory only (no profile column); the suggestion engine reads it.
+  repliedBySent90: number;
   bulkSignals: BulkSignal[];
   // The mails whose captured headers are not cleared, plus the noreply mails; and how many of them are bulk.
   bulkBase: number;
@@ -94,6 +97,7 @@ const emptyActivity = (address: string): SenderActivity => ({
   correctedToSpam90: 0,
   rescued90: 0,
   suspicious90: 0,
+  repliedBySent90: 0,
   bulkSignals: [],
   bulkBase: 0,
   bulkMails: 0,
@@ -151,6 +155,11 @@ interface FeedbackRow {
   addr: string;
   kind: "correction" | "moved_back" | "rescued";
   category: string | null;
+  n: number;
+}
+
+interface RepliedRow {
+  addr: string;
   n: number;
 }
 
@@ -334,6 +343,24 @@ export async function readSenderActivity(
     GROUP BY addr
   `.execute(db);
 
+  // The mails that the user answered with a Sent reply, whoever the reply went to (a reply goes to the Reply-To address, not
+  // always to the sender). The profile counts `answered` from the IMAP flag only; this count is for the suggestion rules.
+  const replied = await sql<RepliedRow>`
+    WITH win AS (${win})
+    SELECT w.addr, count(*)::int AS n
+    FROM win w
+    WHERE w.message_id_header IS NOT NULL AND EXISTS (
+      SELECT 1 FROM sent_emails s
+      WHERE s.org_id = ${ctx.orgId}
+        AND s.mailbox_id = ${mailboxId}
+        AND s.origin = 'user'
+        AND s.parent_message_id = w.message_id_header
+        AND s.sent_at > w.received_at
+        AND ${notAutomatic("s.auto_submitted")}
+    )
+    GROUP BY w.addr
+  `.execute(db);
+
   // Their delay is the time from a Sent mail to the incoming mail that names its Message-ID in In-Reply-To (a whole id, as
   // `replyMatch`; `<id>` tokens when there are any, else bare words). One sample per incoming mail: the newest Sent mail it names.
   const theirDelays = await sql<DelayRow>`
@@ -433,6 +460,10 @@ export async function readSenderActivity(
     if (item === null) continue;
     item.userMailsTo = row.n;
     item.lastUserMailAt = row.last_at;
+  }
+  for (const row of replied.rows) {
+    const item = byAddress.get(row.addr);
+    if (item !== undefined) item.repliedBySent90 = row.n;
   }
   for (const row of userDelays.rows) {
     const item = byAddress.get(row.addr);

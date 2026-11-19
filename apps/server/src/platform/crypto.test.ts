@@ -2,7 +2,7 @@ import { createHmac, hkdfSync, randomBytes } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { CryptoError, createSecretBox, dsrAddressHash, senderKeyHash } from "./crypto";
+import { CryptoError, CryptoKeyVersionError, createSecretBox, dsrAddressHash, senderKeyHash } from "./crypto";
 
 const key = randomBytes(32).toString("base64");
 const otherKey = randomBytes(32).toString("base64");
@@ -29,6 +29,17 @@ describe("createSecretBox", () => {
   test("two encrypt calls of the same text give different ciphertext", () => {
     const box = createSecretBox(key, 1);
     expect(box.encrypt(plain, aad).ciphertext).not.toBe(box.encrypt(plain, aad).ciphertext);
+  });
+
+  test("another key version throws CryptoKeyVersionError (a CryptoError), a wrong key throws a plain CryptoError", () => {
+    const sealed = createSecretBox(key, 1).encrypt(plain, aad);
+    const error = catchError(() => createSecretBox(key, 2).decrypt(sealed, aad));
+    expect(error).toBeInstanceOf(CryptoKeyVersionError);
+    expect(error).toBeInstanceOf(CryptoError);
+    expect((error as Error).message).not.toContain(plain);
+    expect(catchError(() => createSecretBox(otherKey, 1).decrypt(sealed, aad))).not.toBeInstanceOf(
+      CryptoKeyVersionError
+    );
   });
 
   test("wrong aad throws CryptoError", () => {

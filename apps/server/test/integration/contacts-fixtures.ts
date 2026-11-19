@@ -3,12 +3,12 @@ import { randomUUID } from "node:crypto";
 import type { Transaction } from "kysely";
 
 import { refreshMailboxProfiles, type RefreshDeps } from "../../src/modules/contacts";
-import { insertMailbox } from "../../src/modules/mail/repo";
-import { setOrgFeature } from "../../src/modules/tenancy";
+import { insertMailbox, insertSentSyncState } from "../../src/modules/mail/repo";
+import { setOrgFeature, upsertOrgFeature } from "../../src/modules/tenancy";
 import { senderKeyHash } from "../../src/platform/crypto";
-import type { DB, TenantContext } from "../../src/platform/db";
+import type { DB, Db, TenantContext } from "../../src/platform/db";
 
-import { createOrgWithMailbox, testCapabilities, type SeededMail } from "./fixtures";
+import { createOrgWithMailbox, seedSenderActivity, testCapabilities, type SeededMail } from "./fixtures";
 
 // Helpers of the profile pass tests (`contacts-refresh.test.ts`, `contacts-refresh-guards.test.ts`). The clock is fixed and the
 // key is a test key, so no test needs `CREDENTIALS_KEY` in the environment.
@@ -80,3 +80,100 @@ export async function secondMailbox(trx: Trx, org: Org): Promise<Org> {
   });
   return { ctx: org.ctx, mailboxId: id, address };
 }
+
+// A suggestion row of the table, as the generator would have written it.
+export function insertSuggestion(
+  trx: Trx | Db,
+  org: Org,
+  over: {
+    value: string;
+    kind: "vip" | "whitelist" | "blocklist";
+    scope?: "address" | "domain";
+    status?: "open" | "dismissed";
+    createdAt?: Date;
+    endedAt?: Date;
+    mailboxId?: string;
+  }
+) {
+  const open = (over.status ?? "open") === "open";
+  return trx
+    .insertInto("sender_suggestions")
+    .values({
+      org_id: org.ctx.orgId,
+      mailbox_id: over.mailboxId ?? org.mailboxId,
+      key_hash: hashOf(org.ctx.orgId, over.value),
+      scope: over.scope ?? "address",
+      kind: over.kind,
+      pattern: open ? over.value : null,
+      status: over.status ?? "open",
+      created_at: over.createdAt ?? ago(2),
+      ended_at: open ? null : (over.endedAt ?? ago(1)),
+      reason: JSON.stringify({ received: 8, answered: 6 }),
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow()
+    .then((row) => row.id);
+}
+
+// Helpers of the suggestion tests (`contacts-suggestions*.test.ts`).
+// An organization with the flags `sender_context` and `sender_suggestions`.
+export async function suggestOrg(trx: Trx): Promise<Org> {
+  const org = await newOrg(trx);
+  await setOrgFeature(trx, org.ctx, { flag: "sender_suggestions", enabled: true, actor: "cli", now: NOW });
+  return org;
+}
+
+// Sent coverage: the flag, the switch, a first pass and a last pass at `lastPass`.
+export async function withSentCoverage(
+  trx: Trx,
+  org: Org,
+  lastPass: Date = NOW,
+  error: "folder_missing" | null = null
+) {
+  await upsertOrgFeature(trx, org.ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
+  await insertSentSyncState(trx, org.ctx, org.mailboxId, { enabled: true });
+  await trx
+    .updateTable("mailbox_sent_sync")
+    .set({ first_pass_at: ago(30), last_pass_at: lastPass, last_error_code: error })
+    .where("mailbox_id", "=", org.mailboxId)
+    .execute();
+}
+
+// `n` mails received 1, 2, ... days ago; the first `answered` of them are answered.
+export const mails = (n: number, answered: number, extra: Partial<SeededMail> = {}): SeededMail[] =>
+  Array.from({ length: n }, (_, i) => ({ at: ago(i + 1), answered: i < answered, ...extra }));
+
+// Two mails that the user corrected to spam.
+export const spamMails = (): SeededMail[] =>
+  [1, 2].map((day) => ({
+    at: ago(day),
+    category: "info" as const,
+    feedback: [{ verdict: "wrong" as const, trueCategory: "spam" as const }],
+  }));
+
+// Two mails that the user moved back out of spam.
+export const rescuedMails = (): SeededMail[] =>
+  [1, 2].map((day) => ({
+    at: ago(day),
+    category: "spam" as const,
+    feedback: [{ verdict: "wrong" as const, trueCategory: "info" as const }],
+  }));
+
+export const seed = (trx: Trx, org: Org, address: string, list: SeededMail[], sent?: { at: Date; to: string[] }[]) =>
+  seedSenderActivity(trx, org.ctx, org.mailboxId, { address, mails: list, ...(sent === undefined ? {} : { sent }) });
+
+export const rowsOf = (trx: Trx, org: Org, mailboxId = org.mailboxId) =>
+  trx
+    .selectFrom("sender_suggestions")
+    .selectAll()
+    .where("mailbox_id", "=", mailboxId)
+    .orderBy("created_at")
+    .orderBy("kind")
+    .orderBy("key_hash")
+    .execute();
+
+export const openOf = async (trx: Trx, org: Org, mailboxId = org.mailboxId) =>
+  (await rowsOf(trx, org, mailboxId)).filter((row) => row.status === "open");
+
+export const summary = (rows: { kind: string; scope: string; pattern: string | null; status: string }[]) =>
+  rows.map((row) => `${row.status}:${row.kind}:${row.scope}:${row.pattern}`).sort();

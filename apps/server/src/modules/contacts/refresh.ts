@@ -6,6 +6,8 @@ import type { TestMailRule } from "../mail";
 import { isFeatureOn } from "../tenancy";
 
 import { readSenderActivity, type SenderActivity } from "./activity";
+import { senderFlags } from "./flags";
+import { refreshSuggestions } from "./suggest";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -106,7 +108,7 @@ export async function refreshMailboxProfiles(
   options: { now: Date }
 ): Promise<RefreshResult> {
   const { now } = options;
-  const run = async (trx: DbOrTrx): Promise<RefreshResult> => {
+  const run = async (trx: Transaction<DB>): Promise<RefreshResult> => {
     if (!(await isFeatureOn(trx, ctx, "sender_context"))) return { written: 0, unchanged: 0, zeroed: 0, skipped: true };
     if (!(await tryLockProfiles(trx, mailboxId))) return { written: 0, unchanged: 0, zeroed: 0, skipped: true };
 
@@ -168,7 +170,11 @@ export async function refreshMailboxProfiles(
           OR bulk_signals <> '{}' OR median_user_reply_hours IS NOT NULL OR median_their_reply_hours IS NOT NULL
           OR relation <> 'new')
     `.execute(trx);
+    // The suggestions come from the same read, under the same lock and in the same transaction: a failure here undoes the profile writes too.
+    if ((await senderFlags(trx, ctx)).suggestions) {
+      await refreshSuggestions(trx, ctx, mailboxId, { activity, credentialsKey: deps.credentialsKey, now });
+    }
     return { written, unchanged: hashes.length - written, zeroed: Number(zeroed.numAffectedRows ?? 0), skipped: false };
   };
-  return deps.db.isTransaction ? run(deps.db) : deps.db.transaction().execute(run);
+  return deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run);
 }

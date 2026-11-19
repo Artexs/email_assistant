@@ -52,6 +52,7 @@ flowchart BT
   channels --> triage
   config --> audit
   config --> tenancy
+  contacts --> audit
   contacts --> config
   contacts --> delegation
   contacts --> mail

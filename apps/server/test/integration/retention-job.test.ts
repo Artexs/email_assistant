@@ -514,6 +514,31 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
           })
           .execute();
 
+        // The sender context ages out in every variant: a profile with its last mail 400 days ago, and an open suggestion 40
+        // days old (it ends as `expired`). The plan and the mailbox status decide nothing here.
+        await trx
+          .insertInto("sender_profiles")
+          .values({
+            org_id: a.orgId,
+            mailbox_id: a.mailboxId,
+            key_hash: randomUUID().replaceAll("-", "").repeat(2),
+            relation: "known",
+            last_seen_at: new Date(NOW.getTime() - 400 * DAY_MS),
+          })
+          .execute();
+        await trx
+          .insertInto("sender_suggestions")
+          .values({
+            org_id: a.orgId,
+            mailbox_id: a.mailboxId,
+            key_hash: randomUUID().replaceAll("-", "").repeat(2),
+            scope: "address",
+            kind: "vip",
+            pattern: "never-logged@x.test",
+            created_at: new Date(NOW.getTime() - 40 * DAY_MS),
+          })
+          .execute();
+
         const job = createRetentionJob({ db: trx, now: () => NOW });
         const org = { id: a.orgId, dataRetentionDays: 30 };
 
@@ -531,8 +556,8 @@ describe("retention job: every §7 row in a paused mailbox, a suspended organiza
           loops: 0,
           replyTexts: 0,
           tokens: 1,
-          profiles: 0,
-          suggestions: 0,
+          profiles: 1,
+          suggestions: 1,
         });
         expect(await body(trx, doneOld)).toBeNull();
         expect(await body(trx, pendingOld)).toBeNull();

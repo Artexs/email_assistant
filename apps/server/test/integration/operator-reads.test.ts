@@ -11,7 +11,12 @@ import {
   recordLlmCall,
   sumLlmCallsByModelSince,
 } from "../../src/modules/audit";
-import { countFailedOutboxSince, insertOutbox, lastOutboxSentAt } from "../../src/modules/channels";
+import {
+  countFailedOutboxSince,
+  countFailedOutboxSinceOfAll,
+  insertOutbox,
+  lastOutboxSentAt,
+} from "../../src/modules/channels";
 import { insertDigest, lastDigestSentAt, markDigestSent } from "../../src/modules/reports";
 import { lastTriageAt } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
@@ -86,6 +91,37 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       await add("sent", null, at(-1 * HOUR));
       expect(await countFailedOutboxSince(trx, ctxA, at(-24 * HOUR))).toBe(1);
       expect(await countFailedOutboxSince(trx, ctxB, at(-24 * HOUR))).toBe(0);
+    });
+  });
+
+  test("2b. countFailedOutboxSinceOfAll leaves out no_device, expired and outdated rows as countFailedOutboxSince does", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await twoOrgs(trx);
+      for (const code of ["telegram_error", "no_device", "expired", "outdated", "push_refused"]) {
+        const createdAt = at(-1 * HOUR);
+        await insertOutbox(
+          trx,
+          { orgId: a.orgId },
+          {
+            userId: a.userId,
+            kind: "sync_ok",
+            dedupKey: `sync_ok:${randomUUID()}`,
+            mailboxId: a.mailboxId,
+            view: {},
+            locale: "en",
+            createdAt,
+            nextAttemptAt: createdAt,
+          }
+        );
+        await trx
+          .updateTable("outbox")
+          .set({ status: "failed", error_code: code })
+          .where("org_id", "=", a.orgId)
+          .where("status", "=", "pending")
+          .execute();
+      }
+      // `telegram_error` and `push_refused` count; the end of a removed device, an old row and an outdated one do not.
+      expect((await countFailedOutboxSinceOfAll(trx, at(-24 * HOUR))).get(a.orgId)).toBe(2);
     });
   });
 

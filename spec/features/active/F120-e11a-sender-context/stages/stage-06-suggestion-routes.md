@@ -31,3 +31,9 @@ Carry-over reads: `apps/server/src/modules/config/routes.ts` (`rulesRoutes`: own
 ## Done when
 
 All tests pass; mutation: move the flag middleware after the role check → test 2 fails for the member case. Then the Proof command.
+
+## First commit of this stage (carry-over from the stage 05 re-review, PASS 7be87bfd)
+- TG-1: add a test that a non-`23514` error in `insertCandidate` (trigger error code `22023`) stops the pass; today a mutant that swallows every error survives.
+- TG-2: add a test that a block rule for `x@acme.pl` does not protect the domain (`bareInput` uses `relation: "new"`): two other spammers on `acme.pl` still give the domain blocklist row.
+- Note: `normalizeForMatch` normalizes each rule pattern on every `matchSender` call (+20% ASCII, +70% mixed, tens of µs per mail at 1000 rules). Normalize patterns once per rule list if a stage touches this path.
+- Note: the accept path compares exact strings, so `αννας@acme.pl` and `αννασ@acme.pl` can both exist as rules (harmless for matching).
