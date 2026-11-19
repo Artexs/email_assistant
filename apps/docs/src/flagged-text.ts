@@ -74,6 +74,12 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
   ],
   open_loops: ["📝 Follow-up", "Open loops on time", "A follow-up waits for your approval in the panel."],
   sent_sync: ["No sent mail seen for"],
+  telegram_minimal: [
+    "The review is in the panel",
+    "Przegląd jest w panelu",
+    "Your reply request has a result",
+    "Jest wynik Twojej prośby o odpowiedź",
+  ],
   report_mail: [
     "[Email assistant]",
     "[Asystent poczty]",

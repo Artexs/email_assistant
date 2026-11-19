@@ -1,3 +1,4 @@
+export * from "./detail";
 export * from "./encode";
 export * from "./facts";
 export * from "./kinds";

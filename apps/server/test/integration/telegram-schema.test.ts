@@ -389,7 +389,7 @@ describe("outbox view columns (F088)", () => {
     await withRollback(db, async (trx) => {
       const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
       await expectCode(trx, "channel", () => insertOne(trx, orgId, userId, mailboxId, { channel: "sms" }), "23514");
-      await expectCode(trx, "detail", () => insertOne(trx, orgId, userId, mailboxId, { detail: "minimal" }), "23514");
+      await expectCode(trx, "detail", () => insertOne(trx, orgId, userId, mailboxId, { detail: "short" }), "23514");
       await expectCode(trx, "locale", () => insertOne(trx, orgId, userId, mailboxId, { locale: "de" }), "23514");
       await expectCode(
         trx,
@@ -412,9 +412,6 @@ describe("outbox view columns (F088)", () => {
     expect(values("outbox_kind_check")).toEqual([...noticeKinds].sort());
     expect(values("outbox_channel_check")).toEqual([...noticeChannels].sort());
     expect(values("outbox_locale_check")).toEqual([...userLocales].sort());
-    // The list of core has `minimal` before the column does: the migration of the detail setting widens the CHECK, and this line then
-    // goes back to the whole list (`noticeDetails`).
-    expect(values("outbox_detail_check")).toEqual(["full"]);
-    expect([...noticeDetails].sort()).toEqual(["full", "minimal"]);
+    expect(values("outbox_detail_check")).toEqual([...noticeDetails].sort());
   });
 });

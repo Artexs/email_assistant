@@ -168,6 +168,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "contact_wait", enabled: false },
       { orgId: org.orgId, flag: "sender_suggestions", enabled: false },
       { orgId: org.orgId, flag: "web_push", enabled: false },
+      { orgId: org.orgId, flag: "telegram_minimal", enabled: false },
     ]);
     expect(rowsOf(body, org.otherOrgId).map((row) => row.enabled)).toEqual(featureKeys.map(() => false));
     for (const row of [...rowsOf(body, org.orgId), ...rowsOf(body, org.otherOrgId)]) {

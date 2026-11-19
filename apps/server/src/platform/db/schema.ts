@@ -432,6 +432,7 @@ export interface Memberships {
   report_channel: Generated<string>;
   report_mailbox_id: string | null;
   role: string;
+  telegram_detail: Generated<string>;
   user_id: string;
 }
 
@@ -494,6 +495,7 @@ export interface Organizations {
   resumed_at: Timestamp | null;
   sso_required: Generated<boolean>;
   style_text: string | null;
+  telegram_minimal_locked: Generated<boolean>;
   timezone: string;
   trial_ends_at: Timestamp | null;
 }

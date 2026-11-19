@@ -63,6 +63,13 @@ describe("featureFlags registry", () => {
     expect(featureFlags.web_push.removeBy).toBe("2027-06-01");
   });
 
+  test("telegram_minimal exists, defaults off, epic E9, remove by 2027-06-01, after web_push", () => {
+    expect(featureFlags.telegram_minimal.default).toBe(false);
+    expect(featureFlags.telegram_minimal.epic).toBe("E9");
+    expect(featureFlags.telegram_minimal.removeBy).toBe("2027-06-01");
+    expect(featureKeys.indexOf("telegram_minimal")).toBe(featureKeys.indexOf("web_push") + 1);
+  });
+
   test("draft_copy_check exists, defaults off, epic E6a, remove by 2027-06-01", () => {
     expect(featureFlags.draft_copy_check.default).toBe(false);
     expect(featureFlags.draft_copy_check.epic).toBe("E6a");

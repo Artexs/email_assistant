@@ -201,6 +201,7 @@ describe("org_features", () => {
         { flag: "contact_wait", enabled: false, source: "default" },
         { flag: "sender_suggestions", enabled: false, source: "default" },
         { flag: "web_push", enabled: false, source: "default" },
+        { flag: "telegram_minimal", enabled: false, source: "default" },
       ]);
     });
   });

@@ -224,6 +224,13 @@ export const featureFlags = {
     epic: "E9",
     removeBy: "2027-06-01",
   },
+  telegram_minimal: {
+    default: false,
+    description:
+      "The Telegram detail level per member: a member on minimal gets counts and panel links, no mail text and no buttons.",
+    epic: "E9",
+    removeBy: "2027-06-01",
+  },
 } as const satisfies Record<string, FeatureFlag>;
 
 export type FeatureKey = keyof typeof featureFlags;
