@@ -211,7 +211,7 @@ async function eraseInScope(
   const address = normalizeDsrAddress(input.address);
   if (address === null) return { kind: "bad_address" };
   if (normalizeDsrAddress(input.confirm) !== address) return { kind: "confirm_mismatch" };
-  // Before any lock or read (F137 D7): the equality match is exact for this address only when the database and the
+  // Before any lock or read: the equality match is exact for this address only when the database and the
   // program lower-case its letters alike. Else nothing changes and no audit row is written.
   const rule = await (input.ruleCheck ?? checkAddressRule)(db, address);
   if (!rule.ok) return { kind: "rule_mismatch", codePoints: rule.codePoints };

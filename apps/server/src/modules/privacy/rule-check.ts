@@ -21,8 +21,8 @@ function cachedDivergent(db: Db): Promise<DivergentCodePoint[]> {
   return divergentOfProcess;
 }
 
-// The code points where the SQL form and the program form of the address rule differ and that matter for this address
-// (F137 D7). The equality match is exact for the address when none does. A divergent code point conflicts when
+// The code points where the SQL form and the program form of the address rule differ and that matter for this address.
+// The equality match is exact for the address when none does. A divergent code point conflicts when
 // (a) its program form or its database form is a code point of the asked address (the database lowers less or more than
 // the program), or (b) its program form is empty (the program trims it, the database does not).
 // `address` is already in rule form. Ascending, as `divergent` is.

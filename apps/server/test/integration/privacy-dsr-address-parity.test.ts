@@ -277,7 +277,7 @@ describe("the text pattern and the equality match", () => {
   });
 });
 
-// The run-time check of the address rule (F137 D7): the divergent code points that matter for the asked address.
+// The run-time check of the address rule: the divergent code points that matter for the asked address.
 describe("the rule check", () => {
   const A7CE = { cp: 0xa7ce, js: "\uA7CF", db: "\uA7CE" };
 
@@ -286,7 +286,7 @@ describe("the rule check", () => {
     expect(addressRuleConflicts("anna@x.test", [A7CE])).toEqual([]);
   });
 
-  test("a database that lowers more than the program conflicts through its form (G2)", () => {
+  test("a database that lowers more than the program conflicts through its form", () => {
     const lowersMore = [{ cp: 0x1e9e, js: "\u1E9E", db: "\u00DF" }];
     expect(addressRuleConflicts("stra\u00DFe@x.de", lowersMore)).toEqual([0x1e9e]);
     expect(addressRuleConflicts("strasse@x.de", lowersMore)).toEqual([]);
@@ -323,7 +323,7 @@ describe("the rule check", () => {
   });
 });
 
-// Find and erase call the check first (F137 stage 04): a refusal changes nothing and writes no audit row.
+// Find and erase call the check first: a refusal changes nothing and writes no audit row.
 describe("find and erase with the rule check", () => {
   const orgIds: string[] = [];
   const userIds: string[] = [];
