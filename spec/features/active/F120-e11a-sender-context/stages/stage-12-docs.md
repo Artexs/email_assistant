@@ -29,3 +29,12 @@ Fix `docs/capabilities/triage.md` rule 17 cost lines (line ~92):
 - The "about 1.3 s at 100000 mails" figure was the total of both reads. `suspiciousSenderDomains` alone takes about 360 ms.
 - `userSentKey` counts all user Sent mail of any age on every batch (about 80 ms at 100000 rows); the doc calls it "cheap". State the number.
 Optional test gaps (low risk, add if cheap): a test for the default `SENT_RECIPIENT_MAX_MAILS = 5000`; a test that `sent_at` (not `internal_date`) bounds the 90-day window. Accepted note: if the user mails a typo domain more often than the real one, the real domain gets `lookalike_domain` (false alarm only, never lowers suspicion).
+
+## Carry-over from the stage 07 re-review (PASS 6a1e6606)
+
+First commit of this stage (small, with a mutation log each):
+- TG1: pin probe C16 as a command test in `contacts-suggestion-commands.test.ts`: the user wrote recently to `z@mail.acme.pl`, the domain blocklist row `acme.pl` must answer `not_available` on Accept (mutation m10: domain row re-check reads `{ address: row.pattern }` survives today; m07 subdomain LIKE).
+- N1: the comment of `protectedNow` must say that a delegate committed while Accept waits for the row lock is not seen and the rule stays (not "withdrawn within the hour").
+- N4: `moveFocus.current` in the suggestions card is cleared only when `data` changes; clear it when the reload fails, so a later poll does not move focus.
+- N5: docs say "a 404 hides the card and stops its requests"; with the flag off and N mailboxes the card sends N list requests. Fix the doc line or stop after the first 404 for the flag.
+- TG3 (cosmetic): the select lists mailboxes that answered 404 (mutation w02).

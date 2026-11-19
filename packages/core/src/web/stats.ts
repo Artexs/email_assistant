@@ -1,5 +1,6 @@
 // The numbers of one week (M1–M5, M7, M8). Counts and numbers only: no address, no subject, no mail id.
 import { EVIDENCE_MIN_LABELS } from "../metrics/m8";
+import { replyOutcomes } from "../metrics/reply-drafts";
 import { barCategories } from "../triage/metrics";
 import { tripReasons } from "../trust/tripwire";
 
@@ -11,6 +12,13 @@ export { EVIDENCE_MIN_LABELS };
 
 const count = z.number().int().min(0);
 const rate = z.number().min(0).max(1).nullable();
+
+// What became of the reply drafts of the week (`replyOutcomeCounts`). All zero while the reply drafts are off. A stored view of a
+// report queued before this key has none: it reads all zero.
+const replyDraftCounts = z.strictObject(
+  Object.fromEntries(replyOutcomes.map((name) => [name, count])) as Record<(typeof replyOutcomes)[number], typeof count>
+);
+const noReplyDrafts = Object.fromEntries(replyOutcomes.map((name) => [name, 0])) as z.infer<typeof replyDraftCounts>;
 
 /** The kinds of loop (`open_loops.kind`). */
 export const LOOP_KINDS = ["waiting", "promised", "delegated"] as const;
@@ -61,6 +69,7 @@ export const weekStatsSchema = z.strictObject({
     perMailboxMonthUsd: z.number().min(0),
     targetUsd: z.number().min(0),
   }),
+  replyDrafts: replyDraftCounts.default(noReplyDrafts),
   // M8 is the evidence at the time of the computation, not of the week: only the newest week carries rows.
   m8: z
     .array(

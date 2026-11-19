@@ -1,11 +1,12 @@
 import { formatClock, mailboxListSchema, ruleListSchema, type MailboxView } from "@ea/core/web";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { AddRuleForm } from "../components/rules/AddRuleForm";
 import { RuleList } from "../components/rules/RuleList";
 import { NewslettersCard } from "../components/rules/NewslettersCard";
+import { SuggestionsCard } from "../components/rules/SuggestionsCard";
 import { UrgencyCard } from "../components/rules/UrgencyCard";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -27,11 +28,22 @@ interface RulesBodyProps {
   isOwner: boolean;
   isOwnerRole: boolean; // the "only the owner" text depends on the role, not on the write right
   timeZone: string;
+  // Counts the Accepts of the suggestions card: a new value loads the rule list again, and the add form keeps what is typed.
+  rulesVersion: number;
   reloadMe(): void;
   reloadMailboxes(): void;
 }
 
-function RulesBody({ filter, mailboxes, isOwner, isOwnerRole, timeZone, reloadMe, reloadMailboxes }: RulesBodyProps) {
+function RulesBody({
+  filter,
+  mailboxes,
+  isOwner,
+  isOwnerRole,
+  timeZone,
+  rulesVersion,
+  reloadMe,
+  reloadMailboxes,
+}: RulesBodyProps) {
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
   const { data, error, loading, reload } = useResource(async () => {
@@ -39,6 +51,13 @@ function RulesBody({ filter, mailboxes, isOwner, isOwnerRole, timeZone, reloadMe
     setLastLoad(new Date());
     return list;
   });
+
+  const seenVersion = useRef(rulesVersion);
+  useEffect(() => {
+    if (seenVersion.current === rulesVersion) return;
+    seenVersion.current = rulesVersion;
+    reload();
+  }, [rulesVersion, reload]);
 
   // The rules count of the onboarding checklist lives in `useMe()`.
   const onChanged = () => {
@@ -98,6 +117,8 @@ function RulesBody({ filter, mailboxes, isOwner, isOwnerRole, timeZone, reloadMe
 function Rules() {
   const { me, reload: reloadMe } = useMe();
   const [filter, setFilter] = useState(ALL);
+  // An Accept in the suggestions card adds a rule: a new version makes the rule list load again.
+  const [rulesVersion, setRulesVersion] = useState(0);
   const {
     data: mailboxes,
     error,
@@ -156,6 +177,7 @@ function Rules() {
         isOwner={isOwner}
         isOwnerRole={isOwnerRole}
         timeZone={me.organization.timezone}
+        rulesVersion={rulesVersion}
         reloadMe={reloadMe}
         reloadMailboxes={reloadMailboxes}
       />
@@ -167,6 +189,15 @@ function Rules() {
           reloadMailboxes={reloadMailboxes}
         />
       )}
+      <SuggestionsCard
+        mailboxes={mailboxes}
+        isOwner={isOwner}
+        isOwnerRole={isOwnerRole}
+        onRulesChanged={() => {
+          setRulesVersion((version) => version + 1);
+          reloadMe();
+        }}
+      />
       {me.features.includes("bulk_unsubscribe") && (
         <NewslettersCard mailboxes={mailboxes} timeZone={me.organization.timezone} isOwner={isOwner} />
       )}

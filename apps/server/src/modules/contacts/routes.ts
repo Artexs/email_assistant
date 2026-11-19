@@ -3,7 +3,7 @@ import { Hono, type Context, type MiddlewareHandler } from "hono";
 
 import type { Db } from "../../platform/db";
 import { parseBody, requireOwner, type ApiEnv } from "../../platform/http";
-import { getMailbox } from "../mail";
+import { getMailbox, type TestMailRule } from "../mail";
 
 import { suggestionDocs } from "./api-docs";
 import { senderFlags } from "./flags";
@@ -18,6 +18,7 @@ import {
 export interface SuggestionRouteDeps {
   db: Db;
   now(): Date;
+  testMail: TestMailRule;
 }
 
 /**
@@ -50,7 +51,7 @@ export function suggestionRoutes(deps: SuggestionRouteDeps): Hono<ApiEnv> {
     const id = z.uuid().safeParse(c.req.param("id"));
     if (!id.success) return notFound(c);
     await parseBody(c, suggestionActionBodySchema);
-    const result: AcceptResult = await acceptSuggestion({ db: deps.db, now: deps.now }, c.get("ctx"), {
+    const result: AcceptResult = await acceptSuggestion(deps, c.get("ctx"), {
       id: id.data,
       actor: c.get("session").userId,
       via: "web",
@@ -62,6 +63,8 @@ export function suggestionRoutes(deps: SuggestionRouteDeps): Hono<ApiEnv> {
         return c.json({ error: "already" }, 409);
       case "rule_limit":
         return c.json({ error: "rule_limit" }, 409);
+      case "not_available":
+        return c.json({ error: "not_available" }, 409);
       case "not_found":
         return notFound(c);
     }
@@ -71,7 +74,7 @@ export function suggestionRoutes(deps: SuggestionRouteDeps): Hono<ApiEnv> {
     const id = z.uuid().safeParse(c.req.param("id"));
     if (!id.success) return notFound(c);
     await parseBody(c, suggestionActionBodySchema);
-    const result: DismissResult = await dismissSuggestion({ db: deps.db, now: deps.now }, c.get("ctx"), {
+    const result: DismissResult = await dismissSuggestion(deps, c.get("ctx"), {
       id: id.data,
       actor: c.get("session").userId,
       via: "web",

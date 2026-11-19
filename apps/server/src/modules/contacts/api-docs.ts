@@ -21,12 +21,12 @@ export const suggestionDocs = {
   postSuggestionAccept: apiDoc({
     operationId: "postSuggestionAccept",
     summary:
-      "Accept one suggestion (owner only): the server adds the sender rule through the same validated writer as the Rules page and ends the suggestion. A second accept answers 409 `already` and adds no rule; a full rule list answers 409 `rule_limit` and the suggestion stays open.",
+      "Accept one suggestion (owner only): the server adds the sender rule through the same validated writer as the Rules page and ends the suggestion. A second accept answers 409 `already` and adds no rule; a full rule list answers 409 `rule_limit` and the suggestion stays open; a sender that is protected now (a delegate, an answer, a rule or a suspicious mail since the suggestion was made) answers 409 `not_available`, ends the suggestion and adds no rule.",
     tags,
     params: z.object({ id: z.uuid() }),
     body: suggestionActionBodySchema,
     ok: { status: 200, schema: suggestionResultSchema },
-    errors: [ownerOnly, notFound, { status: 409, codes: ["already", "rule_limit"] }],
+    errors: [ownerOnly, notFound, { status: 409, codes: ["already", "rule_limit", "not_available"] }],
   }),
   postSuggestionDismiss: apiDoc({
     operationId: "postSuggestionDismiss",

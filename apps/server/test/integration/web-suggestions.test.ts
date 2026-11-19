@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 
 import { SENDER_RULE_LIMIT, suggestionListSchema, suggestionResultSchema } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -8,13 +8,17 @@ import { auditEvents } from "../../src/modules/audit";
 import { listSenderRules } from "../../src/modules/config";
 import { suggestionRoutes } from "../../src/modules/contacts";
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
+import { loadConfig } from "../../src/platform/config";
+import { createSecretBox } from "../../src/platform/crypto";
 import type { ApiEnv } from "../../src/platform/http";
+import { apiRouters } from "../../src/web";
 import { captureLogs } from "../log-capture";
 
-import { ago, insertSuggestion, NOW, type Org } from "./contacts-fixtures";
+import { ago, insertSuggestion, NO_TEST, NOW, seed, spamMails, withSentCoverage, type Org } from "./contacts-fixtures";
+import { insertDelegate } from "./fixtures";
 import { testDb } from "./helpers";
 import { addMailbox } from "./trust-fixtures";
-import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
+import { as, noBackupCodes, noPrivacy, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // The suggestion routes: GET /api/suggestions/:mailboxId, POST /api/suggestions/:id/accept and /dismiss. Committed rows;
 // `afterEach` removes the organizations. The addresses of these tests are made up.
@@ -50,7 +54,7 @@ async function newBox(flags: { context?: boolean; suggestions?: boolean } = {}):
   const app = webTestApp({
     db,
     sessions: { owner: org.ownerId, member: org.assistantId, other: org.otherOwnerId },
-    routers: (api) => api.route("/", suggestionRoutes({ db, now: () => NOW })),
+    routers: (api) => api.route("/", suggestionRoutes({ db, now: () => NOW, testMail: NO_TEST })),
   });
   return { org, mine, theirs, app };
 }
@@ -256,10 +260,16 @@ describe("suggestion routes: accept and dismiss", () => {
     const box = await newBox();
     const id = await insertSuggestion(db, box.mine, { value: "anna@acme.pl", kind: "vip" });
     const answers: unknown[] = [];
-    for (const action of ["dismiss", "dismiss", "accept"] as const) {
-      const res = await send(box, "owner", id, action);
-      answers.push({ status: res.status, body: await res.json() });
+    const logs = captureLogs();
+    try {
+      for (const action of ["dismiss", "dismiss", "accept"] as const) {
+        const res = await send(box, "owner", id, action);
+        answers.push({ status: res.status, body: await res.json() });
+      }
+    } finally {
+      logs.stop();
     }
+    expect(logs.lines.join("\n")).not.toContain("acme");
     expect(answers).toEqual([
       { status: 200, body: { status: "dismissed" } },
       { status: 409, body: { error: "already" } },
@@ -272,6 +282,74 @@ describe("suggestion routes: accept and dismiss", () => {
       { mailbox_id: box.mine.mailboxId, kind: "vip", scope: "address", via: "web" },
     ]);
     expect(JSON.stringify(audit)).not.toContain("acme");
+  });
+
+  test("8b Accept of a blocklist row whose sender became a delegate answers 409 not_available: no rule, the row is withdrawn, a second tap answers 409 already", async () => {
+    const box = await newBox();
+    await db.transaction().execute(async (trx) => {
+      await withSentCoverage(trx, box.mine);
+      await seed(trx, box.mine, "spam@acme.pl", spamMails());
+    });
+    const id = await insertSuggestion(db, box.mine, { value: "spam@acme.pl", kind: "blocklist" });
+    await db.transaction().execute((trx) => insertDelegate(trx, box.mine.ctx, { email: "spam@acme.pl" }));
+    const answers: unknown[] = [];
+    const logs = captureLogs();
+    try {
+      for (const action of ["accept", "accept"] as const) {
+        const res = await send(box, "owner", id, action);
+        answers.push({ status: res.status, body: await res.json() });
+      }
+    } finally {
+      logs.stop();
+    }
+    expect(answers).toEqual([
+      { status: 409, body: { error: "not_available" } },
+      { status: 409, body: { error: "already" } },
+    ]);
+    expect(await rowOf(id)).toEqual({ status: "withdrawn", pattern: null });
+    expect(await rulesOf(box)).toEqual([]);
+    expect(await auditOf(box.org.orgId, auditEvents.suggestionAccepted)).toEqual([]);
+    expect(logs.lines.join("\n")).not.toContain("acme");
+  });
+
+  test("8c the route set of the server passes the test-mail rule: a Sent mail to a configured test sender does not protect it", async () => {
+    const key = randomBytes(32).toString("base64");
+    const config = loadConfig({
+      DATABASE_URL: process.env.DATABASE_URL,
+      CREDENTIALS_KEY: key,
+      WEB_BASE_URL: TEST_ORIGIN,
+      WEB_AUTH_SECRET: "x".repeat(32),
+      TEST_SENDER_ADDRESSES: "spam@acme.pl",
+    });
+    const extras = {
+      secrets: createSecretBox(key, 1),
+      actionsScope: { kind: "off" } as const,
+      sendScope: { kind: "off" } as const,
+      botUsername: null,
+    };
+    const box = await newBox();
+    await db.transaction().execute(async (trx) => {
+      await withSentCoverage(trx, box.mine);
+      await seed(trx, box.mine, "spam@acme.pl", spamMails(), [{ at: ago(1), to: ["spam@acme.pl"] }]);
+    });
+    const id = await insertSuggestion(db, box.mine, { value: "spam@acme.pl", kind: "blocklist" });
+    const app = webTestApp({
+      db,
+      sessions: { owner: box.org.ownerId },
+      routers: apiRouters(
+        config,
+        db,
+        extras,
+        () => NOW,
+        async () => [],
+        noBackupCodes,
+        noPrivacy
+      ),
+    });
+    const call = post("owner", id, "accept");
+    const res = await app.request(call.path, call.init);
+    expect({ status: res.status, body: await res.json() }).toEqual({ status: 200, body: { status: "accepted" } });
+    expect((await rulesOf(box)).map((rule) => `${rule.kind}:${rule.pattern}`)).toEqual(["blocklist:spam@acme.pl"]);
   });
 
   test("9 another organization: its mailbox id and its suggestion id answer 404 and change nothing; the same for an unknown or bad id", async () => {

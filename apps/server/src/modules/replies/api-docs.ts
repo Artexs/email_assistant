@@ -1,4 +1,12 @@
-import { profileBodySchema, profilePreviewSchema, profileViewSchema, z } from "@ea/core";
+import {
+  profileBodySchema,
+  profilePreviewSchema,
+  profileViewSchema,
+  replySamplesConflictSchema,
+  replySamplesQueuedSchema,
+  replySamplesViewSchema,
+  z,
+} from "@ea/core";
 
 import { apiDoc } from "../../platform/openapi";
 
@@ -38,5 +46,27 @@ export const replyDocs = {
     body: profileBodySchema,
     ok: { status: 200, schema: profilePreviewSchema },
     errors: [ownerOnly, notFound, { status: 429, codes: ["preview_limit", "preview_busy"] }],
+  }),
+  postSamples: apiDoc({
+    operationId: "requestReplySamples",
+    summary:
+      "Ask for up to three sample drafts on the newest mails of the last 7 days that need a reply (owner only; any mailbox mode). The answer lists the request ids and their number: fewer than three when fewer mails qualify (0 uses up nothing). A sample is read in the panel; it is never saved in Drafts and never sent. It counts in the daily LLM cap like a tap. One run for each mailbox and quota day: then 409 `sample_limit`. A mailbox of an OAuth provider answers 409 `blocked` with `reason` `oauth_mailbox`. 409 `llm_off` while no model client runs. 404 while the flag `reply_drafts` is off.",
+    tags,
+    params,
+    ok: { status: 202, schema: replySamplesQueuedSchema },
+    errors: [
+      ownerOnly,
+      notFound,
+      { status: 409, codes: ["blocked", "sample_limit", "llm_off"], schema: replySamplesConflictSchema },
+    ],
+  }),
+  getSamples: apiDoc({
+    operationId: "getReplySamples",
+    summary:
+      "The sample drafts of today's run for a mailbox (owner only), oldest first: the status of each request, the subject of its mail and, for a `done` request, the sample text. The panel polls until no item is `pending` or `drafting`. Retention clears the texts. 404 while the flag `reply_drafts` is off.",
+    tags,
+    params,
+    ok: { status: 200, schema: replySamplesViewSchema },
+    errors: [ownerOnly, notFound],
   }),
 };

@@ -1,4 +1,5 @@
 // The Monday message and the rate text of the handled-share line. Pure: facts in, text out.
+import { replyClosedCount } from "../metrics/reply-drafts";
 import { weekRange } from "../metrics/week";
 import type { CoreTexts } from "../texts";
 import { barCategories } from "../triage/metrics";
@@ -168,6 +169,20 @@ export function renderWeeklyReport(
   if (view.answeredWaiting > 0) lines.push(t.review(view.answeredWaiting));
   if (view.suggestions !== undefined && view.suggestions.open > 0) {
     lines.push(t.suggestions.line(view.suggestions.open, view.suggestions.panelUrl ?? null));
+  }
+  // Shown only when a reply draft was made in the week; the closed figure is the drafts that the mail changed under.
+  const { replyDrafts } = week;
+  if (replyDrafts.made > 0) {
+    lines.push(
+      t.replyDrafts.line({
+        made: replyDrafts.made,
+        sentByTap: replyDrafts.sent_by_tap,
+        sentByUser: replyDrafts.sent_by_user,
+        rejected: replyDrafts.rejected,
+        expired: replyDrafts.expired,
+        closed: replyClosedCount(replyDrafts),
+      })
+    );
   }
   return { text: lines.join("\n"), buttons: [] };
 }

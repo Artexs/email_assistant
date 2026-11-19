@@ -1,7 +1,7 @@
 // Row readers of the action metrics (M3). Every table is joined with its own `org_id` filter.
 // The rows hold ids, folders, reasons and times only: no subject and no text. `fromAddress` is for the whitelist check.
 import { categorySchema, isMoveTarget, rejectReasons } from "@ea/core";
-import type { HiddenMoveRow, MistakeRow, RejectRow, WeekQuery } from "@ea/core";
+import type { HiddenMoveRow, MistakeRow, RejectRow, ReplyPairRow, WeekQuery } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
@@ -152,4 +152,40 @@ export async function listExpiredUnapprovedSends(
     ORDER BY a.created_at, a.id
   `.execute(db);
   return rows.map((raw) => expiredRowSchema.parse(raw));
+}
+
+const pairRowSchema = z.object({ status: z.string(), status_reason: z.string().nullable() });
+
+/**
+ * The reply pairs of real mail that were made in the range (the first version of the pair was created in it), each as its newest
+ * version stands now: an edit, a redraft or a recipient change makes a new send that supersedes the old one, and only the newest
+ * counts. The rows hold a status and a reason code only. The newest version is never older than the first one, so a pair made in the
+ * range has its newest version created at or after the start of the range: the anchor reads no older send.
+ */
+export async function listReplyPairRows(db: DbOrTrx, ctx: TenantContext, q: WeekQuery): Promise<ReplyPairRow[]> {
+  const { rows } = await sql<unknown>`
+    WITH RECURSIVE chain AS (
+      SELECT a.id AS head_id, a.status, a.status_reason, a.email_id, a.supersedes_action_id AS prev,
+        a.created_at AS made_at
+      FROM actions a
+      WHERE a.org_id = ${ctx.orgId} AND a.type = 'send' AND a.payload->>'kind' = 'reply'
+        AND a.created_at >= ${q.range.start}
+        AND NOT EXISTS (
+          SELECT 1 FROM actions newer WHERE newer.org_id = ${ctx.orgId} AND newer.supersedes_action_id = a.id)
+      UNION ALL
+      SELECT c.head_id, c.status, c.status_reason, c.email_id, p.supersedes_action_id, p.created_at
+      FROM chain c
+      JOIN actions p ON p.id = c.prev AND p.org_id = ${ctx.orgId}
+    )
+    SELECT c.status, c.status_reason
+    FROM chain c
+    JOIN emails ON emails.id = c.email_id AND emails.org_id = ${ctx.orgId}
+    WHERE c.prev IS NULL AND c.made_at >= ${q.range.start} AND c.made_at < ${q.range.end}
+      AND ${mailScope(ctx, q)}
+    ORDER BY c.made_at, c.head_id
+  `.execute(db);
+  return rows.map((raw) => {
+    const row = pairRowSchema.parse(raw);
+    return { status: row.status, reason: row.status_reason };
+  });
 }

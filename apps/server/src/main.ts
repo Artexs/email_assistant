@@ -33,7 +33,14 @@ import {
   runSloTick,
   type SloCheckEntry,
 } from "./modules/operator";
-import { createReplyJobs, createReplySweep, createStylePreview, type StylePreview } from "./modules/replies";
+import {
+  createReplyJobs,
+  createReplySweep,
+  createStylePreview,
+  replySampleScope,
+  type ReplySampleScope,
+  type StylePreview,
+} from "./modules/replies";
 import { configureFeatures, countSsoRequiredWhileKilled, listOrganizations } from "./modules/tenancy";
 import { createLlmPause, createReturnedJob, createTriageJob, type LlmPause, type TriageScope } from "./modules/triage";
 import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from "./modules/trust";
@@ -228,6 +235,7 @@ let contactsRefreshRun: Promise<void> = Promise.resolve();
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 // The style preview of the reply drafts: it needs the model client, so it exists only while the LLM scope is on.
 let stylePreview: StylePreview | null = null;
+let replySamples: ReplySampleScope | null = null;
 // The hooks of the delegation and the card edits, the send scope and the UIDPLUS read: the committer, the expiry job and the reply drafter share them.
 const scopeOfSends = sendScope(config);
 const hooks = delegationHooks({ db });
@@ -332,6 +340,8 @@ if (scope !== null) {
     onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
   });
   stylePreview = createStylePreview({ db, llm, dailyCap: config.LLM_DAILY_CAP, now: () => new Date() });
+  // The sample drafts are queued for the drafter job above, so they follow its scope: with `synthetic` only test mail is a candidate.
+  replySamples = replySampleScope(scope, () => new Date());
   scheduler.add("replies.drafter", "*/15 * * * * *", () => {
     repliesDrafterRun = replyJobs.drafter.run().then(() => undefined);
     return repliesDrafterRun;
@@ -531,6 +541,7 @@ const web = webDeps(config, db, {
   mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
   gate,
   stylePreview,
+  replySamples,
   onAuthMailFailed: (ctx, userId, kind, code) => operator.authMailFailed(ctx, userId, kind, code, new Date()),
 });
 const app = createApp({ checkDb: () => checkDb(db), web });

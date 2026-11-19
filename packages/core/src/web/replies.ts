@@ -94,3 +94,36 @@ export const replyRequestStatusSchema = z.strictObject({
   sendId: z.uuid().nullable(),
 });
 export type ReplyRequestStatus = z.infer<typeof replyRequestStatusSchema>;
+
+// Sample drafts (`POST` and `GET /api/mailboxes/:id/reply-samples`): up to three drafts of recent real mail that the owner reads and that are
+// never saved in Drafts and never sent. Owner only.
+export const REPLY_SAMPLE_COUNT = 3;
+
+// 202 of the POST. `requestIds` has `count` entries: fewer than three when fewer mails qualify (0: none qualifies and no run is used up).
+export const replySamplesQueuedSchema = z.strictObject({
+  requestIds: z.array(z.uuid()).max(REPLY_SAMPLE_COUNT),
+  count: z.number().int().min(0).max(REPLY_SAMPLE_COUNT),
+});
+export type ReplySamplesQueued = z.infer<typeof replySamplesQueuedSchema>;
+
+// 409 of the POST: `sample_limit` (one run for each mailbox and quota day), `blocked` with the reason (`oauth_mailbox`) or `llm_off` (no
+// model client runs on this server).
+export const replySamplesConflictSchema = z.strictObject({
+  error: z.enum(["blocked", "sample_limit", "llm_off"]),
+  reason: z.enum(replyBlockReasons).optional(),
+});
+export type ReplySamplesConflict = z.infer<typeof replySamplesConflictSchema>;
+
+// GET: the requests of the newest run of the mailbox today, oldest first. `body` is the sample text of a `done` request, else null (also
+// after retention). `subject` is the subject of the mail that the sample answers. The panel polls until no item is `pending` or `drafting`.
+export const replySampleItemSchema = z.strictObject({
+  requestId: z.uuid(),
+  status: z.enum(replyRequestStatuses),
+  reasonCode: z.string().max(60).nullable(),
+  subject: z.string().nullable(),
+  body: z.string().nullable(),
+});
+export const replySamplesViewSchema = z.strictObject({
+  items: z.array(replySampleItemSchema).max(REPLY_SAMPLE_COUNT),
+});
+export type ReplySamplesView = z.infer<typeof replySamplesViewSchema>;

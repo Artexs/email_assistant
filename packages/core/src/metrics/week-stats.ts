@@ -9,6 +9,7 @@ import { type HandledRow, handledShare } from "./m4";
 import { type UrgentNoticeRow, urgentLatency } from "./m5";
 import { type LlmCallRow, unitCost } from "./m7";
 import { type GateRow, realLabelEvidence } from "./m8";
+import { type ReplyOutcomeRows, replyOutcomeCounts } from "./reply-drafts";
 import { weekRange } from "./week";
 
 export interface WeekRows {
@@ -22,6 +23,7 @@ export interface WeekRows {
   handled: readonly HandledRow[];
   urgent: readonly UrgentNoticeRow[];
   llmCalls: readonly LlmCallRow[];
+  replies: ReplyOutcomeRows;
   gates: readonly GateRow[];
   mailboxes: number;
 }
@@ -44,6 +46,7 @@ export function buildWeekStats(
     m4: handledShare(rows.handled),
     m5: urgentLatency(rows.urgent, { timeZone: opts.timeZone }),
     m7: unitCost(rows.llmCalls, { mailboxes: rows.mailboxes }),
+    replyDrafts: replyOutcomeCounts(rows.replies),
     m8: realLabelEvidence(rows.gates),
   });
 }

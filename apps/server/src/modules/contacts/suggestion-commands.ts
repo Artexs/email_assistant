@@ -10,9 +10,10 @@ import type { Transaction } from "kysely";
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
 import { addSenderRule } from "../config";
+import type { TestMailRule } from "../mail";
 
 import { senderFlags } from "./flags";
-import { rulePatternOf } from "./suggest";
+import { rulePatternOf, suggestionBlockedNow } from "./suggest";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -20,6 +21,8 @@ export interface SuggestionDeps {
   // A plain `Db` opens one transaction; a `Transaction` (a test) is the transaction.
   db: DbOrTrx;
   now(): Date;
+  // The rule of test mail: Accept reads the sender activity again, and test mail never counts.
+  testMail: TestMailRule;
 }
 
 export type SuggestionVia = "web" | "cli";
@@ -31,7 +34,7 @@ export interface SuggestionCommand {
   via: SuggestionVia;
 }
 
-export type AcceptResult = "accepted" | "already" | "rule_limit" | "not_found";
+export type AcceptResult = "accepted" | "already" | "rule_limit" | "not_available" | "not_found";
 export type DismissResult = "dismissed" | "already" | "not_found";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -51,15 +54,14 @@ interface LockedRow {
 
 // The row of this organization, locked until the end of the transaction: Accept and Dismiss on one row run one after the
 // other, and the profile pass (which updates only a row that is still open) waits for it too.
-async function lockRow(trx: Transaction<DB>, ctx: TenantContext, id: string): Promise<LockedRow | undefined> {
+async function lockRow(trx: DbOrTrx, ctx: TenantContext, id: string, lock = true): Promise<LockedRow | undefined> {
   if (!UUID.test(id)) return undefined;
-  const row = await trx
+  const query = trx
     .selectFrom("sender_suggestions")
     .select(["id", "mailbox_id", "kind", "scope", "pattern", "status"])
     .where("id", "=", id)
-    .where("org_id", "=", ctx.orgId)
-    .forUpdate()
-    .executeTakeFirst();
+    .where("org_id", "=", ctx.orgId);
+  const row = await (lock ? query.forUpdate() : query).executeTakeFirst();
   // The table CHECKs hold the values of `kind` and `scope`.
   return row === undefined
     ? undefined
@@ -97,17 +99,45 @@ async function isActiveMailbox(trx: Transaction<DB>, ctx: TenantContext, mailbox
   return row?.status === "active";
 }
 
-// Accept: the owner makes the suggestion a sender rule of its mailbox. The route checks the role; the command trusts it. One
-// transaction: lock the row, then `addSenderRule` (`added` or `exists` both end the row as `accepted`), then the audit row.
-// The audit data holds the mailbox, kind, scope and channel, never the pattern or the key. `not_found` also answers a flag
-// that is off, another organization's id, and a mailbox that is not `active` (its profile is frozen, so the advice is not
-// current; the row stays open and expires). At the rule limit the row stays open and nothing is written.
+// Is the sender of the open row protected now? Read before the row lock, so the lock is held only for the writes. The row is read
+// without a lock first; a row that is not open, has no pattern, or sits in a mailbox that is not `active` is not checked (the
+// locked part answers it). A sender that turns protected between this read and the lock is not caught: the profile pass withdraws
+// the row within the hour.
+async function protectedNow(deps: SuggestionDeps, ctx: TenantContext, id: string, now: Date): Promise<boolean> {
+  if (!(await senderFlags(deps.db, ctx)).suggestions) return false;
+  const row = await lockRow(deps.db, ctx, id, false);
+  if (row === undefined || row.status !== "open" || row.pattern === null) return false;
+  const pattern = rulePatternOf(row.pattern);
+  if (!isValidSenderPattern(pattern)) return false;
+  const mailbox = await deps.db
+    .selectFrom("mailboxes")
+    .select("status")
+    .where("id", "=", row.mailbox_id)
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirst();
+  if (mailbox?.status !== "active") return false;
+  return suggestionBlockedNow(
+    deps.db,
+    ctx,
+    { mailboxId: row.mailbox_id, kind: row.kind, scope: row.scope, pattern: row.pattern },
+    { now, testMail: deps.testMail }
+  );
+}
+
+// Accept: the owner makes the suggestion a sender rule of its mailbox. The route checks the role; the command trusts it. First
+// `protectedNow` (no lock). Then one transaction: lock the row, then `addSenderRule` (`added` or `exists` both end the row as
+// `accepted`), then the audit row. The audit data holds the mailbox, kind, scope and channel, never the pattern or the key.
+// `not_found` also answers a flag that is off, another organization's id, and a mailbox that is not `active` (its profile is
+// frozen, so the advice is not current; the row stays open and expires). At the rule limit the row stays open and nothing is
+// written. `not_available`: the sender is protected now (a delegate, an answer, a rule or a suspicious mail that came after the
+// row was made, or the Sent coverage is gone); the row ends as `withdrawn`, as the pass would end it, and no rule is made.
 export async function acceptSuggestion(
   deps: SuggestionDeps,
   ctx: TenantContext,
   command: SuggestionCommand
 ): Promise<AcceptResult> {
   const now = deps.now();
+  const blocked = await protectedNow(deps, ctx, command.id, now);
   return inTransaction(deps.db, async (trx) => {
     if (!(await senderFlags(trx, ctx)).suggestions) return "not_found";
     const row = await lockRow(trx, ctx, command.id);
@@ -119,6 +149,10 @@ export async function acceptSuggestion(
       // No rule can be made from it: the row ends and the owner never sees it again.
       await endRow(trx, ctx, row, "withdrawn", { actor: command.actor, now });
       return "not_found";
+    }
+    if (blocked) {
+      await endRow(trx, ctx, row, "withdrawn", { actor: command.actor, now });
+      return "not_available";
     }
     const added = await addSenderRule(trx, ctx, {
       mailboxId: row.mailbox_id,
@@ -152,6 +186,8 @@ export async function dismissSuggestion(
     const row = await lockRow(trx, ctx, command.id);
     if (row === undefined) return "not_found";
     if (row.status !== "open") return "already";
+    // As Accept: a mailbox that is not `active` has no current suggestions, so the row is not the owner's to act on.
+    if (!(await isActiveMailbox(trx, ctx, row.mailbox_id))) return "not_found";
     await endRow(trx, ctx, row, "dismissed", { actor: command.actor, now });
     await recordAudit(trx, ctx, {
       actor: command.actor,

@@ -24,9 +24,9 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { createLog } from "../../platform/log";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
-import { listMailboxes } from "../mail";
+import { listMailboxes, type TestMailRule } from "../mail";
 
-import type { SenderActivity } from "./activity";
+import { readSenderActivity, type ActivityScope, type SenderActivity } from "./activity";
 import { sentCoverage } from "./flags";
 
 type DbOrTrx = Db | Transaction<DB>;
@@ -93,22 +93,13 @@ export async function refreshSuggestions(
   if (mailbox === undefined || mailbox.status !== "active") return;
 
   const coverage = await sentCoverage(trx, ctx, mailboxId, now);
-  const rules = await listSenderRules(trx, ctx, mailboxId);
-  const delegates = new Set((await listDelegateAddresses(trx, ctx, { activeOnly: true })).map(normalizeSenderAddress));
-  const ownDomains = new Set(mailboxes.map((box) => registrableDomain(hostOf(box.address))));
-  const senders = input.activity.map((item) => inputOf(item, rules, delegates, ownDomains));
-  const byAddress = new Map(senders.map((item) => [item.address, item]));
-  // The domain protections also see the people that the user's rules and delegates name and that sent nothing in the window:
-  // a domain whitelist must not override a block rule, a domain blocklist must not block a VIP, a whitelisted sender or an
-  // active delegate. These entries have no counts, so they never become a candidate themselves.
-  const inputs = [...senders, ...ruleAndDelegateMembers(byAddress, rules, delegates, ownDomains)];
-  const byDomain = new Map<string, SuggestionInput[]>();
-  for (const item of inputs) byDomain.set(item.domain, [...(byDomain.get(item.domain) ?? []), item]);
+  const standing = await standingOf(trx, ctx, mailboxId, mailboxes, input.activity);
+  const { rules, inputs } = standing;
 
   await expire(trx, ctx, mailboxId, now);
   const open = await openRows(trx, ctx, mailboxId);
   const withdraw = open
-    .filter((row) => row.pattern !== null && isWithdrawn(row, row.pattern, { rules, coverage, byAddress, byDomain }))
+    .filter((row) => row.pattern !== null && isWithdrawn(row, row.pattern, { ...standing, coverage }))
     .map((row) => row.id);
   await end(trx, ctx, mailboxId, withdraw, "withdrawn", now);
 
@@ -273,29 +264,93 @@ function inputOf(
   };
 }
 
+interface Standing {
+  rules: SenderRule[];
+  // The addresses of the activity.
+  byAddress: ReadonlyMap<string, SuggestionInput>;
+  byDomain: ReadonlyMap<string, SuggestionInput[]>;
+  inputs: SuggestionInput[];
+  // The facts of an address or domain that the activity does not show: no counts, but the rules, the delegates and the own domains apply.
+  bare(address: string): SuggestionInput;
+}
+
+// What the engine knows about the senders of a mailbox now: the rules, the active delegates and the activity, as one
+// `SuggestionInput` per address (plus the people that only a rule or a delegate names, so the domain protections see them).
+async function standingOf(
+  trx: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  mailboxes: readonly { address: string }[],
+  activity: readonly SenderActivity[]
+): Promise<Standing> {
+  const rules = await listSenderRules(trx, ctx, mailboxId);
+  const delegates = new Set((await listDelegateAddresses(trx, ctx, { activeOnly: true })).map(normalizeSenderAddress));
+  const ownDomains = new Set(mailboxes.map((box) => registrableDomain(hostOf(box.address))));
+  const senders = activity.map((item) => inputOf(item, rules, delegates, ownDomains));
+  const byAddress = new Map(senders.map((item) => [item.address, item]));
+  // The domain protections also see the people that the user's rules and delegates name and that sent nothing in the window:
+  // a domain whitelist must not override a block rule, a domain blocklist must not block a VIP, a whitelisted sender or an
+  // active delegate. These entries have no counts, so they never become a candidate themselves.
+  const inputs = [...senders, ...ruleAndDelegateMembers(byAddress, rules, delegates, ownDomains)];
+  const byDomain = new Map<string, SuggestionInput[]>();
+  for (const item of inputs) byDomain.set(item.domain, [...(byDomain.get(item.domain) ?? []), item]);
+  return {
+    rules,
+    byAddress,
+    byDomain,
+    inputs,
+    bare: (address) => bareInput(address, rules, delegates, ownDomains),
+  };
+}
+
+// Accept asks this before it makes a rule: true when the row would end now (`isWithdrawn`, the check that the profile pass uses
+// for an open row): a sender rule of its kind covers it, or a "never" condition holds (an active delegate, an answer or a Sent mail
+// to the sender, a VIP or block rule, a suspicious mail, no Sent coverage for a blocklist). The read is bounded: only the mails
+// of the row's address (or domain) of the 90 days, never the whole mailbox (`only` of `readSenderActivity`). A sender that the
+// activity no longer shows is judged by the rules, the delegates and the coverage alone, so a row that outlives its counts
+// (a row lives 30 days, its count needs 90) is checked too. A covering rule of the same kind blocks the row, with or without
+// activity; that agrees with the pass, which withdraws such a row. The caller runs it outside the row lock.
+export async function suggestionBlockedNow(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  row: { mailboxId: string; kind: SuggestionKind; scope: SuggestionScope; pattern: string },
+  options: { now: Date; testMail: TestMailRule }
+): Promise<boolean> {
+  const mailboxes = await listMailboxes(db, ctx);
+  const only: ActivityScope =
+    row.scope === "domain" ? { domain: rulePatternOf(row.pattern) } : { address: row.pattern };
+  const activity = await readSenderActivity(db, ctx, row.mailboxId, { ...options, only });
+  const standing = await standingOf(db, ctx, row.mailboxId, mailboxes, activity);
+  const coverage = await sentCoverage(db, ctx, row.mailboxId, options.now);
+  return isWithdrawn(row, row.pattern, { ...standing, coverage });
+}
+
 interface WithdrawFacts {
   rules: readonly SenderRule[];
   coverage: boolean;
   byAddress: ReadonlyMap<string, SuggestionInput>;
   byDomain: ReadonlyMap<string, SuggestionInput[]>;
+  bare(address: string): SuggestionInput;
 }
 
 // True when an open row must end now. A sender rule of the same kind covers the pattern (a VIP rule also covers a whitelist;
-// `matchSender` has that rule), or a "never" condition holds. A row whose address or domain the activity no longer shows
-// can be judged by the rules and by the Sent coverage only: it stays open until it expires.
-function isWithdrawn(row: OpenRow, pattern: string, facts: WithdrawFacts): boolean {
+// `matchSender` has that rule), or a "never" condition holds. An address or domain that the activity does not show is judged by
+// the rules, the delegates and the Sent coverage alone (`bare`): it ends when one of them protects it, else it stays open until
+// it expires.
+function isWithdrawn(row: Pick<OpenRow, "kind" | "scope">, pattern: string, facts: WithdrawFacts): boolean {
   const match = matchSender(pattern, facts.rules);
   if (row.kind === "vip" && match.vip) return true;
   if (row.kind === "whitelist" && match.whitelisted) return true;
   if (row.kind === "blocklist" && match.blocklisted) return true;
-  if (row.kind === "blocklist" && !facts.coverage) return true;
+  // No Sent coverage ends a blocklist row too: `blocklistNever` and `domainSuggestionBlocked` hold that condition.
   if (row.scope === "address") {
-    const item = facts.byAddress.get(pattern);
-    return item !== undefined && addressSuggestionBlocked(row.kind, item, facts.coverage);
+    const item = facts.byAddress.get(pattern) ?? facts.bare(pattern);
+    return addressSuggestionBlocked(row.kind, item, facts.coverage);
   }
   if (row.kind === "vip") return false;
-  const members = facts.byDomain.get(rulePatternOf(pattern)) ?? [];
-  return members.length > 0 && domainSuggestionBlocked(row.kind, members, facts.coverage);
+  const domain = rulePatternOf(pattern);
+  const members = facts.byDomain.get(domain) ?? [facts.bare(`domain-rule@${domain}`)];
+  return domainSuggestionBlocked(row.kind, members, facts.coverage);
 }
 
 async function openRows(trx: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<OpenRow[]> {
