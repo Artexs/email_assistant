@@ -21,3 +21,7 @@ Steps 1, 4, 6, 7, 8 are live.
 ## What the stage built meanwhile
 
 The pure parts do not depend on the answer: `toVtt`, `ffmpegArgs`, `demoDbProblem` and `DEMO_STEPS` (with the provisional `live` flags). Only `live`, the captions of the not-live steps and the step count change with the answer.
+
+## Answer (coordinator, 2026-11-20)
+
+Option 1. The D7 limit is 3 for the e2e-seed video: steps 2, 3 and 5 stay not live, with the `live` flags and day captions as built. The e2e-seed video is never a G3 candidate (D10). Follow-up ticket F151 redoes the spike on the C1 demo seed, where the sim stack has real triage, and must make steps 2, 3 and 5 live or say why not. Stage 10 records with this step list.
