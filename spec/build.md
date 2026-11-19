@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F138-the-whole-project-calls-only-openai-no-gemini-code-key-config-or-doc-remains-and-the-evals-and-the-judge-run-on-openai-models` (🟠 ACTIVE): The whole project calls only OpenAI: no Gemini code, key, config or doc remains, and the evals and the judge run on OpenAI models
 - `F136-every-limen-job-runs-the-playwright-suites-in-parallel-with-no-shared-lock` (🟠 ACTIVE): Every Limen job runs the Playwright suites in parallel with no shared lock
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
@@ -31,7 +30,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - Rules, one line each (detail in `notes/2026-11-20-replan-parallel.md` and `notes/2026-11-13-limen-planner-role.md`): a line that says `needs plan` gets a `--role planner` job, at most three planner or refresh jobs at once; before stage 01 of a planned ticket run `scripts/plan-drift.sh <folder> <plan base>`, exit 1 → a `Refresh FNNN` planner job first (`needs refresh`); a plan that lands with no `needs-adam` builds without a new owner word once its `Build after` tickets are in `done/`; file overlaps named in plans are advisory: start the stages, and when a land conflicts, resume the worker to merge `master` and re-prove; the coordinator is the only writer of `docs/owner-decisions.md` (the `[important]` items of `questions.md` when a plan lands, the `Decisions for the owner` of a worker final message when a stage lands, its own calls); end each reply that hands control back with `Owner decisions: N new` (`grep -c ' · new$' docs/owner-decisions.md`).
 - Board scan (owner, 2026-11-14, permanent): at every wake and every turn, before you answer, run `bash scripts/coord-scan.sh` and start all work that can start now: (1) every OPEN stage of each active ticket whose Needs are met (several stages of one ticket run next to each other); (2) planned tickets whose plan is landed, whose Build after tickets are in `done/` and whose drift check is clean or refresh landed; (3) plans and refreshes of tickets whose needs have landed (cap three); (4) reviews, checks and the quality pass that are due. A stage marked `VPS` is the coordinator's own run; `OWNER` is an owner step, which does not stop the stages after it. Do not wait for a landing to start unrelated work. State in the reply what you started, or why nothing can start.
 - `F115-e6a-reply-drafts` (🟠 ACTIVE, 18 of 19 stages landed): G1 runs for `drafter-v2` in job `2026-11-19-f115-drafter-v2-gate-runs-holdou-86a2f371`; then release v0.4.2 (carries stage 17), then stage 18 (VPS: flag on for the pilot org, checks 1–3; owner step O1 and the 20-draft check are records, not stops). PD-083 owner check: `owner-check-20.md` (plan default "not done" if unanswered).
-- `F138-…-only-openai-…` (🔴 PLANNED, plan landed, stage 01 landed, needs refresh): 02 (the only `bun.lock` change) → {03, 04} → 05 → 06 (acceptance grep, `llm:check`, classifier smoke run under $0.1; the drafter runs are F115's). Coordinator C1: remove `GEMINI_*` from the PC and the VPS `.env` before the deploy that carries 02.
 - `F108-e7-t5-production-on-the-vps` (🔴 PLANNED, plan landed, needs refresh, no migration): 01 → {02, 03} → 04 (VPS: release v0.4.2 plus the env split) → 05 → 06 (VPS: release v0.4.3) → 07 (VPS); F139 lands before 05.
 - `F121-e10b-public-pages-and-demo` (🔴 PLANNED, plan landed, needs refresh, no migration, no `bun.lock`): 01 and 08 first, then the DAG of `plan.md` § How to run; C1 (demo week on the sim stack, ≤ $5) after the F113 day run ends (2026-11-20 about 22:00 UTC); stages 09–11 build against the e2e seed if the demo seed is not ready (owner rule 2026-11-20); G1–G3 default: prepare, do not publish; stage 01 holds docs-site deploys until G1.
 - `F124-…-parallel-…` (🔴 PLANNED, plan landed, no refresh: stage 01 is built on branch `limen/2026-11-19-f124-stage-01-unit-waits-3600945b`, owner 2026-11-20): `limen continue` that job (merge master, re-prove, land `--keep-open`), then 02 with its review; no migration, no `bun.lock`.
@@ -41,14 +39,18 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F062-drop-mailbox-cursor-columns` (🟠 plan landed; 01 ∥ 02 → 03 → 04; 01 lands only after the v0.4.2 tag): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
 - `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed, [risky], no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.
-- `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F138 stage 02 and F136 land): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
-- `F141-…-deepseek-…` (🔴 PLANNED, needs plan after F138 stage 02 lands; build after F138 in `done/`): a DeepSeek provider row and key, model tiers (`light`, `strong`) per provider, an audit that puts all provider code in the registry; dev, tests and evals only (no legal pages, no gate, no production switch: owner 2026-11-19).
+- `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F136 lands): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
+- `F141-…-deepseek-…` (🔴 PLANNED, needs plan): one `LLM_PROVIDER` for all roles (`openai`, `gemini`, `deepseek`), model tiers `light`/`strong` per provider, per-role provider and model env keys removed, an audit that puts all provider code in the registry; DeepSeek for dev, tests and evals only (no legal pages, no gate, no production switch: owner 2026-11-19).
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (history now; row 28 F122 is the last open row).
 
 ## PARKED
 
 - `F063-junk-llm-cap` (🔴 PLANNED, parked: trigger is a spam wave in the weekly report of F100; no plan).
-- `F140-…-own-model-…` (🔴 PLANNED, parked: the two open stages of the private model option; starts when the owner says "run the own model" or OpenAI answers the EU project request; plan after F138 stage 04).
+- `F140-…-own-model-…` (🔴 PLANNED, parked: the two open stages of the private model option; starts when the owner says "run the own model" or OpenAI answers the EU project request).
+
+## DROPPED
+
+- `F138-…-only-openai-…` (⚪ DROPPED 2026-11-19, owner: Gemini stays as an optional provider, off by default; stage 01, judge on OpenAI, landed and stays).
 
 ## PROVEN
 
