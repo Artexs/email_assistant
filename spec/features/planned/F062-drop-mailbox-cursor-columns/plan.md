@@ -2,7 +2,7 @@
 
 # F062 plan · Neutral names for the moved-mail columns, and no old cursor copy
 
-The old one-job plan (2026-11-09) is in git history at base `96cf823f`; this file replaces it. Ticket: [`ticket.md`](ticket.md).
+Replaces the old one-job plan (git history at `96cf823f`).
 
 ## Input
 
@@ -16,7 +16,7 @@ Repo rules this plan follows: `docs/code-patterns.md` § Migrations (expand then
 - **D2 The dual write of the emails columns is a database trigger, not app code.** Expand adds `emails.source_uid bigint` and `emails.move_pending_at timestamptz` (both nullable, as the old ones), copies the old values, and adds one `BEFORE INSERT OR UPDATE` trigger that keeps each pair equal. So the old release (writes only old names) and the new code (writes only new names) both stay correct, also across a rollback and a roll forward. Rejected: app code that writes both names: a rollback to the old release writes only the old names, and the new code would read stale new columns after the roll forward.
 - **D3 Trigger rule.** INSERT: each new column takes `COALESCE(new name, old name)`, then the old column takes that value. UPDATE: when the new column changed (`IS DISTINCT FROM`), copy it to the old one; else when the old column changed, copy it to the new one. When both changed, the new name wins. Null is a value (clearing `move_pending_at` clears `undo_pending_at`).
 - **D4 Code moves to the new names in the expand release.** Every query, row type, function name and test uses `source_uid` / `sourceUid` and `move_pending_at` / `movePendingAt` (`setUndoPending` becomes `setMovePending`). After stage 04 no code names the old columns; a unit guard test (stage 04) keeps it so until the contract.
-- **D5 The `mailboxes` cursor copy stops in the expand release (stage 02).** Proof that a rollback still works: at base `96cf823f` no code outside tests reads `MailboxRow.uidvalidity` or `last_uid`; every cursor reader reads `mailbox_folders` (checked by the planner: `sync.ts`, `sync-backfill.ts`, `sync-chunk.ts`, `sync-below-cursor.ts`, `moves.ts` read `SyncFolderRow` or `lockSyncFolder`). The rollback target of the expand release is built from this code, so it does not need the copy. The copy only served a rollback to the code before the sort-folder sync (2026-11-09), which no release state can reach now (rollback goes one release back).
+- **D5 The `mailboxes` cursor copy stops in the expand release (stage 02).** A rollback still works: at base `96cf823f` no code outside tests reads `MailboxRow.uidvalidity` or `last_uid`; every cursor reader reads `mailbox_folders` (planner check of `sync.ts`, `sync-backfill.ts`, `sync-chunk.ts`, `sync-below-cursor.ts`, `moves.ts`). The copy only served a rollback to the code before the sort-folder sync, which no release state can reach (rollback goes one release back).
 - **D6 Contract drops** `emails.inbox_uid`, `emails.undo_pending_at`, the trigger and its function, `mailboxes.uidvalidity`, `mailboxes.last_uid`, with `-- contract: v<the release that carries stages 01–04>`. Before the drop it inserts a missing INBOX `mailbox_folders` row from the `mailboxes` cursor (`ON CONFLICT DO NOTHING`), so no cursor can be lost.
 - **D7 Columns stay nullable.** `source_uid` is null on old rows outside INBOX (as `inbox_uid` is now). `SET NOT NULL` would be a third contract step with no product gain.
 - **D8 Data export.** The expand stage exports `source_uid` and `move_pending_at` and lists the old emails columns as excluded ("copy of the new column for the rollback window"); stage 02 excludes the two `mailboxes` cursor columns ("stale copy"). The contract removes the excluded entries. Default, owner to confirm (questions.md Q1).
@@ -31,25 +31,23 @@ Repo rules this plan follows: `docs/code-patterns.md` § Migrations (expand then
 - **Another ticket's branch still writes `inbox_uid` after stage 04 lands:** the guard test fails at its proof after "merge master"; before the contract it still works at runtime (trigger).
 - **A mailbox with no INBOX folder row:** the sync refuses it now; the contract inserts the row first (D6, 05-T3).
 - **Contract release deployed while `current` is older than the expand release** (for example after a rollback of the expand release): forbidden; stage 05 and the release check (`docs/release-checklist.md`, contract line rule) stop it.
-- **Tombstone trigger `emails_skip_tombstoned`** (BEFORE INSERT, returns null): independent of the copy trigger; its tests must stay green.
 
 ## Facts checked (2026-11-19, base 96cf823f)
 
 - `inbox_uid` and `undo_pending_at` are nullable; no index, CHECK, view, policy or trigger names them or the `mailboxes` cursor (scout 3; `schema.ts`).
-- Real uses: 162 snake-case and 68 camel-case lines in 31 files (planner grep); the 341 of the task count also the `mailbox_folders` and `mailbox_sent_sync` cursors, which keep their names.
+- Real uses: 230 lines in 31 files (planner grep); the task's 341 also count the `mailbox_folders` and `mailbox_sent_sync` cursors, which keep their names.
 - The `org:export` map is checked against `information_schema` by test `privacy-export-map` (`privacy/export-map.ts` header).
 - `bun run db:check-migrations` (CI) fails a `DROP COLUMN|TRIGGER|FUNCTION` without a `-- contract:` line (`check-migrations-rules.ts`); `ADD COLUMN`, `UPDATE`, `CREATE FUNCTION`, `CREATE TRIGGER` pass.
 - `deploy/release.sh` runs `db:migrate` before `up -d`; `deploy/rollback.sh` never migrates; state holds `current` and `previous` only (scout 4).
 
 ## Not verified
 
-- Every live mailbox has an INBOX `mailbox_folders` row (scout 1). D6 makes the answer harmless.
-- Row count of `emails` on the VPS (the expand `UPDATE` touches each row once under a table lock). Expected tens of thousands: seconds. Stage 01 records the time on the job DB.
+- Every live mailbox has an INBOX `mailbox_folders` row (scout 1); D6 makes the answer harmless.
+- Row count of `emails` on the VPS (the expand `UPDATE` runs under a table lock); expected tens of thousands, seconds.
 
 ## Done when
 
-- Ticket `## Acceptance`, five items.
-- `bun run db:check-migrations` passes with both migrations.
+Ticket `## Acceptance`, five items.
 
 ## Rules for every stage
 
@@ -67,9 +65,9 @@ Repo rules this plan follows: `docs/code-patterns.md` § Migrations (expand then
 
 - **Migration slot:** stage 01 and stage 05 each need the board's single migration slot.
 - **After stage 01 lands, and after stage 05 lands:** `bun run db:migrate` on the shared dev DB (coordinator or owner).
-- **Release record (not a stage):** the release that carries stages 01–04. Before it, check that all four are on master; else the contract waits for the release that carries the last one.
-- **Before stage 05 starts:** read `deploy/release-state/state` on the VPS: `current` carries stages 01–04. Give that version to the worker for the `-- contract:` line.
-- **Release record:** the release that carries stage 05; at its deploy, `previous` must be the expand release.
+- **Release record (not a stage):** the release that carries stages 01–04; if one of them misses it, the contract waits for the release that carries the last one.
+- **Before stage 05 starts:** `deploy/release-state/state` on the VPS shows that `current` carries stages 01–04. Give that version to the worker for the `-- contract:` line.
+- **Release record:** the release that carries stage 05; at its deploy, `current` is still that expand release (S05-2).
 
 ## Review
 
@@ -90,11 +88,11 @@ Order: 01 ∥ 02 → 03 → 04 → release → 05. Stage 02 may run next to 01 a
 ## Planning progress
 
 - Scouts: 4 (scouts.md). Stage files: all written.
-- Word counts (`wc -w`): see § Log.
+- Word counts (`wc -w`, before the review): plan 1447; stages 01 684, 02 572, 03 632, 04 596, 05 ≤700.
 
 ## Cold review
 
-See § Log.
+Model: `claude-opus-5-5` (the plan has two `[risky]` migration stages; migrations are a risk area). Result: see § Log.
 
 ## Log
 

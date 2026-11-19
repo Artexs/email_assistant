@@ -14,10 +14,7 @@ Up, in this order, in the one transaction dbmate gives:
 
 1. `ALTER TABLE emails ADD COLUMN source_uid bigint, ADD COLUMN move_pending_at timestamptz;` (nullable, no default: D7).
 2. `UPDATE emails SET source_uid = inbox_uid, move_pending_at = undo_pending_at;` (before the trigger exists, so the trigger does not run on it).
-3. Function `emails_copy_renamed_columns()` (plpgsql, `RETURNS trigger`, not `SECURITY DEFINER`) with the D3 rule for both pairs:
-   - INSERT: `NEW.source_uid := COALESCE(NEW.source_uid, NEW.inbox_uid); NEW.inbox_uid := NEW.source_uid;` and the same for `move_pending_at` / `undo_pending_at`.
-   - UPDATE: `IF NEW.source_uid IS DISTINCT FROM OLD.source_uid THEN NEW.inbox_uid := NEW.source_uid; ELSIF NEW.inbox_uid IS DISTINCT FROM OLD.inbox_uid THEN NEW.source_uid := NEW.inbox_uid; END IF;` and the same for the timestamp pair.
-   - `RETURN NEW`.
+3. Function `emails_copy_renamed_columns()` (plpgsql, `RETURNS trigger`, not `SECURITY DEFINER`): the plan's D3 rule for both pairs, then `RETURN NEW`.
 4. `CREATE TRIGGER emails_copy_renamed_columns BEFORE INSERT OR UPDATE ON emails FOR EACH ROW EXECUTE FUNCTION emails_copy_renamed_columns();`
 
 Down: drop the trigger, the function, the two columns.
@@ -27,7 +24,7 @@ The file must have no `-- contract:` line and no statement that `bun run db:chec
 ## Decisions for this stage
 
 - **S01-1 Rollback SQL rule (D10).** A rollback of the release that carries this migration is `deploy/rollback.sh` alone. No SQL before or after. The old release writes only `inbox_uid` / `undo_pending_at`; the trigger fills the new names. A roll forward needs no SQL either: the new columns are current. Never `db:rollback` on the VPS (repo rule, `docs/code-patterns.md` § Migrations).
-- **S01-2 Lock.** The `ALTER` and the `UPDATE` hold a table lock for the length of the migration. No `lock_timeout`: the same as the other migrations of this repo. The worker records the migration time on the job DB in the final message.
+- **S01-2 Lock.** The `ALTER` and the `UPDATE` hold a table lock for the migration; no `lock_timeout`, as the other migrations. The existing tombstone-trigger tests must stay green.
 - **S01-3 Export map (D8).** `emails` exports `source_uid` and `move_pending_at`. `inbox_uid` and `undo_pending_at` move to the excluded list with the reason "copy of source_uid (move_pending_at) for the rollback window; dropped by the contract migration". Use the existing `byOrgExcluding` form.
 - **S01-4 Changelog.** One line under `## [Unreleased]` → `### Changed`, operator words: the data export names the two mail columns `source_uid` and `move_pending_at`.
 - **S01-5 Docs.** `docs/architecture.md` § 5 `emails` row: add the two new columns, mark the old two as "copy for the rollback window, dropped one release later". The full rename of the docs is stage 04.
@@ -43,7 +40,6 @@ The file must have no `-- contract:` line and no statement that `bun run db:chec
 - T7 Insert with `source_uid = 5` and `inbox_uid = 6` → both 5.
 - T8 Update both in one statement (`source_uid = 9`, `inbox_uid = 10`) → both 9.
 - T9 Insert with all four null → all four null.
-- T10 A tombstoned insert is still skipped (the existing `emails_skip_tombstoned` tests stay green; no new test).
 
 Backfill check (manual, record in the final message): on the job DB run `bun run db:rollback` once, insert one row with `inbox_uid = 41` and `undo_pending_at` set, run `bun run db:migrate`, select the row: `source_uid = 41` and `move_pending_at` equal. Then delete the row.
 
