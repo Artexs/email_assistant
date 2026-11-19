@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { enActivity } from "./en-activity";
 import { enApprovals } from "./en-approvals";
+import { enDetail } from "./en-detail";
 import { enAuth } from "./en-auth";
 import { enMailboxes } from "./en-mailboxes";
 import { enPhone } from "./en-phone";
@@ -11,6 +12,7 @@ import { enSettings } from "./en-settings";
 import { enSuggestions } from "./en-suggestions";
 import { plActivity } from "./pl-activity";
 import { plApprovals } from "./pl-approvals";
+import { plDetail } from "./pl-detail";
 import { plAuth } from "./pl-auth";
 import { plMailboxes } from "./pl-mailboxes";
 import { plPhone } from "./pl-phone";
@@ -30,6 +32,7 @@ const groups = [
   ["reply panel", enReplyPanel, plReplyPanel],
   ["phone", enPhone, plPhone],
   ["suggestions", enSuggestions, plSuggestions],
+  ["detail", enDetail, plDetail],
 ] as const;
 
 describe("text groups", () => {

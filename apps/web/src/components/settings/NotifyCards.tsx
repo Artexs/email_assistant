@@ -14,6 +14,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { NoticeRoutesCard } from "./NoticeRoutesCard";
 
 // The own quiet hours and the own report channel. Any member edits their own row only: the server takes
 // the user from the session. Each card shows only with its flag (`me.features`); the server refuses a write without it.
@@ -227,21 +228,35 @@ export function ReportChannelCard({ view, onSaved }: CardProps) {
 }
 
 // The cards load their data here, and only here: `NotifyCards` is the one place that makes a request.
-export function NotifyCards({ timeZone, quiet, channel }: { timeZone: string; quiet: boolean; channel: boolean }) {
+export function NotifyCards({
+  timeZone,
+  quiet,
+  channel,
+  routes,
+}: {
+  timeZone: string;
+  quiet: boolean;
+  channel: boolean;
+  routes: boolean;
+}) {
   const { data, mutate } = useResource(() => api("/api/me/notify", notifyViewSchema));
   if (data === null) return null;
   return (
     <>
       {quiet && <QuietHoursCard view={data} timeZone={timeZone} onSaved={mutate} />}
       {channel && <ReportChannelCard view={data} onSaved={mutate} />}
+      {routes && <NoticeRoutesCard view={data} onSaved={mutate} />}
     </>
   );
 }
 
-// A card shows only with its flag (`me.features`). With both flags off nothing is mounted, so no request goes out. A function
+// A card shows only with its flag (`me.features`). With every flag off nothing is mounted, so no request goes out. A function
 // of its inputs (no hook), so a test can call it.
 export function NotifySection({ features, timeZone }: { features: readonly string[]; timeZone: string }) {
   const quiet = features.includes("user_quiet_hours");
   const channel = features.includes("report_mail");
-  return quiet || channel ? <NotifyCards timeZone={timeZone} quiet={quiet} channel={channel} /> : null;
+  const routes = features.includes("web_push");
+  return quiet || channel || routes ? (
+    <NotifyCards timeZone={timeZone} quiet={quiet} channel={channel} routes={routes} />
+  ) : null;
 }

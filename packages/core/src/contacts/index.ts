@@ -3,3 +3,4 @@ export * from "./suggestions";
 export * from "./types";
 export * from "./wait";
 export * from "./address";
+export * from "./address-probes";

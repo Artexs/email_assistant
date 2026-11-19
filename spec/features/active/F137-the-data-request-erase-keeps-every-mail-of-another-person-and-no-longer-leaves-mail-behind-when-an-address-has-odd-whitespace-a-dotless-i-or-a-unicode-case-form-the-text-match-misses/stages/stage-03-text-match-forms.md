@@ -59,3 +59,10 @@ Write test values with `\u` escapes (Ohm U+2126, Kelvin U+212A, Angstrom U+212B)
 ## Out of scope
 
 The run-time check (stage 04). NFC folding (Q1).
+
+## Carry-over from the stage 02 review (PASS 5b83878b)
+
+First commit of this stage (each with a test and a saved mutation log):
+- G2: three call sites have no test with odd whitespace outside `emails.from_address`. Add one case each, in `privacy-dsr-address-rule.test.ts`: a To (and a Cc) address with trailing NBSP (`apps/server/src/modules/privacy/dsr-match.ts:116`, review mutation 19); a kept mail whose recipient array holds a padded form of the person (`erase.ts:80`, mutation 20); a `sent_emails.from_address` with a leading U+3000 (`dsr-match.ts:140`, mutation 22). Each test fails when its site goes back to `btrim(col)`.
+- G1: parity test I2 prints the count of the divergent code points but asserts nothing about them. Assert: on `postgres:17` 17.x, `divergent` is a subset of the 28 known code points (U+A7CE, U+A7D2, U+A7D4, U+16EA0–U+16EB8) with no trim difference and none below U+0530; on another server version only print. Mutation 14 (U+1E01 to `a`) must fail it.
+- N1 (plan F5 is wrong for the writer): `contacts/refresh.ts:121` hashes `item.address`, which comes from `normalizedAddress("emails.from_address_lower")` (`contacts/activity.ts:222`). After the deploy a sender whose stored From had tab, NBSP, U+3000 or U+FEFF gets a new profile row under the clean hash; the old row (keyed hash and dates, no address) stays until retention (365 days). Correct plan.md F5 and say so in `docs/capabilities/account-data.md` (one line). No cleanup job (coordinator decision: no address in that row, and the erase before this change missed it too).

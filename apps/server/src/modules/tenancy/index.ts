@@ -5,6 +5,7 @@ export {
   getMembership,
   getOrgOwner,
   getOrganization,
+  getOrganizationForShare,
   getOrgFeature,
   countMembershipsOfAll,
   getOrgPlan,

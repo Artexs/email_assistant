@@ -7,6 +7,7 @@ import { plApprovals } from "./texts/pl-approvals";
 import { plReply } from "./texts/pl-reply";
 import { plReplyPanel } from "./texts/pl-reply-panel";
 import { plPhone } from "./texts/pl-phone";
+import { plDetail } from "./texts/pl-detail";
 import { plSuggestions } from "./texts/pl-suggestions";
 
 // Polish texts. The key order and the section comments follow `en.ts` and `texts/en-*.ts`, so the files read side by side.
@@ -21,6 +22,7 @@ export const pl: Record<TextKey, string> = {
   ...plReplyPanel,
   ...plPhone,
   ...plSuggestions,
+  ...plDetail,
 };
 
 // Polish has three forms: one (1), few (2–4, 22–24 …), many (0, 5–21, 25–31 …).

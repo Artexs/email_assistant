@@ -1,5 +1,5 @@
 import { type DigestMinimalFacts, renderDigestMinimal } from "../digest/digest";
-import type { OutMessage } from "../digest/message";
+import { MESSAGE_MAX_CHARS, type OutMessage } from "../digest/message";
 import { textsFor } from "../texts";
 import { minimalTexts } from "../texts/minimal";
 
@@ -26,7 +26,8 @@ function linkLine(opts: NoticeRenderOptions, path: string): string {
 /**
  * The edit of a card at the `minimal` level: no button, and the panel link of the item when the stored text of the card has
  * none (a card that went out at `full` has no link, and the member can no longer reject it in the chat). `original` is the card's
- * own text, already in the chat; the link line is a fixed phrase of ours and holds no view string.
+ * own text, already in the chat; the link line is a fixed phrase of ours and holds no view string. Telegram refuses an edit over
+ * `MESSAGE_MAX_CHARS`: a card that the link line would push over the limit keeps its text without the line.
  */
 export function minimalEdit(
   edited: OutMessage,
@@ -39,7 +40,8 @@ export function minimalEdit(
   const link = panelLinkOf(opts.webBaseUrl, path);
   const line = link ?? minimalTexts(opts.locale).openPanel;
   if (original.includes(line)) return plain;
-  return { ...plain, text: `${edited.text}\n${line}` };
+  const text = `${edited.text}\n${line}`;
+  return text.length > MESSAGE_MAX_CHARS ? plain : { ...plain, text };
 }
 
 /** The text that answers /review for a member with `minimal`: the review lives in the panel. */

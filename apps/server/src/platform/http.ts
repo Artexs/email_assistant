@@ -196,7 +196,7 @@ export function parseQuery<T>(c: Context, schema: z.ZodType<T>): T {
   return parseWith(schema, c.req.query());
 }
 
-function parseWith<T>(schema: z.ZodType<T>, input: unknown): T {
+export function parseWith<T>(schema: z.ZodType<T>, input: unknown): T {
   const result = schema.safeParse(input);
   if (!result.success) {
     throw new ValidationError(
