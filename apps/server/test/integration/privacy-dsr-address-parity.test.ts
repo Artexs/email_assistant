@@ -8,9 +8,7 @@ import {
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
-import { refreshMailboxProfiles } from "../../src/modules/contacts";
-
-import { divergentCodePoints, normalizedAddress } from "../../src/modules/contacts";
+import { divergentCodePoints, normalizedAddress, refreshMailboxProfiles } from "../../src/modules/contacts";
 import {
   addressRegex,
   addressRuleConflicts,
