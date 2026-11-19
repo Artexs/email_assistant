@@ -118,7 +118,8 @@ async function loadSource(options: EvalOptions, deps: DrafterEvalCliDeps): Promi
   };
 }
 
-// One line of `--dump-drafts`: the dev case, its draft and its grade. Dev data is made up; the holdout never gets here.
+// One line of `--dump-drafts`: the dev or week case, its draft and its grade. Both parts are made-up tuning data; the
+// holdout never gets here.
 function dumpLine(result: DrafterCaseResult, c: EvalCase | undefined, draft: string | undefined) {
   return {
     id: result.id,
@@ -273,7 +274,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       ? parseDrafterResults(readFileSync(stateFile, "utf8")).filter((r) => !needsRerun(r, options.judge))
       : [];
     cli.print(`state ${stateFile}: ${earlier.length} earlier results`);
-    // `--dump-drafts` (dev only): one JSON line per new result with the mail, the draft and the grade, for tuning.
+    // `--dump-drafts` (dev and week only): one JSON line per new result with the mail, the draft and the grade, for tuning.
     // The results of an earlier run are not in it: they hold no text.
     const dumpFile = options["dump-drafts"];
     const drafts = new Map<string, string>();

@@ -51,7 +51,7 @@ export const evalUsage = [
   "                    (the open-loops extractor on the sent-mail bank; the part sent-holdout needs --extractor, and --extractor needs a sent part)",
   "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
   "       bun run eval --set reply-injection --drafter --judge [--model …] [--out <file.md>]",
-  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev)]`,
+  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev|week)]`,
   `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
@@ -222,8 +222,8 @@ function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): Ev
   if (sim === injection) return undefined;
   if (sim && (data.part === undefined || data.sentPart !== undefined || values.set !== undefined)) return undefined;
   if (injection && (data.part !== undefined || data.sentPart !== undefined || !data.judge)) return undefined;
-  // Draft texts leave the run only for the dev part: the holdout stays unread, and the week part is no tuning data.
-  if (data["dump-drafts"] !== undefined && data.part !== "dev") return undefined;
+  // Draft texts leave the run only for the dev and week parts (made-up tuning data): the holdout stays unread.
+  if (data["dump-drafts"] !== undefined && data.part !== "dev" && data.part !== "week") return undefined;
   return {
     ...data,
     prompt: productionClassifierChoice(),
