@@ -16,8 +16,11 @@ export async function lastOutboxSentAt(db: DbOrTrx, ctx: TenantContext): Promise
     .executeTakeFirst();
   return row?.sent_at ?? null;
 }
+// Failure codes that are no failure of the system: a cancellation (`outdated`, `expired`) and a push row whose device the user
+// removed or signed out (`no_device`).
+const FAILED_NOT_COUNTED = ["outdated", "expired", "no_device"];
 // Failed outbox rows created after `since`. The outbox has no failure time; the sender gives up
-// 24 h after the queue time, so `created_at` bounds it. `outdated` and `expired` are cancellations.
+// 24 h after the queue time, so `created_at` bounds it.
 export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, since: Date): Promise<number> {
   const row = await db
     .selectFrom("outbox")
@@ -25,7 +28,7 @@ export async function countFailedOutboxSince(db: DbOrTrx, ctx: TenantContext, si
     .where("org_id", "=", ctx.orgId)
     .where("status", "=", "failed")
     .where("created_at", ">", since)
-    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
+    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", [...FAILED_NOT_COUNTED])]))
     .executeTakeFirstOrThrow();
   return Number(row.count);
 }
@@ -36,7 +39,7 @@ export async function countFailedOutboxSinceOfAll(db: DbOrTrx, since: Date): Pro
     .select(["org_id", sql<string>`count(*)`.as("count")])
     .where("status", "=", "failed")
     .where("created_at", ">", since)
-    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", ["outdated", "expired"])]))
+    .where((eb) => eb.or([eb("error_code", "is", null), eb("error_code", "not in", [...FAILED_NOT_COUNTED])]))
     .groupBy("org_id")
     .execute();
   return new Map(rows.map((row) => [row.org_id, Number(row.count)]));

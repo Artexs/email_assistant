@@ -8,7 +8,7 @@ import { sql, type Transaction } from "kysely";
 
 import { detectNotices, queueMailboxRemovedNotices, queueNotice } from "../../src/modules/channels";
 import { detectors, mailOnlyDetectors, servesPushOnly } from "../../src/modules/channels/notices";
-import { pushDedupKey, upsertPushSubscription } from "../../src/modules/channels/push";
+import { listPushOnlyMembers, pushDedupKey, upsertPushSubscription } from "../../src/modules/channels/push";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { markSynced } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
@@ -535,6 +535,42 @@ describe("push-only recipients", () => {
     });
   });
 
+  test("7c. the result of a follow-up reaches a push-only owner by push and a withheld owner with a chat by line and push", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const pushOnly = w.owner;
+      const withChat = await addMember(trx, w.orgId, "owner");
+      await chat(trx, w, withChat);
+      const subA = await device(trx, w, pushOnly, at(-HOUR));
+      const subB = await device(trx, w, withChat, at(-HOUR));
+      // The default route of an updates kind is Telegram: this owner picked both.
+      await setRoutes(trx, w, withChat, { updates: "both" });
+      const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, pushOnly, {
+        sendStatus: "applied",
+        send: {
+          updated_at: at(-20 * MINUTE),
+          applied_at: at(-20 * MINUTE),
+          provider_result: '{"sent_copy":"appended"}',
+        },
+      });
+      await run(trx);
+      const key = `send_result:${follow.sendId}`;
+      expect(shape(await outbox(trx, w.orgId))).toEqual(
+        [
+          `push ${pushDedupKey(key, subA)}`,
+          `push ${pushDedupKey(key, subB)}`,
+          "telegram loop_consent:result:2026-11-20",
+        ].sort()
+      );
+      const state = await trx
+        .selectFrom("actions")
+        .select("result_notified_at")
+        .where("id", "=", follow.sendId)
+        .executeTakeFirstOrThrow();
+      expect(state.result_notified_at).toEqual(T);
+    });
+  });
+
   test("8. a withheld owner with a chat and no device gets only the loop_consent line, as before", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
@@ -565,6 +601,25 @@ describe("push-only recipients", () => {
       await trx.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", w.orgId).execute();
       await run(trx);
       expect(await outbox(trx, w.orgId)).toHaveLength(0);
+    });
+  });
+
+  test("11. the list of push-only members: no member with a chat, none with an expired session; `since` is the oldest live device", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const withChat = await addMember(trx, w.orgId, "owner");
+      await chat(trx, w, withChat);
+      await device(trx, w, withChat, at(-HOUR));
+      const expired = await addMember(trx, w.orgId, "owner");
+      await device(trx, w, expired, at(-HOUR), at(-MINUTE));
+      await device(trx, w, w.owner, at(-30 * MINUTE));
+      await device(trx, w, w.owner, at(-3 * HOUR));
+      const found = (await listPushOnlyMembers(trx, { now: T, orgId: w.orgId })).map((member) => ({
+        userId: member.userId,
+        since: member.since,
+        role: member.role,
+      }));
+      expect(found).toEqual([{ userId: w.owner, since: at(-3 * HOUR), role: "owner" }]);
     });
   });
 
