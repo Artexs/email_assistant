@@ -41,7 +41,7 @@ function rollbackSql(): string {
     .join("\n");
 }
 
-// Statement (a) only: the part before the comment of statement (b). A target from stage 04 on runs this part alone.
+// The notice statement only: the part before the open-reply statement. A target from the stage that added the reply kind on runs this part alone.
 function noticeSql(): string {
   const all = rollbackSql();
   const cut = all.indexOf("-- (b)");

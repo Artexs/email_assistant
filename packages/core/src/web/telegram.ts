@@ -38,7 +38,7 @@ export const OPEN_LOOPS_CONSENT_SINCE = "2026-11-15.2";
 
 // The first version whose text names the reply-draft data (the drafts that the AI writes, and the addresses of the other recipients of a
 // mail: To, Cc, Reply-To). A user whose newest consent is older gets only the count of waiting replies and a panel
-// link in Telegram, never a reply card (`consentCovers`). Test `T8` in `apps/web/src/i18n/i18n.test.ts` fails when this
+// link in Telegram, never a reply card (`consentCovers`). The consent text test in `apps/web/src/i18n/i18n.test.ts` fails when this
 // version is offered while a consent text does not name reply data.
 export const REPLY_CONSENT_SINCE = "2026-11-19";
 
