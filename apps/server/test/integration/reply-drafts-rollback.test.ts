@@ -23,7 +23,7 @@ type Trx = Transaction<DB>;
 
 const readme = readFileSync(join(import.meta.dir, "../../../../deploy/README.md"), "utf8");
 
-// The SQL between `<<'SQL'` and `SQL` in the section "Reply drafts", without the list indent and the transaction lines.
+// The SQL between `<<'SQL'` and `SQL` in the section "Reply drafts", without the transaction lines.
 function rollbackSql(): string {
   const start = readme.indexOf("\n## Reply drafts (F115)\n");
   expect(start).toBeGreaterThan(-1);
@@ -31,12 +31,12 @@ function rollbackSql(): string {
   const section = readme.slice(start, end);
   const open = section.indexOf("<<'SQL'\n");
   expect(open).toBeGreaterThan(-1);
-  const close = section.indexOf("\n   SQL\n", open);
+  // The block is not indented, so it can be copied from the raw file: the closing line is `SQL` at the start of a line.
+  const close = section.indexOf("\nSQL\n", open);
   expect(close).toBeGreaterThan(open);
   return section
     .slice(open + "<<'SQL'\n".length, close)
     .split("\n")
-    .map((line) => line.replace(/^ {3}/, ""))
     .filter((line) => line !== "BEGIN;" && line !== "COMMIT;")
     .join("\n");
 }
@@ -130,6 +130,8 @@ async function seed(trx: Trx) {
       view: { week: { replyDrafts: { made: 1 } } },
     }),
     weeklyWithout: await row({ kind: "weekly_report", status: "pending", view: { week: {} } }),
+    urgentWithKey: await row({ kind: "urgent", status: "pending", view: { draftable: true }, emailId }),
+    urgentWithout: await row({ kind: "urgent", status: "pending", view: {}, emailId }),
     otherKind: await row({ kind: "sync_stale", status: "pending", mailboxId: created.mailboxId }),
   };
   const pair = (sendStatus: string, draftStatus: string) =>
@@ -144,6 +146,7 @@ async function seed(trx: Trx) {
   const replies = {
     waiting: await pair("awaiting_approval", "ready"),
     waitingApplied: await pair("awaiting_approval", "applied"),
+    waitingApplying: await pair("awaiting_approval", "applying"),
     held: await pair("approved", "applied"),
     applying: await pair("applying", "applied"),
     sent: await pair("applied", "applied"),
@@ -167,6 +170,7 @@ describe("the rollback SQL of deploy/README.md § Reply drafts", () => {
         outbox.reviewPending,
         outbox.reviewSending,
         outbox.weeklyWithKey,
+        outbox.urgentWithKey,
       ]) {
         expect(await outboxOf(trx, id)).toEqual(failed);
       }
@@ -175,6 +179,7 @@ describe("the rollback SQL of deploy/README.md § Reply drafts", () => {
       expect(await outboxOf(trx, outbox.reviewSent)).toEqual({ status: "sent", error_code: null });
       expect(await outboxOf(trx, outbox.plainCard)).toEqual(kept);
       expect(await outboxOf(trx, outbox.weeklyWithout)).toEqual(kept);
+      expect(await outboxOf(trx, outbox.urgentWithout)).toEqual(kept);
       expect(await outboxOf(trx, outbox.otherKind)).toEqual(kept);
     });
   });
@@ -219,6 +224,9 @@ describe("the rollback SQL of deploy/README.md § Reply drafts", () => {
         },
       ]);
       expect((await actionOf(trx, replies.waitingApplied.draftId)).status).toBe("applied");
+      // A draft step that is under way is not touched, even when its send closes.
+      expect((await actionOf(trx, replies.waitingApplying.sendId)).status).toBe("expired");
+      expect((await actionOf(trx, replies.waitingApplying.draftId)).status).toBe("applying");
       expect(await auditOf(trx, replies.waitingApplied.draftId)).toEqual([]);
     });
   });
@@ -228,6 +236,7 @@ describe("the rollback SQL of deploy/README.md § Reply drafts", () => {
       const { replies, other } = await seed(trx);
       const read = async () => ({
         applying: await actionOf(trx, replies.applying.sendId),
+        applyingDraft: await actionOf(trx, replies.applying.draftId),
         sent: await actionOf(trx, replies.sent.sendId),
         rejected: await actionOf(trx, replies.rejected.sendId),
         delegation: await actionOf(trx, other.sendId),

@@ -896,42 +896,43 @@ Roll back the code, not the migration. Do not run `db:rollback` on a live databa
 - An older release does not know the callback codes `rd`, `ra`, `ru`, `dr` (they parse to null and answer "invalid"), the audit event `reply.requested` (free text column, harmless) and the routes `POST /api/replies`, `/api/approvals/:id/redraft`, `/recipients`, `GET /api/replies/requests/:id`, `GET`, `PUT /api/mailboxes/:id/profile`, the preview and the sample routes (404).
 
 1. Turn the flag off first: `org:flag --org-id <uuid> --flag reply_drafts --off`, or `FEATURES_OFF=reply_drafts`.
-2. Stop the server. Then, before the old image starts, run this block once (it is safe to run twice). The first statement is for every rollback to a release older than this one. The second statement is only for a rollback to a release older than stage 04 (a release from before the commit `a4065e84`, F115 stage 04): it ends every open reply as the expiry job does, with the reason `rollback`: the send `expired` (no result notice), its `ready` draft `expired` / `send_closed`, and one `action.expired` audit row for each. A draft that is already in the Drafts folder stays there; delete it by hand. Delete the second statement for a newer target. The whole block is one transaction:
+2. Stop the server and run the block below once, before the old image starts (it is safe to run twice; it is not indented, so you can copy it from this file as it stands). The first statement is for every rollback to a release older than this one: it fails the pending and sending rows that the old release rejects, among them the `urgent` rows that hold the key `draftable` (the old urgent view is strict). The second statement is only for a rollback to a release older than stage 04 (a release from before the commit `a4065e84`, F115 stage 04): it ends every open reply as the expiry job does, with the reason `rollback`: the send `expired` (no result notice), its `ready` draft `expired` / `send_closed`, and one `action.expired` audit row for each. Delete the second statement for a newer target. The block never touches a reply send that is `applying` (an SMTP call may be under way), a reply draft that is `applying` or `applied`, or a draft copy that is already in the Drafts folder. Before the block, `$C exec -T db psql -U postgres -d email_assistant -c "SELECT id, type, status FROM actions WHERE payload ->> 'kind' = 'reply' AND status = 'applying'"` should list no row. A row there is an interrupted send or draft step: look in `Wysłane` and in the Drafts folder, and delete a stray draft by hand. Do not send the mail again by hand if it is in `Wysłane`. The whole block is one transaction:
 
-   ```sh
-   $C stop server
-   $C exec -T db psql -U postgres -d email_assistant -v ON_ERROR_STOP=1 <<'SQL'
-   BEGIN;
-   -- (a) notices that an older release cannot read
-   UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL
-   WHERE status IN ('pending', 'sending')
-     AND (kind IN ('replies_ready', 'reply_prompt', 'reply_result')
-          OR (kind = 'approval' AND dedup_key ~ '^approval:[0-9a-f-]{36}:r[0-9]+$')
-          OR (kind = 'weekly_report' AND view -> 'week' ? 'replyDrafts'));
-   -- (b) open reply drafts, for a target older than stage 04 only
-   WITH closed AS (
-     UPDATE actions SET status = 'expired', status_reason = 'rollback', locked_at = NULL, next_attempt_at = NULL,
-       result_notified_at = now(), updated_at = now()
-     WHERE type = 'send' AND payload ->> 'kind' = 'reply' AND status IN ('awaiting_approval', 'approved')
-     RETURNING id, org_id, email_id, depends_on_action_id
-   ), drafts AS (
-     UPDATE actions d SET status = 'expired', status_reason = 'send_closed', locked_at = NULL, updated_at = now()
-     FROM closed c
-     WHERE d.id = c.depends_on_action_id AND d.org_id = c.org_id AND d.type = 'create_draft'
-       AND d.reverses_action_id IS NULL AND d.status = 'ready'
-     RETURNING d.id, d.org_id, d.email_id
-   )
-   INSERT INTO audit_log (org_id, email_id, action_id, actor, event, reason_code, data)
-   SELECT org_id, email_id, id, 'system', 'action.expired', 'rollback', '{"action_type": "send", "reason": "rollback"}'::jsonb
-   FROM closed
-   UNION ALL
-   SELECT org_id, email_id, id, 'system', 'action.expired', 'send_closed', '{"action_type": "create_draft", "reason": "expired"}'::jsonb
-   FROM drafts;
-   COMMIT;
-   SQL
-   ```
+```sh
+$C stop server
+$C exec -T db psql -U postgres -d email_assistant -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+-- (a) notices that an older release cannot read
+UPDATE outbox SET status = 'failed', error_code = 'outdated', locked_at = NULL
+WHERE status IN ('pending', 'sending')
+  AND (kind IN ('replies_ready', 'reply_prompt', 'reply_result')
+       OR (kind = 'approval' AND dedup_key ~ '^approval:[0-9a-f-]{36}:r[0-9]+$')
+       OR (kind = 'weekly_report' AND view -> 'week' ? 'replyDrafts')
+       OR (kind = 'urgent' AND view ? 'draftable'));
+-- (b) open reply drafts, for a target older than stage 04 only
+WITH closed AS (
+  UPDATE actions SET status = 'expired', status_reason = 'rollback', locked_at = NULL, next_attempt_at = NULL,
+    result_notified_at = now(), updated_at = now()
+  WHERE type = 'send' AND payload ->> 'kind' = 'reply' AND status IN ('awaiting_approval', 'approved')
+  RETURNING id, org_id, email_id, depends_on_action_id
+), drafts AS (
+  UPDATE actions d SET status = 'expired', status_reason = 'send_closed', locked_at = NULL, updated_at = now()
+  FROM closed c
+  WHERE d.id = c.depends_on_action_id AND d.org_id = c.org_id AND d.type = 'create_draft'
+    AND d.reverses_action_id IS NULL AND d.status = 'ready'
+  RETURNING d.id, d.org_id, d.email_id
+)
+INSERT INTO audit_log (org_id, email_id, action_id, actor, event, reason_code, data)
+SELECT org_id, email_id, id, 'system', 'action.expired', 'rollback', '{"action_type": "send", "reason": "rollback"}'::jsonb
+FROM closed
+UNION ALL
+SELECT org_id, email_id, id, 'system', 'action.expired', 'send_closed', '{"action_type": "create_draft", "reason": "expired"}'::jsonb
+FROM drafts;
+COMMIT;
+SQL
+```
 
-   The test `apps/server/test/integration/reply-drafts-rollback.test.ts` runs this block as it stands in this file on the development database (it strips `BEGIN` and `COMMIT` to keep its own rollback).
+The test `apps/server/test/integration/reply-drafts-rollback.test.ts` runs this block as it stands in this file on the development database (it strips `BEGIN` and `COMMIT` to keep its own rollback).
 
 3. Run `deploy/rollback.sh` (§ Roll back a release).
 4. What stays: the two tables with their rows, the drafts in the Drafts folder, the sent replies (a send that was `applied` is history), and `llm.call` rows. While the old release runs, its data-request erase does not know the two tables: erase again after the new release is back. A later start ages the instruction and the sample text out by the 90-day rule.
