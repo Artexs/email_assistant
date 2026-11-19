@@ -17,6 +17,8 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-19
+
 ### For users
 
 - en: The privacy policy now names the browser push services (Google FCM, Mozilla, Apple, Microsoft) and the two Telegram levels, "Counts and links only" and "Full". The terms and the data processing agreement now also mention push devices. You accept the new terms once, at your next sign-in.
