@@ -6,6 +6,7 @@ import { useMe } from "../components/shell/MeProvider";
 import { AddRuleForm } from "../components/rules/AddRuleForm";
 import { RuleList } from "../components/rules/RuleList";
 import { NewslettersCard } from "../components/rules/NewslettersCard";
+import { SuggestionsCard } from "../components/rules/SuggestionsCard";
 import { UrgencyCard } from "../components/rules/UrgencyCard";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
@@ -98,6 +99,8 @@ function RulesBody({ filter, mailboxes, isOwner, isOwnerRole, timeZone, reloadMe
 function Rules() {
   const { me, reload: reloadMe } = useMe();
   const [filter, setFilter] = useState(ALL);
+  // An Accept in the suggestions card adds a rule: the key makes the rule list load again.
+  const [rulesVersion, setRulesVersion] = useState(0);
   const {
     data: mailboxes,
     error,
@@ -150,7 +153,7 @@ function Rules() {
         </Select>
       </div>
       <RulesBody
-        key={selected}
+        key={`${selected}:${rulesVersion}`}
         filter={selected === ALL ? null : selected}
         mailboxes={mailboxes}
         isOwner={isOwner}
@@ -167,6 +170,15 @@ function Rules() {
           reloadMailboxes={reloadMailboxes}
         />
       )}
+      <SuggestionsCard
+        mailboxes={mailboxes}
+        isOwner={isOwner}
+        isOwnerRole={isOwnerRole}
+        onRulesChanged={() => {
+          setRulesVersion((version) => version + 1);
+          reloadMe();
+        }}
+      />
       {me.features.includes("bulk_unsubscribe") && (
         <NewslettersCard mailboxes={mailboxes} timeZone={me.organization.timezone} isOwner={isOwner} />
       )}

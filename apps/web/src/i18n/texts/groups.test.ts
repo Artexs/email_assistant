@@ -8,6 +8,7 @@ import { enPhone } from "./en-phone";
 import { enReply } from "./en-reply";
 import { enReplyPanel } from "./en-reply-panel";
 import { enSettings } from "./en-settings";
+import { enSuggestions } from "./en-suggestions";
 import { plActivity } from "./pl-activity";
 import { plApprovals } from "./pl-approvals";
 import { plAuth } from "./pl-auth";
@@ -16,6 +17,7 @@ import { plPhone } from "./pl-phone";
 import { plReply } from "./pl-reply";
 import { plReplyPanel } from "./pl-reply-panel";
 import { plSettings } from "./pl-settings";
+import { plSuggestions } from "./pl-suggestions";
 
 // `en.ts` and `pl.ts` spread these groups. A spread hides a key that two groups define (the later one wins), so the test checks it.
 const groups = [
@@ -27,6 +29,7 @@ const groups = [
   ["reply", enReply, plReply],
   ["reply panel", enReplyPanel, plReplyPanel],
   ["phone", enPhone, plPhone],
+  ["suggestions", enSuggestions, plSuggestions],
 ] as const;
 
 describe("text groups", () => {

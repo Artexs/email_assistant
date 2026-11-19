@@ -77,6 +77,10 @@ import {
   E2E_NEWSLETTERS_OWNER_EMAILS,
   e2eNewslettersMailbox,
   e2eNewslettersOrgName,
+  E2E_SUGGESTIONS_MEMBER_EMAILS,
+  E2E_SUGGESTIONS_OWNER_EMAILS,
+  e2eSuggestionsMailbox,
+  e2eSuggestionsOrgName,
   E2E_REVIEW_MEMBER_EMAILS,
   E2E_REVIEW_OWNER_EMAILS,
   e2eReviewMailbox,
@@ -113,6 +117,7 @@ import {
   seedFilePath,
   seedTargetOk,
 } from "./e2e-seed-args";
+import { seedSuggestionRows } from "./e2e-suggestion-rows";
 import { seedReportRows, seedTrustRows } from "./e2e-trust-rows";
 
 const out = createCliOutput("e2e-seed");
@@ -186,6 +191,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eUrgencyOrgName),
         ...E2E_PROJECTS.map(e2eTrustOrgName),
         ...E2E_PROJECTS.map(e2eNewslettersOrgName),
+        ...E2E_PROJECTS.map(e2eSuggestionsOrgName),
         ...E2E_PROJECTS.map(e2eReviewOrgName),
         ...E2E_PROJECTS.map(e2eLoopsOrgName),
         ...E2E_PROJECTS.map(e2eReplyStyleOrgName),
@@ -221,6 +227,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_TRUST_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_NEWSLETTERS_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_SUGGESTIONS_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_SUGGESTIONS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_REVIEW_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_REVIEW_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_OWNER_EMAILS[project]),
@@ -716,6 +724,38 @@ async function main(): Promise<number> {
         };
       }
 
+      // One organization per project for the suggestions spec. The flags `sender_context` and `sender_suggestions` are on; one
+      // mailbox with three open suggestions. See `e2e-suggestion-rows.ts`.
+      const suggestionIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; mailboxId: string }
+      >;
+      for (const project of E2E_PROJECTS) {
+        const suggestionOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eSuggestionsOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_SUGGESTIONS_OWNER_EMAILS[project],
+          displayName: `E2E Suggestions owner ${project}`,
+        });
+        const ctx = { orgId: suggestionOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_SUGGESTIONS_MEMBER_EMAILS[project],
+          displayName: `E2E Suggestions member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        for (const flag of ["sender_context", "sender_suggestions"] as const) {
+          await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: suggestionOwner.userId, setAt: new Date() });
+        }
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eSuggestionsMailbox(project));
+        await seedSuggestionRows(db, ctx, mailboxId, config.CREDENTIALS_KEY, new Date());
+        suggestionIds[project] = {
+          orgId: suggestionOwner.orgId,
+          ownerId: suggestionOwner.userId,
+          memberId: member.id,
+          mailboxId,
+        };
+      }
+
       // One organization per project for the panel review spec. The flags `panel_review` and `trust_ladder` are on; one
       // mailbox with a done history check and 12 real, unlabelled mails. See `e2e-review-rows.ts`.
       const reviewIds = {} as Record<
@@ -1084,6 +1124,21 @@ async function main(): Promise<number> {
         };
       }
 
+      const suggestionOrgs = {} as SeedFile["suggestionOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_SUGGESTIONS_OWNER_EMAILS[project];
+        const memberEmail = E2E_SUGGESTIONS_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = suggestionIds[project];
+        suggestionOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          mailbox: { id: ids.mailboxId, address: e2eSuggestionsMailbox(project) },
+        };
+      }
+
       const reviewOrgs = {} as SeedFile["reviewOrgs"];
       for (const project of E2E_PROJECTS) {
         const ownerEmail = E2E_REVIEW_OWNER_EMAILS[project];
@@ -1170,6 +1225,7 @@ async function main(): Promise<number> {
         replyStyleOrgs,
         replyPanelOrgs,
         newsletterOrgs,
+        suggestionOrgs,
         reviewOrgs,
         approvalsOrgs,
         loopsOrgs,
