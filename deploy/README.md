@@ -973,7 +973,7 @@ Check `~/ea-logs/backup.log` for one `backup ok` line each night.
 
 ## VPS lost
 
-Use this section when the host is gone and you need a new one. The same restore path runs the twice-a-year drill (§ Drill). Targets: RPO 24 h (the nightly backup), RTO 2 h. Measured drill time: not measured yet (the first drill is F114 stage 09; the result goes here).
+Use this section when the host is gone and you need a new one. The same restore path runs the twice-a-year drill (§ Drill). Targets: RPO 24 h (the nightly backup), RTO 2 h. Measured drill time (first drill, 2026-11-19, tag `v0.3.1`, backup `ea-20261119T182245Z.dump.age`, 675190 bytes): `deploy/backup.sh` 10.7 s; `restore.sh` 173 s (`restore ok target=drill seconds=173`); wall time of the drill 548 s (9 min), which includes two failed starts (see below) and one re-clone; a clean run is about 4 min. Counts before, drill and after: `organizations=2 users=2 mailboxes=1 emails=313`. Rollback time (Part A step 6): not measured; no timing was written down. The drill is far under the RTO of 2 h. The drill checked out `v0.3.1`, not `v0.1.0`: `restore.sh` of `v0.1.0` calls `credentials:check`, and that script exists only from `v0.2.0` (the run stopped at step `credentials`). Known fault of the first start on a fresh volume: `restore.sh` stops at `guard-empty` with `the database system is shutting down`, because the `db` health check passes while the image init server still runs. Run the same command again: the second run works (finding, ticket needed).
 
 What you need before you start: the age identity (`~/ea-backup-key.txt`) on your own machine, a password manager that holds the `.env` keys, and a read key for the B2 bucket on your own machine.
 

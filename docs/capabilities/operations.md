@@ -1,6 +1,6 @@
 # Operations
 
-> Checked against the code at `255e8ab5`, 2026-11-15.
+> Checked against the code at `255e8ab5`, 2026-11-15. Limits rechecked after the first drill on the VPS, 2026-11-19.
 
 ## What it does now
 
@@ -82,13 +82,11 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 
 ## Limits
 
-- The disk check reads the volume of the path in the container. That this is the host root volume is not yet shown on the VPS (F114 stage 09).
 - A bad status file (not the shape of `deploy/backup.sh`) reads as "No backup status file"; the log has no line that tells the two apart.
 - No alert for a server or database that is down: Healthchecks.io stays the dead-man (`platform.heartbeat`).
 - The alert text is one language per server (`OPERATOR_LOCALE`), not one per reader.
 - The operator console list of alerts is F081.
-- The release and rollback scripts are not run on the VPS yet (F114 stage 09), and there is no `v0.1.0` tag yet. `deploy/test/` runs them with stub commands only.
-- The restore path and the drill file are tested with stub commands only. The real drill, with the measured time, is F114 stage 09. The runbook for a lost host is `deploy/README.md` § VPS lost.
+- The runbook for a lost host is `deploy/README.md` § VPS lost. The first real drill ran on 2026-11-19 (restore 173 s, 9 min wall time); the next one is due 2027-05-19.
 - `credentials:check` reads every credentials row in one process and needs the database role `app` and the config of the server (`loadConfig`). It does not check that a mailbox login works, only that the stored secret opens.
 
 ## Decisions

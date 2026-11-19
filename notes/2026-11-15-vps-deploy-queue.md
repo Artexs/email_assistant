@@ -58,6 +58,21 @@ Rule: back up first, tag `ea-server:pre-<ticket>`, deploy a CI-checked pinned co
 - CHANGELOG entries written, `Release v0.2.1` = `a1d7b054`, CI green on it, tag `v0.2.1` pushed (19:5x CET). Contents: Sent-pass 60 s budget (stage 13a), legal page drafts, Polish docs pages, plus flagged-off code of F107, F110, F112, F115, F116. Migration `20261117120001_history_model_failing.sql` (contract v0.1.0, deployed). Master later got F115 stage 03's migration `20261117130001`; it is NOT in v0.2.1 (not landed yet).
 - NOT DEPLOYED: `ssh home_vm` fails with "No route to host" (192.168.1.198, ping 100 % loss) at ~20:00 CET. Retry; run `nohup bash -c "deploy/release.sh v0.2.1; echo RELEASE_RC=\$?" > /tmp/release-v0.2.1.log 2>&1 &` in `~/email_assistant`; the script backs up and keeps `previous` (v0.2.0) as the rollback target. Then the 30-minute watch (`docs/release-checklist.md` step 10). `sent_sync` stays off until the owner says so.
 
+## Rule: every deploy is a release
+
+Every deploy to the VPS is a release: `deploy/release.sh <tag>` from a tag. No bare commit, no `git checkout` by hand (the bootstrap of `v0.1.0` was the last untagged deploy). The rollback target is the `previous` entry of `deploy/release-state/state` (`deploy/rollback.sh`, never the migrations). Record each release here with its rollback target and backup name.
+
+## Restore drill record (2026-11-19, F114 stage 09 Part C)
+
+- Rollback target of the live stack: `v0.3.0` (`previous_commit` `105fb0c0`), live at `v0.3.1` = `2a86a004`; the drill never touched it. Backup used: `ea-20261119T182245Z.dump.age` (675190 bytes; `backup.sh` 10.7 s; `deploy/backup-status/status.json` `result=ok`).
+- Live containers before and after: `email-assistant-db-1` id `bdd78b3d7c26`, started 2026-11-15T14:59:25Z; `email-assistant-server-1` id `fe78a20f034c`, started 2026-11-19T15:38:24Z. Same ids and start times after the drill (step 16 holds).
+- Counts: before = drill = after = `organizations=2 users=2 mailboxes=1 emails=313` (D19 holds).
+- Result: `restore ok target=drill seconds=173`, `credentials ok=1 failed=0`, wall time 548 s with two failed starts. Drill server: `slo_alert_sent kind=slo_backup_age` at 18:30:30Z (2 min 16 s after the restore end), 0 `sync_` events (the one mailbox is `paused`), `docker stats` 100.7 MiB (server) + 54.4 MiB (db). Compose config: one network `ea-drill_default` 172.29.0.0/24, `server` and `cli` image `ea-drill-server`, no ports, no live secret value in the config.
+- Findings: (1) the drill at `v0.1.0` fails at `credentials` (no `credentials:check` before `v0.2.0`); the drill ran at `v0.3.1`. (2) First start on a fresh volume fails at `guard-empty` (db healthy during image init); rerun works; needs a ticket. (3) Not judged: whether the server can sync erased data before the delete replay on a new host: the drill pauses mailboxes, so no sync ran.
+- Open: U2 (`BACKUP_PING_URL`, step 8 skipped) and U3 (operator Telegram group; `OPERATOR_TELEGRAM_CHAT_ID` unset in the live `.env`, count 0, so Part B `sent` lines are not shown); Part A step 6 rollback time not measured.
+- V1 (disk path), read 2026-11-19 after the drill: `statfs("/")` in `server` 20692127744 bytes, `df -B1 /` on the host 20708917248 bytes: 0.08 % apart, so `SLO_DISK_PATH` stays unset.
+- Cleanup: `--down` ran (project, volume, image `ea-drill-server` gone), `~/ea-drill` and `/tmp/f114-drill/` removed. The age key was never printed.
+
 ## Release v0.3.1 (2026-11-19, 15:38 UTC)
 
 - VPS now at tag `v0.3.1` = `2a86a004` (green CI run on that commit). Before: `v0.3.0` = `105fb0c0`. Rollback target `v0.3.0` (`deploy/rollback.sh`). No migration. `release ok v0.3.1 previous v0.3.0`.
