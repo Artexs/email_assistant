@@ -21,7 +21,7 @@ No product code changes in this stage. It writes one report and one test.
 - **Interface (later stages edit this):** two exported-in-file constants:
   - `REGISTRY_PATHS`: path prefixes that may name providers: `apps/server/src/platform/llm/providers/`, `packages/core/src/llm-providers.ts` (created in stage 02; a missing file is fine).
   - `ALLOWED_SITES: Record<string, string>`: file path → reason. Baseline: each file of the audit table with a site, reason `"old site: stage NN"` or `"stays: <reason>"`.
-- **Scan rule:** non-test `.ts` files (`*.test.ts`, `test/`, `e2e/`, `fixtures`, `testing.ts` skipped) under `apps/server/src`, `packages/core/src`, `apps/web/src`, `tools/`. Patterns: `/["'`](openai|gemini|deepseek)["'`]/`, `/\b(gpt|gemini|deepseek)-[a-z0-9.]/`, `/\b(OPENAI|GEMINI|DEEPSEEK)_[A-Z]/`. Comments count too (a comment that names a model is stale data); an exception needs a reason.
+- **Scan rule:** non-test `.ts` files (`*.test.ts`, `test/`, `e2e/`, `fixtures`, `testing.ts` skipped) under `apps/server/src`, `packages/core/src`, `apps/web/src`, `tools/`. Patterns: `/["'`](openai|gemini|deepseek)["'`]/`, `/\b(gpt|gemini|deepseek)-[a-z0-9.]/`, `/\b(OPENAI|GEMINI|DEEPSEEK)_[A-Z]/`, an unquoted list in usage text `/\b(openai|gemini|deepseek)\s*\|\s*(openai|gemini|deepseek)\b/i`, and a host literal `/\b(openai|deepseek)\.com\b|generativelanguage\.googleapis/`. Review 1 found `eval-args.ts` lists (`gemini|openai`) and `endpoint.ts` hosts that the first three patterns miss. Comments count too (a comment that names a model is stale data); an exception needs a reason.
 - **The test also fails** for an `ALLOWED_SITES` entry whose file no longer has a match: a removed site must leave the list, so stage 07 ends with only the true exceptions.
 
 ## Test
@@ -29,6 +29,7 @@ No product code changes in this stage. It writes one report and one test.
 1. The scan passes at `HEAD` with the baseline list.
 2. A fixture string `const m = "gpt-6-luna";` in a temp file under a scanned path that is not listed fails (test the matcher function on a string; do not write into `src`).
 3. A listed file with no match fails the stale-entry check (matcher on an empty string).
+3a. `"--provider gemini|openai"` and `"api.openai.com"` match (the matcher on these strings).
 4. A test file that names `gpt-6-luna` is not scanned.
 
 ## Check

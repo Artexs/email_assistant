@@ -23,10 +23,10 @@ Pure data and pure functions in `packages/core`. The server keeps its own `LlmPr
   - Both: `source: "https://api-docs.deepseek.com/quick_start/pricing"`, `checked: "2026-11-19"`, and a comment: peak rate; off-peak is half; no hour rule, so the report shows the upper bound.
 - **`triage/cost.ts`:** `llmPrices` becomes the flat map of all row prices (same type, same export). `LlmPrice` stays where it is or moves to the new file; keep one definition.
 
-## Step 2 — readers that repeat catalog data
+## Step 2 — allowlist
 
-- `packages/core/src/metrics/cost-model.ts` lists `["gemini-3.5-flash-lite", "gpt-6-luna"]`: derive it from the `light` tier of each provider (so `deepseek-flash` joins). Check the reader of that list (the cost-model doc or report) still renders; update `docs/cost-model.md` if it names the list.
-- Remove the stage-01 allowlist entries for `triage/cost.ts` and `cost-model.ts`.
+- Remove the stage-01 allowlist entry of `triage/cost.ts`.
+- `pilotCost.models` in `packages/core/src/metrics/cost-model.ts` does not change: it records the models of the four measured pilot weeks. Set its allowlist reason to `"stays: measured record (pilot weeks), not catalog data"`.
 
 ## Test
 

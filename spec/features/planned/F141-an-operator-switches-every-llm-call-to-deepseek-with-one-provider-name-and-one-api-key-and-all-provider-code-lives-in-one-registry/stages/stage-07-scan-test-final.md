@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D2, D11.
 
 ## Step 2 — the scan test final
 
-- `ALLOWED_SITES` holds only the permanent exceptions, each with its reason. Expected: `packages/core/src/legal/subprocessors.ts` (legal rows, owner: no change), `apps/server/src/platform/outside-services.ts` (a hand list: each outside key is a decision), the web legal and i18n texts that name a provider, and the e2e seed env pin. Any other exception needs its reason in the final message.
+- `ALLOWED_SITES` holds only the permanent exceptions, each with its reason. Expected, exactly: `packages/core/src/legal/subprocessors.ts` (legal rows, owner: no change), `apps/server/src/platform/outside-services.ts` (a hand list: each outside key is a decision), `e2e-seed-args.ts` (the e2e pin of empty removed keys), `packages/core/src/metrics/cost-model.ts` (`pilotCost.models`, measured record). The web legal texts are `.md` and are not scanned. A comment-only match (at the base: `platform/llm/settings.ts`, `scripts/eval-config.ts`) is reworded to name the registry, not listed. Any other exception needs its reason in the final message.
 - Add a registry test: for each id of `llmProviderIds`, the config shape has `<P>_API_KEY`, `<P>_TIMEOUT_MS`, `<P>_RPM`, and the server row exists.
 
 ## Step 3 — the decision record
