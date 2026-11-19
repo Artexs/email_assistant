@@ -1,4 +1,5 @@
 import { DEFAULT_CHAT_ID, type FakeState } from "./state";
+import { parseRefresh, renderChatView, renderNoChat } from "./view";
 
 const fail = (status: number, error: string) => Response.json({ ok: false, error }, { status });
 const done = (body: object) => Response.json({ ok: true, ...body });
@@ -66,12 +67,27 @@ function press(state: FakeState, body: Body): Response {
   return done({ updateId: result.updateId, callbackId: result.callback.id, messageId, data: pressed });
 }
 
+const HTML = { "content-type": "text/html; charset=utf-8" };
+
+/** The read-only chat page. Only `chat` and `refresh` are read; every other key is ignored. */
+function viewResponse(state: FakeState, params: URLSearchParams): Response {
+  const rawChat = params.get("chat");
+  if (rawChat === null) return new Response(renderChatView(state, null), { headers: HTML });
+  const chatId = /^-?\d+$/.test(rawChat) ? Number(rawChat) : NaN;
+  if (!Number.isSafeInteger(chatId) || !state.chatIds().includes(chatId)) {
+    return new Response(renderNoChat(rawChat), { status: 404, headers: HTML });
+  }
+  return new Response(renderChatView(state, chatId, parseRefresh(params.get("refresh"))), { headers: HTML });
+}
+
 /** Handles `/_fake/*` requests. The fake listens on loopback only, so the routes need no token. */
 export async function handleControl(request: Request, state: FakeState): Promise<Response> {
-  const path = new URL(request.url).pathname.slice("/_fake".length);
+  const url = new URL(request.url);
+  const path = url.pathname.slice("/_fake".length);
   const { method } = request;
 
   if (method === "GET") {
+    if (path === "/view") return viewResponse(state, url.searchParams);
     if (path === "/health") return done({ bot: { id: state.bot.id, username: state.bot.username } });
     if (path === "/chats") {
       return done({ chats: state.chatIds().map((chatId) => ({ chatId, messages: state.messages(chatId).length })) });

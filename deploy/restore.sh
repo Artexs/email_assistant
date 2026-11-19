@@ -163,6 +163,23 @@ psql_db() {
   "${C[@]}" exec -T db psql -U postgres -d email_assistant -v ON_ERROR_STOP=1 -At "$@" </dev/null
 }
 
+# The Postgres image starts a temporary server for its init (socket only, `listen_addresses=''`), stops it, then starts the final
+# server (TCP). `up --wait db` and a socket probe pass during the init. A TCP answer proves the final server runs.
+wait_db_tcp() {
+  step=db-ready
+  local probes=0 max=60
+  while ((probes < max)); do
+    probes=$((probes + 1))
+    if "${C[@]}" exec -T db pg_isready -q -h 127.0.0.1 -U postgres -d email_assistant </dev/null; then
+      echo "db ready probes=$probes"
+      return 0
+    fi
+    ((probes < max)) && sleep 1
+  done
+  echo "restore: the database did not answer on TCP after $max probes" >&2
+  exit 1
+}
+
 restore() {
   local tag
   tag="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
@@ -176,6 +193,7 @@ restore() {
 
   step=db
   "${C[@]}" up -d --wait db </dev/null
+  wait_db_tcp
 
   # Never restore over data. A drill that ran before needs --down first.
   step=guard-empty

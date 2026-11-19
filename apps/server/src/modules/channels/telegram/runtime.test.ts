@@ -4,7 +4,7 @@ import { SoftError } from "../../../platform/errors";
 
 import { cacheOnSuccess, createTelegramRuntime, withTimeout, type TelegramRuntimeDeps } from "./runtime";
 
-function runtimeFor(apiRoot: string) {
+function runtimeFor(apiRoot: string, botUsernameTimeoutMs?: number) {
   // `botUsername` never touches the database or the hooks.
   const deps = {
     db: {},
@@ -13,6 +13,7 @@ function runtimeFor(apiRoot: string) {
     startedAt: new Date(),
     operatorContact: null,
     apiRoot,
+    ...(botUsernameTimeoutMs === undefined ? {} : { botUsernameTimeoutMs }),
   } as unknown as TelegramRuntimeDeps;
   return createTelegramRuntime(deps);
 }
@@ -66,15 +67,17 @@ describe("botUsername", () => {
       },
     });
     try {
-      const runtime = runtimeFor(`http://127.0.0.1:${server.port}`);
+      const runtime = runtimeFor(`http://127.0.0.1:${server.port}`, 50);
+      const started = performance.now();
       const results = await Promise.allSettled([runtime.botUsername(), runtime.botUsername()]);
       expect(results.map((r) => r.status)).toEqual(["rejected", "rejected"]);
       await expect(runtime.botUsername()).rejects.toBeInstanceOf(SoftError);
+      expect(performance.now() - started).toBeLessThan(1000);
       expect(requests).toBe(1);
     } finally {
       await server.stop(true);
     }
-  }, 15_000);
+  });
 
   test("a failed getMe is dropped and a later success is cached", async () => {
     let requests = 0;
