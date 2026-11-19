@@ -528,6 +528,19 @@ describe("the real app", () => {
     expect(path?.patch?.responses?.["409"]?.description).toContain("no_mailbox");
   });
 
+  test("F118 s06: the notify body takes `routes` (three groups, telegram, push or both) and the view returns `routes` and `routeDefaults`", async () => {
+    const path = (await openApiSpec(realApp())).paths?.["/api/me/notify"] as
+      | Record<string, { requestBody?: unknown; responses?: Record<string, unknown> }>
+      | undefined;
+    const body = JSON.stringify(path?.patch?.requestBody);
+    for (const name of ["routes", "urgent", "approvals", "updates", "telegram", "push", "both"]) {
+      expect(body).toContain(`"${name}"`);
+    }
+    const view = JSON.stringify(path?.get?.responses?.["200"]);
+    expect(view).toContain('"routeDefaults"');
+    expect(view).toContain('"routes"');
+  });
+
   test("F118 s03: the four push device routes are described with their error codes; the answers hold no endpoint or key", async () => {
     const paths = (await openApiSpec(realApp())).paths as Record<
       string,

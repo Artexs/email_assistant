@@ -22,6 +22,7 @@ export {
   listMembershipsOfUser,
   listQuietHoursOf,
   setDigestTimes,
+  setMemberNoticeRoutes,
   setMemberQuietHours,
   setMemberReportChannel,
   type MemberNotify,

@@ -1,46 +1,34 @@
-import { configureMailHosts, signalsOfMailbox } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
-import { loadConfig, mailAllowLocal } from "../platform/config";
-import { createSecretBox } from "../platform/crypto";
-import { assertAppRole, createDb } from "../platform/db";
+import { signalsOfMailbox } from "../modules/mail";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
 import { readSignalsOptions, signalsLines, usage } from "./mailbox-signals-args";
 
-const out = createCliOutput("mailbox-signals");
 const log = createLog("mailbox-signals");
 
-async function main(): Promise<number> {
-  const options = readSignalsOptions(process.argv.slice(2));
+// Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
+export async function run(argv: string[], deps: CliDeps): Promise<number> {
+  const { out } = deps;
+  const options = readSignalsOptions(argv);
   if (!options) {
     out.fail(usage);
     return 1;
   }
-
-  const config = loadConfig();
-
-  configureMailHosts({ allowLocal: mailAllowLocal(config) });
-  const db = createDb(config.DATABASE_URL);
   try {
-    await assertAppRole(db);
-    const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
     const since = new Date(Date.now() - options.days * 24 * 3_600_000);
-    const signals = await signalsOfMailbox({ db, secrets }, { orgId: options.orgId }, options.mailboxId, since);
+    const signals = await signalsOfMailbox(deps, { orgId: options.orgId }, options.mailboxId, since);
     // The figures are for the operator, not log lines.
-    process.stdout.write(`${signalsLines(signals).join("\n")}\n`);
+    out.raw(signalsLines(signals).join("\n"));
     return 0;
   } catch (error) {
     log.error("mailbox_signals_failed", { ...errorFields(error) });
+    const reason = oauthReasonLine(error);
+    if (reason !== null) out.fail(reason);
     return 1;
-  } finally {
-    await db.destroy();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    log.error("mailbox_signals_failed", { ...errorFields(error) });
-    process.exit(1);
-  });
+if (import.meta.main) {
+  process.exit(await runMailboxCli("mailbox-signals", run));
+}

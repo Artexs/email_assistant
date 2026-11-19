@@ -17,7 +17,8 @@ const tags = ["channels"];
 export const channelDocs = {
   getNotify: apiDoc({
     operationId: "getNotify",
-    summary: "The own quiet hours and report channel, with the active mailboxes that can get the report mail.",
+    summary:
+      "The own quiet hours, report channel and notice routes. `routes` is the stored choice per group (urgent, approvals, updates: telegram, push or both). `routeDefaults` is where each group goes with no stored choice, for the chat and live push devices of the member. Active mailboxes that can get the report mail.",
     tags,
     ok: { status: 200, schema: notifyViewSchema },
     errors: [{ status: 404, codes: ["not_found"] }],
@@ -25,7 +26,7 @@ export const channelDocs = {
   patchNotify: apiDoc({
     operationId: "patchNotify",
     summary:
-      "Change the own quiet hours (both times, or both null to reset) or the own report channel (telegram, mail or both). Each needs its flag.",
+      "Change the own quiet hours (both times, or both null to reset), the own report channel (telegram, mail or both) or the own notice routes (`routes`: telegram, push or both per group; a group not in the body keeps its value, null removes it). One group of keys per body. Quiet hours need `user_quiet_hours`, the channel `report_mail`, the routes `web_push`.",
     tags,
     body: notifyPatchSchema,
     ok: { status: 200, schema: notifyViewSchema },
