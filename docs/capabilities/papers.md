@@ -1,6 +1,6 @@
 # Papers
 
-> Checked against the code at `7dfdf648`, 2026-11-19.
+> Checked against the code at `b48ccb7a`, 2026-11-19.
 
 ## What it does now
 
