@@ -389,6 +389,32 @@ describe("minimal digest", () => {
     });
   });
 
+  test("the first digest of the day counts the loops of its brief sections, the lines left out and the hidden ones", () => {
+    const part = (more: number, hidden: number) => ({ lines: [], more, hidden });
+    const sections = {
+      urgent: part(0, 0),
+      reply: part(0, 0),
+      waiting: part(5, 0),
+      promised: part(0, 4),
+      stale: part(2, 0),
+    };
+    const { minimal } = renderDigestWithBrief(
+      { ...input, brief: { sections, loopConsent: false, owner: true, urgentEmailIds: [], openLoops: null } },
+      textTables.en
+    );
+    // The stale (closed) loops are not open loops.
+    expect(minimal.openLoops).toEqual({ waiting: 5, promised: 4 });
+  });
+
+  test("a mailbox that never synced or synced late counts as a problem, a fresh one does not", () => {
+    const fresh = mailbox("a@canary.test", "active", new Date("2026-11-06T06:55:00Z"));
+    const late = mailbox("b@canary.test", "active", new Date("2026-11-06T06:00:00Z"));
+    const never = mailbox("c@canary.test", "active", null);
+    const count = (mailboxes: DigestInput["mailboxes"]) =>
+      renderDigestWithBrief({ ...input, mailboxes }, textTables.en).minimal.mailboxProblems;
+    expect([count([fresh]), count([fresh, late]), count([fresh, late, never]), count([])]).toEqual([0, 1, 2, 0]);
+  });
+
   test("the Polish digest and a digest on demand", () => {
     const { minimal } = renderDigestWithBrief(
       { ...input, kind: "on_demand", slot: null, brief: undefined },
