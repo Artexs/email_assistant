@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { CHASER_SET_LIMIT, type SendResultKind } from "../digest/approvals";
 import { ATTACHMENT_LINE_NAMES } from "../digest/attachment-line";
+import type { DigestMinimalFacts } from "../digest/digest";
 import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
 import { approvalViewSchema, panelUrlSchema } from "../outgoing/view-schema";
@@ -80,10 +81,31 @@ export { panelUrlSchema };
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 const approvalViewMatches: Same<z.output<typeof approvalViewSchema>, ApprovalView> = true;
 const sendResultMatches: Same<z.output<typeof sendResultKindSchema>, SendResultKind> = true;
+const digestMinimalMatches: Same<z.output<typeof digestMinimalSchema>, DigestMinimalFacts> = true;
+void digestMinimalMatches;
 void approvalViewMatches;
 void sendResultMatches;
 
 const loopIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+// The facts of the `minimal` Telegram digest (`DigestMinimalFacts`): counts, flags and the clock, no mail text. Optional on read: a row
+// queued before the field existed, and the mail row, have none; the minimal render then prints the fixed "ready" phrase.
+const digestCount = z.number().int().min(0);
+const digestMinimalSchema = z.strictObject({
+  at: isoDate,
+  scheduled: z.boolean(),
+  late: z.boolean(),
+  timeZone,
+  action: z.strictObject({
+    urgent: digestCount,
+    needs_reply: digestCount,
+    delegation: digestCount,
+    unsure: digestCount,
+  }),
+  other: z.strictObject({ info: digestCount, notification: digestCount, spam: digestCount }),
+  mailboxProblems: digestCount,
+  openLoops: z.strictObject({ waiting: digestCount, promised: digestCount }).nullable(),
+});
 
 const digestView = z.strictObject({
   text: z.string().min(1).max(MESSAGE_MAX_CHARS),
@@ -94,6 +116,7 @@ const digestView = z.strictObject({
   // The line number of each loop or delegation that a brief line names: the tap on its buttons edits that line.
   // Numbers only, no text. Absent: no loop line.
   lineOf: z.record(z.string().regex(loopIdPattern), z.number().int().min(0).max(200)).optional(),
+  minimal: digestMinimalSchema.optional(),
 });
 
 const attachmentFactSchema = z.strictObject({

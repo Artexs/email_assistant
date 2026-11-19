@@ -312,3 +312,152 @@ test("T8: the card passes axe and the keyboard reaches every field and button in
     en.rs_preview,
   ]);
 });
+
+const SAMPLE_IDS = [
+  "0190f5a0-0000-7000-8000-0000000000a1",
+  "0190f5a0-0000-7000-8000-0000000000a2",
+  "0190f5a0-0000-7000-8000-0000000000a3",
+];
+const SAMPLE_BODIES = [
+  "Dzień dobry,\nTak, wtorek pasuje.",
+  "Dzień dobry,\nTak, środa pasuje.",
+  "<b>Dzień dobry,</b>\nTak.",
+];
+const samples = (state: "pending" | "done") => ({
+  items: SAMPLE_IDS.map((requestId, index) => ({
+    requestId,
+    status: state,
+    reasonCode: null,
+    subject: `Temat ${index + 1}`,
+    body: state === "done" ? (SAMPLE_BODIES[index] ?? null) : null,
+  })),
+});
+
+test("T9: Show 3 sample drafts shows three sample texts as text; the button is off while they are written and after", async ({
+  context,
+  page,
+}) => {
+  // The e2e server has the model off, so the answers of both sample routes are faked here; the integration test
+  // `web-reply-samples.test.ts` runs the real routes and the drafter job with a fake model.
+  let reads = 0;
+  let asked = 0;
+  await page.route("**/api/mailboxes/*/reply-samples", async (route) => {
+    if (route.request().method() === "POST") {
+      asked += 1;
+      await route.fulfill({ status: 202, json: { requestIds: SAMPLE_IDS, count: 3 } });
+      return;
+    }
+    reads += 1;
+    // No run yet at the load of the card; the first poll after the tap sees the requests waiting, the second sees them done.
+    await route.fulfill({ json: reads === 1 ? { items: [] } : samples(reads === 2 ? "pending" : "done") });
+  });
+  await startSession(context, page, "owner");
+  const button = card(page).getByRole("button", { name: en.rs_samples, exact: true });
+  await expect(button).toBeEnabled();
+  await expect(card(page).getByText(en.rs_samples_note).first()).toBeVisible();
+
+  await button.click();
+  await expect(button).toBeDisabled();
+  await expect(card(page).getByText(en.rs_samples_waiting)).toBeVisible();
+  const bodies = card(page).locator("[data-sample-body]");
+  await expect(bodies).toHaveCount(3, { timeout: 15_000 });
+  expect(await bodies.allTextContents()).toEqual(SAMPLE_BODIES);
+  await expect(card(page).getByText(t("rs_samples_mail", { subject: "Temat 2" }))).toBeVisible();
+  // A model text is untrusted: markup in it shows as text.
+  await expect(card(page).locator("[data-sample] b")).toHaveCount(0);
+  await expect(button).toBeDisabled();
+  expect(asked).toBe(1);
+  await expectNoA11yViolations(page);
+
+  // Today's run stays: a reload shows the texts again and does not ask for a new run.
+  await page.reload();
+  await expect(card(page).locator("[data-sample-body]")).toHaveCount(3);
+  await expect(card(page).getByRole("button", { name: en.rs_samples, exact: true })).toBeDisabled();
+  expect(asked).toBe(1);
+});
+
+test("T10: the answers of a refused run have their own texts, the real route answers llm_off, and an OAuth mailbox gets the reason", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  const button = card(page).getByRole("button", { name: en.rs_samples, exact: true });
+  // The real route: the e2e server has the model off.
+  await button.click();
+  await expect(card(page).getByRole("alert")).toHaveText(en.rs_samples_llm_off);
+
+  // A refusal or an empty run: `alert` for a failure, a plain note (role status, no alert) for the day limit and for no mail.
+  const answers: { status: number; json: unknown; text: string; role: "alert" | "status" }[] = [
+    { status: 409, json: { error: "sample_limit" }, text: en.rs_samples_limit, role: "status" },
+    { status: 409, json: { error: "blocked", reason: "oauth_mailbox" }, text: en.rs_samples_oauth, role: "alert" },
+    { status: 202, json: { requestIds: [], count: 0 }, text: en.rs_samples_none, role: "status" },
+  ];
+  for (const answer of answers) {
+    await page.route("**/api/mailboxes/*/reply-samples", (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({ status: answer.status, json: answer.json })
+        : route.fallback()
+    );
+    await button.click();
+    const shown = card(page).locator("[data-samples]").getByRole(answer.role);
+    await expect(shown).toHaveText(answer.text);
+    if (answer.role === "status") await expect(card(page).locator("[data-samples]").getByRole("alert")).toHaveCount(0);
+    // The button stays on after a refusal or an empty run.
+    await expect(button).toBeEnabled();
+    await page.unroute("**/api/mailboxes/*/reply-samples");
+  }
+
+  // A mailbox with a provider: the reason, no button.
+  await page.goto(`/settings?mailbox=${org().oauth.id}`);
+  await expect(card(page)).toBeVisible();
+  await expect(card(page).getByText(en.rs_samples_oauth)).toBeVisible();
+  await expect(card(page).getByRole("button", { name: en.rs_samples, exact: true })).toHaveCount(0);
+});
+
+test("T11: a 409 sample_limit shows the run of the day that exists (an earlier visit or another tab) instead of the refusal", async ({
+  context,
+  page,
+}) => {
+  let reads = 0;
+  await page.route("**/api/mailboxes/*/reply-samples", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 409, json: { error: "sample_limit" } });
+      return;
+    }
+    reads += 1;
+    // Empty at the load of the card (the run is made by another tab after it), the run after the refusal.
+    await route.fulfill({ json: reads === 1 ? { items: [] } : samples("done") });
+  });
+  await startSession(context, page, "owner");
+  await card(page).getByRole("button", { name: en.rs_samples, exact: true }).click();
+  await expect(card(page).locator("[data-sample-body]")).toHaveCount(3);
+  await expect(card(page).getByText(en.rs_samples_limit)).toHaveCount(0);
+});
+
+test("T12: a run that is not over after one minute says so, keeps the button off and shows no error", async ({
+  context,
+  page,
+}) => {
+  let reads = 0;
+  await page.route("**/api/mailboxes/*/reply-samples", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 202, json: { requestIds: SAMPLE_IDS, count: 3 } });
+      return;
+    }
+    reads += 1;
+    await route.fulfill({ json: reads === 1 ? { items: [] } : samples("pending") });
+  });
+  await startSession(context, page, "owner");
+  const button = card(page).getByRole("button", { name: en.rs_samples, exact: true });
+  // The page clock runs from here: the poll of one minute passes in a moment.
+  await page.clock.install();
+  await button.click();
+  await expect(card(page).getByText(en.rs_samples_waiting)).toBeVisible();
+  for (let step = 0; step < 40; step += 1) {
+    await page.clock.runFor(2000);
+    if ((await card(page).locator("[data-samples=slow]").count()) > 0) break;
+  }
+  await expect(card(page).locator("[data-samples=slow]")).toHaveText(en.rs_samples_slow);
+  await expect(card(page).getByRole("alert")).toHaveCount(0);
+  await expect(button).toBeDisabled();
+});

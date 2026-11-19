@@ -10,7 +10,7 @@ Carry-over reads: `plan.md` D12, D17; `interfaces.md` (`noticeFactsOf`, `renderN
 - **Files:** `noticeDetails` gains `minimal`; the `NoticeRenderer` type makes `telegram.minimal` required (a later kind without one fails typecheck); `noticeFactsOf` covers every kind; one generic builder `minimalText(kind, facts, locale, webBaseUrl)` and a phrase table `packages/core/src/texts/minimal.ts` (one entry per kind, en and pl, with count plurals); `noticeEditRenderers` uses the full edit for `minimal` too (the edit line holds no view text).
 - **Decisions (D12):**
   - Text = one emoji and the kind phrase with the count ("🔴 1 urgent mail", "📝 2 drafts wait for you"), then a line with the link `webBaseUrl + noticePath(kind, itemId)`; no `webBaseUrl` → the line "Open the panel" with no URL.
-  - `digest`: header with the clock (a view fact), then counts per category of `NEEDS ACTION` and `OTHER MAIL`, the count of mailboxes with a problem, and the count of open loops when the brief is in the view; no item line, no footer text that quotes mail; then the link to `/activity`. `weekly_report`: the numbers only, then `/activity`.
+  - `digest`: header with the clock (a view fact), then counts per category of `NEEDS ACTION` and `OTHER MAIL`, the count of mailboxes with a problem, and the count of open loops when the brief is in the view; no item line, no footer text that quotes mail; then the link to `/activity`. `weekly_report`: the numbers only, then `/stats` (D17).
   - No button for any kind. `buttons: []`.
   - The `approval_edit` row of a `minimal` card: the stored text plus the status line, as today.
   - `loop_consent`: its own text is already minimal; the minimal render may equal it.

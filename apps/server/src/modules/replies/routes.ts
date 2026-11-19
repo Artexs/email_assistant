@@ -1,5 +1,6 @@
-import { profileBodySchema, type ProfileInput } from "@ea/core";
+import { profileBodySchema, REPLY_SAMPLE_COUNT, type ProfileInput } from "@ea/core";
 import type { Context } from "hono";
+import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -10,11 +11,14 @@ import { isFeatureOn } from "../tenancy";
 import { replyDocs } from "./api-docs";
 import type { StylePreview } from "./preview";
 import { getProfileView, updateMailboxProfile } from "./profile";
+import { listSamples, sampleReplies, type ReplySampleScope } from "./samples";
 
 export interface ReplyRouteDeps {
   db: Db;
   // null: no model client runs (the LLM scope is off): a preview answers `failed` / `llm_off`.
   preview: StylePreview | null;
+  // The clock and the model scope of the sample drafts. null: no model client runs, so a sample run answers 409 `llm_off`.
+  samples?: ReplySampleScope | null;
 }
 
 type Ctx = Context<ApiEnv>;
@@ -86,6 +90,46 @@ export function replyRoutes(deps: ReplyRouteDeps): Hono<ApiEnv> {
       case "not_found":
         return notFound(c);
     }
+  });
+
+  // The flag runs before the role: every role gets 404 while `reply_drafts` is off, also for a bad id (the rule of the new routes).
+  const flagFirst: MiddlewareHandler<ApiEnv> = async (c, next) => {
+    if (!(await isFeatureOn(deps.db, c.get("ctx"), "reply_drafts"))) return notFound(c);
+    await next();
+  };
+
+  // Sample drafts on recent real mail (owner only; hidden while the flag is off). The POST queues up to three `sample` requests; the
+  // GET reads the run of today for the panel to poll. The texts are for the owner's eyes: nothing is saved in Drafts or sent.
+  app.post("/mailboxes/:id/reply-samples", flagFirst, requireOwner, replyDocs.postSamples, async (c) => {
+    const id = mailboxIdOf(c);
+    if (!id) return notFound(c);
+    if (deps.samples === undefined || deps.samples === null) return c.json({ error: "llm_off" }, 409);
+    const result = await sampleReplies({ db: deps.db, ...deps.samples }, c.get("ctx"), {
+      mailboxId: id,
+      userId: c.get("session").userId,
+      via: "web",
+      count: REPLY_SAMPLE_COUNT,
+    });
+    switch (result.kind) {
+      case "queued":
+        return c.json({ requestIds: result.requestIds, count: result.count }, 202);
+      case "blocked":
+        return c.json({ error: "blocked" as const, reason: result.reason }, 409);
+      case "sample_limit":
+        return c.json({ error: "sample_limit" as const }, 409);
+      case "forbidden":
+        return c.json({ error: "owner_only" }, 403);
+      case "feature_off":
+      case "not_found":
+        return notFound(c);
+    }
+  });
+
+  app.get("/mailboxes/:id/reply-samples", flagFirst, requireOwner, replyDocs.getSamples, async (c) => {
+    const id = mailboxIdOf(c);
+    if (!id) return notFound(c);
+    const items = await listSamples({ db: deps.db, now: deps.samples?.now ?? (() => new Date()) }, c.get("ctx"), id);
+    return items === null ? notFound(c) : c.json({ items });
   });
 
   return app;

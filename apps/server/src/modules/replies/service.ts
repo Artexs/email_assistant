@@ -99,7 +99,7 @@ async function mailboxBlock(
   return undefined;
 }
 
-async function recordRequested(
+export async function recordRequested(
   trx: Transaction<DB>,
   ctx: TenantContext,
   input: { emailId: string; requestId: string; actor: Actor; trigger: ReplyTrigger; now: Date }

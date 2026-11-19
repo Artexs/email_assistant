@@ -12,7 +12,13 @@ describe("pushTexts", () => {
     expect(pl.body("urgent", 5)).toBe("5 pilnych wiadomości");
     expect(pl.body("urgent", 22)).toBe("22 pilne wiadomości");
     expect(pl.body("urgent", 12)).toBe("12 pilnych wiadomości");
-    expect(pl.body("approval", 3)).toBe("3 szkice czekają");
+    expect(pl.body("approval", 3)).toBe("3 szkice czekają na Ciebie");
+    expect(pl.body("approval", 5)).toBe("5 szkiców czeka na Ciebie");
+    // The count of a set is its drafts.
+    expect(pl.body("approval_set", 2)).toBe("2 szkice czekają na Ciebie");
+    expect(pl.body("host_blocked", 1)).toBe("1 skrzynka ma niedozwolony serwer");
+    expect(pl.body("host_blocked", 2)).toBe("2 skrzynki mają niedozwolony serwer");
+    expect(pl.body("host_blocked", 5)).toBe("5 skrzynek ma niedozwolony serwer");
     for (const lang of ["pl", "en"] as const) {
       const texts = pushTexts(lang);
       for (const kind of pushPayloadKinds) {
@@ -32,6 +38,7 @@ describe("pushTexts", () => {
     expect(en.body("urgent", 1)).toBe("1 urgent mail");
     expect(en.body("urgent", 2)).toBe("2 urgent mails");
     expect(en.body("approval", 3)).toBe("3 drafts wait for you");
+    expect(en.body("approval_set", 2)).toBe("2 drafts wait for you");
     expect(en.body("test", 7)).toBe("Notices work on this device.");
   });
 

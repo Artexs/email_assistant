@@ -46,7 +46,7 @@ export const auditEvents = {
   mailboxPolicyChanged: "mailbox.policy_changed",
   mailboxSwitchChanged: "mailbox.switch_changed",
   mailboxProfileChanged: "mailbox.profile_changed", // data: mailbox_id, fields (the names of the changed fields in one string, comma between), via; never the text
-  replyRequested: "reply.requested", // data: via, trigger (tap | redraft), reply_request_id; actor: the user; never the instruction
+  replyRequested: "reply.requested", // data: via, trigger (tap | redraft | sample), reply_request_id; actor: the user; never the instruction
   mailboxSentSyncChanged: "mailbox.sent_sync_changed", // data: mailbox_id, enabled, count (sent rows deleted)
   settingsUrgencySet: "settings.urgency_set", // data: mailbox_id, topics, deadlines (counts), via
   settingsChanged: "settings.changed", // data: mailbox_id, field (loop_wait_days), from, to, via

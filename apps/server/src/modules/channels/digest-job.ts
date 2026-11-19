@@ -174,9 +174,11 @@ export async function queueDigest(
     const loopIds = [...shown.surfaced, ...shown.stale];
     // The line of each loop (and delegation) that a brief line names: the taps on its buttons edit that line.
     const hasLines = Object.keys(shown.lineOf).length > 0;
+    // The counts for a member with `minimal` go into the Telegram view only: the mail row renders the full text.
     const viewOf = (text: string, buttons: typeof message.buttons, withBrief: boolean) => ({
       text,
       buttons,
+      ...(withBrief ? { minimal: built.minimal } : {}),
       ...(withBrief && loopIds.length > 0 ? { loopIds } : {}),
       ...(withBrief && hasLines ? { lineOf: shown.lineOf } : {}),
     });

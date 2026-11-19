@@ -21,6 +21,7 @@ import {
   fieldError,
   loadProfile,
   previewProfile,
+  replySwitchBlocked,
   saveProfile,
   serverFieldError,
   valuesOf,
@@ -36,6 +37,8 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
 import { Textarea } from "../ui/textarea";
+
+import { ReplySamples } from "./ReplySamples";
 
 // The anchor that the links of the organization signature card use.
 export const STYLE_CARD_ID = "style-card";
@@ -62,10 +65,12 @@ interface FormProps {
   view: ProfileView;
   isOwner: boolean;
   replyDraftsOn: boolean;
+  // An OAuth mailbox has no reply drafts yet: the samples answer with a text instead of a button.
+  samplesBlocked: boolean;
   onSaved(view: ProfileView): void;
 }
 
-export function ReplyStyleForm({ mailboxId, view, isOwner, replyDraftsOn, onSaved }: FormProps) {
+export function ReplyStyleForm({ mailboxId, view, isOwner, replyDraftsOn, samplesBlocked, onSaved }: FormProps) {
   const ids = useId();
   const { draft, setValue, reset } = useDraft<ProfileValues>(valuesOf(view));
   const values = draft.value;
@@ -306,6 +311,8 @@ export function ReplyStyleForm({ mailboxId, view, isOwner, replyDraftsOn, onSave
         </p>
       )}
 
+      {isOwner && replyDraftsOn && <ReplySamples mailboxId={mailboxId} blocked={samplesBlocked} />}
+
       {/* The answer of the preview is text from a model: it shows as plain text, never as markup. */}
       <div aria-live="polite" data-preview={preview.state}>
         {preview.state === "done" && preview.answer.kind === "body" && (
@@ -369,6 +376,7 @@ export function ReplyStyleCard({ mailbox, isOwner, replyDraftsOn }: ReplyStyleCa
           view={data}
           isOwner={isOwner}
           replyDraftsOn={replyDraftsOn}
+          samplesBlocked={replySwitchBlocked(mailbox)}
           onSaved={mutate}
         />
       )}

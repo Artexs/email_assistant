@@ -41,11 +41,15 @@ export type NoticeChannel = (typeof noticeChannels)[number];
 export const reportMailKinds = ["digest", "weekly_report", "trust_report_ready", "autonomy_paused"] as const;
 export type ReportMailKind = (typeof reportMailKinds)[number];
 
-export const noticeDetails = ["full"] as const; // The phone channel adds "minimal"
+// `minimal` is the Telegram text with no string of the view: fixed phrases, numbers, the clock and a panel link, no button.
+export const noticeDetails = ["full", "minimal"] as const;
 export type NoticeDetail = (typeof noticeDetails)[number];
 
 export interface NoticeRenderOptions {
   channel: NoticeChannel;
   detail: NoticeDetail;
   locale: UserLocale;
+  // The base URL of the panel (`WEB_BASE_URL`). The `minimal` render ends with a link built from it; unset: the line
+  // "Open the panel" with no URL. The `full` renders ignore it.
+  webBaseUrl?: string | undefined;
 }

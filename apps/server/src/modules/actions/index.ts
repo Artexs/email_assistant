@@ -58,6 +58,7 @@ export {
   listMoveCorrections,
   listMistakeRows,
   listRejectRows,
+  listReplyPairRows,
   type HiddenMoveRowWithMail,
   type MoveCorrection,
 } from "./repo";
