@@ -1,4 +1,4 @@
-// Carry-over of the stage 10 review: /pause and /resume at the minimal level, the panel link of a card edit, and the check render of
+// Carry-over of the review of the detail migration: /pause and /resume at the minimal level, the panel link of a card edit, and the check render of
 // `queueNotice` at both levels. Every test runs in a transaction that is rolled back.
 import { randomUUID } from "node:crypto";
 

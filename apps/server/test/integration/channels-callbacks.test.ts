@@ -564,7 +564,7 @@ describe("approval taps", () => {
   });
 
   // A card that went out at `full` (the stored text has no panel link) and a member who is at `minimal` now: the edit has no button
-  // and adds the panel link of the send, so the member can still reject a held send in the panel (owner decision, stage 10 NOTE 2).
+  // and adds the panel link of the send, so the member can still reject a held send in the panel (owner decision of 2026-11-19).
   const BASE = "https://ea.example.ts.net";
   async function minimalMember(trx: Transaction<DB>, s: Awaited<ReturnType<typeof approvalSetup>>): Promise<void> {
     await setOrgFeature(trx, s.ctx, { flag: "telegram_minimal", enabled: true, actor: "cli", now: T });
