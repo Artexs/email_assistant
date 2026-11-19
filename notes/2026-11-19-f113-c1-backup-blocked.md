@@ -1,25 +1,28 @@
-# F113 C1 blocked: VPS backup fails with B2 401 (2026-11-19)
+# F113 live lab day on the VPS: log of 2026-11-19 (backup blocker resolved)
 
-Job `2026-11-19-f113-live-lab-day-on-the-vps-99533a8f`. Runbook step 3 (backup first) failed. No sim step ran.
+Job `2026-11-19-f113-live-lab-day-on-the-vps-*`. Runbook: `deploy/README.md` § Sim stack.
 
-## Observed (ssh home_vm, ~/email_assistant, checkout v0.3.1, state `current=v0.3.1`)
-- `df -h /`: 20 GB free (rule: stop under 5 GB). Disk is fine.
-- `deploy/backup.sh` (run twice, 18:22 UTC): `Failed to create file system for destination "b2:email-assistant/pilot/": Unknown 401 (401 unauthorized)`.
-- `deploy/backup-status/status.json` now says `result: failed`, `at 2026-11-19T18:22:54Z`, `last_ok_at 2026-11-19T15:32:22Z`. The two runs of this job wrote the failed status. The `slo_backup_age` alert fires when the last good backup is older than 26 h (about 2026-11-20 17:32 UTC).
-- The nightly cron (03:30) uses the same script, so it will fail the same way until the B2 credential works again.
-- Cause: guess only. The B2 application key (rclone config on the VPS) expired, was revoked or was rotated. Not verified. The fix needs a B2 secret that the coordinator cannot get itself.
+## Backup blocker: RESOLVED
+The first `deploy/backup.sh` run of this job failed with B2 401. The F114 drill job ran `backup.sh` at the same time. Its run succeeded: `ea-20261119T182245Z.dump.age` (18:22:56Z, 675190 bytes), shown in `deploy/backup-status/status.json`. This is the named rollback point for the sim work. Cause of the 401: probable collision of two runs (guess from the owner, not verified). The nightly cron on 11-18 and 11-19 had failed earlier with a DNS error on `api.backblazeb2.com` (`~/ea-logs/backup.log`). Do not run `backup.sh` while the F114 drill runs (`docker ps` shows `ea-drill-*`, folder `~/ea-drill`).
 
-## Rollback target if the lab goes on without a fresh backup
-- Last good backup: 15:32 UTC today (`last_ok_at`). Production: `ea-server:v0.3.1` current, `ea-server:v0.3.0` previous.
-- The sim stack never touches production rows (own project, network, volumes).
+## Defect found on the first live start: GreenMail API takes port 8080
+`greenmail` joins the network namespace of `fake-telegram`. The GreenMail standalone image starts an API server on `0.0.0.0:8080`. `server` also listens on 8080 in the same namespace, so `server` crashed in a loop with `EADDRINUSE` (observed: log of `ea-sim-server-1`; GreenMail log line "Starting GreenMail API server at http://0.0.0.0:8080/"). The CI check `sim:check` did not see it.
+Fix (this commit): `deploy/compose.sim.yaml` GREENMAIL_OPTS adds `-Dgreenmail.api.hostname=127.0.0.1 -Dgreenmail.api.port=8099`. The property names come from `GreenMailApiServerBuilder.class` in the image jar. After the fix the GreenMail log says "API server at http://127.0.0.1:8099/" and `server` is healthy and listening.
+The VPS checkout (`~/email_assistant`, detached at v0.3.1) holds the same edit as an uncommitted change in `deploy/compose.sim.yaml`; the v0.3.1 original is in `/tmp/compose.sim.yaml.v0.3.1` on the VPS. A release that carries this commit makes the edit unnecessary (`git checkout deploy/compose.sim.yaml` before `deploy/release.sh`).
 
-## Not done
-Steps 3 to 13 of the runbook: no build, no `deploy/sim.env`, no `ea-sim` container, no run, no score.
+## Other observations
+- `sudo nsenter` needs a password on the VPS. The N1 socket check used `/proc/net/tcp` inside `ea-sim-fake-telegram-1` (`docker exec`). Established peers: 127.0.0.1 and 172.31.0.2:5432 (`db`). No peer on port 25, 465 or 587.
+- A long `docker compose ... exec` over one ssh call (migrate) died with exit 137 when `server` restarted (crash loop). Rerun after the fix: `MIGRATE_EXIT=0`.
+- N2 restart of `fake-telegram`: `server` did not recover (errors `job_failed`, `outbox_claim_failed`, container still `healthy` because its health check runs inside the old namespace). `up -d --force-recreate --no-deps greenmail server lab` fixed it, as the runbook says. Then `lab seed` again (`link relinked`).
+- N2 restart of `server` before seed: chat count 0 -> 1 (the chat was not linked yet, no answer). After seed: 3 -> 5.
 
-## Next
-Owner or coordinator: fix the B2 credential (or accept the 15:32 backup as the rollback point), then resume at runbook step 4 (build `ea-sim-base:v0.3.1`).
-Month spend of the lab machine ledger (`~/.local/state/email-assistant/eval-spend.jsonl`): $2.77 for November, so a $1 day run fits the $20 cap. The VPS ledger starts empty.
-
-## Earlier nightly failures (`~/ea-logs/backup.log` on the VPS)
-- Cron runs of 2026-11-18 03:30 and 2026-11-19 03:30 failed too, with a different error: DNS lookup of `api.backblazeb2.com` on `127.0.0.53:53` "server misbehaving". Last cron success: 2026-11-17.
-- The 15:32 UTC backup today worked (status file). At 18:22 the error became 401 unauthorized. So two different faults appeared in two days (DNS, then 401). The cause of the 401 is not known.
+## Live day run
+Run `day-20261120-215c`, org `lab` (`f67694b4-f9fb-4aac-a153-7563b1b9f08c`), cap $1.00, 155 slots, started 18:38 UTC on 2026-11-19. It is real time: the first slot is 2026-11-20 04:43 UTC and the plan has no clock port. The day ends on 2026-11-20 (about 22:00 UTC), then the tail runs. The serve loop in the `lab` container runs it. Nothing else must restart `fake-telegram`, `greenmail` or the stack until the run stops itself.
+Finish (coordinator, after the run shows `stopped`):
+```
+S="docker compose -p ea-sim -f deploy/compose.sim.yaml --env-file deploy/sim.env"   # in ~/email_assistant on home_vm
+$S exec -T lab bun run lab status
+$S exec -T lab bun run lab score --run day-20261120-215c --out /var/lib/ea-lab/results
+mkdir -p /tmp/ea-lab-results && $S cp lab:/var/lib/ea-lab/results/. /tmp/ea-lab-results/
+```
+Then `scp` `/tmp/ea-lab-results/sim-*.md` and the `.json` files into `evals/results/` of a normal checkout and commit by explicit path.
