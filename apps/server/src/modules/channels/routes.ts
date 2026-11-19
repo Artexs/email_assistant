@@ -22,6 +22,7 @@ import { ownConsentVersion } from "./consent";
 import { createLinkToken, unlinkUser } from "./linking";
 import { changeNotify, notifyViewOf } from "./notify-settings";
 import { getChatLinkForUser } from "./repo";
+import { telegramErrorFields } from "./telegram/errors";
 import {
   changeTelegramDetail,
   changeTelegramLock,
@@ -30,7 +31,6 @@ import {
   storeTelegramDetail,
   telegramDetailOfMember,
 } from "./telegram-detail";
-import { telegramErrorFields } from "./telegram/errors";
 
 const log = createLog("channels");
 

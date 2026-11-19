@@ -13,8 +13,8 @@ import { sql } from "kysely";
 
 import { createOutboxSender, queueNotice } from "../../src/modules/channels";
 import { createFakeChannel } from "../../src/modules/channels/fake/channel";
-import { insertMailbox } from "../../src/modules/mail/repo";
 import { changeTelegramDetail, changeTelegramLock } from "../../src/modules/channels/telegram-detail";
+import { insertMailbox } from "../../src/modules/mail/repo";
 import {
   isOrgSuspended,
   setMemberTelegramDetail,

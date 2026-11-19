@@ -4,8 +4,8 @@ import { approvalEdit } from "../digest/approvals";
 import { MESSAGE_MAX_CHARS, type OutMessage, outButtonsSchema } from "../digest/message";
 import { textsFor } from "../texts";
 
-import { minimalEdit } from "./minimal";
 import type { NoticeDetail, NoticeKind, NoticeRenderOptions } from "./kinds";
+import { minimalEdit } from "./minimal";
 import { type NoticeRenderer, noticeRenderers } from "./renderers";
 
 export type NoticeRenderResult = { ok: true; message: OutMessage } | { ok: false };
