@@ -26,6 +26,7 @@ import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import { seedApprovalsRows } from "./e2e-approvals-rows";
+import { seedReplyPanelRows, type ReplyPanelSeedResult } from "./e2e-reply-panel-rows";
 import { seedDelegationsRows } from "./e2e-delegations-rows";
 import { seedLoopsRows } from "./e2e-loops-rows";
 import { seedNewsletterRows } from "./e2e-newsletter-rows";
@@ -57,6 +58,10 @@ import {
   e2eLoopsOrgName,
   E2E_REPLY_STYLE_MEMBER_EMAILS,
   E2E_REPLY_STYLE_OWNER_EMAILS,
+  e2eReplyPanelMailbox,
+  e2eReplyPanelOrgName,
+  E2E_REPLY_PANEL_MEMBER_EMAILS,
+  E2E_REPLY_PANEL_OWNER_EMAILS,
   e2eReplyStyleMailbox,
   e2eReplyStyleOrgName,
   E2E_TRUST_MEMBER_EMAILS,
@@ -184,6 +189,7 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map(e2eReviewOrgName),
         ...E2E_PROJECTS.map(e2eLoopsOrgName),
         ...E2E_PROJECTS.map(e2eReplyStyleOrgName),
+        ...E2E_PROJECTS.map(e2eReplyPanelOrgName),
       ],
     ]);
     // Users are global: the cascade leaves them.
@@ -221,6 +227,8 @@ async function wipe(migratorUrl: string): Promise<void> {
         ...E2E_PROJECTS.map((project) => E2E_LOOPS_MEMBER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_REPLY_STYLE_OWNER_EMAILS[project]),
         ...E2E_PROJECTS.map((project) => E2E_REPLY_STYLE_MEMBER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_REPLY_PANEL_OWNER_EMAILS[project]),
+        ...E2E_PROJECTS.map((project) => E2E_REPLY_PANEL_MEMBER_EMAILS[project]),
       ],
     ]);
     // Tokens left by a half-failed run.
@@ -633,6 +641,46 @@ async function main(): Promise<number> {
         };
       }
 
+      // One organization per project for the reply panel spec. The flags `approvals_page` and `reply_drafts` are on, and so is the reply
+      // switch of the mailbox. See `e2e-reply-panel-rows.ts`.
+      const replyPanelIds = {} as Record<
+        E2eProject,
+        { orgId: string; ownerId: string; memberId: string; mailboxId: string } & ReplyPanelSeedResult
+      >;
+      for (const project of E2E_PROJECTS) {
+        const panelOwner = await createOrganizationWithOwner(db, {
+          orgName: e2eReplyPanelOrgName(project),
+          timezone: E2E_TIMEZONE,
+          email: E2E_REPLY_PANEL_OWNER_EMAILS[project],
+          displayName: `E2E Reply Panel owner ${project}`,
+        });
+        const ctx = { orgId: panelOwner.orgId };
+        const member = await insertUser(db, {
+          email: E2E_REPLY_PANEL_MEMBER_EMAILS[project],
+          displayName: `E2E Reply Panel member ${project}`,
+        });
+        await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
+        for (const flag of ["approvals_page", "reply_drafts"] as const) {
+          await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: panelOwner.userId, setAt: new Date() });
+        }
+        const address = e2eReplyPanelMailbox(project);
+        const mailboxId = await seedAssistMailbox(db, secretBox, ctx, address);
+        await db.transaction().execute((trx) =>
+          updateMailboxSettings(trx, ctx, mailboxId, {
+            mode: "assist",
+            toolSwitches: { ...ASSIST_SWITCHES, reply_drafts: true },
+          })
+        );
+        const rows = await seedReplyPanelRows(db, ctx, mailboxId, address, panelOwner.userId, new Date());
+        replyPanelIds[project] = {
+          orgId: panelOwner.orgId,
+          ownerId: panelOwner.userId,
+          memberId: member.id,
+          mailboxId,
+          ...rows,
+        };
+      }
+
       // One organization per project for the newsletters spec. The flag `bulk_unsubscribe` is on; one mailbox with five
       // newsletter senders and one request. See `e2e-newsletter-rows.ts`.
       const newsletterIds = {} as Record<
@@ -983,6 +1031,23 @@ async function main(): Promise<number> {
         };
       }
 
+      const replyPanelOrgs = {} as SeedFile["replyPanelOrgs"];
+      for (const project of E2E_PROJECTS) {
+        const ownerEmail = E2E_REPLY_PANEL_OWNER_EMAILS[project];
+        const memberEmail = E2E_REPLY_PANEL_MEMBER_EMAILS[project];
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(ownerEmail)).pathname.split("/").pop() ?? "");
+        await setPassword(E2E_MEMBER_PASSWORD, new URL(await requestLink(memberEmail)).pathname.split("/").pop() ?? "");
+        const ids = replyPanelIds[project];
+        replyPanelOrgs[project] = {
+          orgId: ids.orgId,
+          owner: { userId: ids.ownerId, email: ownerEmail, password: E2E_MEMBER_PASSWORD },
+          member: { userId: ids.memberId, email: memberEmail, password: E2E_MEMBER_PASSWORD },
+          mailbox: { id: ids.mailboxId, address: e2eReplyPanelMailbox(project) },
+          sendIds: ids.sendIds,
+          mailIds: ids.mailIds,
+        };
+      }
+
       const trustOrgs = {} as SeedFile["trustOrgs"];
       for (const project of E2E_PROJECTS) {
         const ownerEmail = E2E_TRUST_OWNER_EMAILS[project];
@@ -1103,6 +1168,7 @@ async function main(): Promise<number> {
         urgencyOrgs,
         trustOrgs,
         replyStyleOrgs,
+        replyPanelOrgs,
         newsletterOrgs,
         reviewOrgs,
         approvalsOrgs,

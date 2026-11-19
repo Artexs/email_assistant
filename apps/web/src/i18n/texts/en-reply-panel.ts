@@ -82,6 +82,6 @@ export const enReplyPanel = {
   // The Draft reply button of an activity row
   rp_draft_reply: "✍️ Draft reply",
   rp_open_draft: "Open the draft",
-  rp_draft_reply_for: "Draft a reply to: {subject}",
-  rp_open_draft_for: "Open the reply draft for: {subject}",
+  rp_draft_reply_for: "✍️ Draft reply: {subject}",
+  rp_open_draft_for: "Open the draft: {subject}",
 } as const;

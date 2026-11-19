@@ -91,8 +91,8 @@ const PL_TEXTS = {
   // The Draft reply button of an activity row
   rp_draft_reply: "✍️ Szkic odpowiedzi",
   rp_open_draft: "Otwórz szkic",
-  rp_draft_reply_for: "Napisz szkic odpowiedzi na: {subject}",
-  rp_open_draft_for: "Otwórz szkic odpowiedzi na: {subject}",
+  rp_draft_reply_for: "✍️ Szkic odpowiedzi: {subject}",
+  rp_open_draft_for: "Otwórz szkic: {subject}",
 } as const;
 
 describe("the Polish texts of the reply panel", () => {
