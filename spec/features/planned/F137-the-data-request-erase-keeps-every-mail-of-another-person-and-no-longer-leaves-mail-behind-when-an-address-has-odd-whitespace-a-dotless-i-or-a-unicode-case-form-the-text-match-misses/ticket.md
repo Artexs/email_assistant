@@ -25,10 +25,15 @@ The data request erase and find use one address rule in the SQL form and the pro
 - The text scrub and the post-erase check agree with the equality match on `ı`, `ẞ`, Ohm and Kelvin.
 - No migration unless the stage needs one; no `TERMS_VERSION` bump.
 
+## Slices
+
+Four stages, one worker job each, in order, none in parallel; no migration and no `bun.lock` change. Stages 02–04 are `[risky]` and get an Opus review before the land. No owner checkpoint. See `plan.md` § How to run.
+
 ## Sequenced
 
-- Plan after: none. Build after: F135 (landed).
-- Gate: —
+- Plan after: none.
+- Build after: F135 (landed; the one address rule that this ticket finishes).
+- Gate: none.
 
 ## Notes
 
