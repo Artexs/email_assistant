@@ -26,6 +26,7 @@ export {
   mailOf,
   type ClaimedAction,
 } from "./claims";
+export { statusGuard } from "./guard";
 export {
   finishAction,
   markApplying,
