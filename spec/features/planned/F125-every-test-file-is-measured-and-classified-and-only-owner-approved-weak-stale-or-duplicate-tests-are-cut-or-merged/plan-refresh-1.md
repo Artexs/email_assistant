@@ -83,7 +83,7 @@ Flag estimate (a throw-away TypeScript AST probe, not committed; raw S1 without 
 
 ## Cap check
 
-The cap of 150 items per job and two continuations (450 per stage) still holds. Stage 04: about 280 items → one continuation. Stage 05: about 45 → none. Stage 06: about 170 + int S9 → one or two; above 450 only the fastest S9 cases stay `not read` (S9 is read last, slowest first). No stage split: the code does not force one (Q5).
+The cap of 150 items per job and two continuations (450 per stage) still holds. With the `S8` call sites of plan review 2 (regex count: stage 04 area about 99, stage 05 about 72, stage 06 about 49): stage 04 about 380 items → one or two continuations; stage 05 about 120 → zero or one; stage 06 about 210 + int S9 → one or two; above 450 only the fastest S9 cases stay `not read` (S9 is read last, slowest first). No stage split: the code does not force one (Q5).
 
 ## Checked, no change
 
@@ -93,3 +93,15 @@ The cap of 150 items per job and two continuations (450 per stage) still holds. 
 - `bunfig.toml` preload, `.bun-version` 1.4.4, `deploy/Dockerfile` workspace copy: unchanged facts (D3, F8 not affected).
 - `run-suites.sh` reads the suite paths from `package.json`, so the new unit paths join stage 02 with no plan change.
 - F124 (parallel runs) and F136 (parallel Playwright) are still in `planned/`; no landed ticket did a step of this plan. `Build after: F124` for the cut stages stays.
+
+## Changes after plan review 2 (`plan-review-2.md`, FAIL on fdb50594)
+
+- Item 1 (blocking): stage 01 also scans shared suite modules (non-test `.ts` with `bun:test` case calls; at 1927d052 `apps/server/test/contract/mail-provider.ts`, `mail-sender.ts`) as `kind` by path, new `CaseRow.shared`, fixture test 14. Stage 02 checks the name on a (file, line) join, joins JUnit rows of shared cases by line, name pattern and classname, reports shared counts apart from the 1 % `unscanned` check, with a fixture test. plan.md D7 states the key exception. Reason: Bun reports a shared case with the runner file and the module line, so these rows were `unscanned` or joined to a wrong runner row.
+- Item 2: N4, Q5 and stages 04–06 estimates include `S8`: 380 / 120 / 210 + int S9; continuations 1–2 / 0–1 / 1–2.
+- Item 3: plan.md P2, D8, F1 and questions.md say "at least 12,800". ticket.md not changed in this round (coordinator instruction); its "about 12,800" is a floor too.
+- Item 4: stage 04 rules for `apps/web/src/i18n` (K2), docs `src` and `integrations` (K2, CSP K3); `apps/docs/e2e/` is stage 06.
+- Item 5: stage 06 F136 note adds `apps/docs/e2e/site.ts`, its config and `e2e-seed.test.ts`.
+- Item 6: stage 06 reads `unit-int-pairs.tsv` if it exists in `master` at the job start; stage 05 always writes it (header only when empty).
+- Item 7: no change (facts confirmed).
+- Item 8: plan.md F1 trimmed to a pointer to § Recount. plan.md stays over the 1,500-word cap; no restructure in a refresh.
+- Item 9: no change (unverified items stay for stages 02 and 03 to measure).

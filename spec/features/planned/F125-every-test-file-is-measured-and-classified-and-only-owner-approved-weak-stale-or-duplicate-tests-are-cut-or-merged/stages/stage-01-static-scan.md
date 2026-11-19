@@ -32,12 +32,14 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
     shapeGroup: string;     // "T<n>" or ""
     skipCondition: string;  // the condition text of skipIf/if, "skip", "todo", "only", or ""
     bodyLines: number;
+    shared: boolean;        // true for a case in a suite module that test files run (not a *.test/*.spec file)
   }
   export function scanSource(file: string, text: string, resolveAsserting: (call: ts.CallExpression) => boolean): CaseRow[];
   export function assignGroups(rows: CaseRow[], bodies: Map<string, { body: string; shape: string }>): void;
   ```
 - **Rules:**
   - Files: `git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts'` minus `scripts/test-audit/` (the tool's own tests). `kind`: `int` for `apps/server/test/` and `tools/fake-telegram/test/`; `e2e` for `apps/web/e2e/` and `apps/docs/e2e/`; else `unit` (a unit file in no suite path, such as `tools/mail-oauth-spike/`, gets `not-run` in stage 02).
+  - Shared suite modules (plan review 2, item 1): also scan each tracked non-test `.ts` file under `apps/server/test/`, `apps/server/src/` and `tools/` that holds a case call with `test` or `it` imported from `bun:test`. Its rows get `shared: true`, the key `<module>:<line>` and the `kind` of its path. At 1927d052 these are `apps/server/test/contract/mail-provider.ts` and `mail-sender.ts` (`int`, read by stage 06, K4). Bun reports their JUnit rows with the runner file and the module line (stage 02 joins them).
   - A case is a call whose callee is `test` or `it`, or a member chain on them (`.each(...)`, `.skip`, `.only`, `.todo`, `.if(...)`, `.skipIf(...)`, `.concurrent`, `.serial`), with a string or template first argument. Playwright `test(` and `test.describe(` count the same.
   - `describePath` from enclosing `describe(`/`test.describe(` calls (and their `.skip`/`.skipIf` forms, whose condition also goes to `skipCondition`).
   - Asserting helper: build one `ts.Program` over all test files with `tsconfig.base.json` options; a call in the body whose callee declaration (through imports, `checker.getAliasedSymbol`) holds `expect(` in its body, up to 3 calls deep, counts as one expect call. Any `expect(`, `expect.assertions(`, `expect.hasAssertions(` in the body counts.
@@ -59,8 +61,9 @@ Goal of the stage: `bun scripts/test-audit/scan.ts` writes one row per test case
   11. `await expect(p).rejects.toThrow("x")` → matcher `rejects.toThrow`.
   12. Group ids: the same input twice gives the same ids.
   13. S8: a unit file that imports only `bun:test` and `../../test/helpers` → `S8`; one more import of `./service` → no `S8`; an e2e file → never `S8`.
+  14. Shared module: a non-test file with `export function suite() { describe("c", () => { test("t", …) }) }` and a `bun:test` import → one row, `shared: true`; the same file without a `bun:test` import → no row.
 - **Check:** `bun test scripts/test-audit`.
-- **Done when:** tests 1–12 pass.
+- **Done when:** tests 1–14 pass.
 
 ## Step 3 — Run it and commit the data
 
