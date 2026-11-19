@@ -676,13 +676,13 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Undo: store `minimal` when `detail` is absent.
 - Source: Opus review of F118 stage 11, NOTE 7; builder decision list.
 
-### 88 · 2026-11-19 · Owner answers in chat: closed items · new
+### 2026-11-19 · Owner answers in chat: closed items · process · new
 - What: Polish texts of F115 s12–s16, F120 s07, F118 s09 and s12 and the changelog `pl:` lines are checked by the owner: closed. F118 owner steps: nothing left (checkpoint A uses the plan default). F108 O1/O2 optional: closed, no action. F121 G1–G3: plan defaults hold (nothing public, no seed, no video). Dev DB migration run by the owner.
 - Why: owner message of 2026-11-19.
 - Undo: ask for a new check.
 - Source: owner chat.
 
-### 89 · 2026-11-19 · F111 own-model runs on the owner's PC only · new
+### 2026-11-19 · F111 own-model runs on the owner's PC only · process · new
 - What: F111 stage 05 runs on the owner's PC GPU (RX 6950 XT, 16 GB); the VPS runs no own model. A local dev test is enough for the stage (PD-112).
 - Why: owner message of 2026-11-19; PD-112 picks the PC when it has ≥ 12 GB.
 - Undo: rent a GPU (cap $5, Q2).
