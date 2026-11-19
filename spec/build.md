@@ -16,13 +16,14 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F139-a-restore-into-a-fresh-database-volume-starts-without-the-guard-empty-failure` (🟠 ACTIVE): A restore into a fresh database volume starts without the guard-empty failure
 - `F138-the-whole-project-calls-only-openai-no-gemini-code-key-config-or-doc-remains-and-the-evals-and-the-judge-run-on-openai-models` (🟠 ACTIVE): The whole project calls only OpenAI: no Gemini code, key, config or doc remains, and the evals and the judge run on OpenAI models
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
 - `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
+- `F068-actions-transitions-runtime` (🟠 ACTIVE): The `actions.status` writers take their guards from the transitions map, and no writer admits an edge that no caller uses
+- `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
 
 ## NEXT
 
@@ -36,8 +37,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F125-…-test-…` (🔴 PLANNED, plan landed, needs refresh for the counts): 01–07 read-only on tests, run next to anything; G1: the owner marks `audit/report.md`; cut stages after F124 lands and G1.
 - `F139-…-guard-empty-…` (🔴 PLANNED, needs plan): a readiness wait in `deploy/restore.sh`; one worker stage, one VPS drill rerun; lands before F108 stage 05.
 - `F136-…-playwright-…` (🔴 PLANNED, unparked 2026-11-20, needs plan, no `bun.lock`): per-job ports, e2e DB and mail addresses for both Playwright suites; removes the shared lock; lands before F121 stage 10.
-- `F062-drop-mailbox-cursor-columns` (🔴 PLANNED, needs plan): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
-- `F068-actions-transitions-runtime` (🔴 PLANNED, needs plan, `[risky]`, no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
+- `F062-drop-mailbox-cursor-columns` (🟠 plan landed; 01 ∥ 02 → 03 → 04; 01 lands only after the v0.4.2 tag): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
+- `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed, [risky], no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.
 - `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F138 stage 02 and F136 land): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
 - `F141-…-deepseek-…` (🔴 PLANNED, needs plan after F138 stage 02 lands; build after F138 in `done/`): a DeepSeek provider row and key, an audit that puts all provider code in the registry, the holdout gate before any production switch; `[important: privacy]` (processing outside the EU, pilot only).
@@ -52,6 +53,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F139-a-restore-into-a-fresh-database-volume-starts-without-the-guard-empty-failure` (🟢 PROVEN): A restore into a fresh database volume starts without the guard-empty failure; landed 2026-11-19
 - `F137-the-data-request-erase-keeps-every-mail-of-another-person-and-no-longer-leaves-mail-behind-when-an-address-has-odd-whitespace-a-dotless-i-or-a-unicode-case-form-the-text-match-misses` (🟢 PROVEN): the data request erase keeps every mail of another person and leaves no mail behind for odd whitespace, a dotless i or a Unicode case form; landed 2026-11-19
 - `F135-the-data-request-erase-finds-mail-of-a-sender-whose-address-has-a-greek-final-sigma-or-a-turkish-dotted-capital-i-the-database-and-the-program-lower-case-it-alike` (🟢 PROVEN): the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike); landed 2026-11-19
 - `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟢 PROVEN): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers; landed 2026-11-19
@@ -61,8 +63,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
 - `F116-e5b-open-loops` (🟢 PROVEN): E5b Open loops; landed 2026-11-19
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
-- `F113-e2b-live-lab` (🟢 PROVEN): E2b Live lab; landed 2026-11-19
-- 2026-11: 103 landed. spec/features/done/2026-11/
+- 2026-11: 104 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
