@@ -530,7 +530,7 @@ describe("address rule gaps: the branches of the mail match", () => {
           `a ${KELVIN}elvin@x.test`,
           `b STRA${CAPITAL_SHARP}E@x.de`,
           `c ${OHM}hm@x.test`,
-          "d ILKER@x.tr",
+          `d ILKER@x.tr and ${DOTLESS}lker@x.tr`,
         ].join("\n"),
       })
     );
@@ -541,7 +541,7 @@ describe("address rule gaps: the branches of the mail match", () => {
       .select(["body_text", "to_addresses"])
       .where("id", "=", keptId)
       .executeTakeFirstOrThrow();
-    expect(kept.body_text).toBe("a [removed]\nb [removed]\nc [removed]\nd ILKER@x.tr");
+    expect(kept.body_text).toBe("a [removed]\nb [removed]\nc [removed]\nd ILKER@x.tr and [removed]");
     // The recipient list compares by the rule too: `ILKER` is `ilker`, not the dotless `ılker` that was erased.
     expect(kept.to_addresses).toEqual(["ILKER@x.tr", "third@x.test"]);
   });
