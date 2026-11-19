@@ -40,3 +40,7 @@ Google Workspace stays "by config" (PD-040): no real check until a Workspace ten
 ## Done when
 
 Checks 1–8 hold, the log line is written, and the ticket is in `done/`.
+
+## Skipped 2026-11-19
+
+Not run. It needs a live Entra test tenant, which the owner does not have; F117 (Microsoft 365) was dropped for the same reason. The code stays in master with the flag `sso_sign_in` off. To resume: get a test tenant and run this stage as written.
