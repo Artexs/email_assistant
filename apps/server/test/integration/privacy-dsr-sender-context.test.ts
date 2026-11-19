@@ -16,6 +16,7 @@ import {
   senderContextRowsOf,
 } from "../../src/modules/contacts";
 import { eraseSubjectData, findSubjectData } from "../../src/modules/privacy";
+import { setOrgFeature } from "../../src/modules/tenancy";
 import { dsrAddressHash, senderKeyHash } from "../../src/platform/crypto";
 import { createDb } from "../../src/platform/db";
 import { waitFor } from "../wait-for";
@@ -507,6 +508,50 @@ describe("the address rule of the profile key in a data request", () => {
       if (result.kind !== "erased") continue;
       expect(result.counts.sender_profiles).toBe(1);
       expect(await profileHashes(w)).toEqual([]);
+    }
+  });
+});
+
+describe("an open suggestion that the generator made for a folded address", () => {
+  // The suggestion row holds the folded address as its pattern; the erase of the address typed in another case removes it.
+  const FOLDS: [string, string][] = [
+    ["αννας@acme.pl", "ΑΝΝΑΣ@ACME.PL"],
+    ["İLKER@acme.pl", "ilker@acme.pl"],
+  ];
+
+  test("15 the find counts it and the erase deletes it, with the profile", async () => {
+    for (const [stored, typed] of FOLDS) {
+      const world = await db.transaction().execute(async (trx) => {
+        const org = await newOrg(trx);
+        await setOrgFeature(trx, org.ctx, { flag: "sender_suggestions", enabled: true, actor: "cli", now: NOW });
+        const mails = [1, 2, 3, 4, 5, 6, 7, 8].map((day) => ({ at: ago(day), answered: day <= 6 }));
+        await seedSenderActivity(trx, org.ctx, org.mailboxId, { address: stored, mails });
+        return { ...org, second: org };
+      });
+      orgIds.push(world.ctx.orgId);
+      const owner = await db
+        .selectFrom("memberships")
+        .select("user_id")
+        .where("org_id", "=", world.ctx.orgId)
+        .executeTakeFirst();
+      if (owner) userIds.push(owner.user_id);
+      await pass(world, world.mailboxId);
+      const open = await db
+        .selectFrom("sender_suggestions")
+        .select("pattern")
+        .where("org_id", "=", world.ctx.orgId)
+        .where("status", "=", "open")
+        .execute();
+      expect(open).toHaveLength(1);
+
+      const found = await find(world, typed);
+      if (found.kind !== "found") throw new Error("find refused");
+      expect(found.counts.sender_profiles).toBe(1);
+      expect(found.counts.sender_suggestions).toBe(1);
+      const result = await erase(world, typed);
+      expect(result.kind).toBe("erased");
+      expect(await profileHashes(world)).toEqual([]);
+      expect(await suggestionIds(world)).toEqual([]);
     }
   });
 });

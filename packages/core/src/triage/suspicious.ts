@@ -230,6 +230,7 @@ const SHARED_SUFFIXES: ReadonlySet<string> = new Set([
   "web.app",
   "firebaseapp.com",
   "onrender.com",
+  "onmicrosoft.com",
 ]);
 
 // `registrableDomain`, except that a tenant of a shared hosting suffix stays apart: `a.herokuapp.com` and `b.herokuapp.com` are

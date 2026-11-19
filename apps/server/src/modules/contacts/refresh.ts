@@ -108,7 +108,7 @@ export async function refreshMailboxProfiles(
   options: { now: Date }
 ): Promise<RefreshResult> {
   const { now } = options;
-  const run = async (trx: DbOrTrx): Promise<RefreshResult> => {
+  const run = async (trx: Transaction<DB>): Promise<RefreshResult> => {
     if (!(await isFeatureOn(trx, ctx, "sender_context"))) return { written: 0, unchanged: 0, zeroed: 0, skipped: true };
     if (!(await tryLockProfiles(trx, mailboxId))) return { written: 0, unchanged: 0, zeroed: 0, skipped: true };
 
@@ -176,5 +176,5 @@ export async function refreshMailboxProfiles(
     }
     return { written, unchanged: hashes.length - written, zeroed: Number(zeroed.numAffectedRows ?? 0), skipped: false };
   };
-  return deps.db.isTransaction ? run(deps.db) : deps.db.transaction().execute(run);
+  return deps.db.isTransaction ? run(deps.db as Transaction<DB>) : deps.db.transaction().execute(run);
 }

@@ -377,3 +377,12 @@ describe("isSharedHostingDomain", () => {
     expect(isSharedHostingDomain("mail.acme.com.pl")).toBe(false);
   });
 });
+
+describe("onmicrosoft.com is a shared hosting suffix", () => {
+  test("the tenants stay apart and the suffix is shared", () => {
+    expect(isSharedHostingDomain("evil1.onmicrosoft.com")).toBe(true);
+    expect(isSharedHostingDomain("onmicrosoft.com")).toBe(true);
+    expect(registrableDomainShared("evil1.onmicrosoft.com")).toBe("evil1.onmicrosoft.com");
+    expect(registrableDomainShared("evil2.onmicrosoft.com")).not.toBe(registrableDomainShared("evil1.onmicrosoft.com"));
+  });
+});

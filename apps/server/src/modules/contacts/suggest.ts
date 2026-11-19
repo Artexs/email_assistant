@@ -5,12 +5,14 @@ import {
   freeMailDomains,
   isNoreplyAddress,
   isSharedHostingDomain,
+  isStorableSuggestionPattern,
   isValidSenderPattern,
   matchSender,
   normalizeSenderAddress,
   registrableDomain,
   suggestionsFor,
   type SenderRule,
+  type SuggestionCandidate,
   type SuggestionInput,
   type SuggestionKind,
   type SuggestionScope,
@@ -19,6 +21,7 @@ import { sql, type Transaction } from "kysely";
 
 import { senderKeyHash } from "../../platform/crypto";
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { createLog } from "../../platform/log";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
 import { listMailboxes } from "../mail";
@@ -28,11 +31,15 @@ import { sentCoverage } from "./flags";
 
 type DbOrTrx = Db | Transaction<DB>;
 
+const log = createLog("contacts");
+
 // The life of a suggestion: an open one ends as `expired` after 30 days; a dismissed key stays hidden for 90
 // days; at most 3 rows are created for a mailbox in 7 days (the cap itself is in `suggestionsFor`).
 export const SUGGESTION_OPEN_DAYS = 30;
 export const SUGGESTION_DISMISS_DAYS = 90;
 const CAP_WINDOW_DAYS = 7;
+const MAX_INSERT_ROUNDS = 3;
+const CHECK_VIOLATION = "23514";
 
 // The sender rule that an accepted suggestion becomes: an address stays as it is, a domain loses the `@` (a sender rule for a
 // domain has no `@`; with it the rule would never match).
@@ -40,10 +47,11 @@ export function rulePatternOf(pattern: string): string {
   return pattern.startsWith("@") ? pattern.slice(1) : pattern;
 }
 
-// A pattern is eligible when it can become a valid sender rule: ASCII letters, digits and hyphens in the domain. An address or
-// domain with other letters (an internationalized domain) is never suggested, so it cannot take one of the three weekly slots.
+// A pattern is eligible when the table accepts it (`isStorableSuggestionPattern`, the same rule as the CHECK of
+// `sender_suggestions.pattern`) and it can become a valid sender rule (ASCII domain). Other addresses are never suggested, so
+// they cannot take one of the three weekly slots and cannot make the INSERT fail.
 export function suggestionPatternEligible(pattern: string): boolean {
-  return isValidSenderPattern(rulePatternOf(pattern));
+  return isStorableSuggestionPattern(pattern) && isValidSenderPattern(rulePatternOf(pattern));
 }
 
 function hostOf(address: string): string {
@@ -74,7 +82,7 @@ export interface SuggestionPassInput {
 // `active` (paused, `auth_error`, `host_blocked`) gets nothing: the job skips it, so its profile is frozen, and a suggestion made
 // from a frozen profile is not current. The step writes no log line and no audit row (a withdrawn or expired row is not a user act).
 export async function refreshSuggestions(
-  trx: DbOrTrx,
+  trx: Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
   input: SuggestionPassInput
@@ -88,8 +96,12 @@ export async function refreshSuggestions(
   const rules = await listSenderRules(trx, ctx, mailboxId);
   const delegates = new Set((await listDelegateAddresses(trx, ctx, { activeOnly: true })).map(normalizeSenderAddress));
   const ownDomains = new Set(mailboxes.map((box) => registrableDomain(hostOf(box.address))));
-  const inputs = input.activity.map((item) => inputOf(item, rules, delegates, ownDomains));
-  const byAddress = new Map(inputs.map((item) => [item.address, item]));
+  const senders = input.activity.map((item) => inputOf(item, rules, delegates, ownDomains));
+  const byAddress = new Map(senders.map((item) => [item.address, item]));
+  // The domain protections also see the people that the user's rules and delegates name and that sent nothing in the window:
+  // a domain whitelist must not override a block rule, a domain blocklist must not block a VIP, a whitelisted sender or an
+  // active delegate. These entries have no counts, so they never become a candidate themselves.
+  const inputs = [...senders, ...ruleAndDelegateMembers(byAddress, rules, delegates, ownDomains)];
   const byDomain = new Map<string, SuggestionInput[]>();
   for (const item of inputs) byDomain.set(item.domain, [...(byDomain.get(item.domain) ?? []), item]);
 
@@ -99,18 +111,50 @@ export async function refreshSuggestions(
     .filter((row) => row.pattern !== null && isWithdrawn(row, row.pattern, { rules, coverage, byAddress, byDomain }))
     .map((row) => row.id);
   await end(trx, ctx, mailboxId, withdraw, "withdrawn", now);
-  const stillOpen = open.filter((row) => !withdraw.includes(row.id));
 
   const keyOf = (value: string): string => senderKeyHash(input.credentialsKey, ctx.orgId, value);
-  const candidates = suggestionsFor(inputs, {
-    dismissed: await dismissedKeys(trx, ctx, mailboxId, now),
-    open: new Set(stillOpen.map((row) => `${row.kind}:${row.scope}:${row.key_hash}`)),
-    createdLast7Days: await createdSince(trx, ctx, mailboxId, new Date(now.getTime() - CAP_WINDOW_DAYS * DAY_MS)),
-    sentCoverage: coverage,
-    keyOf,
-    eligible: suggestionPatternEligible,
-  });
-  for (const candidate of candidates) {
+  // A candidate that the table still refuses (the validator is equal to the CHECK or stricter, so this is a safety net) is
+  // skipped inside a savepoint and never reaches the pass transaction. Its pattern stays in memory only; the next round builds
+  // the candidates again without it, so a bad one cannot hold a weekly slot. The log line holds a count, never an address.
+  const rejected = new Set<string>();
+  for (let round = 0; round < MAX_INSERT_ROUNDS; round += 1) {
+    const open = await openRows(trx, ctx, mailboxId);
+    const candidates = suggestionsFor(inputs, {
+      dismissed: await dismissedKeys(trx, ctx, mailboxId, now),
+      open: new Set(open.map((row) => `${row.kind}:${row.scope}:${row.key_hash}`)),
+      createdLast7Days: await createdSince(trx, ctx, mailboxId, new Date(now.getTime() - CAP_WINDOW_DAYS * DAY_MS)),
+      sentCoverage: coverage,
+      keyOf,
+      eligible: (pattern) => !rejected.has(pattern) && suggestionPatternEligible(pattern),
+    });
+    let refused = false;
+    for (const candidate of candidates) {
+      if (await insertCandidate(trx, ctx, mailboxId, candidate, now)) continue;
+      rejected.add(candidate.pattern);
+      refused = true;
+    }
+    if (!refused) break;
+  }
+  if (rejected.size > 0) {
+    log
+      .with({ org_id: ctx.orgId, mailbox_id: mailboxId })
+      .warn("contacts_suggestion_refused", { count: rejected.size });
+  }
+
+  await end(trx, ctx, mailboxId, await coveredByDomainRow(trx, ctx, mailboxId), "withdrawn", now);
+}
+
+// One INSERT inside a savepoint. False when the table CHECK refuses the row (error code 23514): the savepoint is rolled back and
+// the pass goes on. Any other error stops the pass.
+async function insertCandidate(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  candidate: SuggestionCandidate,
+  now: Date
+): Promise<boolean> {
+  await sql`SAVEPOINT sender_suggestion_insert`.execute(trx);
+  try {
     await trx
       .insertInto("sender_suggestions")
       .values({
@@ -127,9 +171,72 @@ export async function refreshSuggestions(
         conflict.columns(["mailbox_id", "scope", "key_hash", "kind"]).where("status", "=", "open").doNothing()
       )
       .execute();
+  } catch (error) {
+    if ((error as { code?: string } | null)?.code !== CHECK_VIOLATION) throw error;
+    await sql`ROLLBACK TO SAVEPOINT sender_suggestion_insert`.execute(trx);
+    return false;
   }
+  await sql`RELEASE SAVEPOINT sender_suggestion_insert`.execute(trx);
+  return true;
+}
 
-  await end(trx, ctx, mailboxId, await coveredByDomainRow(trx, ctx, mailboxId), "withdrawn", now);
+// An entry with no counts for an address or domain that a rule or an active delegate names, and the activity does not show.
+function ruleAndDelegateMembers(
+  seen: ReadonlyMap<string, SuggestionInput>,
+  rules: readonly SenderRule[],
+  delegates: ReadonlySet<string>,
+  ownDomains: ReadonlySet<string>
+): SuggestionInput[] {
+  const members = new Map<string, SuggestionInput>();
+  const add = (address: string): void => {
+    if (seen.has(address) || members.has(address)) return;
+    members.set(address, bareInput(address, rules, delegates, ownDomains));
+  };
+  for (const email of delegates) add(email);
+  for (const rule of rules) {
+    const pattern = normalizeSenderAddress(rule.pattern);
+    // A domain rule names no address: the entry stands for the domain.
+    add(pattern.includes("@") ? pattern : `domain-rule@${pattern}`);
+  }
+  return [...members.values()];
+}
+
+function bareInput(
+  address: string,
+  rules: readonly SenderRule[],
+  delegates: ReadonlySet<string>,
+  ownDomains: ReadonlySet<string>
+): SuggestionInput {
+  const empty: SenderActivity = {
+    address,
+    received: 0,
+    received30: 0,
+    answered: 0,
+    answered30: 0,
+    flagged: 0,
+    flagged30: 0,
+    unseen7d: 0,
+    movedBack: 0,
+    userMailsTo: 0,
+    delegationsTo: 0,
+    byCategory: {},
+    corrections: {},
+    correctedToSpam90: 0,
+    rescued90: 0,
+    suspicious90: 0,
+    repliedBySent90: 0,
+    bulkSignals: [],
+    bulkBase: 0,
+    bulkMails: 0,
+    medianUserReplyHours: null,
+    medianTheirReplyHours: null,
+    replySamplesTheirs: 0,
+    firstSeenAt: null,
+    lastSeenAt: null,
+    lastUserMailAt: null,
+    relation: "new",
+  };
+  return inputOf(empty, rules, delegates, ownDomains);
 }
 
 function inputOf(
@@ -155,7 +262,8 @@ function inputOf(
     flagged30: item.flagged30,
     correctedToSpam90: item.correctedToSpam90,
     rescued90: item.rescued90,
-    answered90: item.answered,
+    // Answered by the IMAP flag or by a Sent reply (to any recipient): a sender that the user replied to is never blocked.
+    answered90: item.answered + item.repliedBySent90,
     userMailsTo90: item.userMailsTo,
     suspicious90: item.suspicious90,
     isVip: match.vip,

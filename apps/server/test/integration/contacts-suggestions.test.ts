@@ -1,22 +1,28 @@
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertSenderRule } from "../../src/modules/config/repo";
-import { insertSentSyncState } from "../../src/modules/mail/repo";
-import { setOrgFeature, upsertOrgFeature } from "../../src/modules/tenancy";
+import { setOrgFeature } from "../../src/modules/tenancy";
 
 import {
   ago,
   DAY,
   hashOf,
   insertSuggestion,
+  mails,
   newOrg,
   NOW,
+  openOf,
   refresh,
+  rescuedMails,
+  rowsOf,
   secondMailbox,
-  type Org,
-  type Trx,
+  seed,
+  spamMails,
+  suggestOrg,
+  summary,
+  withSentCoverage,
 } from "./contacts-fixtures";
-import { seedSenderActivity, type SeededMail } from "./fixtures";
+import { seedSenderActivity } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // The suggestion step of the profile pass. The clock is fixed (`NOW`) and the key is a test key. Every test runs in a
@@ -25,63 +31,6 @@ const db = testDb();
 afterAll(async () => {
   await db.destroy();
 });
-
-// An organization with the flags `sender_context` and `sender_suggestions`.
-async function suggestOrg(trx: Trx): Promise<Org> {
-  const org = await newOrg(trx);
-  await setOrgFeature(trx, org.ctx, { flag: "sender_suggestions", enabled: true, actor: "cli", now: NOW });
-  return org;
-}
-
-// Sent coverage: the flag, the switch, a first pass and a last pass at `lastPass`.
-async function withSentCoverage(trx: Trx, org: Org, lastPass: Date = NOW, error: "folder_missing" | null = null) {
-  await upsertOrgFeature(trx, org.ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
-  await insertSentSyncState(trx, org.ctx, org.mailboxId, { enabled: true });
-  await trx
-    .updateTable("mailbox_sent_sync")
-    .set({ first_pass_at: ago(30), last_pass_at: lastPass, last_error_code: error })
-    .where("mailbox_id", "=", org.mailboxId)
-    .execute();
-}
-
-// `n` mails received 1, 2, ... days ago; the first `answered` of them are answered.
-const mails = (n: number, answered: number, extra: Partial<SeededMail> = {}): SeededMail[] =>
-  Array.from({ length: n }, (_, i) => ({ at: ago(i + 1), answered: i < answered, ...extra }));
-
-// Two mails that the user corrected to spam.
-const spamMails = (): SeededMail[] =>
-  [1, 2].map((day) => ({
-    at: ago(day),
-    category: "info" as const,
-    feedback: [{ verdict: "wrong" as const, trueCategory: "spam" as const }],
-  }));
-
-// Two mails that the user moved back out of spam.
-const rescuedMails = (): SeededMail[] =>
-  [1, 2].map((day) => ({
-    at: ago(day),
-    category: "spam" as const,
-    feedback: [{ verdict: "wrong" as const, trueCategory: "info" as const }],
-  }));
-
-const seed = (trx: Trx, org: Org, address: string, list: SeededMail[], sent?: { at: Date; to: string[] }[]) =>
-  seedSenderActivity(trx, org.ctx, org.mailboxId, { address, mails: list, ...(sent === undefined ? {} : { sent }) });
-
-const rowsOf = (trx: Trx, org: Org, mailboxId = org.mailboxId) =>
-  trx
-    .selectFrom("sender_suggestions")
-    .selectAll()
-    .where("mailbox_id", "=", mailboxId)
-    .orderBy("created_at")
-    .orderBy("kind")
-    .orderBy("key_hash")
-    .execute();
-
-const openOf = async (trx: Trx, org: Org, mailboxId = org.mailboxId) =>
-  (await rowsOf(trx, org, mailboxId)).filter((row) => row.status === "open");
-
-const summary = (rows: { kind: string; scope: string; pattern: string | null; status: string }[]) =>
-  rows.map((row) => `${row.status}:${row.kind}:${row.scope}:${row.pattern}`).sort();
 
 describe("the suggestion step: VIP and the life of a row", () => {
   test("1 a sender with 6 of 8 answered in 30 days gives one open VIP row with the counts as reason", async () => {
