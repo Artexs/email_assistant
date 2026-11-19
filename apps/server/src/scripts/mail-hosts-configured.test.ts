@@ -41,10 +41,14 @@ describe("entry points that reach mail", () => {
     }
   });
 
-  test("each one calls configureMailHosts", () => {
-    const missing = files.filter(
-      (name) => !readFileSync(join(SERVER_SRC, name), "utf8").includes("configureMailHosts(")
-    );
+  // `runMailboxCli` (scripts/mailbox-cli.ts) builds the production deps for the mailbox tools: it sets the policy before `run`.
+  test("each one calls configureMailHosts, or runs through runMailboxCli, which does", () => {
+    const missing = files.filter((name) => {
+      const text = readFileSync(join(SERVER_SRC, name), "utf8");
+      const viaRunner = name !== "scripts/mailbox-cli.ts" && text.includes("runMailboxCli(");
+      return !text.includes("configureMailHosts(") && !viaRunner;
+    });
     expect(missing).toEqual([]);
+    expect(files).toContain("scripts/mailbox-cli.ts");
   });
 });

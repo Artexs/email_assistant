@@ -30,7 +30,7 @@ import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { webOrg, type WebOrg } from "./web-helpers";
 
-// The operator CLIs on an OAuth mailbox (PD-091 smoke): `run(argv, deps)` in this process, the token endpoint is the fake token server,
+// The operator CLIs on an OAuth mailbox (the provider smoke): `run(argv, deps)` in this process, the token endpoint is the fake token server,
 // the mail is GreenMail (auth off: it takes any token). No real provider call. The password paths have their own subprocess tests.
 const db = testDb();
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
