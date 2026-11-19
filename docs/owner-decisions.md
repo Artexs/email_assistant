@@ -721,3 +721,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: plan refresh of 2026-11-20 (questions.md Q8, Q9); the coordinator took the defaults.
 - Undo: narrow the ticket Acceptance line, then re-run the F138 stage 05 grep.
 - Source: `spec/features/active/F138-*/questions.md`.
+
+### 2026-11-20 · F062: after the contract release, rollback reaches only the expand release · irreversible · new
+
+- Decision: the contract migration (stage 05) drops `emails.inbox_uid`, `undo_pending_at`, `mailboxes.uidvalidity` and `mailboxes.last_uid`. After its release, `deploy/rollback.sh` reaches only the expand release; an older target needs a restore from the backup taken before the release. Other defaults: `org:export` uses the new names (version stays 1); new columns nullable; `mailbox:probe-move` keeps its local name; an old demo seed export must be exported again.
+- Why: the purpose of the ticket; plan Q2 default taken by the coordinator.
+- Undo: do not land stage 05, or restore from the pre-release backup.
+- Source: `spec/features/active/F062-drop-mailbox-cursor-columns/questions.md`.

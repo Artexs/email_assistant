@@ -23,6 +23,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 - `F068-actions-transitions-runtime` (🟠 ACTIVE): The `actions.status` writers take their guards from the transitions map, and no writer admits an edge that no caller uses
+- `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
 
 ## NEXT
 
@@ -36,7 +37,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F125-…-test-…` (🔴 PLANNED, plan landed, needs refresh for the counts): 01–07 read-only on tests, run next to anything; G1: the owner marks `audit/report.md`; cut stages after F124 lands and G1.
 - `F139-…-guard-empty-…` (🔴 PLANNED, needs plan): a readiness wait in `deploy/restore.sh`; one worker stage, one VPS drill rerun; lands before F108 stage 05.
 - `F136-…-playwright-…` (🔴 PLANNED, unparked 2026-11-20, needs plan, no `bun.lock`): per-job ports, e2e DB and mail addresses for both Playwright suites; removes the shared lock; lands before F121 stage 10.
-- `F062-drop-mailbox-cursor-columns` (🔴 PLANNED, needs plan): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
+- `F062-drop-mailbox-cursor-columns` (🟠 plan landed; 01 ∥ 02 → 03 → 04; 01 lands only after the v0.4.2 tag): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
 - `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed, [risky], no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.
 - `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F138 stage 02 and F136 land): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
