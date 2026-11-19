@@ -589,10 +589,10 @@ export const noticeTexts = {
       suggestions: {
         line: (open, link) => `💡 Sugestie reguł do przejrzenia: ${open} · ${link ?? "sprawdź w panelu"}`,
       },
-      // The verbs have one form for every number (impersonal past), so no plural table is needed.
+      // The labels are plural participles that agree with "Szkice" and stay the same for every number, so no plural table is needed.
       replyDrafts: {
         line: (c) =>
-          `✍️ Szkice odpowiedzi: przygotowano ${c.made} · wysłano stuknięciem ${c.sentByTap} · wysłano przez ciebie ${c.sentByUser} · odrzucono ${c.rejected} · wygasło ${c.expired} · zamknięto ${c.closed}`,
+          `✍️ Szkice odpowiedzi: przygotowane ${c.made} · wysłane po zatwierdzeniu ${c.sentByTap} · wysłane z programu pocztowego ${c.sentByUser} · odrzucone ${c.rejected} · wygasłe ${c.expired} · zamknięte ${c.closed}`,
       },
     },
   },

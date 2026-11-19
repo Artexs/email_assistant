@@ -3,7 +3,7 @@ import { quotaDayStart, QUOTA_TIMEZONE } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { updateMailboxSettings } from "../../src/modules/config";
-import { clearReplyTexts, replyRoutes, sampleReplies } from "../../src/modules/replies";
+import { clearReplyTexts, replyRoutes, replySampleScope, sampleReplies } from "../../src/modules/replies";
 import { countSampleRequestsSince, listSampleRequests } from "../../src/modules/replies/repo/samples";
 
 import { testDb } from "./helpers";
@@ -226,6 +226,22 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     }
   });
 
+  test("a paused or auth_error mailbox queues nothing and uses up no day: count 0, and the run works again when the mailbox is active", async () => {
+    const w = await world();
+    await fourMails(w.box);
+    for (const status of ["paused", "auth_error"] as const) {
+      await db.updateTable("mailboxes").set({ status }).where("id", "=", w.box.mailboxId).execute();
+      const res = await ask(w);
+      expect(res.status).toBe(202);
+      expect(await res.json()).toEqual({ requestIds: [], count: 0 });
+      expect(await requestsOf(db, w.box)).toEqual([]);
+    }
+    await db.updateTable("mailboxes").set({ status: "active" }).where("id", "=", w.box.mailboxId).execute();
+    const res = await ask(w);
+    expect(res.status).toBe(202);
+    expect(replySamplesQueuedSchema.parse(await res.json()).count).toBe(3);
+  });
+
   test("two runs at the same time make one run", async () => {
     const w = await world();
     await fourMails(w.box);
@@ -414,11 +430,16 @@ describe("the gates of the sample routes", () => {
     expect(theirs.items).toEqual([]);
   });
 
-  test("the flag off answers 404 on both routes and queues nothing", async () => {
+  test("the flag off answers 404 for every role on both routes, also for a bad id, and queues nothing", async () => {
     const w = await world({ flags: { reply_drafts: false } });
     await fourMails(w.box);
-    expect((await ask(w)).status).toBe(404);
-    expect((await w.app.request(sampleUrl(w.box.mailboxId), as("owner"))).status).toBe(404);
+    for (const who of ["owner", "member"]) {
+      for (const id of [w.box.mailboxId, w.theirBox.mailboxId, "not-a-uuid"]) {
+        const url = `/api/mailboxes/${id}/reply-samples`;
+        expect({ who, id, post: (await w.app.request(url, post(who))).status }).toEqual({ who, id, post: 404 });
+        expect({ who, id, get: (await w.app.request(url, as(who))).status }).toEqual({ who, id, get: 404 });
+      }
+    }
     expect(await requestsOf(db, w.box)).toEqual([]);
   });
 
@@ -434,6 +455,32 @@ describe("the gates of the sample routes", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toEqual({ error: "llm_off" });
     expect(await requestsOf(db, w.box)).toEqual([]);
+  });
+});
+
+describe("the model scope of the samples", () => {
+  test("under the synthetic scope only test mail is sampled; real mail gets no request and the day is not used up", async () => {
+    const w = await world();
+    const testSender = `probe-${w.box.mailboxId}@test.example`;
+    const real = await mail(w.box, { receivedAt: ago(10) });
+    const probe = await mail(w.box, { receivedAt: ago(20), from: testSender });
+    const synthetic = { db, now: () => NOW, testOnly: { senders: [testSender] } };
+    const input = { mailboxId: w.box.mailboxId, userId: w.box.userId, via: "web", count: 3 } as const;
+    const answer = await sampleReplies(synthetic, w.box.ctx, input);
+    expect(answer).toMatchObject({ kind: "queued", count: 1 });
+    expect((await requestsOf(db, w.box)).map((r) => r.email_id)).toEqual([probe]);
+    // With no scope (null) the real mail is a candidate: the second run is the limit, so a new mailbox state shows the filter alone.
+    await db.deleteFrom("reply_requests").where("mailbox_id", "=", w.box.mailboxId).execute();
+    const all = await sampleReplies({ ...synthetic, testOnly: null }, w.box.ctx, input);
+    expect(all).toMatchObject({ kind: "queued", count: 2 });
+    expect((await requestsOf(db, w.box)).map((r) => r.email_id).sort()).toEqual([real, probe].sort());
+  });
+
+  test("the composition root maps the scope of the job: synthetic gives its test-mail rule, all gives none", () => {
+    const rule = { senders: ["probe@test.example"] };
+    const now = () => NOW;
+    expect(replySampleScope({ kind: "synthetic", testMail: rule }, now)).toEqual({ now, testOnly: rule });
+    expect(replySampleScope({ kind: "all" }, now)).toEqual({ now, testOnly: null });
   });
 });
 

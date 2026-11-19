@@ -3,12 +3,12 @@ import type { MailboxView, OrganizationSettings, ProfileView, SettingsWebView } 
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { setLocaleForTest, t } from "../../i18n";
-import { en } from "../../i18n/en";
+import { setLocaleForTest, t } from "../i18n";
+import { en } from "../i18n/en";
 
-import { ModeCard } from "./ModeCard";
-import { ReplyStyleForm } from "./ReplyStyleCard";
-import { SignatureCard } from "./SignatureCard";
+import { ModeCard } from "../components/settings/ModeCard";
+import { ReplyStyleForm } from "../components/settings/ReplyStyleCard";
+import { SignatureCard } from "../components/settings/SignatureCard";
 
 afterEach(() => setLocaleForTest("en"));
 

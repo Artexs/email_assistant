@@ -5,6 +5,7 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { getMailbox, type TestMailRule } from "../mail";
 import { getMembership, isFeatureOn } from "../tenancy";
 
+import type { ReplyLlmScope } from "./draft-one";
 import { loadReplyFacts } from "./facts";
 import { createReplyRequest } from "./repo/requests";
 import { countSampleRequestsSince, listSampleRequests, lockSampleRun } from "./repo/samples";
@@ -24,6 +25,12 @@ export interface SampleDeps {
 
 // What the composition root knows of the sample drafts: the clock and the scope.
 export type ReplySampleScope = Pick<SampleDeps, "now" | "testOnly">;
+
+// The scope of the samples follows the scope of the drafter job: under `synthetic` only test mail is a candidate, so a real mail never gets a
+// request that the job would cancel (and that would use up the day). The composition root calls this with the scope of the job.
+export function replySampleScope(scope: ReplyLlmScope, now: () => Date): ReplySampleScope {
+  return { now, testOnly: scope.kind === "synthetic" ? scope.testMail : null };
+}
 
 export type SampleRepliesResult =
   // `requestIds` has `count` entries. 0: no mail qualifies, nothing is queued and the day's run is not used up.
@@ -54,6 +61,9 @@ export async function sampleReplies(
     const mailbox = await getMailbox(trx, ctx, input.mailboxId);
     if (mailbox === undefined) return { kind: "not_found" };
     if (mailbox.oauth_provider !== null) return { kind: "blocked", reason: "oauth_mailbox" };
+    // The drafter job and the timeout sweep run only for an `active` mailbox: a request for a paused or `auth_error` mailbox would
+    // wait for a minute with no answer and use up the day. Nothing is queued and nothing is used up.
+    if (mailbox.status !== "active") return { kind: "queued", requestIds: [], count: 0 };
     await lockSampleRun(trx, ctx, input.mailboxId);
     const dayStart = quotaDayStart(now, QUOTA_TIMEZONE);
     if ((await countSampleRequestsSince(trx, ctx, input.mailboxId, dayStart)) > 0) return { kind: "sample_limit" };

@@ -93,3 +93,47 @@ export async function waitForSamples(
     await deps.wait(REPLY_POLL_INTERVAL_MS);
   }
 }
+
+// What the card shows. `message` is an error or a plain note (`messageTone`); `slow` is a run that was not over after one minute: the
+// run is not lost (a reload shows the rest), so the button stays off and the text says so.
+export type SamplesState =
+  | { kind: "loading" }
+  | { kind: "idle" }
+  | { kind: "running" }
+  | { kind: "slow" }
+  | { kind: "shown"; items: SampleItem[] }
+  | { kind: "message"; key: TextKey };
+
+// The button is off while the state is read, while a run is written, after a run is shown and while a slow run may still finish. A run
+// that was refused or that found no mail leaves it on.
+export const samplesButtonOff = (state: SamplesState): boolean =>
+  state.kind === "loading" || state.kind === "running" || state.kind === "shown" || state.kind === "slow";
+
+// A note is not an error: it has no `alert` role and no error colour. A text that says the call failed or cannot work is an error.
+const noteKeys: readonly TextKey[] = ["rs_samples_none", "rs_samples_limit"];
+export const messageTone = (key: TextKey): "note" | "error" => (noteKeys.includes(key) ? "note" : "error");
+
+interface Signal {
+  aborted: boolean;
+}
+type SetState = (state: SamplesState) => void;
+
+// Waits until no request of the run is in progress, then shows the run. One minute at most: then the state is `slow`.
+export async function followSamples(mailboxId: string, signal: Signal, set: SetState): Promise<void> {
+  const outcome = await waitForSamples(mailboxId, { signal });
+  if (outcome.kind === "aborted") return;
+  set(outcome.kind === "timeout" ? { kind: "slow" } : { kind: "shown", items: outcome.items });
+}
+
+// Shows the run of the day that exists on the server, or goes on waiting for it. False: there is none (or the card went away).
+export async function showSamples(mailboxId: string, signal: Signal, set: SetState): Promise<boolean> {
+  const found = await loadSamples(mailboxId).catch((): SampleItem[] => []);
+  if (signal.aborted || found.length === 0) return false;
+  if (samplesInProgress(found)) {
+    set({ kind: "running" });
+    await followSamples(mailboxId, signal, set);
+  } else {
+    set({ kind: "shown", items: found });
+  }
+  return true;
+}

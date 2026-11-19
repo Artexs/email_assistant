@@ -386,10 +386,11 @@ test("T10: the answers of a refused run have their own texts, the real route ans
   await button.click();
   await expect(card(page).getByRole("alert")).toHaveText(en.rs_samples_llm_off);
 
-  const answers: { status: number; json: unknown; text: string }[] = [
-    { status: 409, json: { error: "sample_limit" }, text: en.rs_samples_limit },
-    { status: 409, json: { error: "blocked", reason: "oauth_mailbox" }, text: en.rs_samples_oauth },
-    { status: 202, json: { requestIds: [], count: 0 }, text: en.rs_samples_none },
+  // A refusal or an empty run: `alert` for a failure, a plain note (role status, no alert) for the day limit and for no mail.
+  const answers: { status: number; json: unknown; text: string; role: "alert" | "status" }[] = [
+    { status: 409, json: { error: "sample_limit" }, text: en.rs_samples_limit, role: "status" },
+    { status: 409, json: { error: "blocked", reason: "oauth_mailbox" }, text: en.rs_samples_oauth, role: "alert" },
+    { status: 202, json: { requestIds: [], count: 0 }, text: en.rs_samples_none, role: "status" },
   ];
   for (const answer of answers) {
     await page.route("**/api/mailboxes/*/reply-samples", (route) =>
@@ -398,7 +399,11 @@ test("T10: the answers of a refused run have their own texts, the real route ans
         : route.fallback()
     );
     await button.click();
-    await expect(card(page).getByRole("alert")).toHaveText(answer.text);
+    const shown = card(page).locator("[data-samples]").getByRole(answer.role);
+    await expect(shown).toHaveText(answer.text);
+    if (answer.role === "status") await expect(card(page).locator("[data-samples]").getByRole("alert")).toHaveCount(0);
+    // The button stays on after a refusal or an empty run.
+    await expect(button).toBeEnabled();
     await page.unroute("**/api/mailboxes/*/reply-samples");
   }
 
@@ -407,4 +412,52 @@ test("T10: the answers of a refused run have their own texts, the real route ans
   await expect(card(page)).toBeVisible();
   await expect(card(page).getByText(en.rs_samples_oauth)).toBeVisible();
   await expect(card(page).getByRole("button", { name: en.rs_samples, exact: true })).toHaveCount(0);
+});
+
+test("T11: a 409 sample_limit shows the run of the day that exists (an earlier visit or another tab) instead of the refusal", async ({
+  context,
+  page,
+}) => {
+  let reads = 0;
+  await page.route("**/api/mailboxes/*/reply-samples", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 409, json: { error: "sample_limit" } });
+      return;
+    }
+    reads += 1;
+    // Empty at the load of the card (the run is made by another tab after it), the run after the refusal.
+    await route.fulfill({ json: reads === 1 ? { items: [] } : samples("done") });
+  });
+  await startSession(context, page, "owner");
+  await card(page).getByRole("button", { name: en.rs_samples, exact: true }).click();
+  await expect(card(page).locator("[data-sample-body]")).toHaveCount(3);
+  await expect(card(page).getByText(en.rs_samples_limit)).toHaveCount(0);
+});
+
+test("T12: a run that is not over after one minute says so, keeps the button off and shows no error", async ({
+  context,
+  page,
+}) => {
+  let reads = 0;
+  await page.route("**/api/mailboxes/*/reply-samples", async (route) => {
+    if (route.request().method() === "POST") {
+      await route.fulfill({ status: 202, json: { requestIds: SAMPLE_IDS, count: 3 } });
+      return;
+    }
+    reads += 1;
+    await route.fulfill({ json: reads === 1 ? { items: [] } : samples("pending") });
+  });
+  await startSession(context, page, "owner");
+  const button = card(page).getByRole("button", { name: en.rs_samples, exact: true });
+  // The page clock runs from here: the poll of one minute passes in a moment.
+  await page.clock.install();
+  await button.click();
+  await expect(card(page).getByText(en.rs_samples_waiting)).toBeVisible();
+  for (let step = 0; step < 40; step += 1) {
+    await page.clock.runFor(2000);
+    if ((await card(page).locator("[data-samples=slow]").count()) > 0) break;
+  }
+  await expect(card(page).locator("[data-samples=slow]")).toHaveText(en.rs_samples_slow);
+  await expect(card(page).getByRole("alert")).toHaveCount(0);
+  await expect(button).toBeDisabled();
 });

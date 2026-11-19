@@ -1,30 +1,24 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-import { t, type TextKey } from "../../i18n";
+import { t } from "../../i18n";
 import { errorText } from "../../lib/errors";
 import {
   askSamples,
-  loadSamples,
   sampleFailureKey,
   sampleInProgress,
-  samplesInProgress,
-  waitForSamples,
-  type SampleItem,
+  messageTone,
+  samplesButtonOff,
+  followSamples,
+  showSamples,
+  type SamplesState,
 } from "../../lib/reply-samples";
 import { Button } from "../ui/button";
 
 // Sample drafts on the newest mails that need a reply (the owner, the flag `reply_drafts` on, a password mailbox). One run a day for
 // each mailbox. The texts come from a model and show as plain text, never as markup. A sample is not saved in Drafts and cannot be sent.
-type State =
-  | { kind: "loading" }
-  | { kind: "idle" }
-  | { kind: "running" }
-  | { kind: "shown"; items: SampleItem[] }
-  | { kind: "message"; key: TextKey };
-
 export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocked: boolean }) {
   const ids = useId();
-  const [state, setState] = useState<State>({ kind: "loading" });
+  const [state, setState] = useState<SamplesState>({ kind: "loading" });
 
   // The card going away ends every wait: the object of this mount is the signal of the polls.
   const signal = useRef({ aborted: false });
@@ -33,30 +27,10 @@ export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocke
   useEffect(() => {
     const mine = { aborted: false };
     signal.current = mine;
-    const finish = async () => {
-      const outcome = await waitForSamples(mailboxId, { signal: mine });
-      if (outcome.kind === "aborted") return;
-      if (outcome.kind === "timeout") {
-        setState({ kind: "message", key: "rs_samples_slow" });
-        return;
-      }
-      setState({ kind: "shown", items: outcome.items });
-    };
     if (!blocked) {
-      void loadSamples(mailboxId)
-        .then((found) => {
-          if (mine.aborted) return;
-          if (found.length === 0) setState({ kind: "idle" });
-          else if (samplesInProgress(found)) {
-            setState({ kind: "running" });
-            void finish();
-          } else {
-            setState({ kind: "shown", items: found });
-          }
-        })
-        .catch(() => {
-          if (!mine.aborted) setState({ kind: "idle" });
-        });
+      void showSamples(mailboxId, mine, setState).then((found) => {
+        if (!found && !mine.aborted) setState({ kind: "idle" });
+      });
     }
     return () => {
       mine.aborted = true;
@@ -68,20 +42,16 @@ export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocke
     try {
       const answer = await askSamples(mailboxId);
       if (answer.kind === "refused") {
-        setState({ kind: "message", key: answer.key });
+        // The day's run exists already (this tab, another tab or an earlier visit): show it instead of the refusal.
+        if (answer.key === "rs_samples_limit" && (await showSamples(mailboxId, signal.current, setState))) return;
+        if (!signal.current.aborted) setState({ kind: "message", key: answer.key });
         return;
       }
       if (answer.count === 0) {
         setState({ kind: "message", key: "rs_samples_none" });
         return;
       }
-      const outcome = await waitForSamples(mailboxId, { signal: signal.current });
-      if (outcome.kind === "aborted") return;
-      if (outcome.kind === "timeout") {
-        setState({ kind: "message", key: "rs_samples_slow" });
-        return;
-      }
-      setState({ kind: "shown", items: outcome.items });
+      await followSamples(mailboxId, signal.current, setState);
     } catch (failure) {
       setState({ kind: "message", key: errorText(failure) });
     }
@@ -97,7 +67,7 @@ export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocke
         <Button
           type="button"
           variant="outline"
-          disabled={state.kind === "loading" || state.kind === "running" || state.kind === "shown"}
+          disabled={samplesButtonOff(state)}
           aria-describedby={`${ids}-help`}
           onClick={() => void ask()}
         >
@@ -109,11 +79,21 @@ export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocke
       </div>
       <div aria-live="polite" data-samples={state.kind}>
         {state.kind === "running" && <p className="text-sm text-muted-foreground">{t("rs_samples_waiting")}</p>}
-        {state.kind === "message" && (
-          <p role="alert" className="text-sm text-destructive">
-            {t(state.key)}
+        {state.kind === "slow" && (
+          <p role="status" className="text-sm text-muted-foreground">
+            {t("rs_samples_slow")}
           </p>
         )}
+        {state.kind === "message" &&
+          (messageTone(state.key) === "error" ? (
+            <p role="alert" className="text-sm text-destructive">
+              {t(state.key)}
+            </p>
+          ) : (
+            <p role="status" className="text-sm text-muted-foreground">
+              {t(state.key)}
+            </p>
+          ))}
         {state.kind === "shown" && (
           <div className="flex flex-col gap-3">
             <p className="text-sm font-medium">{t("rs_samples_title")}</p>

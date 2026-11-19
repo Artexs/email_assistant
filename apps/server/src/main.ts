@@ -37,6 +37,7 @@ import {
   createReplyJobs,
   createReplySweep,
   createStylePreview,
+  replySampleScope,
   type ReplySampleScope,
   type StylePreview,
 } from "./modules/replies";
@@ -340,7 +341,7 @@ if (scope !== null) {
   });
   stylePreview = createStylePreview({ db, llm, dailyCap: config.LLM_DAILY_CAP, now: () => new Date() });
   // The sample drafts are queued for the drafter job above, so they follow its scope: with `synthetic` only test mail is a candidate.
-  replySamples = { now: () => new Date(), testOnly: scope.kind === "synthetic" ? scope.testMail : null };
+  replySamples = replySampleScope(scope, () => new Date());
   scheduler.add("replies.drafter", "*/15 * * * * *", () => {
     repliesDrafterRun = replyJobs.drafter.run().then(() => undefined);
     return repliesDrafterRun;

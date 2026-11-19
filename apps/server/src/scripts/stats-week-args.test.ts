@@ -49,4 +49,14 @@ describe("statsLines: the reply drafts line", () => {
       "reply_drafts made 5 sent_by_tap 2 sent_by_user 0 rejected 1 expired 1 newer_mail 1 answered 0 original_moved 0 draft_changed 0 no_draft 3 failed 0",
     ]);
   });
+
+  test("a week with only requests that ended with no draft or failed prints the line too", () => {
+    const line = (requests: WeekRows["replies"]["requests"]) =>
+      statsLines(statsOf({ pairs: [], requests })).filter((l) => l.startsWith("reply_drafts"));
+    expect(line([{ status: "no_draft" }])).toEqual([
+      "reply_drafts made 0 sent_by_tap 0 sent_by_user 0 rejected 0 expired 0 newer_mail 0 answered 0 original_moved 0 draft_changed 0 no_draft 1 failed 0",
+    ]);
+    expect(line([{ status: "failed" }, { status: "failed" }])[0]).toContain("made 0");
+    expect(line([{ status: "failed" }, { status: "failed" }])[0]).toContain("failed 2");
+  });
 });

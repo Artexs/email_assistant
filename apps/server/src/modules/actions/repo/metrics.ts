@@ -159,7 +159,8 @@ const pairRowSchema = z.object({ status: z.string(), status_reason: z.string().n
 /**
  * The reply pairs of real mail that were made in the range (the first version of the pair was created in it), each as its newest
  * version stands now: an edit, a redraft or a recipient change makes a new send that supersedes the old one, and only the newest
- * counts. The rows hold a status and a reason code only.
+ * counts. The rows hold a status and a reason code only. The newest version is never older than the first one, so a pair made in the
+ * range has its newest version created at or after the start of the range: the anchor reads no older send.
  */
 export async function listReplyPairRows(db: DbOrTrx, ctx: TenantContext, q: WeekQuery): Promise<ReplyPairRow[]> {
   const { rows } = await sql<unknown>`
@@ -168,6 +169,7 @@ export async function listReplyPairRows(db: DbOrTrx, ctx: TenantContext, q: Week
         a.created_at AS made_at
       FROM actions a
       WHERE a.org_id = ${ctx.orgId} AND a.type = 'send' AND a.payload->>'kind' = 'reply'
+        AND a.created_at >= ${q.range.start}
         AND NOT EXISTS (
           SELECT 1 FROM actions newer WHERE newer.org_id = ${ctx.orgId} AND newer.supersedes_action_id = a.id)
       UNION ALL

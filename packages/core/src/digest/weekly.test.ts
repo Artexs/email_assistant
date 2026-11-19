@@ -356,12 +356,12 @@ describe("the reply draft line of the weekly report", () => {
     ]);
   });
 
-  test("Polish: the verbs have one form for every number", () => {
+  test("Polish: the labels are plural participles that stay the same for every number", () => {
     expect(lineOf(counts, pl)).toEqual([
-      "✍️ Szkice odpowiedzi: przygotowano 9 · wysłano stuknięciem 3 · wysłano przez ciebie 1 · odrzucono 2 · wygasło 1 · zamknięto 10",
+      "✍️ Szkice odpowiedzi: przygotowane 9 · wysłane po zatwierdzeniu 3 · wysłane z programu pocztowego 1 · odrzucone 2 · wygasłe 1 · zamknięte 10",
     ]);
     for (const made of [1, 2, 5, 22]) {
-      expect(lineOf({ ...counts, made }, pl)[0]).toContain(`przygotowano ${made} ·`);
+      expect(lineOf({ ...counts, made }, pl)[0]).toContain(`przygotowane ${made} ·`);
     }
   });
 

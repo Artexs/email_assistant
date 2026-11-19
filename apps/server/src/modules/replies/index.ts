@@ -66,6 +66,7 @@ export { draftableMails } from "./draftable";
 export {
   listSamples,
   SAMPLE_POOL,
+  replySampleScope,
   sampleReplies,
   type ReplySampleScope,
   type SampleDeps,

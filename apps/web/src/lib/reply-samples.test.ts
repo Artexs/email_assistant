@@ -5,7 +5,10 @@ import { REPLY_POLL_INTERVAL_MS, REPLY_POLL_MAX_MS } from "@ea/core/web";
 import {
   askSamples,
   loadSamples,
+  messageTone,
   sampleFailureKey,
+  samplesButtonOff,
+  type SamplesState,
   samplesInProgress,
   waitForSamples,
   type SampleItem,
@@ -95,6 +98,18 @@ describe("waitForSamples", () => {
     expect(await waitForSamples("m1", { signal: live, deps: run.deps })).toEqual({ kind: "aborted" });
   });
 
+  test("an aborted card stops the wait after a read that shows a finished run too", async () => {
+    const live = { aborted: false };
+    const run = deps([[item("done")]]);
+    const original = run.deps.read;
+    run.deps.read = async (id) => {
+      const items = await original(id);
+      live.aborted = true;
+      return items;
+    };
+    expect(await waitForSamples("m1", { signal: live, deps: run.deps })).toEqual({ kind: "aborted" });
+  });
+
   test("a run that ended at the first read needs no wait", async () => {
     const run = deps([[item("done")]]);
     expect((await waitForSamples("m1", { deps: run.deps })).kind).toBe("done");
@@ -145,5 +160,32 @@ describe("the calls", () => {
     const seen = answer(200, { items: [item] });
     expect(await loadSamples(MAILBOX)).toEqual([item as SampleItem]);
     expect(seen.calls).toEqual([{ url: `/api/mailboxes/${MAILBOX}/reply-samples`, method: "GET" }]);
+  });
+});
+
+describe("the card states", () => {
+  const states: [SamplesState, boolean][] = [
+    [{ kind: "loading" }, true],
+    [{ kind: "idle" }, false],
+    [{ kind: "running" }, true],
+    // A slow run may still finish: a click would only get the day limit.
+    [{ kind: "slow" }, true],
+    [{ kind: "shown", items: [] }, true],
+    // A refused run or a run with no mail leaves the button on.
+    [{ kind: "message", key: "rs_samples_none" }, false],
+    [{ kind: "message", key: "rs_samples_llm_off" }, false],
+  ];
+
+  test("the button is off while the state is read, a run is written or shown, and a slow run may finish", () => {
+    for (const [state, off] of states)
+      expect({ kind: state.kind, off: samplesButtonOff(state) }).toEqual({ kind: state.kind, off });
+  });
+
+  test("no mail and the day limit are notes; a failure is an error", () => {
+    expect(messageTone("rs_samples_none")).toBe("note");
+    expect(messageTone("rs_samples_limit")).toBe("note");
+    for (const key of ["rs_samples_llm_off", "rs_samples_oauth", "rs_samples_failed", "error_generic"] as const) {
+      expect(messageTone(key), key).toBe("error");
+    }
   });
 });

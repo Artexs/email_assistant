@@ -46,6 +46,8 @@ describe("replyOutcomeCounts", () => {
       [pair("expired", "timeout"), "expired"],
       [pair("expired"), "expired"],
       [pair("expired", "held_timeout"), "expired"],
+      [pair("expired", "not_notified"), "expired"],
+      [pair("expired", "not_seen"), "expired"],
     ];
     for (const [row, name] of table) {
       expect({ row, counts: replyOutcomeCounts({ pairs: [row], requests: [] }) }).toEqual({ row, counts: only(name) });
