@@ -20,7 +20,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F120-e11a-sender-context` (🟠 ACTIVE): The assistant knows who each sender is to the user and suggests rules from it
 - `F116-e5b-open-loops` (🟠 ACTIVE): E5b Open loops
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
-- `F113-e2b-live-lab` (🟠 ACTIVE): E2b Live lab
 - `F107-e7-t4-papers-and-cost` (🟠 ACTIVE): E7-T4 Papers and cost
 
 ## NEXT
@@ -79,10 +78,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F119-e7-t7-identity-b-oidc` (🟢 PROVEN): E7-T7 Identity B (OIDC); landed 2026-11-19
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
+- `F113-e2b-live-lab` (🟢 PROVEN): E2b Live lab; landed 2026-11-19
 - `F110-e4-b-earn-trust` (🟢 PROVEN): E4-B Earn trust; landed 2026-11-19
 - `F104-e5a-read-sent` (🟢 PROVEN): E5a Read Sent; landed 2026-11-19
-- `F102-e4-a-act-from-the-panel` (🟢 PROVEN): E4-A Act from the panel; landed 2026-11-19
-- 2026-11: 96 landed. spec/features/done/2026-11/
+- 2026-11: 97 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-19: do not wait, run in parallel
 
