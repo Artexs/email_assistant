@@ -16,6 +16,11 @@ const SHARED_SUFFIXES: ReadonlySet<string> = new Set([
   "onrender.com",
 ]);
 
+// True when the registrable domain of `host` is a shared hosting suffix (`github.io`): a rule on it would cover every tenant.
+export function isSharedHostingDomain(host: string): boolean {
+  return SHARED_SUFFIXES.has(registrableDomain(host));
+}
+
 function registrableWithShared(labels: string[]): string[] {
   const base = registrableDomain(labels.join(".")).split(".");
   if (!SHARED_SUFFIXES.has(base.join(".")) || labels.length <= base.length) return base;

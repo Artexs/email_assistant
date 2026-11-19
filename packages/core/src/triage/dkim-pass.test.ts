@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { hasTrustedAlignedDkimPass } from "./dkim-pass";
+import { hasTrustedAlignedDkimPass, isSharedHostingDomain } from "./dkim-pass";
 
 const TRUSTED = ["interia.pl"];
 
@@ -129,5 +129,15 @@ describe("hasTrustedAlignedDkimPass", () => {
     }
     // A domain that is not a shared suffix keeps the old rule.
     expect(hasTrustedAlignedDkimPass("interia.pl; dkim=pass header.d=c.example", TRUSTED, "news.c.example")).toBe(true);
+  });
+});
+
+describe("isSharedHostingDomain", () => {
+  test("a tenant host of a shared suffix counts; an ordinary or a two-level domain does not", () => {
+    expect(isSharedHostingDomain("github.io")).toBe(true);
+    expect(isSharedHostingDomain("someone.github.io")).toBe(true);
+    expect(isSharedHostingDomain("app.herokuapp.com")).toBe(true);
+    expect(isSharedHostingDomain("acme.pl")).toBe(false);
+    expect(isSharedHostingDomain("mail.acme.com.pl")).toBe(false);
   });
 });

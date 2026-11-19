@@ -7,6 +7,7 @@ import {
   profileLockKey,
   refreshMailboxProfiles,
   senderFlags,
+  SENT_COVERAGE_FRESH_MS,
   sentCoverage,
   type ContactsRefreshJobDeps,
 } from "../../src/modules/contacts";
@@ -265,7 +266,13 @@ describe("sentCoverage", () => {
   // The state of the Sent sync: the flag `sent_sync`, the mailbox switch and the first pass.
   async function sentOrg(
     trx: Trx,
-    opts: { flag: boolean; switchOn: boolean | null; firstPass: Date | null }
+    opts: {
+      flag: boolean;
+      switchOn: boolean | null;
+      firstPass: Date | null;
+      lastPass?: Date | null;
+      error?: "no_folder" | "folder_missing" | "failed" | null;
+    }
   ): Promise<Org> {
     const org = await newOrg(trx);
     await upsertOrgFeature(trx, org.ctx, { flag: "sent_sync", enabled: opts.flag, setBy: "test", setAt: T });
@@ -273,7 +280,11 @@ describe("sentCoverage", () => {
       await insertSentSyncState(trx, org.ctx, org.mailboxId, { enabled: opts.switchOn });
       await trx
         .updateTable("mailbox_sent_sync")
-        .set({ first_pass_at: opts.switchOn ? opts.firstPass : null })
+        .set({
+          first_pass_at: opts.switchOn ? opts.firstPass : null,
+          last_pass_at: opts.switchOn ? (opts.lastPass === undefined ? opts.firstPass : opts.lastPass) : null,
+          last_error_code: opts.error ?? null,
+        })
         .where("mailbox_id", "=", org.mailboxId)
         .execute();
     }
@@ -283,15 +294,15 @@ describe("sentCoverage", () => {
   test("10 true only with the flag on, the switch on and a first pass", async () => {
     await withRollback(db, async (trx) => {
       const all = await sentOrg(trx, { flag: true, switchOn: true, firstPass: T });
-      expect(await sentCoverage(trx, all.ctx, all.mailboxId)).toBe(true);
+      expect(await sentCoverage(trx, all.ctx, all.mailboxId, T)).toBe(true);
       const flagOff = await sentOrg(trx, { flag: false, switchOn: true, firstPass: T });
-      expect(await sentCoverage(trx, flagOff.ctx, flagOff.mailboxId)).toBe(false);
+      expect(await sentCoverage(trx, flagOff.ctx, flagOff.mailboxId, T)).toBe(false);
       const switchOff = await sentOrg(trx, { flag: true, switchOn: false, firstPass: T });
-      expect(await sentCoverage(trx, switchOff.ctx, switchOff.mailboxId)).toBe(false);
+      expect(await sentCoverage(trx, switchOff.ctx, switchOff.mailboxId, T)).toBe(false);
       const noPass = await sentOrg(trx, { flag: true, switchOn: true, firstPass: null });
-      expect(await sentCoverage(trx, noPass.ctx, noPass.mailboxId)).toBe(false);
+      expect(await sentCoverage(trx, noPass.ctx, noPass.mailboxId, T)).toBe(false);
       const noState = await sentOrg(trx, { flag: true, switchOn: null, firstPass: null });
-      expect(await sentCoverage(trx, noState.ctx, noState.mailboxId)).toBe(false);
+      expect(await sentCoverage(trx, noState.ctx, noState.mailboxId, T)).toBe(false);
     });
   });
 
@@ -299,8 +310,44 @@ describe("sentCoverage", () => {
     await withRollback(db, async (trx) => {
       const covered = await sentOrg(trx, { flag: true, switchOn: true, firstPass: T });
       const other = await sentOrg(trx, { flag: true, switchOn: null, firstPass: null });
-      expect(await sentCoverage(trx, other.ctx, covered.mailboxId)).toBe(false);
-      expect(await sentCoverage(trx, covered.ctx, other.mailboxId)).toBe(false);
+      expect(await sentCoverage(trx, other.ctx, covered.mailboxId, T)).toBe(false);
+      expect(await sentCoverage(trx, covered.ctx, other.mailboxId, T)).toBe(false);
+    });
+  });
+
+  test("12 a Sent pass that ended with an error code gives no coverage, even when it is fresh", async () => {
+    await withRollback(db, async (trx) => {
+      for (const error of ["folder_missing", "no_folder", "failed"] as const) {
+        const org = await sentOrg(trx, { flag: true, switchOn: true, firstPass: T, error });
+        // `folder_missing` still sets `last_pass_at`: the pass ran at T, so only the error code shows the gap.
+        await trx
+          .updateTable("mailbox_sent_sync")
+          .set({ last_pass_at: T })
+          .where("mailbox_id", "=", org.mailboxId)
+          .execute();
+        expect(await sentCoverage(trx, org.ctx, org.mailboxId, T)).toBe(false);
+      }
+    });
+  });
+
+  test("13 a last pass older than a day gives no coverage; one at the edge does", async () => {
+    await withRollback(db, async (trx) => {
+      const edge = await sentOrg(trx, {
+        flag: true,
+        switchOn: true,
+        firstPass: T,
+        lastPass: new Date(T.getTime() - SENT_COVERAGE_FRESH_MS),
+      });
+      expect(await sentCoverage(trx, edge.ctx, edge.mailboxId, T)).toBe(true);
+      const stale = await sentOrg(trx, {
+        flag: true,
+        switchOn: true,
+        firstPass: T,
+        lastPass: new Date(T.getTime() - SENT_COVERAGE_FRESH_MS - 1),
+      });
+      expect(await sentCoverage(trx, stale.ctx, stale.mailboxId, T)).toBe(false);
+      const never = await sentOrg(trx, { flag: true, switchOn: true, firstPass: T, lastPass: null });
+      expect(await sentCoverage(trx, never.ctx, never.mailboxId, T)).toBe(false);
     });
   });
 });

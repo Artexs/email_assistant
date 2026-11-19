@@ -1,0 +1,217 @@
+import {
+  isValidSenderPattern,
+  suggestionReasonSchema,
+  type SuggestionKind,
+  type SuggestionReason,
+  type SuggestionScope,
+} from "@ea/core";
+import type { Transaction } from "kysely";
+
+import type { DB, Db, TenantContext } from "../../platform/db";
+import { auditEvents, recordAudit } from "../audit";
+import { addSenderRule } from "../config";
+
+import { senderFlags } from "./flags";
+import { rulePatternOf } from "./suggest";
+
+type DbOrTrx = Db | Transaction<DB>;
+
+export interface SuggestionDeps {
+  // A plain `Db` opens one transaction; a `Transaction` (a test) is the transaction.
+  db: DbOrTrx;
+  now(): Date;
+}
+
+export type SuggestionVia = "web" | "cli";
+
+export interface SuggestionCommand {
+  id: string;
+  // The user id of the owner; the audit row names it, and a row of a user that exists records it as `ended_by`.
+  actor: string;
+  via: SuggestionVia;
+}
+
+export type AcceptResult = "accepted" | "already" | "rule_limit" | "not_found";
+export type DismissResult = "dismissed" | "already" | "not_found";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function inTransaction<T>(db: DbOrTrx, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
+  return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
+}
+
+interface LockedRow {
+  id: string;
+  mailbox_id: string;
+  kind: SuggestionKind;
+  scope: SuggestionScope;
+  pattern: string | null;
+  status: string;
+}
+
+// The row of this organization, locked until the end of the transaction: Accept and Dismiss on one row run one after the
+// other, and the profile pass (which updates only a row that is still open) waits for it too.
+async function lockRow(trx: Transaction<DB>, ctx: TenantContext, id: string): Promise<LockedRow | undefined> {
+  if (!UUID.test(id)) return undefined;
+  const row = await trx
+    .selectFrom("sender_suggestions")
+    .select(["id", "mailbox_id", "kind", "scope", "pattern", "status"])
+    .where("id", "=", id)
+    .where("org_id", "=", ctx.orgId)
+    .forUpdate()
+    .executeTakeFirst();
+  // The table CHECKs hold the values of `kind` and `scope`.
+  return row === undefined
+    ? undefined
+    : { ...row, kind: row.kind as SuggestionKind, scope: row.scope as SuggestionScope };
+}
+
+async function endRow(
+  trx: Transaction<DB>,
+  ctx: TenantContext,
+  row: LockedRow,
+  status: "accepted" | "dismissed" | "withdrawn",
+  command: { actor: string; now: Date }
+): Promise<void> {
+  await trx
+    .updateTable("sender_suggestions")
+    .set({
+      status,
+      pattern: null,
+      ended_at: command.now,
+      ended_by: status !== "withdrawn" && UUID.test(command.actor) ? command.actor : null,
+    })
+    .where("id", "=", row.id)
+    .where("org_id", "=", ctx.orgId)
+    .where("status", "=", "open")
+    .execute();
+}
+
+async function isActiveMailbox(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string): Promise<boolean> {
+  const row = await trx
+    .selectFrom("mailboxes")
+    .select("status")
+    .where("id", "=", mailboxId)
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirst();
+  return row?.status === "active";
+}
+
+// Accept: the owner makes the suggestion a sender rule of its mailbox. The route checks the role; the command trusts it. One
+// transaction: lock the row, then `addSenderRule` (`added` or `exists` both end the row as `accepted`), then the audit row.
+// The audit data holds the mailbox, kind, scope and channel, never the pattern or the key. `not_found` also answers a flag
+// that is off, another organization's id, and a mailbox that is not `active` (its profile is frozen, so the advice is not
+// current; the row stays open and expires). At the rule limit the row stays open and nothing is written.
+export async function acceptSuggestion(
+  deps: SuggestionDeps,
+  ctx: TenantContext,
+  command: SuggestionCommand
+): Promise<AcceptResult> {
+  const now = deps.now();
+  return inTransaction(deps.db, async (trx) => {
+    if (!(await senderFlags(trx, ctx)).suggestions) return "not_found";
+    const row = await lockRow(trx, ctx, command.id);
+    if (row === undefined) return "not_found";
+    if (row.status !== "open") return "already";
+    if (row.pattern === null || !(await isActiveMailbox(trx, ctx, row.mailbox_id))) return "not_found";
+    const pattern = rulePatternOf(row.pattern);
+    if (!isValidSenderPattern(pattern)) {
+      // No rule can be made from it: the row ends and the owner never sees it again.
+      await endRow(trx, ctx, row, "withdrawn", { actor: command.actor, now });
+      return "not_found";
+    }
+    const added = await addSenderRule(trx, ctx, {
+      mailboxId: row.mailbox_id,
+      pattern,
+      kind: row.kind,
+      actor: command.actor,
+      now,
+    });
+    if (added.kind === "limit") return "rule_limit";
+    if (added.kind === "mailbox_not_found") return "not_found";
+    await endRow(trx, ctx, row, "accepted", { actor: command.actor, now });
+    await recordAudit(trx, ctx, {
+      actor: command.actor,
+      event: auditEvents.suggestionAccepted,
+      data: { mailbox_id: row.mailbox_id, kind: row.kind, scope: row.scope, via: command.via },
+      at: now,
+    });
+    return "accepted";
+  });
+}
+
+// Dismiss: the key and kind stay hidden for 90 days (the generator reads the dismissed rows). The pattern is cleared.
+export async function dismissSuggestion(
+  deps: SuggestionDeps,
+  ctx: TenantContext,
+  command: SuggestionCommand
+): Promise<DismissResult> {
+  const now = deps.now();
+  return inTransaction(deps.db, async (trx) => {
+    if (!(await senderFlags(trx, ctx)).suggestions) return "not_found";
+    const row = await lockRow(trx, ctx, command.id);
+    if (row === undefined) return "not_found";
+    if (row.status !== "open") return "already";
+    await endRow(trx, ctx, row, "dismissed", { actor: command.actor, now });
+    await recordAudit(trx, ctx, {
+      actor: command.actor,
+      event: auditEvents.suggestionDismissed,
+      data: { mailbox_id: row.mailbox_id, kind: row.kind, scope: row.scope, via: command.via },
+      at: now,
+    });
+    return "dismissed";
+  });
+}
+
+export interface OpenSuggestion {
+  id: string;
+  kind: SuggestionKind;
+  scope: SuggestionScope;
+  // The address or `@domain`: only an open row has one.
+  pattern: string;
+  reason: SuggestionReason;
+  createdAt: Date;
+}
+
+// The open suggestions of one mailbox, oldest first. Empty while the flag `sender_suggestions` is off, and for a mailbox that is
+// not `active`: the profile behind the reasons is frozen there.
+export async function listOpenSuggestions(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string
+): Promise<OpenSuggestion[]> {
+  if (!(await senderFlags(db, ctx)).suggestions) return [];
+  const mailbox = await db
+    .selectFrom("mailboxes")
+    .select("status")
+    .where("id", "=", mailboxId)
+    .where("org_id", "=", ctx.orgId)
+    .executeTakeFirst();
+  if (mailbox?.status !== "active") return [];
+  const rows = await db
+    .selectFrom("sender_suggestions")
+    .select(["id", "kind", "scope", "pattern", "reason", "created_at"])
+    .where("org_id", "=", ctx.orgId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("status", "=", "open")
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  const items: OpenSuggestion[] = [];
+  for (const row of rows) {
+    if (row.pattern === null) continue;
+    items.push({
+      id: row.id,
+      kind: row.kind as SuggestionKind,
+      scope: row.scope as SuggestionScope,
+      pattern: row.pattern,
+      reason: suggestionReasonSchema.parse(row.reason),
+      createdAt: row.created_at,
+    });
+  }
+  return items;
+}
+
+export async function countOpenSuggestions(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<number> {
+  return (await listOpenSuggestions(db, ctx, mailboxId)).length;
+}

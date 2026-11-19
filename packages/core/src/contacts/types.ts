@@ -65,4 +65,6 @@ export interface SuggestionContext {
   createdLast7Days: number;
   sentCoverage: boolean;
   keyOf(value: string): string;
+  // Optional: false drops a candidate pattern (an address or `@domain`) that cannot become a sender rule.
+  eligible?(pattern: string): boolean;
 }

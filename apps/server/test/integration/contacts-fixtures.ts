@@ -6,7 +6,7 @@ import { refreshMailboxProfiles, type RefreshDeps } from "../../src/modules/cont
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import { senderKeyHash } from "../../src/platform/crypto";
-import type { DB, TenantContext } from "../../src/platform/db";
+import type { DB, Db, TenantContext } from "../../src/platform/db";
 
 import { createOrgWithMailbox, testCapabilities, type SeededMail } from "./fixtures";
 
@@ -79,4 +79,38 @@ export async function secondMailbox(trx: Trx, org: Org): Promise<Org> {
     folderMap: {},
   });
   return { ctx: org.ctx, mailboxId: id, address };
+}
+
+// A suggestion row of the table, as the generator would have written it.
+export function insertSuggestion(
+  trx: Trx | Db,
+  org: Org,
+  over: {
+    value: string;
+    kind: "vip" | "whitelist" | "blocklist";
+    scope?: "address" | "domain";
+    status?: "open" | "dismissed";
+    createdAt?: Date;
+    endedAt?: Date;
+    mailboxId?: string;
+  }
+) {
+  const open = (over.status ?? "open") === "open";
+  return trx
+    .insertInto("sender_suggestions")
+    .values({
+      org_id: org.ctx.orgId,
+      mailbox_id: over.mailboxId ?? org.mailboxId,
+      key_hash: hashOf(org.ctx.orgId, over.value),
+      scope: over.scope ?? "address",
+      kind: over.kind,
+      pattern: open ? over.value : null,
+      status: over.status ?? "open",
+      created_at: over.createdAt ?? ago(2),
+      ended_at: open ? null : (over.endedAt ?? ago(1)),
+      reason: JSON.stringify({ received: 8, answered: 6 }),
+    })
+    .returning("id")
+    .executeTakeFirstOrThrow()
+    .then((row) => row.id);
 }
