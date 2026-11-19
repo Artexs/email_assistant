@@ -403,6 +403,11 @@ describe("the gates of the sample routes", () => {
     expect(await requestsOf(db, w.box)).toEqual([]);
   });
 
+  test("the flag is checked before the model: flag off and no model client still answers 404", async () => {
+    const w = await world({ flags: { reply_drafts: false }, samples: false });
+    expect((await ask(w)).status).toBe(404);
+  });
+
   test("with no model client the run answers 409 llm_off and queues nothing", async () => {
     const w = await world({ samples: false });
     await fourMails(w.box);
