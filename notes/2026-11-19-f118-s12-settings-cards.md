@@ -28,3 +28,13 @@ Ticket: `spec/features/active/F118-e9b-phone-channel-pwa-push-telegram-detail/` 
 
 ## Proof logs
 Under `.f118s12-logs/` in the job worktree (untracked, in the shared git exclude): `mutation-*.log` (c01–c09 server and core guards of the carry-over; u01–u03 and e01–e06 panel guards), `e2e-*.log`, `proof-*.log`, `int-env-i.log`.
+
+## Review fixes (PASS c84414fd, fixed in ddc5e600)
+- NOTE 1: under the lock a re-link or a dialog save no longer overwrites a stored `full`. `linkDetailBody` (TelegramDetail.tsx) sends no `detail` under the lock unless the user picked `minimal`; the dialog Save needs a change from what the card shows (`effectiveDetail`). Server test 26 (link without `detail` under the lock keeps `full`); e2e `the lock does not overwrite a stored full`. The server stays as is: a body `minimal` under the lock is an explicit choice and is stored.
+- Test gaps: e09 (linked card shows the effective level and `tgd_locked_now`), e08 (link step follows a lock that comes after a pick of `full`), e11 (lock switch disabled in a suspended organization), flag-off e2e asserts no request to the detail, lock, notify or push routes.
+- NOTE 2: the member lock card shows the state only (no `tgl_help`, no `set_owner_only`).
+- NOTE 3: `nr_help` names the report channel (digests and reports never go to the phone).
+- NOTE 4 (kept as designed): the "(default)" mark cannot tell a stored value from the default, and the value that is the default now cannot be pinned (`routesPatchOf` drops it). Also in the stage 13 file under "Carry-over".
+- NOTE 9: the legend of the choice already is `tgd_title` ("What Telegram gets"); it repeats the title of the change dialog only in the dialog. Left as is: it reads fine in the link step, and a fieldset needs a legend.
+- Texts: nine Polish and English fixes from the review (`tgl_help`, `nr_help`, `tgd_full_option`, `tgd_full_short`, `tgd_locked_now`, `tgd_minimal_text`, `tgd_full_text`, `tgd_current_label`, `tgl_title`, `nr_both`).
+- A fresh worktree has no `.env` or `node_modules`: run `bash scripts/limen-prepare.sh` (needs `LIMEN_JOB_ID`).
