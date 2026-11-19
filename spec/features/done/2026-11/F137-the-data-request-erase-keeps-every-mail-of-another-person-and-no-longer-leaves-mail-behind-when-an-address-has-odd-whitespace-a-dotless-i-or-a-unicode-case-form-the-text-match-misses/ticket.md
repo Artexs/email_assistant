@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-19
 ---
 
 # F137 · the data request erase keeps every mail of another person and leaves no mail behind for odd whitespace, a dotless i or a Unicode case form
