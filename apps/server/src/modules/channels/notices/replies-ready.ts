@@ -48,6 +48,8 @@ async function detectRepliesReady(run: OrgRun): Promise<void> {
           locale: owner.locale,
           kind: "replies_ready",
           dedupKey: `replies_ready:${owner.userId}:${first.id}`,
+          // The newest reply that waits made the count what it is.
+          eventAt: new Date(Math.max(...fresh.map((send) => send.updated_at.getTime()))),
           view: {
             count: open.length,
             now,

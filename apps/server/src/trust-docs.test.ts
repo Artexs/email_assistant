@@ -63,7 +63,8 @@ describe("the trust-ladder docs name the code", () => {
   });
 
   test("the one-click limits stay on the page", () => {
-    expect(page).toContain("does NOT check that the DKIM signature covers");
+    expect(page).toContain("needs EVERY stored signature of the passing `header.d` to name both");
+    expect(page).not.toContain("does NOT check that the DKIM signature covers");
     expect(page).toContain("NEWEST mail of the sender");
     expect(page).toContain("NAT64 `64:ff9b::/96` is refused");
     expect(page).toContain("counts a domain that the sender chooses");

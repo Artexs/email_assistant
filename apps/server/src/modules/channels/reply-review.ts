@@ -68,7 +68,7 @@ export type ReviewCardResult = "queued" | "waiting" | "exists";
 export async function queueReviewCard(
   db: DbOrTrx,
   ctx: TenantContext,
-  owner: LinkedChat,
+  owner: Pick<LinkedChat, "userId" | "locale">,
   send: SendRow,
   input: { now: Date; timeZone: string; panelBase?: string }
 ): Promise<ReviewCardResult> {
@@ -90,6 +90,8 @@ export async function queueReviewCard(
       dedupKey: reviewCardKey(send.id, earlier.length + 1),
       ...(send.email_id === null ? {} : { emailId: send.email_id }),
       view: { actionId: send.id, view, now: input.now, timeZone: input.timeZone },
+      // The answer to a tap in Telegram: it stays in that chat, the phone gets no copy.
+      only: "telegram",
     },
     input.now
   );
@@ -105,7 +107,7 @@ export type NextReviewResult = { kind: "card"; result: ReviewCardResult } | { ki
 export async function queueNextReviewCard(
   deps: { db: DbOrTrx; webBaseUrl?: string },
   ctx: TenantContext,
-  owner: LinkedChat,
+  owner: Pick<LinkedChat, "userId" | "locale">,
   opts: { afterId?: string; now: Date }
 ): Promise<NextReviewResult> {
   const anchor = opts.afterId === undefined ? undefined : await getSend(deps.db, ctx, opts.afterId);
@@ -139,7 +141,7 @@ export async function queueNextReviewCard(
 export async function queueReviewCardOfSend(
   deps: { db: DbOrTrx; webBaseUrl?: string },
   ctx: TenantContext,
-  owner: LinkedChat,
+  owner: Pick<LinkedChat, "userId" | "locale">,
   sendId: string,
   now: Date
 ): Promise<ReviewCardResult | "none"> {

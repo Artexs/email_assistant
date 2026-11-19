@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { membershipRoleSchema, userLocaleSchema, type MembershipRole, type UserLocale } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { SecretBox } from "../../../platform/crypto";
@@ -164,6 +165,63 @@ export async function listLiveDeviceIds(
     .orderBy("push_subscriptions.id")
     .execute();
   return rows.map((row) => ({ id: row.id, createdAt: row.created_at }));
+}
+
+// A member who can be reached by push only: a live device and no linked Telegram chat. `since` is the oldest live device.
+export interface PushOnlyMember {
+  orgId: string;
+  userId: string;
+  role: MembershipRole;
+  locale: UserLocale;
+  since: Date;
+}
+
+// The push-only members of the organizations that are not suspended (`orgId` narrows to one). It reads no flag: the caller
+// asks `isFeatureOn(web_push)` for each organization. Oldest first by organization and user.
+export async function listPushOnlyMembers(db: DbOrTrx, opts: { now: Date; orgId?: string }): Promise<PushOnlyMember[]> {
+  let query = db
+    .selectFrom("push_subscriptions as p")
+    .innerJoin("auth_sessions as s", (join) =>
+      join.onRef("s.id", "=", "p.session_id").onRef("s.user_id", "=", "p.user_id")
+    )
+    .innerJoin("memberships as m", (join) =>
+      join.onRef("m.org_id", "=", "p.org_id").onRef("m.user_id", "=", "p.user_id")
+    )
+    .innerJoin("users as u", "u.id", "p.user_id")
+    .innerJoin("organizations as o", "o.id", "p.org_id")
+    .select(["p.org_id", "p.user_id", "m.role", "u.locale"])
+    .select((eb) => eb.fn.min("p.created_at").as("since"))
+    .where("s.expires_at", ">", opts.now)
+    .where("o.plan", "<>", "suspended")
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom("chat_links as c")
+            .select("c.user_id")
+            .whereRef("c.org_id", "=", "p.org_id")
+            .whereRef("c.user_id", "=", "p.user_id")
+            .where("c.channel", "=", "telegram")
+        )
+      )
+    )
+    .groupBy(["p.org_id", "p.user_id", "m.role", "u.locale"]);
+  if (opts.orgId !== undefined) query = query.where("p.org_id", "=", opts.orgId);
+  const rows = await query.orderBy("p.org_id").orderBy("p.user_id").execute();
+  return rows.flatMap((row) =>
+    row.since === null
+      ? []
+      : [
+          {
+            orgId: row.org_id,
+            userId: row.user_id,
+            role: membershipRoleSchema.parse(row.role),
+            // A user without a locale gets Polish, as the other notices do.
+            locale: userLocaleSchema.nullable().parse(row.locale) ?? "pl",
+            since: row.since,
+          },
+        ]
+  );
 }
 
 export interface DeviceView {

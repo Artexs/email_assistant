@@ -10,18 +10,18 @@ import { draftableMails } from "../../replies";
 import { isFeatureOn } from "../../tenancy";
 import { listTriagedBetween, suspiciousReasonsOf, suspiciousReasonsToShow } from "../../triage";
 import { replyConsentOf } from "../consent";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
 export const URGENT_LOOKBACK_MS = 24 * 3_600_000;
 export const URGENT_LIMIT = 200;
 
-// Every linked member gets an urgent notice for mail that was triaged after the link.
+// Every recipient gets an urgent notice for mail that was triaged after the link (a push-only recipient: after the first device).
 async function detectUrgent(
   db: DbOrTrx,
   ctx: TenantContext,
-  members: LinkedChat[],
+  members: NoticeRecipient[],
   pausedMailboxIds: Set<string>,
   timeZone: string,
   now: Date,
@@ -29,7 +29,8 @@ async function detectUrgent(
 ): Promise<void> {
   const lookbackStart = now.getTime() - URGENT_LOOKBACK_MS;
   // Mail triaged before a resume gets no urgent notice.
-  const sinceOf = (member: LinkedChat) => Math.max(member.linkedAt.getTime(), lookbackStart, resumedAt?.getTime() ?? 0);
+  const sinceOf = (member: NoticeRecipient) =>
+    Math.max(member.since.getTime(), lookbackStart, resumedAt?.getTime() ?? 0);
   const earliest = Math.min(...members.map(sinceOf));
   const triaged = (
     await listTriagedBetween(
@@ -140,6 +141,7 @@ async function detectUrgent(
             kind: "urgent",
             dedupKey: `urgent:${row.email_id}`,
             emailId: row.email_id,
+            eventAt: row.triaged_at,
             view: {
               emailId: row.email_id,
               from: row.from_address,

@@ -1,7 +1,7 @@
 import { type TenantContext } from "../../../platform/db";
 import { listAnsweredUnnotified, markAnsweredNotified } from "../../delegation";
 import { getEmailMeta, isSyntheticMessageId } from "../../mail";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
@@ -9,7 +9,7 @@ import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detect
 async function detectDelegationAnswered(
   db: DbOrTrx,
   ctx: TenantContext,
-  members: LinkedChat[],
+  members: NoticeRecipient[],
   timeZone: string,
   now: Date
 ): Promise<void> {
@@ -38,6 +38,7 @@ async function detectDelegationAnswered(
               dedupKey: `delegation_answered:${row.id}`,
               // The delegation's own mail: the answer mail can be gone after a retention delete.
               emailId: row.email_id,
+              eventAt: row.answered_at ?? now,
               view,
             },
             now

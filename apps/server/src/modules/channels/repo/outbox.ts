@@ -57,6 +57,8 @@ export interface NewOutboxRow {
   locale: UserLocale;
   // Absent = `telegram`. A `mail` row is the report mail (`mailboxId` names the mailbox it goes into).
   channel?: NoticeChannel;
+  // Only a `push` row: the device of the row (`outbox_push_subscription_channel_check`).
+  pushSubscriptionId?: string;
   createdAt: Date;
   nextAttemptAt: Date;
 }
@@ -77,6 +79,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       view: JSON.stringify(row.view),
       locale: row.locale,
       channel: row.channel ?? "telegram",
+      push_subscription_id: row.pushSubscriptionId ?? null,
       status: "pending",
       attempts: 0,
       created_at: row.createdAt,

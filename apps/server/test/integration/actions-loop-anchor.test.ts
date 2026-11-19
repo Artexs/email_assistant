@@ -255,7 +255,7 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       });
       expect(results.map((send) => send.id).sort()).toEqual([ended.sendId, done.sendId].sort());
       expect(await listFailedFollowUps(trx, a.ctx, { limit: 50 })).toEqual([
-        { id: failedLoop.sendId, loopId, unknown: true },
+        { id: failedLoop.sendId, loopId, unknown: true, updatedAt: expect.any(Date) },
       ]);
       expect(await listFailedFollowUps(trx, b.ctx, { limit: 50 })).toEqual([]);
     });

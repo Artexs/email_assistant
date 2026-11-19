@@ -1,6 +1,6 @@
 // `MailProvider` has IMAP semantics (UIDs, flags, APPEND) by design. Another backend gets an adapter that maps its ids
 // to this shape, or a port v2 with its own ADR (architecture review §3.7).
-import type { AuthErrorReason as CoreAuthErrorReason } from "@ea/core";
+import type { AuthErrorReason as CoreAuthErrorReason, DkimSignature } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
@@ -106,6 +106,11 @@ export interface CapturedHeaders {
   listUnsubscribe: string | null;
   /** RFC 8058: the topmost `List-Unsubscribe-Post` value is `List-Unsubscribe=One-Click` (trimmed, any case). */
   listUnsubscribePost: boolean;
+  /**
+   * The signing domain and the signed header names of each `DKIM-Signature` header (`dkimSignaturesOf`). Empty when the
+   * mail has none or none that can be trusted (too many, too long, or one does not parse). Never the signature value.
+   */
+  dkimSignatures: DkimSignature[];
   listId: string | null;
   /** A token: lower case, `^[a-z0-9-]{1,40}$`, else "other". */
   autoSubmitted: string | null;

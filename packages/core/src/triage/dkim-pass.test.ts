@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import { hasTrustedAlignedDkimPass } from "./dkim-pass";
+import { hasCoveredDkimPass, hasTrustedAlignedDkimPass } from "./dkim-pass";
+import type { DkimSignature } from "./dkim-signature";
 
 const TRUSTED = ["interia.pl"];
 
@@ -129,5 +130,69 @@ describe("hasTrustedAlignedDkimPass", () => {
     }
     // A domain that is not a shared suffix keeps the old rule.
     expect(hasTrustedAlignedDkimPass("interia.pl; dkim=pass header.d=c.example", TRUSTED, "news.c.example")).toBe(true);
+  });
+});
+
+describe("hasCoveredDkimPass", () => {
+  const PASS = "interia.pl; dkim=pass header.d=c.example";
+  const full = ["from", "list-unsubscribe", "list-unsubscribe-post"];
+  const covered = (signatures: DkimSignature[] | null, auth: string | null = PASS, from = "c.example") =>
+    hasCoveredDkimPass(auth, TRUSTED, from, signatures);
+
+  test("1: a pass and a signature of that domain that names both headers", () => {
+    expect(covered([{ d: "c.example", h: full }])).toBe(true);
+  });
+
+  test("2: a signature without `list-unsubscribe-post` or without `list-unsubscribe` is not enough", () => {
+    expect(covered([{ d: "c.example", h: ["from", "list-unsubscribe"] }])).toBe(false);
+    expect(covered([{ d: "c.example", h: ["from", "list-unsubscribe-post"] }])).toBe(false);
+    expect(covered([{ d: "c.example", h: ["from"] }])).toBe(false);
+  });
+
+  test("3: a covering signature of another domain does not count", () => {
+    expect(covered([{ d: "other.example", h: full }])).toBe(false);
+    expect(covered([{ d: "news.c.example", h: full }])).toBe(false);
+    expect(
+      covered([{ d: "c.example", h: full }], "interia.pl; dkim=pass header.d=other.example", "other.example")
+    ).toBe(false);
+  });
+
+  test("4: no proof: null (old mail), an empty list, and no pass", () => {
+    expect(covered(null)).toBe(false);
+    expect(covered([])).toBe(false);
+    expect(covered([{ d: "c.example", h: full }], null)).toBe(false);
+    expect(covered([{ d: "c.example", h: full }], "evil.example; dkim=pass header.d=c.example")).toBe(false);
+    expect(covered([{ d: "c.example", h: full }], "interia.pl; dkim=fail header.d=c.example")).toBe(false);
+  });
+
+  test("5: EVERY signature of the passing domain must cover: a covering extra header cannot hide an uncovered one", () => {
+    const narrow = { d: "c.example", h: ["from"] };
+    const wide = { d: "c.example", h: full };
+    expect(covered([narrow, wide])).toBe(false);
+    expect(covered([wide, narrow])).toBe(false);
+    expect(covered([wide, wide])).toBe(true);
+    // A signature of another domain next to it changes nothing.
+    expect(covered([wide, { d: "x.example", h: ["from"] }])).toBe(true);
+  });
+
+  test("6: a parent domain: header.d of the parent and its signature count for a sub-domain sender", () => {
+    expect(covered([{ d: "c.example", h: full }], PASS, "news.c.example")).toBe(true);
+    expect(
+      covered([{ d: "news.c.example", h: full }], "interia.pl; dkim=pass header.d=news.c.example", "a.news.c.example")
+    ).toBe(true);
+  });
+
+  test("7: with two passes, one covered pass is enough; a pass of an unaligned domain adds nothing", () => {
+    const auth = "interia.pl; dkim=pass header.d=esp.example; dkim=pass header.d=c.example";
+    expect(
+      covered(
+        [
+          { d: "c.example", h: full },
+          { d: "esp.example", h: ["from"] },
+        ],
+        auth
+      )
+    ).toBe(true);
+    expect(covered([{ d: "esp.example", h: full }], auth)).toBe(false);
   });
 });

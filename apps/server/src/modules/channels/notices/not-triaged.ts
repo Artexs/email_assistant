@@ -58,6 +58,8 @@ async function detectNotTriaged(run: OrgRun): Promise<void> {
                 kind: "not_triaged",
                 dedupKey: `not_triaged:${mail.id}`,
                 emailId: mail.id,
+                // The notice is about mail that waits during the pause: the later of the two starts.
+                eventAt: new Date(Math.max(since.getTime(), mail.receivedAt.getTime())),
                 mailboxId: mailbox.id,
                 view: { emailId: mail.id, mailboxId: mailbox.id, sender: mail.fromAddress },
               },

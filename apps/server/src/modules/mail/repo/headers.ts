@@ -1,3 +1,4 @@
+import { dkimSignaturesSchema, type DkimSignature } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
@@ -8,9 +9,11 @@ import type { DbOrTrx } from "./shared";
 
 const RETENTION_BATCH = 1000;
 
-// `listUnsubscribePost` is null on a row stored before the header was captured.
-export interface EmailHeadersRow extends Omit<CapturedHeaders, "listUnsubscribePost"> {
+// `listUnsubscribePost` and `dkimSignatures` are null on a row stored before they were captured, and `dkimSignatures`
+// after the retention clear.
+export interface EmailHeadersRow extends Omit<CapturedHeaders, "listUnsubscribePost" | "dkimSignatures"> {
   listUnsubscribePost: boolean | null;
+  dkimSignatures: DkimSignature[] | null;
   emailId: string;
   capturedAt: Date;
   textsClearedAt: Date | null;
@@ -34,13 +37,13 @@ export async function insertEmailHeaders(
   const result = await sql`
     INSERT INTO email_headers (
       email_id, org_id, from_name, reply_to, return_path, auth_results, list_unsubscribe, list_unsubscribe_post,
-      list_id, auto_submitted, precedence, has_calendar, attachments, attachment_count, links, link_count,
+      dkim_signatures, list_id, auto_submitted, precedence, has_calendar, attachments, attachment_count, links, link_count,
       parts_known, captured_at
     )
     SELECT
       e.id, e.org_id, ${capture.fromName}::text, ${capture.replyTo}::text[], ${capture.returnPath}::text,
       ${capture.authResults}::text, ${capture.listUnsubscribe}::text,
-      ${capture.listUnsubscribePost}::boolean, ${capture.listId}::text,
+      ${capture.listUnsubscribePost}::boolean, ${JSON.stringify(capture.dkimSignatures)}::jsonb, ${capture.listId}::text,
       ${capture.autoSubmitted}::text, ${capture.precedence}::text, ${capture.hasCalendar}::boolean,
       ${JSON.stringify(capture.attachments)}::jsonb, ${capture.attachmentCount}::integer,
       ${JSON.stringify(capture.links)}::jsonb, ${capture.linkCount}::integer,
@@ -72,6 +75,7 @@ export async function getEmailHeaders(
     authResults: row.auth_results,
     listUnsubscribe: row.list_unsubscribe,
     listUnsubscribePost: row.list_unsubscribe_post,
+    dkimSignatures: row.dkim_signatures === null ? null : dkimSignaturesSchema.parse(row.dkim_signatures),
     listId: row.list_id,
     autoSubmitted: row.auto_submitted,
     precedence: row.precedence,
@@ -126,6 +130,7 @@ export async function clearCapturedHeaders(
         return_path: null,
         auth_results: null,
         list_unsubscribe: null,
+        dkim_signatures: null,
         list_id: null,
         attachments: sql`'[]'::jsonb`,
         links: sql`'[]'::jsonb`,

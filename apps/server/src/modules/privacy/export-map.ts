@@ -125,6 +125,7 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "auth_results",
     "list_unsubscribe",
     "list_unsubscribe_post",
+    "dkim_signatures",
     "list_id",
     "auto_submitted",
     "precedence",
