@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-19
 ---
 
 # F104 · E5a Read Sent
