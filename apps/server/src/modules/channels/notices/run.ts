@@ -7,8 +7,8 @@ import { createLog } from "../../../platform/log";
 import { type MailboxSummary, type TestMailRule } from "../../mail";
 import { type TrustEvidenceReader } from "../../reports";
 import { type LlmPause, type TriageScope } from "../../triage";
+import { type NoticeRecipient } from "../notice-fan-out";
 import { queueNotice, type QueueNoticeInput } from "../notice-queue";
-import { type LinkedChat } from "../port";
 import { type ReportMember } from "../report-members";
 
 export const log = createLog("channels");
@@ -41,8 +41,8 @@ export interface OrgRun {
   now: Date;
   timeZone: string;
   resumedAt: Date | null;
-  members: LinkedChat[];
-  owners: LinkedChat[];
+  members: NoticeRecipient[];
+  owners: NoticeRecipient[];
   // The members of the organization that a report goes to: a linked chat, or a mail channel with a report mailbox.
   reportMembers: ReportMember[];
   mailboxes: MailboxSummary[];

@@ -1,6 +1,6 @@
 import { type TenantContext } from "../../../platform/db";
 import { type MailboxSummary } from "../../mail";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 import { cancelPendingOutbox, listSentStaleEpisodes } from "../repo";
 
 import { NoticeDeps, queue, warnSkipped, type Detector } from "./run";
@@ -11,8 +11,8 @@ export const STALE_GRACE_AFTER_START_MS = 10 * 60_000;
 async function detectSync(
   deps: NoticeDeps,
   ctx: TenantContext,
-  members: LinkedChat[],
-  owners: LinkedChat[],
+  members: NoticeRecipient[],
+  owners: NoticeRecipient[],
   mailbox: MailboxSummary,
   timeZone: string,
   now: Date,
@@ -50,6 +50,13 @@ async function detectSync(
             kind: "sync_stale",
             dedupKey: key,
             mailboxId: mailbox.id,
+            // The sync became late 30 minutes after the last one (a mailbox that never synced: after its last start).
+            eventAt: new Date(
+              (
+                mailbox.last_synced_at ??
+                new Date(Math.max(mailbox.status_changed_at.getTime(), mailbox.created_at.getTime()))
+              ).getTime() + SYNC_LATE_MS
+            ),
             view: { address: mailbox.address, lastSyncedAt: mailbox.last_synced_at, now, timeZone },
           },
           now
@@ -79,6 +86,7 @@ async function detectSync(
           kind: "sync_ok",
           dedupKey: `sync_ok:${mailbox.id}:${episode}`,
           mailboxId: mailbox.id,
+          eventAt: lastSyncedAt,
           view: { address: mailbox.address, lastSyncedAt, now, timeZone },
         },
         now

@@ -25,6 +25,7 @@ export const hostBlockedDetector: Detector = {
               kind: "host_blocked",
               dedupKey: key,
               mailboxId: mailbox.id,
+              eventAt: mailbox.status_changed_at,
               view: {
                 address: mailbox.address,
                 since: mailbox.status_changed_at,

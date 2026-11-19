@@ -12,6 +12,8 @@ export {
   endpointHash,
   listDeviceViews,
   listLiveDeviceIds,
+  listPushOnlyMembers,
+  type PushOnlyMember,
   loadDeviceSecret,
   lockPushUser,
   markPushError,

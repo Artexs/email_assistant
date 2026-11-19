@@ -4,7 +4,7 @@ import { type Db, type TenantContext } from "../../../platform/db";
 import { listFailedFollowUps, listFailedUnnotified, markNotified, markResultNotified } from "../../actions";
 import { isSyntheticMessageId } from "../../mail";
 import { isFeatureOn } from "../../tenancy";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 
 import { panelListUrlOf } from "./approval";
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
@@ -17,7 +17,12 @@ function isMailboxActionType(type: string): type is (typeof MAILBOX_ACTION_TYPES
 }
 
 // Owners get one notice per failed action; the dedup key and `notified_at` keep it single.
-async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: LinkedChat[], now: Date): Promise<void> {
+async function detectActionFailed(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  owners: NoticeRecipient[],
+  now: Date
+): Promise<void> {
   const failed = await listFailedUnnotified(db, ctx, { limit: ACTION_FAILED_LIMIT });
   for (const action of failed) {
     const run = async (trx: DbOrTrx) => {
@@ -57,6 +62,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
               kind: "action_failed",
               dedupKey: `action_failed:${action.id}`,
               emailId: action.email_id,
+              eventAt: action.updated_at,
               view,
             },
             now
@@ -80,7 +86,7 @@ async function detectActionFailed(db: DbOrTrx, ctx: TenantContext, owners: Linke
 async function detectFailedFollowUps(
   db: DbOrTrx,
   ctx: TenantContext,
-  owners: LinkedChat[],
+  owners: NoticeRecipient[],
   now: Date,
   webBaseUrl: string | undefined
 ): Promise<void> {
@@ -101,6 +107,7 @@ async function detectFailedFollowUps(
             kind: "action_failed",
             dedupKey: `action_failed:${send.id}`,
             loopId: send.loopId,
+            eventAt: send.updatedAt,
             view: {
               followUp: { cause: send.unknown ? "unknown" : "failed", ...(panelUrl === undefined ? {} : { panelUrl }) },
             },

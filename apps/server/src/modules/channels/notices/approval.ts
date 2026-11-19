@@ -37,9 +37,9 @@ import {
   replyFactsOf,
 } from "../../mail";
 import { getOrganization, isFeatureOn, listMemberships } from "../../tenancy";
-import { type LinkedChat } from "../port";
+import { type NoticeRecipient } from "../notice-fan-out";
 
-import { queueLoopConsentLines, splitByLoopConsent } from "./loop-consent";
+import { queueLoopConsentLines, splitByLoopConsent, type LoopGate } from "./loop-consent";
 import { APPROVAL_LIMIT, DbOrTrx, inTransaction, queue, warnSkipped, type Detector } from "./run";
 
 // The panel page of a send: `<WEB_BASE_URL>/approvals?id=<send id>`, with no double slash after a trailing `/`.
@@ -174,7 +174,7 @@ export function forgetRefusedCards(): void {
 async function detectApprovals(
   db: DbOrTrx,
   ctx: TenantContext,
-  owners: LinkedChat[],
+  owners: NoticeRecipient[],
   timeZone: string,
   now: Date,
   webBaseUrl: string | undefined
@@ -187,9 +187,14 @@ async function detectApprovals(
   for (const row of rows) {
     try {
       // A follow-up card names recipients of the owner's own sent mail: the consent gate splits the owners.
-      const gate = row.loop_id === null ? { covered: owners, withheld: [] } : await splitByLoopConsent(db, ctx, owners);
+      // The send began to wait when its row last changed.
+      const eventAt = row.updated_at;
+      const gate: LoopGate =
+        row.loop_id === null
+          ? { covered: owners, withheld: [], pushWithheld: [] }
+          : await splitByLoopConsent(db, ctx, owners, { kind: "approval", eventAt, now });
       const noticeView =
-        gate.covered.length === 0
+        gate.covered.length === 0 && gate.pushWithheld.length === 0
           ? undefined
           : {
               actionId: row.id,
@@ -199,8 +204,8 @@ async function detectApprovals(
             };
       await inTransaction(db, async (trx) => {
         if (noticeView !== undefined) {
-          for (const owner of gate.covered) {
-            await queue(
+          const queueFor = (owner: NoticeRecipient, only?: "push") =>
+            queue(
               trx,
               ctx,
               {
@@ -210,11 +215,14 @@ async function detectApprovals(
                 dedupKey: `approval:${row.id}`,
                 ...(row.email_id === null ? {} : { emailId: row.email_id }),
                 ...(row.loop_id === null ? {} : { loopId: row.loop_id }),
+                eventAt,
+                ...(only === undefined ? {} : { only }),
                 view: noticeView,
               },
               now
             );
-          }
+          for (const owner of gate.covered) await queueFor(owner);
+          for (const owner of gate.pushWithheld) await queueFor(owner, "push");
         }
         await queueLoopConsentLines(trx, ctx, gate.withheld, {
           about: "approval",
