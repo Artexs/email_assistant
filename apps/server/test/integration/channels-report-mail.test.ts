@@ -131,7 +131,7 @@ describe("digest rows by mail (steps 1, tests 1 to 3 and 6)", () => {
       // The Telegram row also holds the counts of the minimal level; the rest of the two views is the same.
       const { minimal, ...telegramView } = rows[0]?.view as Record<string, unknown>;
       expect(minimal).toBeDefined();
-      expect(telegramView).toEqual(rows[1]?.view);
+      expect(telegramView).toEqual(rows[1]?.view as Record<string, unknown>);
       // A repeat adds nothing, and the next slot adds a pair.
       await digest(trx, new Date(SLOT_NOW.getTime() + 60_000));
       expect(await rowsOf(trx, o.orgId)).toHaveLength(2);
@@ -285,7 +285,12 @@ describe("the digest with the loop and spam review features off", () => {
         // Exactly these keys: no `loopIds`, no `lineOf`, nothing of the spam review line. The Telegram row also holds the counts of
         // the minimal level (as stored JSON: dates are strings); the mail row renders the full text only and holds none.
         const minimal = row.channel === "telegram" ? { minimal: JSON.parse(JSON.stringify(fixture.minimal)) } : {};
-        expect(row.view).toEqual({ text: fixture.message.text, buttons: fixture.message.buttons, ...minimal });
+        const expected: Record<string, unknown> = {
+          text: fixture.message.text,
+          buttons: fixture.message.buttons,
+          ...minimal,
+        };
+        expect(row.view as Record<string, unknown>).toEqual(expected);
       }
     });
   });
