@@ -17,6 +17,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F138-the-whole-project-calls-only-openai-no-gemini-code-key-config-or-doc-remains-and-the-evals-and-the-judge-run-on-openai-models` (🟠 ACTIVE): The whole project calls only OpenAI: no Gemini code, key, config or doc remains, and the evals and the judge run on OpenAI models
+- `F136-every-limen-job-runs-the-playwright-suites-in-parallel-with-no-shared-lock` (🟠 ACTIVE): Every Limen job runs the Playwright suites in parallel with no shared lock
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
 - `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
@@ -36,7 +37,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F124-…-parallel-…` (🔴 PLANNED, plan landed, no refresh: stage 01 is built on branch `limen/2026-11-19-f124-stage-01-unit-waits-3600945b`, owner 2026-11-20): `limen continue` that job (merge master, re-prove, land `--keep-open`), then 02 with its review; no migration, no `bun.lock`.
 - `F125-…-test-…` (🔴 PLANNED, plan landed, needs refresh for the counts): 01–07 read-only on tests, run next to anything; G1: the owner marks `audit/report.md`; cut stages after F124 lands and G1.
 - `F139-…-guard-empty-…` (🔴 PLANNED, needs plan): a readiness wait in `deploy/restore.sh`; one worker stage, one VPS drill rerun; lands before F108 stage 05.
-- `F136-…-playwright-…` (🔴 PLANNED, unparked 2026-11-20, needs plan, no `bun.lock`): per-job ports, e2e DB and mail addresses for both Playwright suites; removes the shared lock; lands before F121 stage 10.
+- `F136-…-playwright-…` (🟠 plan landed, 6 stages, no `bun.lock`): per-job ports, e2e DB and mail addresses for both Playwright suites; removes the shared lock; lands before F121 stage 10.
 - `F062-drop-mailbox-cursor-columns` (🟠 plan landed; 01 ∥ 02 → 03 → 04; 01 lands only after the v0.4.2 tag): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
 - `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed, [risky], no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.

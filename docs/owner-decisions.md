@@ -728,3 +728,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: the purpose of the ticket; plan Q2 default taken by the coordinator.
 - Undo: do not land stage 05, or restore from the pre-release backup.
 - Source: `spec/features/active/F062-drop-mailbox-cursor-columns/questions.md`.
+
+### 2026-11-20 · F136: no cap on parallel Playwright runs; the memory gate acts only at job start · process · new
+
+- Decision: after F136 the shared Playwright lock is gone and no cap limits parallel Playwright runs. One docs run peaked at about 2.2 GB. Limen's memory gate acts only when a job starts. `demo:record` keeps the lock (shared demo DB). Prepare fails hard when the e2e part fails. One existing test file (`apps/docs/scripts/browser-check.test.ts`) changes two assertions.
+- Why: plan defaults Q1–Q4 of F136; the coordinator took them.
+- Undo: add a run cap in stage 05 or keep the lock rule; both are small edits.
+- Source: `spec/features/active/F136-*/questions.md`.
