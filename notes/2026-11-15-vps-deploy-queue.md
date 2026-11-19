@@ -91,5 +91,5 @@ Every deploy to the VPS is a release: `deploy/release.sh <tag>` from a tag. No b
 - Release gate note for `v0.4.x`: `drafter-v1` prompt text changed since `v0.3.1` (F115 stage 02 dev tuning) with no holdout report (checklist step 3). `reply_drafts` is off everywhere; `v0.3.0` shipped the prompt the same way. The coordinator decides.
 - Sim stack: `deploy/compose.sim.yaml` changed since `v0.3.1` (checklist step 4). The lab already runs with that content. Do not rebuild `ea-sim` while its live run is active.
 
-## Limen land picks the ticket from the label (2026-11-19)
-`limen land` of job `…5dc00e68` (label "F138 stage 01 (judge on OpenAI, for F115 s02)") closed F115, not F138: F138 is in `planned/`, so it matched the active F115 in the label. Fix: `git revert` of the close commit (`47e80b72`). Rule: a job label names only its own ticket.
+## Limen land closed the wrong ticket (2026-11-19)
+`limen land` of job `…5dc00e68` (label "F138 stage 01 (judge on OpenAI, for F115 s02)") closed F115. Cause: the coordinator left out `--keep-open`; land closes the active ticket it finds for the job, and F138 is in `planned/`. Fix: `git revert` of the close commit (`47e80b72`). Rule: land with `--keep-open` while the ticket has open stages, and a job label names only its own ticket.
