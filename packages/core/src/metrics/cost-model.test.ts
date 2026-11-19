@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { E3_ESTIMATE_USD_PER_MAIL, costToRun, pilotCost, type PilotCost } from "./cost-model";
+import { E3_ESTIMATE_USD_PER_MAIL, costToRun, pilotCost, roundedCostRow, type PilotCost } from "./cost-model";
 import { unitCost } from "./m7";
 
 const block: PilotCost = {
@@ -59,5 +59,18 @@ describe("costToRun", () => {
     expect(pilotCost.triagedMails).toBe(6 + 5 + 26 + 50);
     expect(pilotCost.llmUsd).toBeCloseTo(0.0658 + 0.0256, 6);
     expect(pilotCost.llmCalls).toBe(195 + 81);
+  });
+});
+
+describe("roundedCostRow", () => {
+  test("rounds each value half up to the cent and the margin is the price minus the rounded total", () => {
+    const row = roundedCostRow(costToRun(100, { pilot: block }), 25);
+    expect(row).toEqual({ llmUsd: 1.5, hostingUsd: 0.36, backupUsd: 0.05, totalUsd: 1.91, marginUsd: 23.09 });
+    expect(row.totalUsd + row.marginUsd).toBeCloseTo(25, 9);
+  });
+
+  test("the parts may differ from the total by a cent", () => {
+    const row = roundedCostRow(costToRun(100), 25);
+    expect(row).toEqual({ llmUsd: 0.43, hostingUsd: 0.36, backupUsd: 0.05, totalUsd: 0.83, marginUsd: 24.17 });
   });
 });

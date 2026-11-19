@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { docsUrl, PRODUCT_NAME } from "./site";
+import { docsUrl, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from "./site";
 
 describe("docsUrl", () => {
   test("T1 English home", () => {
@@ -62,5 +62,11 @@ describe("docsUrl", () => {
 
   test("the product name", () => {
     expect(PRODUCT_NAME).toBe("Email Assistant");
+  });
+});
+
+describe("placeholder price", () => {
+  test("the placeholder price is 25 dollars per mailbox per month", () => {
+    expect(PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH).toBe(25);
   });
 });

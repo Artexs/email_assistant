@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DOCS_BASE } from "@ea/core";
+import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH } from "@ea/core";
 
 import { expectNoA11yViolations } from "./a11y";
 import { builtPagePaths, distIsBuilt, docsTestOrigin } from "./site";
@@ -117,4 +117,20 @@ test("T10 the changelog page shows released versions with a date and no operator
   for (const operatorText of ["Unreleased", "Offline quality lab", "Keep a Changelog", "release:prepare"]) {
     expect(text).not.toContain(operatorText);
   }
+});
+
+test("F121-03 the pricing page shows the banner, the price and three cost rows, with no form or input", async ({
+  page,
+}) => {
+  await open(page, `${DOCS_BASE}/pricing/`);
+  const main = page.locator("main");
+  await expect(main).toContainText(
+    "Not for sale. This is a placeholder price for a product that is built to a sale standard; there is no checkout."
+  );
+  await expect(main).toContainText(`$${PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH}`);
+  await expect(main.locator("tbody tr")).toHaveCount(3);
+  await expect(main.locator("form")).toHaveCount(0);
+  await expect(main.locator("input")).toHaveCount(0);
+  expect((await main.innerText()).toLowerCase()).not.toContain("gemini");
+  await expectNoA11yViolations(page);
 });
