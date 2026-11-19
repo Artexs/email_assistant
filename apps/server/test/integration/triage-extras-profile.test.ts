@@ -3,9 +3,8 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { senderProfileReader } from "../../src/composition";
-import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { getMailboxSettings, insertDefaultSettings } from "../../src/modules/config";
-import { claimEmails } from "../../src/modules/mail";
+import { claimEmails, NO_TEST_SENDERS } from "../../src/modules/mail";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import {
   type ClassifierPromptChoice,
