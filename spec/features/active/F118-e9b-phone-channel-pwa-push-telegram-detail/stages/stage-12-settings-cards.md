@@ -23,3 +23,13 @@ Carry-over reads: `plan.md` D7, D12, D13, D14; `interfaces.md` (routes of stages
 - **Check:** the touched tests, `bun run web:build`, then the Proof with the e2e step as in stage 04.
 - **Done when:** the Proof with the e2e step prints `PROOF_OK`.
 - **Out of scope:** papers and docs (13).
+
+## Carry-over from the stage 11 review (PASS 2d2984bf)
+
+First commit of this stage (each with a test and a mutation log):
+- Link route default (coordinator decision, replaces the stage 11 rule): when `detail` is absent, KEEP the stored value (the column default is already `minimal`, so new members still get `minimal`). Change test 1 of `web-telegram-detail.test.ts`. Reason: an old cached panel bundle (D15) must not drop a pilot member from `full` to `minimal`. The stage 12 card always sends `detail`, preselected from the stored value.
+- TG1: a user in two organizations: add review probe P1 to `web-telegram-detail.test.ts` (PATCH changes only the row of the session org; the lock route answers 403 where the user is not owner) and a repo-level test of `setMemberTelegramDetail` with a scope-free `db` (mutation m08: no `org_id` filter in the UPDATE survives today).
+- NOTE 1 (hardening, small): read the org row `FOR SHARE` inside the transaction of `changeTelegramDetail` and the link route, and check the lock again there.
+- NOTE 3: with the flag off the link route answers 400 to a bad `detail`; ignore the value instead, as the stage 11 file says.
+- NOTE 4: `renderNoticeEdit` has no length check; with the panel link line a card near 4096 characters could be refused by Telegram. Cut or check the length (fall back to the text without the link line).
+- NOTE 2 (cosmetic): link route checks consent before the lock, PATCH checks the lock before consent; make the order equal.
