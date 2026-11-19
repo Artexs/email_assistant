@@ -475,16 +475,19 @@ describe("org:dsr --find CLI", () => {
 
   test("a refusal: exit 1 and org_dsr_refused with the reason, no address", async () => {
     const w = await seed();
-    const own = await run(["--org-id", w.orgId, "--address", w.own, "--find"]);
+    // The three starts do not depend on each other, so they run together (in a row they used 3 s of the 5 s limit).
+    const [own, bad, missing] = await Promise.all([
+      run(["--org-id", w.orgId, "--address", w.own, "--find"]),
+      run(["--org-id", w.orgId, "--address", "p@x.test.", "--find"]),
+      run(["--org-id", randomUUID(), "--address", w.person, "--find"]),
+    ]);
     expect(own.code).toBe(1);
     expect(own.stdout + own.stderr).toContain("org_dsr_refused");
     expect(own.stdout + own.stderr).toContain("own_address");
     expect(own.stdout + own.stderr).not.toContain(w.own);
-    const bad = await run(["--org-id", w.orgId, "--address", "p@x.test.", "--find"]);
     expect(bad.code).toBe(1);
     expect(bad.stdout + bad.stderr).toContain("bad_address");
     expect(bad.stdout + bad.stderr).not.toContain("p@x.test");
-    const missing = await run(["--org-id", randomUUID(), "--address", w.person, "--find"]);
     expect(missing.code).toBe(1);
     expect(missing.stdout + missing.stderr).toContain("not_found");
     expect(await auditRows(w.orgId)).toHaveLength(0);
