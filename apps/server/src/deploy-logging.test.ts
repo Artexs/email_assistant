@@ -165,7 +165,7 @@ describe("deploy/check-logging.sh --drill (restore drill file set, F114 stage 07
     expect(ok.out).toContain("migrate");
 
     const live = readFileSync(real("compose.yaml"), "utf8");
-    const noProfile = live.replace(/(  migrate:\n(?:.*\n)*?)    profiles: \[cli\]\n/, "$1");
+    const noProfile = live.replace(/(  migrate:\n(?:.*\n)*?) {4}profiles: \[cli\]\n/, "$1");
     expect(noProfile).not.toBe(live);
     mkdirSync(join(dir, "copy", "deploy"), { recursive: true });
     writeFileSync(join(dir, "copy", "deploy", "compose.yaml"), noProfile);
