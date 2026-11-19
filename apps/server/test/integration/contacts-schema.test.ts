@@ -6,12 +6,13 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertLoopRow } from "./loops-fixtures";
+import { createScratchDb } from "./scratch-db";
 
 // Sender context: the migration `20261118120001_sender_context.sql` (the tables `sender_profiles` and
 // `sender_suggestions`, and the columns of `open_loops` that the contact wait uses). The connection is the `app` role;
@@ -542,13 +543,12 @@ describe("open_loops and the previous release", () => {
 
 describe("the Down and Up sections", () => {
   async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-    const owner = createDb(url);
+    const scratch = await createScratchDb();
+    const owner = scratch.owner;
     try {
       await withRollback(owner, run);
     } finally {
-      await owner.destroy();
+      await scratch.drop();
     }
   }
 

@@ -6,12 +6,13 @@ import { noticeKinds } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile, insertReplyRequest } from "./reply-fixtures";
+import { createScratchDb } from "./scratch-db";
 
 // The migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the copy of the style text,
 // the three notice kinds). The connection is the `app` role; the Down and Up sections run as the owner.
@@ -361,13 +362,12 @@ describe("outbox: the kinds replies_ready, reply_prompt and reply_result", () =>
 
 describe("the style text copy and the Down and Up sections", () => {
   async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-    const owner = createDb(url);
+    const scratch = await createScratchDb();
+    const owner = scratch.owner;
     try {
       await withRollback(owner, run);
     } finally {
-      await owner.destroy();
+      await scratch.drop();
     }
   }
 

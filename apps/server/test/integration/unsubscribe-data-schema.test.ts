@@ -5,11 +5,12 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { createScratchDb } from "./scratch-db";
 
 // The migration `20261117140001_unsubscribe_data.sql` (the column `email_headers.list_unsubscribe_post`
 // and the table `unsubscribe_requests`). The connection is the `app` role; the Down and Up sections run as the owner.
@@ -166,7 +167,11 @@ describe("unsubscribe_requests: constraints", () => {
       await request(trx, a);
       await request(trx, b);
       await trx.deleteFrom("mailboxes").where("id", "=", a.mailboxId).execute();
-      const left = await trx.selectFrom("unsubscribe_requests").select("org_id").execute();
+      const left = await trx
+        .selectFrom("unsubscribe_requests")
+        .select("org_id")
+        .where("org_id", "in", [a.orgId, b.orgId])
+        .execute();
       expect(left.map((row) => row.org_id)).toEqual([b.orgId]);
     });
   });
@@ -267,13 +272,12 @@ describe("email_headers.list_unsubscribe_post and the previous release", () => {
 
 describe("the Down and Up sections", () => {
   async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-    const owner = createDb(url);
+    const scratch = await createScratchDb();
+    const owner = scratch.owner;
     try {
       await withRollback(owner, run);
     } finally {
-      await owner.destroy();
+      await scratch.drop();
     }
   }
 

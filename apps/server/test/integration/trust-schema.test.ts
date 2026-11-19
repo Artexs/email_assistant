@@ -5,10 +5,11 @@ import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createDb, type DB } from "../../src/platform/db";
+import type { Db, DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { createScratchDb } from "./scratch-db";
 import { addMailbox, insertCheckItemRow, insertCheckRow, insertTripRow } from "./trust-fixtures";
 
 // The migration `trust_ladder` (`docs/capabilities/trust.md`): CHECKs, keys,
@@ -408,14 +409,13 @@ describe("migration: Up, Down, Up", () => {
     indexes: 0,
   };
 
-  async function withOwner(run: (owner: ReturnType<typeof createDb>) => Promise<void>): Promise<void> {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-    const owner = createDb(url);
+  async function withOwner(run: (owner: Db) => Promise<void>): Promise<void> {
+    const scratch = await createScratchDb();
+    const owner = scratch.owner;
     try {
       await run(owner);
     } finally {
-      await owner.destroy();
+      await scratch.drop();
     }
   }
 

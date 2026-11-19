@@ -6,10 +6,11 @@ import { suspiciousReasons } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { createScratchDb } from "./scratch-db";
 
 // Constraints and index of the suspicious-mail migration.
 const db = testDb();
@@ -229,9 +230,8 @@ describe("F109 migration: sender index", () => {
 // shared test DB keeps its schema.
 describe("F109 migration: Down", () => {
   test("9: Down deletes the not_triaged rows, keeps the other kinds, and drops the column and the index", async () => {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down section");
-    const owner = createDb(url);
+    const scratch = await createScratchDb();
+    const owner = scratch.owner;
     try {
       const down = migration.split("-- migrate:down")[1] ?? "";
       expect(down).toContain("DROP COLUMN from_address_lower");
@@ -265,7 +265,7 @@ describe("F109 migration: Down", () => {
         expect(rows[0]?.n).toBe(0);
       });
     } finally {
-      await owner.destroy();
+      await scratch.drop();
     }
   });
 });

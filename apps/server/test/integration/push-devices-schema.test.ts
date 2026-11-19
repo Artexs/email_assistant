@@ -6,11 +6,12 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { insertMembership } from "../../src/modules/tenancy/repo";
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { addMember, createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { createScratchDb } from "./scratch-db";
 
 // The migration `20261118130001_push_devices.sql` (the table `push_subscriptions`, the column
 // `outbox.push_subscription_id`, the channel `push` and the column `memberships.notice_routes`). The connection is the `app`
@@ -516,13 +517,12 @@ describe("the previous release", () => {
 
 describe("the Down and Up sections", () => {
   async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-    const owner = createDb(url);
+    const scratch = await createScratchDb();
+    const owner = scratch.owner;
     try {
       await withRollback(owner, run);
     } finally {
-      await owner.destroy();
+      await scratch.drop();
     }
   }
 

@@ -6,11 +6,12 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { insertMembership } from "../../src/modules/tenancy/repo";
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
 
 import { addMember, createOrgWithMailbox, linkChat, randomChatId } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
+import { createScratchDb } from "./scratch-db";
 
 // The migration `20261119130001_telegram_detail.sql` (the column `memberships.telegram_detail`, the column
 // `organizations.telegram_minimal_locked` and the wider list of `outbox_detail_check`). The connection is the `app` role; the Down and
@@ -49,13 +50,12 @@ async function expectSqlState(trx: Trx, run: () => Promise<unknown>, code: strin
 }
 
 async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-  const url = process.env.MIGRATOR_DATABASE_URL;
-  if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-  const owner = createDb(url);
+  const scratch = await createScratchDb();
+  const owner = scratch.owner;
   try {
     await withRollback(owner, run);
   } finally {
-    await owner.destroy();
+    await scratch.drop();
   }
 }
 
