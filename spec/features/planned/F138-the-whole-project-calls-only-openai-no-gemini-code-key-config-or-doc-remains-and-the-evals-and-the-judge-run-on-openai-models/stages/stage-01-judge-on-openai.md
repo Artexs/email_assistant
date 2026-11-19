@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). `[risky]` (LLM evals). Needs the F115 stage 02 branch landed on master.
 
-The judge may run on the same provider as the model under test, but never on the same model. Gemini still exists in this stage; stage 02 removes it.
+The judge may share the provider of the model under test, never the model. Gemini still exists here; stage 02 removes it.
 
 ## Step 1 — Judge rule and default judge
 
@@ -12,7 +12,7 @@ The judge may run on the same provider as the model under test, but never on the
   - `JUDGE_SAME_MODEL = "judge model must differ from the model under test (ADR 0037)"` (exported). `JUDGE_SAME_PROVIDER` and `JUDGE_SAME_PROVIDER_DRAFTER` are removed.
   - `judgeSetupError(table, at, role: JudgedRole = "classifier")` keeps its signature. Order of checks: same model → key missing → no price.
   - `DEFAULT_JUDGE_MODEL = "gpt-6.1-terra"` (exported from `config-llm.ts`).
-- **Decisions:** D3, D4. "Same model" = same provider and same model id; the effort does not count. The default judge row applies only when no `LLM_JUDGE_*` key is set: provider = the classifier's provider, model `DEFAULT_JUDGE_MODEL`, effort `none`, timeout = the provider's, role rpm null. `LLM_JUDGE_MODEL` without `LLM_JUDGE_PROVIDER` stays an error (today's rule). `--judge-provider` and `--judge-model` still override per run.
+- **Decisions:** D3, D4. "Same model" = same provider and same model id; the effort does not count. When neither `LLM_JUDGE_MODEL` nor `--judge-model` is set, the judge model is `DEFAULT_JUDGE_MODEL` with effort `none` (unless `LLM_JUDGE_REASONING` is set), also when `LLM_JUDGE_PROVIDER` or `--judge-provider` is set. Provider: the judge key or flag, else the classifier's. Timeout = the provider's; role rpm = `LLM_JUDGE_RPM` or null. `LLM_JUDGE_MODEL` without `LLM_JUDGE_PROVIDER` stays an error (today's rule).
 - **Test (unit):**
   1. Classifier `openai/gpt-6-luna`, judge `openai/gpt-6.1-terra`, key set → `null`.
   2. Classifier `openai/gpt-6-luna` effort `none`, judge `openai/gpt-6-luna` effort `high` → `JUDGE_SAME_MODEL`.
@@ -20,7 +20,9 @@ The judge may run on the same provider as the model under test, but never on the
   4. Judge `openai/gpt-6.1-terra` on an `eu` endpoint → the "no price" message (no `eu` row).
   5. Env with only `OPENAI_API_KEY` set → `table.roles.judge` = `{ provider: "openai", model: "gpt-6.1-terra", reasoningEffort: "none", rpm: null }`.
   6. Env `LLM_JUDGE_PROVIDER=openai`, `LLM_JUDGE_MODEL=gpt-6-luna` with the classifier on `gpt-6-luna` → config parses; `judgeSetupError` gives `JUDGE_SAME_MODEL`.
-- **Done when:** tests 1–6 pass; the old "provider must differ" tests are rewritten to the model rule, not deleted.
+  7. Env `LLM_JUDGE_PROVIDER=openai` only → judge model `gpt-6.1-terra`. Drafter run args `--judge-provider openai` with no `--judge-model` → judge model `gpt-6.1-terra`.
+  8. Drafter run args `--model gpt-6.1-terra --judge` → `JUDGE_SAME_MODEL`, exit 1, no call.
+- **Done when:** tests 1–8 pass; the old "provider must differ" tests are rewritten to the model rule, not deleted.
 - **Out of scope:** the Gemini adapter, the judge prompt (D14).
 
 ## Step 2 — Judge model in the state key
