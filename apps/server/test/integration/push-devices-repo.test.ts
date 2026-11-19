@@ -17,7 +17,7 @@ import {
   upsertPushSubscription,
 } from "../../src/modules/channels/push";
 import { insertMembership } from "../../src/modules/tenancy/repo";
-import { createSecretBox } from "../../src/platform/crypto";
+import { CryptoKeyVersionError, createSecretBox } from "../../src/platform/crypto";
 import type { DB } from "../../src/platform/db";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
 
@@ -480,6 +480,25 @@ describe("loadDeviceSecret", () => {
         target: { endpoint, p256dh: `p256dh-${counter}`, auth: `auth-${counter}` },
       });
       expect(await loadDeviceSecret(trx, { orgId: o.orgId }, randomUUID(), box)).toBeNull();
+    });
+  });
+
+  test("12b: a secret of another key version throws and removes nothing: the device and its open rows stay", async () => {
+    await withRollback(db, async (trx) => {
+      const o = await createOrgWithMailbox(trx);
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const device = await subscribe(trx, o, o.userId, s);
+      const row = await pushRow(trx, o, device?.id ?? "");
+      const next = createSecretBox(randomBytes(32).toString("base64"), 2);
+      await expect(loadDeviceSecret(trx, { orgId: o.orgId }, device?.id ?? "", next)).rejects.toThrow(
+        CryptoKeyVersionError
+      );
+      expect(await deviceCount(trx, o.orgId)).toBe(1);
+      expect(await stateOf(trx, row)).toEqual({
+        status: "pending",
+        error_code: null,
+        push_subscription_id: device?.id ?? "",
+      });
     });
   });
 

@@ -3,6 +3,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { noticeRenderers } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -406,6 +407,54 @@ describe("queueNotice fans out by the route of the member", () => {
         now: T,
       });
       expect(digest).toBeString();
+    });
+  });
+
+  test("8b. a view that has a Telegram text but no push payload writes no row at all (the push check of queueNotice)", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      await chat(trx, w, w.owner);
+      await device(trx, w, w.owner, at(-HOUR));
+      const urgent = noticeRenderers.urgent;
+      const original = urgent.push;
+      // A push render that fails: the Telegram check passes, so only the push check can stop the write.
+      urgent.push = {
+        full: () => {
+          throw new Error("no push payload");
+        },
+      };
+      try {
+        const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+        await expect(
+          queueNotice(trx, w.ctx, {
+            userId: w.owner,
+            locale: "en",
+            kind: "urgent",
+            view: {
+              emailId,
+              from: "boss@example.test",
+              subject: "Contract",
+              ai: { reasonCode: "llm", reason: null },
+              receivedAt: at(-20 * MINUTE),
+              synthetic: false,
+              folderTag: null,
+              actions: [],
+              delegateNames: {},
+              stayFolder: "INBOX",
+              now: T,
+              timeZone: "Europe/Warsaw",
+            },
+            dedupKey: `urgent:${emailId}`,
+            emailId,
+            mailboxId: w.mailboxId,
+            eventAt: at(-5 * MINUTE),
+            now: T,
+          })
+        ).rejects.toThrow("urgent");
+        expect(await outbox(trx, w.orgId, "urgent")).toEqual([]);
+      } finally {
+        urgent.push = original;
+      }
     });
   });
 

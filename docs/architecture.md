@@ -578,6 +578,7 @@ Tenancy:
   | `trust.regate`         | `20 */5 * * * *` (every 5 min; also once at start, before the triage worker)               | [trust.md](capabilities/trust.md) rule 9                    |
   | `trust.tripwire`       | `0 * * * * *` (every minute; needs no model, runs with the scope `off`)                    | [trust.md](capabilities/trust.md) rule 10                   |
   | `channels.report_mail` | `*/15 * * * * *` (every 15 s; needs no Telegram bot)                                       | [trust.md](capabilities/trust.md) rule 19                   |
+  | `channels.push`        | `*/15 * * * * *` (every 15 s; needs the `VAPID_*` keys, no Telegram bot)                   | [digest-and-notices.md](capabilities/digest-and-notices.md) |
   | `platform.retention`   | `0 40 2 * * *` (daily at 02:40; the backup runs at 03:30, from the host cron)              | [retention.md](capabilities/retention.md)                   |
   | `channels.notifier`    | `*/15 * * * * *` (every 15 s; only when Telegram is on)                                    | [digest-and-notices.md](capabilities/digest-and-notices.md) |
   | `channels.digest`      | `5 * * * * *` (every minute at second 5; only when Telegram is on)                         | [digest-and-notices.md](capabilities/digest-and-notices.md) |

@@ -39,7 +39,7 @@ export interface QueueNoticeInput<K extends NoticeKind> {
 }
 
 // The only producer path into `outbox` (ADR 0032 point 5): the row stores the view; a view that does not render never
-// enters the outbox (the check renders the Telegram text for every channel: a mail row and a push row take the same view), so the caller skips the event as it did when the insert failed.
+// enters the outbox (the check renders the Telegram text; a push row is checked with the push render), so the caller skips the event as it did when the insert failed.
 // With no explicit `channel` the call is the fan-out of one member and event: the Telegram row (the dedup key as it was) and one
 // push row per device (`<key>:push:<device id>`), as `planFanOut` decides. An explicit `channel` writes that one row.
 // Returns the id of the Telegram row when one was written, else the id of the first push row, else null: null = every row of the
@@ -76,6 +76,11 @@ export async function queueNotice<K extends NoticeKind>(
       now: input.now,
       ...(input.only === undefined ? {} : { only: input.only }),
     });
+    // The push rows take the same view: a view that has no push render never gets a push row (the check of the Telegram text above does not cover it).
+    if (plan.deviceIds.length > 0) {
+      const pushRendered = renderNotice(input.kind, view, { channel: "push", detail: "full", locale: input.locale });
+      if (!pushRendered.ok) throw new NoticeViewError(input.kind);
+    }
     const telegramId = plan.telegram ? await insertOutbox(trx, ctx, { ...base, dedupKey: input.dedupKey }) : null;
     let firstPushId: string | null = null;
     for (const deviceId of plan.deviceIds) {

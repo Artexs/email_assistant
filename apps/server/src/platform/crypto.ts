@@ -27,6 +27,14 @@ export class CryptoError extends Error {
   }
 }
 
+/** The stored secret was sealed under another key version than the configured one. A configuration problem, not a damaged secret. */
+export class CryptoKeyVersionError extends CryptoError {
+  constructor(stored: number, configured: number) {
+    super(`Secret has key version ${stored}, configured is ${configured}`);
+    this.name = "CryptoKeyVersionError";
+  }
+}
+
 function decodeBase64(value: string): Buffer | null {
   return BASE64.test(value) ? Buffer.from(value, "base64") : null;
 }
@@ -52,7 +60,7 @@ export function createSecretBox(keyBase64: string, keyVersion: number): SecretBo
 
     decrypt(secret, aad) {
       if (secret.keyVersion !== keyVersion) {
-        throw new CryptoError(`Secret has key version ${secret.keyVersion}, configured is ${keyVersion}`);
+        throw new CryptoKeyVersionError(secret.keyVersion, keyVersion);
       }
       const bytes = decodeBase64(secret.ciphertext);
       if (bytes === null || bytes.length < IV_BYTES + TAG_BYTES) {

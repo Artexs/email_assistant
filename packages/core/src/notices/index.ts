@@ -1,4 +1,5 @@
 export * from "./encode";
+export * from "./facts";
 export * from "./kinds";
 export * from "./push";
 export * from "./routes";

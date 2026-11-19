@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { membershipRoleSchema, userLocaleSchema, type MembershipRole, type UserLocale } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
-import type { SecretBox } from "../../../platform/crypto";
+import { CryptoKeyVersionError, type SecretBox } from "../../../platform/crypto";
 import type { DB, TenantContext } from "../../../platform/db";
 import { errorFields } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
@@ -297,7 +297,8 @@ export interface DeviceSecret {
 }
 
 // The decrypted endpoint and keys of one device, for the sender only. null when the device does not exist, or when its secret
-// does not open (a wrong key, a changed row): then the device goes (`removeDevice`) and the line logs the device id only.
+// does not open (a wrong key, a changed row): then the device goes (`removeDevice`) and the line logs the device id only. A secret
+// of another key VERSION throws `CryptoKeyVersionError` and removes nothing: the server key was changed, and a key change drops no device.
 export async function loadDeviceSecret(
   trx: Transaction<DB>,
   ctx: TenantContext,
@@ -320,6 +321,9 @@ export async function loadDeviceSecret(
     }
     return { userId: row.user_id, sessionId: row.session_id, target: { endpoint, p256dh, auth } };
   } catch (error) {
+    // Another key version is a configuration problem (the key of the server changed): the device is not damaged, so it stays and
+    // the caller decides (the sender raises an alert and keeps the row).
+    if (error instanceof CryptoKeyVersionError) throw error;
     log.warn("push_secret_unreadable", { push_subscription_id: id, ...errorFields(error) });
     await removeDevice(trx, ctx, id);
     return null;

@@ -20,6 +20,16 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `push_key_version_mismatch`
+
+- **First seen:** 2026-11-19 (the push sender is new, F118 stage 08)
+- **Source:** the push sender (`channels.push`, `channels/push-sender.ts`), level `error`, once per run.
+- **Cause:** `CREDENTIALS_KEY_VERSION` in `.env` is not the version that sealed the stored push devices. The key was changed, or the server runs an old `.env`.
+- **Fix:** put the right `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION` back and restart. Nothing is lost: the sender removes no device and fails no row for this error; all push rows wait 10 minutes, then the sender tries again, and a row older than 24 h ends `expired`. A key change with the SAME version makes the stored devices unreadable instead: the sender removes each one (`push_secret_unreadable`, the rows end `no_device`) and the members turn notices on again in Settings (`deploy/README.md`).
+- **Status:** fixed
+
+---
+
 ### Log store: vlagent reads no lines
 
 - **First seen:** 2026-11-15 (the store is new, F103 stage 18)
