@@ -81,6 +81,10 @@ async function insertHeaders(
         auth_results: headers.dkim ? `${E2E_AUTHSERV_ID}; dkim=pass header.d=news.example` : null,
         list_unsubscribe: headers.link,
         list_unsubscribe_post: headers.post,
+        // The one-click sender has a signature that covers both list headers (the rule needs it, RFC 8058).
+        dkim_signatures: headers.dkim
+          ? JSON.stringify([{ d: "news.example", h: ["from", "list-unsubscribe", "list-unsubscribe-post"] }])
+          : null,
         parts_known: true,
         captured_at: capturedAt,
       }))

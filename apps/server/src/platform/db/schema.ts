@@ -243,6 +243,7 @@ export interface EmailHeaders {
   auth_results: string | null;
   auto_submitted: string | null;
   captured_at: Timestamp;
+  dkim_signatures: Json | null;
   email_id: string;
   from_name: string | null;
   has_calendar: Generated<boolean>;

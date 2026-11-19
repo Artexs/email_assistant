@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-19
 ---
 
 # F135 · the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike)

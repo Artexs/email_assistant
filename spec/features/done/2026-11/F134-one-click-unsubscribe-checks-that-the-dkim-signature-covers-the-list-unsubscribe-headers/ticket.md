@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-18
+landed: 2026-11-19
 ---
 
 # F134 · One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers

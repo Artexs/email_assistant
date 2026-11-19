@@ -1,3 +1,4 @@
+import { dkimSignaturesOf } from "@ea/core";
 import { convert } from "html-to-text";
 import { simpleParser, type ParsedMail } from "mailparser";
 
@@ -162,6 +163,9 @@ export function captureFromParsed(parsed: ParsedMail, opts: { partsKnown: boolea
       ? null
       : cleanCut(headerValue(parsed, "list-unsubscribe"), CAPTURE_LIMITS.listUnsubscribe),
     listUnsubscribePost: !repeated && oneClickOf(headerValue(parsed, "list-unsubscribe-post")),
+    dkimSignatures: dkimSignaturesOf(
+      parsed.headerLines.filter((header) => header.key === "dkim-signature").map((header) => header.line)
+    ),
     listId: cleanCut(headerValue(parsed, "list-id"), CAPTURE_LIMITS.listId),
     autoSubmitted: token(headerValue(parsed, "auto-submitted")),
     precedence: token(headerValue(parsed, "precedence")),

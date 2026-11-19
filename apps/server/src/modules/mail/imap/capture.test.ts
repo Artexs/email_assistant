@@ -204,6 +204,65 @@ describe("captureFromParsed", () => {
     expect([other.listUnsubscribe, other.listUnsubscribePost]).toEqual(["<https://u.test/x>", true]);
   });
 
+  test("5e: the DKIM-Signature headers give only the domain and the header names, never the signature value", async () => {
+    const signed = await captureOf(
+      simple([
+        "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=News.Example; s=sel; t=1;",
+        "\th=From:To:Subject:List-Unsubscribe:",
+        " LIST-UNSUBSCRIBE-Post; bh=SECRETBODYHASH=; b=SECRETSIGNATUREVALUE==",
+        "List-Unsubscribe: <https://u.test/x>",
+        "List-Unsubscribe-Post: List-Unsubscribe=One-Click",
+      ])
+    );
+    expect(signed.dkimSignatures).toEqual([
+      { d: "news.example", h: ["from", "to", "subject", "list-unsubscribe", "list-unsubscribe-post"] },
+    ]);
+    expect(JSON.stringify(signed.dkimSignatures)).not.toContain("SECRET");
+    // Two signatures keep their order; a body-only signature (no list headers in `h=`) stays as it is.
+    const two = await captureOf(
+      simple([
+        "DKIM-Signature: v=1; d=a.example; h=from; bh=x; b=y",
+        "dkim-signature: v=1; d=b.example; h=from:list-unsubscribe; bh=x; b=y",
+      ])
+    );
+    expect(two.dkimSignatures).toEqual([
+      { d: "a.example", h: ["from"] },
+      { d: "b.example", h: ["from", "list-unsubscribe"] },
+    ]);
+    expect((await captureOf(simple([]))).dkimSignatures).toEqual([]);
+  });
+
+  test("5f: too many, a very long, a duplicate-tag and a missing-tag DKIM-Signature give no signature at all", async () => {
+    const good = "DKIM-Signature: v=1; d=a.example; h=from:list-unsubscribe:list-unsubscribe-post; bh=x; b=y";
+    expect((await captureOf(simple([good]))).dkimSignatures).toHaveLength(1);
+    const nine = Array.from({ length: 9 }, () => good);
+    expect((await captureOf(simple(nine))).dkimSignatures).toEqual([]);
+    // 20 000 characters in `z=` and `b=` (a long header folded over many lines).
+    const filler = Array.from({ length: 250 }, () => ` ${"A".repeat(78)}`);
+    const long = ["DKIM-Signature: v=1; d=a.example; h=from:list-unsubscribe:list-unsubscribe-post; b=", ...filler];
+    expect((await captureOf(simple(long))).dkimSignatures).toEqual([]);
+    for (const bad of [
+      "DKIM-Signature: v=1; d=a.example; d=b.example; h=from; b=y",
+      "DKIM-Signature: v=1; d=a.example; b=y",
+      "DKIM-Signature: v=1; h=from; b=y",
+    ]) {
+      expect((await captureOf(simple([good, bad]))).dkimSignatures).toEqual([]);
+    }
+  });
+
+  test("5g: a mail with two copies of a list header is no one-click whatever its `h=` says", async () => {
+    // `h=` names each header once, but the mail has two copies of List-Unsubscribe: the signature covers one instance only.
+    const capture = await captureOf(
+      simple([
+        "DKIM-Signature: v=1; d=a.example; h=from:list-unsubscribe:list-unsubscribe-post; b=y",
+        "List-Unsubscribe: <https://evil.test/x>",
+        "List-Unsubscribe: <https://u.test/x>",
+        "List-Unsubscribe-Post: List-Unsubscribe=One-Click",
+      ])
+    );
+    expect([capture.listUnsubscribe, capture.listUnsubscribePost]).toEqual([null, false]);
+  });
+
   test("5: a mail without the headers gives null and empty values", async () => {
     expect(await captureOf(simple([]))).toEqual({
       fromName: null,
@@ -212,6 +271,7 @@ describe("captureFromParsed", () => {
       authResults: null,
       listUnsubscribe: null,
       listUnsubscribePost: false,
+      dkimSignatures: [],
       listId: null,
       autoSubmitted: null,
       precedence: null,
