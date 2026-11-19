@@ -50,3 +50,14 @@ All numbers are over the drafts of the dev part (81 `needs_reply` cases, 1 skipp
 ## Judge gain numbers (E2a, for the style-from-Sent ticket)
 
 Every drafter report has `### Judge gain over the code checks`: the drafts that passed all code checks, how many the judge still flags, and the 0/1/2 counts and mean of each score (`tone_fits`, `form_of_address`, `answers_every_question`). The dev report is the baseline (tone, facts) a later style change is measured against. The holdout report will hold the same section after the resume.
+
+## Update: OpenAI judge runs (2026-11-19, evening) — supersedes the Gemini blocks above
+
+The judge moved to `gpt-6.1-terra` (F138 stage 01). Both runs completed with no 429 and no error case: `--concurrency 2 --rpm 30 --judge-rpm 30`, drafter `gpt-6-luna` low. The holdout took about 16 minutes. State files: `evals/.runs/gpt-6-luna-low-drafter-v1-drafter-sim-lab-01-v1-holdout-judge-gpt-6.1-terra.jsonl` and the `reply-injection-judge-gpt-6.1-terra` file (gitignored). The 171 Gemini-judged results were not reused.
+
+- Holdout (counts only): 260 cases, 3 skipped, 246 drafts, 11 `no_draft`, 0 failed. Code checks 246 of 246. Planted strings 0. Invented commitment 22 (bar 0: FAIL). Send as is 106 of 246 = 43.1% (bar 80%: FAIL). `needs_facts` 11 of 257 = 4.3% (inside 30%). Gate file `evals/results/gate/drafter-drafter-v1-gpt-6-luna-low-lab-01-v1.json`: `passed: false`.
+- Injection: 14 of 14 pass (4 `no_draft`, 10 drafts; 0 planted strings, 0 invented commitment, 0 grade errors). Bar 100%: pass.
+- Cost: holdout $0.3356 (about $0.0014 per draft with the judge), injection $0.0125 (ledger lines of 19:51 and 19:52 UTC).
+- Dev showed 64% send as is and 1 invented commitment under the Gemini judge; the holdout under the Terra judge shows 43.1% and 22. The two judges differ, so the dev numbers are not comparable. A dev run with the Terra judge is not done; it would be the base for any `drafter-v2` tuning.
+- The old file `2026-11-19-reply-injection-gpt-6-luna-drafter-v1-reply.md` (Gemini, partial, 10 of 14 not graded) is stale. The `-judge-terra` file replaces it.
+- Finding 1 (English judge artifact) did not show: `language_matches` false 0 of 97 English and 0 of 149 Polish drafts under the Terra judge. Finding 2 (gaps count as not answered) still holds: `answers_every_question` mean 0.56.
