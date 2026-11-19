@@ -127,6 +127,8 @@ describe("loadClassifierExtras reads the profile for the part profile", () => {
         reader: readerOf(trx),
       });
       expect(upper.senderProfile?.relation).toBe("known");
+      // The reader itself takes a raw address: the key of its answer is the normalised one.
+      expect((await readerOf(trx)(org.ctx, org.mailboxId, " ANNA@Acme.PL "))?.relation).toBe("known");
     });
   });
 
