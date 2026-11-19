@@ -23,6 +23,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
+- `F068-actions-transitions-runtime` (🟠 ACTIVE): The `actions.status` writers take their guards from the transitions map, and no writer admits an edge that no caller uses
 
 ## NEXT
 
@@ -37,7 +38,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F139-…-guard-empty-…` (🔴 PLANNED, needs plan): a readiness wait in `deploy/restore.sh`; one worker stage, one VPS drill rerun; lands before F108 stage 05.
 - `F136-…-playwright-…` (🔴 PLANNED, unparked 2026-11-20, needs plan, no `bun.lock`): per-job ports, e2e DB and mail addresses for both Playwright suites; removes the shared lock; lands before F121 stage 10.
 - `F062-drop-mailbox-cursor-columns` (🔴 PLANNED, needs plan): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
-- `F068-actions-transitions-runtime` (🔴 PLANNED, needs plan, `[risky]`, no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
+- `F068-actions-transitions-runtime` (🔴 PLANNED, plan landed, [risky], no migration): the status writers in `modules/actions/repo/` build their guards from the transitions map.
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.
 - `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F138 stage 02 and F136 land): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
 - `F141-…-deepseek-…` (🔴 PLANNED, needs plan after F138 stage 02 lands; build after F138 in `done/`): a DeepSeek provider row and key, an audit that puts all provider code in the registry, the holdout gate before any production switch; `[important: privacy]` (processing outside the EU, pilot only).
