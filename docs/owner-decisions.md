@@ -693,3 +693,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: owner message of 2026-11-19.
 - Undo: ask the coordinator to start the stage.
 - Source: owner chat.
+
+### 2026-11-19 · F117 dropped, F116 gate G1 on defaults, F114 restore drill runs now · process · new
+- What: (1) F117 is dropped. Stages 01 and 03–13 and 16 stay in master (flags off); stages 02, 14, 15, 17, 18, 19 and 21 are not built, because they need spike results from a live Microsoft and Google test account. No other active ticket depends on F117 (F119 s16 shares the Entra tenant and is skipped the same way). (2) F116 gate G1 takes the plan defaults (PD-119 wait, PD-120 automatic follow-up off, PD-122 others' promises as planned), because the E2b week does not exist yet; the pilot stage 25 runs on them. (3) F114 stage 09 part C (restore drill) runs now with the `age` key at `~/.config/ea-backup/age-key.txt` on the owner's PC; U2 and U3 stay open.
+- Why: owner message of 2026-11-19: "skip F117 or build it without my account", "the age key is on your machine", "continue F116".
+- Undo: move F117 back from `dropped/` to `active/` and run its stage 01 spike kit with a test account; G1 can be re-run later with real data.
+- Source: owner chat.

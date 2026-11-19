@@ -38,3 +38,7 @@ An owner connects a Microsoft 365 or Gmail mailbox with "Sign in with Microsoft"
 ## Notes
 
 - Replaces the old mail OAuth adapters ticket (F048, dropped). Shares the Microsoft test tenant with the OIDC ticket (F119 Q10).
+
+## Dropped 2026-11-19
+
+Owner: skip, no Microsoft 365 seat or Entra tenant. Landed and kept (flags off): stages 01, 03–13, 16. Not built: 02, 14, 15, 17, 18, 19, 21 (they need live spike results). Microsoft and Google OAuth: not proven live. No active ticket depends on F117. To resume: move this folder to `active/`, run the stage 01 kit with a test account.
