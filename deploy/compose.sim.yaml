@@ -53,8 +53,8 @@ services:
     mem_limit: 384m
     network_mode: service:fake-telegram
     environment:
-      # -Xmx256m: the Java heap stays under the container limit.
-      GREENMAIL_OPTS: "-Xmx256m -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false"
+      # -Xmx256m: the Java heap stays under the container limit. The GreenMail API moves to 8099: its default 8080 is the port of `server` in the shared namespace (found on the first live start, 2026-11-19).
+      GREENMAIL_OPTS: "-Xmx256m -Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled -Dgreenmail.verbose=false -Dgreenmail.api.hostname=127.0.0.1 -Dgreenmail.api.port=8099"
     depends_on:
       fake-telegram:
         condition: service_healthy
