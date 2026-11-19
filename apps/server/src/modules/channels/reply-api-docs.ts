@@ -64,7 +64,7 @@ export const replyApprovalDocs = {
   getReplyRequest: apiDoc({
     operationId: "getReplyRequest",
     summary:
-      "The state of a request for a draft: `pending` or `drafting` (poll again), `done` (`sendId` is the new version), `superseded` (`sendId` is the draft of the thread that waits now), `no_draft`, `failed` or `cancelled` (`reasonCode` names the cause). Reads only the request row. A request of another organization or one that was not made by a tap or a redraft answers 404.",
+      "The state of a request for a draft: `pending` or `drafting` (poll again), `done` (`sendId` is the new version), `superseded` (`sendId` is the draft of the thread that waits now), `no_draft`, `failed` or `cancelled` (`reasonCode` names the cause). Reads the request row; for `superseded` it also reads the open sends of the thread. A request of another organization or one that was not made by a tap or a redraft answers 404.",
     tags,
     params,
     ok: { status: 200, schema: replyRequestStatusSchema },

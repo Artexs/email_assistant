@@ -1,6 +1,5 @@
 import {
   approvalViewOf,
-  bareAddress,
   buildOutgoingMessage,
   draftPayloadSchema,
   draftVersion,
@@ -132,20 +131,17 @@ export async function approvalViewFor(
   // A reply goes to the stored From. The card also shows the Reply-To of the original when it names other addresses
   if (draft.kind === "reply" && email !== null && send.email_id !== null) {
     const emailId = send.email_id;
-    const from = email.from_address?.toLowerCase() ?? null;
     const mail = (await replyFactsOf(db, ctx, [emailId])).get(emailId);
     const replyTo = mail?.replyTo ?? [];
-    // Bare addresses only (a stored entry may hold a display name): the line shows what a tap on Use Reply-To would send to.
-    const others = [
-      ...new Set(
-        replyTo.flatMap((entry) => {
-          const bare = bareAddress(entry);
-          return bare === null ? [] : [bare.toLowerCase()];
-        })
-      ),
-    ]
-      .filter((address) => address !== from && address.length <= 320)
-      .slice(0, 5);
+    // The addresses that a tap on Use Reply-To could send to: `otherReplyTo` is the one rule (no sender, no own mailbox, also not
+    // its `+tag` form, bare addresses only), so the line and the button agree. Lower case, at most 5.
+    const others =
+      mail === undefined || mail.fromAddress === null
+        ? []
+        : otherReplyTo({ from: mail.fromAddress, replyTo, own: mail.ownAddresses })
+            .map((address) => address.toLowerCase())
+            .filter((address) => address.length <= 320)
+            .slice(0, 5);
     if (others.length > 0) view.replyTo = others;
     // The buttons that change the recipients: only when there is something to change to (the rules of the service are the same ones).
     if (mail !== undefined && mail.fromAddress !== null) {
