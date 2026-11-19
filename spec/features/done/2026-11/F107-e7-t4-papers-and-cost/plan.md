@@ -116,3 +116,4 @@ Model `claude-opus-5-5` (stage 07 `[risky]`, privacy claims, Polish text). Revie
 ## Log
 
 - 2026-11-14: planned at `69473f4e`.
+- 2026-11-19 stage 07: deployed with release `v0.4.1` (`4f1e76df`) by `deploy/release.sh` (`release ok v0.4.1 previous v0.3.1`; rollback target `v0.3.1`). Checks: 1 `/health` 200; 2 all six `/legal/<pl|en>/<privacy|terms|dpa>` 200 with the draft line; 3 users with `terms_version` not `2026-11-19`: 2 of 2 (every member gets the dialog); 4 `"level":"error"` lines since start: 0; 5 after 30 min: 15 `sync_done` lines. Measurement: [pilot-cost.md](pilot-cost.md). Not done: check 6 (owner step U1).
