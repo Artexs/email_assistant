@@ -12,6 +12,8 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+# shellcheck source=deploy/compose-lib.sh
+source deploy/compose-lib.sh
 
 # A caller variable must not change which stack the script talks to.
 unset COMPOSE_FILE COMPOSE_PROJECT_NAME COMPOSE_PROFILES COMPOSE_ENV_FILES
@@ -105,8 +107,9 @@ set_compose() {
     [[ -f "$DRILL_ENV" ]] || refuse "$DRILL_ENV does not exist; run deploy/restore.sh --target drill --init-env <live .env>"
     C=(docker compose -p "$DRILL_PROJECT" -f deploy/compose.yaml -f deploy/compose.drill.yaml --env-file "$DRILL_ENV")
   else
-    [[ -f .env ]] || refuse ".env does not exist; make it first (deploy/README.md § First install)"
-    C=(docker compose -f deploy/compose.yaml --env-file .env)
+    [[ -f deploy/db.env || -f .env ]] || refuse ".env does not exist; make it first (deploy/README.md § First install)"
+    ea_compose_init || exit 2
+    C=("${EA_COMPOSE[@]}")
   fi
 }
 
@@ -163,6 +166,23 @@ psql_db() {
   "${C[@]}" exec -T db psql -U postgres -d email_assistant -v ON_ERROR_STOP=1 -At "$@" </dev/null
 }
 
+# The Postgres image starts a temporary server for its init (socket only, `listen_addresses=''`), stops it, then starts the final
+# server (TCP). `up --wait db` and a socket probe pass during the init. A TCP answer proves the final server runs.
+wait_db_tcp() {
+  step=db-ready
+  local probes=0 max=60
+  while ((probes < max)); do
+    probes=$((probes + 1))
+    if "${C[@]}" exec -T db pg_isready -q -h 127.0.0.1 -U postgres -d email_assistant </dev/null; then
+      echo "db ready probes=$probes"
+      return 0
+    fi
+    ((probes < max)) && sleep 1
+  done
+  echo "restore: the database did not answer on TCP after $max probes" >&2
+  exit 1
+}
+
 restore() {
   local tag
   tag="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
@@ -176,6 +196,7 @@ restore() {
 
   step=db
   "${C[@]}" up -d --wait db </dev/null
+  wait_db_tcp
 
   # Never restore over data. A drill that ran before needs --down first.
   step=guard-empty
@@ -225,7 +246,7 @@ restore() {
   psql_db -c "delete from auth_sessions" >/dev/null
 
   step=migrate
-  "${C[@]}" run --rm -T cli bun run db:migrate </dev/null
+  "${C[@]}" run --rm -T migrate </dev/null
 
   # The key of this host must open every stored mailbox secret before the server starts.
   step=credentials

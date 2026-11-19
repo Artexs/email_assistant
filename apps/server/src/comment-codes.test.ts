@@ -96,5 +96,6 @@ describe("comments carry no bare ticket or decision codes", () => {
       }
     }
     expect(hits).toEqual([]);
-  });
+    // The scan reads every source file; on a loaded machine it needs more than the default 5 s.
+  }, 60_000);
 });

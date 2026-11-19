@@ -51,3 +51,7 @@ Mutation: change the price constant to 26 → test 4 fails; round half to even �
 **Done when.** Tests 1–7 pass; Proof prints `PROOF_OK`.
 
 **Out of scope.** Polish page (stage 05); any change to `costToRun` or `docs/cost-model.md` numbers.
+
+## Coordinator amendment 2026-11-20 (F138 dropped)
+
+The owner dropped F138: Gemini stays in the code as an optional provider, off by default. Ignore every "Needs F138 stage 02/04" line and every test that says the built page holds no `gemini`. New rule: a public page names only the providers and sub-processors that run by default (the OpenAI provider and the hosting). It never says that Gemini is removed, and it never claims "only OpenAI" for the code. If a ledger row names Gemini, a claim may cite it only with its condition "optional, off by default". Replace the "no `gemini`" test by a test that the page holds no Gemini text outside such a condition. The pages stay held by `OWNER_REVIEW_PENDING`.

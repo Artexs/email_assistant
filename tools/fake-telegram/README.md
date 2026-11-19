@@ -134,6 +134,10 @@ $ bun run fake-tg wait "Urgent mail" --timeout 600 --after 7
 
 Errors go to stderr as `fake-tg: <message>`.
 
+## Read-only chat view
+
+Open `http://127.0.0.1:<port>/_fake/view` in a browser (loopback only, like every `/_fake/*` route). It lists the chats. `?chat=<id>` shows the bot messages of one chat, oldest first, with time, text, inline buttons as labels and edits as the latest text. `?chat=<id>&refresh=2` reloads the page every 2 seconds (1–99; for a screen recording). The page has a "Test Telegram — not real" banner, no script, no form and no outside asset. Every text is HTML-escaped; only `<b>`, `<i>` and `<code>` pairs come back as tags. A chat that does not exist answers 404. Pressing buttons stays with `fake-tg press`.
+
 ## TypeScript API
 
 The package is `@ea/fake-telegram`. It exports everything from `src/index.ts`.

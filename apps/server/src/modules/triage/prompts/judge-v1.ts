@@ -76,6 +76,8 @@ function listBlock(title: string, items: readonly string[] | undefined): string[
 export function buildUserPrompt(input: {
   kind: RubricKind;
   mail: { subject: string; body: string };
+  // The older mails of the thread, oldest first. judge-v1 and judge-v2 do not show them; judge-v3 quotes them.
+  thread?: readonly { from: string; body: string }[];
   draft: string;
   lang: "pl" | "en" | "de";
   expectedPoints?: readonly string[];

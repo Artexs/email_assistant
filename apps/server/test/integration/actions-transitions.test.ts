@@ -118,8 +118,8 @@ type WriterCall = (trx: Transaction<DB>, ctx: TenantContext, row: CallRow, locke
 interface CheckOptions {
   // The status that the variant writes when it changes a row.
   next: ActionStatus;
-  // Rows that the guard of the SQL admits and a CHECK rejects at the write: the call fails with this code.
-  failsWith?: (type: ActionType, status: ActionStatus) => string | undefined;
+  // The call narrows the statuses of the row (`finishAction` with `opts.from`): admitted = row.from ∩ narrow.
+  narrow?: readonly ActionStatus[];
   // Types that the map does not list for the variant, but that the test also drives (they must be rejected).
   extraTypes?: readonly ActionType[];
   // The lock of the rows in the main pass. "token": the claim token (default; the call passes it).
@@ -184,15 +184,9 @@ async function checkWriter(guard: WriterGuard, call: WriterCall, options: CheckO
           continue;
         }
         const row = await insertRow(type, status, mainLock);
-        const admitted = guard.from[type]?.includes(status) ?? false;
+        const admitted =
+          (guard.from[type]?.includes(status) ?? false) && (options.narrow ? options.narrow.includes(status) : true);
         const label = `${guard.writer} ${guard.variant} ${type} x ${status}`;
-        const failCode = options.failsWith?.(type, status);
-
-        if (failCode) {
-          await expectCode(trx, `check_code_${failCode}`, () => call(trx, ctx, row, TOKEN), failCode);
-          continue;
-        }
-
         const changed = await call(trx, ctx, row, TOKEN);
         const after = await statusOf(row.id);
         expect({ label, changed }).toEqual({ label, changed: admitted });
@@ -267,19 +261,20 @@ describe("transitions map: finishAction", () => {
     { next: "failed", finish: { status: "failed", at: AT, reason: "hard_error" } },
     { next: "expired", finish: { status: "expired", at: AT, reason: "send_closed" } },
   ];
-  const variants: { variant: string; from?: readonly ("ready" | "approved" | "applying")[] }[] = [
-    { variant: "default" },
-    { variant: `from ["applying"]`, from: ["applying"] },
-    { variant: `from ["approved"]`, from: ["approved"] },
+  // The row of the target, narrowed by `opts.from` (none = the default `ready`, `applying`).
+  const narrowings: { name: string; from?: readonly ("ready" | "approved" | "applying")[] }[] = [
+    { name: "no from" },
+    { name: `from ["applying"]`, from: ["applying"] },
+    { name: `from ["approved"]`, from: ["approved"] },
   ];
 
-  for (const { variant, from } of variants) {
-    for (const { next, finish } of nexts) {
-      test(`${variant} -> ${next}: the guard row equals the behavior`, async () => {
+  for (const { next, finish } of nexts) {
+    for (const { name, from } of narrowings) {
+      test(`to "${next}", ${name}: the admitted set is the row narrowed by opts.from`, async () => {
         await checkWriter(
-          guardOf("finishAction", variant),
+          guardOf("finishAction", `to "${next}"`),
           (trx, ctx, row, token) => finishAction(trx, ctx, row.id, token, finish, from ? { from } : undefined),
-          { next }
+          { next, narrow: from ?? ["ready", "applying"] }
         );
       });
     }
@@ -303,14 +298,8 @@ describe("transitions map: releaseAction", () => {
           }),
         {
           next: toStatus,
-          // A send is never `ready`: the guard admits the row, the CHECK rejects the write.
-          ...(toStatus === "ready"
-            ? {
-                extraTypes: ["send"] as const,
-                failsWith: (type: ActionType, status: ActionStatus) =>
-                  type === "send" && (status === "approved" || status === "applying") ? "23514" : undefined,
-              }
-            : {}),
+          // A send is never `ready`: the guard refuses the row (no `23514` from the CHECK).
+          ...(toStatus === "ready" ? { extraTypes: ["send"] as const } : {}),
         }
       );
     });
@@ -362,6 +351,38 @@ describe("transitions map: setRejected", () => {
       next: "rejected",
       lock: "free",
       statuses: ["approved"],
+    });
+  });
+
+  test("a row in any other status, with no lock or a stale lock, is refused (the `approved` branch admits only `approved`)", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgId, mailboxId } = await createOrgWithMailbox(trx);
+      const ctx = { orgId };
+      const emailId = await insertTestEmail(trx, ctx, mailboxId);
+      const rows = [guardOf("setRejected", `from "awaiting_approval"`), guardOf("setRejected", `from "approved"`)];
+      const admitted = new Set(rows.flatMap((row) => (row.from.send ?? []).map((status) => `send x ${status}`)));
+      for (const type of actionTypes) {
+        for (const status of ACTION_STATUSES) {
+          for (const lockedAt of [null, STALE_LOCK]) {
+            if (forbiddenRow(type, status) || admitted.has(`${type} x ${status}`)) continue;
+            const id = await insertAction(trx, ctx, emailId, {
+              type,
+              status,
+              lockedAt,
+              approvedAt: type === "send" ? TOKEN : null,
+            });
+            const label = `${type} x ${status}, lock ${lockedAt === null ? "none" : "stale"}`;
+            const changed = await setRejected(trx, ctx, id, { at: WRITE_AT, staleBefore: STALE_BEFORE });
+            expect({ label, changed }).toEqual({ label, changed: false });
+            const after = await trx
+              .selectFrom("actions")
+              .select("status")
+              .where("id", "=", id)
+              .executeTakeFirstOrThrow();
+            expect({ label, status: after.status }).toEqual({ label, status });
+          }
+        }
+      }
     });
   });
 });
