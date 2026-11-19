@@ -24,7 +24,7 @@ export function hostingAndBackupUsdPerMailboxMonth(mailboxesPerHost: number = co
 
 /**
  * The LLM cost of the pilot: the sums of the four finished `stats:week` runs of one organization (one window, one scope).
- * Source: `pilot-cost.md` in the F107 ticket folder (stage 07, read-only on the VPS).
+ * Source: `pilot-cost.md` in the folder of the papers-and-cost ticket (a read-only measurement on the VPS).
  */
 export interface PilotCost {
   measuredOn: string;
