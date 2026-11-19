@@ -107,6 +107,15 @@ describe("memberships.telegram_detail", () => {
       expect(await detailOf(trx, o.orgId, unlinked)).toBe("minimal");
       const added = await addMember(trx, o.orgId);
       expect(await detailOf(trx, o.orgId, added)).toBe("minimal");
+      // The CHECK that Up made refuses a level that is not on the list.
+      await expectSqlState(
+        trx,
+        () =>
+          sql`update memberships set telegram_detail = 'short' where org_id = ${o.orgId}::uuid and user_id = ${added}::uuid`.execute(
+            trx
+          ),
+        CHECK
+      );
     });
   });
 
