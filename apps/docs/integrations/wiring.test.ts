@@ -47,13 +47,14 @@ afterAll(() => {
 });
 
 describe("astro.config.mjs", () => {
-  test("the integrations run in this order: Starlight, CSP, public content, in-place pages, links", () => {
+  test("the integrations run in this order: Starlight, CSP, public content, in-place pages, links, images", () => {
     expect(integrations.map((integration) => integration.name)).toEqual([
       "@astrojs/starlight",
       "ea-csp-finalize",
       "ea-public-content",
       "ea-in-place-check",
       "ea-link-check",
+      "ea-image-check",
       "ea-shots",
     ]);
   });
@@ -97,6 +98,22 @@ describe("astro.config.mjs", () => {
       const { lines, logger: log } = logger();
       run({ dir: pathToFileURL(`${dist}/`), logger: log });
       expect(lines).toEqual(["links checked in 1 page(s)"]);
+    } finally {
+      rmSync(dist, { recursive: true, force: true });
+    }
+  });
+  test("the image check runs after the build and fails on an image outside the allowed places", () => {
+    const dist = mkdtempSync(join(tmpdir(), "docs-wiring-dist-"));
+    try {
+      const run = hook("ea-image-check", "astro:build:done");
+      put(dist, "index.html", `<html><body><img src="/email_assistant/other.png"></body></html>`);
+      expect(() => run({ dir: pathToFileURL(`${dist}/`), logger: logger().logger })).toThrow(
+        "image_outside /email_assistant/other.png in index.html"
+      );
+      put(dist, "index.html", `<html><body><img src="/email_assistant/shots/a.png"></body></html>`);
+      const { lines, logger: log } = logger();
+      run({ dir: pathToFileURL(`${dist}/`), logger: log });
+      expect(lines).toEqual(["image sources checked: 1"]);
     } finally {
       rmSync(dist, { recursive: true, force: true });
     }
