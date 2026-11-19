@@ -65,7 +65,7 @@ describe("notificationOf", () => {
     const item = "3f1c2a52-0b6e-4c1a-9d0e-5a7b8c9d0e1f";
     expect(notificationOf({ ...urgent, kind: "approval", count: 3, itemId: item, lang: "pl" })).toEqual({
       title: "Szkic do akceptacji",
-      options: { body: "3 szkice czekają", tag: "r1", data: { path: `/approvals?id=${item}` } },
+      options: { body: "3 szkice czekają na Ciebie", tag: "r1", data: { path: `/approvals?id=${item}` } },
     });
   });
 
