@@ -67,8 +67,8 @@ const E2E_ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
 const DEMO_ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
   onboarding: {
     path: "/onboarding",
-    en: "The Onboarding page of the panel in a demo organization, with the steps to connect a mailbox, link Telegram and choose the mode.",
-    pl: "Strona Start w panelu organizacji demo, z krokami: podłącz skrzynkę, połącz Telegram i wybierz tryb.",
+    en: "The Onboarding page of the panel in a demo organization, with one mailbox connected and the steps to link Telegram and choose the mode.",
+    pl: "Strona Start w panelu organizacji demo, z jedną podłączoną skrzynką i krokami: połącz Telegram i wybierz tryb.",
   },
   mailboxes: {
     path: "/mailboxes",

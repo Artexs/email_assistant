@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { TERMS_VERSION, type LiveRunPlan } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -123,6 +123,35 @@ async function counts() {
     users: await one(sql`select count(*) as n from users where email = ${DEMO_OWNER_EMAIL}`),
   };
 }
+
+// The command refuses before it touches a database: a database that the e2e seed would not wipe takes no demo owner with a known password.
+async function runCommand(args: string[]): Promise<{ code: number; stderr: string }> {
+  const child = Bun.spawn(["bun", "apps/server/src/scripts/demo-org-setup.ts", ...args], {
+    cwd: resolve(import.meta.dir, "../../../.."),
+    env: { ...process.env, MIGRATOR_DATABASE_URL: process.env.DATABASE_URL ?? "" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stderr, code] = await Promise.all([new Response(child.stderr).text(), child.exited]);
+  return { code, stderr };
+}
+
+describe("demo-org-setup command", () => {
+  test("a database that is not an e2e database is refused before anything is imported", async () => {
+    const file = await writeSeed();
+    const result = await runCommand(["--seed", file, "--out", join(dir, "owner.json")]);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("refusing: DATABASE_URL is not an e2e database");
+    expect(await counts()).toEqual({ orgs: 0, users: 0 });
+  });
+  test("missing or unknown arguments are refused", async () => {
+    for (const args of [[], ["--seed", "x.json"], ["--seed", "x.json", "--out", "y.json", "--other", "z"]]) {
+      const result = await runCommand(args);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain("refusing: bad_args");
+    }
+  });
+});
 
 describe("setupDemoOrg", () => {
   test("T2 the owner signs in with the password; the organization, one mailbox and activity rows are there; the terms are accepted", async () => {
