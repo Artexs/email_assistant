@@ -8,14 +8,15 @@ After this stage no code path can call Google for an LLM, and the legal registry
 
 - **Goal:** `llmProviders` has one row, `openai` (D1). `LlmProviderId` is `"openai"`.
 - **Files:** delete `apps/server/src/platform/llm/providers/gemini.ts` and its test. Change the registry, `config-llm.ts` (the `GEMINI_*` keys, `defaultGeminiRpm`, `providerBlocks.gemini`), `settings.ts` (`uniformRoleTable` gets one provider row; comments that name Gemini), `testing.ts` (default provider `openai`), `outside-services.ts` (`GEMINI_API_KEY` out). Remove `@google/genai` with `bun remove` in the package that holds it; never edit `bun.lock` by hand.
-- **Decisions:** D1, D2. Keep every provider-generic mechanism: `LLM_PROVIDER`, `LLM_<ROLE>_PROVIDER`, `providerBlocks: Record<LlmProviderId, …>`, the rule "`LLM_<ROLE>_REASONING` on a provider whose `reasoningEffort` is null is an error" (no provider has null now; keep the rule and its test with a fake provider row, or drop only the test case that needs a real null provider, and say which in the final message). A comment that only explains Gemini goes.
+- **Decisions:** D1, D2, D15. Keep every provider-generic mechanism: `LLM_PROVIDER`, `LLM_<ROLE>_PROVIDER`, `providerBlocks`, the per-provider rate limiter, the null-effort rule. Tests of a mechanism that needs two providers (per-provider limiter, a role on another provider, null effort) move to the test helper `twoProviderTable()` in `platform/llm/testing.ts`: a second row `other` (cast in test code only, no registry row). Tests that parse a second provider from env are deleted: the enum has one value. List each moved and each deleted test in the final message.
 - **Test (unit):**
   1. Env `OPENAI_API_KEY=k` only → config parses; `LLM_PROVIDER` = `openai`.
   2. Env `LLM_PROVIDER=other` → `ConfigError`; the message holds `LLM_PROVIDER` and not `other`.
   3. Env `LLM_JUDGE_PROVIDER=other` → `ConfigError` naming `LLM_JUDGE_PROVIDER`.
-  4. Env `OPENAI_API_KEY=k` plus `OLD_PROVIDER_API_KEY=x` → config parses and the parsed config has no `OLD_PROVIDER_API_KEY` (an unknown leftover key is ignored, D2). No test names the removed vendor: the acceptance grep covers test files too.
+  4. Env `OPENAI_API_KEY=k` plus `OLD_PROVIDER_API_KEY=x` → parses; no `OLD_PROVIDER_API_KEY` in the result (D2). No test names the removed vendor.
   5. `llmProviderIds` equals `["openai"]`.
-- **Done when:** tests 1–5 pass. Every test that breaks on the type change is fixed in this stage; a test that only holds a Gemini string and still passes waits for stage 03.
+  6. `twoProviderTable()`: two roles on `openai` and `other` get two provider limiters (the moved client test).
+- **Done when:** tests 1–6 pass. A test that breaks on the type change is fixed here; one that only holds a Gemini string waits for stage 03.
 
 ## Step 2 — Prices, lint rule, scripts, env files
 
@@ -39,14 +40,14 @@ After this stage no code path can call Google for an LLM, and the legal registry
 - **Files:** `packages/core/src/legal/subprocessors.ts` (remove row `gemini`), `apps/web/src/legal/en/privacy.md` and `pl/privacy.md` § AI model, `packages/core/src/web/terms.ts` (`TERMS_HISTORY`).
 - **Decisions:**
   - Delete only the sentence "An install can use Google Gemini instead." (en) and "Instalacja może zamiast tego używać Google Gemini." (pl). The next sentence about the "Used when" column stays.
-  - Append one `TERMS_HISTORY` entry: version = the UTC date of the commit (add `-2`, `-3` when that date exists), the digest that `legal-version.test.ts` asks for, comment `// sub-processor gemini removed`. Do not change any other legal text.
+  - Append one `TERMS_HISTORY` entry: version = the UTC date of the commit (add `-2`, `-3` when that date exists), the digest that `legal-version.test.ts` asks for, comment `// LLM sub-processor row removed (ADR 0037)` (no vendor name in `packages/`, N4). No other legal text changes.
   - Rows `google-oauth` and push services (Google FCM) stay.
-  - `outside-services.test.ts` keeps both directions (each provider id has a row; each `llmProvider` row names a known id).
-- **Test:** the existing legal tests (`legal-version.test.ts`, `legal-privacy.test.ts`, the registry tests) pass. No new test holds the vendor name; the grep of stage 03 covers the pages.
+  - `outside-services.test.ts` keeps both directions.
+- **Test:** the legal tests (`legal-version`, `legal-privacy`, `legal-papers`, the registry tests) pass.
 
 ## Check
 
-`bun test apps/server/src/platform apps/server/src/scripts packages/core apps/web/src/lib deploy/test` and `bun run lint`.
+`bun test apps/server/src/platform apps/server/src/scripts apps/server/src/legal-papers.test.ts packages/core apps/web/src/lib deploy/test` and `bun run lint`.
 
 ## Done when
 

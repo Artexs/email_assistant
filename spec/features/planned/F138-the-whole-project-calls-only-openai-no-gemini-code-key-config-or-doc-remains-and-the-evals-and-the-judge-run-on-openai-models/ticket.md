@@ -11,7 +11,7 @@ Every LLM call of the product, the evals and the judge goes to OpenAI. The Gemin
 ## Scope
 
 - Starting seam: ADR 0015 (`LLM_PROVIDER` switch, `apps/server/src/platform/llm/providers/{gemini,openai}.ts`, `platform/config-llm.ts`, `settings.ts`, `outside-services.ts`).
-- The product already runs on OpenAI `gpt-6-luna` (VPS `LLM_PROVIDER=openai`, since 2026-11-06). Find every remaining Gemini use: the E2a judge and the second-model runs of the evals (`GEMINI_MODEL`, now `gemini-3.8-flash`), F115 stage 02 (real drafter run and injection grading), eval fixtures and result files that name a Gemini model, `llm:check`, the sub-processor registry and the privacy pages, the ESLint rule that confines `@google/genai`, the `@google/genai` dependency, CI and compose env, `.env.example`.
+- The product already runs on OpenAI `gpt-6-luna` (VPS `LLM_PROVIDER=openai`, since 2026-11-06). Find every remaining Gemini use: the E2a judge and the second-model runs of the evals (`GEMINI_MODEL_CLASSIFIER`, default `gemini-3.5-flash-lite`; the F115 judge ran on it), F115 stage 02 (real drafter run and injection grading), eval fixtures and result files that name a Gemini model, `llm:check`, the sub-processor registry and the privacy pages, the ESLint rule that confines `@google/genai`, the `@google/genai` dependency, CI and compose env, `.env.example`.
 - Pick an OpenAI model for the judge that is not the model under test, and record why. Re-run any gate whose number changes (the drafter holdout, the judge agreement) on the new models; old result files stay as history.
 - A new ADR that supersedes 0007 and amends 0015 and 0012. The sub-processor entry for Google is removed only when no code path can send data to it.
 - Keep the provider registry shape if a later provider is wanted (owner, 2026-11-06: "allow more providers later"); the registry then has one row.
@@ -32,7 +32,7 @@ Every LLM call of the product, the evals and the judge goes to OpenAI. The Gemin
 
 ## Slices
 
-One worker job per stage, in order 01 → 02 → {03, 04, 05 in parallel} → 06 (`plan.md` § Stages and § How to run). Stage 02 is the only `bun.lock` change; no migration. Owner step O1 (the OpenAI project limit) comes before stage 06. Risky: 01, 02, 06.
+One worker job per stage, in order 01 → 02 → {03, 04 in parallel} → 05 → 06 (`plan.md` § Stages and § How to run). Stage 02 is the only `bun.lock` change; no migration. Owner step O1 (the OpenAI project limit) comes before stage 06. Risky: 01, 02, 06.
 
 ## Sequenced
 

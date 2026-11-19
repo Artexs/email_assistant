@@ -1,8 +1,8 @@
 # F138 stage 05 — Current docs
 
-Part of [`../plan.md`](../plan.md). Needs stage 02 landed.
+Part of [`../plan.md`](../plan.md). Needs stages 03 and 04 landed.
 
-May run next to stages 03 and 04. This stage owns the current docs outside `docs/decisions/`, `docs/legal/` and `docs/product/`, plus `README.md` and `CLAUDE.md`. Link to ADR 0037 by its file name; if stage 04 took another number, the land of the later stage fixes the link.
+Runs after stage 04 (B2): `capability-map.test.ts` fails on "ADR 0037" in a page until the ADR file exists. This stage owns the current docs outside `docs/decisions/`, `docs/legal/` and `docs/product/`, plus `README.md` and `CLAUDE.md`. Link to the ADR by the number that stage 04 used. If stage 04 took another number than 0037, fix it here also in `JUDGE_SAME_MODEL` and `evals/README.md` (N7).
 
 ## Step 1 — What the system does now
 
@@ -36,13 +36,14 @@ The ticket grep (`git grep -niE "gemini|@google/genai|generativelanguage" -- app
 5. `docs/architecture.md`: lines under "History (before ADR 0037)".
 6. `docs/roadmap.md`: dated state lines.
 7. `docs/diagrams/architecture-2026-11.*`.
-8. `CHANGELOG.md` is outside the grep paths; do not edit old entries.
+8. `docs/legal/claims.md` rows whose claim starts `Removed by ADR 0037` (B1).
+9. `CHANGELOG.md` is outside the grep paths; do not edit old entries.
 
 Any other hit in a file of this stage is fixed here. Save the output of the command of this stage to `/tmp/f138-s05/grep.log` and give the count of hits per allowed group.
 
 ## Check
 
-`bun run lint` (Markdown files are not linted; the check guards against a stray edit).
+`bun test apps/server/src/capability-map.test.ts apps/server/src/own-model-docs.test.ts` and `bun run lint`.
 
 ## Done when
 

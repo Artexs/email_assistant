@@ -6,20 +6,21 @@ The judge may share the provider of the model under test, never the model. Gemin
 
 ## Step 1 — Judge rule and default judge
 
-- **Goal:** a `--judge` run (sim classifier run and `--drafter` run) works with drafter or classifier `gpt-6-luna` and judge `gpt-6.1-terra`, both on `openai`, with no `--judge-*` flag and no `LLM_JUDGE_*` key.
+- **Goal:** a `--judge` run (sim or `--drafter`) works with `gpt-6-luna` under test and judge `gpt-6.1-terra`, both on `openai`, with no judge flag or key.
 - **Files:** `apps/server/src/scripts/eval-judge-setup.ts`; the judge row of `llmRoleTable` in `apps/server/src/platform/config-llm.ts`.
 - **Interfaces:**
   - `JUDGE_SAME_MODEL = "judge model must differ from the model under test (ADR 0037)"` (exported). `JUDGE_SAME_PROVIDER` and `JUDGE_SAME_PROVIDER_DRAFTER` are removed.
   - `judgeSetupError(table, at, role: JudgedRole = "classifier")` keeps its signature. Order of checks: same model → key missing → no price.
   - `DEFAULT_JUDGE_MODEL = "gpt-6.1-terra"` (exported from `config-llm.ts`).
-- **Decisions:** D3, D4. "Same model" = same provider and same model id; the effort does not count. When neither `LLM_JUDGE_MODEL` nor `--judge-model` is set, the judge model is `DEFAULT_JUDGE_MODEL` with effort `none` (unless `LLM_JUDGE_REASONING` is set), also when `LLM_JUDGE_PROVIDER` or `--judge-provider` is set. Provider: the judge key or flag, else the classifier's. Timeout = the provider's; role rpm = `LLM_JUDGE_RPM` or null. `LLM_JUDGE_MODEL` without `LLM_JUDGE_PROVIDER` stays an error (today's rule).
+- **Decisions:** D3, D4. "Same model" = same provider and same model id string; effort does not count. The trigger of the default is only the model: when neither `LLM_JUDGE_MODEL` nor `--judge-model` is set, the model is `DEFAULT_JUDGE_MODEL`, whatever other judge key or flag is set (`_PROVIDER`, `_RPM`, `_REASONING`, `_TIMEOUT_MS`, `--judge-provider`). Effort: `LLM_JUDGE_REASONING`, else `none`. Provider: the judge key or flag, else the classifier's. `LLM_JUDGE_MODEL` without `LLM_JUDGE_PROVIDER` stays an error.
+- **Text (N5):** every usage text and comment that says the judge needs another provider (`eval-args.ts`, `eval-drafter.ts`, `eval-sim.ts`) states the model rule.
 - **Test (unit):**
   1. Classifier `openai/gpt-6-luna`, judge `openai/gpt-6.1-terra`, key set → `null`.
   2. Classifier `openai/gpt-6-luna` effort `none`, judge `openai/gpt-6-luna` effort `high` → `JUDGE_SAME_MODEL`.
-  3. Role `drafter` `openai/gpt-6-luna`, judge `openai/gpt-6-luna` → `JUDGE_SAME_MODEL`, and no call runs (the existing fake-LLM harness test of the drafter run, exit 1).
+  3. Role `drafter` `openai/gpt-6-luna`, judge `openai/gpt-6-luna` → `JUDGE_SAME_MODEL`, exit 1, no call (fake-LLM drafter harness).
   4. Judge `openai/gpt-6.1-terra` on an `eu` endpoint → the "no price" message (no `eu` row).
-  5. Env with only `OPENAI_API_KEY` set → `table.roles.judge` = `{ provider: "openai", model: "gpt-6.1-terra", reasoningEffort: "none", rpm: null }`.
-  6. Env `LLM_JUDGE_PROVIDER=openai`, `LLM_JUDGE_MODEL=gpt-6-luna` with the classifier on `gpt-6-luna` → config parses; `judgeSetupError` gives `JUDGE_SAME_MODEL`.
+  5. Env with only `OPENAI_API_KEY` → judge `{ provider: "openai", model: "gpt-6.1-terra", reasoningEffort: "none", rpm: null }`; with `LLM_JUDGE_RPM=20` only → the same model, rpm 20.
+  6. Env `LLM_JUDGE_PROVIDER=openai`, `LLM_JUDGE_MODEL=gpt-6-luna`, classifier `gpt-6-luna` → config parses; `JUDGE_SAME_MODEL`.
   7. Env `LLM_JUDGE_PROVIDER=openai` only → judge model `gpt-6.1-terra`. Drafter run args `--judge-provider openai` with no `--judge-model` → judge model `gpt-6.1-terra`.
   8. Drafter run args `--model gpt-6.1-terra --judge` → `JUDGE_SAME_MODEL`, exit 1, no call.
 - **Done when:** tests 1–8 pass; the old "provider must differ" tests are rewritten to the model rule, not deleted.
@@ -32,7 +33,7 @@ The judge may share the provider of the model under test, never the model. Gemin
 - **Decisions:** a run with `--judge` adds `-judge-<judge model>` (same character rule as the model part) before the endpoint suffix. A run without `--judge` keeps today's name, so no old classifier state changes name.
 - **Test (unit):**
   1. Model `gpt-6-luna`, effort `low`, prompt `drafter-v1`, judge `gpt-6.1-terra` → the name holds `-judge-gpt-6.1-terra` and ends in `.jsonl`.
-  2. The same options without a judge → today's name (compare with a fixed string from the current code).
+  2. The same options without a judge → today's name (a fixed string).
   3. Two names that differ only in the judge model are different.
   4. Drafter run (fake LLM): a state file under the old name (no judge part) with 1 graded case exists; a judged run grades that case again (2 judge calls for 2 cases, not 1).
 
@@ -45,7 +46,7 @@ The judge may share the provider of the model under test, never the model. Gemin
   1. `{ rpm: 60, judge: true, judgeRpm: 8 }`, judge on `openai` → `providers.openai.rpm` 60, `roles.judge.rpm` 8, `roles.drafter.rpm` unchanged.
   2. `{ rpm: 60, judge: true }` with `judgeRoleRpm: 20` → `roles.judge.rpm` 20.
   3. `{ rpm: 60, judge: false, judgeRpm: 8 }` → no judge change.
-- **Docs:** `evals/README.md` lines on `--judge`, `--judge-provider`, `--judge-rpm` and the judge rule say the new rule (no ADR link check: ADR 0037 comes in stage 05).
+- **Docs:** `evals/README.md` states the new judge rule and the `--judge-rpm` rule (ADR 0037 comes in stage 04).
 
 ## Check
 

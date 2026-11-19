@@ -2,7 +2,7 @@
 
 Part of [`../plan.md`](../plan.md). Needs stage 02 landed.
 
-May run next to stages 04 and 05: they change only `docs/` and root text files, this stage changes only `apps/`, `packages/`, `deploy/` and `evals/README.md`.
+May run next to stage 04 (it changes only `docs/decisions`, `docs/legal`, `docs/product*`). This stage changes only `apps/`, `packages/`, `deploy/` and `evals/README.md`. Stage 05 runs after both.
 
 ## Step 1 — Test fixtures and comments
 
