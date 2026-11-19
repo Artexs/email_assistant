@@ -29,7 +29,9 @@ const claim = (over: Partial<PublicClaim> = {}): PublicClaim => ({
 let root = "";
 beforeAll(() => {
   root = mkdtempSync(join(tmpdir(), "claims-"));
-  for (const file of ["a/b.ts", "a/c.ts", "docs/decisions/0003-x.md"]) {
+  // `etc/passwd` and `https:/example.com/a/b.ts` exist under the root: the rules for an absolute path and a URL must refuse them,
+  // not the missing file (`join(root, "/etc/passwd")` would find the first).
+  for (const file of ["a/b.ts", "a/c.ts", "docs/decisions/0003-x.md", "etc/passwd", "https:/example.com/a/b.ts"]) {
     mkdirSync(dirname(join(root, file)), { recursive: true });
     writeFileSync(join(root, file), "x\n");
   }

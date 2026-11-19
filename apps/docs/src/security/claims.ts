@@ -1,5 +1,5 @@
-// The claims of the public security page (F121). Each claim cites rows of the claims ledger (`docs/legal/claims.md`)
-// and repo files that prove it. `claimProblems` is the check; the build runs it (`integrations/claim-check.ts`).
+// The claims of the public security page (spec/features/active/F121-e10b-public-pages-and-demo). Each claim cites rows of the claims ledger
+// (`docs/legal/claims.md`) and repo files that prove it. `claimProblems` is the check; the build runs it (`integrations/claim-check.ts`).
 import { existsSync } from "node:fs";
 import { isAbsolute, join, relative } from "node:path";
 import type { Texts } from "@ea/core/web";
@@ -16,7 +16,7 @@ export interface PublicClaim {
   condition: Texts | null;
 }
 
-// Stage 02 fills the list. While it is empty the security page makes no claim.
+// The security page stage fills the list. While it is empty the security page makes no claim.
 export const publicClaims: readonly PublicClaim[] = [];
 
 export interface LedgerRow {
