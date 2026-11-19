@@ -17,6 +17,12 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-19
+
+### Fixed
+
+- Capability page format: the checked line of the backups and operations pages stands alone on its line again.
+
 ## [0.4.0] - 2026-11-19
 
 ### Added
