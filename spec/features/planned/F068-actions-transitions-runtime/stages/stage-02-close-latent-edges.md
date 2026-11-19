@@ -19,7 +19,7 @@ Goal: `WRITER_GUARDS` admits exactly the `ACTION_EDGES`. Change only these rows.
 | `releaseAction toStatus "applying"` | `create_draft: [applying]`; `send: [applying]` | L1 (to `applying`) |
 | `markUndone default` | `move, mark_read, flag, create_draft: [applied]` | L4, L7 |
 
-Remove `LATENT_EDGES` and `LatentEdge` (D9); test A (f) compares guard keys with `ACTION_EDGES` keys only; delete the test "no latent edge repeats". The L8 limit (D8) becomes a comment on E1 and E5. Add the missing `createPlanned` callers to `ACTION_ENTRIES` (grep at HEAD).
+Remove `LATENT_EDGES` and `LatentEdge` (D9); test A (f) compares guard keys with `ACTION_EDGES` keys only; delete the test "no latent edge repeats". The D8 blind spot becomes a comment on the draft edges. Add the missing `createPlanned` callers to `ACTION_ENTRIES` (grep at HEAD).
 
 Check each call of the ten writers at HEAD against plan § Facts checked. A call that lands on a closed key is a stop: report it, do not widen a row.
 
@@ -36,12 +36,14 @@ For each key, in a rolled-back transaction: insert a row `(type, from)` with the
 
 Named cases inside the table (each → `false`, row unchanged): 1. `markApplying`, `move` `ready`. 2. `finishAction` `expired` `from: ["ready"]`, `flag` `ready`. 3. `finishAction` `applied` `from: ["approved"]`, `send` `approved` (L5). 4. `finishAction` `expired` `from: ["applying"]`, `send` `applying` (L6). 5. `releaseAction` to `applying`, `send` `approved`. 6. `releaseAction` to `ready`, `save_summary` `ready`. 7. `markUndone`, `send` `applied` (L4). 8. `markUndone`, `save_summary` `applied` (L7).
 
-Control cases (the row changes): 9. `finishAction` `failed` `from: ["approved"]`, `send` `approved` (E7). 10. `finishAction` `expired` `from: ["approved"]`, `send` `approved` (E21). 11. `releaseAction` to `ready`, `create_draft` `applying` (E10). 12. `finishAction` `applied`, default `from`, original `create_draft` `ready` (L8 stays open, D8).
+Control cases (the row changes): 9. `finishAction` `failed` `from: ["approved"]`, `send` `approved` (E7). 10. `finishAction` `expired` `from: ["approved"]`, `send` `approved` (E21). 11. `releaseAction` to `ready`, `create_draft` `applying` (E10). 12. `finishAction` `applied`, default `from`, original `create_draft` `ready` (D8). 13. `markApplying`, reverse `create_draft` `ready` (D8).
+
+Test B drives every `actionTypes` member for every row. Stage 01 test 8 drops the pair `to "applied"` × `["approved"]`: it admits nothing now (case 3 covers it).
 
 ## Step 3 — docs
 
-- `docs/capabilities/actions-and-undo.md` § Data: the writers build their type and status guard from `WRITER_GUARDS` through `statusGuard`; the guards admit exactly the drawn edges, except L8 (D8).
-- `docs/code-patterns.md` § Data access: a function that changes `actions.status` builds its guard with `statusGuard` from a `WRITER_GUARDS` row and gets a test B case (D13). § Add an action type, row 5: drop `LATENT_EDGES`; a new type needs its `WRITER_GUARDS` rows, else every writer refuses it.
+- `docs/capabilities/actions-and-undo.md` § Data: the writers build their type and status guard from `WRITER_GUARDS` through `statusGuard`; the guards admit exactly the drawn edges, except the original/reverse draft blind spot (D8).
+- `docs/code-patterns.md` § Data access: the rule of D13. § Add an action type, row 5: drop `LATENT_EDGES`; a new type needs `WRITER_GUARDS` rows, else every writer refuses it.
 
 ## Check
 
@@ -50,8 +52,8 @@ Control cases (the row changes): 9. `finishAction` `failed` `from: ["approved"]`
 ## Done when
 
 - `LATENT_EDGES` and `LatentEdge` exist nowhere in `apps/` (a search that must find nothing).
-- Test A (f), test B, the closed-edge test (70 keys, cases 1–12) and stage 01 test 7 pass.
-- The send suites named in stage 01 pass with no edit.
+- Test A (f), test B, the closed-edge test (70 keys, cases 1–13) and stage 01 test 7 pass.
+- The suites in plan § Rules pass with no edit.
 - The Proof (`plan.md`, `NN` = `02`) prints `PROOF_OK`.
 
 ## Out of scope
