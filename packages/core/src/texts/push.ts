@@ -45,7 +45,8 @@ const enBodies: Record<Exclude<PushPayloadKind, "test">, EnForms> = {
   urgent: { one: "1 urgent mail", other: "{count} urgent mails" },
   not_triaged: { one: "1 mail without a category", other: "{count} mails without a category" },
   approval: { one: "1 draft waits for you", other: "{count} drafts wait for you" },
-  approval_set: { one: "1 set of drafts waits for you", other: "{count} sets of drafts wait for you" },
+  // The count of a set is its drafts, so the phrase counts drafts.
+  approval_set: { one: "1 draft waits for you", other: "{count} drafts wait for you" },
   replies_ready: { one: "1 reply is ready", other: "{count} replies are ready" },
   send_result: { one: "1 send result", other: "{count} send results" },
   delegation_answered: { one: "1 answer to a delegation", other: "{count} answers to delegations" },
@@ -85,11 +86,16 @@ const plBodies: Record<Exclude<PushPayloadKind, "test">, PlForms> = {
     few: "{count} wiadomości bez kategorii",
     many: "{count} wiadomości bez kategorii",
   },
-  approval: { one: "1 szkic czeka na Ciebie", few: "{count} szkice czekają", many: "{count} szkiców czeka" },
+  approval: {
+    one: "1 szkic czeka na Ciebie",
+    few: "{count} szkice czekają na Ciebie",
+    many: "{count} szkiców czeka na Ciebie",
+  },
+  // The count of a set is its drafts, so the phrase counts drafts.
   approval_set: {
-    one: "1 zestaw szkiców czeka na Ciebie",
-    few: "{count} zestawy szkiców czekają",
-    many: "{count} zestawów szkiców czeka",
+    one: "1 szkic czeka na Ciebie",
+    few: "{count} szkice czekają na Ciebie",
+    many: "{count} szkiców czeka na Ciebie",
   },
   replies_ready: {
     one: "1 odpowiedź jest gotowa",
@@ -118,9 +124,9 @@ const plBodies: Record<Exclude<PushPayloadKind, "test">, PlForms> = {
     many: "{count} skrzynek ma błąd logowania",
   },
   host_blocked: {
-    one: "1 serwer skrzynki jest niedozwolony",
-    few: "{count} serwery skrzynek są niedozwolone",
-    many: "{count} serwerów skrzynek jest niedozwolonych",
+    one: "1 skrzynka ma niedozwolony serwer",
+    few: "{count} skrzynki mają niedozwolony serwer",
+    many: "{count} skrzynek ma niedozwolony serwer",
   },
   sync_stale: {
     one: "1 skrzynka się nie synchronizuje",

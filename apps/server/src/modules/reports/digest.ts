@@ -187,13 +187,15 @@ async function loadBrief(
     loadLoopBrief(db, ctx, mailboxIds, { now: request.now, timeZone, modes, draftMailboxIds, lock }),
     listDelegationsDueBy(db, ctx, mailboxIds, { dueBefore: dayEnd, limit: BRIEF_DELEGATION_LINES }),
   ]);
+  const loopCounts = { waiting: loopBrief.waiting.total + delegations.total, promised: loopBrief.promised.total };
   if (!loops.firstOfDay) {
     return {
       sections: null,
       loopConsent: loops.loopConsent,
       owner: request.role === "owner",
       urgentEmailIds: [],
-      openLoops: { waiting: loopBrief.waiting.total + delegations.total, promised: loopBrief.promised.total },
+      openLoops: loopCounts,
+      loopCounts,
     };
   }
   const urgentRows = items.filter((item) => item.category === "urgent");
@@ -249,6 +251,7 @@ async function loadBrief(
     owner: request.role === "owner",
     urgentEmailIds: urgent.map((item) => item.emailId),
     openLoops: null,
+    loopCounts,
     ...(links === undefined ? {} : { links }),
   };
 }

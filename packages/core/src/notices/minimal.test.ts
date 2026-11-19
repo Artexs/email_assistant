@@ -287,6 +287,44 @@ describe("minimal render of every kind", () => {
     });
   });
 
+  test("the count of a kind is the count of its items: replies, drafts of a set, sends on hold", () => {
+    const text = (kind: NoticeKind, locale: UserLocale) => {
+      const result = renderNotice(kind, stored(kind), options(locale, base));
+      return result.ok ? result.message.text : "";
+    };
+    expect(text("replies_ready", "en")).toBe(`✍️ 3 replies are ready\n${base}/approvals`);
+    expect(text("approval_set", "en")).toBe(`📝 2 drafts wait for you\n${base}/approvals`);
+    expect(text("approval_set", "pl")).toBe(`📝 2 szkice czekają na Ciebie\n${base}/approvals`);
+    expect(text("send_held", "en")).toBe(`⏳ 2 sends are on hold\n${base}/approvals`);
+    expect(text("send_held", "pl")).toBe(`⏳ 2 wysyłki są wstrzymane\n${base}/approvals`);
+  });
+
+  test("the Polish count phrases of the notice kinds, word for word", () => {
+    const line = (kind: Parameters<ReturnType<typeof minimalTexts>["line"]>[0], count: number) =>
+      minimalTexts("pl").line(kind, count);
+    expect(line("approval", 1)).toBe("📝 1 szkic czeka na Ciebie");
+    expect(line("approval", 2)).toBe("📝 2 szkice czekają na Ciebie");
+    expect(line("approval", 5)).toBe("📝 5 szkiców czeka na Ciebie");
+    expect(line("approval_set", 5)).toBe("📝 5 szkiców czeka na Ciebie");
+    expect(line("host_blocked", 1)).toBe("⛔ 1 skrzynka ma niedozwolony serwer");
+    expect(line("host_blocked", 2)).toBe("⛔ 2 skrzynki mają niedozwolony serwer");
+    expect(line("host_blocked", 5)).toBe("⛔ 5 skrzynek ma niedozwolony serwer");
+    expect(line("trust_report_ready", 1)).toBe("📋 Wynik sprawdzenia skrzynki jest gotowy");
+    expect(line("autonomy_paused", 1)).toBe("⏸ Wyłączono automatyczne przenoszenie dla jednej kategorii");
+    expect(line("reply_result", 1)).toBe("✍️ Jest wynik Twojej prośby o odpowiedź");
+  });
+
+  test("the Polish mailbox-problem line has its plural forms (1, 2, 5, 12, 22)", () => {
+    const line = (count: number) => minimalTexts("pl").mailboxProblems(count);
+    expect([1, 2, 5, 12, 22].map(line)).toEqual([
+      "⚠️ 1 skrzynka ma problem",
+      "⚠️ 2 skrzynki mają problem",
+      "⚠️ 5 skrzynek ma problem",
+      "⚠️ 12 skrzynek ma problem",
+      "⚠️ 22 skrzynki mają problem",
+    ]);
+  });
+
   test("a view the schema refuses, and a mail or push row with the detail minimal, do not render", () => {
     expect(renderNotice("urgent", { subject: "x" }, options("en", base))).toEqual({ ok: false });
     for (const channel of ["mail", "push"] as const) {
@@ -389,21 +427,49 @@ describe("minimal digest", () => {
     });
   });
 
-  test("the first digest of the day counts the loops of its brief sections, the lines left out and the hidden ones", () => {
-    const part = (more: number, hidden: number) => ({ lines: [], more, hidden });
-    const sections = {
-      urgent: part(0, 0),
-      reply: part(0, 0),
-      waiting: part(5, 0),
-      promised: part(0, 4),
-      stale: part(2, 0),
+  test("the open loops of the facts are the loop counts of the brief, the first digest of the day too; without them the count line", () => {
+    const part = { lines: [], more: 0, hidden: 0 };
+    const sections = { urgent: part, reply: part, waiting: part, promised: part, stale: part };
+    const facts = (brief: Partial<NonNullable<DigestInput["brief"]>>) =>
+      renderDigestWithBrief(
+        {
+          ...input,
+          brief: { sections, loopConsent: false, owner: true, urgentEmailIds: [], openLoops: null, ...brief },
+        },
+        textTables.en
+      ).minimal.openLoops;
+    // A first digest with no consent: the sections hold the loops only, the counts hold loops and delegations.
+    expect(facts({ loopCounts: { waiting: 3, promised: 1 } })).toEqual({ waiting: 3, promised: 1 });
+    expect(facts({ openLoops: { waiting: 2, promised: 0 } })).toEqual({ waiting: 2, promised: 0 });
+    expect(facts({})).toBeNull();
+  });
+
+  test("a late digest (now 08:40, slot 08:00): the header names the slot and says late", () => {
+    const late = {
+      ...input,
+      now: new Date("2026-11-06T07:40:00Z"),
+      slot: { date: "2026-11-06", time: "08:00", late: true },
     };
-    const { minimal } = renderDigestWithBrief(
-      { ...input, brief: { sections, loopConsent: false, owner: true, urgentEmailIds: [], openLoops: null } },
-      textTables.en
-    );
-    // The stale (closed) loops are not open loops.
-    expect(minimal.openLoops).toEqual({ waiting: 5, promised: 4 });
+    const { minimal } = renderDigestWithBrief(late, textTables.en);
+    expect(minimal.at.toISOString()).toBe("2026-11-06T07:00:00.000Z");
+    expect(minimal.late).toBe(true);
+    const view = encodeNoticeView("digest", { text: "t", buttons: [], minimal });
+    const english = renderNotice("digest", view, options("en", base));
+    expect(english.ok && english.message.text.split("\n")[0]).toBe("📬 Digest 08:00 · Fri 6 Nov (late)");
+    const polish = renderNotice("digest", view, options("pl", base));
+    expect(polish.ok && polish.message.text.split("\n")[0]).toBe("📬 Podsumowanie 08:00 · pt. 6 lis (spóźnione)");
+  });
+
+  test("every category keeps its own count: no two counts swap", () => {
+    const counts = { urgent: 1, needs_reply: 2, delegation: 3, unsure: 4, info: 5, notification: 6, spam: 7 };
+    const { minimal } = renderDigestWithBrief({ ...input, counts }, textTables.en);
+    expect(minimal.action).toEqual({ urgent: 1, needs_reply: 2, delegation: 3, unsure: 4 });
+    expect(minimal.other).toEqual({ info: 5, notification: 6, spam: 7 });
+    const view = encodeNoticeView("digest", { text: "t", buttons: [], minimal });
+    const result = renderNotice("digest", view, options("en", base));
+    const lines = result.ok ? result.message.text.split("\n") : [];
+    expect(lines).toContain("NEEDS ACTION · 10: 1 urgent, 2 reply, 3 delegate, 4 unsure");
+    expect(lines).toContain("OTHER MAIL · 18: 5 info, 6 notification, 7 spam");
   });
 
   test("a mailbox that never synced or synced late counts as a problem, a fresh one does not", () => {
@@ -463,7 +529,7 @@ describe("minimal weekly report, loop consent and card edit", () => {
     const result = renderNotice("loop_consent", stored("loop_consent"), options("en", base));
     expect(result).toEqual({
       ok: true,
-      message: { text: `${textTables.en.notices.loopConsent.approval}\n${base}/settings`, buttons: [] },
+      message: { text: `${textTables.en.notices.loopConsent.approval}\n${base}/approvals`, buttons: [] },
     });
   });
 

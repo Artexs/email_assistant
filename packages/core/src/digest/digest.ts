@@ -99,6 +99,9 @@ export interface DigestBrief {
   links?: BriefRenderOptions["links"];
   // The count line of a later digest: waiting lines and promises due. Null: no line.
   openLoops: { waiting: number; promised: number } | null;
+  // The same two counts in every digest of a brief, the first of the day too (loops and the delegations due today, with or without the
+  // consent of the member): the `minimal` digest prints them. Absent: `openLoops`.
+  loopCounts?: { waiting: number; promised: number };
 }
 
 export interface DigestInput {
@@ -185,20 +188,10 @@ function hasProblem(mailbox: DigestMailbox, now: Date): boolean {
   return mailbox.lastSyncedAt === null || now.getTime() - mailbox.lastSyncedAt.getTime() > SYNC_LATE_MS;
 }
 
-function sectionTotal(part: { lines: readonly unknown[]; more: number; hidden: number }): number {
-  return part.lines.length + part.more + part.hidden;
-}
-
 export function digestMinimalFacts(input: DigestInput): DigestMinimalFacts {
   const { timeZone, counts } = input;
   const slot = input.kind === "scheduled" ? input.slot : null;
-  const brief = input.brief;
-  const openLoops =
-    brief === undefined
-      ? null
-      : brief.sections !== null
-        ? { waiting: sectionTotal(brief.sections.waiting), promised: sectionTotal(brief.sections.promised) }
-        : brief.openLoops;
+  const openLoops = input.brief === undefined ? null : (input.brief.loopCounts ?? input.brief.openLoops);
   const countOf = (category: Category): number => counts[category] ?? 0;
   return {
     at: slot === null ? input.now : localToInstant(slot.date, slot.time, timeZone),

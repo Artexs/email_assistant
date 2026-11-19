@@ -16,6 +16,12 @@ Ticket: `spec/features/active/F118-e9b-phone-channel-pwa-push-telegram-detail/` 
 4. The weekly report minimal prints two numbers of the view (`week.m4.triaged`, `week.m4.handled`) and no label string.
 5. `/digest` at the minimal level still builds the full digest (reads mail rows in memory) to get the counts; the text holds none of it.
 
+## Review fixes (Opus review of b24bcd4e)
+- Counts: `noticeFactsOf` has a `send_held` case (`view.waiting`). An approval set counts drafts; its push and minimal phrase is now "N drafts wait for you" (the stage 08 push body changed the same way). `loop_consent` links to `/approvals` (`PAGE.loop_consent`), as every full view does.
+- Digest: `DigestBrief.loopCounts` (loops plus delegations due today, set in every brief, consent or not) feeds `DigestMinimalFacts.openLoops`; it equals the count line of a later digest. Delegations that are not due today are not counted (same as that line). Test: `channels-digest-minimal-loops.test.ts`.
+- Polish texts changed: approval and approval_set (`na Ciebie` in all forms), host_blocked, trust_report_ready, autonomy_paused, reply_result.
+- Two test edits of the first review round, for the next worker: `channels-report-mail.test.ts` (the Telegram digest row also holds `minimal`; the mail row does not) and `telegram-schema.test.ts` (the outbox detail CHECK is pinned to `["full"]` until the detail migration widens it; then the line goes back to `noticeDetails`).
+
 ## For stage 10
 - `telegramDetailOf` is the single place to make real (`detailsOf(trx, ctx, userIds)` batch reader for the sender). The sender must pass `detail` and `webBaseUrl` to `renderNotice`; `queueNotice` still check-renders `full` only.
 - Taps on old `full` cards answer as today (D12).

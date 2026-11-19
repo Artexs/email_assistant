@@ -57,17 +57,17 @@ export interface MinimalTexts {
 const ownEn: Record<MinimalOwnPhraseKind, string> = {
   digest: "📬 Your digest is ready",
   weekly_report: "📊 Your weekly report is ready",
-  trust_report_ready: "📋 Your mailbox check is ready",
+  trust_report_ready: "📋 The result of your mailbox check is ready",
   autonomy_paused: "⏸ Automatic moves were turned off for one category",
-  reply_result: "✍️ A reply request has a result",
+  reply_result: "✍️ Your reply request has a result",
 };
 
 const ownPl: Record<MinimalOwnPhraseKind, string> = {
   digest: "📬 Podsumowanie jest gotowe",
   weekly_report: "📊 Raport tygodniowy jest gotowy",
-  trust_report_ready: "📋 Sprawdzanie skrzynki jest gotowe",
-  autonomy_paused: "⏸ Automatyczne przenoszenie wiadomości jednej kategorii zostało wstrzymane",
-  reply_result: "✍️ Prośba o odpowiedź ma wynik",
+  trust_report_ready: "📋 Wynik sprawdzenia skrzynki jest gotowy",
+  autonomy_paused: "⏸ Wyłączono automatyczne przenoszenie dla jednej kategorii",
+  reply_result: "✍️ Jest wynik Twojej prośby o odpowiedź",
 };
 
 const isOwn = (kind: string): kind is MinimalOwnPhraseKind =>

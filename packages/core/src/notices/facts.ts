@@ -16,7 +16,8 @@ export const MAX_FACT_COUNT = 99_999;
 // - `approval`, `send_result`: the id of the action; `approval_set`: the id of the set; `delegation_answered`: the delegation id.
 // - `urgent`, `not_triaged`: null. The tap opens the list (`/activity?category=urgent`), and the id of the mail never leaves the server.
 // - every other kind: null.
-// `count` is the number of items that the view names: the items of an approval set, the replies of `replies_ready`, else 1.
+// `count` is the number of items that the view names: the drafts of an approval set, the replies of `replies_ready`, the sends
+// that wait in `send_held`, else 1.
 // A kind that has no push renderer gets the same two facts; the minimal Telegram render reads them too.
 export function noticeFactsOf<K extends NoticeKind>(kind: K, view: NoticeView<K>): NoticeFacts {
   const facts = factsOf(kind as NoticeKind, view as never);
@@ -35,6 +36,8 @@ function factsOf(kind: NoticeKind, view: NoticeView<NoticeKind>): NoticeFacts {
     }
     case "delegation_answered":
       return { count: 1, itemId: (view as NoticeView<"delegation_answered">).delegationId };
+    case "send_held":
+      return { count: (view as NoticeView<"send_held">).waiting, itemId: null };
     case "replies_ready":
       return { count: (view as NoticeView<"replies_ready">).count, itemId: null };
     default:
