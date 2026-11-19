@@ -12,7 +12,7 @@ export const enDetail = {
     "Your organization locks Telegram to counts and links. Your choice, Full, applies again when the lock ends.",
   tgd_minimal_short: "Counts and links only",
   tgd_full_short: "Full",
-  tgd_current_label: "What Telegram gets now",
+  tgd_current_label: "What Telegram gets now:",
   tgd_change: "Change",
   tgd_change_title: "Change what Telegram gets",
   tgd_saved_toast: "Telegram settings saved.",

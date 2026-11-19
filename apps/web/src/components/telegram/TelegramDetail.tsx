@@ -116,7 +116,7 @@ export function TelegramDetailLinked({ state, busy, onChanged }: LinkedProps) {
     <div data-section="telegram-detail-linked" className="flex flex-col items-start gap-2">
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm">
-          <span className="text-muted-foreground">{`${t("tgd_current_label")}: `}</span>
+          <span className="text-muted-foreground">{t("tgd_current_label")} </span>
           <span data-detail={shown} className="font-medium">
             {t(shortLabels[shown])}
           </span>

@@ -15,7 +15,7 @@ export const plDetail = {
     "Twoja organizacja ograniczyła Telegram do liczb i linków. Twój wybór, Pełne, wróci do działania, gdy blokada się skończy.",
   tgd_minimal_short: "Tylko liczby i linki",
   tgd_full_short: "Pełne",
-  tgd_current_label: "Co Telegram dostaje teraz",
+  tgd_current_label: "Co Telegram dostaje teraz:",
   tgd_change: "Zmień",
   tgd_change_title: "Zmień, co dostaje Telegram",
   tgd_saved_toast: "Ustawienia Telegrama zapisane.",
