@@ -15,7 +15,7 @@ import {
 import { z } from "zod";
 
 import type { Db, TenantContext } from "../../platform/db";
-import { listActionsForEmails, listDraftTasks, listSummaries } from "../actions";
+import { listActionsForEmails, listDraftTasks, listOpenReplySendIdsOfEmails, listSummaries } from "../actions";
 import { readSenderLines, type SenderLineDeps } from "../contacts";
 import { listDelegateNames, listLatestDelegationsByEmailIds } from "../delegation";
 import { isFeatureOn } from "../tenancy";
@@ -62,9 +62,10 @@ export function decodeActivityCursor(text: string): ActivityCursor | null {
 }
 
 // One page of the activity list: the latest result of each mail with its actions, feedback and delegation.
-// A fixed number of queries per page (at most 9; the flag read of `why_lines` makes it 10, and only when a row holds a rule),
+// A fixed number of queries per page (at most 10; the flag read of `why_lines` makes it 11, and only when a row holds a rule),
 // whatever the number of rows. `sender` (absent: no sender line) adds the flag read of `sender_context` and, with the flag on,
-// ONE profile read for the whole page.
+// ONE profile read for the whole page. The flag read of `reply_drafts` adds, with the flag on, ONE read of the open reply drafts
+// of the page.
 export async function listActivity(
   db: Db,
   ctx: TenantContext,
@@ -117,6 +118,11 @@ export async function listActivity(
           rows.map((row) => ({ mailboxId: row.mailbox_id, address: row.from_address })),
           now
         );
+
+  // The key `reply` shows only while the flag is on: the row then offers "Draft reply", or links to the open draft.
+  const openReplies = (await isFeatureOn(db, ctx, "reply_drafts"))
+    ? await listOpenReplySendIdsOfEmails(db, ctx, ids)
+    : null;
 
   const names = delegateIds.size === 0 ? new Map<string, string>() : await listDelegateNames(db, ctx, [...delegateIds]);
 
@@ -178,6 +184,7 @@ export async function listActivity(
       suspicious: suspicious.get(row.email_id) ?? [],
       rule: whyOn ? row.rule : null,
       ...(lines === null ? {} : { sender: lines[index] ?? null }),
+      ...(openReplies === null ? {} : { reply: { sendId: openReplies.get(row.email_id) ?? null } }),
     };
   });
 

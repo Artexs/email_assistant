@@ -22,13 +22,16 @@ export interface EditValues {
   delegateId: string | null;
 }
 
-// An owner who may write edits a waiting delegation, clarification or follow-up (a reminder has no edit; a held send is approved already).
+// An owner who may write edits a waiting delegation, clarification, follow-up or reply (a reminder has no edit; a held send is approved already).
 export function canEdit(detail: Pick<ApprovalDetail, "state" | "kind">, who: { owner: boolean; canWrite: boolean }) {
   return (
     who.owner &&
     who.canWrite &&
     detail.state === "waiting" &&
-    (detail.kind === "delegation" || detail.kind === "clarification" || detail.kind === "follow_up")
+    (detail.kind === "delegation" ||
+      detail.kind === "clarification" ||
+      detail.kind === "follow_up" ||
+      detail.kind === "reply")
   );
 }
 

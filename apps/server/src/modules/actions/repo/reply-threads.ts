@@ -65,6 +65,31 @@ export async function listOpenReplyEmailIds(
   return new Set(rows.flatMap((row) => (row.email_id === null ? [] : [row.email_id])));
 }
 
+// The open reply send of each mail (of `emailIds`): the mail id to the id of the newest open send. A mail with none is absent. The
+// activity page shows "Open the draft" for them. Filters `org_id`.
+export async function listOpenReplySendIdsOfEmails(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  emailIds: readonly string[]
+): Promise<Map<string, string>> {
+  const open = new Map<string, string>();
+  if (emailIds.length === 0) return open;
+  const rows = await db
+    .selectFrom("actions")
+    .select(["id", "email_id"])
+    .where("org_id", "=", ctx.orgId)
+    .where("type", "=", "send")
+    .where("status", "in", OPEN_REPLY_STATUSES)
+    .where(sql<string>`payload->>'kind'`, "=", "reply")
+    .where("email_id", "in", [...emailIds])
+    .orderBy("created_at")
+    .orderBy("id")
+    .execute();
+  // Oldest first, so the newest send of a mail is the last one set.
+  for (const row of rows) if (row.email_id !== null) open.set(row.email_id, row.id);
+  return open;
+}
+
 // An open reply send that the sweep may close.
 export interface SweepReplySend {
   sendId: string;

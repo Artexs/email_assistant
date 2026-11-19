@@ -60,13 +60,14 @@ export function panelListUrlOf(base: string | undefined): string | undefined {
 // The text the owner sees is the text the committer sends (same builder, same inputs).
 // `panelBase`: the base URL of the panel when the link goes on the card (the caller checks the flag `approvals_page`).
 // `draftRow`: the draft of the send when the caller has read it. `quote` is the whole quote that the committer sends
-// (up to 8000 characters); the view holds the quote cut for a card.
+// (up to 8000 characters); the view holds the quote cut for a card. `replyAllAdds` (a reply only, when Reply all is offered): the
+// addresses that Reply all would add to Cc, so the panel shows them before the tap; the card shows no list and does not carry them.
 export async function approvalViewFor(
   db: DbOrTrx,
   ctx: TenantContext,
   send: SendRow,
   options: { panelBase?: string; draftRow?: DraftRow; loopHooks?: LoopHooks } = {}
-): Promise<{ view: ApprovalView; subject: string; quote: string | null }> {
+): Promise<{ view: ApprovalView; subject: string; quote: string | null; replyAllAdds?: string[] }> {
   if (send.depends_on_action_id === null) throw new Error("send has no draft");
   const draftRow = options.draftRow ?? (await getDraft(db, ctx, send.depends_on_action_id));
   if (draftRow === undefined) throw new Error("draft not found");
@@ -129,6 +130,7 @@ export async function approvalViewFor(
   // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail".
   if (draft.kind === "reply" && !(await isSentVisible(db, ctx, mailbox.id))) view.sentVisible = false;
   // A reply goes to the stored From. The card also shows the Reply-To of the original when it names other addresses
+  let replyAllAdds: string[] | undefined;
   if (draft.kind === "reply" && email !== null && send.email_id !== null) {
     const emailId = send.email_id;
     const mail = (await replyFactsOf(db, ctx, [emailId])).get(emailId);
@@ -153,13 +155,19 @@ export async function approvalViewFor(
       });
       if (draft.recipients !== "all" && participants.length > 0 && participants.length <= REPLY_CC_MAX) {
         view.canReplyAll = true;
+        replyAllAdds = participants;
       }
       if (draft.recipients !== "reply_to" && otherReplyTo({ ...facts, replyTo }).length > 0) {
         view.canUseReplyTo = true;
       }
     }
   }
-  return { view, subject: message.subject, quote: message.parts.quote };
+  return {
+    view,
+    subject: message.subject,
+    quote: message.parts.quote,
+    ...(replyAllAdds === undefined ? {} : { replyAllAdds }),
+  };
 }
 
 // A card that the renderer refuses (a follow-up whose To and Cc do not fit one message, rule 2,400 characters) is refused again at

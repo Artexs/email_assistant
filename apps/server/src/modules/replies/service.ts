@@ -1,10 +1,11 @@
 import {
-  cleanUserText,
+  cleanReplyInstruction,
   draftPayloadSchema,
   MAX_REDRAFTS,
   parseToolSwitches,
   replyEligibility,
   replyRecipients,
+  REPLY_INSTRUCTION_MAX,
   replyRecipientsProblem,
   sameRecipients,
   sendPayloadSchema,
@@ -34,18 +35,13 @@ import { lockThread, runInTransaction } from "./write";
 // The services behind the Telegram buttons and the reply routes: a request for a draft, a new version from one line of
 // instruction, and a new version with other recipients. The caller checks nothing: the owner check, the gates and the limits are here.
 
-// The instruction of a user is one line of 1 to 300 characters (the column holds 300).
-export const INSTRUCTION_MAX = 300;
+// The instruction of a user is one line of 1 to 300 characters (the column holds 300). The rule is in core: the panel counts with it too.
+export const INSTRUCTION_MAX = REPLY_INSTRUCTION_MAX;
 // At most this many redraft requests for one mail.
 export const REDRAFT_LIMIT = MAX_REDRAFTS;
 
-// The text of a user, cleaned: control and direction characters gone, one line. null: empty or too long. It is data for the model and is
-// never a recipient, a folder or a command.
-export function cleanInstruction(text: string): string | null {
-  const clean = cleanUserText(text, { oneLine: true });
-  const length = Array.from(clean).length;
-  return length < 1 || length > INSTRUCTION_MAX ? null : clean;
-}
+// The text of a user, cleaned (`cleanReplyInstruction`). null: empty or too long.
+export const cleanInstruction = cleanReplyInstruction;
 
 export type ReplyBlock = ReplyBlockReason | "policy_changed";
 
