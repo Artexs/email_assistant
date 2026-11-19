@@ -1,8 +1,8 @@
 # F138 stage 05 — Current docs
 
-Part of [`../plan.md`](../plan.md). Needs stages 03 and 04 landed.
+Needs stage 04: the ADR 0037 file (`capability-map.test.ts` fails on "ADR 0037" in a page until it exists, B2). Needs stage 02: `gemini:test` and the `GEMINI_*` keys gone (these docs describe that state). May run next to stage 03, except when stage 04 took another ADR number: then it needs stage 03's `evals/README.md`.
 
-Runs after stage 04 (B2): `capability-map.test.ts` fails on "ADR 0037" in a page until the ADR file exists. This stage owns the current docs outside `docs/decisions/`, `docs/legal/` and `docs/product/`, plus `README.md` and `CLAUDE.md`. Link to the ADR by the number that stage 04 used. If stage 04 took another number than 0037, fix it here also in `JUDGE_SAME_MODEL` and `evals/README.md` (N7).
+Part of [`../plan.md`](../plan.md). This stage owns the current docs outside `docs/decisions/`, `docs/legal/` and `docs/product/`, plus `README.md` and `CLAUDE.md`. Link to the ADR by the number that stage 04 used. If stage 04 took another number than 0037, fix it here also in `JUDGE_SAME_MODEL` and `evals/README.md` (N7).
 
 ## Step 1 — What the system does now
 
@@ -29,15 +29,17 @@ Runs after stage 04 (B2): `capability-map.test.ts` fails on "ADR 0037" in a page
 
 The ticket grep (`git grep -niE "gemini|@google/genai|generativelanguage" -- apps packages docs evals deploy .env.example package.json bun.lock`) may find only:
 
-1. `docs/decisions/0007-*`, `0012-*`, `0013-*`, `0015-*`, `0035-*` (old text), `0037-*`, and `docs/decisions/README.md` rows.
+1. `docs/decisions/**`: old text of any ADR (history, for example 0017), ADR 0037 and the README rows.
 2. `evals/results/**` (old result files) and lines of `evals/README.md` that name an old result file.
-3. `docs/product/**` and `docs/product-brief.md`: dated owner text and the "Changed by ADR 0037" lines.
-4. `docs/known-alerts.md`: dated alert text (not an instruction).
+3. `docs/product/**` and `docs/product-brief.md`: every file is a dated Stage 2 record (owner text, inventories, discovery notes); stage 04 adds only the "Changed by ADR 0037" lines.
+4. `docs/known-alerts.md`: every entry is a dated record; this stage changes only its Fix and Check instructions.
 5. `docs/architecture.md`: lines under "History (before ADR 0037)".
 6. `docs/roadmap.md`: dated state lines.
 7. `docs/diagrams/architecture-2026-11.*`.
-8. `docs/legal/claims.md` rows whose claim starts `Removed by ADR 0037` (B1).
+8. (none: stage 04 writes the removed claim rows with no vendor name.)
 9. `CHANGELOG.md` is outside the grep paths; do not edit old entries.
+10. `pilotCost.models` in `packages/core/src/metrics/cost-model.ts` and the Models row of `docs/cost-model.md` (measured record, plan D16).
+11. `docs/owner-decisions.md`: dated log; only the coordinator writes it. Never edit it.
 
 Any other hit in a file of this stage is fixed here. Save the output of the command of this stage to `/tmp/f138-s05/grep.log` and give the count of hits per allowed group.
 
@@ -47,7 +49,7 @@ Any other hit in a file of this stage is fixed here. Save the output of the comm
 
 ## Done when
 
-- The grep of this stage shows only allowed hits 4–7 (the log and the per-group count in the final message).
+- The grep of this stage shows only allowed hits 4–7, 10 and 11 (the log and the per-group count in the final message).
 - The Proof (`sNN` = `s05`) prints `PROOF_OK`.
 
 ## Out of scope
