@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-19
 ---
 
 # F118 · E9b Phone channel (PWA, push, Telegram detail)
