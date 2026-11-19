@@ -210,6 +210,22 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     expect((await requestsOf(db, secondBox)).map((r) => r.trigger)).toEqual(["sample"]);
   });
 
+  test("the run list shows today's run only: a run of an earlier day is not shown", async () => {
+    const w = await world();
+    await fourMails(w.box);
+    await ask(w);
+    await runDrafter(w);
+    const shown = async () =>
+      replySamplesViewSchema.parse(await (await w.app.request(sampleUrl(w.box.mailboxId), as("owner"))).json()).items;
+    expect(await shown()).toHaveLength(3);
+    kit.clock.now = new Date(NOW.getTime() + 2 * DAY);
+    try {
+      expect(await shown()).toEqual([]);
+    } finally {
+      kit.clock.now = NOW;
+    }
+  });
+
   test("two runs at the same time make one run", async () => {
     const w = await world();
     await fourMails(w.box);
@@ -363,6 +379,9 @@ describe("the gates of the sample routes", () => {
     expect((await w.app.request(sampleUrl(w.box.mailboxId), { headers: origin })).status).toBe(401);
     expect((await ask(w, "member")).status).toBe(403);
     expect((await w.app.request(sampleUrl(w.box.mailboxId), as("member"))).status).toBe(403);
+    // The role comes before the id: a member gets 403 for a bad id too.
+    expect((await w.app.request("/api/mailboxes/not-a-uuid/reply-samples", post("member"))).status).toBe(403);
+    expect((await w.app.request("/api/mailboxes/not-a-uuid/reply-samples", as("member"))).status).toBe(403);
     expect((await w.app.request("/api/mailboxes/not-a-uuid/reply-samples", post("owner"))).status).toBe(404);
     expect((await w.app.request("/api/mailboxes/not-a-uuid/reply-samples", as("owner"))).status).toBe(404);
     expect(await requestsOf(db, w.box)).toEqual([]);
