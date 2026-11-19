@@ -61,5 +61,7 @@ export function subprocessorView(row: Subprocessor, lang: Lang): SubprocessorVie
 
 // The rows of the page: every registry row except an AI provider that is not the default one.
 export function publicSubprocessors(rows: readonly Subprocessor[]): Subprocessor[] {
-  return rows.filter((row) => row.activeWhen.kind !== "llmProvider" || row.activeWhen.provider === DEFAULT_LLM_PROVIDER);
+  return rows.filter(
+    (row) => row.activeWhen.kind !== "llmProvider" || row.activeWhen.provider === DEFAULT_LLM_PROVIDER
+  );
 }

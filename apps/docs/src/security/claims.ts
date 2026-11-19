@@ -26,10 +26,7 @@ export const publicClaims: readonly PublicClaim[] = [
       pl: "System wysyła szkic dopiero po zatwierdzeniu go przez właściciela. Wiadomość z prośbą o zatwierdzenie pokazuje właścicielowi pełny tekst szkicu.",
     },
     ledger: ["C018", "C099"],
-    proofs: [
-      "docs/capabilities/drafts-and-send.md",
-      "apps/server/test/integration/actions-approvals.test.ts",
-    ],
+    proofs: ["docs/capabilities/drafts-and-send.md", "apps/server/test/integration/actions-approvals.test.ts"],
     condition: null,
   },
   {

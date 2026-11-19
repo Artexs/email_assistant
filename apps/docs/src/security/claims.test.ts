@@ -177,7 +177,9 @@ describe("the public claims of the security page", () => {
   test("a claim that cites a ledger row that names Gemini says so only with the condition: optional, off by default", () => {
     const rows = parseLedger(ledgerText);
     const geminiRows = new Set(
-      [...rows.values()].filter((row) => /gemini/i.test(row.source) || /gemini/i.test(row.condition)).map((row) => row.id)
+      [...rows.values()]
+        .filter((row) => /gemini/i.test(row.source) || /gemini/i.test(row.condition))
+        .map((row) => row.id)
     );
     for (const claim of publicClaims) {
       if (!claim.ledger.some((id) => geminiRows.has(id))) continue;

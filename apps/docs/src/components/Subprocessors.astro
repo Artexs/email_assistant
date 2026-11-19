@@ -10,8 +10,20 @@ interface Props {
 
 const { lang } = Astro.props;
 const labels = {
-  en: { name: "Service", purpose: "What it does", data: "Data it receives", where: "Where it works", when: "Used when" },
-  pl: { name: "Usługa", purpose: "Do czego służy", data: "Jakie dane dostaje", where: "Gdzie działa", when: "Używana, gdy" },
+  en: {
+    name: "Service",
+    purpose: "What it does",
+    data: "Data it receives",
+    where: "Where it works",
+    when: "Used when",
+  },
+  pl: {
+    name: "Usługa",
+    purpose: "Do czego służy",
+    data: "Jakie dane dostaje",
+    where: "Gdzie działa",
+    when: "Używana, gdy",
+  },
 }[lang];
 const views = publicSubprocessors(subprocessors).map((row) => subprocessorView(row, lang));
 ---

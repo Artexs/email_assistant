@@ -35,7 +35,10 @@ describe("subprocessorView", () => {
   });
 
   test("T4 a field with a placeholder beside real text, and a placeholder name, are shown as not confirmed yet", () => {
-    const mixed = row({ name: "<SMTP provider>", location: { en: "No EU region. <to confirm: country>", pl: "x <y>" } });
+    const mixed = row({
+      name: "<SMTP provider>",
+      location: { en: "No EU region. <to confirm: country>", pl: "x <y>" },
+    });
     const view = subprocessorView(mixed, "en");
     expect(view.name).toBe(NOT_CONFIRMED.en);
     expect(view.location).toBe(NOT_CONFIRMED.en);
@@ -107,6 +110,8 @@ describe("publicSubprocessors", () => {
 
   test("the default provider is the one that the server config runs without a key", () => {
     const config = readFileSync(join(import.meta.dir, "../../../server/src/platform/config-llm.ts"), "utf8");
-    expect(config).toContain(`LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("${DEFAULT_LLM_PROVIDER}"))`);
+    expect(config).toContain(
+      `LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("${DEFAULT_LLM_PROVIDER}"))`
+    );
   });
 });

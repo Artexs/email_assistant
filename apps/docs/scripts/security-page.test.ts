@@ -57,7 +57,9 @@ export function geminiOutsideCondition(blocks: readonly string[]): string[] {
 describe("the built /security/ page", () => {
   test("T5 one claim row for each public claim, in order, with the claim text", () => {
     const claimRows = rows("claim");
-    expect(claimRows.map((row) => /<tr id="claim-([^"]*)"/.exec(row)?.[1])).toEqual(publicClaims.map((claim) => claim.id));
+    expect(claimRows.map((row) => /<tr id="claim-([^"]*)"/.exec(row)?.[1])).toEqual(
+      publicClaims.map((claim) => claim.id)
+    );
     claimRows.forEach((row, index) => {
       expect(decode(cells(row)[0] ?? "")).toBe(publicClaims[index]?.text.en as string);
     });
