@@ -29,36 +29,36 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 
 ## Entry points
 
-| Kind     | Name                                                                                      | Where                                                       |
-| -------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| job      | `replies.drafter` (`*/15 * * * * *`; scan, claim, draft; never a send)                     | `apps/server/src/modules/replies/jobs.ts`                   |
-| job      | `replies.sweep` (`40 */5 * * * *`; closes open replies)                                    | `apps/server/src/modules/replies/sweep.ts`                  |
-| function | `draftReply` (the call and the code checks)                                                | `apps/server/src/modules/replies/drafter.ts`                |
-| function | `draftOne`, `recoverRequest` (one request)                                                 | `apps/server/src/modules/replies/draft-one.ts`              |
-| function | `capVerdict`, `recordAttempts`                                                             | `apps/server/src/modules/replies/spend.ts`                  |
-| function | `requestReply`, `redraftReply`, `setReplyRecipients`, `cleanInstruction`                   | `apps/server/src/modules/replies/service.ts`                |
-| function | `sampleReplies`, `listSamples`                                                             | `apps/server/src/modules/replies/samples.ts`                |
-| function | `updateMailboxProfile`, `getProfileView`; `createStylePreview`                             | `apps/server/src/modules/replies/profile.ts`                |
-| function | `replyEligibility`                                                                         | `packages/core/src/replies/eligibility.ts`                  |
-| function | `checkReplyBody`                                                                           | `packages/core/src/replies/checks.ts`                       |
-| function | `replyRecipients`, `otherParticipants`, `otherReplyTo`                                     | `packages/core/src/replies/recipients.ts`                   |
-| function | `quoteReply`                                                                               | `packages/core/src/replies/quote.ts`                        |
-| function | `approvalExpiresAt`                                                                        | `apps/server/src/modules/actions/lifetime.ts`               |
-| function | `checkReplyBeforeSend`                                                                     | `apps/server/src/modules/actions/reply-pass.ts`             |
-| function | `draftCopyHash`                                                                            | `apps/server/src/modules/actions/copy.ts`                   |
-| function | `checkCopyBeforeSend`                                                                      | `apps/server/src/modules/actions/copy-check.ts`             |
-| function | `closeSend`                                                                                | `apps/server/src/modules/actions/close.ts`                  |
-| function | `replaceApproval`                                                                          | `apps/server/src/modules/actions/replace.ts`                |
-| route    | `POST /api/replies`, `POST /api/approvals/:id/redraft`, `/recipients`, `GET /api/replies/requests/:id` | `apps/server/src/modules/channels/reply-routes.ts` |
-| route    | `GET`, `PUT /api/mailboxes/:id/profile`, `POST .../profile/preview`, `POST`, `GET .../reply-samples` | `apps/server/src/modules/replies/routes.ts`          |
-| route    | `PATCH /api/settings/:mailboxId/switches/reply_drafts`                                     | `apps/server/src/modules/config/routes.ts`                  |
-| Telegram | the notice `replies_ready`; the callbacks `rv`, `rk`, `rd`, `ra`, `ru`, `dr`               | `apps/server/src/modules/channels/reply-taps.ts`            |
-| Telegram | the taps and the line of instruction                                                       | `apps/server/src/modules/channels/reply-redraft.ts`         |
-| function | `replyConsentOf`                                                                           | `apps/server/src/modules/channels/consent.ts`               |
-| page     | the reply item, Redraft, Reply all                                                         | `apps/web/src/components/approvals/ReplyControls.tsx`       |
-| page     | the style card samples                                                                     | `apps/web/src/components/settings/ReplySamples.tsx`         |
-| CLI      | `bun run mailbox:profile`, `bun run reply:check-copy`, `bun run job:run`                   | `apps/server/src/scripts/mailbox-profile.ts`                |
-| eval     | `bun run eval --sim lab-01 --part dev --drafter`, `--set reply-injection --drafter`        | `apps/server/src/scripts/eval-drafter.ts`                   |
+| Kind     | Name                                                                                                   | Where                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| job      | `replies.drafter` (`*/15 * * * * *`; scan, claim, draft; never a send)                                 | `apps/server/src/modules/replies/jobs.ts`             |
+| job      | `replies.sweep` (`40 */5 * * * *`; closes open replies)                                                | `apps/server/src/modules/replies/sweep.ts`            |
+| function | `draftReply` (the call and the code checks)                                                            | `apps/server/src/modules/replies/drafter.ts`          |
+| function | `draftOne`, `recoverRequest` (one request)                                                             | `apps/server/src/modules/replies/draft-one.ts`        |
+| function | `capVerdict`, `recordAttempts`                                                                         | `apps/server/src/modules/replies/spend.ts`            |
+| function | `requestReply`, `redraftReply`, `setReplyRecipients`, `cleanInstruction`                               | `apps/server/src/modules/replies/service.ts`          |
+| function | `sampleReplies`, `listSamples`                                                                         | `apps/server/src/modules/replies/samples.ts`          |
+| function | `updateMailboxProfile`, `getProfileView`; `createStylePreview`                                         | `apps/server/src/modules/replies/profile.ts`          |
+| function | `replyEligibility`                                                                                     | `packages/core/src/replies/eligibility.ts`            |
+| function | `checkReplyBody`                                                                                       | `packages/core/src/replies/checks.ts`                 |
+| function | `replyRecipients`, `otherParticipants`, `otherReplyTo`                                                 | `packages/core/src/replies/recipients.ts`             |
+| function | `quoteReply`                                                                                           | `packages/core/src/replies/quote.ts`                  |
+| function | `approvalExpiresAt`                                                                                    | `apps/server/src/modules/actions/lifetime.ts`         |
+| function | `checkReplyBeforeSend`                                                                                 | `apps/server/src/modules/actions/reply-pass.ts`       |
+| function | `draftCopyHash`                                                                                        | `apps/server/src/modules/actions/copy.ts`             |
+| function | `checkCopyBeforeSend`                                                                                  | `apps/server/src/modules/actions/copy-check.ts`       |
+| function | `closeSend`                                                                                            | `apps/server/src/modules/actions/close.ts`            |
+| function | `replaceApproval`                                                                                      | `apps/server/src/modules/actions/replace.ts`          |
+| route    | `POST /api/replies`, `POST /api/approvals/:id/redraft`, `/recipients`, `GET /api/replies/requests/:id` | `apps/server/src/modules/channels/reply-routes.ts`    |
+| route    | `GET`, `PUT /api/mailboxes/:id/profile`, `POST .../profile/preview`, `POST`, `GET .../reply-samples`   | `apps/server/src/modules/replies/routes.ts`           |
+| route    | `PATCH /api/settings/:mailboxId/switches/reply_drafts`                                                 | `apps/server/src/modules/config/routes.ts`            |
+| Telegram | the notice `replies_ready`; the callbacks `rv`, `rk`, `rd`, `ra`, `ru`, `dr`                           | `apps/server/src/modules/channels/reply-taps.ts`      |
+| Telegram | the taps and the line of instruction                                                                   | `apps/server/src/modules/channels/reply-redraft.ts`   |
+| function | `replyConsentOf`                                                                                       | `apps/server/src/modules/channels/consent.ts`         |
+| page     | the reply item, Redraft, Reply all                                                                     | `apps/web/src/components/approvals/ReplyControls.tsx` |
+| page     | the style card samples                                                                                 | `apps/web/src/components/settings/ReplySamples.tsx`   |
+| CLI      | `bun run mailbox:profile`, `bun run reply:check-copy`, `bun run job:run`                               | `apps/server/src/scripts/mailbox-profile.ts`          |
+| eval     | `bun run eval --sim lab-01 --part dev --drafter`, `--set reply-injection --drafter`                    | `apps/server/src/scripts/eval-drafter.ts`             |
 
 ## Data
 

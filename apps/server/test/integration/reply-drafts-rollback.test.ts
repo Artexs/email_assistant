@@ -124,7 +124,11 @@ async function seed(trx: Trx) {
     reviewSent: await row({ kind: "approval", status: "sent", dedupKey: `approval:${sendId}:r2`, emailId }),
     // The card of an ordinary send keeps its key `approval:<send id>` and is not touched.
     plainCard: await row({ kind: "approval", status: "pending", dedupKey: `approval:${sendId}`, emailId }),
-    weeklyWithKey: await row({ kind: "weekly_report", status: "pending", view: { week: { replyDrafts: { made: 1 } } } }),
+    weeklyWithKey: await row({
+      kind: "weekly_report",
+      status: "pending",
+      view: { week: { replyDrafts: { made: 1 } } },
+    }),
     weeklyWithout: await row({ kind: "weekly_report", status: "pending", view: { week: {} } }),
     otherKind: await row({ kind: "sync_stale", status: "pending", mailboxId: created.mailboxId }),
   };
