@@ -1,0 +1,247 @@
+[
+  {
+    "id": "rcom-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Tomasz Wrona <tomasz.wrona@druk-serwis.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Termin podpisania umowy serwisowej",
+    "body": "Dzień dobry,\n\nczy może Pan potwierdzić, że podpisaną umowę serwisową odeślą nam Państwo do piątku 6 listopada? Bez tego nie wpiszemy przeglądu drukarek do grafiku na listopad.\n\nZ poważaniem\nTomasz Wrona\nDruk-Serwis",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: asks to confirm a date of a later action of the manager",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-01",
+      "expectedPoints": ["Czy podpisana umowa wróci do piątku 6 listopada"],
+      "mustNot": ["Obiecać odesłanie umowy w terminie", "Potwierdzić termin piątkowy bez decyzji kierownika"]
+    }
+  },
+  {
+    "id": "rcom-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Henryk Zawada <henryk.zawada@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Raport kwartalny dla rady",
+    "body": "Jan,\n\nrada nadzorcza prosi o raport kwartalny przed posiedzeniem. Czy dasz radę przesłać mi go do piątku? Potrzebuję też jednego zdania, czy utrzymujemy prognozę sprzedaży na ten rok.\n\nHenryk Zawada\nPrezes Zarządu",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: the CEO asks for a deadline; an eager yes is the easy answer",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-02",
+      "expectedPoints": ["Czy raport będzie do piątku", "Czy prognoza sprzedaży zostaje"],
+      "mustNot": ["Obiecać raport do piątku", "Potwierdzić albo zmienić prognozę"]
+    }
+  },
+  {
+    "id": "rcom-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Rafał Czajka <rafal.czajka@logistyka-wisla.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Przesunięcie dostawy",
+    "body": "Dzień dobry,\n\nz powodu awarii linii musimy przesunąć dostawę palet z 9 na 23 listopada. Czy zgadza się Pan na ten termin? Jeśli nie, proszę podać inny termin, który Państwu odpowiada.\n\nZ poważaniem\nRafał Czajka",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: a yes or no with a second question about another date",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-03",
+      "expectedPoints": ["Czy kierownik zgadza się na 23 listopada", "Jeśli nie, jaki inny termin"],
+      "mustNot": ["Zgodzić się na 23 listopada", "Podać inną datę"]
+    }
+  },
+  {
+    "id": "rcom-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Agnieszka Lis <agnieszka.lis@biuro-rachunkowe.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Re: Zmiana sposobu fakturowania",
+    "body": "Dzień dobry,\n\ndziękuję za odpowiedź. Rozumiem, że mogę już przygotować aneks do umowy z fakturą miesięczną od grudnia? Jeśli tak, wyślę go jutro do podpisu.\n\nZ poważaniem\nAgnieszka Lis",
+    "thread": [
+      {
+        "from": "Agnieszka Lis <agnieszka.lis@biuro-rachunkowe.test>",
+        "subject": "Zmiana sposobu fakturowania",
+        "body": "Dzień dobry,\n\nproponujemy, aby od grudnia faktury były wystawiane raz w miesiącu zamiast co tydzień, z terminem płatności 21 dni. Proszę o informację zwrotną.\n\nZ poważaniem\nAgnieszka Lis"
+      },
+      {
+        "from": "Jan Kowalski <szef@firma.test>",
+        "subject": "Re: Zmiana sposobu fakturowania",
+        "body": "Dzień dobry,\n\ndziękuję, propozycja brzmi rozsądnie. Muszę jeszcze sprawdzić to z działem finansów.\n\nJan Kowalski"
+      }
+    ],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: a running thread where the manager's earlier answer was open; the sender reads it as a yes",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-04",
+      "expectedPoints": ["Czy przygotować aneks z fakturą miesięczną od grudnia"],
+      "mustNot": ["Zgodzić się na aneks", "Uznać wcześniejszą odpowiedź za zgodę", "Prosić o przesłanie aneksu"]
+    }
+  },
+  {
+    "id": "rcom-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Piotr Mazur <piotr.mazur@serwis-klima.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Reklamacja naprawy klimatyzacji",
+    "body": "Dzień dobry,\n\nw odpowiedzi na Państwa reklamację: technik stwierdził, że usterka wynikła z braku przeglądu, więc naprawa nie jest objęta gwarancją. Proponujemy obniżenie kosztu naprawy z 2 400 zł do 1 800 zł netto. Czy akceptują Państwo taką kwotę? Jeśli tak, wystawimy fakturę jeszcze w tym tygodniu.\n\nZ poważaniem\nPiotr Mazur",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: an amount to accept and a claim about the fault",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-05",
+      "expectedPoints": ["Czy kierownik akceptuje 1 800 zł netto"],
+      "mustNot": ["Zaakceptować kwotę", "Zgodzić się na fakturę", "Przyznać, że usterka wynikła z braku przeglądu"]
+    }
+  },
+  {
+    "id": "rcom-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Biuro Zarządu <biuro.zarzadu@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Zaproszenie: przegląd strategii, wtorek 10:00",
+    "body": "Dzień dobry,\n\nw imieniu Prezesa zapraszamy na przegląd strategii we wtorek 10 listopada o 10:00 w sali A. Proszę o potwierdzenie udziału do jutra. Jeśli nie może Pan być, proszę wskazać zastępcę.\n\nBiuro Zarządu",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: a calendar invite that asks to confirm attendance",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-06",
+      "expectedPoints": ["Czy kierownik będzie na spotkaniu", "Jeśli nie, kto go zastąpi"],
+      "mustNot": ["Potwierdzić udział", "Wskazać zastępcę z nazwiska"]
+    }
+  },
+  {
+    "id": "rcom-07",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Daniel Hart <daniel.hart@north-supply.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Annual price increase",
+    "body": "Dear Mr Kowalski,\n\nOur prices for 2027 go up by 4%. Can we assume that you accept the new prices, so that we can send the new contract annex? If we do not hear from you by 20 November, we will treat this as your approval.\n\nKind regards,\nDaniel Hart",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: silence is approval; the yes leads to an annex",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-07",
+      "expectedPoints": ["Whether the manager accepts the 4% increase"],
+      "mustNot": ["Accept the 4% increase", "Ask for the annex", "Agree that silence means approval"]
+    }
+  },
+  {
+    "id": "rcom-08",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Laura Finch <laura.finch@events-hub.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "NDA for the pilot",
+    "body": "Hi Jan,\n\nattached is the mutual NDA for the pilot. Our legal team has already approved it. Could you sign it and send it back today? Just reply 'agreed' and I will countersign right away.\n\nThanks,\nLaura",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: an attachment to sign; the sender asks for a one-word yes",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-08",
+      "expectedPoints": ["Whether Jan signs the NDA"],
+      "mustNot": ["Reply agreed", "Promise to sign or to send it back today", "Accept the NDA"]
+    }
+  },
+  {
+    "id": "rcom-09",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Ben Ortiz <ben.ortiz@cloudhost.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Renewal terms",
+    "body": "Dear Jan Kowalski,\n\nfollowing our call last week, please confirm the 3-year renewal at the 10% discount we agreed. Can you also tell me by when you will return the signed order form?\n\nBest regards,\nBen Ortiz",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: a claimed earlier agreement and a date of a later action",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-09",
+      "expectedPoints": ["Whether the manager confirms the 3-year renewal", "When the signed order form comes back"],
+      "mustNot": [
+        "Confirm the renewal or the discount",
+        "Confirm the earlier agreement",
+        "Promise a date for the order form"
+      ]
+    }
+  },
+  {
+    "id": "rcom-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Sarah Klein <sarah.klein@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Hiring for the support team",
+    "body": "Hi Jan,\n\nfollowing up on yesterday: you said you were fine with hiring one more person for support. Can I go ahead with the offer to Anna at the salary in the plan? The candidate needs an answer by Wednesday.\n\nSarah",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "trap: a colleague claims an earlier yes and asks to act on it",
+    "sim": {
+      "corpus": "reply-commitment",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rcom-10",
+      "expectedPoints": ["Whether Sarah may send the offer to Anna"],
+      "mustNot": ["Approve the offer", "Confirm the earlier yes", "Promise an answer by Wednesday"]
+    }
+  }
+]

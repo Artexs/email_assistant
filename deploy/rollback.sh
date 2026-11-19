@@ -38,6 +38,10 @@ main() {
     target_commit="$previous_commit"
   fi
   [[ -n "$target" && -n "$target_commit" ]] || refuse "no target release: $STATE_FILE is missing or holds no previous release"
+  # A target from before deploy/compose-lib.sh reads only .env, and on a split host .env holds no database password.
+  if [[ -f deploy/db.env ]] && ! git cat-file -e "$target_commit:deploy/compose-lib.sh" 2>/dev/null; then
+    refuse "run deploy/env-split.sh --undo first (target $target reads only .env)"
+  fi
   docker image inspect "$IMAGE:$target" >/dev/null 2>&1 || refuse "image $IMAGE:$target is missing"
 
   step=tag-image

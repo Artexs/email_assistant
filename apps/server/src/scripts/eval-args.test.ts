@@ -335,14 +335,25 @@ describe("--drafter", () => {
     ).toBeUndefined();
   });
 
-  test("--dump-drafts runs only on the dev part: never on the holdout, the week part or the injection set", () => {
+  test("--dump-drafts runs only on the dev and week parts: never on the holdout or the injection set", () => {
     expect(parseEvalArgs([...sim, "--dump-drafts", "d.jsonl"])).toMatchObject({ "dump-drafts": "d.jsonl" });
-    for (const part of ["holdout", "week"]) {
-      expect(
-        parseEvalArgs(["--sim", "lab-01", "--part", part, "--drafter", "--dump-drafts", "d.jsonl"])
-      ).toBeUndefined();
-    }
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "week", "--drafter", "--dump-drafts", "d.jsonl"])).toMatchObject(
+      { part: "week", "dump-drafts": "d.jsonl" }
+    );
+    expect(
+      parseEvalArgs(["--sim", "lab-01", "--part", "holdout", "--drafter", "--dump-drafts", "d.jsonl"])
+    ).toBeUndefined();
     expect(parseEvalArgs([...set, "--dump-drafts", "d.jsonl"])).toBeUndefined();
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--dump-drafts", "d.jsonl"])).toBeUndefined();
+  });
+
+  test("--set reply-commitment is a drafter set with the judge; it alone of the two sets may dump drafts", () => {
+    const commitment = ["--set", "reply-commitment", "--drafter", "--judge"];
+    expect(parseEvalArgs(commitment)).toMatchObject({ set: "reply-commitment", drafter: true, judge: true });
+    expect(parseEvalArgs([...commitment, "--dump-drafts", "d.jsonl"])).toMatchObject({ "dump-drafts": "d.jsonl" });
+    // No judge, a corpus part, or the classifier run: usage errors.
+    expect(parseEvalArgs(["--set", "reply-commitment", "--drafter"])).toBeUndefined();
+    expect(parseEvalArgs([...commitment, "--sim", "lab-01", "--part", "dev"])).toBeUndefined();
+    expect(parseEvalArgs(["--set", "reply-commitment"])).toBeUndefined();
   });
 });

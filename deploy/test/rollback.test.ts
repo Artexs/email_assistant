@@ -1,3 +1,6 @@
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { createHarness, indexOfCall, type Harness } from "./release-harness";
@@ -19,6 +22,44 @@ beforeEach(() => {
 afterEach(() => h.cleanup());
 
 describe("rollback.sh", () => {
+  test("11. db.env present and the target has no deploy/compose-lib.sh: exit 2, no docker call, state unchanged; without db.env it runs", () => {
+    h.writeState({
+      ...stateV010,
+      current: "v0.1.1",
+      current_commit: "commit-v0.1.1",
+      previous: "v0.1.0",
+      previous_commit: "commit-v0.1.0",
+    });
+    const before = readFileSync(join(h.root, "deploy", "release-state", "state"), "utf8");
+    h.setSwitch("no-compose-lib");
+    writeFileSync(join(h.root, "deploy", "db.env"), "POSTGRES_PASSWORD=x\n");
+    const refused = h.run("rollback.sh");
+    expect(refused.code).toBe(2);
+    expect(refused.output).toContain(
+      "rollback refused: run deploy/env-split.sh --undo first (target v0.1.0 reads only .env)"
+    );
+    expect(h.calls().some((line) => line.includes("docker"))).toBe(false);
+    expect(readFileSync(join(h.root, "deploy", "release-state", "state"), "utf8")).toBe(before);
+
+    // a target that has the helper rolls back on a split host
+    Bun.spawnSync(["rm", `${h.stubs}/no-compose-lib`]);
+    expect(h.run("rollback.sh").code).toBe(0);
+  });
+
+  test("11b. without db.env the same target (no helper) rolls back", () => {
+    h.writeState({
+      ...stateV010,
+      current: "v0.1.1",
+      current_commit: "commit-v0.1.1",
+      previous: "v0.1.0",
+      previous_commit: "commit-v0.1.0",
+    });
+    h.setSwitch("no-compose-lib");
+    const result = h.run("rollback.sh");
+    expect(result.code).toBe(0);
+    expect(result.stdout.trim().split("\n").at(-1)).toBe("rollback ok v0.1.0");
+  });
+
   test("12. after a failed release the target is current: retag, checkout, up --no-build, pending cleared", () => {
     h.writeState(stateV010);
     h.setSwitch("curl-fail");
