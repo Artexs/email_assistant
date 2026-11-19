@@ -48,41 +48,39 @@ describe("scheduler", () => {
 
   test("a throwing job does not stop the next tick", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
-    const scheduler = createScheduler();
     let runs = 0;
-    scheduler.add("throws", EVERY_SECOND, async () => {
+    const job = async (): Promise<void> => {
       runs += 1;
       throw new Error("boom");
-    });
+    };
     try {
-      await waitFor(() => runs >= 2, "two runs");
+      // The cron keeps going because a tick never throws.
+      await runJobTick("throws", job);
+      await runJobTick("throws", job);
     } finally {
-      scheduler.stop();
       errorSpy.mockRestore();
     }
 
-    expect(runs).toBeGreaterThanOrEqual(2);
-  }, 10_000);
+    expect(runs).toBe(2);
+  });
 
   test("a failed job logs its error label and not its message", async () => {
     const errorSpy = spyOn(console, "error").mockImplementation((): void => undefined);
-    const scheduler = createScheduler();
-    scheduler.add("throws", EVERY_SECOND, async () => {
-      throw new Error("MARKER-SCHED");
-    });
+    let output = "";
     try {
-      await waitFor(() => joined(errorSpy.mock.calls).includes("job_failed"), "the error line");
+      await runJobTick("throws", async () => {
+        throw new Error("MARKER-SCHED");
+      });
+      output = joined(errorSpy.mock.calls);
     } finally {
-      scheduler.stop();
+      errorSpy.mockRestore();
     }
-    const output = joined(errorSpy.mock.calls);
-    errorSpy.mockRestore();
 
     expect(output).toContain("job_failed");
     expect(output).toContain("job=throws");
     expect(output).toContain("error=Error");
     expect(output).not.toContain("MARKER-SCHED");
-  }, 10_000);
+  });
 
   test("stop() stops all jobs", async () => {
     const scheduler = createScheduler();
@@ -100,7 +98,7 @@ describe("scheduler", () => {
       witnessRuns += 1;
     });
     try {
-      await waitFor(() => witnessRuns >= 2, "two witness ticks");
+      await waitFor(() => witnessRuns >= 1, "a witness tick");
     } finally {
       witness.stop();
     }

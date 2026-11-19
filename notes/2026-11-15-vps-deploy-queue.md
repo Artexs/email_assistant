@@ -91,5 +91,15 @@ Every deploy to the VPS is a release: `deploy/release.sh <tag>` from a tag. No b
 - Release gate note for `v0.4.x`: `drafter-v1` prompt text changed since `v0.3.1` (F115 stage 02 dev tuning) with no holdout report (checklist step 3). `reply_drafts` is off everywhere; `v0.3.0` shipped the prompt the same way. The coordinator decides.
 - Sim stack: `deploy/compose.sim.yaml` changed since `v0.3.1` (checklist step 4). The lab already runs with that content. Do not rebuild `ea-sim` while its live run is active.
 
+## Release v0.4.1 (2026-11-19, 19:32 UTC)
+
+- VPS at tag `v0.4.1` = `4f1e76df` (master CI run 44595141632 green: ci, e2e, image, docs). `release ok v0.4.1 previous v0.3.1`. Rollback target `v0.3.1` (`deploy/rollback.sh`). Backup inside the release: `backup ok`, 676068 bytes. No migration in the range from `v0.3.1`.
+- Before `release.sh`: `git checkout -q -- deploy/compose.sim.yaml` (sha256 `d9b43d3c…` before and after the release: equal). `ea-sim` containers untouched (same creation times). The tree is clean at the tag now.
+- Config: server start logs `operator_notices_on kind=telegram` (`OPERATOR_TELEGRAM_CHAT_ID` loads). `operator_contact_empty` warn is old (since F089 stage 06): `WEB_BASE_URL` set, `OPERATOR_CONTACT` unset.
+- Flags turned on for the pilot organization: `approvals_page`, `delegation_pages` (F102 Q10), `trust_ladder` (F110 U2). The history check was queued by the flag change and ended `done`, cost $0.0152.
+- 30-min watch to 20:03 UTC: 0 error lines, 15 `sync_done`, `ops:alerts` only resolved alerts. Check outputs per ticket: `plan.md` § Log of F102, F107, F110, F119.
+- Open owner steps: F102 check 8 and U1 (panel through Tailscale), F107 U1 (terms dialog), F110 U2 (`/report`), F119 check 6 (sign-in with TOTP).
+- Lesson: a remote script that runs `docker compose exec -T` reads the ssh stdin. Copy the script with `scp` and run it with `</dev/null`; else the rest of a piped script is lost.
+
 ## Limen land closed the wrong ticket (2026-11-19)
 `limen land` of job `…5dc00e68` (label "F138 stage 01 (judge on OpenAI, for F115 s02)") closed F115. Cause: the coordinator left out `--keep-open`; land closes the active ticket it finds for the job, and F138 is in `planned/`. Fix: `git revert` of the close commit (`47e80b72`). Rule: land with `--keep-open` while the ticket has open stages, and a job label names only its own ticket.

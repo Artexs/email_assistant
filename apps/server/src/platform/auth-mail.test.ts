@@ -101,6 +101,7 @@ describe("createAuthMailer", () => {
     let closed = 0;
     const deps: AuthMailerDeps = {
       timeoutMs: 50,
+      outerExtraMs: 0,
       createTransport: () => ({
         sendMail: () => new Promise<unknown>(() => undefined),
         close: () => {
@@ -111,9 +112,26 @@ describe("createAuthMailer", () => {
     const started = performance.now();
     const result = await createAuthMailer(settings, deps).send(mail);
     expect(result).toEqual({ ok: false, code: "TIMEOUT" });
-    expect(performance.now() - started).toBeLessThan(6000);
+    expect(performance.now() - started).toBeLessThan(1000);
     expect(closed).toBe(1);
-  }, 10_000);
+  });
+
+  test("the outer guard waits the SMTP timeout plus the extra", async () => {
+    const deps: AuthMailerDeps = {
+      timeoutMs: 50,
+      outerExtraMs: 200,
+      createTransport: () => ({
+        sendMail: () => new Promise<unknown>(() => undefined),
+        close: () => undefined,
+      }),
+    };
+    const started = performance.now();
+    const result = await createAuthMailer(settings, deps).send(mail);
+    const elapsed = performance.now() - started;
+    expect(result).toEqual({ ok: false, code: "TIMEOUT" });
+    expect(elapsed).toBeGreaterThanOrEqual(200);
+    expect(elapsed).toBeLessThan(1000);
+  });
 
   test("a failed send gives the code; the log holds the user id and the code only", async () => {
     let closed = 0;
