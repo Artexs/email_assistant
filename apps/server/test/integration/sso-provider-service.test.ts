@@ -10,6 +10,7 @@ import {
   removeSsoProvider,
   setSsoProvider,
   type SetSsoProviderResult,
+  addMember,
 } from "../../src/modules/tenancy";
 import { buildOidcConfig, discoverProviderConfig } from "../../src/platform/auth-sso";
 import { startFakeOidc, type FakeOidc } from "../fake-oidc";
@@ -550,5 +551,64 @@ describe("review gaps of stage 07 (TG1 to TG4)", () => {
     expect(await held.removal).toEqual({ kind: "removed", linksRemoved: 1, sessionsEnded: 1 });
     expect(await providerRows(org.orgId)).toHaveLength(0);
     expect((await annState(org)).links).toBe(0);
+  });
+});
+
+// The public reset request refuses an SSO-only member (`isSsoOnlyMember`), so a reset link made before the organization
+// got its provider must not work either: the first `set` deletes the open links of the members with no password.
+describe("a new provider ends the open reset links of members with no password", () => {
+  async function addLink(userId: string): Promise<void> {
+    await sql`INSERT INTO auth_verifications (identifier, value, expires_at)
+      VALUES (${randomBytes(16).toString("hex")}, ${userId}, now() + interval '1 hour')`.execute(db);
+  }
+
+  async function linksOf(userId: string): Promise<number> {
+    const result = await sql<{ n: number }>`
+      SELECT count(*)::int AS n FROM auth_verifications WHERE value = ${userId}`.execute(db);
+    return result.rows[0]?.n ?? -1;
+  }
+
+  async function addPasswordMember(org: Org): Promise<string> {
+    const added = await addMember(
+      db,
+      { orgId: org.orgId },
+      { email: `bob@${org.domain}`, displayName: "Bob", role: "assistant", locale: "en", actor: "cli", now: NOW }
+    );
+    if (added.kind !== "added") throw new Error(`addMember: ${added.kind}`);
+    userIds.push(added.userId);
+    await sql`INSERT INTO auth_accounts (account_id, provider_id, user_id, password)
+      VALUES (${added.userId}, 'credential', ${added.userId}::uuid, 'x')`.execute(db);
+    return added.userId;
+  }
+
+  test("a member with no password loses the links; a member with a password and another organization keep theirs", async () => {
+    const org = await seedOrg();
+    const other = await seedOrg();
+    const bobId = await addPasswordMember(org);
+    for (const userId of [org.userId, bobId, other.userId]) await addLink(userId);
+    await addLink(org.userId);
+
+    expect(await setFor(org, await configOf(fakeA))).toEqual({ kind: "new" });
+    expect(await linksOf(org.userId)).toBe(0);
+    expect(await linksOf(bobId)).toBe(1);
+    expect(await linksOf(other.userId)).toBe(1);
+  });
+
+  test("a later set (new secret) does not delete a link that the operator made after the provider", async () => {
+    const org = await seedOrg();
+    const config = await configOf(fakeA);
+    expect(await setFor(org, config)).toEqual({ kind: "new" });
+    await addLink(org.userId);
+    expect(await setFor(org, await configOf(fakeA, { clientSecret: "another-secret" }))).toEqual({ kind: "secret" });
+    expect(await linksOf(org.userId)).toBe(1);
+  });
+
+  test("a set that fails on the domain deletes nothing (one transaction)", async () => {
+    const taken = await seedOrg();
+    expect(await setFor(taken, await configOf(fakeA))).toEqual({ kind: "new" });
+    const org = await seedOrg();
+    await addLink(org.userId);
+    expect(await setFor(org, await configOf(fakeB), taken.domain)).toEqual({ kind: "domain_taken" });
+    expect(await linksOf(org.userId)).toBe(1);
   });
 });

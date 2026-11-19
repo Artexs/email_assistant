@@ -81,6 +81,33 @@ export async function isPasswordSignInRefused(db: Db | Transaction<DB>, userId: 
   return row !== undefined;
 }
 
+// True when the user is an SSO-only member: no password account (`auth_accounts.provider_id = 'credential'`) and a
+// membership in an organization that has an SSO provider row. Such a user gets no password from the public reset
+// request (ADR 0026 point 6). A user of an organization with no provider is not SSO-only: that is a member whose invite
+// has not been used yet, and the reset mail stays the way in. No TenantContext: the user gives the rows; RLS shows every
+// row inside `/api/auth/*` (like `isBreakGlassOwner`).
+export async function isSsoOnlyMember(db: Db | Transaction<DB>, userId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom("memberships")
+    .innerJoin("sso_providers", "sso_providers.org_id", "memberships.org_id")
+    .select("memberships.user_id")
+    .where("memberships.user_id", "=", userId)
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom("auth_accounts")
+            .select("auth_accounts.id")
+            .where("auth_accounts.user_id", "=", userId)
+            .where("auth_accounts.provider_id", "=", "credential")
+        )
+      )
+    )
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 // True when one provider has a proved domain and its organization has the flag on: the row of `org_features` wins over
 // `defaultOn`. No TenantContext and no tenant scope: the public sign-in page asks, with no session (RLS shows every row,
 // like `isBreakGlassOwner`). One query whatever the data is. The caller applies the kill list first.

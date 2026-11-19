@@ -17,6 +17,31 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-19
+
+### Fixed
+
+- Capability page format: the checked line of the backups and operations pages stands alone on its line again.
+
+## [0.4.0] - 2026-11-19
+
+### Added
+
+- Data requests: `bun run org:dsr --org-id <uuid> --rule-check` lists each letter that the database lower-cases unlike the program (on `postgres:17`: 28 rare letters). It prints no address.
+
+### Changed
+
+- Act from the panel: the Approvals page and the Delegates and Delegations pages (flags `approvals_page`, `delegation_pages`) are turned on for the pilot organization after this deploy. There you approve, reject and edit waiting drafts and manage delegates. The other organizations keep them off.
+- Trust ladder: this deploy checks that every automatic category carries its model-setup stamp, and the operator runs the history check for the pilot mailbox (flag `trust_ladder` on for the pilot organization). The other trust flags (why lines, spam line, quiet hours, report mail, urgency editor, panel review, newsletters) stay off.
+- Legal pages and cost: no text change in this release. The draft privacy policy, terms and data processing pages stay at terms version `2026-11-19`. The operator measures the LLM cost of the pilot over the last four weeks (read only) as the basis of the cost model.
+- Company sign-in (OIDC): no change for users. The flag `sso_sign_in` stays off and no organization has a provider, so the sign-in page shows no company button.
+- Backups: the copy to B2 runs up to 5 times with a growing wait (`BACKUP_RCLONE_TRIES`, `BACKUP_RCLONE_DELAY`), so a short DNS or B2 login failure no longer fails the nightly backup. Only one backup run works at a time: a second run exits with code 75 and leaves the status file as it is.
+- The reply drafter prompt `drafter-v1` is tuned on the dev part (no invented promise or request, shorter gap labels). It still has no holdout report, so `reply_drafts` stays off. The reply drafter eval (`bun run eval --drafter`) has a judge gain section.
+
+### Fixed
+
+- Data requests: find and erase now refuse an address with a letter that the database lower-cases unlike the program (`rule_mismatch`). They change nothing and write no audit row, so they no longer give a wrong match for such an address.
+
 ## [0.3.1] - 2026-11-19
 
 ### For users

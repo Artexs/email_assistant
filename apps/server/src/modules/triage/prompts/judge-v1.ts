@@ -22,7 +22,7 @@ export const rubricItems = {
 // The flat answer: one key per rubric item. A score is 0, 1 or 2; a check is true or false.
 export type JudgeAnswer = Record<string, 0 | 1 | 2 | boolean>;
 
-const MEANINGS: Record<string, string> = {
+export const MEANINGS: Record<string, string> = {
   facts_kept: "the draft keeps the facts of the mail that the task needs (what, who, when, how much).",
   task_clear: "the recipient can do the task from the draft alone.",
   tone_fits: "the tone fits a short message from a manager's assistant to a colleague or a sender.",

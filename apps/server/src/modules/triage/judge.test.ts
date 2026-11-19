@@ -4,8 +4,9 @@ import { type GenerateFn, type GenerateRequest, LlmOutputError } from "../../pla
 import { createFixedLlmClient } from "../../platform/llm/testing";
 
 import { judgeDraft, judgePassed } from "./judge";
-import { prompts, rolesWithoutPrompt } from "./prompts";
-import { buildUserPrompt } from "./prompts/judge-v1";
+import { judgeVersions, prompts, rolesWithoutPrompt } from "./prompts";
+import { buildSystemPrompt as buildSystemV1, buildUserPrompt } from "./prompts/judge-v1";
+import { buildSystemPrompt as buildSystemV2, buildUserPrompt as buildUserV2 } from "./prompts/judge-v2";
 
 const delegationAnswer = {
   facts_kept: 2,
@@ -42,9 +43,29 @@ function fake(answer: unknown): { llm: ReturnType<typeof createFixedLlmClient>; 
 }
 
 describe("judge prompt registry", () => {
-  test("the judge has a prompt entry at judge-v1 and is not in rolesWithoutPrompt", () => {
-    expect(prompts.judge.version).toBe("judge-v1");
+  test("the judge has a prompt entry at judge-v2 and is not in rolesWithoutPrompt", () => {
+    expect(prompts.judge.version).toBe("judge-v2");
+    expect(prompts.judge).toBe(judgeVersions["judge-v2"]);
+    expect(judgeVersions["judge-v1"].version).toBe("judge-v1");
     expect(Object.hasOwn(rolesWithoutPrompt, "judge")).toBe(false);
+  });
+});
+
+describe("judge-v2", () => {
+  test("the delegation rubric and the user prompt are those of judge-v1", () => {
+    expect(buildSystemV2("delegation")).toBe(buildSystemV1("delegation"));
+    expect(buildUserV2).toBe(buildUserPrompt);
+  });
+
+  test("the reply rubric says that a gap holds the manager's decision and is no commitment", () => {
+    const v1 = buildSystemV1("reply");
+    const v2 = buildSystemV2("reply");
+    expect(v1).not.toContain("[[label]]");
+    expect(v2).toContain("A gap is [[label]] in the draft.");
+    expect(v2).toContain("A gap that holds the manager's decision or a fact that only the manager has is an answer");
+    expect(v2).toContain("A question that the draft neither answers nor holds as a gap is not answered.");
+    expect(v2).toContain("A gap is no commitment.");
+    expect(v2).toContain("promise of a later action");
   });
 });
 
@@ -83,7 +104,7 @@ describe("buildUserPrompt", () => {
 });
 
 describe("judgeDraft", () => {
-  test("the call has role judge, promptVersion judge-v1 and the model override", async () => {
+  test("the call has role judge, the current judge version and the model override; another prompt can be passed", async () => {
     const calls: { role: string; promptVersion: string; model?: string }[] = [];
     const llm = {
       modelOf: () => "m",
@@ -105,8 +126,10 @@ describe("judgeDraft", () => {
       },
     };
     await judgeDraft(llm as never, delegationInput, { model: "judge-model" });
+    await judgeDraft(llm as never, delegationInput, { prompt: judgeVersions["judge-v1"] });
     expect(calls).toEqual([
-      expect.objectContaining({ role: "judge", promptVersion: "judge-v1", model: "judge-model" }),
+      expect.objectContaining({ role: "judge", promptVersion: "judge-v2", model: "judge-model" }),
+      expect.objectContaining({ role: "judge", promptVersion: "judge-v1" }),
     ]);
   });
 

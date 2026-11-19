@@ -1,4 +1,4 @@
-import type { Transaction } from "kysely";
+import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
@@ -70,6 +70,21 @@ export async function insertSsoProvider(
       updated_at: input.now,
     })
     .execute();
+}
+
+// Deletes the open verification rows whose value is the id of a member of this organization who has no password account
+// (`auth_accounts.provider_id = 'credential'`): the reset links that were made before the organization got its provider.
+// Better Auth stores the identifiers hashed, so the user id in `value` is the only link to the user (like
+// `endPasswordSessionsAndChallenges`). A member with no password has no two-factor challenge or trusted device (turning two-factor on
+// needs the password), so these rows are reset links, also an unused `web:invite` link: the operator makes a new one.
+export async function deleteResetLinksOfPasswordlessMembers(trx: Transaction<DB>, ctx: TenantContext): Promise<number> {
+  const result = await sql`DELETE FROM auth_verifications WHERE value IN (
+      SELECT m.user_id::text FROM memberships m
+      WHERE m.org_id = ${ctx.orgId}::uuid
+        AND NOT EXISTS (SELECT 1 FROM auth_accounts a WHERE a.user_id = m.user_id AND a.provider_id = 'credential'))`.execute(
+    trx
+  );
+  return Number(result.numAffectedRows ?? 0);
 }
 
 // `boundary: true` also drops the proof (a new issuer, domain or client is a new identity provider).

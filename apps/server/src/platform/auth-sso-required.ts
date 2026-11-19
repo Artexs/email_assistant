@@ -77,7 +77,7 @@ export async function refuseSsoRequiredSignIn(
   return { context: { context: { ...override.context.context, ssoRequiredRefused: true } } };
 }
 
-// A reset request of a refused member sends no mail and writes no token; the caller answers the generic answer.
+// A reset request of a refused member ("SSO required", or an SSO-only member) sends no mail and writes no token; the caller answers the generic answer.
 // Better Auth checks the body after the hooks, so an address that its own schema (`z.email()`) refuses must not match
 // here: the endpoint answers 400 for it, and a 200 would show that the address is a refused member. No trim.
 // An error of `isRefused` is not caught (fail closed).

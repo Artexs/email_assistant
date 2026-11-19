@@ -315,4 +315,34 @@ describe("--drafter", () => {
     expect(parseEvalArgs([...sim, "--judge-provider", "gemini"])).toBeUndefined();
     expect(parseEvalArgs([...sim, "--judge", "--judge-provider", "gemini"])).toBeDefined();
   });
+
+  test("--drafter-prompt takes a known drafter version; other modes refuse it", () => {
+    expect(parseEvalArgs([...sim, "--drafter-prompt", "drafter-v1"])).toMatchObject({ "drafter-prompt": "drafter-v1" });
+    expect(parseEvalArgs([...set, "--drafter-prompt", "drafter-v1"])).toBeDefined();
+    expect(parseEvalArgs([...sim, "--drafter-prompt", "drafter-v0"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--drafter-prompt", "drafter-v1"])).toBeUndefined();
+    expect(parseEvalArgs(["--drafter-prompt", "drafter-v1"])).toBeUndefined();
+  });
+
+  test("--judge-prompt takes a known judge version and needs --judge; the classifier run refuses it", () => {
+    expect(parseEvalArgs([...sim, "--judge", "--judge-prompt", "judge-v1"])).toMatchObject({
+      "judge-prompt": "judge-v1",
+    });
+    expect(parseEvalArgs([...sim, "--judge-prompt", "judge-v2"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--judge", "--judge-prompt", "judge-v9"])).toBeUndefined();
+    expect(
+      parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-prompt", "judge-v1"])
+    ).toBeUndefined();
+  });
+
+  test("--dump-drafts runs only on the dev part: never on the holdout, the week part or the injection set", () => {
+    expect(parseEvalArgs([...sim, "--dump-drafts", "d.jsonl"])).toMatchObject({ "dump-drafts": "d.jsonl" });
+    for (const part of ["holdout", "week"]) {
+      expect(
+        parseEvalArgs(["--sim", "lab-01", "--part", part, "--drafter", "--dump-drafts", "d.jsonl"])
+      ).toBeUndefined();
+    }
+    expect(parseEvalArgs([...set, "--dump-drafts", "d.jsonl"])).toBeUndefined();
+    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--dump-drafts", "d.jsonl"])).toBeUndefined();
+  });
 });

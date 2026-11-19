@@ -9,6 +9,10 @@ import { DEFAULT_OPENAI_BASE_URL, type LlmEndpoint, parseLlmBaseUrl } from "./ll
 const defaultGeminiRpm = 12;
 const defaultLlmDailyCap = 300;
 
+// The judge model when neither `LLM_JUDGE_MODEL` nor `--judge-model` is set: larger than the default drafter
+// model, which the judge must never equal. Its effort is `none` unless `LLM_JUDGE_REASONING` says otherwise.
+export const DEFAULT_JUDGE_MODEL = "gpt-6.1-terra";
+
 // Accepted values of `reasoning.effort`.
 export const openAiReasoningEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 
@@ -211,15 +215,20 @@ export function llmRoleTable(
     const envKeys = override?.provider === undefined;
     const provider = override?.provider ?? config[roleKey(role, "PROVIDER")] ?? classifier.provider;
     const base = provider === classifier.provider ? classifier : defaults(provider);
-    const row: LlmRoleSettings = envKeys
-      ? {
-          provider,
-          model: config[roleKey(role, "MODEL")] ?? base.model,
-          timeoutMs: config[roleKey(role, "TIMEOUT_MS")] ?? base.timeoutMs,
-          rpm: config[roleKey(role, "RPM")] ?? null,
-          reasoningEffort: config[roleKey(role, "REASONING")] ?? base.reasoningEffort,
-        }
-      : { ...base, rpm: null };
+    // The model decides alone whether the role default applies: any other judge key or flag leaves it in force.
+    const roleDefault = role === "judge" ? DEFAULT_JUDGE_MODEL : undefined;
+    const envModel = envKeys ? config[roleKey(role, "MODEL")] : undefined;
+    const defaulted = roleDefault !== undefined && envModel === undefined && override?.model === undefined;
+    const envEffort = envKeys ? config[roleKey(role, "REASONING")] : undefined;
+    // The default model brings effort `none`, not the classifier's effort (a setting of another model).
+    const baseEffort = defaulted && base.reasoningEffort !== null ? "none" : base.reasoningEffort;
+    const row: LlmRoleSettings = {
+      provider,
+      model: envModel ?? roleDefault ?? base.model,
+      timeoutMs: envKeys ? (config[roleKey(role, "TIMEOUT_MS")] ?? base.timeoutMs) : base.timeoutMs,
+      rpm: envKeys ? (config[roleKey(role, "RPM")] ?? null) : null,
+      reasoningEffort: envEffort ?? baseEffort,
+    };
     return finish(apply(row, override));
   };
 

@@ -10,7 +10,14 @@ import {
   type LlmUsage,
   softCodes,
 } from "../../platform/llm";
-import { type AttemptHooks, type CaseUsage, judgeReplyDraft, RETRY_WAITS_MS } from "../triage";
+import {
+  type AttemptHooks,
+  type CaseUsage,
+  type DrafterPrompt,
+  type JudgePrompt,
+  judgeReplyDraft,
+  RETRY_WAITS_MS,
+} from "../triage";
 
 import { DrafterCallError, draftReply } from "./drafter";
 
@@ -137,13 +144,17 @@ export function drafterInputOf(c: EvalCase, persona: DrafterPersona, language: "
 export interface DrafterEvalDeps {
   llm: LlmClient;
   sleep(ms: number): Promise<void>;
-  // The judge role of the run, or undefined when the run has no `--judge`.
-  judge?: { llm: LlmClient; model: string };
+  // The judge role of the run, or undefined when the run has no `--judge`. `prompt` undefined is `prompts.judge`.
+  judge?: { llm: LlmClient; model: string; prompt?: JudgePrompt };
+  // Gets the text of each draft. Only a dev run with `--dump-drafts` passes it; the state file never holds the text.
+  onDraft?(id: string, body: string): void;
 }
 
 export interface DrafterRunInput {
   persona: DrafterPersona;
   retries: number;
+  // The drafter prompt of the run; undefined is the production prompt.
+  prompt?: DrafterPrompt;
 }
 
 const blank = (): Pick<
@@ -187,6 +198,7 @@ export async function runDrafterCase(
     try {
       const result = await draftReply(deps.llm, drafterInput, {
         maxCalls: attempts === undefined || attempts.mayRetry() ? 2 : 1,
+        ...(input.prompt === undefined ? {} : { prompt: input.prompt }),
       });
       // A call that gave no token counts (an unreadable answer) was still paid: the pool charges it at the estimate.
       for (const call of result.attempts) if (call.usage === null) attempts?.failed();
@@ -218,6 +230,7 @@ export async function runDrafterCase(
         };
       }
       const leak = holdsPlanted(result.body, c.sim?.planted ?? []);
+      deps.onDraft?.(c.id, result.body);
       const graded =
         deps.judge === undefined
           ? { judge: null, usage: null }

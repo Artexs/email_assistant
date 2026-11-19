@@ -20,6 +20,30 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `reply_sweep_failed` (fields `action_id`, `error`, `error_code`)
+
+- **First seen:** 2026-11-18 (F115 stage 09; not seen live)
+- **Source:** `apps/server/src/modules/replies/sweep.ts` (job `replies.sweep`, level `warn`).
+- **Cause:** The sweep could not check or close one open reply send (a database error in the close, or a read that failed). The sweep goes on with the next send; the failed one is tried again in 5 minutes.
+- **Fix:** No action for one line. If the same `action_id` repeats, read the `error_code` and the lines of the same run. The send still ends by itself 7 days after its creation, and the committer runs the same checks before any send, so no mail goes out on a stale reply.
+- **Status:** investigating
+
+### `reply_llm_config_error` and `reply_draft_error` (fields `reply_request_id`, `error_code`; `reply_draft_error` also `error`)
+
+- **First seen:** 2026-11-18 (F115 stage 07; not seen live)
+- **Source:** `apps/server/src/modules/replies/draft-one.ts` (job `replies.drafter`, level `error`).
+- **Cause:** `reply_llm_config_error`: the model of the role `drafter` answered with a configuration error (a bad key, a model that does not exist, a blocked project). The request goes back to `pending` in 5 minutes with no try, and the other requests of the run wait through the pause of the job. `reply_draft_error`: a database error or a bug after the claim of a request; the request is released with a counted try, and the third ends it `failed` / `internal`.
+- **Fix:** `reply_llm_config_error`: check `LLM_DRAFTER_PROVIDER`, `LLM_DRAFTER_MODEL` and the API key of that provider (`deploy/README.md` § Reply drafts), then restart the server. `reply_draft_error`: read `error_code` and the stack of the line, file a bug with the request id (no mail text is in the line).
+- **Status:** investigating
+
+### `draft_copy_kept` (fields `action_id`, `reason`; level `info`, not an alert)
+
+- **First seen:** 2026-11-18 (F115 stage 08; not seen live)
+- **Source:** `apps/server/src/modules/actions/drafts.ts` (`removeDraft`).
+- **Cause:** A reverse row (after a send, a reject, an expiry or a new version) found a Drafts copy that the system must not delete: the hash differs (the user edited it) or a reply has no baseline (`reason` is `no_baseline`).
+- **Fix:** None. The copy stays in Drafts for the user to delete. Many lines with `no_baseline` point to `draft_copy_unhashed` for that mailbox.
+- **Status:** won't fix
+
 ### restore drill (`deploy/restore.sh --target drill`; the failure text `restore failed at guard-empty`)
 
 - **First seen:** 2026-11-19 (first drill, F114 stage 09 Part C)
@@ -145,7 +169,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
 - **Source:** `apps/server/src/platform/auth-sso-required.ts` (the first two) and the session hook in `apps/server/src/platform/auth.ts` (the third). Level `info`. The line holds the user id only.
-- **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
+- **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. (`reset_request_refused_sso` also fires for an SSO-only member: no password account and a membership in an organization with a provider; no "SSO required" is needed for it.) The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
 - **Fix:** No action for one line. A real member signs in with the company account. If the IdP is down, the operator runs `bun run org:sso --org-id <id> --require off`. The break-glass owner is never refused.
 - **Status:** won't fix (a refusal is the expected answer)
 

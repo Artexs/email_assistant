@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -14,7 +14,7 @@ import { readSlots, writeJson } from "../platform/sim-files";
 
 import { parseEvalArgs } from "./eval-args";
 import { type DrafterEvalCliDeps, runDrafterEval } from "./eval-drafter";
-import { JUDGE_SAME_PROVIDER_DRAFTER } from "./eval-judge-setup";
+import { JUDGE_SAME_MODEL } from "./eval-judge-setup";
 import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
 
 // The drafter eval runner with a fake LLM client, a temp ledger, runs and gate dirs: no real call, no money.
@@ -25,10 +25,10 @@ const env = {
   LLM_PROVIDER: "openai",
   OPENAI_API_KEY: "o-key",
 };
-// The judge on Gemini: another provider than the drafter, as the run requires.
-const judged = loadConfig({ ...env, GEMINI_API_KEY: "g-key", LLM_JUDGE_PROVIDER: "gemini" });
-// No judge provider set: the judge role takes the provider of the classifier, which is the drafter's.
-const sameProvider = loadConfig({ ...env, GEMINI_API_KEY: "g-key" });
+// No judge key: the judge is the default model (gpt-6.1-terra) on the drafter's provider, another model than the drafter.
+const judged = loadConfig(env);
+// The judge model set equal to the drafter model: the run refuses it.
+const sameModel = loadConfig({ ...env, LLM_JUDGE_PROVIDER: "openai", LLM_JUDGE_MODEL: "gpt-6-luna" });
 
 const MODEL = "gpt-6-luna";
 const injectionCases = z
@@ -199,17 +199,49 @@ describe("runDrafterEval", () => {
     expect(stdout).toContain("skipped (language other than pl or en) | 1");
   });
 
-  test("a judge provider equal to the drafter provider is a setup error: exit 1, no client, no call", async () => {
-    const run1 = await run(injectionArgs(), {
-      config: sameProvider,
-      deps: { injectionFile: casesFile(injectionCases) },
-    });
+  const expectRefusedSameModel = (run1: Awaited<ReturnType<typeof run>>) => {
     expect(run1.code).toBe(1);
     expect(run1.clients).toBe(0);
     expect(run1.calls).toMatchObject({ drafter: 0, judge: 0 });
-    expect(lines.some((line) => line.includes(JUDGE_SAME_PROVIDER_DRAFTER))).toBe(true);
+    expect(lines.some((line) => line.includes(JUDGE_SAME_MODEL))).toBe(true);
     expect(existsSync(join(tmp, "runs"))).toBe(false);
     expect(existsSync(join(tmp, "spend.jsonl"))).toBe(false);
+  };
+
+  test("3: a judge model equal to the drafter model is a setup error: exit 1, no client, no call", async () => {
+    expectRefusedSameModel(
+      await run(injectionArgs(), { config: sameModel, deps: { injectionFile: casesFile(injectionCases) } })
+    );
+  });
+
+  test("8: --model gpt-6.1-terra with the default judge is the same model: exit 1, no client, no call", async () => {
+    const args = injectionArgs().map((arg) => (arg === MODEL ? "gpt-6.1-terra" : arg));
+    expectRefusedSameModel(await run(args, { deps: { injectionFile: casesFile(injectionCases) } }));
+  });
+
+  test("7: --judge-provider openai with no --judge-model runs with the judge gpt-6.1-terra", async () => {
+    const file = casesFile(injectionCases.slice(0, 1));
+    const run1 = await run(injectionArgs(["--judge-provider", "openai"]), { deps: { injectionFile: file } });
+    expect(run1.code).toBe(0);
+    expect(run1.calls.judge).toBe(1);
+    expect(lines.some((line) => line.includes("judge=openai/gpt-6.1-terra"))).toBe(true);
+  });
+
+  test("the judge model is in the state file name; a state file of the old name is not reused", async () => {
+    const stateDir = join(tmp, "runs");
+    const stateFiles = () => readdirSync(stateDir).filter((entry) => entry.endsWith(".jsonl"));
+    // One graded case under the name of a run with no judge part (the name before the judge model joined it).
+    const first = await run(injectionArgs(), { deps: { injectionFile: casesFile(injectionCases.slice(0, 1)) } });
+    expect(first.calls.judge).toBe(1);
+    const [judgedName] = stateFiles();
+    expect(judgedName).toContain("-judge-gpt-6.1-terra");
+    const oldName = (judgedName as string).replace("-judge-gpt-6.1-terra", "");
+    renameSync(join(stateDir, judgedName as string), join(stateDir, oldName));
+
+    const second = await run(injectionArgs(), { deps: { injectionFile: casesFile(injectionCases.slice(0, 2)) } });
+    expect(second.code).toBe(0);
+    expect(second.calls.judge).toBe(2);
+    expect(stateFiles().sort()).toEqual([judgedName as string, oldName].sort());
   });
 
   test("the budget is reached after one case: exit 2; a rerun resumes and drafts only the second case", async () => {
@@ -368,6 +400,44 @@ describe("runDrafterEval on a corpus part", () => {
     expect(stdout).toContain("Case ids (dev only)");
     expect(stdout).toContain(result.needsReply[0]?.id as string);
     expect(existsSync(join(tmp, "gate"))).toBe(false);
+  });
+
+  test("--drafter-prompt and --judge-prompt pick the prompts; their versions name the gate file, the state file and the report", async () => {
+    const fake = fakeClient();
+    const prompts: string[] = [];
+    const client = fake.client;
+    fake.client = {
+      ...client,
+      generate: (req) => {
+        prompts.push(`${req.role}:${req.promptVersion}`);
+        return client.generate(req);
+      },
+    };
+    await holdout({ fake, extra: ["--drafter-prompt", "drafter-v2", "--judge-prompt", "judge-v1"] });
+    expect(new Set(prompts)).toEqual(new Set(["drafter:drafter-v2", "judge:judge-v1"]));
+    expect(readdirSync(join(tmp, "gate"))).toEqual(["drafter-drafter-v2-gpt-6-luna-none-mini-v1.json"]);
+    expect(readdirSync(join(tmp, "runs")).filter((file) => file.endsWith(".jsonl"))).toEqual([
+      "gpt-6-luna-none-drafter-v2-drafter-sim-mini-v1-holdout-judge-gpt-6.1-terra.jsonl",
+    ]);
+    expect(stdout).toContain("drafter-v2");
+    expect(stdout).toContain("judge-v1");
+  });
+
+  test("a dev run with --dump-drafts writes each draft with its grade; the state file still holds no text", async () => {
+    const dump = join(tmp, "dump.jsonl");
+    const result = await holdout({ part: "dev", extra: ["--dump-drafts", dump] });
+    const rows = readFileSync(dump, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id: string; draft: string | null; judge: unknown });
+    expect(rows.map((row) => row.id).sort()).toEqual(result.needsReply.map((slot) => slot.id).sort());
+    for (const row of rows) {
+      expect(Object.values(BODIES)).toContain(row.draft as string);
+      expect(row.judge).toEqual({ scores: expect.any(Object), checks: expect.any(Object) });
+    }
+    const [state] = readdirSync(join(tmp, "runs")).filter((file) => file.endsWith(".jsonl"));
+    const stateText = readFileSync(join(tmp, "runs", state as string), "utf8");
+    for (const body of Object.values(BODIES)) expect(stateText).not.toContain(body);
   });
 
   test("a corpus drafter run without --judge makes no judge call and no gate file", async () => {

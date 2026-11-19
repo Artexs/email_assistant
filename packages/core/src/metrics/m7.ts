@@ -1,7 +1,7 @@
 // M7: cost per mailbox per month, from the week's LLM calls and the reference numbers of the cost model.
 import { costPerMail, type LlmEndpointKind } from "../triage/cost";
 
-import { costModel } from "./cost-model";
+import { costModel, hostingAndBackupUsdPerMailboxMonth } from "./cost-model";
 
 export interface LlmCallRow {
   mailboxId: string | null;
@@ -34,8 +34,7 @@ export function unitCost(rows: readonly LlmCallRow[], opts: { mailboxes: number 
     else llmUsdWeek += cost;
   }
   const mailboxes = Math.max(1, opts.mailboxes);
-  const hostingUsdMonth = costModel.hostingUsdPerMonth / costModel.mailboxesPerHost;
-  const backupUsdMonth = costModel.backupUsdPerMailboxMonth;
+  const { hostingUsd: hostingUsdMonth, backupUsd: backupUsdMonth } = hostingAndBackupUsdPerMailboxMonth();
   return {
     llmUsdWeek,
     llmCalls: rows.length,

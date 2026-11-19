@@ -41,15 +41,17 @@ describe("TELEGRAM_CONSENT_VERSION", () => {
   test("it is pinned: only a change of the consent text `tg_consent_text` moves it, in the same commit as the new TERMS_HISTORY entry", () => {
     // The phone channel does not change the consent text: a member who linked before keeps the consent.
     // A new value here means a new consent text. Change this line only then.
-    expect(TELEGRAM_CONSENT_VERSION).toBe("2026-11-15.2");
+    expect(TELEGRAM_CONSENT_VERSION).toBe("2026-11-19");
   });
 });
 
 describe("REPLY_CONSENT_SINCE ", () => {
-  test("it is a valid version, and no consent that a user can give today covers it (the text does not name reply data yet)", () => {
+  test("it is the version whose text names reply data: the current consent covers it, the one before does not", () => {
+    expect(REPLY_CONSENT_SINCE).toBe(TELEGRAM_CONSENT_VERSION);
     expect(consentCovers(REPLY_CONSENT_SINCE, REPLY_CONSENT_SINCE)).toBe(true);
-    // The next legal text batch changes the consent text and sets the version in one commit; the invariant test of the web texts then takes over.
-    expect(consentCovers(TELEGRAM_CONSENT_VERSION, REPLY_CONSENT_SINCE)).toBe(false);
+    expect(consentCovers(TELEGRAM_CONSENT_VERSION, REPLY_CONSENT_SINCE)).toBe(true);
+    // A user who linked with the text of the open-loops version gets no reply card until the consent is given again.
+    expect(consentCovers("2026-11-15.2", REPLY_CONSENT_SINCE)).toBe(false);
     expect(consentCovers(null, REPLY_CONSENT_SINCE)).toBe(false);
   });
 });

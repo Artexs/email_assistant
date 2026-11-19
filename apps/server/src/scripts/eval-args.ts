@@ -10,6 +10,10 @@ import {
   classifierParts,
   classifierV3Parts,
   classifierVersionIds,
+  type DrafterVersion,
+  drafterVersionIds,
+  type JudgeVersion,
+  judgeVersionIds,
   optionalParts,
   productionClassifierChoice,
   versionHasParts,
@@ -47,9 +51,11 @@ export const evalUsage = [
   "                    (the open-loops extractor on the sent-mail bank; the part sent-holdout needs --extractor, and --extractor needs a sent part)",
   "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
   "       bun run eval --set reply-injection --drafter --judge [--model …] [--out <file.md>]",
+  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev)]`,
+  `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
-  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge needs another provider than the drafter; the injection set needs --judge)",
+  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge model must differ from the drafter model (default judge gpt-6.1-terra); the injection set needs --judge)",
 ].join("\n");
 
 const optionsSchema = z.object({
@@ -89,6 +95,9 @@ const optionsSchema = z.object({
   drafter: z.boolean().default(false),
   "prompt-version": z.enum(classifierVersionIds as [ClassifierVersion, ...ClassifierVersion[]]).optional(),
   "prompt-parts": z.string().min(1).optional(),
+  "drafter-prompt": z.enum(drafterVersionIds as [DrafterVersion, ...DrafterVersion[]]).optional(),
+  "dump-drafts": z.string().min(1).optional(),
+  "judge-prompt": z.enum(judgeVersionIds as [JudgeVersion, ...JudgeVersion[]]).optional(),
   judge: z.boolean().default(false),
   "judge-provider": z.enum(llmProviderIds).optional(),
   "judge-model": z.string().min(1).optional(),
@@ -122,7 +131,9 @@ const casesOnly = [
   "fresh",
 ] as const;
 // A sim run takes its set and state file from the corpus, and has no DB.
-const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly] as const;
+// The drafter options belong to `--drafter` only.
+const drafterOnly = ["drafter-prompt", "dump-drafts", "judge-prompt"] as const;
+const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly, ...drafterOnly] as const;
 // The options of `--sim <scenario> --part sent-dev|sent-holdout --extractor`.
 const extractorAllowed = new Set<string>([
   "sim",
@@ -150,6 +161,7 @@ const drafterAllowed = new Set<string>([
   "judge-provider",
   "judge-model",
   "judge-rpm",
+  ...drafterOnly,
 ]);
 const simOnly = [
   "extractor",
@@ -167,6 +179,7 @@ const simOnly = [
   "judge-rpm",
   "prompt-version",
   "prompt-parts",
+  ...drafterOnly,
 ] as const;
 
 const isSentPart = (value: string): value is SentPart => (sentParts as readonly string[]).includes(value);
@@ -201,13 +214,16 @@ type ParsedData = Omit<z.infer<typeof optionsSchema>, "part"> & { part?: SimPart
 function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): EvalOptions | undefined {
   if (data.extractor || data.suspicious || data.real || data.gap) return undefined;
   if (Object.keys(values).some((key) => !drafterAllowed.has(key))) return undefined;
-  if (!data.judge && (data["judge-provider"] || data["judge-model"] || data["judge-rpm"])) return undefined;
+  if (!data.judge && (data["judge-provider"] || data["judge-model"] || data["judge-rpm"] || data["judge-prompt"]))
+    return undefined;
   const sim = data.sim !== undefined;
   const injection = data.set === "reply-injection";
   // Exactly one source: a corpus part (never a sent part) or the injection set.
   if (sim === injection) return undefined;
   if (sim && (data.part === undefined || data.sentPart !== undefined || values.set !== undefined)) return undefined;
   if (injection && (data.part !== undefined || data.sentPart !== undefined || !data.judge)) return undefined;
+  // Draft texts leave the run only for the dev part: the holdout stays unread, and the week part is no tuning data.
+  if (data["dump-drafts"] !== undefined && data.part !== "dev") return undefined;
   return {
     ...data,
     prompt: productionClassifierChoice(),
@@ -259,6 +275,9 @@ export function parseEvalArgs(args: string[]): EvalOptions | undefined {
         "judge-rpm": { type: "string" },
         "prompt-version": { type: "string" },
         "prompt-parts": { type: "string" },
+        "drafter-prompt": { type: "string" },
+        "dump-drafts": { type: "string" },
+        "judge-prompt": { type: "string" },
       },
       strict: true,
     });

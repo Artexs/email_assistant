@@ -924,6 +924,15 @@ describe("evalStateFileName", () => {
     expect(new Set([name([]), name(["history"]), name(["urgency"]), name(["history", "urgency"])]).size).toBe(4);
   });
 
+  // A judge-v2 run never reuses the grades of a judge-v1 run; the judge-v1 names stay as they were.
+  test("the judge version is in the name after the judge model, except judge-v1", () => {
+    const judged = (judgeVersion?: string) =>
+      evalStateFileName({ ...base, model: "gpt-6-luna", judgeModel: "gpt-6.1-terra", judgeVersion });
+    expect(judged()).toBe("gpt-6-luna-classifier-v2-all-judge-gpt-6.1-terra.jsonl");
+    expect(judged("judge-v1")).toBe(judged());
+    expect(judged("judge-v2")).toBe("gpt-6-luna-classifier-v2-all-judge-gpt-6.1-terra-judge-v2.jsonl");
+  });
+
   test("subset suffix and unsafe characters", () => {
     expect(evalStateFileName({ ...base, model: "a/b c", perCategory: 3 })).toBe("a_b_c-classifier-v2-all-pc3.jsonl");
   });
@@ -941,6 +950,31 @@ describe("evalStateFileName", () => {
     expect(evalStateFileName({ ...base, model: "gpt-6-luna", endpoint: "own", perCategory: 3 })).toBe(
       "gpt-6-luna-classifier-v2-all-pc3-own.jsonl"
     );
+  });
+
+  // A resume never mixes the grades of two judge models.
+  describe("the judge model", () => {
+    const drafter = { ...base, model: "gpt-6-luna", reasoningEffort: "low", promptVersion: "drafter-v1" };
+
+    test("1: a judged run's name holds -judge-<model> and ends in .jsonl, before the endpoint suffix", () => {
+      const name = evalStateFileName({ ...drafter, judgeModel: "gpt-6.1-terra" });
+      expect(name).toBe("gpt-6-luna-low-drafter-v1-all-judge-gpt-6.1-terra.jsonl");
+      expect(evalStateFileName({ ...drafter, judgeModel: "gpt-6.1-terra", endpoint: "eu", perCategory: 3 })).toBe(
+        "gpt-6-luna-low-drafter-v1-all-pc3-judge-gpt-6.1-terra-eu.jsonl"
+      );
+      expect(evalStateFileName({ ...drafter, judgeModel: "a/b c" })).toContain("-judge-a_b_c.jsonl");
+    });
+
+    test("2: a run with no judge keeps today's name", () => {
+      expect(evalStateFileName(drafter)).toBe("gpt-6-luna-low-drafter-v1-all.jsonl");
+    });
+
+    test("3: two names that differ only in the judge model are different", () => {
+      const names = [undefined, "gpt-6.1-terra", "gpt-x"].map((judgeModel) =>
+        evalStateFileName({ ...drafter, judgeModel })
+      );
+      expect(new Set(names).size).toBe(3);
+    });
   });
 
   test("a v3 label with parts and own ends with the endpoint; other parts give another name", () => {

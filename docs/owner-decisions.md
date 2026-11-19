@@ -398,6 +398,7 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Choice: the code does not refuse it. A reset creates a credential account, and in an organization without "SSO required" that password signs in. Docs state it as a default.
 - Why: refusing needs code and a plan change; the owner can still require SSO per organization.
 - Undo: a later ticket adds a refusal for SSO-only members. Also open: axe checks for the company sign-in block, the Account card of a member with no password and `/operator` (no e2e spec opens them).
+- Superseded 2026-11-19: the coordinator chose the refusal (F119 carry-over, job `…4961c82a`). The public reset request gives an SSO-only member the generic answer and no mail; only the operator's `web:invite --user-id` gives a password. Undo: remove the `ssoOnlyMember` line in `web.ts`.
 - Source: `notes/2026-11-15-f119-sso-docs-facts.md`, `deploy/README.md` section "Company sign-in (F119)".
 
 ### 2026-11-15 · F109 v3 prompt holdout: no ship by the rule (F109) · quality · new
@@ -698,4 +699,18 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - What: (1) F117 is dropped. Stages 01 and 03–13 and 16 stay in master (flags off); stages 02, 14, 15, 17, 18, 19 and 21 are not built, because they need spike results from a live Microsoft and Google test account. No other active ticket depends on F117 (F119 s16 shares the Entra tenant and is skipped the same way). (2) F116 gate G1 takes the plan defaults (PD-119 wait, PD-120 automatic follow-up off, PD-122 others' promises as planned), because the E2b week does not exist yet; the pilot stage 25 runs on them. (3) F114 stage 09 part C (restore drill) runs now with the `age` key at `~/.config/ea-backup/age-key.txt` on the owner's PC; U2 and U3 stay open.
 - Why: owner message of 2026-11-19: "skip F117 or build it without my account", "the age key is on your machine", "continue F116".
 - Undo: move F117 back from `dropped/` to `active/` and run its stage 01 spike kit with a test account; G1 can be re-run later with real data.
+- Source: owner chat.
+
+### 2026-11-19 · Only active tickets; bypass owner steps where simple · process · new
+
+- Decision: work only on `spec/features/active/` until all close; planned jobs stopped (F062, F068, F122 plan, F124, F125, F138 stage 01). F104 U1 ("Track my sent mail") set by the coordinator with `mailbox:settings sent-sync --value on`. F114 U3: `OPERATOR_TELEGRAM_CHAT_ID` in the VPS `.env` set to the owner's existing chat with the bot (the one `chat_links` row of the live org); U2 (Healthchecks ping) stays open, the in-app backup-age alert covers it. F115 stage 02 runs resume on Gemini on 2026-11-20 instead of moving to F138.
+- Why: owner message of 2026-11-19: "your only job is to find a reason why you can't start them. Fix it or bypass and start those tickets".
+- Undo: `mailbox:settings sent-sync --value off`; remove `OPERATOR_TELEGRAM_CHAT_ID` from the VPS `.env` (backup `.env.bak-20261119-operator`).
+- Source: owner chat.
+
+### 2026-11-19 · Tickets that wait on time close now · process · new
+
+- Decision: F029, F064, F113, F116 and F120 close with the logs and data of today, without their waits (F029 24 h log window, F120 one day before `contact_wait`, F113 scored day and week, F116 lab week and first pilot week). Flags `contact_wait`, `open_loops`, `delegate_button` on for the pilot org. Each `plan.md` Log names what is not proven.
+- Why: owner message of 2026-11-19: "close all of them without further waiting… use only the logs and anything else that is there for current time. So that's my decision".
+- Undo: move a ticket back to `active/` and run its open check; flags off with `org:flag --off`.
 - Source: owner chat.

@@ -1,6 +1,6 @@
 import type { LlmClient, LlmUsage } from "../../platform/llm";
 
-import { prompts } from "./prompts";
+import { type JudgePrompt, prompts } from "./prompts";
 import { judgeSchema, type RubricKind, rubricItems } from "./prompts/judge-v1";
 
 export interface JudgeResult {
@@ -21,17 +21,19 @@ export function judgePassed(result: Omit<JudgeResult, "passed">, codeChecksPasse
 
 // One LLM call per draft. LLM errors go to the caller unchanged. The answer has no free text.
 // `passed` of the result is the rubric alone: the eval joins it with the code checks (`judgePassed`).
+// `prompt` is `prompts.judge` unless the drafter eval picks another version.
 export async function judgeDraft(
   llm: LlmClient,
-  input: Parameters<typeof prompts.judge.buildUser>[0],
-  opts: { model?: string } = {}
+  input: Parameters<JudgePrompt["buildUser"]>[0],
+  opts: { model?: string; prompt?: JudgePrompt } = {}
 ): Promise<{ result: JudgeResult; usage: LlmUsage }> {
+  const prompt = opts.prompt ?? prompts.judge;
   const { data, usage } = await llm.generate({
-    role: prompts.judge.role,
-    promptVersion: prompts.judge.version,
+    role: prompt.role,
+    promptVersion: prompt.version,
     schema: judgeSchema(input.kind),
-    system: prompts.judge.buildSystem(input.kind),
-    prompt: prompts.judge.buildUser(input),
+    system: prompt.buildSystem(input.kind),
+    prompt: prompt.buildUser(input),
     model: opts.model,
   });
   const names = rubricItems[input.kind];

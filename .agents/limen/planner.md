@@ -48,6 +48,10 @@ A harness study (Nov 12–14) found: plans cost 3–10 times their build, and ab
 - **Read less:** start from `docs/capabilities/` and the ticket's epic page. Read code only to check a fact that a decision depends on.
 - A worker that finds a gap in a decision still stops and asks (plan-task §4). A gap in code detail is the worker's to solve at `HEAD`.
 
+## Needs lines (owner, 2026-11-20)
+
+The `Needs` line of a stage (its first lines; `scripts/coord-scan.sh` prints it) names the real dependency: the file, interface, table, data file or record that this stage reads and an earlier stage or another ticket writes. Examples: `Needs stage 01: compose-lib.sh ea_compose_init.` `Needs F107 stage 08: costToRun.` Never "stages 01–NN landed" or "green master CI": such a line turns a ticket into one job at a time. Two stages with no shared file or interface get `May run next to NN`. A stage that only the coordinator runs (VPS, deploy, real spend) says so in its first line, and a stage that needs a release names the release content (`needs the release that carries stage 01`). An owner step or a production check (a watch window, a pilot week, a data run that takes days) is a record, not a dependency of the stages after it (owner rule 2026-11-20, `spec/build.md`); if it must wait, write it as a follow-up ticket, not as a stage that blocks the close. The coordinator starts every stage whose Needs are met; a land conflict is resolved by "merge master, re-prove", not by waiting.
+
 ## Refresh job
 
 The instruction says `Refresh FNNN` when the plan exists but other tickets changed the code after it was written. You do not plan again. You make the existing plan true for the code at `HEAD`, before its first stage builds.
