@@ -1,4 +1,4 @@
-import { renderNotice, type OutMessage } from "@ea/core";
+import { renderNotice, type NoticeDetail, type OutMessage } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
@@ -7,6 +7,7 @@ import { createLog } from "../../platform/log";
 import { markDigestSent } from "../reports";
 
 import { checkCardEdit } from "./card-edit-check";
+import { createDetailGate } from "./detail";
 import { ChannelError, type ChatChannel } from "./port";
 import { createQuietGate } from "./quiet-gate";
 import {
@@ -38,6 +39,8 @@ export interface SenderDeps {
   now(): Date;
   batchSize?: number;
   perUserLimit?: number;
+  // The base URL of the panel (`WEB_BASE_URL`): the `minimal` text ends with a link built from it. Unset: the line "Open the panel".
+  webBaseUrl?: string;
 }
 
 export function backoff(attempt: number): number {
@@ -93,6 +96,8 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
     const sentPerUser = new Map<string, number>();
     // The quiet hours of the users of this batch, read once. A row that quiet hours never hold (digest, edit) needs no hours.
     const quiet = createQuietGate({ db, now, claimed });
+    // The detail levels of the members of this batch, read once (flag `telegram_minimal`, the lock of the organization, the level of the member).
+    const levels = createDetailGate({ db, claimed });
 
     for (const [index, row] of claimed.entries()) {
       const ctx = { orgId: row.orgId };
@@ -111,6 +116,8 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         // A row with a text is sent as it is (rows queued before send-time rendering); every other row is rendered now
         // (ADR 0032 point 5).
         let message: OutMessage;
+        // The level of a row that was rendered now; a row with a stored text keeps the level it has.
+        let renderedDetail: NoticeDetail | undefined;
         if (row.text !== null) {
           message = {
             text: row.text,
@@ -118,10 +125,12 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
             ...(row.kind === "reply_prompt" ? { forceReply: true as const } : {}),
           };
         } else {
+          renderedDetail = await levels.detailOf(row);
           const rendered = renderNotice(row.kind, row.view, {
             channel: row.channel,
-            detail: row.detail,
+            detail: renderedDetail,
             locale: row.locale,
+            ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
           });
           if (!rendered.ok) {
             await fail(row, "bad_view");
@@ -183,7 +192,12 @@ export function createOutboxSender(deps: SenderDeps): { run(): Promise<void> } {
         sentPerUser.set(userKey, sentCount + 1);
 
         const markSent = async (trx: Transaction<DB>): Promise<boolean> => {
-          const ok = await markOutboxSent(trx, ctx, row.id, row.lockedAt, { messageId, at: now, message });
+          const ok = await markOutboxSent(trx, ctx, row.id, row.lockedAt, {
+            messageId,
+            at: now,
+            message,
+            ...(renderedDetail === undefined ? {} : { detail: renderedDetail }),
+          });
           if (ok && row.kind === "digest" && row.digestId !== null) {
             await markDigestSent(trx, ctx, row.digestId, now);
           }

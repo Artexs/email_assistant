@@ -284,7 +284,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "quiet_end",
     "report_channel",
     "report_mailbox_id",
-    "notice_routes"
+    "notice_routes",
+    "telegram_detail"
   ),
   // What the user waits for, promised or handed on: the text of the mail-derived copy and the state a person understands.
   // The ids and the counters of the chaser stay out (they mean nothing without the database). `org_id` goes out like in
@@ -340,7 +341,8 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "trial_ends_at",
     "max_mailboxes",
     "resumed_at",
-    "sso_required"
+    "sso_required",
+    "telegram_minimal_locked"
   ),
   outbox: byOrg(
     "id",

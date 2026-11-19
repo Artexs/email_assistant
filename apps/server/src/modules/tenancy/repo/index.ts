@@ -21,6 +21,7 @@ export {
   listMemberships,
   listMembershipsOfUser,
   listQuietHoursOf,
+  listTelegramDetailsOf,
   setDigestTimes,
   setMemberNoticeRoutes,
   setMemberQuietHours,

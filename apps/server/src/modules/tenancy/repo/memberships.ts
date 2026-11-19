@@ -1,13 +1,16 @@
 import {
   membershipRoleSchema,
+  noticeDetails,
   noticeRoutesSchema,
   reportChannelSchema,
   userLocaleSchema,
   type MembershipRole,
+  type NoticeDetail,
   type NoticeRoutes,
   type UserLocale,
 } from "@ea/core";
 import { sql, type Transaction } from "kysely";
+import { z } from "zod";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
 
@@ -243,4 +246,30 @@ export async function listQuietHoursOf(
     }
   }
   return hours;
+}
+
+const noticeDetailSchema = z.enum(noticeDetails);
+
+// The Telegram detail level of the members of one claimed batch, with the lock of their organization, in one query. Like
+// `listQuietHoursOf` it walks all organizations; the pair `(org_id, user_id)` is the key. A pair with no membership is not in the map.
+export async function listTelegramDetailsOf(
+  db: Db | Transaction<DB>,
+  pairs: readonly { orgId: string; userId: string }[]
+): Promise<Map<string, { memberDetail: NoticeDetail; locked: boolean }>> {
+  const details = new Map<string, { memberDetail: NoticeDetail; locked: boolean }>();
+  if (pairs.length === 0) return details;
+  const rows = await db
+    .selectFrom("memberships as m")
+    .innerJoin("organizations as o", "o.id", "m.org_id")
+    .select(["m.org_id", "m.user_id", "m.telegram_detail", "o.telegram_minimal_locked"])
+    .where("m.user_id", "in", [...new Set(pairs.map((pair) => pair.userId))])
+    .where("m.org_id", "in", [...new Set(pairs.map((pair) => pair.orgId))])
+    .execute();
+  for (const row of rows) {
+    details.set(`${row.org_id}:${row.user_id}`, {
+      memberDetail: noticeDetailSchema.parse(row.telegram_detail),
+      locked: row.telegram_minimal_locked,
+    });
+  }
+  return details;
 }

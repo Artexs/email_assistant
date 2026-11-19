@@ -61,6 +61,8 @@ export interface NewOutboxRow {
   channel?: NoticeChannel;
   // Only a `push` row: the device of the row (`outbox_push_subscription_channel_check`).
   pushSubscriptionId?: string;
+  // The level of a Telegram row at queue time (absent = `full`); the sender writes the level of the send over it.
+  detail?: NoticeDetail;
   createdAt: Date;
   nextAttemptAt: Date;
 }
@@ -82,6 +84,7 @@ export async function insertOutbox(db: DbOrTrx, ctx: TenantContext, row: NewOutb
       locale: row.locale,
       channel: row.channel ?? "telegram",
       push_subscription_id: row.pushSubscriptionId ?? null,
+      detail: row.detail ?? "full",
       status: "pending",
       attempts: 0,
       created_at: row.createdAt,
@@ -277,7 +280,8 @@ export async function markOutboxSent(
   id: string,
   lockedAt: Date,
   // `messageId` is the Telegram message id; a report mail has none (null).
-  sent: { messageId: number | null; at: Date; message: OutMessage }
+  // `detail`: the level at which the text was rendered (a row with a stored text keeps its level: no `detail`).
+  sent: { messageId: number | null; at: Date; message: OutMessage; detail?: NoticeDetail }
 ): Promise<boolean> {
   const result = await db
     .updateTable("outbox")
@@ -288,6 +292,7 @@ export async function markOutboxSent(
       // The cache of the sent message (ADR 0032 point 5): the stored text is the sent text.
       text: sent.message.text,
       buttons: JSON.stringify(outButtonsSchema.parse(sent.message.buttons)),
+      ...(sent.detail === undefined ? {} : { detail: sent.detail }),
       locked_at: null,
       error_code: null,
     })

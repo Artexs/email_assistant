@@ -3,6 +3,7 @@ import {
   NoticeViewError,
   renderNotice,
   type NoticeChannel,
+  type NoticeDetail,
   type NoticeKind,
   type NoticeView,
   type UserLocale,
@@ -11,6 +12,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 
+import { detailOfUser } from "./detail";
 import { planFanOut, type NoticeOnly } from "./notice-fan-out";
 import { pushDedupKey } from "./push";
 import { insertOutbox } from "./repo";
@@ -50,7 +52,13 @@ export async function queueNotice<K extends NoticeKind>(
   input: QueueNoticeInput<K>
 ): Promise<string | null> {
   const view = encodeNoticeView(input.kind, input.view);
-  const rendered = renderNotice(input.kind, view, { channel: "telegram", detail: "full", locale: input.locale });
+  // A Telegram row stores the level of the member now and the check render uses it (the sender reads the level again at send time and
+  // writes the level of the send). A mail or push row, and a call that writes no Telegram row, stay `full`.
+  const detail: NoticeDetail =
+    (input.channel === undefined || input.channel === "telegram") && input.only !== "push"
+      ? await detailOfUser(db, ctx, input.userId)
+      : "full";
+  const rendered = renderNotice(input.kind, view, { channel: "telegram", detail, locale: input.locale });
   if (!rendered.ok) throw new NoticeViewError(input.kind);
   const base = {
     userId: input.userId,
@@ -66,7 +74,7 @@ export async function queueNotice<K extends NoticeKind>(
     nextAttemptAt: input.now,
   };
   if (input.channel !== undefined) {
-    return insertOutbox(db, ctx, { ...base, dedupKey: input.dedupKey, channel: input.channel });
+    return insertOutbox(db, ctx, { ...base, dedupKey: input.dedupKey, channel: input.channel, detail });
   }
   const write = async (trx: Db | Transaction<DB>): Promise<string | null> => {
     const plan = await planFanOut(trx, ctx, {
@@ -81,7 +89,9 @@ export async function queueNotice<K extends NoticeKind>(
       const pushRendered = renderNotice(input.kind, view, { channel: "push", detail: "full", locale: input.locale });
       if (!pushRendered.ok) throw new NoticeViewError(input.kind);
     }
-    const telegramId = plan.telegram ? await insertOutbox(trx, ctx, { ...base, dedupKey: input.dedupKey }) : null;
+    const telegramId = plan.telegram
+      ? await insertOutbox(trx, ctx, { ...base, dedupKey: input.dedupKey, detail })
+      : null;
     let firstPushId: string | null = null;
     for (const deviceId of plan.deviceIds) {
       const pushId = await insertOutbox(trx, ctx, {

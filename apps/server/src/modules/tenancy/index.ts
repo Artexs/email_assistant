@@ -23,6 +23,7 @@ export {
   listOrgFeatureRows,
   listOrgFeatureRowsOfAll,
   listQuietHoursOf,
+  listTelegramDetailsOf,
   setDigestTimes,
   setMemberNoticeRoutes,
   setMemberQuietHours,

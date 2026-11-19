@@ -105,7 +105,12 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
     },
     { botInfo: deps.botInfo, apiRoot: deps.apiRoot }
   );
-  const sender = createOutboxSender({ db, channel: createTelegramChannel(bot.api), now });
+  const sender = createOutboxSender({
+    db,
+    channel: createTelegramChannel(bot.api),
+    now,
+    ...(deps.webBaseUrl === undefined ? {} : { webBaseUrl: deps.webBaseUrl }),
+  });
   let polling: Polling | undefined;
   const loadBotUsername = cacheOnSuccess(() => bot.api.getMe().then((me) => me.username));
   const botUsername = () => withTimeout(loadBotUsername(), BOT_USERNAME_TIMEOUT_MS);

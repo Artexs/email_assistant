@@ -36,6 +36,7 @@ import { getOrganization, isFeatureOn } from "../tenancy";
 import { handleMistakeTap, handleReasonTap } from "./action-feedback-taps";
 import { editBriefLine, lineEditResult } from "./brief-line-edit";
 import { cardEditHooks } from "./card-edits";
+import { detailOfUser } from "./detail";
 import { heldReason } from "./held-reason";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
 import { nextAfterReplyDecision } from "./reply-taps";
@@ -129,9 +130,10 @@ export async function handleApprovalCallback(
         ? await findOutboxByDedup(deps.db, ctx, link.userId, dedupKey)
         : await findApprovalCardOfTap(deps.db, ctx, link.userId, cardOf, source.messageId);
     if (row === undefined || row.text === null || row.text === "") return undefined;
+    // The level of the member now: at `minimal` the edit has no button, also on a card that went out at `full`.
     return renderNoticeEdit(
       { original: row.text, outcome, at: now, timeZone, ...extra },
-      { channel: row.channel, detail: row.detail, locale: row.locale }
+      { channel: row.channel, detail: await detailOfUser(deps.db, ctx, link.userId), locale: row.locale }
     );
   };
 

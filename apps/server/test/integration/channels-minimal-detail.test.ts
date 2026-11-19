@@ -31,7 +31,7 @@ afterAll(async () => {
 });
 
 // The direct answers of the bot follow the detail level of the chat. The level is a fake here: `telegramDetailOf` reads
-// `deps.detailOf` and returns `full` without it, until the setting exists.
+// `deps.detailOf`, and the effective level of the member without it (`channels-detail-send.test.ts` covers the real reader).
 const T = new Date("2026-11-06T10:00:00Z");
 const HOUR = 3_600_000;
 const BASE = "https://ea.example.ts.net";
@@ -96,7 +96,7 @@ async function addMailbox(trx: Transaction<DB>, orgId: string): Promise<string> 
 }
 
 describe("telegramDetailOf", () => {
-  test("reads full until a level is set, and the fake level otherwise", async () => {
+  test("reads full while the flag is off, and the fake level when a test passes one", async () => {
     await withRollback(db, async (trx) => {
       const { link } = await setup(trx);
       expect(await telegramDetailOf(depsAt(trx), link)).toBe("full");

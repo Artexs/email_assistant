@@ -542,6 +542,27 @@ describe("approval taps", () => {
     });
   });
 
+  test("(5g) a held approval at the minimal level: the edit of the tap has no Reject button (the level of the member now)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await approvalSetup(trx, { sendScope: () => ({ kind: "off" }) });
+      await setOrgFeature(trx, s.ctx, { flag: "telegram_minimal", enabled: true, actor: "cli", now: T });
+      await trx
+        .updateTable("memberships")
+        .set({ telegram_detail: "minimal" })
+        .where("org_id", "=", s.a.orgId)
+        .where("user_id", "=", s.o1)
+        .execute();
+      const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, { notifiedAt: T, createdAt: T });
+      await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
+
+      const tap = await handleCallback(s.deps, s.owner1, `ap:${sendId}`);
+
+      expect(tap.answer).toBe(textTables.en.bot.taps.approvedHeld);
+      expect(tap.edit?.buttons).toEqual([]);
+      expect(tap.edit?.text).toContain("Sending is held by SEND_SCOPE");
+    });
+  });
+
   test("(5e) a tap on a card that was never sent answers and gives no edit", async () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);

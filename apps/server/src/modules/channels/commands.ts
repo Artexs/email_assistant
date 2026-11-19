@@ -44,6 +44,7 @@ import { ANSWERED_CHECK_WINDOW_MS, listAnsweredCandidates, listForReview } from 
 
 import { handleCallback, type CallbackDeps } from "./callbacks";
 import { replyConsentOf } from "./consent";
+import { detailOfUser } from "./detail";
 import { SYNC_LATE_MS } from "./notices";
 import type { CommandName, LinkedChat, UpdateHandlers } from "./port";
 import { handleReplyText } from "./reply-redraft";
@@ -78,9 +79,9 @@ const ADDRESS_MAX = 60;
 
 const ACTIONS_WINDOW_MS = 24 * 3_600_000;
 
-// The detail level of a chat. Every member reads `full` until the setting exists (the column, the flag and the lock come later).
+// The detail level of a chat: the effective level of the member of the link now (flag, lock, own level). The same reader as the sender.
 export async function telegramDetailOf(deps: CommandDeps, link: LinkedChat): Promise<NoticeDetail> {
-  return deps.detailOf === undefined ? "full" : deps.detailOf(link);
+  return deps.detailOf === undefined ? detailOfUser(deps.db, { orgId: link.orgId }, link.userId) : deps.detailOf(link);
 }
 
 export function helpMessage(link: LinkedChat): OutMessage {
