@@ -6,12 +6,13 @@ opened: 2026-11-19
 
 ## Outcome
 
-An operator sets the provider name `deepseek` and its API key, restarts, and every LLM call of the product, the evals and the judge goes to DeepSeek, priced in the call rows and the cost readers. Today one variable (`LLM_PROVIDER`) already picks the provider and one registry holds the provider code; what is missing is the DeepSeek row of that registry (its API shape, errors, prices) and its legal line. A short audit stage first proves that no provider code sits outside the registry. Owner, 2026-11-20.
+An operator sets the provider name `deepseek` and its API key, restarts, and every LLM call of the product, the evals and the judge goes to DeepSeek, priced in the call rows and the cost readers. Today one variable (`LLM_PROVIDER`) already picks the provider and one registry holds the provider code; what is missing is the DeepSeek row of that registry (its API shape, errors, prices) and its legal line. Roles name a model tier (`light`, `strong`), never a model id: each provider row maps the tiers to its models and prices, so a provider switch changes no other env key (owner, 2026-11-19). A short audit stage first proves that no provider code sits outside the registry. Owner, 2026-11-20.
 
 ## Scope
 
 - A read-only audit first: every place that names a provider or a model outside the provider registry, and where provider logic is duplicated; the plan moves it into the registry.
 - A DeepSeek row in the registry: its API shape, error mapping, price rows with their read date, reasoning-effort rules and rate limit.
+- Model tiers: each provider row maps `light` and `strong` to a model id, a price row and a reasoning-effort rule; each role picks a tier (classifier, drafter and extractor `light`, judge `strong`). An env key may still pin one exact model for one role (evals, a trial).
 - Config: the provider key, the base URL, the global and the per-role provider name. The judge rule (the judge model differs from the model under test) keeps working across providers.
 - Legal: a sub-processor row, the privacy text and a terms entry for DeepSeek. The vision asks for EU location before any outside user's mail; DeepSeek processes outside the EU, so the switch is a documented pilot choice, never a default.
 - The holdout gate (classifier and drafter) on DeepSeek before any automatic category runs on it; a failing model unlocks no `auto`.
@@ -24,6 +25,8 @@ An operator sets the provider name `deepseek` and its API key, restarts, and eve
 
 ## Acceptance
 
+- With only `LLM_PROVIDER` and that provider's key set, every role runs on that provider's tier models, for `openai` and for `deepseek`; no `*_MODEL_*` key is needed.
+- The gate file names the resolved model id, not the tier, so a provider switch needs a new gate run.
 - `bun run llm:check` with the DeepSeek provider and key passes for every role; with the key missing it fails with a message that names the key, never a value.
 - Each call writes one `llm.call` row with provider `deepseek`, the model, the tokens and a priced cost; `triage:cost` and `stats:week` show it.
 - The audit report lists every provider-specific code site before, and a test or lint rule proves zero outside the registry after.
