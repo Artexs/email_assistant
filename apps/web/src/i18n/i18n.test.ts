@@ -157,9 +157,9 @@ describe("the Telegram consent text", () => {
   });
 
   // A Telegram user is covered for reply data only by a consent version that offered a text naming it. While
-  // `REPLY_CONSENT_SINCE` is above the current version nobody is covered (the reply stage ships without the legal text change: it needs a
-  // TERMS_VERSION bump that belongs to the next legal text batch). Once it is not above, both consent texts must name the reply drafts and the other
-  // recipients' addresses, or this test fails.
+  // The version `REPLY_CONSENT_SINCE` covers users who consent to a text that names the reply drafts and the other recipients'
+  // addresses. While it is above the current version nobody is covered; once it is not above, both consent texts must name
+  // that data, or this test fails.
   test("T8 the reply version is not offered before its text names reply data", () => {
     if (REPLY_CONSENT_SINCE > TELEGRAM_CONSENT_VERSION) return;
     expect(en.tg_consent_text).toContain("reply drafts that the AI writes");

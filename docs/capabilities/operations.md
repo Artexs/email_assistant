@@ -1,6 +1,8 @@
 # Operations
 
-> Checked against the code at `255e8ab5`, 2026-11-15. Limits rechecked after the first drill on the VPS, 2026-11-19.
+> Checked against the code at `255e8ab5`, 2026-11-15.
+>
+> Limits rechecked after the first drill on the VPS, 2026-11-19.
 
 ## What it does now
 
