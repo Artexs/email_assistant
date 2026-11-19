@@ -398,6 +398,7 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Choice: the code does not refuse it. A reset creates a credential account, and in an organization without "SSO required" that password signs in. Docs state it as a default.
 - Why: refusing needs code and a plan change; the owner can still require SSO per organization.
 - Undo: a later ticket adds a refusal for SSO-only members. Also open: axe checks for the company sign-in block, the Account card of a member with no password and `/operator` (no e2e spec opens them).
+- Superseded 2026-11-19: the coordinator chose the refusal (F119 carry-over, job `…4961c82a`). The public reset request gives an SSO-only member the generic answer and no mail; only the operator's `web:invite --user-id` gives a password. Undo: remove the `ssoOnlyMember` line in `web.ts`.
 - Source: `notes/2026-11-15-f119-sso-docs-facts.md`, `deploy/README.md` section "Company sign-in (F119)".
 
 ### 2026-11-15 · F109 v3 prompt holdout: no ship by the rule (F109) · quality · new
