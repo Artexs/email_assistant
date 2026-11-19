@@ -19,12 +19,12 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ### For users
 
-- en: The privacy policy, terms and data processing pages now name the browser push services (Google FCM, Mozilla, Apple, Microsoft) and the two Telegram levels, "Counts and links only" and "Full". You accept the new terms once, at your next sign-in.
-  pl: Polityka prywatności, regulamin i umowa powierzenia danych wymieniają teraz usługi push przeglądarek (Google FCM, Mozilla, Apple, Microsoft) oraz dwa poziomy Telegrama: „Tylko liczby i linki” i „Pełna treść”. Nowy regulamin akceptujesz raz, przy następnym logowaniu.
+- en: The privacy policy now names the browser push services (Google FCM, Mozilla, Apple, Microsoft) and the two Telegram levels, "Counts and links only" and "Full". The terms and the data processing agreement now also mention push devices. You accept the new terms once, at your next sign-in.
+  pl: Polityka prywatności wymienia teraz usługi push przeglądarek (Google FCM, Mozilla, Apple, Microsoft) oraz dwa poziomy Telegrama: „Tylko liczby i linki” i „Pełna treść”. Regulamin i umowa powierzenia danych wspominają też o urządzeniach push. Nowy regulamin akceptujesz raz, przy następnym logowaniu.
 
 ### Changed
 
-- The terms version moves to `2026-11-19`. The sub-processor registry has the row `web-push` (active when `VAPID_PRIVATE_KEY` is set), and `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` map to it in `OUTSIDE_SERVICE_KEYS`. The kept-text of the data categories that go until a delete now reads "Until the mailbox, the member or the organization is deleted". `tg_consent_text` and the consent version do not change. ADR 0032 is accepted. `deploy/README.md` has the section "Phone notices and Telegram detail (F118)" with the keys, the flags and the rollback steps. The flags `web_push` and `telegram_minimal` stay off until the owner turns them on for the pilot organization.
+- The terms version moves to `2026-11-19`. The sub-processor registry has the row `web-push` (active when `VAPID_PRIVATE_KEY` is set), and `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` map to it in `OUTSIDE_SERVICE_KEYS`. Each data category that is kept until a delete now has a scope with its own text: "Until the mailbox or the organization is deleted", "Until the member removes it or the organization is deleted" (chat links, push devices) or "Until the organization is deleted" (the account). `tg_consent_text` and the consent version do not change. ADR 0032 is accepted. `deploy/README.md` has the section "Phone notices and Telegram detail (F118)" with the keys, the flags and the rollback steps. The flags `web_push` and `telegram_minimal` stay off until the owner turns them on for the pilot organization.
 
 ## [0.3.0] - 2026-11-19
 

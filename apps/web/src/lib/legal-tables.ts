@@ -21,7 +21,7 @@ export function keptText(texts: Dictionary, kept: Kept): string {
     case "afterExpiry":
       return fillSlots(texts.legal_kept_after_expiry, { days: daysText(texts, kept.days) });
     case "untilDelete":
-      return texts.legal_kept_until_delete;
+      return texts[`legal_kept_until_${kept.scope}`];
   }
 }
 

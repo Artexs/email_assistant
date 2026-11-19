@@ -5,13 +5,16 @@ import type { Texts } from "./texts";
 //   days             a fixed number of days after the row was made (or last changed)
 //   daysAfterClose   a fixed number of days after the row is closed or done
 //   afterExpiry      a fixed number of days after the row expires; a period of hours counts as 1 day (the upper bound)
-//   untilDelete      no job clears it: it goes with the mailbox, the member or the organization (`docs/capabilities/account-data.md`)
+//   untilDelete      no job clears it; `scope` says what ends it (`docs/capabilities/account-data.md`):
+//                    mailbox       the removal of the mailbox, or the delete of the organization
+//                    member        the member (the panel or the CLI removes the item), or the delete of the organization
+//                    organization  the delete of the organization (no code removes a member or a mailbox with it)
 export type Kept =
   | { kind: "orgSetting"; defaultDays: number }
   | { kind: "days"; days: number }
   | { kind: "daysAfterClose"; days: number }
   | { kind: "afterExpiry"; days: number }
-  | { kind: "untilDelete" };
+  | { kind: "untilDelete"; scope: "mailbox" | "member" | "organization" };
 
 // What the system stores, about whom and for how long. The privacy page and the records of processing read this list. A
 // test ties it to the database: every table is in a category or in `NO_PERSONAL_DATA_TABLES`.
@@ -29,7 +32,9 @@ export interface DataCategory {
   kept: Kept;
 }
 
-const untilDelete: Kept = { kind: "untilDelete" };
+const untilMailbox: Kept = { kind: "untilDelete", scope: "mailbox" };
+const untilMember: Kept = { kind: "untilDelete", scope: "member" };
+const untilOrganization: Kept = { kind: "untilDelete", scope: "organization" };
 
 export const dataCategories: readonly DataCategory[] = [
   {
@@ -48,7 +53,7 @@ export const dataCategories: readonly DataCategory[] = [
       "memberships.*",
     ],
     subjects: ["users"],
-    kept: untilDelete,
+    kept: untilOrganization,
   },
   {
     id: "organization",
@@ -66,7 +71,7 @@ export const dataCategories: readonly DataCategory[] = [
       "mailbox_sent_sync.*",
     ],
     subjects: ["users"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "mailbox-secret",
@@ -77,7 +82,7 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["mailbox_credentials.*"],
     subjects: ["users"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "sign-in-tokens",
@@ -156,7 +161,7 @@ export const dataCategories: readonly DataCategory[] = [
       "sent_emails.thread_key",
     ],
     subjects: ["users", "others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "ai-results",
@@ -186,7 +191,7 @@ export const dataCategories: readonly DataCategory[] = [
       "triage_results.prompt_version",
     ],
     subjects: ["others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "action-records",
@@ -203,7 +208,7 @@ export const dataCategories: readonly DataCategory[] = [
       "actions.approved_via",
     ],
     subjects: ["users", "others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "delegation",
@@ -225,7 +230,7 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["delegates.*", "sender_rules.*"],
     subjects: ["users", "others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "loop-texts",
@@ -267,7 +272,7 @@ export const dataCategories: readonly DataCategory[] = [
     columns: ["mailbox_profiles.*"],
     // A signature can name a colleague or a contact: the DSR address map covers these columns (`address-map.ts`).
     subjects: ["users", "others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "unsubscribe-data",
@@ -279,7 +284,7 @@ export const dataCategories: readonly DataCategory[] = [
     columns: ["unsubscribe_requests.*"],
     // The sender is a third party. A data-request erase of the sender deletes the row (`address-map.ts`, rule `delete`).
     subjects: ["others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "sender-context",
@@ -305,20 +310,20 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["chat_links.*"],
     subjects: ["users"],
-    kept: untilDelete,
+    kept: untilMember,
   },
   {
     id: "push-devices",
     label: { en: "Notice devices", pl: "Urządzenia powiadomień" },
     purpose: {
       en: "The phone or the browser that a member registered to receive push notices: an encrypted address of the push service with its keys, a name of the device and the result of the last send",
-      pl: "Telefon lub przeglądarka, które członek zarejestrował do powiadomień push: zaszyfrowany adres usługi push z kluczami, nazwa urządzenia i wynik ostatniego wysłania",
+      pl: "Telefon lub przeglądarka, które członek zarejestrował do powiadomień push: zaszyfrowany adres usługi push z kluczami, nazwa urządzenia i wynik ostatniej wysyłki",
     },
     columns: ["push_subscriptions.*"],
     // The device is bound to a web session: the end of the session makes it inactive, and the member can remove it in the
     // panel. No retention job clears the row: it goes with the member, the user or the organization.
     subjects: ["users"],
-    kept: untilDelete,
+    kept: untilMember,
   },
   {
     id: "messages",
@@ -340,7 +345,7 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["audit_log.*", "triage_feedback.*", "action_feedback.*"],
     subjects: ["users", "others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
   {
     id: "tombstones",
@@ -351,7 +356,7 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["dsr_tombstones.*"],
     subjects: ["others"],
-    kept: untilDelete,
+    kept: untilMailbox,
   },
 ];
 
