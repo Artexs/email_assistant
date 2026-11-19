@@ -487,6 +487,23 @@ describe("injection verdict", () => {
   });
 });
 
+describe("drafterExitCode", () => {
+  test("more than 10 percent error cases is exit 1; 10 percent or less is exit 0; an incomplete run is exit 2", () => {
+    const rows = (errors: number) => [
+      ...Array.from({ length: 10 - errors }, (_, i) => result(`ok-${i}`)),
+      ...Array.from({ length: errors }, (_, i) =>
+        result(`err-${i}`, { outcome: "error", errorCode: "http_503", judge: null })
+      ),
+    ];
+    const scores = (errors: number) => scoreDrafter(rows(errors), { judgeRan: true, planted: () => false });
+    expect(drafterExitCode({ complete: true, scores: scores(1) })).toBe(0);
+    expect(drafterExitCode({ complete: true, scores: scores(2) })).toBe(1);
+    expect(drafterExitCode({ complete: false, scores: scores(0) })).toBe(2);
+    expect(drafterExitCode({ complete: true, scores: scores(0), gate: true })).toBe(0);
+    expect(drafterExitCode({ complete: true, scores: scores(1), gate: true })).toBe(1);
+  });
+});
+
 describe("reports", () => {
   const header = {
     title: "Reply drafter eval: t",
