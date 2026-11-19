@@ -28,7 +28,7 @@ A stranger reads on the public docs site what the product is (home), what it doe
 - `bun run docs:build` holds home, security and pricing in en and pl; the build fails when a security claim links a file that does not exist.
 - The pricing table equals `costToRun` at 50, 100 and 200 mails a day (unit test).
 - A pushed `v*` tag does not deploy the docs while the owner-review list is not empty (deploy-gate test).
-- `bun run demo:record --seed <file>` writes an MP4 of 100–130 s and captions in en and pl.
+- `bun run demo:record` writes an MP4 of 100–130 s and captions in en and pl (e2e seed; the demo-seed video is the follow-up ticket's).
 - The fake Telegram serves a read-only, escaped chat view on loopback.
 - A cold-read agent with only the built site answers the ten buyer questions in line with the claims table.
 
@@ -39,8 +39,9 @@ One job per stage; order in `plan.md` § How to run. No migration, no `bun.lock`
 ## Sequenced
 
 - Plan after: none (F107, F110, F113, F114 have `stages/`).
-- Build after: F113 (E2b), F100 (E3a, done), F110 (E4-B), F107 (E7-T4; stage 03 of this plan needs its stage 08 `costToRun`), F114 (E8b), all in `spec/features/done/`.
-- Gate: — for the build start. Before stage 09: coordinator step C1 (demo week run and export, 5–12 days lead; start it at the build start). Publication: owner gates G1 (pages), G2 (demo seed in git), G3 (video asset); default for each: prepare, do not publish.
+- Build after: F113 (E2b), F100 (E3a, done), F110 (E4-B), F107 (E7-T4), F114 (E8b), all in `spec/features/done/`.
+- Stage needs: stage 02 needs F138 stage 02 (registry without the gemini row); stage 10 needs coordinator step C3 (demo DB).
+- Gate: C1 (demo week) gates no stage (owner, 2026-11-20); it starts after the F113 day run day-20261120-215c ends. Publication: owner gates G1 (pages), G2 (demo seed in git), G3 (video asset); default for each: prepare, do not publish.
 
 ## Notes
 

@@ -18,6 +18,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F138-the-whole-project-calls-only-openai-no-gemini-code-key-config-or-doc-remains-and-the-evals-and-the-judge-run-on-openai-models` (🟠 ACTIVE): The whole project calls only OpenAI: no Gemini code, key, config or doc remains, and the evals and the judge run on OpenAI models
 - `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
+- `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 
