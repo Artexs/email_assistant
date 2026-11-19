@@ -17,6 +17,8 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-19
+
 ### For users
 
 - en: The privacy policy, terms and data processing pages now also describe sender profiles and phone devices. You accept the new terms once, at your next sign-in.
