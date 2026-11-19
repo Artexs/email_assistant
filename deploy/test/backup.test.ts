@@ -35,7 +35,7 @@ function stub(name: string, body: string): void {
 function writeEnv(extra: string): void {
   writeFileSync(
     join(root, "deploy", "backup.env"),
-    `BACKUP_DIR=${backups}\nAGE_RECIPIENT=age1testkey\nBACKUP_REMOTE=stub:bucket/x\n${extra}\n`
+    `BACKUP_DIR=${backups}\nAGE_RECIPIENT=age1testkey\nBACKUP_REMOTE=stub:bucket/x\nBACKUP_RCLONE_DELAY=0\n${extra}\n`
   );
 }
 
@@ -51,8 +51,11 @@ beforeEach(() => {
   stub("docker", `printf 'PGDMPfake-dump-body'`);
   // `age -r <recipient> -o <file>`: copy stdin to the file
   stub("age", `while [[ $# -gt 0 ]]; do [[ "$1" == -o ]] && out="$2"; shift; done\ncat >"$out"`);
-  // `rclone copyto <src> <dest>`: fail when asked
-  stub("rclone", `[[ -n "\${STUB_RCLONE_FAIL:-}" ]] && exit 1\nexit 0`);
+  // `rclone copyto <src> <dest>`: fail when asked (always, or for the first STUB_RCLONE_FAIL_FIRST calls); count the calls
+  stub(
+    "rclone",
+    `echo x >>"${root}/rclone.calls"\ncalls=$(wc -l <"${root}/rclone.calls")\n[[ -n "\${STUB_RCLONE_FAIL:-}" ]] && exit 1\n(( calls <= \${STUB_RCLONE_FAIL_FIRST:-0} )) && { echo "dial tcp: lookup api.backblazeb2.com: server misbehaving" >&2; exit 1; }\nexit 0`
+  );
   // `curl`: log the arguments, one call per line; fail when asked, and print the URL on stderr as a leaky curl would
   stub(
     "curl",
@@ -77,6 +80,11 @@ function status(): Record<string, unknown> {
     string,
     unknown
   >;
+}
+
+function rcloneCalls(): number {
+  const file = join(root, "rclone.calls");
+  return existsSync(file) ? readFileSync(file, "utf8").trim().split("\n").length : 0;
 }
 
 function curlCalls(): string[] {
@@ -170,5 +178,79 @@ describe("deploy/backup.sh status file and ping", () => {
     const dir = join(root, "deploy", "backup-status");
     expect(statSync(join(dir, "status.json")).mode & 0o777).toBe(0o644);
     expect(readdirSync(dir).filter((file) => file.endsWith(".tmp"))).toEqual([]);
+  });
+});
+
+describe("deploy/backup.sh B2 retry and lock", () => {
+  test("6. a copy that fails twice and then works gives ok after 3 tries", () => {
+    const { code, output } = run({ STUB_RCLONE_FAIL_FIRST: "2" });
+    expect(code).toBe(0);
+    expect(rcloneCalls()).toBe(3);
+    expect(output).toContain("try 1 of 5 failed");
+    expect(output).toContain("try 2 of 5 failed");
+    expect(status().result).toBe("ok");
+    expect(readdirSync(backups).filter((file) => file.endsWith(".dump.age"))).toHaveLength(1);
+    expect(readdirSync(backups).filter((file) => file.endsWith(".part"))).toEqual([]);
+  });
+
+  test("7. a copy that always fails stops after BACKUP_RCLONE_TRIES tries, writes failed and leaves no dump", () => {
+    writeEnv(`BACKUP_PING_URL=${PING_URL}\nBACKUP_RCLONE_TRIES=3`);
+    const { code, output } = run({ STUB_RCLONE_FAIL: "1" });
+    expect(code).not.toBe(0);
+    expect(rcloneCalls()).toBe(3);
+    expect(output).toContain("rclone copyto failed after 3 tries");
+    expect(status().result).toBe("failed");
+    expect(readdirSync(backups)).toEqual([]);
+  });
+
+  test("8. the wait doubles: DELAY 1 and 3 tries wait 1 s and 2 s", () => {
+    writeEnv(`BACKUP_RCLONE_DELAY=1\nBACKUP_RCLONE_TRIES=3`);
+    const started = Date.now();
+    const { output } = run({ STUB_RCLONE_FAIL: "1" });
+    expect(Date.now() - started).toBeGreaterThanOrEqual(2900);
+    expect(output).toContain("next try in 1s");
+    expect(output).toContain("next try in 2s");
+  });
+
+  test("9. a bad BACKUP_RCLONE_TRIES or BACKUP_RCLONE_DELAY fails before any dump", () => {
+    for (const extra of ["BACKUP_RCLONE_TRIES=0", "BACKUP_RCLONE_TRIES=x", "BACKUP_RCLONE_DELAY=-1"]) {
+      writeEnv(extra);
+      const { code, output } = run();
+      expect(code).not.toBe(0);
+      expect(output).toContain("BACKUP_RCLONE_TRIES must be a whole number above 0");
+    }
+    expect(rcloneCalls()).toBe(0);
+  });
+
+  test("10. a second run while the first holds the lock exits 75, does nothing and keeps the status file", async () => {
+    // The first run waits inside the dump step (docker stub), after it took the lock.
+    stub("docker", `sleep "\${STUB_DOCKER_SLEEP:-0}"\nprintf 'PGDMPfake-dump-body'`);
+    const first = Bun.spawn(["bash", join(root, "deploy", "backup.sh")], {
+      cwd: root,
+      env: { PATH: `${stubs}:${process.env.PATH ?? ""}`, HOME: root, STUB_DOCKER_SLEEP: "3" },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const lockFile = join(root, "deploy", "backup-status", "backup.lock");
+    for (let i = 0; i < 50 && !existsSync(lockFile); i++) await Bun.sleep(100);
+    expect(existsSync(lockFile)).toBe(true);
+    writeFileSync(
+      join(root, "deploy", "backup-status", "status.json"),
+      '{"result":"ok","at":"2026-01-01T00:00:00Z","name":"x","bytes":1,"last_ok_at":"2026-01-01T00:00:00Z"}\n'
+    );
+
+    const second = run();
+    expect(second.code).toBe(75);
+    expect(second.output).toContain("another backup run holds");
+    expect(rcloneCalls()).toBe(0);
+    expect(curlCalls()).toEqual([]);
+    expect(status().at).toBe("2026-01-01T00:00:00Z");
+
+    expect(await first.exited).toBe(0);
+    expect(rcloneCalls()).toBe(1);
+    expect(readdirSync(backups).filter((file) => file.endsWith(".dump.age"))).toHaveLength(1);
+    expect(status().result).toBe("ok");
+    // The lock is free after the first run ends.
+    expect(run().code).toBe(0);
   });
 });

@@ -10,9 +10,22 @@ cd "$(dirname "$0")/.."
 STATUS_DIR=deploy/backup-status
 STATUS_FILE="$STATUS_DIR/status.json"
 BACKUP_PING_URL=""
+LOCK_FILE="$STATUS_DIR/backup.lock"
 part=""
 ok_name=""
 ok_bytes=""
+
+# One run at a time (notes/2026-11-19-backup-dns-failures.md). Two runs started in the same second share
+# the name of the `.part` file and the `.tmp` status file, and the exit trap of one run deletes the file of the other.
+# The lock comes before the exit trap on purpose: a run that loses the lock must not write `failed` over the status of
+# the run that holds it. The lock is released by the kernel when the holder exits, also after a crash or `kill -9`.
+command -v flock >/dev/null || { echo "backup: flock is not installed (util-linux)" >&2; exit 1; }
+mkdir -p "$STATUS_DIR"
+exec 9>"$LOCK_FILE"
+if ! flock -n 9; then
+  echo "backup: another backup run holds $LOCK_FILE; this run did nothing" >&2
+  exit 75
+fi
 
 # The one exit trap. A non-zero exit after this point writes `failed`; a good run writes `ok`. Then it pings, if a URL is set.
 on_exit() {
@@ -79,6 +92,10 @@ source "$ENV_FILE"
 : "${BACKUP_REMOTE:?BACKUP_REMOTE is not set}"
 KEEP_DAYS="${KEEP_DAYS:-7}"
 COMPOSE="${COMPOSE:-docker compose}"
+# The B2 login (DNS lookup of api.backblazeb2.com, then b2_authorize_account) can fail for a short time. rclone copyto is
+# safe to repeat: it writes the same name with --no-check-dest. Waits: DELAY, 2*DELAY, 4*DELAY ... (30 s: 30+60+120+240 s).
+RCLONE_TRIES="${BACKUP_RCLONE_TRIES:-5}"
+RCLONE_DELAY="${BACKUP_RCLONE_DELAY:-30}"
 
 if [[ "$BACKUP_DIR" != /* ]]; then
   echo "backup: BACKUP_DIR must be an absolute path (start with /)" >&2
@@ -90,6 +107,10 @@ if [[ "$AGE_RECIPIENT" != age1* ]]; then
 fi
 if [[ ! "$KEEP_DAYS" =~ ^[0-9]+$ ]]; then
   echo "backup: KEEP_DAYS must be a whole number" >&2
+  exit 1
+fi
+if [[ ! "$RCLONE_TRIES" =~ ^[1-9][0-9]*$ || ! "$RCLONE_DELAY" =~ ^[0-9]+$ ]]; then
+  echo "backup: BACKUP_RCLONE_TRIES must be a whole number above 0 and BACKUP_RCLONE_DELAY a whole number" >&2
   exit 1
 fi
 for tool in age rclone; do
@@ -125,7 +146,17 @@ if [[ ! -s "$part" ]]; then
 fi
 
 # Copy before the rename: a failed copy leaves no local .dump.age either
-rclone copyto --no-check-dest "$part" "$BACKUP_REMOTE/$name"
+attempt=1
+until rclone copyto --no-check-dest "$part" "$BACKUP_REMOTE/$name"; do
+  if ((attempt >= RCLONE_TRIES)); then
+    echo "backup: rclone copyto failed after $attempt tries" >&2
+    exit 1
+  fi
+  wait_s=$((RCLONE_DELAY * 2 ** (attempt - 1)))
+  echo "backup: rclone copyto try $attempt of $RCLONE_TRIES failed; next try in ${wait_s}s" >&2
+  sleep "$wait_s"
+  attempt=$((attempt + 1))
+done
 mv "$part" "$final"
 
 # Local retention only. Remote retention is a lifecycle rule on the bucket.

@@ -1036,6 +1036,22 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** `rclone copyto --no-check-dest` in `deploy/backup.sh`. Cron `PATH` starts with `/home/serwer/bin` (`notes/2026-11-03-pilot-vps.md`).
 - **Status:** fixed
 
+### `Failed to create file system for destination "b2:…": failed to authorize account … lookup api.backblazeb2.com on 127.0.0.53:53: server misbehaving`
+
+- **First seen:** 2026-11-18 03:30:07 UTC (again 2026-11-19 03:30:07). Worked 2026-11-04 to 2026-11-17.
+- **Source:** `deploy/backup.sh` on the VPS (cron), `rclone copyto` to B2, in `~/ea-logs/backup.log`. Then `slo_backup_age` after 26 hours.
+- **Cause:** a DNS lookup failed in `systemd-resolved` (stub `127.0.0.53`; upstream the router `192.168.1.1`). Proved: not the cron `PATH`, not Tailscale DNS (`accept-dns` off), not a standing fault (lookups work). Not proved: why the resolver failed at 03:30 on two nights (journal not readable for `serwer`; guess: router or upstream DNS). The old script had no retry.
+- **Fix:** `deploy/backup.sh` retries the B2 copy up to `BACKUP_RCLONE_TRIES` times (default 5, waits 30/60/120/240 s). It also takes a `flock` lock. Details: `notes/2026-11-19-backup-dns-failures.md`. Not active on the VPS until the next release. Until then: run `deploy/backup.sh` by hand after a failed night (last line `backup ok …`).
+- **Status:** workaround (fix in the repo, not deployed). Root cause of the resolver error open: with `sudo`, read `journalctl -u systemd-resolved` for 03:25 to 03:40 UTC.
+
+### `Failed to create file system for "b2:…": Unknown 401 (401 unauthorized)` (also `error listing: Unknown 401`)
+
+- **First seen:** 2026-11-19 ~18:22 UTC (two `deploy/backup.sh` runs at the same time).
+- **Source:** `rclone` on the VPS.
+- **Cause:** the B2 key is write-only, so any listing or HEAD gives 401. The apt `rclone` 1.53 (`/usr/bin/rclone`, first in `PATH` of a plain `ssh home_vm 'cmd'`) gives 401 even for the commands that work with `~/bin/rclone` 1.75.2. Concurrency is not the cause: one call alone gives 401 (tested). Which command gave the 401 at 18:22 is not proved (guess: a run without `~/bin` in `PATH`).
+- **Fix:** run `backup.sh` with `PATH=$HOME/bin:$PATH` (cron and `deploy/release.sh` already do). Do not list the bucket with the write-only key. The new lock stops two runs at the same time (they collided on the `.part` file and `status.json.tmp`).
+- **Status:** workaround
+
 ### `sync_failed` with `error_code=22P02` (before F103: `sync <mailbox id> failed: invalid input syntax for type bigint: "NaN"`)
 
 - **First seen:** 2026-11-03

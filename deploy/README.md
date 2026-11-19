@@ -953,6 +953,8 @@ The dump holds live `auth_sessions` tokens, password hashes and reset tokens. Af
    `30 3 * * * cd <repo> && deploy/backup.sh >> ~/ea-logs/backup.log 2>&1`
 
 On any failure, `backup.sh` exits with a non-zero code and leaves no `.dump.age` file.
+The copy to B2 runs up to `BACKUP_RCLONE_TRIES` times (default 5) with waits of `BACKUP_RCLONE_DELAY` seconds (default 30), doubled each time. This covers a short DNS or B2 login failure (alert `failed to authorize account … server misbehaving`).
+Only one run works at a time: `backup.sh` takes `flock` on `deploy/backup-status/backup.lock`. A second run exits with code 75, prints `another backup run holds …` and leaves the status file as it is.
 Check `~/ea-logs/backup.log` for one `backup ok` line each night.
 
 ### Status file and ping
