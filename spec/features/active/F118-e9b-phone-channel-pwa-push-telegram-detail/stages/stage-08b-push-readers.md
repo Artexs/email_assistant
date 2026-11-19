@@ -35,3 +35,10 @@ Some readers find a notice by the exact Telegram dedup key; a push row's key is 
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the M5 metric and SLO (Telegram only, Q11); Telegram detail (09–12).
+
+## First commit of this stage (carry-over from the stage 08 review, PASS 7c500177)
+- Tests for surviving mutants of stage 08: m12 (`Retry-After` must win over the backoff: use `Retry-After: 120` with attempts 0); m07b (an `approval` row is sent with `Urgency: high`); m35 (a row that was posted and then hit a DB error stays `sending` until the 5-min stale reclaim); m16 (a second sender run inside the 10-min key-version pause sends nothing).
+- TTL: make the push TTL `max(0, 24 h − row age)` so a message held by quiet hours is not delivered after the 24 h life of the row. Add a test.
+- Note: a 429 counts an attempt, so five 429s end the row `too_many_errors`; state this in rule 3c of `digest-and-notices.md`.
+- Test and doc: `POST /me/push/test` answers 500 `internal` on a key-version mismatch (it no longer removes the device); add a test and a line in the docs.
+- Ops: add `VAPID_PRIVATE_KEY: ""` to the `compose.drill.yaml` overrides; reword the known-alerts entry `push_key_version_mismatch` (configuration alert: status "open until the key is restored", not "fixed").
