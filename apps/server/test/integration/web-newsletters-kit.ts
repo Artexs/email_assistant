@@ -82,12 +82,16 @@ export interface SenderMail {
   authResults?: string | null;
   link?: string | null;
   post?: boolean | null;
-  /** The stored `dkim_signatures`; default: one signature of `c.example` that covers both list headers when `post` is true. */
+  /** The stored `dkim_signatures`; default: one signature of the `header.d` domain of `authResults` that covers both list headers when `post` is true. */
   signatures?: DkimSignature[] | null;
 }
 
-const COVERING: DkimSignature[] = [
-  { d: "c.example", h: ["from", "to", "subject", "list-unsubscribe", "list-unsubscribe-post"] },
+// One signature that covers both list headers, for the domain of the `header.d` of the mail's `Authentication-Results`.
+const covering = (authResults: string | null | undefined): DkimSignature[] => [
+  {
+    d: /header\.d=([^\s;]+)/.exec(authResults ?? "")?.[1] ?? "c.example",
+    h: ["from", "to", "subject", "list-unsubscribe", "list-unsubscribe-post"],
+  },
 ];
 
 // SQL NULL for a row from before the column, else the JSON array.
@@ -113,7 +117,7 @@ export async function addSenderMail(db: Db, orgId: string, mailboxId: string, m:
         list_unsubscribe: m.link ?? null,
         list_unsubscribe_post: m.post ?? null,
         dkim_signatures: signaturesJson(
-          m.signatures === undefined ? (m.post === true ? COVERING : null) : m.signatures
+          m.signatures === undefined ? (m.post === true ? covering(m.authResults) : null) : m.signatures
         ),
         parts_known: true,
         captured_at: at,
