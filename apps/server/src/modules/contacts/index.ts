@@ -1,4 +1,5 @@
 export { PROFILE_DAYS, readSenderActivity, type ReadActivityOptions, type SenderActivity } from "./activity";
+export { normalizedAddress } from "./address-sql";
 export { sentCoverage, senderFlags, type SenderFlags } from "./flags";
 export {
   createContactsRefreshJob,

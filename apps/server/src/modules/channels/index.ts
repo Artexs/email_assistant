@@ -48,6 +48,7 @@ export {
 export { consentVersionsOf, loopConsentOf } from "./consent";
 export { channelRoutes, type ChannelRouteDeps } from "./routes";
 export { approvalRoutes, type ApprovalRouteDeps } from "./approval-routes";
+export { replyApprovalRoutes } from "./reply-routes";
 export { pushRoutes, type PushRouteDeps } from "./push";
 export { createTelegramApi, createTelegramChannel } from "./telegram/api";
 export { checkBot } from "./telegram/check";

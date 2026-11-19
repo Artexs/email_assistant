@@ -1,4 +1,4 @@
-import type { ReplyTrigger } from "@ea/core";
+import { replyRequestStatuses, type ReplyTrigger } from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
@@ -326,4 +326,60 @@ export async function listEndedRequestsVia(
           },
         ]
   );
+}
+
+// What the panel needs to poll one request of a user (a tap or a redraft): the row, never the instruction. Another organization's id,
+// an unknown id and a request that is no user request (`auto`, `sample`) give undefined.
+export interface UserRequestView {
+  emailId: string;
+  mailboxId: string;
+  threadKey: string;
+  status: (typeof replyRequestStatuses)[number];
+  reasonCode: string | null;
+  sendActionId: string | null;
+}
+
+export async function getUserRequest(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  requestId: string
+): Promise<UserRequestView | undefined> {
+  const row = await db
+    .selectFrom("reply_requests")
+    .select(["email_id", "mailbox_id", "thread_key", "status", "reason_code", "send_action_id"])
+    .where("org_id", "=", ctx.orgId)
+    .where("id", "=", requestId)
+    .where("trigger", "in", ["tap", "redraft"])
+    .executeTakeFirst();
+  if (row === undefined) return undefined;
+  const status = replyRequestStatuses.find((name) => name === row.status);
+  if (status === undefined) throw new Error("unknown reply request status");
+  return {
+    emailId: row.email_id,
+    mailboxId: row.mailbox_id,
+    threadKey: row.thread_key,
+    status,
+    reasonCode: row.reason_code,
+    sendActionId: row.send_action_id,
+  };
+}
+
+// The facts of a reply version for the panel: the line of the request that made this send (null: none, or retention cleared it)
+// and the redrafts left for the mail. The line is read for the owner's own page only; no write route returns it.
+export async function replyVersionFacts(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  opts: { sendId: string; emailId: string }
+): Promise<{ instruction: string | null; redrafts: number }> {
+  const made = await db
+    .selectFrom("reply_requests")
+    .select("instruction")
+    .where("org_id", "=", ctx.orgId)
+    .where("email_id", "=", opts.emailId)
+    .where("send_action_id", "=", opts.sendId)
+    .orderBy("created_at", "desc")
+    .orderBy("id", "desc")
+    .limit(1)
+    .executeTakeFirst();
+  return { instruction: made?.instruction ?? null, redrafts: await countRedrafts(db, ctx, opts.emailId) };
 }
