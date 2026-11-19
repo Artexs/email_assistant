@@ -199,7 +199,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${row.model} effort=${row.reasoningEffort ?? "-"} prompt=${prompts.drafter.version}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
   );
 
-  // `--rpm` is the rate of the drafter provider for this process only; the judge provider keeps the configured rate.
+  // `--rpm` is the rate of the drafter provider for this process only (the judge too, on the same provider); `--judge-rpm` limits only the judge role.
   const rated = simRoleTable(table, {
     rpm: options.rpm as number,
     judge: options.judge,
@@ -218,6 +218,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       reasoningEffort: row.reasoningEffort,
       promptVersion: prompts.drafter.version,
       set: `drafter-${source.key}`,
+      judgeModel: judgeRow?.model,
     })
   );
   mkdirSync(dirname(stateFile), { recursive: true });
@@ -230,7 +231,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
   }
 
   let newSpendUsd = 0;
-  // The judge is on another provider than the drafter: a call is priced at the endpoint of its provider.
+  // The judge model differs from the drafter model: a call is priced at the endpoint of the judge's provider.
   const endpointOfModel = (usedModel: string) =>
     judgeRow !== undefined && usedModel === judgeRow.model && usedModel !== row.model
       ? table.providers[judgeRow.provider].endpoint

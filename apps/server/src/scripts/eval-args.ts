@@ -49,7 +49,7 @@ export const evalUsage = [
   "       bun run eval --set reply-injection --drafter --judge [--model …] [--out <file.md>]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
-  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge needs another provider than the drafter; the injection set needs --judge)",
+  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge model must differ from the drafter model (default judge gpt-6.1-terra); the injection set needs --judge)",
 ].join("\n");
 
 const optionsSchema = z.object({
