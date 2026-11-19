@@ -124,6 +124,10 @@ describe("joinCases with shared rows", () => {
 });
 
 describe("namePattern", () => {
+  test("2 an escaped backtick of a template name is a plain backtick", () => {
+    expect(namePattern("a \\`b\\` (${x}) c").test("a `b` (1) c")).toBe(true);
+  });
+
   test("1 wildcards for template parts, printf marks and each variables; the rest is literal", () => {
     expect(namePattern("a ${x.y} (b) %s $name").test("a 1 (b) 2 3")).toBe(true);
     expect(namePattern("a (b)").test("a b")).toBe(false);

@@ -71,16 +71,24 @@ const escapeRegex = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g
 // `test.each` each become a wildcard. Everything else is literal.
 const NAME_WILDCARD = /\$\{(?:[^{}]|\{[^{}]*\})*\}|%[sdifjopO#%]|\$[A-Za-z_][\w.]*/g;
 
-export function namePattern(name: string): RegExp {
+// The scan keeps the raw text of a template name (`\`` for a backtick) and the value of a string name.
+// A pattern holds both readings: the text as it stands, and the text with its backslash escapes removed.
+const unescapeName = (text: string): string =>
+  text.replace(/\\([\s\S])/g, (_whole, char: string) => (char === "n" ? "\n" : char === "t" ? "\t" : char));
+
+function patternSource(name: string, literal: (text: string) => string): string {
   let source = "";
   let last = 0;
   for (const match of name.matchAll(NAME_WILDCARD)) {
-    source += escapeRegex(name.slice(last, match.index));
+    source += escapeRegex(literal(name.slice(last, match.index)));
     source += match[0] === "%%" ? "%" : "[\\s\\S]*";
     last = (match.index ?? 0) + match[0].length;
   }
-  source += escapeRegex(name.slice(last));
-  return new RegExp(`^${source}$`);
+  return source + escapeRegex(literal(name.slice(last)));
+}
+
+export function namePattern(name: string): RegExp {
+  return new RegExp(`^(?:${patternSource(name, (text) => text)}|${patternSource(name, unescapeName)})$`);
 }
 
 // Bun prints the classname innermost describe first (`inner > outer`). A shared row matches when its
