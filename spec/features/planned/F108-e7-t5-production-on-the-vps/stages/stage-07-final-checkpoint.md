@@ -1,6 +1,6 @@
-# F108 stage 05 — Final checkpoint: a second organization on the VPS; close S6
+# F108 stage 07 — Final checkpoint: a second organization on the VPS; close S6
 
-Part of [`../plan.md`](../plan.md). A coordinator run. Needs stage 04 and F114 in `done/` (its stage 09 drill is the restore test, P5). Risk: the pilot org shares the host and the database.
+Part of [`../plan.md`](../plan.md). A coordinator run. Needs stage 06 and F114 in `done/` (its stage 09 drill is the restore test, P5). Risk: the pilot org shares the host and the database.
 
 ## Carry-over reads
 
@@ -27,7 +27,7 @@ Part of [`../plan.md`](../plan.md). A coordinator run. Needs stage 04 and F114 i
 ## Close
 
 9. CI: the last three `ci` runs on `master` are green (`gh run list`). The two old timing tests are closed in `docs/known-alerts.md` (F093): confirm, do not edit.
-10. Restore: cite the F114 drill result (time, counts, date) in `docs/capabilities/backups.md`.
+10. Restore: cite the F114 drill result (time, counts, date, and the tag its clone ran) in `docs/capabilities/backups.md`. If that tag has no `deploy/compose-lib.sh`, write V4 "new restore path not proven on a host" in `outcome.md`.
 11. `tasks/active/s6-pre-sale.md`: status line "S6 done 2026-MM-DD"; move it to `tasks/done/` with `git mv`; `tasks/planned/s6f-hosted-production.md` the same. Each S6 "Done when" line that F108 owned gets its evidence pointer.
 12. `outcome.md` in the ticket folder (3–6 sentences, the evidence pointers, the not-verified lines of steps 4 and 5).
 

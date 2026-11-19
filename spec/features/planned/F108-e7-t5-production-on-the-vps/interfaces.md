@@ -6,18 +6,18 @@ Names that a later stage, another ticket or the operator uses. Part of [plan.md]
 
 | File | Holds | Mode | Made by |
 | --- | --- | --- | --- |
-| `.env` | every app key; after the split no D5 password key | 600 | operator (exists) |
-| `deploy/db.env` | `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD` (exactly these three lines) | 600 | `deploy/env-split.sh` |
+| `.env` | every app key; after the split no D5 key | 600 | operator (exists) |
+| `deploy/db.env` | `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`; `MIGRATOR_DATABASE_URL` when the old `.env` had it (unused there, kept so the split loses nothing) | 600 | `deploy/env-split.sh` |
 
-`deploy/db.env.example` (committed) lists the three names with empty values and one comment line: "Compose interpolation file of the VPS; the server never gets it (ADR 0019, D1)".
+`deploy/db.env.example` (committed) lists the three password names with empty values and one comment line: "Compose interpolation file of the VPS; the server never gets it (ADR 0019)".
 
 ## Compose helper (stage 01)
 
 `deploy/compose-lib.sh`, sourced from the repo root, runs nothing by itself.
-- Array `EA_COMPOSE=(docker compose -f deploy/compose.yaml --env-file <file>)`; `<file>` = `deploy/db.env` when it exists, else `.env`.
-- Function `ea_compose_init`: sets `EA_COMPOSE`; neither file → prints `compose: no deploy/db.env and no .env` to stderr, returns 2.
-- Function `ea_env_split_state`: prints one word: `split` (db.env exists and `.env` holds no D5 password key), `old` (no db.env, `.env` holds all three), `mixed` (any other case). Stage 03 guards use it.
-- Users: `release-lib.sh` (`COMPOSE_CMD` comes from it), `backup.sh`, `logs.sh`, `restore.sh` (target `new-host` only), `check-server-env.sh`. The README `C=` line names the same command.
+- `EA_D5_KEYS=(POSTGRES_PASSWORD MIGRATOR_PASSWORD APP_PASSWORD MIGRATOR_DATABASE_URL)`: the one list of D5.
+- Function `ea_compose_init`: sets `EA_COMPOSE_FILES=(-f deploy/compose.yaml --env-file <file>)` and `EA_COMPOSE=(docker compose "${EA_COMPOSE_FILES[@]}")`; `<file>` = `deploy/db.env` when it exists, else `.env`. Neither file → stderr `compose: no deploy/db.env and no .env`, return 2.
+- Function `ea_env_split_state`: prints one word. `split`: db.env exists and `.env` holds no D5 key. `old`: no db.env and `.env` holds the three password keys. `mixed`: any other case. A key counts only as a line that starts with `<KEY>=`.
+- Users: `release-lib.sh` (`COMPOSE_CMD`), `backup.sh` (`EA_COMPOSE_FILES` after its own `COMPOSE` word), `logs.sh`, `restore.sh` (target `new-host`), `check-server-env.sh`, `env-split.sh`. The README `C=` line is `docker compose -f deploy/compose.yaml --env-file deploy/db.env` on a split host.
 
 ## Compose service `migrate` (stage 01)
 
@@ -34,24 +34,27 @@ migrate:
   depends_on: db (service_healthy)
 ```
 
-No `env_file`, no `ports`, no `volumes`. Call: `"${EA_COMPOSE[@]}" run --rm -T migrate`. The drill override gives `migrate` the drill image block (`image: ea-drill-server`, local log, `restart: "no"`, `ports: !reset []`).
+No `env_file`, no `ports`, no `volumes`, no healthcheck. Call: `"${EA_COMPOSE[@]}" run --rm -T migrate`. The drill override gives `migrate` the drill image block (`image: ea-drill-server`, local log, `restart: "no"`, `ports: !reset []`); `check-logging.sh --drill` allows it.
+
+`rollback.sh` (stage 01): db.env exists and the target commit has no `deploy/compose-lib.sh` → `rollback refused: run deploy/env-split.sh --undo first (target <tag> reads only .env)`, exit 2.
 
 ## Scripts (stage 02)
 
 `deploy/env-split.sh [--undo]`, run from the repo root.
-- Split: `.env` has all three keys, no `deploy/db.env` → writes `deploy/db.env` (600) with the three lines, rewrites `.env` without them (other lines and their order kept). Last line `env split ok moved=3`. Exit 0.
-- Already split (`ea_env_split_state` = `split`) → `env split: already split`, exit 0, no write.
-- `mixed` or a key twice → `env split refused: <reason>` (key names only), exit 2, no write.
-- `--undo`: `split` → appends the three lines to `.env`, removes `deploy/db.env`; last line `env split undone moved=3`. Else exit 2.
+- State `old` → writes `deploy/db.env` (600) with the D5 lines of `.env`, then rewrites `.env` without them (other lines and order kept). Last line `env split ok moved=<3|4>`. Exit 0.
+- State `split` → `env split: already split`, exit 0, no write.
+- State `mixed` where every D5 line of `.env` is also in db.env with an equal value (a split that stopped between the two renames) → removes them from `.env`, last line `env split ok finished=<n>`. Any other `mixed`, or a key twice → `env split refused: <reason>` (key names only), exit 2, no write.
+- `--undo`: state `split` → appends the db.env lines to `.env`, then removes db.env; last line `env split undone moved=<n>`. Else exit 2.
 - Never prints a value. Leaves no temp file and no `.env.bak*`.
 
-`deploy/check-server-env.sh`: reads `exec -T server env` names only. Clean → `server env ok keys=<n>`, exit 0. A D5 key → `server env bad: <names, comma list>` on stderr, exit 1. Compose or exec failure → exit 2.
+`deploy/check-server-env.sh`: reads `exec -T server env`, names only. Clean → `server env ok keys=<n>`, exit 0. A D5 key → `server env bad: <names, sorted, comma list>` on stderr, exit 1. Compose or exec failure → exit 2.
 
-## Guards (stage 03)
+## Guards (stage 05)
 
-`release.sh`, `rollback.sh`, `restore.sh --target new-host`: state not `split` → `… refused: run deploy/env-split.sh first (state <state>)`, exit 2, before the backup or any change. `release.sh` verify calls `check-server-env.sh`; exit ≠ 0 → `release failed at verify` (pending kept, rollback message as today).
+`release.sh`, `rollback.sh`, `restore.sh --target new-host`: state not `split` → `<script> refused: run deploy/env-split.sh first (state <state>)`, exit 2, before the backup or any change. `release.sh` verify calls `check-server-env.sh`; exit ≠ 0 → `release failed at verify` (pending kept, rollback message as today).
 
 ## Seams to other tickets
 
-- F114 stage 09 (drill, not run yet): `restore.sh` migrates through `migrate` after stage 01; the drill override covers it.
-- Every later ticket that adds a one-off DB-admin command: run it in `migrate` (or `exec db psql -U postgres`), never add an admin key to `server` or `cli`.
+- F114 stage 09 (drill, not run yet): after stage 01, `restore.sh` migrates through `migrate`; the drill proves that path only when its clone is at a tag that holds stage 01.
+- Active stage files with `C=… --env-file .env` (F029 05, F102 20, F104 13, F107 07, F118 checkpoint A): after F108 stage 04 they must use the README `C=` line.
+- A later one-off DB-admin command runs in `migrate` or `exec db psql -U postgres`; never add a D5 key to `server` or `cli`.

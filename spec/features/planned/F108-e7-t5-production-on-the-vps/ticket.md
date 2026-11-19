@@ -10,7 +10,7 @@ The home VPS runs the application as a production system: the long-running serve
 
 ## Scope
 
-- Env split (S6 D25): host file `deploy/db.env` for the three database passwords, a `migrate` one-off service, the server and `cli` without admin keys, a split tool and a key-name check.
+- Env split (S6 D25): the database passwords move out of the server's env file; a one-off migrate service; a split tool and a key-name check.
 - VPS rollout in two releases (expand, then contract).
 - Backup checks on the VPS and in the bucket (read only); no `.env.bak-*` on the VPS (D30).
 - ADR 0019, `docs/architecture.md` §10, `deploy/README.md`, capability pages.
@@ -18,7 +18,7 @@ The home VPS runs the application as a production system: the long-running serve
 
 ## Out of scope
 
-- The CI timing tests (fixed by F093; stage 05 only checks CI).
+- The CI timing tests (fixed earlier by the CI-green ticket F093; the last stage only checks CI).
 - The failed-backup alert and the backup status file (built by F114 stages 03–04); the restore drill (F114 stage 09).
 - The sim stack env (`deploy/compose.sim.yaml`) and the local dev env.
 - A hosted server, a public domain, an image registry (ADR 0019 says why).
@@ -34,13 +34,13 @@ The home VPS runs the application as a production system: the long-running serve
 
 ## Slices
 
-Five stages, one job each, in order. 01–03 are worker jobs; 04 and 05 are coordinator runs on the VPS. No migration. 01 and 03 change `deploy/compose.yaml`: no other job that changes Compose files runs next to them. Checkpoints and the release order: `plan.md` § How to run.
+Seven stages, one job each. 01, 02, 03, 05 are worker jobs (02 and 03 may run in parallel); 04, 06, 07 are coordinator runs on the VPS. Release N (01–03) is deployed and the env is split (04) before 05 is spawned. No migration. 01 and 05 change `deploy/compose.yaml`: no other job that changes Compose files runs next to them. Detail: `plan.md` § How to run.
 
 ## Sequenced
 
 - Plan after: F114 (E8b alerts and releases: the release, rollback and restore scripts and the backup status file this plan changes; it has `stages/`).
-- Build after: E7-T1 Polish UI (F098), E7-T2 platform controls (F099), E7-T3 account data (F106), all in `done/`, and E7-T4 papers and cost (F107, active) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 14). Stage 05 also needs F114 in `done/` (its stage 09 drill proves the restore).
-- Gate: — (VPS deploys are pre-approved, owner 2026-11-13). Stage 05 waits for the F114 drill, which waits for the owner's `age` key (`notes/owner-later.md` item 3).
+- Build after: E7-T1 Polish UI (F098), E7-T2 platform controls (F099), E7-T3 account data (F106), all in `done/`, and E7-T4 papers and cost (F107, active) in `spec/features/done/` (`05-execution-plan.md` §2.1 row 14). Stage 07 also needs F114 in `done/` (its stage 09 drill proves the restore).
+- Gate: — (VPS deploys are pre-approved, owner 2026-11-13). Stage 07 waits for the F114 drill, which waits for the owner's `age` key (`notes/owner-later.md` item 3).
 
 ## Notes
 
