@@ -19,13 +19,17 @@ Names that one stage creates and a later stage uses. Code detail beyond these is
 - `matchesAddress(ref: <kysely sql expression>, pattern: string)` (stage 03) — the SQL `ref ~ pattern`.
 - `replaceAddress(ref, pattern: string, replacement: string)` (stage 03) — the SQL `regexp_replace(ref, pattern, replacement, 'g')`.
 
-## Server, `apps/server/src/modules/privacy` (stage 04)
+## Server, `apps/server/src/modules/privacy` (stages 02 and 04)
 
-- `checkAddressRuleParity(db: DbOrTrx, opts?: { probes?: readonly string[]; normalize?: (s: string) => string }): Promise<{ ok: true } | { ok: false; differences: number }>` — one query; default probes = `ADDRESS_RULE_PROBES` plus `x<form>y@x.test` for every form of every `addressCaseForms` target; default `normalize` = `normalizeSenderAddress`.
-- `findSubjectData` and `eraseSubjectData` take an optional `ruleCheck` (default `checkAddressRuleParity`) in their input. New result kind `rule_mismatch` with `differences: number`, next to `own_address` and `bad_address`.
-- CLI `org:dsr`: `refused: rule_mismatch <n>` on stderr, exit 1. Warn log event `dsr_rule_mismatch` with `differences` only.
+- `type DivergentCodePoint = { cp: number; js: string; db: string }`.
+- `divergentCodePoints(db: DbOrTrx): Promise<DivergentCodePoint[]>` (stage 02) — the full-range compare of SQL `normalizedAddress(chr(cp))` with JS `normalizeSenderAddress`, 1–0x10FFFF without surrogates, ascending `cp`. Probe text as `text` (D10). Stage 02 may place it in `modules/contacts` next to `normalizedAddress`; stage 04 imports it from there.
+- `addressRuleConflicts(address: string, divergent: readonly DivergentCodePoint[]): number[]` (stage 04, pure) — D7 rule.
+- `checkAddressRule(db: DbOrTrx, address: string): Promise<{ ok: true } | { ok: false; codePoints: number[] }>` (stage 04); caches the divergent set once per process (Q5).
+- `formatRuleCheck(divergent: readonly DivergentCodePoint[]): string[]` (stage 04, pure) — `rule check <n>`, then `U+XXXX js <hex> db <hex>` (hex of each code point of the form, space-free, comma-joined when more than one).
+- `findSubjectData` and `eraseSubjectData` take an optional `ruleCheck: (db, address) => Promise<…>` (default `checkAddressRule`). New result kind `{ kind: "rule_mismatch"; codePoints: number[] }`.
+- CLI `org:dsr`: refusal via the existing `org_dsr_refused` log line (reason `rule_mismatch`); stdout `rule mismatch <n>`; exit 1. New mode `--rule-check --org-id <uuid>` (`OrgDsrArgs` mode `rule_check`), exit 0.
 
 ## Tests that later stages extend
 
 - `apps/server/test/integration/privacy-dsr-address-rule.test.ts` (stage 01 adds the gap tests).
-- `apps/server/test/integration/privacy-dsr-address-parity.test.ts` (new in stage 02; stage 03 adds the regex agreement; stage 04 adds the guard tests).
+- `apps/server/test/integration/privacy-dsr-address-parity.test.ts` (new in stage 02; stage 03 adds the regex agreement; stage 04 adds the rule-check tests).

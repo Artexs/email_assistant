@@ -2,14 +2,13 @@
 
 Part of [`../plan.md`](../plan.md); names in [`../interfaces.md`](../interfaces.md). **[risky]** (privacy: the scrub changes kept text of other people).
 
-Carry-over reads: `apps/server/src/modules/privacy/address-map.ts` (`addressRegex`, its boundary comments), `dsr-match.ts` (`rowCondition`, `findOpenActions`), `erase.ts` (the scrub, `clearLoopTextsOfPerson`, the post-erase match), `apps/server/test/integration/privacy-dsr-match.test.ts` (the pattern table tests), plan.md F2 and F3. Decisions: D3, D4, D5.
+Carry-over reads: `modules/privacy/address-map.ts` (`addressRegex` and its boundary comments), `dsr-match.ts`, `erase.ts` (scrub, `clearLoopTextsOfPerson`, post-erase match), `privacy-dsr-match.test.ts` (pattern table), plan.md F2, F3, `plan-review-1.md` G1. Decisions: D3, D4, D5.
 
-Test values use `\u` escapes in code: ı U+0131, ẞ U+1E9E, ß U+00DF, Ω-Ohm U+2126, Ω U+03A9, ω U+03C9, K-Kelvin U+212A, Å-Angstrom U+212B, ſ U+017F, İ U+0130, combining dot U+0307.
+Write test values with `\u` escapes (Ohm U+2126, Kelvin U+212A, Angstrom U+212B).
 
 ## Step 1 — the case-form table in core
 
-- Goal: `addressCaseForms` (interfaces.md § Core), pure and cached.
-- Files: `packages/core/src/contacts/address.ts` (or a sibling), unit test, core index.
+- Goal: `addressCaseForms` (interfaces.md § Core), pure and cached, in core.
 - Test (unit):
   1. `k` → contains exactly `k`, `K`, U+212A.
   2. `ω` → exactly `ω`, `Ω`, U+2126. `å` → exactly `å`, `Å`, U+212B.
@@ -18,12 +17,12 @@ Test values use `\u` escapes in code: ı U+0131, ẞ U+1E9E, ß U+00DF, Ω-Ohm U
   5. `σ` → exactly `σ`, `Σ`, `ς`.
   6. `i` → exactly `i`, `I`, `İ`, `i` + U+0307, `I` + U+0307.
   7. `1`, `@`, `.` → exactly themselves.
-  8. Property: for every target of the table, every form `f` gives `normalizeSenderAddress(f) === target`, and the first element is the target.
+  8. Property: over the whole table, `normalizeSenderAddress(f) === target` for every form; the target comes first.
 
 ## Step 2 — one case-sensitive pattern and one way to run it
 
-- Goal: `addressRegex` emits per letter a class (an alternation for the two-code-point `i` forms) of `addressCaseForms(letter)`; punctuation is escaped as now. Add `A-Z` wherever a boundary class relied on the `i` flag (`atext`, the `[a-z]=` look-behind, the look-ahead). `matchesAddress` and `replaceAddress` (D4) are the only SQL that runs a pattern: switch `rowCondition` (text, json), `findOpenActions`, the scrub and every test that runs `addressRegex` to them.
-- Decisions: D3, D4. Do not change `normalizeDsrAddress`.
+- Goal: `addressRegex` emits per letter a class (an alternation for the two-code-point `i` forms) of `addressCaseForms(letter)`; punctuation is escaped as now. Boundary classes (look-behind, look-ahead, the `[a-z]=` look-behind) take `A-Z`, the combining mark blocks and every code point of the case-form table (D3). `matchesAddress` and `replaceAddress` (D4) are the only SQL that runs a pattern: switch `rowCondition` (text, json), `findOpenActions`, the scrub and every test that runs `addressRegex` to them.
+- Do not change `normalizeDsrAddress`.
 - Check: `grep -rnE "~\*|'gi'" apps/server/src/modules/privacy` prints nothing (acceptance).
 - Test:
   1. The pattern table of `privacy-dsr-match.test.ts` passes with unchanged expectations, plus upper-case rows: `<P@X.TEST>` matches `p@x.test`; `JIMBOB@X.TEST` does not match `bob@x.test`.
@@ -35,6 +34,7 @@ Test values use `\u` escapes in code: ı U+0131, ẞ U+1E9E, ß U+00DF, Ω-Ohm U
      - `ωhm@x.test` matches U+2126 + `hm@x.test` and `Ωhm@x.test`.
      - `kelvin@x.test` matches U+212A + `elvin@x.test`.
      - `ſam@x.test` does not match `SAM@x.test`.
+     - Boundaries (G1): `bob@x.test` does not match `jose` + U+0301 + `bob@x.test`, `bob@x.test` + U+0301, or U+212A + `bob@x.test`; matches `é bob@x.test` (NFC é, then a space).
      - Each named row also with the json pattern on a jsonb value `{"to":"<t>"}`.
 
 ## Step 3 — scrub and post-erase check end to end
@@ -44,10 +44,11 @@ Test values use `\u` escapes in code: ı U+0131, ẞ U+1E9E, ß U+00DF, Ω-Ohm U
   1. Seed mails From `kelvin@x.test`, `straße@x.de`, `ωhm@x.test` and `ılker@x.tr`, and one kept mail From `other@x.test` whose `body_text` has four lines: `a U+212Aelvin@x.test`, `b STRAẞE@x.de`, `c U+2126hm@x.test`, `d ILKER@x.tr`.
   2. Erase `kelvin@x.test`, `straße@x.de`, `ωhm@x.test` and `ılker@x.tr` in turn: each gives kind `erased` (the post-erase check passes).
   3. The kept body is exactly `a [removed]`, `b [removed]`, `c [removed]`, `d ILKER@x.tr`.
-  4. The same kept mail with `ILKER@x.tr` in `to_addresses` keeps that element after the erase of `ılker@x.tr`.
+  4. `ILKER@x.tr` in the kept mail's `to_addresses` stays after the erase of `ılker@x.tr`.
 - Mutations (plan.md rule), one at a time:
   - `matchesAddress` uses `~*` and `replaceAddress` uses `'gi'`: Step 2 test 3 (ı) and Step 3 test 3 (line d) fail.
-  - `addressCaseForms` returns only `[letter, letter.toUpperCase()]`: Step 1 tests and Step 2 test 3 (Kelvin, ẞ, Ohm) fail.
+  - `addressCaseForms` returns only `[letter]`: Step 1 tests and Step 2 tests 1 and 3 fail.
+  - Drop the combining marks from the boundary classes: the G1 cases fail.
   - `replaceAddress` gets a pattern without the U+212A form while `matchesAddress` keeps it: Step 3 test 2 fails with `dsr_erase_incomplete` (the post-erase check sees the leftover).
 
 ## Step 4 — docs
