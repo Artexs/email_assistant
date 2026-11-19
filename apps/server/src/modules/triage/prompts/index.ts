@@ -4,10 +4,12 @@ import type { ClassifierEmail, ClassifierExtras, SenderContext } from "../classi
 
 import * as classifierV2 from "./classifier-v2";
 import * as classifierV3 from "./classifier-v3";
-import { type ClassifierV3Part, optionalParts } from "./classifier-v3";
+import type { ClassifierV3Part } from "./classifier-v3";
+import * as classifierV4 from "./classifier-v4";
 import * as drafterV1 from "./drafter-v1";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
+import { type ClassifierPart, isV3Part, optionalParts } from "./parts";
 
 /** The prompt of one role in one version; the builders differ per role. */
 export interface PromptEntry<R extends LlmRole> {
@@ -18,22 +20,23 @@ export interface PromptEntry<R extends LlmRole> {
 }
 
 export type { ClassifierV3Part } from "./classifier-v3";
-export { classifierV3Parts, optionalParts } from "./classifier-v3";
+export { classifierV3Parts } from "./classifier-v3";
+export { type ClassifierPart, classifierParts, optionalParts } from "./parts";
 
-/** One classifier prompt version with the one builder signature of all versions; v2 ignores `extras` and `parts`. */
+/** One classifier prompt version with the one builder signature of all versions; v2 ignores `extras` and `parts`; v3 ignores `profile`. */
 export interface ClassifierPrompt {
   role: "classifier";
   version: PromptVersion<"classifier">;
   /** True when the user prompt reads the extras (attachments, history, urgency, list): the caller then loads them. */
   readsExtras: boolean;
-  buildSystem: (allowed: readonly Category[], parts: readonly ClassifierV3Part[]) => string;
+  buildSystem: (allowed: readonly Category[], parts: readonly ClassifierPart[]) => string;
   buildUser: (
     email: ClassifierEmail,
     sender: SenderContext,
     delegates: readonly classifierV2.ClassifierDelegate[],
     nonce: string,
     extras: ClassifierExtras,
-    parts: readonly ClassifierV3Part[]
+    parts: readonly ClassifierPart[]
   ) => string;
 }
 
@@ -51,8 +54,16 @@ export const classifierVersions = {
     role: "classifier",
     version: classifierV3.PROMPT_VERSION,
     readsExtras: true,
-    buildSystem: classifierV3.buildSystemPrompt,
-    buildUser: classifierV3.buildUserPrompt,
+    buildSystem: (allowed, parts) => classifierV3.buildSystemPrompt(allowed, parts.filter(isV3Part)),
+    buildUser: (email, sender, delegates, nonce, extras, parts) =>
+      classifierV3.buildUserPrompt(email, sender, delegates, nonce, extras, parts.filter(isV3Part)),
+  },
+  "classifier-v4": {
+    role: "classifier",
+    version: classifierV4.PROMPT_VERSION,
+    readsExtras: true,
+    buildSystem: classifierV4.buildSystemPrompt,
+    buildUser: classifierV4.buildUserPrompt,
   },
 } as const satisfies Record<string, ClassifierPrompt>;
 export type ClassifierVersion = keyof typeof classifierVersions;
@@ -93,7 +104,7 @@ export const prompts = {
 
 export interface ClassifierPromptChoice {
   version: ClassifierVersion;
-  parts: readonly ClassifierV3Part[];
+  parts: readonly ClassifierPart[];
 }
 
 /** The version and part list of the production pointer: the parts count only for v3. The arguments are for tests. */
@@ -104,9 +115,13 @@ export function productionClassifierChoice(
   return { version: pointer, parts: pointer === classifierV3.PROMPT_VERSION ? optionalParts(v3Parts) : [] };
 }
 
-/** `classifier-v3[history,urgency]`: the version and the sorted optional parts. Another version has no parts. */
-export function promptLabel(choice: { version: string; parts: readonly ClassifierV3Part[] }): string {
-  return choice.version === classifierV3.PROMPT_VERSION
+/** The versions that have a part list: v3 and v4. */
+export const versionHasParts = (version: string): boolean =>
+  version === classifierV3.PROMPT_VERSION || version === classifierV4.PROMPT_VERSION;
+
+/** `classifier-v4[list,profile]`: the version and the sorted optional parts. Another version has no parts. */
+export function promptLabel(choice: { version: string; parts: readonly ClassifierPart[] }): string {
+  return versionHasParts(choice.version)
     ? `${choice.version}[${optionalParts(choice.parts).join(",")}]`
     : choice.version;
 }

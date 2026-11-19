@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import type { GateEvidenceDeps, GateView, SendLimits } from "@ea/core";
+import { type GateEvidenceDeps, type GateView, normalizeSenderAddress, type SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import {
@@ -20,6 +20,7 @@ import {
   SENDER_STALE_MS,
 } from "./modules/channels";
 import type { SettingsChange, SettingsDeps } from "./modules/config";
+import { readProfiles, senderFlags } from "./modules/contacts";
 import { delegationHooks } from "./modules/delegation";
 import { type AnalysisScope, loopHooks, onSentOff } from "./modules/loops";
 import type { TestMailRule } from "./modules/mail";
@@ -38,7 +39,13 @@ import {
 } from "./modules/mail";
 import type { SetOrgPlanHooks } from "./modules/tenancy";
 import { isFeatureOn } from "./modules/tenancy";
-import { loadGateEvidence, noGateEvidence, runningEvidenceKey, setCategoryAutoWithGate } from "./modules/triage";
+import {
+  type ClassifierExtrasInput,
+  loadGateEvidence,
+  noGateEvidence,
+  runningEvidenceKey,
+  setCategoryAutoWithGate,
+} from "./modules/triage";
 import {
   clearTrips,
   setCategoryAutoWithEvidence,
@@ -88,6 +95,27 @@ export function sendScope(config: Config): SendScope {
   }
   log.warn("send_scope", { config_key: "SEND_SCOPE", scope: "all" });
   return { kind: "all" };
+}
+
+// The profile reader of the classifier prompt part `profile` (`classifier-v4`): the stored profile of one sender in one mailbox,
+// or null (flag `sender_context` off, no stored row). `triage` may not import `contacts`, so the roots pass this.
+// The production prompt reads no profile (triage rule 18); only a prompt with the part calls it.
+export function senderProfileReader(input: {
+  db: Db | Transaction<DB>;
+  credentialsKey: string;
+  now: () => Date;
+}): NonNullable<ClassifierExtrasInput["readProfile"]> {
+  return async (ctx, mailboxId, senderLower) => {
+    if (!(await senderFlags(input.db, ctx)).context) return null;
+    const address = normalizeSenderAddress(senderLower);
+    const profiles = await readProfiles(
+      { db: input.db, credentialsKey: input.credentialsKey },
+      ctx,
+      [{ mailboxId, address }],
+      input.now()
+    );
+    return profiles.get(`${mailboxId}:${address}`) ?? null;
+  };
 }
 
 // The one own-mail check of every sync, backfill and history run (ADR 0022 point 2): a draft or a send of the system (`X-EA-Action-Id` =

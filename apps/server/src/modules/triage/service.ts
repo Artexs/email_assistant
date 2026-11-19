@@ -35,7 +35,7 @@ import { finishEmail, PENDING_BODY_DAYS, releaseEmail, type ClaimedEmail, type T
 import { isFeatureOn } from "../tenancy";
 
 import { classifyEmail } from "./classifier";
-import { buildClassifierInput } from "./classify-input";
+import { buildClassifierInput, type ClassifierInputDeps } from "./classify-input";
 import type { LlmPause } from "./pause";
 import type { ClassifierPromptChoice } from "./prompts";
 import { insertTriageResult } from "./repo";
@@ -107,6 +107,8 @@ export interface TriageDeps {
   now(): Date;
   // Absent: the production prompt (`productionClassifierChoice`). Tests inject another version and part list; the registry stays.
   prompt?: ClassifierPromptChoice;
+  // The profile reader of the composition root (`classifier-v4` part `profile`); the production prompt reads no profile.
+  readProfile?: ClassifierInputDeps["readProfile"];
 }
 
 export type TriageOutcome =

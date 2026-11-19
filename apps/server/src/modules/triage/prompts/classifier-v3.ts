@@ -28,15 +28,6 @@ const NAME_CHARS = 120;
 const has = (parts: readonly ClassifierV3Part[], part: ClassifierV3Part): boolean =>
   part === "attachments" || parts.includes(part);
 
-/**
- * The canonical list of optional parts: sorted by name, once each. It names a run (`classifier-v3[history,urgency]`),
- * its state file and its gate file. `attachments` is always on, so it is not listed. The order of the prompt text
- * does not depend on it: that is the type's order.
- */
-export function optionalParts(parts: readonly ClassifierV3Part[]): ClassifierV3Part[] {
-  return classifierV3Parts.filter((part) => part !== "attachments" && parts.includes(part)).sort();
-}
-
 function rulesOf(parts: readonly ClassifierV3Part[], allowed: readonly Category[]): string[] {
   const rules: string[] = [];
   if (has(parts, "attachments")) {
@@ -113,6 +104,23 @@ export function buildUserPrompt(
   extras: ClassifierExtras,
   parts: readonly ClassifierV3Part[]
 ): string {
+  const history = has(parts, "history") && extras.senderHistory !== null ? historySection(extras.senderHistory) : [];
+  return renderUserPrompt(email, sender, delegates, nonce, extras, parts, history);
+}
+
+/**
+ * The user prompt with the lines of the one sender block (`history` here, `profile` in v4) after the urgency section.
+ * One sender block at most: the caller decides which one.
+ */
+export function renderUserPrompt(
+  email: ClassifierEmail,
+  sender: SenderContext,
+  delegates: readonly ClassifierDelegate[],
+  nonce: string,
+  extras: ClassifierExtras,
+  parts: readonly ClassifierV3Part[],
+  senderBlock: readonly string[]
+): string {
   const thread = [...email.thread]
     .sort((a, b) => a.receivedAt.getTime() - b.receivedAt.getTime())
     .slice(-THREAD_MAILS)
@@ -147,7 +155,7 @@ export function buildUserPrompt(
     "",
   ];
   if (has(parts, "urgency") && extras.urgency !== null) lines.push(...urgencySection(extras.urgency));
-  if (has(parts, "history") && extras.senderHistory !== null) lines.push(...historySection(extras.senderHistory));
+  lines.push(...senderBlock);
   if (delegates.length > 0) {
     lines.push("Delegates (from the user's settings, not from the email):", ...delegates.map(delegateLine), "");
   }
