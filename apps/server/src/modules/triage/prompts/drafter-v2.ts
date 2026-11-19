@@ -1,7 +1,7 @@
 import { buildUserPrompt as buildUserPromptV1 } from "./drafter-v1";
 
 // Any change to the text below needs a new file and version id (`drafter-v3.ts`) and a passing drafter run.
-// drafter-v2 = drafter-v1 with the rules that the dev part of lab-01 showed missing (the cause table of the F115 tuning in
+// drafter-v2 = drafter-v1 with the rules that the dev part of lab-01 showed missing (the cause table in
 // `spec/features/active/F115-e6a-reply-drafts/tuning-1.md`): a decision stays inside its gap, no promise of a later
 // reply, the form of address of the email wins over the writing style, one gap per question, and a request of the email
 // for a reference, an address or a copy gets no word. The user prompt and the retry prompt are those of drafter-v1.
