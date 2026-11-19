@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
+
 import {
   addressCaseForms,
   addressCasedCodePoints,
@@ -19,6 +22,8 @@ import {
   matchesAddress,
   normalizeDsrAddress,
 } from "../../src/modules/privacy";
+
+import { resetRuleCheckCache } from "../../src/modules/privacy/rule-check";
 
 import { KEY, newOrg, NO_TEST, NOW } from "./contacts-fixtures";
 import { seedSenderActivity } from "./fixtures";
@@ -445,5 +450,96 @@ describe("find and erase with the rule check", () => {
       kind: "confirm_mismatch",
     });
     expect(await findSubjectData(db, { ...base, address: "bad" })).toEqual({ kind: "bad_address" });
+  });
+});
+
+// Order and cache of the check, and the CLI refusal path.
+describe("the rule check: order, cache and CLI", () => {
+  const FAIL = async () => ({ ok: false as const, codePoints: [0xa7ce] });
+
+  test("an organization that does not exist: erase and find answer rule_mismatch, not not_found", async () => {
+    const orgId = randomUUID();
+    const erased = await eraseSubjectData(db, {
+      orgId,
+      address: "anna@x.test",
+      confirm: "anna@x.test",
+      credentialsKey: KEY,
+      ruleCheck: FAIL,
+    });
+    expect(erased).toEqual({ kind: "rule_mismatch", codePoints: [0xa7ce] });
+    const found = await findSubjectData(db, { orgId, address: "anna@x.test", credentialsKey: KEY, ruleCheck: FAIL });
+    expect(found).toEqual({ kind: "rule_mismatch", codePoints: [0xa7ce] });
+  });
+
+  test("the erase and the find of an unknown organization still answer not_found when the check passes", async () => {
+    const orgId = randomUUID();
+    const ok = async () => ({ ok: true as const });
+    const erased = await eraseSubjectData(db, {
+      orgId,
+      address: "anna@x.test",
+      confirm: "anna@x.test",
+      credentialsKey: KEY,
+      ruleCheck: ok,
+    });
+    expect(erased).toEqual({ kind: "not_found" });
+    const found = await findSubjectData(db, { orgId, address: "anna@x.test", credentialsKey: KEY, ruleCheck: ok });
+    expect(found).toEqual({ kind: "not_found" });
+  });
+
+  test("a failed read of the divergent set is not cached; a good read is", async () => {
+    // A connection whose executor cannot be taken: the first read of the set fails.
+    const broken = new Proxy(db, {
+      get(target, property, receiver) {
+        if (property === "getExecutor") {
+          return () => {
+            throw new Error("broken connection");
+          };
+        }
+        return Reflect.get(target, property, receiver) as unknown;
+      },
+    });
+    resetRuleCheckCache();
+    try {
+      await expect(checkAddressRule(broken, "anna@x.test")).rejects.toThrow("broken connection");
+      // The failed promise is gone: the next call reads again on a good connection and succeeds.
+      expect(await checkAddressRule(db, "anna@x.test")).toEqual({ ok: true });
+      // The good read is kept: a broken connection is not used any more.
+      expect(await checkAddressRule(broken, "anna@x.test")).toEqual({ ok: true });
+    } finally {
+      resetRuleCheckCache();
+    }
+  });
+
+  test("CLI: a refusal exits 1, prints `rule mismatch <n>`, logs org_dsr_refused rule_mismatch and no address", async () => {
+    const letter = (await divergentCodePoints(db)).find(({ js }) => js !== "");
+    if (letter === undefined) {
+      process.stdout.write("rule check: no divergent letter on this database, the CLI refusal test is skipped\n");
+      return;
+    }
+    const local = `${letter.js}zq`;
+    const address = `${local}@x.test`;
+    const script = resolve(import.meta.dir, "../../src/scripts/org-dsr.ts");
+    const run = async (args: string[]) => {
+      const proc = Bun.spawn(["bun", script, ...args], {
+        cwd: resolve(import.meta.dir, "../../../.."),
+        env: { ...process.env, CREDENTIALS_KEY: process.env.CREDENTIALS_KEY ?? KEY },
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const code = await proc.exited;
+      return { code, stdout: await new Response(proc.stdout).text(), stderr: await new Response(proc.stderr).text() };
+    };
+    const orgId = randomUUID();
+    const modes = [["--find"], ["--erase", "--confirm", address]];
+    for (const mode of modes) {
+      const result = await run(["--org-id", orgId, "--address", address, ...mode]);
+      expect(result.code).toBe(1);
+      expect(result.stdout).toBe("rule mismatch 1\n");
+      expect(result.stderr).toContain("org_dsr_refused");
+      expect(result.stderr).toContain("reason=rule_mismatch");
+      for (const needle of [address, local, "zq", "x.test", String.fromCodePoint(letter.cp), letter.js]) {
+        expect(result.stdout + result.stderr).not.toContain(needle);
+      }
+    }
   });
 });

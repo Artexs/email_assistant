@@ -10,6 +10,11 @@ export type RuleCheck = (db: Db, address: string) => Promise<AddressRuleCheck>;
 // shows at the next run. A failed read is not kept: the next call asks again.
 let divergentOfProcess: Promise<DivergentCodePoint[]> | null = null;
 
+// Drops the cached set, so a test can start from an empty cache. Production code never calls it.
+export function resetRuleCheckCache(): void {
+  divergentOfProcess = null;
+}
+
 function cachedDivergent(db: Db): Promise<DivergentCodePoint[]> {
   if (divergentOfProcess === null) {
     const pending = divergentCodePoints(db);
