@@ -67,6 +67,8 @@ export interface TelegramRuntimeDeps {
   apiRoot?: string;
   // Only for tests.
   botInfo?: UserFromGetMe;
+  // Tests: a short wait for `getMe`. Default `BOT_USERNAME_TIMEOUT_MS`.
+  botUsernameTimeoutMs?: number;
 }
 
 export interface TelegramRuntime {
@@ -113,7 +115,7 @@ export function createTelegramRuntime(deps: TelegramRuntimeDeps): TelegramRuntim
   });
   let polling: Polling | undefined;
   const loadBotUsername = cacheOnSuccess(() => bot.api.getMe().then((me) => me.username));
-  const botUsername = () => withTimeout(loadBotUsername(), BOT_USERNAME_TIMEOUT_MS);
+  const botUsername = () => withTimeout(loadBotUsername(), deps.botUsernameTimeoutMs ?? BOT_USERNAME_TIMEOUT_MS);
 
   return {
     async notify() {

@@ -36,6 +36,8 @@ export interface AuthMailerDeps {
     close(): void;
   };
   timeoutMs?: number;
+  /** Extra time of the outer guard timer after the SMTP timeouts; default 5 s. */
+  outerExtraMs?: number;
 }
 
 /** TLS certificates are always checked: no option sets `tls.rejectUnauthorized`. Only a loopback host connects without TLS. */
@@ -66,6 +68,7 @@ const TIMED_OUT = Symbol("auth-mail-timeout");
 
 export function createAuthMailer(settings: AuthMailSettings, deps: AuthMailerDeps = {}): AuthMailer {
   const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const outerExtraMs = deps.outerExtraMs ?? OUTER_TIMER_EXTRA_MS;
   const open = deps.createTransport ?? createTransport;
 
   return {
@@ -85,7 +88,7 @@ export function createAuthMailer(settings: AuthMailSettings, deps: AuthMailerDep
           // A late rejection of the raced send is handled here, so it never goes unhandled.
           sending.catch(() => undefined);
           const timeout = new Promise<typeof TIMED_OUT>((resolve) => {
-            timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs + OUTER_TIMER_EXTRA_MS);
+            timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs + outerExtraMs);
           });
           const outcome = await Promise.race([sending, timeout]);
           if (outcome === TIMED_OUT) {
