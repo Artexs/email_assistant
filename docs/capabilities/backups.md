@@ -1,6 +1,8 @@
 # Backups
 
-> Checked against the code at `cf125cf`, 2026-11-14. Limits rechecked after the first drill on the VPS, 2026-11-19.
+> Checked against the code at `cf125cf`, 2026-11-14.
+>
+> Limits rechecked after the first drill on the VPS, 2026-11-19.
 
 ## What it does now
 
