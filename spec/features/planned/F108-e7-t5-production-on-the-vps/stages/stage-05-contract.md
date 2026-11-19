@@ -1,6 +1,8 @@
 # F108 stage 05 — Contract: the server and `cli` without admin keys [risky]
 
-Part of [`../plan.md`](../plan.md). Needs stages 01–03 and the stage 04 record `env split ok` (D4: do not spawn before). Interfaces: [`../interfaces.md`](../interfaces.md) § Guards. Risk: security (secret scope) and the production deploy path.
+Needs stage 04: its record `env split ok` in `notes/2026-11-15-vps-deploy-queue.md` § "F108 rollout" (D4: do not spawn before). Needs stage 01: `ea_env_split_state`; stage 02: `deploy/check-server-env.sh`; stage 03: README § Env split. Needs F139: the readiness wait before `guard-empty` in `deploy/restore.sh`; keep it as it is. A worker job.
+
+Part of [`../plan.md`](../plan.md). Interfaces: [`../interfaces.md`](../interfaces.md) § Guards. Risk: security (secret scope) and the production deploy path.
 
 ## Carry-over reads
 
@@ -26,7 +28,7 @@ Stage 01–03 files and tests (`compose-lib.sh` `ea_env_split_state`, `check-ser
 
 **Files.** `deploy/release.sh`, `deploy/rollback.sh`, `deploy/restore.sh` (`new-host` only), `deploy/release-lib.sh` if the guard lives there; their tests.
 
-**Decisions.** D7, D8. The guard runs first, before `git fetch`, the backup and the `pending` mark. It uses `ea_env_split_state` (stage 01), so `MIGRATOR_DATABASE_URL` left in `.env` makes the state `mixed` and blocks. `release.sh` calls `check-server-env.sh` after the release-name check in its verify step. `rollback.sh` does not call it: release N (expand) is a valid rollback target and still has the migrator URL. The drill target has no guard (its own env, D9).
+**Decisions.** D7, D8. The guard runs first, before `git fetch`, the backup and the `pending` mark. It uses `ea_env_split_state` (stage 01), so `MIGRATOR_DATABASE_URL` left in `.env` makes the state `mixed` and blocks. `release.sh` calls `check-server-env.sh` after the release-name check in its verify step. `rollback.sh` does not call it: release N (expand) is a valid rollback target and still has the migrator URL. The drill target has no guard (its own env, D9). In `restore.sh --target new-host` the guard comes before `up -d --wait db`; the F139 wait and the `guard-empty` step stay after it, unchanged.
 
 **Test.** Release harness with stubs.
 4. State `old` → `release.sh v0.9.1` exits 2, stderr names `run deploy/env-split.sh first (state old)`; no `backup.sh` call, no state-file write.
@@ -35,6 +37,7 @@ Stage 01–03 files and tests (`compose-lib.sh` `ea_env_split_state`, `check-ser
 7. State `split`, clean env → `release ok v0.9.1 previous <old>`.
 8. `rollback.sh` with state `old` → exit 2, nothing changed; with state `split` → runs, and makes no `check-server-env.sh` call.
 9. `restore.sh --target new-host` with state `old` → exit 2 before any `docker` call; `--target drill` with state `old` → passes the guard.
+10. The F139 test of the readiness wait (`deploy/test/restore.test.ts` or its own file) passes unchanged.
 
 ## Step 5.3 — Docs
 
@@ -42,10 +45,10 @@ Stage 01–03 files and tests (`compose-lib.sh` `ea_env_split_state`, `check-ser
 
 **Check.** `bun test deploy/test apps/server/src/deploy-logging.test.ts`.
 
-**Done when.** Tests 1–9 pass; the Proof chain ends with `PROOF_OK`.
+**Done when.** Tests 1–10 pass; the Proof chain ends with `PROOF_OK`.
 
 **Out of scope.** Any VPS step; other secrets of the server (`CREDENTIALS_KEY`, bot token, LLM keys: the server needs them); a secret manager.
 
 ## Proof
 
-`mkdir -p /tmp/f108-s05 && bun run lint > /tmp/f108-s05/lint.log 2>&1 && bun run typecheck > /tmp/f108-s05/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f108-s05/unit.log 2>&1 && bun run test:int:ci > /tmp/f108-s05/int.log 2>&1 && echo PROOF_OK`
+The chain of [`../plan.md`](../plan.md) § Proof with `sNN` = `s05`; it ends with `PROOF_OK`.

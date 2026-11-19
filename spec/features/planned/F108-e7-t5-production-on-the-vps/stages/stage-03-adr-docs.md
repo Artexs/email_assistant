@@ -1,10 +1,12 @@
 # F108 stage 03 — ADR 0019 and the runbooks
 
-Part of [`../plan.md`](../plan.md). Needs stage 01. May run in parallel with stage 02 (no shared file). The coordinator follows these runbooks in stages 04 and 06, so they must be exact.
+Needs stage 01: the `migrate` service and `deploy/compose-lib.sh` (the runbooks call them). The stage 02 names (`env-split.sh`, `check-server-env.sh`, `db.env.example`) come from [`../interfaces.md`](../interfaces.md). May run next to 02 (no shared file). A worker job.
+
+Part of [`../plan.md`](../plan.md). The coordinator follows these runbooks in stages 04 and 06, so they must be exact.
 
 ## Carry-over reads
 
-`deploy/README.md` (§ First install, § Release, § Roll back a release, § Web panel steps that teach `.env.bak-*` copies, § 48-hour test procedure cron line, § Backups, § VPS lost / New host), `docs/architecture.md` §10, `docs/decisions/README.md`, `docs/decisions/0017-web-access-tailscale-serve.md`, `docs/capabilities/operations.md` and `backups.md`, `docs/release-checklist.md`, `.env.example`; [`../interfaces.md`](../interfaces.md) (the names the docs must use).
+`deploy/README.md` (§ First install, § Release, § Roll back a release, § Phone notices and Telegram detail → Make the keys step 2 and Roll back step 3, § Web panel steps, all of which teach `.env.bak-*` copies; § 48-hour test procedure cron line; § Backups; § VPS lost / New host and § Drill, which now hold the first drill record), `docs/architecture.md` §10, `docs/decisions/README.md`, `docs/decisions/0017-web-access-tailscale-serve.md`, `docs/capabilities/operations.md` and `backups.md`, `docs/release-checklist.md`, `.env.example`; [`../interfaces.md`](../interfaces.md) (the names the docs must use).
 
 ## Step 3.1 — ADR 0019
 
@@ -24,18 +26,20 @@ Part of [`../plan.md`](../plan.md). Needs stage 01. May run in parallel with sta
 - The `C=` line: `--env-file deploy/db.env`, with one line that says the old form is for a host that was not split yet.
 - § First install and § New host: make `deploy/db.env` from the example (mode 600) with the three passwords; `.env` gets no D5 key; delete the `MIGRATOR_DATABASE_URL` and `DATABASE_URL` lines from the copied `.env` (Compose sets both).
 - New § Env split (for an existing host): the order is `deploy/backup.sh` (the database backup; never a copy of `.env`), `deploy/env-split.sh`, check `ea_env_split_state` = `split`, `$C config --quiet`; after the first release with the contract, `deploy/check-server-env.sh`. A rollback to a release older than the split helper: `deploy/env-split.sh --undo` first (`rollback.sh` says so).
-- Replace each instruction that makes a `.env.bak-*` copy with: "keep the old value in the password manager; never leave a copy of `.env` on the host" (D30).
+- Keep the first drill record in § VPS lost as it is (F114 wrote it; F139 owns its `guard-empty` line). § New host step 3: the three passwords go to `deploy/db.env`, not `.env`. § Drill: `--init-env <live repo>/.env` stays (it reads only `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION`, which stay in `.env`).
+- Replace each instruction that makes a `.env.bak-*` copy (§ Phone notices `.env.bak-vapid`; § Web panel `.env.bak-s5e`, `.env.bak-f069`) and each step that restores one (§ Phone notices Roll back step 3 becomes "delete the three `VAPID_*` lines") with: "keep the old value in the password manager; never leave a copy of `.env` on the host" (D30).
 - Every cron line and one-off example uses `$C` or the new `C=` form (the § 48-hour test `mailbox:seed` cron line too); every `run --rm cli bun run db:migrate` becomes `run --rm migrate`.
 
 **Test.**
 1. `bash deploy/check-logging.sh` passes (it also checks that no document runs a one-off in `server`).
 2. The repo's docs checks pass: `bun run docs:stale --strict` and the link check, if the repo has one.
 3. No file in `deploy/` or `docs/` (outside `docs/decisions/` history and `notes/`) still holds `--env-file .env` except the line that names the old form; this grep must find only that line.
+4. No `cp … .env.bak` and no `.env.bak-` name stays in `deploy/README.md`; this grep must find nothing.
 
-**Done when.** Tests 1–3 pass; ADR 0019 is listed as accepted; the Proof chain ends with `PROOF_OK`.
+**Done when.** Tests 1–4 pass; ADR 0019 is listed as accepted; the Proof chain ends with `PROOF_OK`.
 
 **Out of scope.** Script changes (stages 01, 02, 05); other tickets' stage files (the coordinator handles them, `interfaces.md` § Seams).
 
 ## Proof
 
-`mkdir -p /tmp/f108-s03 && bun run lint > /tmp/f108-s03/lint.log 2>&1 && bun run typecheck > /tmp/f108-s03/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f108-s03/unit.log 2>&1 && bun run test:int:ci > /tmp/f108-s03/int.log 2>&1 && echo PROOF_OK`
+The chain of [`../plan.md`](../plan.md) § Proof with `sNN` = `s03`; it ends with `PROOF_OK`.

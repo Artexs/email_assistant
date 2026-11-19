@@ -1,10 +1,12 @@
 # F108 stage 02 — Split tool and server env check
 
-Part of [`../plan.md`](../plan.md). Needs stage 01 (`compose-lib.sh`: `EA_D5_KEYS`, `ea_env_split_state`, `ea_compose_init`). Interfaces: [`../interfaces.md`](../interfaces.md) § Scripts. May run in parallel with stage 03 (no shared file).
+Needs stage 01: `deploy/compose-lib.sh` (`EA_D5_KEYS`, `ea_env_split_state`, `ea_compose_init`). May run next to 03 (no shared file). A worker job.
+
+Part of [`../plan.md`](../plan.md). Interfaces: [`../interfaces.md`](../interfaces.md) § Scripts.
 
 ## Carry-over reads
 
-Stage 01 `compose-lib.sh` and its tests; `.gitignore`; `.env.example` (the three password lines and `MIGRATOR_DATABASE_URL`); the stub-command pattern of `deploy/test/backup.test.ts`.
+Stage 01 `compose-lib.sh` and its tests; `.gitignore`; `.env.example` (the three password lines and `MIGRATOR_DATABASE_URL`); the stub-command pattern of `deploy/test/backup.test.ts` (a `stub(name, body)` script in a temp folder first on `PATH`; a stub that must count or fail on call N appends to a calls file in the temp root, as the `rclone` stub does).
 
 ## Step 2.1 — `deploy/env-split.sh`
 
@@ -47,4 +49,4 @@ Stage 01 `compose-lib.sh` and its tests; `.gitignore`; `.env.example` (the three
 
 ## Proof
 
-`mkdir -p /tmp/f108-s02 && bun run lint > /tmp/f108-s02/lint.log 2>&1 && bun run typecheck > /tmp/f108-s02/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f108-s02/unit.log 2>&1 && bun run test:int:ci > /tmp/f108-s02/int.log 2>&1 && echo PROOF_OK`
+The chain of [`../plan.md`](../plan.md) § Proof with `sNN` = `s02`; it ends with `PROOF_OK`.

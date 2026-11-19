@@ -1,17 +1,20 @@
 # F108 stage 04 — VPS: release N and the env split [risky]
 
-Part of [`../plan.md`](../plan.md). A coordinator run on the VPS (`ssh home_vm`, `~/email_assistant`). Needs stages 01–03 landed; stage 05 is not landed (D4). VPS deploys are pre-approved (owner, 2026-11-13). Risk: production; the pilot runs on this host.
+A coordinator run on the VPS (`ssh home_vm`, `~/email_assistant`); no worker job. Needs the release that carries stage 01 (`compose-lib.sh`, service `migrate`), stage 02 (`env-split.sh`, `check-server-env.sh`) and stage 03 (README § Env split, the new `C=` line), and not stage 05 (D4). The board names it v0.4.2.
+
+Part of [`../plan.md`](../plan.md). VPS deploys are pre-approved (owner, 2026-11-13). Risk: production; the pilot runs on this host.
 
 ## Carry-over reads
 
-`docs/release-checklist.md`; `deploy/README.md` § Release, § Env split; `notes/2026-11-15-vps-deploy-queue.md` (last release, open items); the outcomes of stages 01–03.
+`docs/release-checklist.md`; `deploy/README.md` § Release, § Env split; `notes/2026-11-15-vps-deploy-queue.md` (last release, open items); the stage 01–03 commits.
 
 ## Rules (also for stage 06)
 
 - Before anything: `df -h /` (under 5 GB free → stop, tell the owner); `git status` clean; the state file has `pending` empty. Write the rollback target into the queue note before each release.
 - Never print a value of `.env`, `deploy/db.env`, `backup.env`, the crontab or the rclone config. Key names only (`cut -d= -f1`); crontab lines are counted or shown with everything after `cd <repo> &&` cut off.
 - Each step records its command and result line in `notes/2026-11-15-vps-deploy-queue.md` § "F108 rollout".
-- A failed step: stop, roll back by checklist step 11, record, report. Never `down -v`; never a DB restore without the owner.
+- The nightly backup holds a lock for up to about 10 minutes (B2 retries). Start no release and no manual `deploy/backup.sh` near its cron time. `another backup run holds …` (exit 75; a release then fails at step `backup`, before `pending`) changed nothing: wait for the other run's `backup ok`, then run again. `rclone copyto try <n> of <m> failed` lines before `backup ok` are retries.
+- A failed step: stop, roll back by checklist step 11 (with its push-row steps when the target is older than the push sender), record, report. Never `down -v`; never a DB restore without the owner.
 
 ## Part A — Release N (expand)
 

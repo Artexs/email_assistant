@@ -1,6 +1,6 @@
 # F108 · Production on the VPS: plan
 
-> **Status 2026-11-19 — planned, nothing built.** Plan base: c68ce51e. Sources: epic `E07-platform-and-trust.md` (S6f, decision 14), `E07-discovery-notes.md` §9, §11; `tasks/planned/s6f-hosted-production.md`; `tasks/active/s6-pre-sale.md` (P22, P23, D25, D30, D31). [scouts.md](scouts.md), [questions.md](questions.md), [interfaces.md](interfaces.md).
+> **Status — planned, nothing built.** Plan base: f21809c4, refreshed 2026-11-19 ([refresh 1](plan-refresh-1.md)). Sources: epic `E07-platform-and-trust.md` (S6f, decision 14), `E07-discovery-notes.md` §9, §11; `tasks/planned/s6f-hosted-production.md`; `tasks/active/s6-pre-sale.md` (P22, P23, D25, D30, D31). [scouts.md](scouts.md), [questions.md](questions.md), [interfaces.md](interfaces.md).
 
 ## Input
 
@@ -18,7 +18,7 @@ Owner (S6 plan, 2026-11-12): "**P22** S6f becomes "Production on the home VPS": 
 
 - **D1 Where the admin keys live.** `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD` move from the VPS `.env` to a new host file `deploy/db.env` (mode 600, git-ignored, example `deploy/db.env.example`). It is the Compose interpolation file; `.env` stays the server's `env_file`. Rejected: an allow-list of about 80 keys (drifts; empty is not unset).
 - **D2 One compose command.** A sourced helper builds the Compose file arguments of every deploy script: `--env-file deploy/db.env` when that file exists, else `--env-file .env` (old layout, local dev). Neither → refuse. Rejected: a path in each script (six copies today).
-- **D3 Service `migrate`** (shape in interfaces.md): server image, `bun run db:migrate`, no `env_file`, only the migrator URL. `release.sh` and `restore.sh` use it. The drill override gives it the drill image (else the drill runs the live image); `check-logging.sh` allows it in the drill set.
+- **D3 Service `migrate`** (shape in interfaces.md): server image, `bun run db:migrate`, no `env_file`, only the migrator URL. `release.sh` and `restore.sh` use it. The drill override gives it the drill image, log, restart and ports, not the drill env anchor; `check-logging.sh` allows it in the drill set.
 - **D4 Expand, then contract** (the migration rule, for Compose). Release N holds stages 01–02 (`migrate` exists; the server keeps its migrator URL). The coordinator makes, tags and deploys N and splits the VPS env (stage 04) before stage 05 (contract) is spawned. After that, any release that holds stage 05 is safe, also one of another ticket. Reason: the old `release.sh` runs the next release from memory and migrates through `cli`. Rejected: one release (that step fails); a tag on an older commit (`release.sh` needs a new version commit).
 - **D5 Forbidden keys** in `server` and `cli`: `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`, `MIGRATOR_DATABASE_URL`. `DATABASE_URL` (role `app`) stays.
 - **D6 Split tool** `deploy/env-split.sh` moves the D5 lines (the three passwords, required; `MIGRATOR_DATABASE_URL` when present, as `.env.example` has it) to `deploy/db.env`. Lossless (no backup copy, D30); temp file + rename; key names only in output. A second run finishes a half-done split (equal lines in both files). `--undo` moves them back.
@@ -34,12 +34,12 @@ A decision gap is a question in the final message.
 
 ## Facts checked (c68ce51e, 2026-11-19)
 
-Scouts 1–4; review 1 reproductions. Planner read: `server` has `env_file: ../.env` + `MIGRATOR_DATABASE_URL`, `cli` extends it; Compose interpolates only the three passwords and `EA_RELEASE`; `release.sh` migrates through `cli`; `rollback.sh` checks out the target commit with the `COMPOSE_CMD` it started with; `check-logging.sh --drill` allows only `db`, `server`, `cli`; `.env.example` puts `MIGRATOR_DATABASE_URL` in `.env`; the F114 drill clones a pinned tag (v0.1.0); no runtime code or VPS CLI reads a D5 key (only dev scripts); ADR 0019 is "reserved"; F093 fixed the timing tests.
+Scouts 1–4; review 1 reproductions. Planner read: `server` has `env_file: ../.env` + `MIGRATOR_DATABASE_URL`, `cli` extends it; Compose interpolates only the three passwords and `EA_RELEASE`; `release.sh` migrates through `cli`; `rollback.sh` checks out the target commit with the `COMPOSE_CMD` it started with; `check-logging.sh --drill` allows only `db`, `server`, `cli`; `.env.example` puts `MIGRATOR_DATABASE_URL` in `.env`; no runtime code or VPS CLI reads a D5 key (only dev scripts); ADR 0019 is "reserved"; F093 fixed the timing tests.
 
 ## Not verified
 
 - V1 `rclone backend lifecycle` with a read key (stage 06). V2 a read remote on this PC (stage 06, `rclone listremotes`). V3 the VPS `.env` key names, the crontab lines that call Compose, and which `.env.bak-*` exist (stage 04, names only).
-- V4 the new `restore.sh` path on a host: the F114 drill proves it only at a tag with stage 01 (stage 07 records the tag).
+- V4 the new `restore.sh` path on a host: the F114 drill ran at `v0.3.1` (no stage 01); the F139 rerun on release N proves it (stage 07).
 
 ## Done when
 
@@ -69,7 +69,6 @@ mkdir -p /tmp/f108-sNN && bun run lint > /tmp/f108-sNN/lint.log 2>&1 && bun run 
 Not a stop; defaults in [questions.md](questions.md).
 - O1 (optional, stage 06): a read remote for the bucket on the PC.
 - O2 (optional, stage 07): a test mailbox and a second Telegram account.
-- The F114 drill needs the owner's `age` key (`notes/owner-later.md` item 3): stage 07 waits for it.
 
 ## Review
 
@@ -89,8 +88,7 @@ Opus 5.5 before land: 01, 02, 03, 05 (all touch deploy or secrets; `spec/build.m
 
 1. Move the ticket to `active/` after F107 is in `done/`. Spawn 01; after its land, 02 and 03 (they may run in parallel). Worker stages: `limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --prepare 'bash scripts/limen-prepare.sh' --label "F108-sNN <slug> · F108" "Implement F108 stage NN (spec/features/active/F108-e7-t5-production-on-the-vps/: ticket.md, plan.md, interfaces.md, stages/stage-NN-<slug>.md). Run the Proof after the last commit; claim only what a saved log shows."`
 2. Stage 04 right after 01–03 land: release N (`release:prepare` commit, tag, deploy) and the split. Stage 05 is spawned only after stage 04 recorded `env split ok` (D4).
-3. Stage 06 after the first release that holds stage 05. Stage 07 after F114 is in `done/`. Drop each job DB after its land.
-4. After stage 04, `C=… --env-file .env` in other tickets' stage files fails loudly: use the README `C=` line.
+3. Stage 06 after the first release that holds stage 05; then 07. Drop each job DB after its land. Each stage's `Needs` line names its real input.
 
 ## Planning progress
 
@@ -99,8 +97,8 @@ Opus 5.5 before land: 01, 02, 03, 05 (all touch deploy or secrets; `spec/build.m
 ## Cold review
 
 `claude-opus-5-5`, thinking high (`[risky]` stages: deploy path, secrets, VPS). [Review 1](plan-review-1.md): FAIL, 2 blocking, 14 notes; all fixed, none rejected. B1 → D4, stage 04. B2 → D5, D6, tests. N2 stage 01; N3 D4; N4, N5, N10 stage 03, 04; N6 D8; N7 D6; N8 V4; N9 D12; N12 seven stages.
-Words: stages 01–07: 696, 549, 570, 591, 641, 606, 544.
+Words: stages 01–07: 694, 565, 694, 698, 691, 675, 624 (refresh 1; plan.md 1468).
 
 ## Log
 
-- 2026-11-19 written at c68ce51e; review 1 fixed.
+- 2026-11-19 written at c68ce51e; review 1 fixed. Refreshed at f21809c4: [plan-refresh-1.md](plan-refresh-1.md).

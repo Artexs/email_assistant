@@ -34,7 +34,7 @@ migrate:
   depends_on: db (service_healthy)
 ```
 
-No `env_file`, no `ports`, no `volumes`, no healthcheck. Call: `"${EA_COMPOSE[@]}" run --rm -T migrate`. The drill override gives `migrate` the drill image block (`image: ea-drill-server`, local log, `restart: "no"`, `ports: !reset []`); `check-logging.sh --drill` allows it.
+No `env_file`, no `ports`, no `volumes`, no healthcheck. Call: `"${EA_COMPOSE[@]}" run --rm -T migrate`. The drill override gives `migrate` `image: ea-drill-server`, local log, `restart: "no"` and `ports: !reset []`, written on the service; not the `x-drill-server` anchor (its `env_file: drill.env` and forced channel env do not belong in `migrate`). `check-logging.sh --drill` allows it.
 
 `rollback.sh` (stage 01): db.env exists and the target commit has no `deploy/compose-lib.sh` → `rollback refused: run deploy/env-split.sh --undo first (target <tag> reads only .env)`, exit 2.
 
@@ -55,6 +55,8 @@ No `env_file`, no `ports`, no `volumes`, no healthcheck. Call: `"${EA_COMPOSE[@]
 
 ## Seams to other tickets
 
-- F114 stage 09 (drill, not run yet): after stage 01, `restore.sh` migrates through `migrate`; the drill proves that path only when its clone is at a tag that holds stage 01.
-- Active stage files with `C=… --env-file .env` (F029 05, F102 20, F104 13, F107 07, F118 checkpoint A): after F108 stage 04 they must use the README `C=` line.
+- F114 drill (ran 2026-11-19 at `v0.3.1`, before stage 01): it does not prove the `migrate` path. The F139 drill rerun on the release that carries stage 01 does (V4).
+- F139 (restore readiness wait before `guard-empty`): lands before stage 05; stage 01 and stage 05 keep its wait in `restore.sh`.
+- `backup.sh` (lock and B2 retries since 2026-11-19): a lock-refused run exits 75 and writes no status; stage 01 keeps that order (lock, trap, then the helper).
+- Stage files with `C=… --env-file .env`: none outside F108 at `f21809c4`. A later one written before stage 04 must use the README `C=` line after it.
 - A later one-off DB-admin command runs in `migrate` or `exec db psql -U postgres`; never add a D5 key to `server` or `cli`.

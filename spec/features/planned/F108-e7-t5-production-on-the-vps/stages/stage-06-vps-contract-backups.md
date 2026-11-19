@@ -1,6 +1,8 @@
 # F108 stage 06 — VPS: the contract release, backup checks, no secret copies [risky]
 
-Part of [`../plan.md`](../plan.md). A coordinator run on the VPS and on this PC. Needs stage 05 landed and stage 04 done. The rules of stage 04 § Rules apply. Risk: production; the pilot runs on this host.
+A coordinator run on the VPS and on this PC; no worker job. Needs the release that carries stage 05 (the guards, `check-server-env.sh` in verify; the board names it v0.4.3). Needs stage 04: its record (state `split`) and the saved crontab file under `~/ea-logs/`.
+
+Part of [`../plan.md`](../plan.md). The rules of stage 04 § Rules apply. Risk: production; the pilot runs on this host.
 
 ## Carry-over reads
 
@@ -15,7 +17,7 @@ Stage 04 record in `notes/2026-11-15-vps-deploy-queue.md`; `docs/release-checkli
 
 ## Part B — Backups (read only, P23)
 
-5. VPS: the crontab has one `deploy/backup.sh` line (show it cut as in stage 04 § Rules). The last line of `~/ea-logs/backup.log` that starts with `backup` is `backup ok <name> <bytes>`. `deploy/backup-status/status.json`: `result` = `ok`, `last_ok_at` under 26 h old (print those two fields only).
+5. VPS: the crontab has one `deploy/backup.sh` line (show it cut as in stage 04 § Rules). `deploy/backup-status/status.json` is the truth: `result` = `ok`, `last_ok_at` under 26 h old (print those two fields only). In `~/ea-logs/backup.log`: the last `backup ok <name> <bytes>` line (its name equals `name` in `status.json`); the counts, never the lines, of `rclone copyto try` and `another backup run holds` over the last 7 days. A lock line means two runs overlapped: check for a second cron line or a manual run, and record it.
 6. `bun run ops:alerts` (through `cli`): no open `slo_backup_age` (P4). Record whether `OPERATOR_TELEGRAM_CHAT_ID` (in `.env`) and `BACKUP_PING_URL` (in `deploy/backup.env`) have a value: "set" or "empty", never the value. Empty = F114 owner steps U2 or U3 still open; say so in the report.
 7. Bucket (D10, V2), on this PC: `rclone listremotes` (names only). A remote for the backup bucket with read access → `rclone lsl <remote>:<bucket> | sort -k2,3 | tail -n 3` (names, sizes, times). The newest name equals `name` in `status.json`. No such remote → record "bucket listing: owner step O1" and go on.
 8. Lifecycle (D11, V1): `rclone backend lifecycle <remote>:<bucket>` → record the days of the rule. Refused or no remote → "lifecycle not read".
