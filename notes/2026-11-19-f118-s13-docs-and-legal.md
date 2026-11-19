@@ -16,3 +16,11 @@ Read the changed legal texts. Write the `03-product-frame.md` §4 Telegram line 
 
 ## Proof logs
 `.f118s13-logs/` in the job worktree (untracked): `mutation-*.log`, `proof-*.log`, `int-env-i.log`, `lint-early.log`.
+
+## Review fixes (FAIL 2663c767; `notes/2026-11-19-f118-s13-review-1.md`)
+- B1 (verified in source, not at runtime): `git show v0.2.1:apps/server/src/modules/channels/repo.ts` shows `claimDueOutbox` with no channel filter. It sets `status = 'sending'` on every due row, then parses `channel` with `z.enum(noticeChannels)` (`["telegram"]` in v0.2.1) and `detail` with `noticeDetails` (`["full"]`). A push row or a `detail = 'minimal'` row throws after the claim; the caller logs `outbox_claim_failed` and returns, so the claimed batch stays `sending`. v0.3.0 filters on `channel` and has both enums wide. `deploy/README.md` step 5 now closes push rows (pending AND sending) and relabels `minimal` rows BEFORE `deploy/rollback.sh`; the second SQL (the `detail = 'minimal'` rows) is my own finding from the same source, not in the review. `docs/release-checklist.md`, ADR 0032 and rule 3c of `digest-and-notices.md` point to it. N8 text is in step 1.
+- `untilDelete` has a `scope`: `mailbox` (default; unchanged wording), `member` (`chat-links`, `push-devices`: the member removes the item in the panel or the CLI), `organization` (`account`: no code removes a member). Texts: `legal_kept_until_mailbox|member|organization` (en, pl). `legal-tables.test.ts` checks the Kept column of the records against the same text.
+- `TERMS_HISTORY` entry `2026-11-19` got a new digest in place (the first digest of that version was never deployed); no second entry.
+- T1 to T5 are tests now (`telegram.test.ts`, `legal-papers.test.ts` 2b, `legal-tables.test.ts`, `push.test.ts` 3, claim C248 source `registry.test.ts`). Mutation logs `.f118s13-logs/mutation-r1..r7*.log`.
+- Not done on purpose: `apps/docs/src/flagged-text.ts` still says of `web_push` that "no route, sender or text exists yet" (stale reason, found while editing faq.mdx; the flag now has panel texts). Not changed: a docs-site decision for checkpoint B.
+- Groups 3 (notes) and 4 (Polish fixes) share one commit: the edits touch the same sentences.

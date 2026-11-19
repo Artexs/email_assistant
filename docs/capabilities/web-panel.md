@@ -1,6 +1,6 @@
 # Web panel
 
-> Checked against the code at `ddc5e600`, 2026-11-19.
+> Checked against the code at `9f22bcb6`, 2026-11-19.
 
 ## What it does now
 
