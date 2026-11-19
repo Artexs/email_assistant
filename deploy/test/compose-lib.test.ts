@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-// F108 stage 01, tests 1–4: `deploy/compose-lib.sh` builds the Compose command and names the state of the env split.
+// Stage 01 of the production-on-the-VPS ticket, tests 1–4: `deploy/compose-lib.sh` builds the Compose command and names the state of the env split.
 // Each case runs bash in a temp repo root that holds the files of the case.
 
 const LIB = join(import.meta.dir, "..", "compose-lib.sh");

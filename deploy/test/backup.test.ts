@@ -256,7 +256,7 @@ describe("deploy/backup.sh B2 retry and lock", () => {
   });
 });
 
-describe("deploy/backup.sh Compose env file (F108 stage 01)", () => {
+describe("deploy/backup.sh Compose env file", () => {
   test("5. with deploy/db.env present the docker call reads it, and the backup is ok", () => {
     writeFileSync(join(root, "deploy", "db.env"), "POSTGRES_PASSWORD=x\n");
     stub("docker", `echo "$*" >>"${root}/docker.calls"\nprintf 'PGDMPfake-dump-body'`);
