@@ -111,7 +111,8 @@ export interface RealEvalReport extends EvalReportBase {
 export type EvalReport = CasesEvalReport | RealEvalReport;
 
 // The state file of one run. Gemini has no effort, so its names stay as before.
-// The endpoint is part of the name: a resume never takes the results of another endpoint. A run with an
+// The endpoint is part of the name: a resume never takes the results of another endpoint. A judged run adds
+// `-judge-<judge model>`: a resume never takes grades of another judge model; a run without a judge keeps its name. A run with an
 // explicit `--state` path skips this function, so the endpoint is the caller's duty there.
 export function evalStateFileName(opts: {
   model: string;
@@ -121,11 +122,14 @@ export function evalStateFileName(opts: {
   promptVersion: string;
   set: string;
   perCategory?: number;
+  /** The judge model of a `--judge` run. */
+  judgeModel?: string;
 }): string {
   const effort = opts.reasoningEffort === null ? "" : `-${opts.reasoningEffort}`;
   const perCategory = opts.perCategory === undefined ? "" : `-pc${opts.perCategory}`;
   const version = opts.promptVersion.replace(/[^\w.-]/g, "_");
-  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${version}-${opts.set}${perCategory}${endpointSuffix(opts.endpoint)}.jsonl`;
+  const judge = opts.judgeModel === undefined ? "" : `-judge-${opts.judgeModel.replace(/[^\w.-]/g, "_")}`;
+  return `${opts.model.replace(/[^\w.-]/g, "_")}${effort}-${version}-${opts.set}${perCategory}${judge}${endpointSuffix(opts.endpoint)}.jsonl`;
 }
 
 // One state line. It holds no case text: ids, categories, numbers and codes only.
