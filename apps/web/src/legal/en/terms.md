@@ -46,7 +46,7 @@ These terms say how the service works and what you can expect from it. They desc
 
 ## End and deletion
 
-- The owner can delete the organization in the Account card, when the operator turned this on. Otherwise ask \<contact>, and the operator deletes it. The delete removes the mailboxes, the mail, the results, the rules, the Telegram links, the audit log and the accounts of the members at once.
+- The owner can delete the organization in the Account card, when the operator turned this on. Otherwise ask \<contact>, and the operator deletes it. The delete removes the mailboxes, the mail, the results, the rules, the Telegram links, the push devices, the audit log and the accounts of the members at once.
 - Backups keep the rows until they expire. After a restore of a backup, the operator deletes the organization again.
 - After a delete, change the password of each mailbox at the mail provider, because the assistant knew it.
 - On request the operator makes an encrypted export of the data of the organization. The export holds no password hash, no mailbox secret, no token and no session.

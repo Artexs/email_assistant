@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { dataCategories, subprocessors } from "@ea/core/web";
 import { describe, expect, test } from "bun:test";
 
@@ -18,6 +21,21 @@ describe("table texts", () => {
     expect(daysText(en, 30)).toBe("30 days");
     expect(daysText(pl, 1)).toBe("1 dzień");
     expect(daysText(pl, 7)).toBe("7 dni");
+  });
+
+  test("the Kept column of the records of processing says the text of the privacy page for each until-delete category", () => {
+    const records = readFileSync(path.join(import.meta.dir, "../../../../docs/legal/records-of-processing.md"), "utf8");
+    const lines = records.split("\n").filter((line) => line.startsWith("|"));
+    for (const category of dataCategories) {
+      if (category.kept.kind !== "untilDelete") continue;
+      const row = lines.find((line) => line.split("|")[1]?.trim() === `\`${category.id}\``);
+      const cells = (row ?? "").split("|").map((cell) => cell.trim());
+      const kept = cells[cells.length - 2] ?? "";
+      expect({ id: category.id, kept: kept.toLowerCase() }).toEqual({
+        id: category.id,
+        kept: keptText(en, category.kept).toLowerCase(),
+      });
+    }
   });
 
   test("every kept kind of the registry has a text without an open slot", () => {

@@ -46,7 +46,7 @@ Ten regulamin mówi, jak działa usługa i czego możesz się po niej spodziewa�
 
 ## Zakończenie i usunięcie
 
-- Właściciel może usunąć organizację w karcie Konto, gdy operator to włączył. W przeciwnym razie napisz na \<contact>, a operator ją usunie. Usunięcie od razu kasuje skrzynki, wiadomości, wyniki, reguły, powiązania z Telegramem, dziennik audytu i konta członków.
+- Właściciel może usunąć organizację w karcie Konto, gdy operator to włączył. W przeciwnym razie napisz na \<contact>, a operator ją usunie. Usunięcie od razu kasuje skrzynki, wiadomości, wyniki, reguły, powiązania z Telegramem, urządzenia push, dziennik audytu i konta członków.
 - Kopie zapasowe zachowują wiersze, dopóki nie wygasną. Po przywróceniu kopii operator usuwa organizację ponownie.
 - Po usunięciu zmień hasło każdej skrzynki u dostawcy poczty, bo asystent je znał.
 - Na prośbę operator tworzy zaszyfrowany eksport danych organizacji. Eksport nie zawiera skrótów haseł, sekretów skrzynek, tokenów ani sesji.

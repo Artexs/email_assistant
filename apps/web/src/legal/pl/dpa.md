@@ -14,7 +14,7 @@ Podmiot przetwarzający przetwarza pocztę wyłącznie po to, aby realizować dl
 - **Sortowanie:** aby przypisać każdej wiadomości kategorię z krótkim uzasadnieniem.
 - **Działania:** aby przenosić wiadomości, oznaczać je flagą lub jako przeczytane, gdy pozwalają na to tryb i przełączniki każdej skrzynki.
 - **Szkice:** aby pisać szkice odpowiedzi i pytań. Szkic jest wysyłany dopiero po zatwierdzeniu przez właściciela.
-- **Podsumowania:** aby informować członków o pilnej poczcie, problemach i szkicach, które czekają, w Telegramie.
+- **Podsumowania:** aby informować członków o pilnej poczcie, problemach i szkicach, które czekają, w Telegramie lub w powiadomieniu push na zarejestrowanym telefonie albo w przeglądarce.
 - **Przypomnienia dla wykonawców:** aby przypomnieć wykonawcy o zleceniu, szkicem, który wymaga takiego samego zatwierdzenia.
 
 ## Dane i osoby
@@ -65,7 +65,7 @@ Załącznik 1. Podmiot przetwarzający stosuje te środki:
 
 ## Zakończenie
 
-- Gdy organizacja zostanie usunięta, usunięcie od razu kasuje jej dane: skrzynki, wiadomości, wyniki, reguły, powiązania z Telegramem, dziennik audytu i konta członków.
+- Gdy organizacja zostanie usunięta, usunięcie od razu kasuje jej dane: skrzynki, wiadomości, wyniki, reguły, powiązania z Telegramem, urządzenia push, dziennik audytu i konta członków.
 - Na prośbę podmiot przetwarzający najpierw tworzy zaszyfrowany eksport danych.
 - Kopie zapasowe zachowują wiersze, dopóki nie wygasną. Kopie na serwerze są domyślnie trzymane 7 dni. Kopie w zewnętrznym magazynie są trzymane \<backup retention>.
 - Skrzynka administratora zachowuje swoje wiadomości. Szkice i foldery, które utworzył asystent, zostają w niej.

@@ -18,9 +18,9 @@ describe("data categories: retention pins", () => {
     expect(keptOf("email_headers", "from_name")).toMatchObject({ kind: "orgSetting" });
     expect(keptOf("email_headers", "attachments")).toMatchObject({ kind: "orgSetting" });
     expect(keptOf("emails", "subject")).toEqual({ kind: "days", days: 90 });
-    expect(keptOf("emails", "dedup_key")).toEqual({ kind: "untilDelete" });
-    expect(keptOf("chat_links", "external_chat_id")).toEqual({ kind: "untilDelete" });
-    expect(keptOf("actions", "provider_result")).toEqual({ kind: "untilDelete" });
+    expect(keptOf("emails", "dedup_key")).toEqual({ kind: "untilDelete", scope: "mailbox" });
+    expect(keptOf("chat_links", "external_chat_id")).toEqual({ kind: "untilDelete", scope: "member" });
+    expect(keptOf("actions", "provider_result")).toEqual({ kind: "untilDelete", scope: "mailbox" });
     expect(keptOf("delegations", "task_summary")).toEqual({ kind: "daysAfterClose", days: 90 });
   });
 

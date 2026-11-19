@@ -191,6 +191,46 @@ A `409` in the log (the event `telegram_polling_conflict`, field `wait_ms`) mean
 
 For a mailbox in `auth_error` the owner gets a Telegram notice. Fix it as in the section "Login error (`auth_error`)". Alert texts and fixes: `docs/known-alerts.md`.
 
+## Phone notices and Telegram detail (F118)
+
+Two flags control this feature. Both are off by default, for every organization. `web_push` turns on the push channel, the phone notices card and the route selects. `telegram_minimal` turns on the Telegram level "Counts and links only" (`minimal`) and the lock of the owner. Rules: [`docs/capabilities/digest-and-notices.md`](../docs/capabilities/digest-and-notices.md) rules 3c to 3f. Decisions: [ADR 0032](../docs/decisions/0032-phone-channel-push-and-telegram-detail.md).
+
+### Make the keys (once)
+
+1. Make the VAPID pair on the VPS or on a machine that you trust: `bun run push:keys`. The command prints three bare lines: `VAPID_PUBLIC_KEY=...`, `VAPID_PRIVATE_KEY=...` and `VAPID_SUBJECT=mailto:<your address>`. Keep a copy in your password manager. No agent reads or prints these keys.
+2. Back up the file first: `cp -p .env .env.bak-vapid`. Paste the three lines as they are into the VPS `.env` (no prefix, no quotes). Replace `<your address>` with your real address: the push services see it in the token. Delete `.env.bak-vapid` when you are done: it holds every secret.
+3. Check that the lines exist, without printing them: `grep -c '^VAPID_' .env` prints `3`. All three keys or none: a set of one or two stops the server at start, and the log names the key, not its value. An empty set switches Web Push off.
+4. Start the new code: `deploy/release.sh v<x.y.z>` (it runs `db:migrate` first). The server needs outbound HTTPS on port 443 to the push services of the browsers of your members (for Chrome on Android: `fcm.googleapis.com`).
+
+A new pair ends every subscribed device (a browser keeps the old public key). A new `CREDENTIALS_KEY` drops every stored device too (§ First install). Members turn notices on again in Settings.
+
+### The phone
+
+The phone needs Tailscale to open the panel (§ Web panel). The push arrives without it: the push service of the browser carries it. Open the panel on the phone, install it (Chrome menu → "Install app"), then Settings → "Phone notices" → "Turn on notices on this device". iOS shows a push only for a panel on the Home Screen (iOS 16.4 or later); this is not tested. Notices stop on a device when its session ends (a sign-out, a lock, a password change; a company sign-in session ends after 12 hours); the next panel load re-binds it.
+
+### Turn it on (pilot organization first)
+
+1. The papers name the push services in the sub-processor table (`web-push`) and the new `TERMS_VERSION` makes every member accept the terms again at the next sign-in. Read the changed texts first (the legal pages are drafts, not legal advice).
+2. `$C run --rm cli bun run org:flag --org-id <org id> --flag web_push --on`, and the same with `--flag telegram_minimal --on`.
+3. Check: `$C run --rm cli bun run org:flag --org-id <org id>` shows both flags `on`.
+4. A member who had a Telegram chat before the migration keeps the level `full`; a member who links later starts at `minimal`. The owner can lock `minimal` for everyone in Settings.
+
+### Roll back
+
+Steps 1 to 3 stop the feature with no harm to mail, Telegram or other organizations. A rollback of the code (steps 4 and 5) needs the care that they describe: read them before you run `deploy/rollback.sh`.
+
+1. Flags off (no deploy needed): `$C run --rm cli bun run org:flag --org-id <org id> --flag web_push --off` and the same with `telegram_minimal`. With `web_push` off the push sender waits, the cards and routes are absent, and every new notice goes to Telegram. A push row that already waits stays `pending` and ends `failed` / `expired` after 24 hours. A member whose route for that notice was "Phone" only gets no Telegram row for it (there is no fallback while the flag is off). With `telegram_minimal` off every member reads `full` again (the messages of before the setting).
+2. Remove a phone: Settings → "Phone notices" → "Remove" (before the flag goes off), or sign out on the phone. A removed device ends its open push rows `no_device`; a member with a chat gets the Telegram row of the event.
+3. Remove the keys: restore the backup of `.env` or delete the three `VAPID_*` lines, then `$C up -d --wait server`.
+4. Roll back the code only if the server itself misbehaves: `deploy/rollback.sh` (§ Roll back a release). It never rolls back the database, and the new columns and the table `push_subscriptions` are harmless to a build that has the push sender (`v0.3.0` and later). For a rollback to such a build, do these two things first:
+   - Turn the flag `telegram_minimal` off (step 1). The code before the level at send time ignores `memberships.telegram_detail`, so a member who chose `minimal` would get `full` text.
+   - Let the pending outbox rows drain before a rollback to code older than the minimal render. The digest key `minimal` and the `approval_edit` key `sendId` are refused by the strict views of the older code, so those rows end `failed` / `bad_view` (they are digest text and card edits, not approvals).
+5. **A rollback to a build older than the push sender (`v0.2.x`) needs more, and it must happen BEFORE `deploy/rollback.sh`.** That build claims every due outbox row with no filter on the channel (`claimDueOutbox` in `v0.2.1:apps/server/src/modules/channels/repo.ts`), and only then reads the channel and the detail of each row. A push row (`channel = 'push'`) or a row with `detail = 'minimal'` makes that read fail, so the claim fails as a whole and the Telegram rows of every organization that were claimed in the same batch stay `sending`. After 5 minutes the same happens again, so approval requests and notices stop for everyone until the rows are closed. Run, in this order:
+   1. Turn `web_push` off (step 1), so that no new push row appears.
+   2. Close the push rows: `$C exec -T db psql -U postgres -d email_assistant -c "update outbox set status = 'failed', error_code = 'outdated', locked_at = null where channel = 'push' and status in ('pending', 'sending')"`.
+   3. Make the open rows readable for the old build: `$C exec -T db psql -U postgres -d email_assistant -c "update outbox set detail = 'full' where detail = 'minimal' and status in ('pending', 'sending')"` (the old build sends such a row at the level `full`, as step 4 says).
+   4. Check, after the two updates: `$C exec -T db psql -U postgres -d email_assistant -c "select count(*) from outbox where status in ('pending', 'sending') and (channel = 'push' or detail = 'minimal')"` prints `0`. Then, and only then, run `deploy/rollback.sh`.
+
 ## Web panel
 
 ### What it is

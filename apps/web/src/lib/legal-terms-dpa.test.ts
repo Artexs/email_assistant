@@ -82,6 +82,17 @@ describe("the terms of service sources", () => {
     test(`${lang}: the terms have no table (the e2e test checks the page)`, () => {
       expect(source).not.toMatch(/^\|/m);
     });
+
+    // The delete lists of the terms, the privacy policy and the DPA name the same things: the push devices go with the organization.
+    test(`4. ${lang}: the delete lists of the terms and the DPA name the push devices`, () => {
+      const word = lang === "en" ? "push devices" : "urządzenia push";
+      expect({ lang, doc: "terms", found: source.includes(word) }).toEqual({ lang, doc: "terms", found: true });
+      expect({ lang, doc: "dpa", found: readLegalSource(lang, "dpa").includes(word) }).toEqual({
+        lang,
+        doc: "dpa",
+        found: true,
+      });
+    });
   }
 });
 

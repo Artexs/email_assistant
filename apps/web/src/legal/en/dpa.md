@@ -14,7 +14,7 @@ The processor processes the mail only to run these functions for the controller:
 - **Triage:** to sort each mail into a category, with a short reason.
 - **Actions:** to move, flag or mark mail as read, as the mode and the switches of each mailbox allow.
 - **Drafts:** to write drafts of replies and questions. A draft is sent only after an owner approves it.
-- **Digests:** to tell the members about urgent mail, problems and drafts that wait, in Telegram.
+- **Digests:** to tell the members about urgent mail, problems and drafts that wait, in Telegram or by push notice to a registered phone or browser.
 - **Delegation follow-up:** to remind a delegate of a task, with a draft that needs the same approval.
 
 ## Data and data subjects
@@ -65,7 +65,7 @@ Annex 1. The processor applies these measures:
 
 ## End
 
-- When the organization is deleted, the delete removes its data at once: the mailboxes, the mail, the results, the rules, the Telegram links, the audit log and the accounts of the members.
+- When the organization is deleted, the delete removes its data at once: the mailboxes, the mail, the results, the rules, the Telegram links, the push devices, the audit log and the accounts of the members.
 - On request, the processor makes an encrypted export of the data first.
 - Backups keep the rows until they expire. Copies on the server are kept 7 days by default. Copies in the off-site storage are kept \<backup retention>.
 - The mailbox of the controller keeps its mail. The drafts and the folders that the assistant made stay in it.

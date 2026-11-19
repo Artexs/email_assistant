@@ -37,6 +37,14 @@ describe("telegramConsentBodySchema", () => {
   });
 });
 
+describe("TELEGRAM_CONSENT_VERSION", () => {
+  test("it is pinned: only a change of the consent text `tg_consent_text` moves it, in the same commit as the new TERMS_HISTORY entry", () => {
+    // The phone channel does not change the consent text: a member who linked before keeps the consent.
+    // A new value here means a new consent text. Change this line only then.
+    expect(TELEGRAM_CONSENT_VERSION).toBe("2026-11-15.2");
+  });
+});
+
 describe("REPLY_CONSENT_SINCE ", () => {
   test("it is a valid version, and no consent that a user can give today covers it (the text does not name reply data yet)", () => {
     expect(consentCovers(REPLY_CONSENT_SINCE, REPLY_CONSENT_SINCE)).toBe(true);

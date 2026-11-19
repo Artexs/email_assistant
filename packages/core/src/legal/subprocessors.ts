@@ -92,6 +92,24 @@ export const subprocessors: readonly Subprocessor[] = [
     activeWhen: { kind: "env", key: "TELEGRAM_BOT_TOKEN" },
   },
   {
+    id: "web-push",
+    name: "Browser push services (Google FCM, Mozilla, Apple, Microsoft)",
+    purpose: {
+      en: "Deliver phone and browser notices",
+      pl: "Dostarczanie powiadomień na telefon i do przeglądarki",
+    },
+    // What the push service of the browser of the device sees: the message is encrypted for the device (RFC 8291), and the
+    // headers and the VAPID token (RFC 8292) are in clear text.
+    dataReceived: {
+      en: "an encrypted message (version, notice id, kind, count, item id, language) that they cannot read; the device push address; the time, size, lifetime (24 h), urgency (high or normal) and topic (a hash of the notice id) of each message; the operator contact in the signed VAPID token",
+      pl: "zaszyfrowana wiadomość (wersja, identyfikator powiadomienia, rodzaj, liczba, identyfikator pozycji, język), której nie mogą odczytać; adres push urządzenia; czas, rozmiar, okres ważności (24 h), pilność (wysoka lub normalna) i temat (skrót identyfikatora powiadomienia) każdej wiadomości; kontakt operatora w podpisanym tokenie VAPID",
+    },
+    location: toConfirmLocation,
+    termsUrl: "https://policies.google.com/privacy",
+    personalData: true,
+    activeWhen: { kind: "env", key: "VAPID_PRIVATE_KEY" },
+  },
+  {
     id: "backblaze",
     name: "Backblaze B2",
     purpose: {
