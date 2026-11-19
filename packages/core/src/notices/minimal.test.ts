@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import { renderDigestWithBrief, type DigestInput } from "../digest/digest";
 import { weekStatsExample } from "../metrics/fixtures";
-import { minimalTexts } from "../texts/minimal";
-import { textTables } from "../texts";
 import type { UserLocale } from "../tenancy";
+import { textTables } from "../texts";
+import { minimalTexts } from "../texts/minimal";
 
 import { encodeNoticeView } from "./encode";
 import { noticeKinds, type NoticeKind, type NoticeRenderOptions } from "./kinds";

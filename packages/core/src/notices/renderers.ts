@@ -31,8 +31,8 @@ import { describeActions } from "../digest/would-do";
 import { textsFor } from "../texts";
 
 import { noticeFactsOf } from "./facts";
-import { minimalOf, renderMinimalDigest, renderMinimalLoopConsent, renderMinimalWeekly } from "./minimal";
 import { type NoticeKind, type NoticeRenderOptions } from "./kinds";
+import { minimalOf, renderMinimalDigest, renderMinimalLoopConsent, renderMinimalWeekly } from "./minimal";
 import { type PushKind, pushPayloadSchema } from "./push";
 import { type NoticeView, noticeViewSchemas } from "./views";
 

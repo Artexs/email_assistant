@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import { CHASER_SET_LIMIT, type SendResultKind } from "../digest/approvals";
-import type { DigestMinimalFacts } from "../digest/digest";
 import { ATTACHMENT_LINE_NAMES } from "../digest/attachment-line";
+import type { DigestMinimalFacts } from "../digest/digest";
 import { MESSAGE_MAX_CHARS, outButtonsSchema } from "../digest/message";
 import type { ApprovalView } from "../outgoing/sender";
 import { approvalViewSchema, panelUrlSchema } from "../outgoing/view-schema";
