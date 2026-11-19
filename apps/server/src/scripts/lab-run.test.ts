@@ -679,6 +679,7 @@ function emptySeed(): DemoSeed {
       max_mailboxes: 1,
       resumed_at: null,
       sso_required: false,
+      telegram_minimal_locked: false,
     },
   ];
   return {
