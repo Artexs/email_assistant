@@ -1,14 +1,16 @@
 # F138 stage 02 — Remove the Gemini provider
 
-Part of [`../plan.md`](../plan.md). `[risky]` (production config at start, legal text, `bun.lock`). Needs stage 01 landed.
+Needs stage 01: `JUDGE_SAME_MODEL` and `DEFAULT_JUDGE_MODEL` (landed). Needs the board's `bun.lock` slot: no other `bun.lock` change builds next to it. Needs F115 stage 17: `TERMS_HISTORY` `2026-11-19-2`, row `openai` (landed).
 
-After this stage no code path can call Google for an LLM, and the legal registry says so. The only `bun.lock` change of F138: no other `bun.lock` change may build next to it.
+Part of [`../plan.md`](../plan.md). `[risky]` (production config at start, legal text, `bun.lock`).
+
+After this stage no code path can call Google for an LLM, and the legal registry says so. The only `bun.lock` change of F138.
 
 ## Step 1 — Provider, config and dependency
 
 - **Goal:** `llmProviders` has one row, `openai` (D1). `LlmProviderId` is `"openai"`.
-- **Files:** delete `apps/server/src/platform/llm/providers/gemini.ts` and its test. Change the registry, `config-llm.ts` (the `GEMINI_*` keys, `defaultGeminiRpm`, `providerBlocks.gemini`), `settings.ts` (`uniformRoleTable` gets one provider row; comments that name Gemini), `testing.ts` (default provider `openai`), `outside-services.ts` (`GEMINI_API_KEY` out). Remove `@google/genai` with `bun remove` in the package that holds it; never edit `bun.lock` by hand.
-- **Decisions:** D1, D2, D15. Keep every provider-generic mechanism: `LLM_PROVIDER`, `LLM_<ROLE>_PROVIDER`, `providerBlocks`, the per-provider rate limiter, the null-effort rule. Tests of a mechanism that needs two providers (per-provider limiter, a role on another provider, null effort) move to the test helper `twoProviderTable()` in `platform/llm/testing.ts`: a second row `other` (cast in test code only, no registry row). Tests that parse a second provider from env are deleted: the enum has one value. List each moved and each deleted test in the final message.
+- **Files:** delete `apps/server/src/platform/llm/providers/gemini.ts` and its test. Change the registry, `config-llm.ts` (the `GEMINI_*` keys, `defaultGeminiRpm`, `providerBlocks.gemini`), `settings.ts` (`uniformRoleTable` gets one provider row; comments that name Gemini), `testing.ts` (default provider `openai`), `outside-services.ts` (`GEMINI_API_KEY` out). `bun remove @google/genai` in `apps/server`; never edit `bun.lock` by hand.
+- **Decisions:** D1, D2, D15. Keep every provider-generic mechanism: `LLM_PROVIDER`, `LLM_<ROLE>_PROVIDER`, `providerBlocks`, the per-provider rate limiter, the null-effort rule. Tests of a mechanism that needs two providers (per-provider limiter, a role on another provider, null effort) use `twoProviderTable()`, moved from `client-roles.test.ts` and exported from `platform/llm/testing.ts`: a second row `other` (cast in test code only, no registry row). Tests that parse a second provider from env are deleted: the enum has one value. List each moved and each deleted test in the final message.
 - **Test (unit):**
   1. Env `OPENAI_API_KEY=k` only → config parses; `LLM_PROVIDER` = `openai`.
   2. Env `LLM_PROVIDER=other` → `ConfigError`; the message holds `LLM_PROVIDER` and not `other`.
@@ -40,7 +42,7 @@ After this stage no code path can call Google for an LLM, and the legal registry
 - **Files:** `packages/core/src/legal/subprocessors.ts` (remove row `gemini`), `apps/web/src/legal/en/privacy.md` and `pl/privacy.md` § AI model, `packages/core/src/web/terms.ts` (`TERMS_HISTORY`).
 - **Decisions:**
   - Delete only the sentence "An install can use Google Gemini instead." (en) and "Instalacja może zamiast tego używać Google Gemini." (pl). The next sentence about the "Used when" column stays.
-  - Append one `TERMS_HISTORY` entry: version = the UTC date of the commit (add `-2`, `-3` when that date exists), the digest that `legal-version.test.ts` asks for, comment `// LLM sub-processor row removed (ADR 0037)` (no vendor name in `packages/`, N4). No other legal text changes.
+  - Append one `TERMS_HISTORY` entry after the newest entry at build time (`2026-11-19-2` at refresh): version = the UTC date of the commit (add `-2`, `-3` when that date exists), the digest that `legal-version.test.ts` asks for, comment `// LLM sub-processor row removed (ADR 0037)` (no vendor name in `packages/`, N4). No other legal text changes.
   - Rows `google-oauth` and push services (Google FCM) stay.
   - `outside-services.test.ts` keeps both directions.
 - **Test:** the legal tests (`legal-version`, `legal-privacy`, `legal-papers`, the registry tests) pass.

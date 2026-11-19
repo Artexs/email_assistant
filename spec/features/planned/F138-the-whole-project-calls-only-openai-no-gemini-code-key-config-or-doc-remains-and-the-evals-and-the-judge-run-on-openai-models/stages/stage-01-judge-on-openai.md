@@ -1,6 +1,8 @@
 # F138 stage 01 — Judge on OpenAI
 
-Part of [`../plan.md`](../plan.md). `[risky]` (LLM evals). Needs the F115 stage 02 branch landed on master.
+Landed: 0d9edf6e, 334de262. A record; do not build it again.
+
+Part of [`../plan.md`](../plan.md). `[risky]` (LLM evals).
 
 The judge may share the provider of the model under test, never the model. Gemini still exists here; stage 02 removes it.
 

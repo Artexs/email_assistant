@@ -1,8 +1,8 @@
 # F138 stage 04 — ADR 0037, decision notes and internal papers
 
-Part of [`../plan.md`](../plan.md). Needs stage 02 landed.
+Needs stage 02: the registry row `gemini` gone from `subprocessors.ts` (`legal-papers.test.ts` 2b compares Record B with the registry, plan F8). May run next to stage 03. Stage 05 needs this stage's ADR 0037 file (B2).
 
-May run next to stage 03, never next to stage 05 (B2: `capability-map.test.ts` needs the ADR 0037 file before a page names it). This stage owns `docs/decisions/`, `docs/product/`, `docs/product-brief.md` and `docs/legal/`, and nothing else.
+Part of [`../plan.md`](../plan.md). This stage owns `docs/decisions/`, `docs/product/`, `docs/product-brief.md` and `docs/legal/`, and nothing else.
 
 ## Step 1 — ADR 0037
 
@@ -30,8 +30,8 @@ May run next to stage 03, never next to stage 05 (B2: `capability-map.test.ts` n
 ## Step 3 — Internal legal papers
 
 - **Files and decisions:**
-  - `docs/legal/claims.md` (B1): ids run with no gap (`legal-papers.test.ts`), so no row is deleted or renumbered (other tickets cite ids). The claim rows of the removed registry row and the removed privacy sentence (at base C038, C139–C141) keep their ids; their claim text becomes `Removed by ADR 0037 (2026-11-19): <the old claim>` and their source cell `ADR 0037`. The counts table at the top stays true. Remove `gemini` from the recipient and transfer claims (at base C182, C184, C196).
-  - `docs/legal/dpia.md` and `docs/legal/records-of-processing.md`: the LLM provider is `openai` only.
+  - `docs/legal/claims.md` (B1): ids run with no gap (`legal-papers.test.ts`), so no row is deleted or renumbered (other tickets cite ids). The claim rows of the removed registry row and the removed privacy sentence (at base C038, C139–C141) keep their ids; their claim text becomes `Removed by ADR 0037 (2026-11-19): <the old claim>` and their source cell `ADR 0037`. The counts table at the top stays true. Remove `gemini` from the recipient and transfer claims (C182, C184 at refresh).
+  - `docs/legal/dpia.md` and `records-of-processing.md` (Record B): the LLM provider is `openai` only.
   - `google-oauth` and `web-push` (Google FCM) stay.
 
 ## Check

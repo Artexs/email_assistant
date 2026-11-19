@@ -1,12 +1,12 @@
 # F138 stage 03 — Neutral test names and tool text
 
-Part of [`../plan.md`](../plan.md). Needs stage 02 landed.
+Needs stage 02: `llmProviderIds = ["openai"]`, the deleted Gemini adapter, `twoProviderTable()` in `platform/llm/testing.ts` (the tests renamed here lose or keep their subject by them). May run next to stage 04.
 
-May run next to stage 04 (it changes only `docs/decisions`, `docs/legal`, `docs/product*`). This stage changes only `apps/`, `packages/`, `deploy/` and `evals/README.md`. Stage 05 runs after both.
+Part of [`../plan.md`](../plan.md). This stage changes only `apps/`, `packages/`, `deploy/` and `evals/README.md`.
 
 ## Step 1 — Test fixtures and comments
 
-- **Goal:** no file under `apps/` or `packages/` names Gemini (at base about 60 files, mostly tests and comments).
+- **Goal:** no file under `apps/` or `packages/` names Gemini (68 files at refresh, mostly tests and comments), except `pilotCost.models` in `packages/core/src/metrics/cost-model.ts`: a measured record (plan D16), do not change it.
 - **Decisions:**
   - D8: a test that needs "another provider" uses `other`; "another model" uses `model-b` (a third: `model-c`). The meaning of each test stays: a test that checks that a grant on another provider does not match keeps that check with `provider: "other"`.
   - A test whose only purpose was Gemini behaviour (for example the 503 or quota mapping of the deleted adapter, or "Gemini has no effort") is deleted when stage 02 left it without a subject; list each deleted test name in the final message with one reason.
@@ -29,7 +29,7 @@ May run next to stage 04 (it changes only `docs/decisions`, `docs/legal`, `docs/
 
 ## Done when
 
-- `git grep -niE "gemini|@google/genai|generativelanguage" -- apps packages deploy .env.example package.json bun.lock` finds nothing.
+- `git grep -niE "gemini|@google/genai|generativelanguage" -- apps packages deploy .env.example package.json bun.lock` finds only the `pilotCost.models` line (D16).
 - `git grep -niE "gemini" -- evals ':!evals/results'` finds only lines in `evals/README.md` that name an old result file.
 - The Proof (`sNN` = `s03`) prints `PROOF_OK`.
 
