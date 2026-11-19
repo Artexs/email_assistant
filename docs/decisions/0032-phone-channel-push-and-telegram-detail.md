@@ -42,4 +42,5 @@ Each line says where the point lives now. `docs/capabilities/digest-and-notices.
 - `03-product-frame.md` §4 needs one changed line (the owner writes it): "Telegram carries mail content only when the user opts in; never raw bodies. Logs and error reports carry ids and counts."
 - `TERMS_VERSION` goes up when E9b lands (papers: Telegram detail levels, push services).
 - On the tailnet deployment, the phone needs Tailscale to open the panel. Push arrives without it. A public panel needs an ADR 0017 change (E7 or E10), not this ADR.
+- A code rollback to a build older than the push sender (`v0.2.x`) needs the push rows closed first: that build claims every due outbox row and fails on the channel `push` (`deploy/README.md` § Phone notices and Telegram detail).
 - iOS shows push only for a Home Screen web app (iOS 16.4 or later). The owner's test phone is Android, so iOS is documented, not tested.

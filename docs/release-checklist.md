@@ -21,6 +21,6 @@ Every VPS deploy is a release: a tagged version (a patch version is fine). Do th
    `release:prepare` runs no git command. It refuses a version that is not greater than the current one and an empty `[Unreleased]`.
 9. **Deploy on the VPS:** `deploy/release.sh v<x.y.z>`. The last output line is `release ok v<x.y.z> previous <old>`. Any other end is a failed release: go to step 11.
 10. **Watch for 30 minutes.** No new `error` event in the log store (`docs/capabilities/logs.md`). `bun run ops:alerts` shows no open alert. Sync lines keep coming.
-11. **On trouble:** `deploy/rollback.sh`. It needs no rebuild and never changes the database. Then fix forward in a new patch release.
+11. **On trouble:** `deploy/rollback.sh`. It needs no rebuild and never changes the database. Then fix forward in a new patch release. A rollback to a build older than the push sender (`v0.2.x`) needs the steps of `deploy/README.md` § Phone notices and Telegram detail → Roll back (step 5) first: that build fails its outbox claim on a push row.
 
 A migration with a `-- contract: v<x.y.z>` line removes what the old code used. The release `v<x.y.z>` named there stopped that use. It must be deployed already, and it must be the release that you can roll back to. Check this before step 9.
