@@ -869,7 +869,7 @@ Capability page: `docs/capabilities/reply-drafts.md` (rules, limits, tests). For
 ### Release
 
 1. Release with the flags off (`docs/release-checklist.md`). The migration `20261117130001_reply_drafts.sql` only adds things (two tables, three outbox kinds in a CHECK list, one backfill of the mailbox signature). The old release runs on the new schema until step 3 of Roll back.
-2. This release holds the new Telegram consent text (consent version `2026-11-19`, `TERMS_VERSION` `2026-11-19-2`). Every member accepts the terms again at the next sign-in. A member who linked Telegram earlier gets reply data in Telegram only after the Confirm card of the Telegram card in the panel records the new version; until then that owner sees the count and the panel link only.
+2. This release holds the new Telegram consent text (consent version `2026-11-19`, `TERMS_VERSION` `2026-11-19-2`). Every member accepts the terms again at the next sign-in. A member who linked Telegram earlier gets reply data in Telegram only after the Confirm block of the Telegram card in the panel (`/mailboxes`) records the new version. The block shows while `reply_drafts` (or `open_loops`) is on and the owner's consent is older than the text of that flag; until the owner taps Confirm, that owner sees the count and the panel link only.
 3. Keep `reply_drafts` OFF on every organization until this release (or a later one) runs on the server. An older release has no consent text for reply data: an owner with the flag on would get "Confirm the new Telegram terms in the panel" and no panel version could cover reply data.
 
 ### Turn on (pilot organization first)

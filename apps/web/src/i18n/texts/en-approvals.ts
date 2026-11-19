@@ -313,7 +313,7 @@ export const enApprovals = {
   lset_auto_help: "Drafts still wait for your tap before they go out.",
   lset_auto_on_toast: "Follow-ups are drafted automatically.",
   lset_auto_off_toast: "Follow-ups are not drafted automatically.",
-  tgc_title: "New Telegram terms: open loops",
+  tgc_title: "New Telegram terms",
   tgc_confirm: "Confirm",
   tgc_confirmed_toast: "The new Telegram terms are confirmed.",
   // The evidence lines of the autonomy card and the block lines of the "Set anyway" dialog
