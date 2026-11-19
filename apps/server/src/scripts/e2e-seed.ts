@@ -26,11 +26,11 @@ import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
 import { seedApprovalsRows } from "./e2e-approvals-rows";
-import { seedReplyPanelRows, type ReplyPanelSeedResult } from "./e2e-reply-panel-rows";
 import { seedDelegationsRows } from "./e2e-delegations-rows";
 import { seedLoopsRows } from "./e2e-loops-rows";
 import { seedNewsletterRows } from "./e2e-newsletter-rows";
 import { seedOpenLoopsRows } from "./e2e-open-loops-rows";
+import { seedReplyPanelRows, type ReplyPanelSeedResult } from "./e2e-reply-panel-rows";
 import { seedReviewRows } from "./e2e-review-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
