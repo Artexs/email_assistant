@@ -1,6 +1,8 @@
+import type { Transaction } from "kysely";
+
 import { insertSentSyncState, markSentPass, updateSentCursor } from "../modules/mail";
 import { senderKeyHash } from "../platform/crypto";
-import type { Db, TenantContext } from "../platform/db";
+import type { DB, Db, TenantContext } from "../platform/db";
 
 import { inTransaction } from "./e2e-activity-rows";
 import { E2E_SUGGESTIONS } from "./e2e-seed-args";
@@ -15,7 +17,7 @@ const KEYS = ["vip", "blocklist", "whitelist"] as const;
 // seed gives the mailbox that coverage, and the spec calls the reset before each test, so each test starts with all three rows
 // and with fresh coverage whatever ran before it.
 export async function seedSuggestionRows(
-  db: Db,
+  db: Db | Transaction<DB>,
   ctx: TenantContext,
   mailboxId: string,
   credentialsKey: string,
