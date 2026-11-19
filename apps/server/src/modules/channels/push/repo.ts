@@ -142,6 +142,15 @@ export async function upsertPushSubscription(
   return { id, created: true, sessionChanged: true };
 }
 
+// A live device with the time it became reachable. `boundAt` is the later of the device `created_at` and the `created_at` of its
+// session: a device that was bound again to a new session after the old one ended is not reachable for the events of the dead time,
+// so the fan-out compares the event with `boundAt` and a rebound device gets no burst of old notices.
+export interface LiveDevice {
+  id: string;
+  createdAt: Date;
+  boundAt: Date;
+}
+
 // The devices that the sender and the fan-out may use: bound to a session that exists and has not expired. No secret,
 // no box. Oldest first.
 export async function listLiveDeviceIds(
@@ -149,7 +158,7 @@ export async function listLiveDeviceIds(
   ctx: TenantContext,
   userId: string,
   now: Date
-): Promise<{ id: string; createdAt: Date }[]> {
+): Promise<LiveDevice[]> {
   const rows = await db
     .selectFrom("push_subscriptions")
     .innerJoin("auth_sessions", (join) =>
@@ -157,14 +166,22 @@ export async function listLiveDeviceIds(
         .onRef("auth_sessions.id", "=", "push_subscriptions.session_id")
         .onRef("auth_sessions.user_id", "=", "push_subscriptions.user_id")
     )
-    .select(["push_subscriptions.id", "push_subscriptions.created_at"])
+    .select([
+      "push_subscriptions.id",
+      "push_subscriptions.created_at",
+      "auth_sessions.created_at as session_created_at",
+    ])
     .where("push_subscriptions.org_id", "=", ctx.orgId)
     .where("push_subscriptions.user_id", "=", userId)
     .where("auth_sessions.expires_at", ">", now)
     .orderBy("push_subscriptions.created_at")
     .orderBy("push_subscriptions.id")
     .execute();
-  return rows.map((row) => ({ id: row.id, createdAt: row.created_at }));
+  return rows.map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    boundAt: row.session_created_at > row.created_at ? row.session_created_at : row.created_at,
+  }));
 }
 
 // A member who can be reached by push only: a live device and no linked Telegram chat. `since` is the oldest live device.

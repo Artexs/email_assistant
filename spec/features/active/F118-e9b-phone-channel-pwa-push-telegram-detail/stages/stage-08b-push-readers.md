@@ -23,12 +23,14 @@ Some readers find a notice by the exact Telegram dedup key; a push row's key is 
 ## Step 2 — Fallback to Telegram (D23)
 
 - **Goal:** a push row that ends `failed` / `no_device` (device ended, expired, gone, or removed) queues the Telegram row of its event when the member has a chat link and no row with the event's Telegram key exists. The fallback uses the same kind, view and locale (the row's view is the event's facts), the key without the `:push:<id>` part, and the member's current detail at send time.
+- **Loop-consent gate (carry-over N1 of the stage 07 review; stage 08 has no fallback, so the guard lives here):** a row with `loop_id` set never falls back. A withheld owner with a chat holds the real follow-up kind (`approval`, `send_result`) only as a push row; its Telegram row never existed on purpose (the loop-consent gate, `splitByLoopConsent`). The fallback would bypass that gate. Stage 08 gives the claimed row `loopId` and `emailId`; the fallback reads them. A kind of a follow-up has a `loop_id`; every other fallback row has none.
 - **Decisions:** only `no_device` falls back; `push_refused`, `expired`, `too_many_errors` do not (they mean a broken device or an old event). A fallback row of a kind that is not in `pushKinds` cannot exist. An approval that is already decided makes its fallback card `answered_elsewhere` through step 1.
 - **Test (integration):**
   1. Member with a chat, route `urgent: push`, one device; the urgent push row is held by quiet hours; the session ends at 03:00 → at 07:00 the push row is `failed` / `no_device` and one Telegram `urgent:<id>` row exists.
   2. Same, with a Telegram row of the event already there (route `both`) → no second Telegram row.
   3. Push-only member (no chat) → no fallback row; the push row stays `failed` / `no_device`.
   4. A 400 answer (`push_refused`) → no fallback row.
+  5. Withheld owner with a chat and a device (no loop consent): the follow-up `approval` is a push row with `loop_id`; the device ends → no Telegram `approval` row (the loop-consent line stays the only Telegram row). Mutation: drop the `loop_id` guard; this test fails.
 - **Mutation guard:** remove the push match in the card fail; test 1 of step 1 fails. Remove the chat check of the fallback; test 3 of step 2 fails. List both.
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.

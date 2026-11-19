@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "
 import { sql, type Transaction } from "kysely";
 
 import { detectNotices, queueMailboxRemovedNotices, queueNotice } from "../../src/modules/channels";
+import { planFanOut } from "../../src/modules/channels/notice-fan-out";
 import { detectors, mailOnlyDetectors, servesPushOnly } from "../../src/modules/channels/notices";
 import { listPushOnlyMembers, pushDedupKey, upsertPushSubscription } from "../../src/modules/channels/push";
 import { NO_TEST_SENDERS } from "../../src/modules/mail";
@@ -80,7 +81,8 @@ const chat = (trx: Transaction<DB>, w: World, userId: string, linkedAt = at(-2 *
   linkChat(trx, w.ctx, userId, randomChatId(), linkedAt);
 
 let counter = 0;
-// One device of a user, created at `createdAt`, bound to a session that ends at `sessionEnd`.
+// One device of a user, created at `createdAt`, bound to a session that ends at `sessionEnd`. The session starts at `createdAt` too
+// (the fan-out reads the start of the session, so a session made by the real clock would break a fixed test clock).
 async function device(
   trx: Transaction<DB>,
   w: World,
@@ -90,8 +92,8 @@ async function device(
 ): Promise<string> {
   counter += 1;
   const { rows } = await sql<{ id: string }>`
-    insert into auth_sessions (user_id, token, expires_at)
-    values (${userId}::uuid, ${randomUUID()}, ${sessionEnd}) returning id`.execute(trx);
+    insert into auth_sessions (user_id, token, expires_at, created_at)
+    values (${userId}::uuid, ${randomUUID()}, ${sessionEnd}, ${createdAt}) returning id`.execute(trx);
   const sessionId = rows[0]?.id ?? "";
   const added = await upsertPushSubscription(trx, w.ctx, {
     userId,
@@ -331,6 +333,36 @@ describe("queueNotice fans out by the route of the member", () => {
       await detectNotices({ db: trx, now: () => later, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
       expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual(
         [`telegram urgent:${old}`, `telegram urgent:${fresh}`, `push urgent:${fresh}:push:${sub}`].sort()
+      );
+    });
+  });
+
+  test("6b. a member with no chat and only a dead device keeps the Telegram row of before (the route counts live devices only)", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      await device(trx, w, w.owner, at(-HOUR), at(-MINUTE));
+      const plan = await planFanOut(trx, w.ctx, { userId: w.owner, kind: "urgent", eventAt: at(-10 * MINUTE), now: T });
+      expect(plan).toEqual({ telegram: true, deviceIds: [] });
+    });
+  });
+
+  test("7b. a device that was bound again to a new session gets no push row for the mail of the time its session was dead", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      await chat(trx, w, w.owner, at(-6 * HOUR));
+      // The device was made 5 h ago; its session ended 3 h ago; a new session began 1 h ago and the device was bound to it.
+      const sub = await device(trx, w, w.owner, at(-5 * HOUR), at(-3 * HOUR));
+      const { rows } = await sql<{ id: string }>`
+        insert into auth_sessions (user_id, token, expires_at, created_at)
+        values (${w.owner}::uuid, ${randomUUID()}, ${at(24 * HOUR)}, ${at(-HOUR)}) returning id`.execute(trx);
+      await sql`update push_subscriptions set session_id = ${rows[0]?.id ?? ""}::uuid where id = ${sub}::uuid`.execute(
+        trx
+      );
+      const dead = await urgentMail(trx, w, at(-2 * HOUR));
+      const fresh = await urgentMail(trx, w, at(-30 * MINUTE));
+      await run(trx);
+      expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual(
+        [`telegram urgent:${dead}`, `telegram urgent:${fresh}`, `push urgent:${fresh}:push:${sub}`].sort()
       );
     });
   });
