@@ -33,10 +33,10 @@ Part of [`../plan.md`](../plan.md). Decisions D1, D3, D7, D8.
 
 **Decisions.**
 - `env.ts` calls `loadRepoDotEnv(repoRoot)` at module top, before it computes `E2E_PORT` and `E2E_TELEGRAM_PORT` from `e2ePorts(process.env)`. The exported names keep their meaning (D7). `loadDotEnv()` stays as a thin wrapper, or goes if no caller is left; the worker decides.
-- `site.ts` does the same for `DOCS_TEST_PORT` through `docsTestPort(process.env)`. `serve.ts`, the config and the spec need no change of their own.
+- `site.ts` does the same for `DOCS_TEST_PORT` through `docsTestPort(process.env)`, and exports `docsLocalOrigin(env): string`. The docs Playwright config calls `docsLocalOrigin(process.env)` in its own body, so each evaluation reads the env of that moment. Bun caches `site.ts` across cache-busted config imports (review B1). The config itself does not load `.env`. `serve.ts` reads `docsTestPort(process.env)`.
 - `servers.ts` keeps the exact text `--port ${E2E_TELEGRAM_PORT}`.
 - `.env.example` gets the three keys, empty, with one comment line: "per job from scripts/limen-prepare.sh; empty = 8081, 8092, 8093". If a test checks `.env.example` against the config schema, add the keys to its list of non-server keys, next to `E2E_DATABASE_URL`.
-- Update the two assertions of `apps/docs/scripts/browser-check.test.ts` (D8): the port case checks `docsTestPort({})` = 8093, and the config case sets `process.env.DOCS_TEST_PORT = "28562"` and then deletes it, expecting `http://127.0.0.1:28562/email_assistant/` and `http://127.0.0.1:8093/email_assistant/`. Restore the old value in `finally`, as the case does for `DOCS_TEST_URL`. The case count stays the same.
+- Update the two assertions of `apps/docs/scripts/browser-check.test.ts` (D8): the port case checks `docsTestPort({})` = 8093, and the config case sets `process.env.DOCS_TEST_PORT = "28562"`, imports the config with a cache-buster, then deletes the key and imports again, expecting `http://127.0.0.1:28562/email_assistant/` and `http://127.0.0.1:8093/email_assistant/`. Restore the old value in `finally`, as the case does for `DOCS_TEST_URL`. The case count stays the same.
 
 **Test.**
 9. The browser-check config case above, both ports.

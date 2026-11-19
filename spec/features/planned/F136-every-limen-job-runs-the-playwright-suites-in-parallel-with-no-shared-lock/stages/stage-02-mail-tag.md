@@ -14,6 +14,8 @@ Part of [`../plan.md`](../plan.md). Decisions D6, D8.
 - `mailTagFromEnv(env: Record<string, string | undefined>): string`. Reads `E2E_MAIL_TAG`. Unset or `""` → `""`. Otherwise it must match `^[a-z0-9]{1,16}$`, or it throws a message that holds `E2E_MAIL_TAG`.
 - `taggedAddress(address: string, tag: string): string`. An empty tag → the address unchanged. Otherwise it inserts `-<tag>` before the last `@`.
 - Every function that returns a GreenMail-backed address (`e2eApprovalsMailbox`, `e2eDelegatesMailbox`, … every address that reaches `seedAssistMailbox`, also any address that `e2e-seed.ts` builds inline before it calls `seedAssistMailbox`) returns `taggedAddress(base, mailTagFromEnv(process.env))`. The worker lists them by reading every `seedAssistMailbox(` call. Prefer one registry, a typed list of the GreenMail-backed bases, that the test can walk, over a call in each function. If a typed list does not fit the per-project functions, a test that calls each function is enough.
+- Guard (review N6): when the tag is set, `seedAssistMailbox` throws on an address that does not end in `-<tag>@<domain>`, so a later seed edit cannot add an untagged GreenMail address.
+- `e2e-paused-box@x.test` stays untagged: the seed inserts it directly (not through `seedAssistMailbox`), the mailbox is paused and never synced, and `plan.spec.ts` asserts the literal text (review N5).
 - Addresses that never reach GreenMail stay unchanged: `e2eDeleteMailbox`, the user login addresses and `E2E_SEND_TEST_ADDRESS` (`anna@example.com`, the send sink that no spec reads; `SEND_TEST_ADDRESSES` must keep matching it).
 
 **Test (new file).**
@@ -22,6 +24,7 @@ Part of [`../plan.md`](../plan.md). Decisions D6, D8.
 3. `mailTagFromEnv({})` → `""`, and `mailTagFromEnv({ E2E_MAIL_TAG: "1ac5ae68" })` → `"1ac5ae68"`.
 4. `"Bad_Tag"`, `"a@b"` and a 17-character tag each throw a message that holds `E2E_MAIL_TAG`.
 5. With `process.env.E2E_MAIL_TAG = "t1"`, every GreenMail-backed address function returns an address that ends in `-t1@e2e.test`, and `e2eDeleteMailbox("mobile")` still returns `del-phone@x.test`. Restore the key in `finally`.
+6a. With `E2E_MAIL_TAG=t1`, `seedAssistMailbox` (or its pure address check) refuses `e2e-x-mobile@e2e.test` with a message that holds `E2E_MAIL_TAG`.
 6. With the key unset, `e2eApprovalsMailbox("mobile")` → `"e2e-approvals-mobile@e2e.test"` (today's value: main checkout and CI do not change).
 
 ## Step 2 — The panel helper uses the tag

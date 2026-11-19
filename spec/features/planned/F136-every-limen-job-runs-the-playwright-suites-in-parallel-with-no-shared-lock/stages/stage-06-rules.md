@@ -1,6 +1,6 @@
 # F136 stage 06 — The lock leaves the rules
 
-Needs stage 05: `proof-parallel.md` in this ticket folder with both `PARALLEL_OK` summaries and the memory figure. Needs stage 03: the CLI name `apps/server/src/scripts/e2e-job-env.ts`, which the new rule text cites. Last stage: land without `--keep-open`.
+Needs stage 05: `proof-parallel.md` (the `PARALLEL_OK` summary and the memory figure). Needs stage 04: the script name `db:migrate:e2e`. Last stage: land without `--keep-open`.
 
 Part of [`../plan.md`](../plan.md). Decisions D9, D10, D12. Proves ticket Acceptance line 6.
 
@@ -12,13 +12,15 @@ Part of [`../plan.md`](../plan.md). Decisions D9, D10, D12. Proves ticket Accept
 - `CLAUDE.md` § Rules, the "Shared runtime" bullet. Replace the e2e lock sentence with these points:
   - Each Limen job gets its own e2e DB, its own ports for both Playwright suites and its own GreenMail addresses from `scripts/limen-prepare.sh`, so `test:e2e`, `docs:test` and `docs:shots` run with no lock.
   - The main checkout keeps 8081, 8092 and 8093.
-  - A Playwright run takes about <figure from proof-parallel.md> of memory; Limen's start gate is the only limit.
-  - A job prepared before this change has no port keys: append the output of `bun apps/server/src/scripts/e2e-job-env.ts --job-name <db name>` to `.env` and make its e2e DB as the `env.ts` message says.
+  - A Playwright run takes about <figure from proof-parallel.md> of memory. No cap exists; Limen's memory gate acts only at job start (D9).
+  - One panel-suite run at a time per worktree: `test:e2e`, `docs:shots` and `demo:record` share its ports, e2e DB and `test-results` (D12).
+  - A job prepared before this change runs `bash scripts/limen-prepare.sh` again (D10).
+  - After a migration (own or merged), run `bun run db:migrate` and `bun run db:migrate:e2e`.
   Keep the other sentences of the bullet: one migration or `bun.lock` change at a time, and the `:ci` scripts.
 - `.agents/limen/styleguide.md`, the line "Checks before a commit": drop "`test:e2e` runs under `flock …`"; say that every job runs it with no lock.
 - `docs/code-patterns.md` § Docs site: the `docs:test` and `docs:shots` lines lose "run it under flock …" and say "port from `DOCS_TEST_PORT` (default 8093)" and "the e2e ports from `E2E_PORT` and `E2E_TELEGRAM_PORT`".
 - `docs/architecture.md`, the e2e paragraph that names `E2E_DATABASE_URL`: add the port keys, the mail tag and "prepare sets them per job". Grep `docs/` for `8081`, `8092` and `8093` and fix any text that calls them fixed.
-- `apps/web/e2e/docs-shots.config.ts`: the comment "Run it under flock … (fixed ports)" becomes "ports come from `env.ts`".
+- `apps/web/e2e/docs-shots.config.ts`: the lock comment says "ports come from `env.ts`".
 - Do not edit `apps/docs/scripts/shot-run.test.ts`. Its comment names the lock, but it is a test file that F125 may still cut before its G1. It goes to the coordinator list below.
 
 **Test.**
