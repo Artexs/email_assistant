@@ -25,5 +25,13 @@ for dir in spec/features/active/F*/; do
     fi
   done
 done
+# PARKED = the ticket id is in `## PARKED` of spec/build.md: never plan or build it until the owner moves it to NEXT.
+parked=$(sed -n '/^## PARKED/,/^## /p' spec/build.md | grep -oE 'F[0-9]+' | sort -u)
 echo "== planned tickets without a plan folder:"
-for d in spec/features/planned/F*/; do [ -f "$d/plan.md" ] || printf '  %s\n' "$(basename "$d" | cut -c1-70)"; done
+for d in spec/features/planned/F*/; do
+  [ -f "$d/plan.md" ] && continue
+  id=$(basename "$d" | cut -d- -f1)
+  mark=""
+  printf '%s\n' "$parked" | grep -qx "$id" && mark=" PARKED (do not plan)"
+  printf '  %s%s\n' "$(basename "$d" | cut -c1-70)" "$mark"
+done
