@@ -1,6 +1,6 @@
 import { sql } from "kysely";
 
-import type { TenantContext } from "../../../platform/db";
+import { dedupKeyOrPush, type TenantContext } from "../../../platform/db";
 
 import { releaseMarksOfFailedDigests } from "./digest-marks";
 import type { DbOrTrx } from "./shared";
@@ -24,7 +24,10 @@ export async function cancelPendingOutbox(
     .where("kind", "=", filter.kind)
     .where("mailbox_id", "=", filter.mailboxId)
     .where("status", "=", "pending");
-  if (filter.exceptDedupKey !== undefined) query = query.where("dedup_key", "<>", filter.exceptDedupKey);
+  // The notice that stays is the whole event: its Telegram row and its push rows (`<key>:push:<device id>`).
+  if (filter.exceptDedupKey !== undefined) {
+    query = query.where(sql<boolean>`not ${dedupKeyOrPush(sql.raw<string>("dedup_key"), filter.exceptDedupKey)}`);
+  }
   if (filter.dedupPrefix !== undefined) {
     const prefix = filter.dedupPrefix;
     query = query.where(sql<boolean>`starts_with(dedup_key, ${prefix})`);
@@ -70,12 +73,15 @@ function waitingApprovalRequest(staleBefore: Date) {
   return sql`(status = 'pending' or (status = 'sending' and locked_at < ${staleBefore}))`;
 }
 // The request of an `outbox` row (`approval` or `approval_set`) has no send that still waits for an answer. One predicate
-// for the resume hook and for the erase of one person's data.
+// for the resume hook and for the erase of one person's data. A push row of the request (`<key>:push:<device id>`) belongs to its send
+// as the Telegram row does: without it the resume would end the push row of a send that still waits.
 const noAwaitingApprovalSend = sql`not exists (
   select 1 from actions a
   where a.org_id = outbox.org_id and a.type = 'send' and a.status = 'awaiting_approval'
-    and ((outbox.kind = 'approval' and (outbox.dedup_key = 'approval:' || a.id::text or outbox.dedup_key like 'approval:' || a.id::text || ':r%'))
-      or (outbox.kind = 'approval_set' and outbox.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+    and ((outbox.kind = 'approval' and (${dedupKeyOrPush(sql.raw<string>("outbox.dedup_key"), sql`'approval:' || a.id::text`)}
+        or outbox.dedup_key like 'approval:' || a.id::text || ':r%'))
+      or (outbox.kind = 'approval_set'
+        and ${dedupKeyOrPush(sql.raw<string>("outbox.dedup_key"), sql`'approval_set:' || (a.payload->>'set_id')`)}))
 )`;
 // The erase of one person's data: a waiting approval-set request whose sends all closed (the sender holds
 // it, for quiet hours or lag) still lists the erased subject in its view. It becomes `failed` / `outdated` (as at a resume)
@@ -94,15 +100,18 @@ export async function closeWaitingApprovalSetsSince(
   `.execute(db);
   return Number(result.numAffectedRows ?? 0);
 }
-// Members that got a "sync is late" notice for an episode and no "sync works again" notice yet.
+// Members that got a "sync is late" notice for an episode and no "sync works again" notice yet. A notice counts when its Telegram row
+// or one of its push rows (one per device) is `sent`; the "works again" notice counts the same way. One entry per member and episode.
 export async function listSentStaleEpisodes(
   db: DbOrTrx,
   ctx: TenantContext,
   mailboxId: string
 ): Promise<{ userId: string; episode: string }[]> {
+  const episodeOf = sql<string>`split_part(s.dedup_key, ':', 3)`;
   const rows = await db
     .selectFrom("outbox as s")
-    .select(["s.user_id", sql<string>`split_part(s.dedup_key, ':', 3)`.as("episode")])
+    .select(["s.user_id", episodeOf.as("episode")])
+    .select((eb) => eb.fn.min("s.created_at").as("first_at"))
     .where("s.org_id", "=", ctx.orgId)
     .where("s.mailbox_id", "=", mailboxId)
     .where("s.kind", "=", "sync_stale")
@@ -116,12 +125,16 @@ export async function listSentStaleEpisodes(
             .whereRef("ok.org_id", "=", "s.org_id")
             .whereRef("ok.user_id", "=", "s.user_id")
             .where(
-              sql<boolean>`ok.dedup_key = 'sync_ok:' || s.mailbox_id::text || ':' || split_part(s.dedup_key, ':', 3)`
+              dedupKeyOrPush(
+                sql.raw<string>("ok.dedup_key"),
+                sql<string>`'sync_ok:' || s.mailbox_id::text || ':' || split_part(s.dedup_key, ':', 3)`
+              )
             )
         )
       )
     )
-    .orderBy("s.created_at")
+    .groupBy(["s.user_id", episodeOf])
+    .orderBy("first_at")
     .execute();
   return rows.map((row) => ({ userId: row.user_id, episode: row.episode }));
 }

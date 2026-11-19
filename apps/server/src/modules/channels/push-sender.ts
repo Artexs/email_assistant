@@ -14,6 +14,7 @@ import {
   loadDeviceSecret,
   markPushError,
   markPushSuccess,
+  queueTelegramFallback,
   removeDevice,
   sendWebPush,
   type PushResult,
@@ -90,6 +91,18 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
 
   const fail = (row: ClaimedOutbox, code: OutboxFailCode): Promise<void> =>
     guarded(() => failOutbox(db, { orgId: row.orgId }, row.id, row.lockedAt, code), row.id);
+
+  // The device of a row is gone and nothing ended the row yet: it ends `no_device`, and its event falls back to Telegram when the
+  // member has a chat and the row holds no loop. The row ends only when this run still owns its claim.
+  const endNoDevice = (row: ClaimedOutbox): Promise<void> =>
+    guarded(
+      () =>
+        inTransaction(async (trx) => {
+          const ended = await failOutbox(trx, { orgId: row.orgId }, row.id, row.lockedAt, "no_device");
+          if (ended) await queueTelegramFallback(trx, { orgId: row.orgId }, row);
+        }),
+      row.id
+    );
 
   async function releaseAll(rows: ClaimedOutbox[], next: Date): Promise<void> {
     for (const row of rows) await release(row, next, false);
@@ -183,19 +196,21 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
         // The device must exist and be live: a session that ended or expired ends the push (the device goes, the row ends `no_device`).
         const deviceId = row.pushSubscriptionId;
         if (deviceId === null) {
-          await fail(row, "no_device");
+          await endNoDevice(row);
           outboxLog.warn("push_no_device", { kind: row.kind });
           continue;
         }
         if (!(await liveDevices(row.orgId, row.userId)).has(deviceId)) {
+          // `removeDevice` ends this row and every other open row of the device, each with its fallback; `endNoDevice` covers a device
+          // that was removed by another run a moment ago.
           await inTransaction((trx) => removeDevice(trx, ctx, deviceId));
-          await fail(row, "no_device");
+          await endNoDevice(row);
           outboxLog.warn("push_device_gone", { kind: row.kind, push_subscription_id: deviceId, code: "session_ended" });
           continue;
         }
         const secret = await inTransaction((trx) => loadDeviceSecret(trx, ctx, deviceId, box));
         if (secret === null) {
-          await fail(row, "no_device");
+          await endNoDevice(row);
           // No device row: removed earlier in this run (a 410 of another row), or a secret that did not open (its own line says so).
           outboxLog.warn("push_no_device", { kind: row.kind, push_subscription_id: deviceId });
           continue;
@@ -244,6 +259,7 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
             // The push service says the browser dropped the subscription (404, 410). The device goes and every open row of it ends
             // `no_device`, this one included. Not a failure of ours: the operator counts leave `no_device` out, so this line is the trace.
             await inTransaction((trx) => removeDevice(trx, ctx, deviceId));
+            await endNoDevice(row);
             outboxLog.warn("push_device_gone", {
               kind: row.kind,
               push_subscription_id: deviceId,
