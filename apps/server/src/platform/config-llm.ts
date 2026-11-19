@@ -9,8 +9,8 @@ import { DEFAULT_OPENAI_BASE_URL, type LlmEndpoint, parseLlmBaseUrl } from "./ll
 const defaultGeminiRpm = 12;
 const defaultLlmDailyCap = 300;
 
-// The judge model when neither `LLM_JUDGE_MODEL` nor `--judge-model` is set (F138 D4): larger than the default
-// drafter model, which the judge must never equal (ADR 0037 comes in stage 04). Effort `none` unless `LLM_JUDGE_REASONING`.
+// The judge model when neither `LLM_JUDGE_MODEL` nor `--judge-model` is set: larger than the default drafter
+// model, which the judge must never equal. Its effort is `none` unless `LLM_JUDGE_REASONING` says otherwise.
 export const DEFAULT_JUDGE_MODEL = "gpt-6.1-terra";
 
 // Accepted values of `reasoning.effort`.

@@ -943,7 +943,7 @@ describe("evalStateFileName", () => {
     );
   });
 
-  // F138 D5: a resume never mixes the grades of two judge models.
+  // A resume never mixes the grades of two judge models.
   describe("the judge model", () => {
     const drafter = { ...base, model: "gpt-6-luna", reasoningEffort: "low", promptVersion: "drafter-v1" };
 

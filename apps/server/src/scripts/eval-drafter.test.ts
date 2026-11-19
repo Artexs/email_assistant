@@ -230,7 +230,7 @@ describe("runDrafterEval", () => {
   test("the judge model is in the state file name; a state file of the old name is not reused", async () => {
     const stateDir = join(tmp, "runs");
     const stateFiles = () => readdirSync(stateDir).filter((entry) => entry.endsWith(".jsonl"));
-    // One graded case under the name of a run with no judge part (the name before F138).
+    // One graded case under the name of a run with no judge part (the name before the judge model joined it).
     const first = await run(injectionArgs(), { deps: { injectionFile: casesFile(injectionCases.slice(0, 1)) } });
     expect(first.calls.judge).toBe(1);
     const [judgedName] = stateFiles();
