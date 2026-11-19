@@ -17,7 +17,7 @@ export const TERMS_HISTORY: readonly TermsHistoryEntry[] = [
   { version: "2026-11-18", sha256: "4c28889f8a7b2567b52b26b06c6be28b0cce5711298113425e32db6a2fd3673d" }, // data category sender-context
   { version: "2026-11-18-2", sha256: "8386c47db63b162fb771458b7e3c31ce09d07587ca588fc51ec730c95bd420d4" }, // data category push-devices
   { version: "2026-11-19", sha256: "0d28bb37aa989259d6f2660fc4a7fb1402418a5e8ffdb5d87938cf1c2f78df8d" }, // sub-processor web-push, Telegram levels
-  { version: "2026-11-19-2", sha256: "d0985baf07da6c3373a848c03333bcf27fc08fc3f48e16ebd4648055fb3648f9" }, // reply drafts: consent text, privacy text, row openai
+  { version: "2026-11-19-2", sha256: "b78d2c1c9e5c0f00422e21a2c4ce9ceb68b546676e1baed1408c405dd9a823fa" }, // reply drafts: consent text, privacy text, row openai
 ];
 
 function lastVersion(history: readonly TermsHistoryEntry[]): string {
