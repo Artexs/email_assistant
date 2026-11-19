@@ -19,3 +19,7 @@ Steps 3 to 13 of the runbook: no build, no `deploy/sim.env`, no `ea-sim` contain
 ## Next
 Owner or coordinator: fix the B2 credential (or accept the 15:32 backup as the rollback point), then resume at runbook step 4 (build `ea-sim-base:v0.3.1`).
 Month spend of the lab machine ledger (`~/.local/state/email-assistant/eval-spend.jsonl`): $2.77 for November, so a $1 day run fits the $20 cap. The VPS ledger starts empty.
+
+## Earlier nightly failures (`~/ea-logs/backup.log` on the VPS)
+- Cron runs of 2026-11-18 03:30 and 2026-11-19 03:30 failed too, with a different error: DNS lookup of `api.backblazeb2.com` on `127.0.0.53:53` "server misbehaving". Last cron success: 2026-11-17.
+- The 15:32 UTC backup today worked (status file). At 18:22 the error became 401 unauthorized. So two different faults appeared in two days (DNS, then 401). The cause of the 401 is not known.
