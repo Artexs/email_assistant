@@ -7,7 +7,7 @@ import { eraseSubjectData, findSubjectData } from "../../src/modules/privacy";
 import { senderKeyHash } from "../../src/platform/crypto";
 
 import { KEY, newOrg, NO_TEST, NOW, ago, type Org } from "./contacts-fixtures";
-import { insertDelegate, insertTestEmail, seedSenderActivity } from "./fixtures";
+import { insertAction, insertDelegate, insertTestEmail, seedSenderActivity } from "./fixtures";
 import { testDb } from "./helpers";
 
 // One address rule in every data request match. The database `lower()` and the JavaScript `toLowerCase()` differ for the
@@ -566,5 +566,56 @@ describe("address rule gaps: the branches of the mail match", () => {
     expect((await erase(w, `ANNA${SIGMA}@x.gr`)).kind).toBe("erased");
     expect((await erase(w, `${DOTTED}lker@X.TR`)).kind).toBe("erased");
     expect(await senders(w)).toEqual([...near].sort());
+  });
+
+  // The jsonb text form escapes a line break as `\n`, so the address follows the letter `n` there. The json pattern
+  // accepts that start; the text pattern does not. The address is nowhere else in the row.
+  test("json: an address after a line break in a closed triage fields value is found and scrubbed", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    await addMail(w, { from_address: "anna@x.test" });
+    const keptId = await db.transaction().execute(async (trx) => {
+      const id = await insertTestEmail(trx, w.ctx, w.mailboxId, { received_at: ago(1), from_address: "other@x.test" });
+      await trx
+        .insertInto("triage_results")
+        .values({
+          org_id: w.ctx.orgId,
+          email_id: id,
+          category: "info",
+          confidence: 0.9,
+          reason_code: "test",
+          fields: JSON.stringify({ note: "Regards\nANNA@x.test" }),
+        })
+        .execute();
+      return id;
+    });
+    const found = await find(w, "anna@x.test");
+    expect(found.kind).toBe("found");
+    if (found.kind !== "found") return;
+    expect(found.counts.mentions["triage_results.fields"]).toBe(1);
+    expect((await erase(w, "anna@x.test")).kind).toBe("erased");
+    const row = await db
+      .selectFrom("triage_results")
+      .select("fields")
+      .where("email_id", "=", keptId)
+      .executeTakeFirstOrThrow();
+    expect(row.fields).toEqual({ note: "Regards\n[removed]" });
+  });
+
+  test("json: an address after a line break in an open action of a kept mail is counted and stops the erase", async () => {
+    const w = await orgOf(`box-${randomUUID()}@x.test`);
+    await addMail(w, { from_address: "anna@x.test" });
+    await db.transaction().execute(async (trx) => {
+      const id = await insertTestEmail(trx, w.ctx, w.mailboxId, { received_at: ago(1), from_address: "other@x.test" });
+      await insertAction(trx, w.ctx, id, {
+        type: "create_draft",
+        status: "ready",
+        payload: { body: "Regards\nANNA@x.test" },
+      });
+    });
+    const found = await find(w, "anna@x.test");
+    expect(found.kind).toBe("found");
+    if (found.kind !== "found") return;
+    expect(found.counts.open_actions).toBe(1);
+    expect((await erase(w, "anna@x.test")).kind).toBe("open_actions");
   });
 });

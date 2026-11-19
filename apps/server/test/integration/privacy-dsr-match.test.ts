@@ -267,6 +267,14 @@ describe("DSR address map", () => {
     { address: "bob@x.test", text: "JIMBOB@X.TEST", hit: false },
     { address: "bob@x.test", text: "<BOB@X.TEST>", hit: true },
     { address: "p@x.test", text: "o'p@x.test", hit: false },
+    // A combining mark or a cased letter outside the letter ranges, then a quote or a brace: the quote joins the local
+    // part. U+212A is the Kelvin sign, U+0130 the dotted capital I, U+0301 and U+20D0 are combining marks.
+    { address: "bob@x.test", text: "jose\u0301'bob@x.test", hit: false },
+    { address: "bob@x.test", text: "\u212a'bob@x.test", hit: false },
+    { address: "bob@x.test", text: "a\u20d0{bob@x.test", hit: false },
+    { address: "bob@x.test", text: "\u0130'bob@x.test", hit: false },
+    { address: "bob@x.test", text: "\u0301'bob@x.test", hit: false },
+    { address: "bob@x.test", text: "x 'bob@x.test", hit: true },
     { address: "p@x.test", text: "=p@x.test", hit: false },
     { address: "p@x.test", text: "x/p@x.test", hit: false },
     { address: "p@x.test", text: "łp@x.test", hit: false },
