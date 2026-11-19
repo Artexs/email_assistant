@@ -402,6 +402,23 @@ describe("runDrafterEval on a corpus part", () => {
     expect(existsSync(join(tmp, "gate"))).toBe(false);
   });
 
+  test("a dev run with --dump-drafts writes each draft with its grade; the state file still holds no text", async () => {
+    const dump = join(tmp, "dump.jsonl");
+    const result = await holdout({ part: "dev", extra: ["--dump-drafts", dump] });
+    const rows = readFileSync(dump, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id: string; draft: string | null; judge: unknown });
+    expect(rows.map((row) => row.id).sort()).toEqual(result.needsReply.map((slot) => slot.id).sort());
+    for (const row of rows) {
+      expect(Object.values(BODIES)).toContain(row.draft as string);
+      expect(row.judge).toEqual({ scores: expect.any(Object), checks: expect.any(Object) });
+    }
+    const [state] = readdirSync(join(tmp, "runs")).filter((file) => file.endsWith(".jsonl"));
+    const stateText = readFileSync(join(tmp, "runs", state as string), "utf8");
+    for (const body of Object.values(BODIES)) expect(stateText).not.toContain(body);
+  });
+
   test("a corpus drafter run without --judge makes no judge call and no gate file", async () => {
     corpus = await completeCorpus();
     writeJson(join(corpus.dir, "manifest.json"), { version: "1", audit: { status: "pending" } });

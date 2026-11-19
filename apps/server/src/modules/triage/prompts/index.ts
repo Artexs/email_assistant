@@ -71,6 +71,27 @@ export const classifierVersionIds = Object.keys(classifierVersions) as Classifie
 
 // The part list of the production prompt when the pointer is `classifier-v3`; `attachments` is always on. A change of
 // the list is `classifier-v4` with its own gate.
+/** One drafter prompt version: the builders of every version have the signature of `drafter-v1`. */
+export interface DrafterPrompt {
+  role: "drafter";
+  version: PromptVersion<"drafter">;
+  buildSystem: () => string;
+  buildUser: typeof drafterV1.buildUserPrompt;
+}
+
+// Every drafter version that can run: the drafter eval picks one with `--drafter-prompt`. Production uses the one that
+// `prompts.drafter` names.
+export const drafterVersions = {
+  "drafter-v1": {
+    role: "drafter",
+    version: drafterV1.PROMPT_VERSION,
+    buildSystem: drafterV1.buildSystemPrompt,
+    buildUser: drafterV1.buildUserPrompt,
+  },
+} as const satisfies Record<string, DrafterPrompt>;
+export type DrafterVersion = keyof typeof drafterVersions;
+export const drafterVersionIds = Object.keys(drafterVersions) as DrafterVersion[];
+
 export const CLASSIFIER_V3_PARTS: readonly ClassifierV3Part[] = ["attachments"];
 
 // The prompt each role uses now. A new version is a new file `<role>-v<n>.ts`, a new entry here and a sim gate run with
@@ -82,12 +103,7 @@ export const prompts = {
     buildSystem: classifierV2.buildSystemPrompt,
     buildUser: classifierV2.buildUserPrompt,
   },
-  drafter: {
-    role: "drafter",
-    version: drafterV1.PROMPT_VERSION,
-    buildSystem: drafterV1.buildSystemPrompt,
-    buildUser: drafterV1.buildUserPrompt,
-  },
+  drafter: drafterVersions["drafter-v1"],
   extractor: {
     role: "extractor",
     version: extractorV1.PROMPT_VERSION,

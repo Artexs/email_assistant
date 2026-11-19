@@ -22,7 +22,14 @@ import {
   scoreDrafter,
   sendAsIs,
 } from "../modules/replies";
-import { evalStateFileName, firstEstimateUsd, gateFileName, prompts, runPool } from "../modules/triage";
+import {
+  drafterVersions,
+  evalStateFileName,
+  firstEstimateUsd,
+  gateFileName,
+  prompts,
+  runPool,
+} from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
 import { type Config, ConfigError, llmRoleTable } from "../platform/config";
 import {
@@ -110,6 +117,25 @@ async function loadSource(options: EvalOptions, deps: DrafterEvalCliDeps): Promi
   };
 }
 
+// One line of `--dump-drafts`: the dev case, its draft and its grade. Dev data is made up; the holdout never gets here.
+function dumpLine(result: DrafterCaseResult, c: EvalCase | undefined, draft: string | undefined) {
+  return {
+    id: result.id,
+    lang: c?.lang,
+    from: c?.from,
+    subject: c?.subject,
+    body: c?.body,
+    thread: c?.thread,
+    expectedPoints: c?.sim?.expectedPoints ?? [],
+    mustNot: c?.sim?.mustNot ?? [],
+    outcome: result.outcome,
+    reasonCode: result.reasonCode,
+    failures: result.failures,
+    draft: draft ?? null,
+    judge: result.judge,
+  };
+}
+
 // `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection --drafter --judge`: the reply
 // drafter on every needs_reply case (the label, not a prediction: the drafter is measured alone), graded by the judge.
 // Exit 0: done (and the gate or the injection bar passed); 1: a usage or setup error, a failed gate, an injection set under
@@ -135,6 +161,8 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     return 1;
   }
   const judgeRow = options.judge ? table.roles.judge : undefined;
+  const drafterPrompt =
+    options["drafter-prompt"] === undefined ? prompts.drafter : drafterVersions[options["drafter-prompt"]];
   const { endpoint, host } = llmEndpointFields(table, "drafter");
   const own = endpoint === "own";
   if (own && options.judge) {
@@ -196,7 +224,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     return 1;
   }
   cli.print(
-    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${row.model} effort=${row.reasoningEffort ?? "-"} prompt=${prompts.drafter.version}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
+    `provider=${row.provider} endpoint=${endpoint} host=${host ?? "-"} model=${row.model} effort=${row.reasoningEffort ?? "-"} prompt=${drafterPrompt.version}${judgeRow === undefined ? "" : ` judge=${judgeRow.provider}/${judgeRow.model}`} concurrency=${options.concurrency} rpm=${options.rpm} cap=${cap === null ? "none (own endpoint)" : `$${cap}`}`
   );
 
   // `--rpm` is the rate of the drafter provider for this process only (the judge too, on the same provider); `--judge-rpm` limits only the judge role.
@@ -216,7 +244,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       model: row.model,
       endpoint,
       reasoningEffort: row.reasoningEffort,
-      promptVersion: prompts.drafter.version,
+      promptVersion: drafterPrompt.version,
       set: `drafter-${source.key}`,
       judgeModel: judgeRow?.model,
     })
@@ -242,6 +270,11 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       ? parseDrafterResults(readFileSync(stateFile, "utf8")).filter((r) => !needsRerun(r, options.judge))
       : [];
     cli.print(`state ${stateFile}: ${earlier.length} earlier results`);
+    // `--dump-drafts` (dev only): one JSON line per new result with the mail, the draft and the grade, for tuning.
+    // The results of an earlier run are not in it: they hold no text.
+    const dumpFile = options["dump-drafts"];
+    const drafts = new Map<string, string>();
+    const caseById = new Map(cases.map((c) => [c.id, c]));
     const outcome = await runPool<EvalCase, DrafterCaseResult>({
       cases,
       earlier: new Map(earlier.map((r) => [r.id, r])),
@@ -268,13 +301,19 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
             llm,
             sleep: deps.sleep ?? ((ms) => new Promise((done) => setTimeout(done, ms))),
             ...(judgeRow === undefined ? {} : { judge: { llm, model: judgeRow.model } }),
+            ...(dumpFile === undefined ? {} : { onDraft: (id: string, body: string) => drafts.set(id, body) }),
           },
           c,
-          { persona: source.persona, retries: options.retries },
+          { persona: source.persona, retries: options.retries, prompt: drafterPrompt },
           attempts
         ),
       onResult: async (result) => {
         appendFileSync(stateFile, `${JSON.stringify(result)}\n`);
+        if (dumpFile !== undefined)
+          appendFileSync(
+            dumpFile,
+            `${JSON.stringify(dumpLine(result, caseById.get(result.id), drafts.get(result.id)))}\n`
+          );
         // The incoming ids of a holdout never reach the output: a failed line holds the code only.
         if (result.errorCode !== null) cli.print(`case ${holdout ? "-" : result.id} failed: ${result.errorCode}`);
       },
@@ -295,7 +334,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       host,
       model: row.model,
       reasoningEffort: row.reasoningEffort,
-      promptVersion: prompts.drafter.version,
+      promptVersion: drafterPrompt.version,
       judge:
         judgeRow === undefined
           ? null
@@ -351,7 +390,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       const name = gateFileName({
         role: "drafter",
         endpoint,
-        promptVersion: prompts.drafter.version,
+        promptVersion: drafterPrompt.version,
         model: row.model,
         reasoningEffort: row.reasoningEffort,
         scenario: source.scenario,
