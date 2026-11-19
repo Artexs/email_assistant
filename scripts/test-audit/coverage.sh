@@ -20,5 +20,9 @@ paths_of() {
 read -r -a unit_paths <<<"$(paths_of test:unit)"
 read -r -a int_paths <<<"$(paths_of test:int)"
 
-bun test "${unit_paths[@]}" --coverage --coverage-reporter=lcov --coverage-dir="$out/unit"
-bun test "${int_paths[@]}" --coverage --coverage-reporter=lcov --coverage-dir="$out/int"
+# A failing case does not stop the other suite: Bun writes the lcov file of a failed run too. The script
+# exits 1 after both runs when one of them failed, so a flaky case is seen and the data stays whole.
+status=0
+bun test "${unit_paths[@]}" --coverage --coverage-reporter=lcov --coverage-dir="$out/unit" || status=1
+bun test "${int_paths[@]}" --coverage --coverage-reporter=lcov --coverage-dir="$out/int" || status=1
+exit "$status"
