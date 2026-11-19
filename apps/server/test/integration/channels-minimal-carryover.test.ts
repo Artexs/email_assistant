@@ -180,7 +180,12 @@ describe("/pause and /resume name the mailboxes by their place at the minimal le
       const w = await world(trx, "minimal");
       const second = `second-${randomUUID()}@x.test`;
       await addMailbox(trx, w, second);
-      await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", w.mailboxId).execute();
+      // The list is ordered by creation time, then id: rows of one transaction share the time, so the first one is made older than the real clock.
+      await trx
+        .updateTable("mailboxes")
+        .set({ status: "paused", created_at: new Date("2020-01-01T00:00:00Z") })
+        .where("id", "=", w.mailboxId)
+        .execute();
       const paused = (await pauseMailboxes(depsAt(trx), linkOf(w))).text;
       expect(paused).toContain("Mailbox 1 was paused already.");
       expect(paused).toContain("Paused: Mailbox 2");
