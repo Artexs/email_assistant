@@ -530,8 +530,10 @@ describe("the rule check: order, cache and CLI", () => {
     };
     const orgId = randomUUID();
     const modes = [["--find"], ["--erase", "--confirm", address]];
-    for (const mode of modes) {
-      const result = await run(["--org-id", orgId, "--address", address, ...mode]);
+    // The two starts do not depend on each other, so they run together: each start scans every code point (about 0.7 s),
+    // and two in a row after the read of this test used the 5 s limit in a loaded run.
+    const results = await Promise.all(modes.map((mode) => run(["--org-id", orgId, "--address", address, ...mode])));
+    for (const result of results) {
       expect(result.code).toBe(1);
       expect(result.stdout).toBe("rule mismatch 1\n");
       expect(result.stderr).toContain("org_dsr_refused");
