@@ -16,8 +16,188 @@ export interface PublicClaim {
   condition: Texts | null;
 }
 
-// The security page stage fills the list. While it is empty the security page makes no claim.
-export const publicClaims: readonly PublicClaim[] = [];
+// The rows below keep to the wording of their ledger rows. A fact that only a `gap` or `unverified` row holds is not here:
+// the buyer facts among them stand in the "does not promise" section of the page (`security.mdx`).
+export const publicClaims: readonly PublicClaim[] = [
+  {
+    id: "never-sends-alone",
+    text: {
+      en: "The system sends a draft only after an owner approves it. The approval message shows the owner the full text of the draft.",
+      pl: "System wysyła szkic dopiero po zatwierdzeniu go przez właściciela. Wiadomość z prośbą o zatwierdzenie pokazuje właścicielowi pełny tekst szkicu.",
+    },
+    ledger: ["C018", "C099"],
+    proofs: [
+      "docs/capabilities/drafts-and-send.md",
+      "apps/server/test/integration/actions-approvals.test.ts",
+    ],
+    condition: null,
+  },
+  {
+    id: "mail-storage",
+    text: {
+      en: "The assistant stores the text, subject and addresses of the mail of the connected mailboxes, and header facts such as the sender name, Reply-To, authentication results, list data, attachment names and sizes, and link hosts. The hosting is one server.",
+      pl: "Asystent przechowuje treść, temat i adresy wiadomości z podłączonych skrzynek oraz fakty z nagłówków, takie jak nazwa nadawcy, Reply-To, wyniki uwierzytelnienia, dane listy, nazwy i rozmiary załączników oraz hosty linków. Hosting to jeden serwer.",
+    },
+    ledger: ["C005", "C199"],
+    proofs: ["docs/architecture.md", "docs/decisions/0017-web-access-tailscale-serve.md"],
+    condition: {
+      en: "This holds for the install on a home server only.",
+      pl: "Dotyczy tylko instalacji na serwerze domowym.",
+    },
+  },
+  {
+    id: "ai-provider-receives",
+    text: {
+      en: "This install uses OpenAI as the AI model. For each mail the assistant sends the text, subject and sender, the delegates, and up to three earlier mails of the same thread as context. It does not send mail older than 7 days, unless the operator loads old mail once.",
+      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej wiadomości asystent wysyła treść, temat i nadawcę, delegatów oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie wysyła wiadomości starszych niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę.",
+    },
+    ledger: ["C030", "C031", "C032"],
+    proofs: [
+      "docs/capabilities/triage.md",
+      "docs/capabilities/sync.md",
+      "docs/decisions/0015-llm-provider-switch.md",
+      "docs/architecture.md",
+    ],
+    condition: {
+      en: "The install uses the OpenAI provider.",
+      pl: "Instalacja używa dostawcy OpenAI.",
+    },
+  },
+  {
+    id: "ai-provider-keeps",
+    text: {
+      en: "The assistant asks OpenAI not to store the data. OpenAI keeps abuse logs for up to 30 days (its data-controls page, read 2026-11-17).",
+      pl: "Asystent prosi OpenAI, aby nie przechowywało danych. OpenAI przechowuje logi nadużyć do 30 dni (jego strona o kontroli danych, odczytana 2026-11-17).",
+    },
+    ledger: ["C034", "C035"],
+    proofs: [
+      "apps/server/src/platform/llm/providers/openai.ts",
+      "apps/server/src/platform/llm/providers/openai.test.ts",
+      "docs/decisions/0015-llm-provider-switch.md",
+    ],
+    condition: {
+      en: "The OpenAI terms stay as they were on 2026-11-17.",
+      pl: "Warunki OpenAI pozostają takie, jak 2026-11-17.",
+    },
+  },
+  {
+    id: "telegram",
+    text: {
+      en: "Telegram gets only the items that the consent text names, and no raw mail body. Chats with a bot are not end-to-end encrypted. Telegram keeps the messages until the member deletes them in the chat.",
+      pl: "Telegram dostaje tylko pozycje wymienione w tekście zgody i żadnej surowej treści wiadomości. Czaty z botem nie są szyfrowane end-to-end. Telegram przechowuje wiadomości, dopóki członek organizacji nie usunie ich w czacie.",
+    },
+    ledger: ["C204", "C041", "C028"],
+    proofs: ["docs/architecture.md", "packages/core/src/legal/subprocessors.ts", "apps/web/src/i18n/en.ts"],
+    condition: null,
+  },
+  {
+    id: "backups",
+    text: {
+      en: "Each night the server makes a backup of the whole database. The backup is encrypted with age before it leaves the server, and the key that decrypts it is not on the server. A backup holds the data as it was, also texts that the retention job cleared later and data that a delete removed later.",
+      pl: "Co noc serwer robi kopię zapasową całej bazy danych. Kopia jest szyfrowana narzędziem age, zanim opuści serwer, a klucz do jej odszyfrowania nie leży na serwerze. Kopia zawiera dane takie, jakie były, także teksty wyczyszczone później i dane usunięte później.",
+    },
+    ledger: ["C024", "C044"],
+    proofs: ["docs/capabilities/backups.md", "deploy/backup.sh"],
+    condition: {
+      en: "This holds for the install on a home server, where the host runs the backup.",
+      pl: "Dotyczy instalacji na serwerze domowym, gdzie host wykonuje kopię zapasową.",
+    },
+  },
+  {
+    id: "logs",
+    text: {
+      en: "Server logs hold ids, counts, codes and times, and no mail text, address or password.",
+      pl: "Logi serwera zawierają identyfikatory, liczby, kody i czasy, a nie zawierają treści wiadomości, adresów ani haseł.",
+    },
+    ledger: ["C014", "C203"],
+    proofs: [
+      "docs/capabilities/logs.md",
+      "apps/server/test/integration/log-canary.test.ts",
+      "docs/decisions/0024-structured-logs-and-operator-alerts.md",
+    ],
+    condition: null,
+  },
+  {
+    id: "healthchecks",
+    text: {
+      en: "The alert service Healthchecks.io gets a timing ping and no personal data. It alerts when the server stops.",
+      pl: "Usługa alarmowa Healthchecks.io dostaje ping czasowy i żadnych danych osobowych. Alarmuje, gdy serwer przestaje działać.",
+    },
+    ledger: ["C152"],
+    proofs: ["apps/server/src/platform/heartbeat.ts", "deploy/README.md"],
+    condition: {
+      en: "The operator sets up the alert service.",
+      pl: "Operator konfiguruje usługę alarmową.",
+    },
+  },
+  {
+    id: "retention",
+    text: {
+      en: "A job runs once a day. It clears the mail body after 30 days by default (the organization sets the period) and the subject, addresses, AI texts and notices after 90 days. The rows stay.",
+      pl: "Raz dziennie działa zadanie. Czyści treść wiadomości po 30 dniach domyślnie (okres ustawia organizacja) oraz temat, adresy, teksty AI i powiadomienia po 90 dniach. Wiersze zostają.",
+    },
+    ledger: ["C202", "C168", "C023"],
+    proofs: ["docs/capabilities/retention.md", "apps/server/test/integration/retention-job.test.ts"],
+    condition: null,
+  },
+  {
+    id: "export-and-delete",
+    text: {
+      en: "The operator makes an encrypted export of the data of an organization; it holds no password hash, mailbox secret, token or session. A delete removes the mailboxes, mail, results, rules, Telegram links, audit log and accounts of the members at once. On the written instruction of the organization, the operator can find the data of one person and erase it. Backups keep the rows of a deleted organization until they expire.",
+      pl: "Operator robi zaszyfrowany eksport danych organizacji; nie zawiera on skrótów haseł, sekretów skrzynek, tokenów ani sesji. Usunięcie kasuje od razu skrzynki, pocztę, wyniki, reguły, powiązania z Telegramem, dziennik audytu i konta członków. Na pisemne polecenie organizacji operator może znaleźć dane jednej osoby i je usunąć. Kopie zapasowe przechowują wiersze usuniętej organizacji do czasu ich wygaśnięcia.",
+    },
+    ledger: ["C055", "C057", "C060", "C058"],
+    proofs: [
+      "docs/capabilities/account-data.md",
+      "apps/server/test/integration/privacy-export-map.test.ts",
+      "apps/server/test/integration/account-data-delete.test.ts",
+      "apps/server/test/integration/privacy-dsr-erase.test.ts",
+      "docs/capabilities/backups.md",
+    ],
+    condition: null,
+  },
+  {
+    id: "undo",
+    text: {
+      en: "Each sorting decision has a reason code in the audit log. The member can reverse an automatic move with Undo for 7 days, in Telegram or in the panel.",
+      pl: "Każda decyzja o sortowaniu ma kod powodu w dzienniku audytu. Członek organizacji może cofnąć automatyczne przeniesienie przyciskiem Cofnij przez 7 dni, w Telegramie lub w panelu.",
+    },
+    ledger: ["C052", "C053"],
+    proofs: [
+      "apps/server/src/modules/triage/service.ts",
+      "docs/capabilities/actions-and-undo.md",
+      "apps/server/test/integration/actions-undo.test.ts",
+    ],
+    condition: null,
+  },
+  {
+    id: "shadow-first",
+    text: {
+      en: "A new mailbox starts in shadow mode: nothing changes in the mailbox. In assist mode a move happens only for a category that the owner set to run by itself and that passed the quality gate. Mail the assistant is unsure about moves only with a separate switch.",
+      pl: "Nowa skrzynka zaczyna w trybie cienia: nic się w niej nie zmienia. W trybie asysty przeniesienie następuje tylko dla kategorii, którą właściciel ustawił do automatycznej obsługi i która przeszła bramkę jakości. Wiadomości, co do których asystent ma wątpliwości, są przenoszone tylko przy osobnym przełączniku.",
+    },
+    ledger: ["C050", "C051"],
+    proofs: [
+      "docs/architecture.md",
+      "docs/capabilities/actions-and-undo.md",
+      "apps/server/test/integration/triage-gate.test.ts",
+    ],
+    condition: null,
+  },
+  {
+    id: "private-panel",
+    text: {
+      en: "The panel is reachable only through Tailscale, by members of the private network, and has no public address.",
+      pl: "Panel jest dostępny tylko przez Tailscale, dla członków sieci prywatnej, i nie ma publicznego adresu.",
+    },
+    ledger: ["C066"],
+    proofs: ["docs/decisions/0017-web-access-tailscale-serve.md", "docs/architecture.md"],
+    condition: {
+      en: "This holds for the install on a home server. A public address for the panel would change it.",
+      pl: "Dotyczy instalacji na serwerze domowym. Publiczny adres panelu by to zmienił.",
+    },
+  },
+];
 
 export interface LedgerRow {
   id: string;

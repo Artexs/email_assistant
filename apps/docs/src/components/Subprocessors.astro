@@ -1,0 +1,42 @@
+---
+// The services that get data from this system: one row for each row of the registry that the page shows (`publicSubprocessors`),
+// through `subprocessorView` (no placeholder, no config key).
+import { subprocessors } from "@ea/core/web";
+import { publicSubprocessors, subprocessorView } from "../security/subprocessor-view";
+
+interface Props {
+  lang: "en" | "pl";
+}
+
+const { lang } = Astro.props;
+const labels = {
+  en: { name: "Service", purpose: "What it does", data: "Data it receives", where: "Where it works", when: "Used when" },
+  pl: { name: "Usługa", purpose: "Do czego służy", data: "Jakie dane dostaje", where: "Gdzie działa", when: "Używana, gdy" },
+}[lang];
+const views = publicSubprocessors(subprocessors).map((row) => subprocessorView(row, lang));
+---
+
+<table>
+  <thead>
+    <tr>
+      <th scope="col">{labels.name}</th>
+      <th scope="col">{labels.purpose}</th>
+      <th scope="col">{labels.data}</th>
+      <th scope="col">{labels.where}</th>
+      <th scope="col">{labels.when}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      views.map((view) => (
+        <tr id={`subprocessor-${view.id}`}>
+          <td>{view.termsUrl === null ? view.name : <a href={view.termsUrl}>{view.name}</a>}</td>
+          <td>{view.purpose}</td>
+          <td>{view.dataReceived}</td>
+          <td>{view.location}</td>
+          <td>{view.usedWhen}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

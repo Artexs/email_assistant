@@ -118,3 +118,20 @@ test("T10 the changelog page shows released versions with a date and no operator
     expect(text).not.toContain(operatorText);
   }
 });
+
+test("T6 the security page has its heading, a checklist whose links reach claim anchors, and every claim row", async ({
+  page,
+}) => {
+  await open(page, `${DOCS_BASE}/security/`);
+  await expect(page.locator("main h1")).toHaveText("Security and data");
+  const links = page.locator('main ul a[href^="#claim-"]');
+  const count = await links.count();
+  expect(count).toBeGreaterThanOrEqual(5);
+  for (let index = 0; index < count; index += 1) {
+    const href = (await links.nth(index).getAttribute("href")) ?? "";
+    await expect(page.locator(`tr${href}`), `anchor ${href}`).toHaveCount(1);
+  }
+  await expect(page.locator('main tr[id^="claim-"]').first()).toHaveAttribute("id", "claim-never-sends-alone");
+  await expect(page.locator('main tr[id^="subprocessor-"]').first()).toBeVisible();
+  await expectNoA11yViolations(page);
+});

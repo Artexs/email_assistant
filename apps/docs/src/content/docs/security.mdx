@@ -1,0 +1,58 @@
+---
+title: Security and data
+description: What the assistant does with your mail and your data. Each claim has a proof link to a file in the repository.
+capabilities:
+  - drafts-and-send
+  - triage
+  - backups
+  - retention
+  - logs
+  - account-data
+  - actions-and-undo
+  - digest-and-notices
+---
+
+import ClaimsTable from "../../components/ClaimsTable.astro";
+import Subprocessors from "../../components/Subprocessors.astro";
+
+This page says what the assistant does with your mail and your data.
+Each claim has a link to the file in the repository that proves it, and a condition when the claim depends on the setup.
+A claim that no file proves is not on this page. The section "What this product does not promise" lists what you must not assume.
+
+## The short list
+
+- [The assistant never sends a mail alone](#claim-never-sends-alone): an owner approves each draft.
+- [What the AI provider receives](#claim-ai-provider-receives): the text, subject and sender of a mail, and no mail older than 7 days.
+- [What Telegram receives](#claim-telegram): only the items that the consent text names.
+- [Backups](#claim-backups): encrypted before they leave the server.
+- [Export and delete](#claim-export-and-delete): the operator exports, deletes and erases on request.
+- [Undo](#claim-undo): you can reverse an automatic move for 7 days.
+
+## Claims
+
+<ClaimsTable lang="en" />
+
+## Services that get data
+
+The table lists the outside services that get data from the assistant in the default setup, and when each one is in use.
+An install can use another AI provider; the legal papers of an install name the services that it uses.
+"Not confirmed yet" means that the project has not yet written down and checked this fact.
+
+<Subprocessors lang="en" />
+
+## Hosts of this site
+
+This site runs on GitHub Pages. GitHub logs the IP address of each visitor.
+The site sets no cookies, has no analytics and holds no user data.
+GitHub hosts this public site only. It gets no mail data from the assistant.
+
+## What this product does not promise
+
+- No certification or audit. The project holds no SOC 2 or ISO 27001 report.
+- No legal review. A lawyer has not checked the legal texts of the product.
+- No EU-only AI processing by default. The default setup sends mail text to the AI provider with no EU-only setting.
+- No end-to-end encryption of Telegram notices. Telegram can read what the assistant sends to it.
+- Drafts can be wrong. You approve each draft before the assistant sends it.
+- Facts that come only from the AI provider:
+  - The provider states that it does not use data of its paid API to train its models ([its data-controls page](https://platform.openai.com/docs/guides/your-data), read 2026-11-17). This project has not checked the contract.
+  - The provider states that it offers an EU region as a project setting ([its data-residency page](https://platform.openai.com/docs/guides/data-residency), read 2026-11-17). This project has not checked the region setting of the project that an install uses.

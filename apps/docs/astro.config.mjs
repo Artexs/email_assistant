@@ -63,6 +63,7 @@ export default defineConfig({
           ],
         },
         { label: "FAQ", items: [{ slug: "faq" }] },
+        { label: "Security and data", items: [{ slug: "security" }] },
         { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },
         ...IN_PLACE_PAGES.filter((page) => !inOperate(page)).map((page) => ({ slug: page.id })),
       ],

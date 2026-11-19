@@ -60,6 +60,7 @@ apps/docs/.astro/
 apps/docs/public/shots/
 # the folder of the builds in `apps/docs/scripts/shots-build.test.ts`
 apps/docs/dist-shots-test/
+apps/docs/dist-security-test/
 
 # release state of deploy/release.sh and deploy/rollback.sh (the folder is in git, the file is not)
 deploy/release-state/state

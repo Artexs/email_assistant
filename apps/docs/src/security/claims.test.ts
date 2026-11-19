@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { REPO_URL } from "../in-place";
-import { claimProblems, parseLedger, type PublicClaim, proofUrl } from "./claims";
+import { REPO_URL, repoRoot } from "../in-place";
+import { claimProblems, parseLedger, type PublicClaim, proofUrl, publicClaims } from "./claims";
 
 const LEDGER = `# Claims
 
@@ -122,5 +122,66 @@ describe("proofUrl", () => {
   });
   test("the default ref is master without DOCS_GIT_REF", () => {
     if (process.env.DOCS_GIT_REF === undefined) expect(proofUrl("a/b.ts")).toBe(`${REPO_URL}/blob/master/a/b.ts`);
+  });
+});
+
+describe("the public claims of the security page", () => {
+  const ledgerText = readFileSync(join(import.meta.dir, "../../../../docs/legal/claims.md"), "utf8");
+
+  test("T1 the claim check finds no problem at HEAD", () => {
+    expect(claimProblems(publicClaims, repoRoot(), ledgerText)).toEqual([]);
+  });
+
+  test("T2 every claim has an English and a Polish text with no angle bracket and no TODO", () => {
+    expect(publicClaims.length).toBeGreaterThanOrEqual(5);
+    for (const claim of publicClaims) {
+      const texts = [claim.text.en, claim.text.pl, claim.condition?.en ?? "x", claim.condition?.pl ?? "x"];
+      for (const text of texts) {
+        expect(text.trim()).not.toBe("");
+        expect(text).not.toMatch(/[<>]|TODO/);
+      }
+      expect(claim.id).toMatch(/^[a-z][a-z0-9-]*$/);
+    }
+  });
+
+  test("T3 the first claim is never-sends-alone and its ledger holds the send-approval row", () => {
+    expect(publicClaims[0]?.id).toBe("never-sends-alone");
+    expect(publicClaims[0]?.ledger).toContain("C018");
+    expect(parseLedger(ledgerText).get("C018")?.source).toContain("drafts-and-send.md");
+  });
+
+  test("the order is the order of the page, and no claim text or condition names a condition by a config key or a provider that is off by default", () => {
+    expect(publicClaims.map((claim) => claim.id)).toEqual([
+      "never-sends-alone",
+      "mail-storage",
+      "ai-provider-receives",
+      "ai-provider-keeps",
+      "telegram",
+      "backups",
+      "logs",
+      "healthchecks",
+      "retention",
+      "export-and-delete",
+      "undo",
+      "shadow-first",
+      "private-panel",
+    ]);
+    for (const claim of publicClaims) {
+      for (const text of [claim.text.en, claim.text.pl, claim.condition?.en ?? "", claim.condition?.pl ?? ""]) {
+        expect(text).not.toMatch(/gemini/i);
+        expect(text).not.toMatch(/\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/);
+      }
+    }
+  });
+
+  test("a claim that cites a ledger row that names Gemini says so only with the condition: optional, off by default", () => {
+    const rows = parseLedger(ledgerText);
+    const geminiRows = new Set(
+      [...rows.values()].filter((row) => /gemini/i.test(row.source) || /gemini/i.test(row.condition)).map((row) => row.id)
+    );
+    for (const claim of publicClaims) {
+      if (!claim.ledger.some((id) => geminiRows.has(id))) continue;
+      expect(claim.condition?.en.toLowerCase()).toContain("optional, off by default");
+    }
   });
 });
