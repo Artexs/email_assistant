@@ -1,18 +1,23 @@
 import { sql } from "kysely";
 
-import type { TenantContext } from "../../../platform/db";
+import { dedupKeyOrPush, type TenantContext } from "../../../platform/db";
 import { APPROVAL_TTL_MS, REPLY_TTL_MS, UNNOTIFIED_TTL_MS } from "../constants";
 
 import { sendFilterExpr, type SendClaimFilter } from "./filters";
 import type { DbOrTrx } from "./shared";
 
 type ExpiredReason = "timeout" | "draft_missing" | "not_notified" | "not_seen" | "held_timeout";
-// True when an owner received the approval request of the send (one `sent` outbox row of it).
+// The outbox rows of the approval request of the send `a`: the Telegram row (`approval:<send id>`, `approval_set:<set id>`) and the
+// push rows of the same event (`<key>:push:<device id>`). A sent push row reached an owner as a sent Telegram card did.
+const requestRowOf = (row: string) => sql<boolean>`(
+  (${sql.raw(row)}.kind = 'approval' and ${dedupKeyOrPush(sql.raw<string>(`${row}.dedup_key`), sql`'approval:' || a.id::text`)})
+  or (${sql.raw(row)}.kind = 'approval_set'
+    and ${dedupKeyOrPush(sql.raw<string>(`${row}.dedup_key`), sql`'approval_set:' || (a.payload->>'set_id')`)})
+)`;
+// True when an owner received the approval request of the send (one `sent` outbox row of it, by Telegram or by push).
 const requestSent = sql<boolean>`exists (
   select 1 from outbox o2
-  where o2.org_id = a.org_id and o2.status = 'sent'
-    and ((o2.kind = 'approval' and o2.dedup_key = 'approval:' || a.id::text)
-      or (o2.kind = 'approval_set' and o2.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+  where o2.org_id = a.org_id and o2.status = 'sent' and ${requestRowOf("o2")}
 )`;
 // A reply send (payload kind `reply`). The reply rules differ: a 7-day limit from `created_at`, no `not_notified`, no `not_seen`
 // (`approvalExpiresAt` in lifetime.ts holds the same rule for the tap and the panel).
@@ -62,7 +67,7 @@ export async function listExpiredApprovals(
   return result.rows;
 }
 // The `awaiting_approval` sends of an organization whose approval request no owner saw before `before`.
-// A request counts as seen when one `outbox` row of it is `sent`. `notified_at` set means the notifier queued it.
+// A request counts as seen when one `outbox` row of it is `sent` (a Telegram card or a push row). `notified_at` set means the notifier queued it.
 // A send with `notified_at` null is not listed: the notifier queues it at its next run, with a fresh text.
 // The caller locks each one (`expireSend`).
 export async function listUnseenApprovalSends(
@@ -83,9 +88,7 @@ export async function listUnseenApprovalSends(
       and a.notified_at is not null and a.notified_at < ${opts.before}
       and not exists (
         select 1 from outbox o
-        where o.org_id = a.org_id and o.status = 'sent'
-          and ((o.kind = 'approval' and o.dedup_key = 'approval:' || a.id::text)
-            or (o.kind = 'approval_set' and o.dedup_key = 'approval_set:' || (a.payload->>'set_id')))
+        where o.org_id = a.org_id and o.status = 'sent' and ${requestRowOf("o")}
       )
     order by a.created_at, a.id
   `.execute(trx);

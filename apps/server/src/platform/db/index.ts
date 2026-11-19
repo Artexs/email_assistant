@@ -9,6 +9,7 @@ export type { TenantContext } from "./tenant-context";
 
 export { currentTenantScope, withoutTenantScope, withTenantScope } from "./tenant-scope";
 export { ScopedPostgresDialect } from "./scoped-driver";
+export { dedupKeyOrPush, PUSH_KEY_INFIX, pushDedupKey } from "./outbox-keys";
 
 export type Db = Kysely<DB>;
 

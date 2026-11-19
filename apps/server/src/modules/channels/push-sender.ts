@@ -14,6 +14,7 @@ import {
   loadDeviceSecret,
   markPushError,
   markPushSuccess,
+  queueTelegramFallback,
   removeDevice,
   sendWebPush,
   type PushResult,
@@ -35,7 +36,7 @@ const log = createLog("channels");
 
 // A row that waits for the flag `web_push` is looked at again after this time, with no attempt counted.
 export const PUSH_FLAG_WAIT_MS = 15 * 60_000;
-/** How long a push service keeps a message for an offline device: as long as the life of a row. */
+/** The life of a row and of a message at the push service. A message gets what is left of it: `PUSH_TTL_SECONDS` minus the row age. */
 export const PUSH_TTL_SECONDS = 86_400;
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_PER_USER_LIMIT = 3;
@@ -90,6 +91,18 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
 
   const fail = (row: ClaimedOutbox, code: OutboxFailCode): Promise<void> =>
     guarded(() => failOutbox(db, { orgId: row.orgId }, row.id, row.lockedAt, code), row.id);
+
+  // The device of a row is gone and nothing ended the row yet: it ends `no_device`, and its event falls back to Telegram when the
+  // member has a chat and the row holds no loop. The row ends only when this run still owns its claim.
+  const endNoDevice = (row: ClaimedOutbox): Promise<void> =>
+    guarded(
+      () =>
+        inTransaction(async (trx) => {
+          const ended = await failOutbox(trx, { orgId: row.orgId }, row.id, row.lockedAt, "no_device");
+          if (ended) await queueTelegramFallback(trx, { orgId: row.orgId }, row);
+        }),
+      row.id
+    );
 
   async function releaseAll(rows: ClaimedOutbox[], next: Date): Promise<void> {
     for (const row of rows) await release(row, next, false);
@@ -183,19 +196,21 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
         // The device must exist and be live: a session that ended or expired ends the push (the device goes, the row ends `no_device`).
         const deviceId = row.pushSubscriptionId;
         if (deviceId === null) {
-          await fail(row, "no_device");
+          await endNoDevice(row);
           outboxLog.warn("push_no_device", { kind: row.kind });
           continue;
         }
         if (!(await liveDevices(row.orgId, row.userId)).has(deviceId)) {
+          // `removeDevice` ends this row and every other open row of the device, each with its fallback; `endNoDevice` covers a device
+          // that was removed by another run a moment ago.
           await inTransaction((trx) => removeDevice(trx, ctx, deviceId));
-          await fail(row, "no_device");
+          await endNoDevice(row);
           outboxLog.warn("push_device_gone", { kind: row.kind, push_subscription_id: deviceId, code: "session_ended" });
           continue;
         }
         const secret = await inTransaction((trx) => loadDeviceSecret(trx, ctx, deviceId, box));
         if (secret === null) {
-          await fail(row, "no_device");
+          await endNoDevice(row);
           // No device row: removed earlier in this run (a 410 of another row), or a secret that did not open (its own line says so).
           outboxLog.warn("push_no_device", { kind: row.kind, push_subscription_id: deviceId });
           continue;
@@ -218,7 +233,8 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
           secret.target,
           Buffer.from(text, "utf8"),
           {
-            ttl: PUSH_TTL_SECONDS,
+            // A row held by quiet hours must not live a full day at the push service: the message ends when the row would.
+            ttl: Math.max(0, PUSH_TTL_SECONDS - Math.floor((now.getTime() - row.createdAt.getTime()) / 1000)),
             urgency: noticeGroupOf(row.kind) === "updates" ? "normal" : "high",
             topic: pushTopicOf(row.id),
           },
@@ -243,6 +259,7 @@ export function createPushSender(deps: PushSenderDeps): { run(): Promise<void> }
             // The push service says the browser dropped the subscription (404, 410). The device goes and every open row of it ends
             // `no_device`, this one included. Not a failure of ours: the operator counts leave `no_device` out, so this line is the trace.
             await inTransaction((trx) => removeDevice(trx, ctx, deviceId));
+            await endNoDevice(row);
             outboxLog.warn("push_device_gone", {
               kind: row.kind,
               push_subscription_id: deviceId,

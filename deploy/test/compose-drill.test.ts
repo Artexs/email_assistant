@@ -152,6 +152,7 @@ describe("deploy/compose.drill.yaml", () => {
         "GEMINI_API_KEY",
         "OPENAI_API_KEY",
         "OPENAI_OWN_API_KEY",
+        "VAPID_PRIVATE_KEY",
       ]) {
         expect(env[key], `${name} ${key}`).toBe("");
       }

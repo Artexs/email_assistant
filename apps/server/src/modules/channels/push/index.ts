@@ -26,6 +26,7 @@ export {
   type UpsertPushSubscription,
   upsertPushSubscription,
 } from "./repo";
+export { type EndedPushRow, queueTelegramFallback, telegramKeyOfPushKey } from "./fallback";
 export { canonicalEndpoint, checkPushEndpoint, PUSH_HOST_SUFFIXES, type PushEndpointCheck } from "./endpoint";
 export { type PushOptions, type PushResult, type PushTarget, sendWebPush, type SendDeps } from "./send";
 export { VapidError, type VapidKeys, vapidHeaders } from "./vapid";

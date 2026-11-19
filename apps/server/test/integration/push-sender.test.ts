@@ -16,7 +16,7 @@ import { generateVapidKeyPair } from "../../src/platform/vapid-keys";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
 import { decryptPushBody, newReceiver } from "../push-decrypt";
 
-import { addMember, createOrgWithMailbox, insertTriaged, isolateChannels } from "./fixtures";
+import { addMember, createOrgWithMailbox, insertTriaged, isolateChannels, testNoticeView } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
@@ -151,21 +151,23 @@ interface RowOver {
   noDevice?: boolean;
 }
 
-// One push row of a device. An `urgent` row by default; `auth_error` is a kind of the group `updates`.
+// One push row of a device. An `urgent` row by default; `auth_error` is a kind of the group `updates`, `approval` of the group `approvals`.
 async function pushRow(trx: Trx, w: World, d: Device, over: RowOver = {}): Promise<string> {
   const kind = over.kind ?? "urgent";
-  const emailId = kind === "urgent" ? await urgentEmail(trx, w) : undefined;
+  const emailId = kind === "urgent" || kind === "approval" ? await urgentEmail(trx, w) : undefined;
   const view =
     over.view ??
-    (kind === "auth_error"
-      ? encodeNoticeView("auth_error", {
-          address: CANARY_FROM,
-          mailboxId: w.mailboxId,
-          since: new Date(NOON.getTime() - HOUR),
-          now: NOON,
-          timeZone: "Europe/Warsaw",
-        })
-      : encodeNoticeView("urgent", urgentView(emailId ?? "")));
+    (kind === "approval"
+      ? testNoticeView("approval", { marker: CANARY_SUBJECT, at: NOON })
+      : kind === "auth_error"
+        ? encodeNoticeView("auth_error", {
+            address: CANARY_FROM,
+            mailboxId: w.mailboxId,
+            since: new Date(NOON.getTime() - HOUR),
+            now: NOON,
+            timeZone: "Europe/Warsaw",
+          })
+        : encodeNoticeView("urgent", urgentView(emailId ?? "")));
   const id = await insertOutbox(trx, w.ctx, {
     userId: over.userId ?? w.userId,
     kind,
@@ -236,7 +238,8 @@ describe("the push sender", () => {
       const call = push.calls[0];
       expect(call?.url).toBe(d.endpoint);
       expect(call?.headers).toMatchObject({
-        ttl: "86400",
+        // The row is 10 minutes old: the message lives what is left of its 24 hours.
+        ttl: "85800",
         urgency: "high",
         topic: pushTopicOf(rowId),
         "content-encoding": "aes128gcm",
@@ -273,6 +276,23 @@ describe("the push sender", () => {
       await sender(trx, push, { now: NOON }).run();
       expect(push.calls).toHaveLength(1);
       expect(push.calls[0]?.headers.urgency).toBe("normal");
+    });
+  });
+
+  test("1c. an approval row goes with the urgency high and a body that holds the action id", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const d = await device(trx, w);
+      const id = await pushRow(trx, w, d, { kind: "approval" });
+      const push = fakePushService();
+      await sender(trx, push, { now: NOON }).run();
+      expect(push.calls).toHaveLength(1);
+      expect(push.calls[0]?.headers.urgency).toBe("high");
+      const body = JSON.parse(
+        decryptPushBody(push.calls[0]?.body ?? new Uint8Array(), d.receiver).toString("utf8")
+      ) as Record<string, unknown>;
+      expect(body).toMatchObject({ kind: "approval", id });
+      expect((await stateOf(trx, id)).status).toBe("sent");
     });
   });
 
@@ -366,6 +386,36 @@ describe("the push sender", () => {
       const state = await stateOf(trx, id);
       expect(state).toMatchObject({ status: "pending", attempts: 1 });
       expect(state.next_attempt_at?.getTime()).toBe(NOON.getTime() + 30_000);
+    });
+  });
+
+  test("4b. Retry-After wins over the backoff: 120 s on the first failure, where the backoff would be 30 s", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const d = await device(trx, w);
+      const id = await pushRow(trx, w, d);
+      await sender(trx, fakePushService({ status: 429, headers: { "Retry-After": "120" } }), { now: NOON }).run();
+      const state = await stateOf(trx, id);
+      expect(state).toMatchObject({ status: "pending", attempts: 1 });
+      expect(state.next_attempt_at?.getTime()).toBe(NOON.getTime() + 120_000);
+    });
+  });
+
+  test("4c. five 429 answers count five attempts and end the row as too_many_errors", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const d = await device(trx, w);
+      const id = await pushRow(trx, w, d);
+      const clock = { now: NOON };
+      const run = sender(trx, fakePushService({ status: 429, headers: { "Retry-After": "30" } }), clock);
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        await run.run();
+        const state = await stateOf(trx, id);
+        expect(state).toMatchObject({ status: "pending", attempts: attempt });
+        clock.now = state.next_attempt_at ?? clock.now;
+      }
+      await run.run();
+      expect(await stateOf(trx, id)).toMatchObject({ status: "failed", error_code: "too_many_errors" });
     });
   });
 
@@ -613,6 +663,110 @@ describe("the push sender", () => {
       expect(events.has("push_sent")).toBe(true);
       expect(events.has("push_device_gone")).toBe(true);
       expect(events.has("push_failed")).toBe(true);
+    } finally {
+      logs.stop();
+    }
+  });
+
+  test("18. the TTL is what is left of the 24 hours of the row: a row 23 h 50 min old goes with 600 s, a fresh row with 86400 s", async () => {
+    await withRollback(db, async (trx) => {
+      const w = await world(trx);
+      const d = await device(trx, w);
+      await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 23 * HOUR - 50 * MINUTE) });
+      await pushRow(trx, w, d, { createdAt: NOON });
+      const push = fakePushService();
+      await sender(trx, push, { now: NOON }).run();
+      expect(push.calls.map((call) => call.headers.ttl).sort()).toEqual(["600", "86400"]);
+    });
+  });
+
+  test("19. a row that was posted and then hit a database error stays sending; the stale reclaim after 5 minutes sends it again", async () => {
+    const logs = captureLogs();
+    try {
+      await withRollback(db, async (trx) => {
+        const w = await world(trx);
+        const d = await device(trx, w);
+        const id = await pushRow(trx, w, d);
+        const push = fakePushService();
+        // After the POST the database "goes away": a transaction that starts now fails. Before the POST it works as usual.
+        let posted = false;
+        const postingFetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+          posted = true;
+          return push.fetch(input, init);
+        }) as typeof fetch;
+        const flaky = new Proxy(trx, {
+          get(target, prop) {
+            if (prop === "isTransaction") return false;
+            if (prop === "transaction") {
+              return () => ({
+                execute: <T>(action: (inner: Trx) => Promise<T>): Promise<T> =>
+                  posted ? Promise.reject(new Error("database went away")) : action(target),
+              });
+            }
+            const value = Reflect.get(target, prop, target) as unknown;
+            return typeof value === "function" ? (value as (...args: unknown[]) => unknown).bind(target) : value;
+          },
+        });
+        const clock = { now: NOON };
+        await createPushSender({
+          db: flaky,
+          box,
+          keys: vapid,
+          fetch: postingFetch,
+          now: () => new Date(clock.now),
+        }).run();
+        expect(push.calls).toHaveLength(1);
+        const stuck = await stateOf(trx, id);
+        expect(stuck).toMatchObject({ status: "sending", attempts: 0 });
+        expect(stuck.locked_at?.getTime()).toBe(NOON.getTime());
+        expect(eventLines(logs.lines, "outbox_failed")).toHaveLength(1);
+
+        // 4 minutes later the lock is young: nobody claims the row.
+        clock.now = new Date(NOON.getTime() + 4 * MINUTE);
+        await sender(trx, push, clock).run();
+        expect(push.calls).toHaveLength(1);
+        expect((await stateOf(trx, id)).status).toBe("sending");
+
+        // 6 minutes later the reclaim sends it again, with an attempt counted.
+        clock.now = new Date(NOON.getTime() + 6 * MINUTE);
+        await sender(trx, push, clock).run();
+        expect(push.calls).toHaveLength(2);
+        expect(await stateOf(trx, id)).toMatchObject({ status: "sent", attempts: 1 });
+      });
+    } finally {
+      logs.stop();
+    }
+  });
+
+  test("20. a second run of the same sender inside the 10-minute key-version pause claims nothing, not even a new row; after the pause it tries again", async () => {
+    const logs = captureLogs();
+    try {
+      await withRollback(db, async (trx) => {
+        const w = await world(trx);
+        const d = await device(trx, w);
+        await pushRow(trx, w, d);
+        const push = fakePushService();
+        const clock = { now: NOON };
+        const wrongKey = createSecretBox(randomBytes(32).toString("base64"), 2);
+        const run = sender(trx, push, clock, { box: wrongKey });
+        await run.run();
+        expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(1);
+
+        // A new row, due now: inside the pause the sender must not even claim it.
+        const fresh = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 2 * MINUTE) });
+        clock.now = new Date(NOON.getTime() + 5 * MINUTE);
+        await run.run();
+        const waiting = await stateOf(trx, fresh);
+        expect(waiting).toMatchObject({ status: "pending", attempts: 0 });
+        expect(waiting.next_attempt_at?.getTime()).toBe(NOON.getTime() - MINUTE);
+        expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(1);
+        expect(push.calls).toHaveLength(0);
+
+        // The pause is over: the sender claims again (and meets the same fault once more).
+        clock.now = new Date(NOON.getTime() + 11 * MINUTE);
+        await run.run();
+        expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(2);
+      });
     } finally {
       logs.stop();
     }
