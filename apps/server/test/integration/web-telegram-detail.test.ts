@@ -16,6 +16,7 @@ import { createFakeChannel } from "../../src/modules/channels/fake/channel";
 import { changeTelegramDetail, changeTelegramLock } from "../../src/modules/channels/telegram-detail";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import {
+  insertMembership,
   isOrgSuspended,
   setMemberTelegramDetail,
   setTelegramMinimalLocked,
@@ -125,17 +126,20 @@ const tokens = (orgId = org.orgId) =>
   db.selectFrom("chat_link_tokens").select("user_id").where("org_id", "=", orgId).execute();
 
 describe("the link step stores the detail level", () => {
-  test("1. a link with no detail stores minimal", async () => {
+  test("1. a link with no detail keeps the stored level (full stays full, a new member is minimal) and writes no audit row", async () => {
     await flag(org.orgId, true);
     await setDetail(org.ownerId, "full");
     const res = await app().request("/api/channels/telegram/link", post("owner", CURRENT));
     expect(res.status).toBe(200);
     telegramLinkSchema.parse(await res.json());
-    expect(await detailOf(org.ownerId)).toBe("minimal");
+    expect(await detailOf(org.ownerId)).toBe("full");
     expect(await tokens()).toHaveLength(1);
-    expect(await auditOf("member.telegram_detail_changed")).toEqual([
-      { actor: org.ownerId, data: { detail: "minimal" } },
-    ]);
+    expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
+    // The column default: a member that never chose has `minimal`, and a link without `detail` leaves it.
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+    expect((await app().request("/api/channels/telegram/link", post("assistant", CURRENT))).status).toBe(200);
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+    expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
   });
 
   test("2. full with the current consent stores full; full with an old consent is 409 and stores nothing", async () => {
@@ -180,6 +184,32 @@ describe("the link step stores the detail level", () => {
     expect(await tokens()).toHaveLength(1);
   });
 
+  test("3b. the order of the checks is the one of the PATCH route: locked full with an old consent answers the lock, in both routes", async () => {
+    await flag(org.orgId, true);
+    await setLock(true);
+    const old = { consentVersion: "2020-01-01", detail: "full" };
+    const link = await app().request("/api/channels/telegram/link", post("assistant", old));
+    const change = await app().request("/api/me/telegram-detail", patch("assistant", old));
+    expect([
+      { status: link.status, body: await link.json() },
+      { status: change.status, body: await change.json() },
+    ]).toEqual([
+      { status: 409, body: { error: "telegram_detail_locked" } },
+      { status: 409, body: { error: "telegram_detail_locked" } },
+    ]);
+    // Not locked: both answer the old consent.
+    await setLock(false);
+    for (const res of [
+      await app().request("/api/channels/telegram/link", post("assistant", old)),
+      await app().request("/api/me/telegram-detail", patch("assistant", old)),
+    ]) {
+      expect({ status: res.status, body: await res.json() }).toEqual({
+        status: 409,
+        body: { error: "telegram_consent_outdated" },
+      });
+    }
+  });
+
   test("4. flag off: the link ignores detail (full is linked), the column stays, GET holds no detail key", async () => {
     await setDetail(org.ownerId, "full");
     await setLock(true);
@@ -195,6 +225,13 @@ describe("the link step stores the detail level", () => {
     expect(await detailOf(org.assistantId)).toBe("minimal");
     expect(await tokens()).toHaveLength(2);
     expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
+    // A value that the schema refuses is ignored as well: the feature is off, the old behaviour stays.
+    for (const detail of ["everything", 1, null]) {
+      const bad = await app().request("/api/channels/telegram/link", post("owner", { ...CURRENT, detail }));
+      expect({ detail, status: bad.status }).toEqual({ detail, status: 200 });
+    }
+    expect(await tokens()).toHaveLength(2); // a new token replaces the one of the same user
+    expect(await detailOf(org.ownerId)).toBe("full");
 
     const state = (await (await app().request("/api/channels/telegram", as("owner"))).json()) as Record<
       string,
@@ -214,6 +251,26 @@ describe("the link step stores the detail level", () => {
       expect(res.status).toBe(400);
     }
     expect(await tokens()).toEqual([]);
+  });
+});
+
+describe("the link under the lock keeps the stored level", () => {
+  test("26. a link without detail while the organization locks minimal keeps a stored full; the unlock gives full again", async () => {
+    await flag(org.orgId, true);
+    await setDetail(org.assistantId, "full");
+    await setLock(true);
+    const res = await app().request("/api/channels/telegram/link", post("assistant", CURRENT));
+    expect(res.status).toBe(200);
+    expect(await detailOf(org.assistantId)).toBe("full");
+    expect(await tokens()).toHaveLength(1);
+    expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
+    const read = async () =>
+      telegramStateSchema.parse(await (await app().request("/api/channels/telegram", as("assistant"))).json());
+    expect(await read()).toMatchObject({ detail: "full", effectiveDetail: "minimal", locked: true });
+    expect((await app().request("/api/organization/telegram-lock", patch("owner", { locked: false }))).status).toBe(
+      200
+    );
+    expect(await read()).toMatchObject({ detail: "full", effectiveDetail: "full", locked: false });
   });
 });
 
@@ -507,6 +564,85 @@ describe("two writers of one row", () => {
     });
     expect((await result.second).kind).toBe("ok");
     expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
+  });
+});
+
+describe("a user in two organizations", () => {
+  // The assistant is a member of the organization of the session (first membership) and the owner of the other one.
+  const inTwoOrgs = async () => {
+    await insertMembership(db, { orgId: org.otherOrgId }, { userId: org.assistantId, role: "owner" });
+    await flag(org.orgId, true);
+    await flag(org.otherOrgId, true);
+    await setDetail(org.assistantId, "full");
+    await setDetail(org.assistantId, "full", org.otherOrgId);
+  };
+
+  test("22. PATCH changes only the row of the session organization; the lock route answers 403 where the user is no owner", async () => {
+    await inTwoOrgs();
+    const res = await app().request("/api/me/telegram-detail", patch("assistant", { detail: "minimal" }));
+    expect(res.status).toBe(200);
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+    expect(await detailOf(org.assistantId, org.otherOrgId)).toBe("full");
+    expect(await auditOf("member.telegram_detail_changed", org.otherOrgId)).toEqual([]);
+
+    const lock = await app().request("/api/organization/telegram-lock", patch("assistant", { locked: true }));
+    expect({ status: lock.status, body: await lock.json() }).toEqual({ status: 403, body: { error: "owner_only" } });
+    expect(await lockOf()).toBe(false);
+    expect(await lockOf(org.otherOrgId)).toBe(false);
+  });
+
+  test("23. the repo writers filter by organization themselves: a scope-free db changes one row of a user in two organizations", async () => {
+    await inTwoOrgs();
+    expect(await setMemberTelegramDetail(db, { orgId: org.orgId }, org.assistantId, "minimal")).toBe("full");
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+    expect(await detailOf(org.assistantId, org.otherOrgId)).toBe("full");
+    expect(await setTelegramMinimalLocked(db, { orgId: org.orgId }, true)).toBe(false);
+    expect(await lockOf()).toBe(true);
+    expect(await lockOf(org.otherOrgId)).toBe(false);
+  });
+});
+
+describe("the lock is read under a share lock", () => {
+  // The owner's write holds the organization row in an open transaction. A link or a change that reads the lock without the share
+  // lock sees the old value (not locked) and stores `full` after the owner has locked; with `FOR SHARE` it waits and sees the lock.
+  const raceWithOpenLock = async <T>(run: () => Promise<T>): Promise<T> => {
+    const pending = await db.transaction().execute(async (trx) => {
+      await setTelegramMinimalLocked(trx, { orgId: org.orgId }, true);
+      const result = run();
+      const early = await Promise.race([
+        result.then(() => "done"),
+        new Promise((done) => setTimeout(done, 150, "waiting")),
+      ]);
+      expect(early).toBe("waiting");
+      return { result };
+    });
+    return pending.result;
+  };
+
+  test("24. a link with full that meets the owner's open lock answers 409 and makes no token and no consent row", async () => {
+    await flag(org.orgId, true);
+    await setDetail(org.assistantId, "minimal");
+    const res = await raceWithOpenLock(async () =>
+      app().request("/api/channels/telegram/link", post("assistant", { ...CURRENT, detail: "full" }))
+    );
+    expect({ status: res.status, body: await res.json() }).toEqual({
+      status: 409,
+      body: { error: "telegram_detail_locked" },
+    });
+    expect(await tokens()).toEqual([]);
+    expect(await auditOf("web.telegram_consent")).toEqual([]);
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+  });
+
+  test("25. a change to full that meets the owner's open lock is refused and stores nothing", async () => {
+    await flag(org.orgId, true);
+    await setDetail(org.assistantId, "minimal");
+    const result = await raceWithOpenLock(() =>
+      changeTelegramDetail(db, { orgId: org.orgId }, org.assistantId, { detail: "full", ...CURRENT }, NOW)
+    );
+    expect(result).toEqual({ kind: "locked" });
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+    expect(await auditOf("web.telegram_consent")).toEqual([]);
   });
 });
 

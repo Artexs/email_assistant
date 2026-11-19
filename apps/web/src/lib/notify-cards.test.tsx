@@ -109,18 +109,19 @@ describe("ReportChannelCard", () => {
 // Only `NotifyCards` loads `/api/me/notify`. The section mounts it only for a flag that is on, so with both flags off the Settings page
 // makes no request (the GET answers 200 whatever the flags say).
 describe("NotifySection", () => {
-  test("both flags off: nothing is mounted, so no request goes out", () => {
+  test("every flag off: nothing is mounted, so no request goes out", () => {
     expect(NotifySection({ features: [], timeZone: "UTC" })).toBeNull();
     expect(NotifySection({ features: ["stats_page", "trust_ladder"], timeZone: "UTC" })).toBeNull();
   });
 
   test.each([
-    { features: ["user_quiet_hours"], quiet: true, channel: false },
-    { features: ["report_mail"], quiet: false, channel: true },
-    { features: ["report_mail", "user_quiet_hours"], quiet: true, channel: true },
-  ])("the flags $features mount the loader with the matching cards", ({ features, quiet, channel }) => {
+    { features: ["user_quiet_hours"], quiet: true, channel: false, routes: false },
+    { features: ["report_mail"], quiet: false, channel: true, routes: false },
+    { features: ["report_mail", "user_quiet_hours"], quiet: true, channel: true, routes: false },
+    { features: ["web_push"], quiet: false, channel: false, routes: true },
+  ])("the flags $features mount the loader with the matching cards", ({ features, quiet, channel, routes }) => {
     const node = NotifySection({ features, timeZone: "UTC" });
     expect(node?.type).toBe(NotifyCards);
-    expect(node?.props).toEqual({ timeZone: "UTC", quiet, channel });
+    expect(node?.props).toEqual({ timeZone: "UTC", quiet, channel, routes });
   });
 });

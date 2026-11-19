@@ -32,5 +32,9 @@ Owner steps O4–O5 in `questions.md`: deploy; flags `web_push` and `telegram_mi
 ## Carry-over from the stage 02 review (2026-11-18)
 See `../review-2.md` (the lines for stage 13).
 
+## Carry-over from the stage 12 review (PASS c84414fd)
+- NOTE 4: the "(default)" mark of the route selects cannot tell a stored value from the default, and a user cannot pin the value that is the default now (`routesPatchOf` drops it). Kept as designed (D7). Say it in the capability page and the help text if the owner wants it changed.
+- Papers: name the two Telegram levels (`minimal`, `full`) in the privacy text; `tg_consent_text` is unchanged and over-describes a `minimal` member.
+
 ## Gate note (from the stage 08 review, PASS 7c500177)
 The sub-processor registry has no push row. Proposed row (adds the clear-text urgency header the stage 13 draft lacked): id `web-push`; name "Browser push services (Google FCM, Mozilla, Apple, Microsoft)"; purpose "Deliver phone and browser notices"; dataReceived "an encrypted message (kind, count, item id, language) that they cannot read; the device push address; the time, size, lifetime (24 h) and urgency (high or normal) of each message; the operator contact in the VAPID token"; personalData true; activeWhen env `VAPID_PRIVATE_KEY`; texts in en and pl. The new row changes the legal digest (`legal-checks.ts:80`), so this stage bumps `TERMS_VERSION` and adds a `TERMS_HISTORY` entry. Update claims.md C182/C195 too. Gate G-papers: `web_push` only for the owner's pilot org until this stage lands.

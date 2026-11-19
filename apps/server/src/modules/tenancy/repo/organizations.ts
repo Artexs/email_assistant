@@ -19,6 +19,14 @@ export async function getOrganization(
   return db.selectFrom("organizations").selectAll().where("id", "=", ctx.orgId).executeTakeFirst();
 }
 
+/** The organization row read with `FOR SHARE`: a writer of the row (the owner's lock) waits until this transaction ends. */
+export async function getOrganizationForShare(
+  trx: Transaction<DB>,
+  ctx: TenantContext
+): Promise<OrganizationRow | undefined> {
+  return trx.selectFrom("organizations").selectAll().where("id", "=", ctx.orgId).forShare().executeTakeFirst();
+}
+
 export async function getOrgPlan(db: Db | Transaction<DB>, ctx: TenantContext): Promise<OrgPlanState | undefined> {
   const row = await db
     .selectFrom("organizations")

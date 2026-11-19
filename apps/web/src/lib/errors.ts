@@ -11,6 +11,7 @@ const codeTexts: Record<string, TextKey> = {
   telegram_off: "tg_off",
   telegram_unreachable: "tg_unreachable",
   telegram_consent_outdated: "tg_consent_outdated",
+  telegram_detail_locked: "tgd_locked",
   rule_exists: "err_rule_exists",
   rule_limit: "err_rule_limit",
   not_found: "err_not_found",

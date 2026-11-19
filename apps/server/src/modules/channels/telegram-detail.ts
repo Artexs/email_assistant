@@ -2,6 +2,7 @@ import {
   effectiveDetail,
   TELEGRAM_CONSENT_VERSION,
   type TelegramDetail,
+  telegramDetailSchema,
   type TelegramDetailAnswer,
   type TelegramDetailBody,
   type TelegramLockAnswer,
@@ -9,9 +10,11 @@ import {
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
+import { ValidationError } from "../../platform/http";
 import { auditEvents, recordAudit } from "../audit";
 import {
   getOrganization,
+  getOrganizationForShare,
   isFeatureOn,
   listTelegramDetailsOf,
   setMemberTelegramDetail,
@@ -73,19 +76,39 @@ export async function recordTelegramConsent(trx: Transaction<DB>, ctx: TenantCon
   });
 }
 
+/** What the link step does with the level. `off`: the flag is off; the value is not read. `keep`: no `detail` was sent; the stored level stays. */
+export type LinkDetail =
+  | { kind: "off" }
+  | { kind: "keep" }
+  | { kind: "locked" }
+  | { kind: "store"; detail: TelegramDetail };
+
 /**
- * The detail level that a link asks for. `locked`: the organization locked `minimal` and the link asked for `full`. Reads only.
- * `undefined`: the flag is off; the link keeps today's behaviour and leaves the stored level alone.
+ * The detail level that a link asks for, from the raw body value. `locked`: the organization locks `minimal` and the link asked
+ * for `full`. With `share` the organization row is read `FOR SHARE` (inside the link transaction): the owner's lock cannot change
+ * between this check and the write. The flag off ignores the value, also a bad one. With the flag on a bad value is a 400.
+ * `detail` absent keeps the stored level (the column default `minimal` covers a new member): an old panel bundle that sends no
+ * `detail` must not lower a member from `full`.
  */
 export async function linkDetailOf(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  asked: TelegramDetail | undefined
-): Promise<{ detail: TelegramDetail } | { locked: true } | undefined> {
-  if (!(await isFeatureOn(db, ctx, "telegram_minimal"))) return undefined;
-  const detail = asked ?? "minimal";
-  if (detail === "full" && (await getOrganization(db, ctx))?.telegram_minimal_locked === true) return { locked: true };
-  return { detail };
+  raw: unknown,
+  opts: { share: boolean } = { share: false }
+): Promise<LinkDetail> {
+  if (!(await isFeatureOn(db, ctx, "telegram_minimal"))) return { kind: "off" };
+  if (raw === undefined) return { kind: "keep" };
+  const parsed = telegramDetailSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ValidationError([{ path: "detail", code: "invalid_value", message: "detail must be full or minimal" }]);
+  }
+  if (parsed.data === "full") {
+    const organization = opts.share
+      ? await getOrganizationForShare(db as Transaction<DB>, ctx)
+      : await getOrganization(db, ctx);
+    if (organization?.telegram_minimal_locked === true) return { kind: "locked" };
+  }
+  return { kind: "store", detail: parsed.data };
 }
 
 export type ChangeDetailResult =
@@ -106,7 +129,8 @@ export function changeTelegramDetail(
   now: Date
 ): Promise<ChangeDetailResult> {
   return inTransaction(db, async (trx): Promise<ChangeDetailResult> => {
-    const organization = await getOrganization(trx, ctx);
+    // `FOR SHARE`: the owner's lock waits for this transaction, so the lock check below holds until the level is stored.
+    const organization = await getOrganizationForShare(trx, ctx);
     if (organization === undefined) return { kind: "not_found" };
     if (body.detail === "full") {
       if (organization.telegram_minimal_locked) return { kind: "locked" };
