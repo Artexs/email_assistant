@@ -29,3 +29,6 @@ export async function withRollback(db: Db, fn: (trx: Transaction<DB>) => Promise
     }
   }
 }
+
+// A credentials key for the tests that hash a sender address (`senderKeyHash`) or run the data-request match: base64 of 32 bytes.
+export const TEST_CREDENTIALS_KEY = Buffer.alloc(32, 7).toString("base64");

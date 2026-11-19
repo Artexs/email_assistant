@@ -21,6 +21,9 @@ export interface DsrCounts {
   open_actions: number;
   chain_actions: number;
   chain_delegations: number;
+  // Sender profiles (found by the keyed hash) and address suggestions (by the hash or by the pattern) of the person.
+  sender_profiles: number;
+  sender_suggestions: number;
 }
 
 export function dsrCounts(match: DsrMatch): DsrCounts {
@@ -32,6 +35,11 @@ export function dsrCounts(match: DsrMatch): DsrCounts {
     open_actions: match.openActions.length,
     chain_actions: match.chainActions.length,
     chain_delegations: match.chainDelegations.length,
+    sender_profiles: match.senderContext.profiles.length,
+    sender_suggestions: new Set([
+      ...match.senderContext.suggestions,
+      ...(match.mentions["sender_suggestions.pattern"] ?? []),
+    ]).size,
   };
 }
 
@@ -49,7 +57,9 @@ export function dsrIsEmpty(counts: DsrCounts): boolean {
     counts.listed.sender_rules === 0 &&
     counts.open_actions === 0 &&
     counts.chain_actions === 0 &&
-    counts.chain_delegations === 0
+    counts.chain_delegations === 0 &&
+    counts.sender_profiles === 0 &&
+    counts.sender_suggestions === 0
   );
 }
 
@@ -63,6 +73,8 @@ export function dsrAuditData(addressHash: string, counts: DsrCounts): AuditData 
     listed_delegates: counts.listed.delegates,
     listed_sender_rules: counts.listed.sender_rules,
     open_actions: counts.open_actions,
+    sender_profiles: counts.sender_profiles,
+    sender_suggestions: counts.sender_suggestions,
   };
 }
 
@@ -113,7 +125,7 @@ async function* reportChunks(
   const rules = await sql<Record<string, unknown>>`
     select id, kind, pattern from sender_rules
     where org_id = ${input.orgId}::uuid and id = any (${match.listed.senderRules}::uuid[]) order by id`.execute(trx);
-  yield `],"mentions":${JSON.stringify(match.mentions)},"listed":${JSON.stringify({ delegates: delegates.rows, sender_rules: rules.rows })},"open_actions":${JSON.stringify(match.openActions)}}`;
+  yield `],"mentions":${JSON.stringify(match.mentions)},"sender_context":${JSON.stringify(match.senderContext)},"listed":${JSON.stringify({ delegates: delegates.rows, sender_rules: rules.rows })},"open_actions":${JSON.stringify(match.openActions)}}`;
 }
 
 // The dry run for one address. One `REPEATABLE READ READ ONLY` transaction reads the match
@@ -141,7 +153,7 @@ async function findInScope(
     .execute(async (trx): Promise<DsrFindResult> => {
       const org = await trx.selectFrom("organizations").select("id").where("id", "=", input.orgId).executeTakeFirst();
       if (!org) return { kind: "not_found" };
-      const match = await matchSubject(trx, input.orgId, address);
+      const match = await matchSubject(trx, input.orgId, address, input.credentialsKey);
       if (match.ownAddress) return { kind: "own_address" };
       const counts = dsrCounts(match);
       if (!input.report) return { kind: "found", counts, reportBytes: null };
