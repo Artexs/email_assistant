@@ -22,6 +22,14 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 - en: The privacy policy now names the browser push services (Google FCM, Mozilla, Apple, Microsoft) and the two Telegram levels, "Counts and links only" and "Full". The terms and the data processing agreement now also mention push devices. You accept the new terms once, at your next sign-in.
   pl: Polityka prywatności wymienia teraz usługi push przeglądarek (Google FCM, Mozilla, Apple, Microsoft) oraz dwa poziomy Telegrama: „Tylko liczby i linki” i „Pełna treść”. Regulamin i umowa powierzenia danych wspominają też o urządzeniach push. Nowy regulamin akceptujesz raz, przy następnym logowaniu.
 
+### Added
+
+- Phone channel, second part (flags `web_push`, `telegram_minimal`): the Settings cards for the Telegram detail level and for routing each notice group to Telegram, push or both; the owner lock for the minimal level; push notices and the minimal Telegram text render for every notice kind. The detail tables and the lock API behind them are in.
+
+### Fixed
+
+- The data request find and erase now match an address in every letter case, also for letters that the database and the program lower-case differently (for example a dotless i or a Greek final sigma), and no longer match another person's address that only looks similar. The erase scrubs the same texts that the find lists.
+
 ### Changed
 
 - The terms version moves to `2026-11-19`. The sub-processor registry has the row `web-push` (active when `VAPID_PRIVATE_KEY` is set), and `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` map to it in `OUTSIDE_SERVICE_KEYS`. Each data category that is kept until a delete now has a scope with its own text: "Until the mailbox or the organization is deleted", "Until the member removes it or the organization is deleted" (chat links, push devices) or "Until the organization is deleted" (the account). `tg_consent_text` and the consent version do not change. ADR 0032 is accepted. `deploy/README.md` has the section "Phone notices and Telegram detail (F118)" with the keys, the flags and the rollback steps. The flags `web_push` and `telegram_minimal` stay off until the owner turns them on for the pilot organization.
