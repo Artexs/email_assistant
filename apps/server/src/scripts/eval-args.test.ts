@@ -106,6 +106,18 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
     expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v9"])).toBeUndefined();
   });
 
+  test("v4 takes the part profile (sorted with the others); v3 refuses it", () => {
+    expect(
+      parseEvalArgs([...sim, "--prompt-version", "classifier-v4", "--prompt-parts", "profile,list"])?.prompt
+    ).toEqual({ version: "classifier-v4", parts: ["list", "profile"] });
+    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v4", "--prompt-parts", "none"])?.prompt).toEqual({
+      version: "classifier-v4",
+      parts: [],
+    });
+    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "profile"])).toBeUndefined();
+    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v4", "--prompt-parts", "foo"])).toBeUndefined();
+  });
+
   test("6. v3 without --prompt-parts while the pointer is v2 gives the parts none", () => {
     expect(productionClassifierChoice().version).toBe("classifier-v2");
     expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3"])?.prompt).toEqual({

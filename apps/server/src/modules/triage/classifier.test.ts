@@ -109,6 +109,7 @@ describe("classifyEmail", () => {
       attachments: [{ name: "a.pdf", type: "application/pdf", size: null }],
       isList: true,
       senderHistory: { days: 90, received: 3, corrections: {} },
+      senderProfile: null,
       urgency: { today: "2027-01-15", topics: [], deadlines: [] },
     };
     const plain = await run();
@@ -124,6 +125,7 @@ describe("classifyEmail", () => {
       attachments: [{ name: "plan.pdf", type: "application/pdf", size: null }],
       isList: false,
       senderHistory: null,
+      senderProfile: null,
       urgency: null,
     };
     const { result, call } = await run({ extras, prompt: { version: "classifier-v3", parts: [] } });

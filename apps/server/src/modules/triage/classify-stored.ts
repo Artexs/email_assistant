@@ -18,7 +18,7 @@ import type { LlmCallRecord } from "../audit";
 import { getStoredEmail, type TestMailRule } from "../mail";
 
 import { classifyEmail } from "./classifier";
-import { buildClassifierInput } from "./classify-input";
+import { buildClassifierInput, type ClassifierInputDeps } from "./classify-input";
 import type { ClassifierPromptChoice } from "./prompts";
 import type { TriageMailbox } from "./service";
 import { assessEmail } from "./suspicious-context";
@@ -35,6 +35,8 @@ export interface ClassifyStoredDeps {
   testMail: TestMailRule;
   /** Absent: the production prompt. */
   prompt?: ClassifierPromptChoice;
+  /** The profile reader of the composition root (`classifier-v4` part `profile`). */
+  readProfile?: ClassifierInputDeps["readProfile"];
   /** The settings snapshot of the mailbox: the thresholds, the sender rules, the delegates, the urgency profile. */
   mailbox: TriageMailbox;
   now(): Date;
