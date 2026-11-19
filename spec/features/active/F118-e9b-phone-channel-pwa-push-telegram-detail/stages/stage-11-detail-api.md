@@ -34,3 +34,14 @@ Carry-over reads: `plan.md` D13, D14; `interfaces.md` (routes, audit events); `d
 - **Check:** the touched tests, then the Proof.
 - **Done when:** the Proof prints `PROOF_OK`.
 - **Out of scope:** the panel cards (12).
+
+## Carry-over from the stage 10 review (PASS 908b6489)
+
+First commit of this stage (before the API), each with a test and a mutation log:
+- NOTE 1 (proven): `/pause` and `/resume` print the own mailbox address at `minimal` (`switchMailboxes`, `channels/commands.ts` ~312-341). Use `telegramDetailOf` and "Mailbox n" like `/status` (plan D12, Q4 default). This must land before a member can select `minimal`.
+- NOTE 2 (owner decision, default taken): a card edit at `minimal` has no Reject button, also when the card was sent at `full`, and a `full` card has no panel link. Default: at `minimal`, the edit adds the panel link line `/approvals?id=<send id>` when the original text has none. Test it. Keep no button.
+- TG1: `queueNotice` check-render must cover `full` always, plus the member level when it is `minimal` (`channels/notice-queue.ts:57-62`); test a `full` render that throws.
+- TG2: test a card sent at `full`, member now at `minimal`, then a tap edit (test 5g uses a card queued at `minimal`).
+- Cost: a batch reader of the detail level in the digest and notice loops (today 1-2 queries per `queueNotice`, 1000 members = up to 2000 queries); do it if the diff stays small, else note it.
+- NOTE 9: add the operator step "turn `telegram_minimal` off before a code rollback; let pending rows drain before a rollback to code older than stage 09" to rule 3e of `docs/capabilities/digest-and-notices.md`.
+- NOTE 10: `docs/capabilities/account-data.md:28` and `docs/architecture.md:318` must name `memberships.telegram_detail` and `organizations.telegram_minimal_locked`.

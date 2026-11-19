@@ -663,3 +663,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: your rule says owner checkpoints are not a stop, and waiting would idle the whole F118 chain for days.
 - Undo: stop the F118 stages after 06; the code that landed stays off behind the flag.
 - Source: your instruction "no limits, just proceed", F118 plan Q1 and G-A.
+
+### 2026-11-19 · F118 stage 10: a Telegram card edit at the minimal level has no Reject button · user-visible · new
+- Choice: when a member is at the `minimal` level, the edited card has no buttons, also if the card was sent at `full`. Stage 11 adds a panel link line to such an edit, so the member can still reject in the panel.
+- Why: the minimal level sends no buttons (plan D12). The review found that a card sent at `full` has no panel link, so a held send could not be rejected from the chat.
+- Undo: keep a stop-only Reject button on the edit.
+- Source: Opus review of F118 stage 10, NOTE 2; builder decision list.
