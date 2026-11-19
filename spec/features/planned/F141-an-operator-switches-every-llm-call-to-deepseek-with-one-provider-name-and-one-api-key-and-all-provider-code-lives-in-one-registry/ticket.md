@@ -35,3 +35,8 @@ An operator sets `LLM_PROVIDER` (`openai`, `gemini` or `deepseek`) and that prov
 
 - Production `.env` on the VPS changes in the release that carries this: the plan lists the keys to remove there and on the dev machine (the DeepSeek stopgap lines of `notes.md`).
 - Facts and seams: `notes.md`.
+
+## Sequenced
+
+- Plan after: none.
+- Build after: none. Gate: none (this ticket is not in `docs/product/stage-2/07-foundation-plan.md` or `05-execution-plan.md` § 2). The deploy of the release that carries stage 04 waits for owner step O1 (`plan.md`).

@@ -84,10 +84,11 @@ Order: 01 → 02 → 03 → 04 → 05 → 07; 06 may run next to 04 and 05. Spaw
 ## Planning progress
 
 - Scouts: 4 (`scouts.md`).
-- [written] plan.md, stages 01–07. Word counts: see § Cold review.
+- [written] plan.md, stages 01–07, `questions.md` (7 defaults).
+- Word counts before the review (`wc -w`): plan 1304; stages 01 589, 02 514, 03 648, 04 ~690, 05 610, 06 413, 07 444.
 
 ## Cold review
 
-Not run yet.
+Model: `claude-opus-5-5`, because stages 03 and 04 are `[risky]` and touch security, config and LLM spend (`spec/build.md` standing models). Result: pending.
 
 ## Log
