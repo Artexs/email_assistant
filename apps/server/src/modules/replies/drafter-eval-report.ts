@@ -118,6 +118,7 @@ function replyDraftLines(scores: DrafterScores): string[] {
               ["tone_fits (mean, 0-2)", mean("tone_fits")],
               ["checks false", counts(scores.checkFalse)],
               ["no_invented_commitment false", scores.inventedCommitments],
+              ...languageRows(scores),
               [
                 "send as is or small edit (all scores >= 1, all checks true)",
                 `${scores.sendAsIs}/${scores.drafts} (${pct(ratio(scores.sendAsIs, scores.drafts))})`,

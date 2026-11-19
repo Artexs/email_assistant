@@ -521,6 +521,9 @@ describe("reports", () => {
     expect(text).toContain("`needs_facts` share of answered cases: 2 of 3 (66.7%); line: 30.0% (above the line)");
     expect(text).toContain("cost per draft: $0.0300");
     expect(text).toContain("send as is or small edit | 1/1 (100.0%)");
+    expect(text).toContain(
+      "language all: drafts / language_matches false / send as is / send as is without that check | 1 / 0 / 1 / 1"
+    );
   });
 
   test("a dev report lists the ids", () => {
