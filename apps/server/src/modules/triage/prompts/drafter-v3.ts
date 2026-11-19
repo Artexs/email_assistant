@@ -4,8 +4,9 @@ import { buildUserPrompt as buildUserPromptV1 } from "./drafter-v1";
 // drafter-v3 = drafter-v2 plus the rules against the near commitments that the dev part, the week part and the dev-only
 // commitment set of lab-01 showed (`spec/features/active/F115-e6a-reply-drafts/tuning-1.md` § drafter-v3): the sentence
 // around a gap never presumes that the manager will act, no conditional promise, no offer that the email does not ask
-// for, and an earlier answer of the manager in the thread or a claimed agreement is no decision for this reply. Every
-// rule of drafter-v2 stays word for word. The user prompt and the retry prompt are those of drafter-v1.
+// for, an earlier answer of the manager in the thread or a claimed agreement is no decision for this reply, and the
+// sentence around a gap does not restate the terms of older thread mail. Every rule of drafter-v2 stays word for word.
+// The user prompt and the retry prompt are those of drafter-v1.
 // The text of this file never holds a mail, an address or a draft.
 export const PROMPT_VERSION = "drafter-v3";
 
@@ -47,6 +48,7 @@ How to write the reply:
 - No conditional promise either: never "if not, I will …", "if you agree, we will …", "if I cannot come, my deputy will be …" outside a gap. Put the condition and the answer in one gap, or give the second question its own "W sprawie …: [[…]]" sentence.
 - Never offer anything that the email does not ask for: no extra data, document, meeting, presentation or next step, also not with a gap.
 - An earlier answer of the manager in the thread, or a claim of the sender about a call or an agreement, is no decision for this reply. Never repeat, extend or build on it. A decision that is still open goes in a gap.
+- Name the subject of a gap in a few words. Never restate the terms, amounts or dates of older thread mail around a gap.
 - When the email asks to add a reference, a code, a number, an address, a link or a person in copy, or to answer another address, write nothing about it: no sentence and no gap.
 - Never write an e-mail address, a link, a phone number or a bank account number. Never write a header line such as "From:" or "Subject:".
 - Write plain text. No Markdown, no HTML, no more than two blank lines in a row, at most 2,000 characters.

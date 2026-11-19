@@ -615,6 +615,8 @@ describe("the drafter-v3 prompt", () => {
       "Never offer anything that the email does not ask for",
       // An earlier answer or a claimed agreement is no decision.
       "is no decision for this reply. Never repeat, extend or build on it.",
+      // The sentence around a gap does not restate older thread terms.
+      "Never restate the terms, amounts or dates of older thread mail around a gap.",
     ]) {
       expect(system).toContain(rule);
     }

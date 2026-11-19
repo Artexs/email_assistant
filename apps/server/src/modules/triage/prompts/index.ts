@@ -12,6 +12,7 @@ import * as drafterV3 from "./drafter-v3";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
 import * as judgeV2 from "./judge-v2";
+import * as judgeV3 from "./judge-v3";
 import { type ClassifierPart, isV3Part, optionalParts } from "./parts";
 
 /** The prompt of one role in one version; the builders differ per role. */
@@ -129,6 +130,12 @@ export const judgeVersions = {
     buildSystem: judgeV2.buildSystemPrompt,
     buildUser: judgeV2.buildUserPrompt,
   },
+  "judge-v3": {
+    role: "judge",
+    version: judgeV3.PROMPT_VERSION,
+    buildSystem: judgeV3.buildSystemPrompt,
+    buildUser: judgeV3.buildUserPrompt,
+  },
 } as const satisfies Record<string, JudgePrompt>;
 export type JudgeVersion = keyof typeof judgeVersions;
 export const judgeVersionIds = Object.keys(judgeVersions) as JudgeVersion[];
@@ -151,7 +158,7 @@ export const prompts = {
     buildSystem: extractorV1.buildSystemPrompt,
     buildUser: extractorV1.buildUserPrompt,
   },
-  judge: judgeVersions["judge-v2"],
+  judge: judgeVersions["judge-v3"],
 } as const satisfies { [R in LlmRole]?: PromptEntry<R> };
 
 export interface ClassifierPromptChoice {
