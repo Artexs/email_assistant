@@ -230,3 +230,5 @@ Review 1 ([plan-review-1.md](plan-review-1.md), job `2026-11-14-f029-plan-review
 
 - 2026-11-14: Plan written at `d70e2bf` (the planning branch was fast-forwarded from `2170da8` to `master` to read the F100 stage 06 flag refresh).
 - 2026-11-14: Cold review 1 (FAIL, 1 blocking, 4 major, 10 minor) filed as `plan-review-1.md`; all findings fixed (§ Cold review).
+
+- 2026-11-19 stage 05 (coordinator, closed early by owner decision "close those tasks that wait for time"): window = the v0.4.1 server since 19:32:35Z (about 1 h; the release recreated the container, so v0.3.1 logs are gone). 1 `flags_refreshed`: 6. 2 `user_moves_failed`: 0. 3 `user_moves_found`/`retry`: 0 lines (no hand moves). 4 `user_moves_checked`: 6 lines, largest count 3. 5 Q5: 0. 6 Q4 largest identical copies: 1. Error lines: 0. O1 (hand move in webmail): not done. Not proven: a full 24 h window and a real hand move. Closes F029 and F064.
