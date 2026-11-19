@@ -282,7 +282,8 @@ describe("deploy/backup.sh Compose env file (F108 stage 01)", () => {
     // The first run has read .env by now; take it away and write a marker status
     await Bun.sleep(500);
     rmSync(join(root, ".env"));
-    const marker = '{"result":"ok","at":"2026-01-01T00:00:00Z","name":"x","bytes":1,"last_ok_at":"2026-01-01T00:00:00Z"}\n';
+    const marker =
+      '{"result":"ok","at":"2026-01-01T00:00:00Z","name":"x","bytes":1,"last_ok_at":"2026-01-01T00:00:00Z"}\n';
     writeFileSync(join(root, "deploy", "backup-status", "status.json"), marker);
     const second = run();
     expect(second.code).toBe(75);

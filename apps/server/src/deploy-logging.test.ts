@@ -336,11 +336,25 @@ describe("deploy/compose.yaml service migrate", () => {
     "POSTGRES_PASSWORD=sentinel-p-61\nMIGRATOR_PASSWORD=sentinel-m-61\nAPP_PASSWORD=sentinel-a-61\n"
   );
   const run = Bun.spawnSync(
-    ["docker", "compose", "-f", "deploy/compose.yaml", "--env-file", "deploy/db.env", "--profile", "cli", "config", "--format", "json"],
+    [
+      "docker",
+      "compose",
+      "-f",
+      "deploy/compose.yaml",
+      "--env-file",
+      "deploy/db.env",
+      "--profile",
+      "cli",
+      "config",
+      "--no-env-resolution",
+      "--format",
+      "json",
+    ],
     { cwd: project, env: { PATH: process.env.PATH ?? "", HOME: project } }
   );
   if (run.exitCode !== 0) throw new Error(`docker compose config exited ${run.exitCode}: ${run.stderr.toString()}`);
-  const services = (JSON.parse(run.stdout.toString()) as { services: Record<string, Record<string, unknown>> }).services;
+  const services = (JSON.parse(run.stdout.toString()) as { services: Record<string, Record<string, unknown>> })
+    .services;
 
   test("6. migrate has exactly the migrator URL and LOG_FORMAT, no env_file, ports or volumes, and the profile cli", () => {
     const migrate = services.migrate ?? {};
