@@ -1,34 +1,12 @@
 import { dkimCoversOneClickHeaders, type DkimSignature } from "./dkim-signature";
-import { registrableDomain, trustedAuthResults } from "./suspicious";
-
-// Shared hosting suffixes. The built-in registrable-domain rule has no private suffixes, so `evil.github.io` would be
-// "registrable" as `github.io` and a signature of `github.io` would align with every tenant. For these suffixes the
-// registrable domain keeps one more label (`evil.github.io`).
-const SHARED_SUFFIXES: ReadonlySet<string> = new Set([
-  "github.io",
-  "pages.dev",
-  "vercel.app",
-  "netlify.app",
-  "blogspot.com",
-  "herokuapp.com",
-  "azurewebsites.net",
-  "web.app",
-  "firebaseapp.com",
-  "onrender.com",
-]);
-
-function registrableWithShared(labels: string[]): string[] {
-  const base = registrableDomain(labels.join(".")).split(".");
-  if (!SHARED_SUFFIXES.has(base.join(".")) || labels.length <= base.length) return base;
-  return labels.slice(-(base.length + 1));
-}
+import { registrableDomainShared, trustedAuthResults } from "./suspicious";
 
 // The domains from `fromDomain` up to its registrable domain: `a.b.c.example` gives `a.b.c.example`, `b.c.example`,
 // `c.example`. A signing domain in this list is aligned with the From domain (relaxed, as DMARC reads it) and is never a
 // public suffix or a shared hosting suffix.
 function alignedDomains(fromDomain: string): string[] {
   const labels = fromDomain.trim().toLowerCase().replace(/\.+$/, "").split(".");
-  const floor = registrableWithShared(labels).length;
+  const floor = registrableDomainShared(labels.join(".")).split(".").length;
   const found: string[] = [];
   for (let start = 0; labels.length - start >= floor; start += 1) found.push(labels.slice(start).join("."));
   return found;

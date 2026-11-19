@@ -646,6 +646,7 @@ export function testNoticeView(
 export const noSuspiciousContext: SuspiciousContext = {
   isKnown: () => false,
   knownDomains: [],
+  sentDomains: [],
   protectedNames: [],
   trustedAuthservIds: [],
 };
