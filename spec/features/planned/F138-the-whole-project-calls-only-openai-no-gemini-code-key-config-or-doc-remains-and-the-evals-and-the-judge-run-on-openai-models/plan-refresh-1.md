@@ -75,17 +75,30 @@ commits after the base that touch the named paths:
 - ADR 0036 is the last; 0037 is free.
 - `--limit` is valid with `--sim`; `llm:check --role judge` exists.
 
-## Words (`wc -w`)
+## Words (`wc -w`, after the review fixes)
 
- 1475 plan.md
+```
+ 1485 plan.md
   693 stages/stage-01-judge-on-openai.md
   699 stages/stage-02-remove-provider.md
-  473 stages/stage-03-test-names-and-tool-text.md
-  698 stages/stage-04-adr-and-papers.md
-  671 stages/stage-05-current-docs.md
-  569 stages/stage-06-runs.md
- 5278 total
+  487 stages/stage-03-test-names-and-tool-text.md
+  682 stages/stage-04-adr-and-papers.md
+  700 stages/stage-05-current-docs.md
+  643 stages/stage-06-runs.md
+ 5389 total
+```
 
 ## Review
 
-Stage 06 lost its run steps and got a new pointer step, and stage 05 may now run next to stage 03: a substance change. Cold review on `claude-opus-5-5` (stages 02 and 06 are `[risky]`): [plan-review-2.md](plan-review-2.md).
+Stage 06 lost its run steps and got a new pointer step, and stage 05 may now run next to stage 03: a substance change. Cold review on `claude-opus-5-5` (stages 02 and 06 are `[risky]`), job `2026-11-19-f138-plan-review-refresh-1-e31fddb7`: [plan-review-2.md](plan-review-2.md), FAIL at f0394277, 2 BLOCKING, 2 TEST GAP, 6 NOTE. Fixes:
+
+- **B1** ADR 0017 names Gemini. Stage 05 group 1 and the stage 04 Done-when now allow old text of any `docs/decisions/NNNN-*.md`; stage 06 never edits a file of an allowed group.
+- **B2** Plan D17 (new) defines "history" for the ticket grep; questions.md item 9 and item 8 (D16) are `[important: rule-exception]`. Group 8 is gone: stage 04 writes the removed claim rows with no vendor name.
+- **T1** Stage 05 groups 3 and 4 are path-based (every file of `docs/product/**`, every `known-alerts.md` entry). Stage 06 sorts hits by path, reads lines only for groups 2, 5, 6, and writes per-group counts.
+- **T2** Stage 06 smoke pass rule: `state …: 0 earlier results` and the ledger grew; plan F10 states the resume risk.
+- **N1** Stage 03 adds `tools/` (fake-telegram fixtures) and its Done-when grep covers `tools`.
+- **N2** D16 and ADR 0037 point 6 (stage 04) name the consequence: the pilot record keeps its old price; a new `stats:week` counts those calls as unpriced.
+- **N3** D11: no judge-agreement gate exists, so none reruns.
+- **N4** Board line `spec/build.md` "smoke run, about $0.3": outside this folder; in the final message for the coordinator.
+- **N5** Stage 04: the ADR 0035 section is `## Amendment 2026-11-19 (ADR 0037)`.
+- **N6** Stage 06 env check also counts `env | grep -c '^GEMINI_'`.

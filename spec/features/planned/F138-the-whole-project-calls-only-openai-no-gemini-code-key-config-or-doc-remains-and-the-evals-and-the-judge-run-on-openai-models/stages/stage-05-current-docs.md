@@ -29,14 +29,14 @@ Part of [`../plan.md`](../plan.md). This stage owns the current docs outside `do
 
 The ticket grep (`git grep -niE "gemini|@google/genai|generativelanguage" -- apps packages docs evals deploy .env.example package.json bun.lock`) may find only:
 
-1. `docs/decisions/0007-*`, `0012-*`, `0013-*`, `0015-*`, `0035-*` (old text), `0037-*`, and `docs/decisions/README.md` rows.
+1. `docs/decisions/**`: old text of any ADR (history, for example 0017), ADR 0037 and the README rows.
 2. `evals/results/**` (old result files) and lines of `evals/README.md` that name an old result file.
-3. `docs/product/**` and `docs/product-brief.md`: dated owner text and the "Changed by ADR 0037" lines.
-4. `docs/known-alerts.md`: dated alert text (not an instruction).
+3. `docs/product/**` and `docs/product-brief.md`: every file is a dated Stage 2 record (owner text, inventories, discovery notes); stage 04 adds only the "Changed by ADR 0037" lines.
+4. `docs/known-alerts.md`: every entry is a dated record; this stage changes only its Fix and Check instructions.
 5. `docs/architecture.md`: lines under "History (before ADR 0037)".
 6. `docs/roadmap.md`: dated state lines.
 7. `docs/diagrams/architecture-2026-11.*`.
-8. `docs/legal/claims.md` rows whose claim starts `Removed by ADR 0037` (B1).
+8. (none: stage 04 writes the removed claim rows with no vendor name.)
 9. `CHANGELOG.md` is outside the grep paths; do not edit old entries.
 10. `pilotCost.models` in `packages/core/src/metrics/cost-model.ts` and the Models row of `docs/cost-model.md` (measured record, plan D16).
 11. `docs/owner-decisions.md`: dated log; only the coordinator writes it. Never edit it.

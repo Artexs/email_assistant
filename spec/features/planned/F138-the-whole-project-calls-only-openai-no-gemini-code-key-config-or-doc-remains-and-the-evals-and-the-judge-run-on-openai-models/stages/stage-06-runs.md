@@ -8,17 +8,17 @@ This stage runs no drafter and no judge (plan D11: F115 stage 02 ran them on Ope
 
 ## Step 1 — Acceptance grep
 
-- Run the ticket grep of stage 05 § Allowed hits; save it to `/tmp/f138-s06/grep.log`. Every hit must be in an allowed group. A hit outside them: fix it in this stage when it is a one-line text fix, else stop and report.
+- Run the ticket grep of stage 05 § Allowed hits; save it to `/tmp/f138-s06/grep.log`. Sort each hit by its path into a group; groups 2 (`evals/README.md`), 5 and 6 also need a read of the hit line. Write the per-group count. A hit outside every group: fix it here when it is a one-line text fix in a current file, else stop and report. Never edit a file of an allowed group (history).
 
 ## Step 2 — Checks on OpenAI
 
-- **No Gemini key (T1), before any call:** `grep -cE '^(GEMINI_|LLM_[A-Z_]*=gemini)' .env` in this worktree. Not 0: remove those lines and the other `LLM_<ROLE>_*` lines of such a role from this worktree's `.env` only (`sed -i`; never the main checkout's file), then the count must be 0. Save the count to `/tmp/f138-s06/env-check.log`. Print counts only.
+- **No Gemini key (T1), before any call:** `grep -cE '^(GEMINI_|LLM_[A-Z_]*=gemini)' .env` in this worktree. Not 0: remove those lines and the other `LLM_<ROLE>_*` lines of such a role from this worktree's `.env` only (`sed -i`; never the main checkout's file), then the count must be 0. Also `env | grep -c '^GEMINI_'` (must be 0). Save both counts to `/tmp/f138-s06/env-check.log`. Print counts only.
 - **Spend and rate (D13, N9):** before the first call, write the November sum of the eval ledger (`eval-spend.jsonl`) in the final message. Any 429 (quota or rate) stops the stage at once: no retry, no other run; the key is the production project's.
 - Never print the env, a key or `.env`. Never read `evals/sim/*/holdout/`.
 - **Commands, in order** (save each output under `/tmp/f138-s06/`):
   1. `bun run llm:check`: passes and shows provider `openai`.
   2. `bun run llm:check --role judge`: passes, provider `openai`, model `gpt-6.1-terra`.
-  3. Classifier smoke (Q4): `bun run eval --sim lab-01 --part holdout --limit 20 --budget-usd 1 --concurrency 2 --rpm 30 --out /tmp/f138-s06/classifier-smoke.md` (a `--limit` run writes no gate file). Pass = the run ends with exit 0 or exit 1 on a bar, with 0 LLM errors and provider `openai` in the report. Commit nothing of it.
+  3. Classifier smoke (Q4): `bun run eval --sim lab-01 --part holdout --limit 20 --budget-usd 1 --concurrency 2 --rpm 30 --out /tmp/f138-s06/classifier-smoke.md` (a `--limit` run writes no gate file). Pass = exit 0 or exit 1 on a bar; the output shows `state …: 0 earlier results` (the state name has no limit part, so an old holdout state would resume with no call: if it shows more, stop and report); 0 LLM errors; provider `openai` in the report; the eval ledger grew by more than $0. Commit nothing of it.
 - **Exit 1 on a bar (N1):** 20 cases cannot hold a bar; it is a result. Record it and go on. An LLM error or a key error stops the stage.
 
 ## Step 3 — Pointer to the drafter evidence
