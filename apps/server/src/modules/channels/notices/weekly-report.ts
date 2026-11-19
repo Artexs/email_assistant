@@ -1,5 +1,6 @@
-import { lastFinishedWeek, localDateTime, localToInstant, parseDigestTimes } from "@ea/core";
+import { lastFinishedWeek, localDateTime, localToInstant, panelUrlSchema, parseDigestTimes } from "@ea/core";
 
+import { countOpenSuggestionsOfOrg } from "../../contacts";
 import { weekStats } from "../../reports";
 import { getMembership, isFeatureOn } from "../../tenancy";
 import { countAnsweredWaiting } from "../../triage";
@@ -26,6 +27,16 @@ const failedAt = new Map<string, number>();
 
 /** The keys of the failed attempts on record (for tests). */
 export const failedAttemptKeys = (): string[] => [...failedAt.keys()];
+
+// The rule suggestions that wait, for the weekly line: absent while the flag `sender_suggestions` is off or no row is open (the
+// count is 0). The link is the Rules page of the panel; with no `WEB_BASE_URL` the line has a fixed phrase instead.
+async function suggestionsOf(run: OrgRun): Promise<{ open: number; panelUrl?: string } | undefined> {
+  const open = await countOpenSuggestionsOfOrg(run.db, run.ctx);
+  if (open === 0) return undefined;
+  const base = run.deps.webBaseUrl;
+  const url = panelUrlSchema.safeParse(base === undefined ? "" : `${base.replace(/\/+$/, "")}/rules`);
+  return { open, ...(url.success ? { panelUrl: url.data } : {}) };
+}
 
 // On Monday, every linked member gets the numbers of the last finished week at the member's own slot (weekly report).
 // With the flag `report_mail`, a member whose report channel is `mail` or `both` also gets a mail row (dedup key
@@ -76,8 +87,9 @@ async function detectWeeklyReport(run: OrgRun): Promise<void> {
         since: new Date(now.getTime() - ANSWERED_WAITING_MS),
         testMail,
       });
+      const suggestions = await suggestionsOf(run);
       for (const { member, telegram, mailboxId } of due) {
-        const view = { week, timeZone, answeredWaiting };
+        const view = { week, timeZone, answeredWaiting, ...(suggestions === undefined ? {} : { suggestions }) };
         if (telegram) {
           await queue(
             db,

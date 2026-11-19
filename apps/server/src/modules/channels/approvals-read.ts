@@ -1,11 +1,13 @@
 import {
   APPROVAL_LIST_MAX,
   approvalDetailSchema,
+  approvalEndReasons,
   approvalListSchema,
   draftPayloadSchema,
   MAX_REDRAFTS,
   sendPayloadSchema,
   type ApprovalDetail,
+  type ApprovalEndReason,
   type ApprovalItem,
   type ApprovalList,
   type SendPayload,
@@ -74,6 +76,12 @@ export function expiresAtOf(send: SendRow, state: DetailState): Date | null {
   return approvalExpiresAt(sendKindOf(send.payload), send);
 }
 
+// The reason that the system closed an `expired` send (`closeSend`), or undefined: a timeout and every other state have none.
+export function endReasonOf(send: SendRow, state: DetailState): ApprovalEndReason | undefined {
+  if (state !== "expired") return undefined;
+  return approvalEndReasons.find((reason) => reason === send.status_reason);
+}
+
 interface Built {
   send: SendRow;
   state: DetailState;
@@ -85,7 +93,7 @@ interface Built {
   version: number | null;
   heldBy: ApprovalItem["heldBy"];
   // A reply only: the facts of the panel (`approvalReplyFields`); undefined for every other kind.
-  reply: Pick<ApprovalItem, "instruction" | "redraftsLeft" | "recipientsMode"> | undefined;
+  reply: Pick<ApprovalItem, "instruction" | "redraftsLeft" | "recipientsMode" | "replyAllAdds"> | undefined;
 }
 
 // The facts of a reply for the panel. They come from the payload and the request rows, never from the mailbox.
@@ -93,7 +101,8 @@ async function replyFieldsOf(
   deps: ApprovalReadDeps,
   ctx: TenantContext,
   send: SendRow,
-  draftPayload: ReturnType<typeof draftPayloadSchema.safeParse>
+  draftPayload: ReturnType<typeof draftPayloadSchema.safeParse>,
+  replyAllAdds: string[] | undefined
 ): Promise<Built["reply"]> {
   if (!draftPayload.success || draftPayload.data.kind !== "reply" || send.email_id === null) return undefined;
   const facts = await replyVersionFacts(deps.db, ctx, { sendId: send.id, emailId: send.email_id });
@@ -101,6 +110,7 @@ async function replyFieldsOf(
     instruction: facts.instruction,
     redraftsLeft: Math.max(0, MAX_REDRAFTS - facts.redrafts),
     recipientsMode: draftPayload.data.recipients,
+    ...(replyAllAdds === undefined ? {} : { replyAllAdds }),
   };
 }
 
@@ -127,7 +137,9 @@ async function build(deps: ApprovalReadDeps, ctx: TenantContext, send: SendRow, 
     version: built?.view.version ?? null,
     heldBy,
     reply:
-      draftParsed === undefined || !payload.success ? undefined : await replyFieldsOf(deps, ctx, send, draftParsed),
+      draftParsed === undefined || !payload.success
+        ? undefined
+        : await replyFieldsOf(deps, ctx, send, draftParsed, built?.replyAllAdds),
   };
 }
 
@@ -231,6 +243,7 @@ export async function getApprovalDetail(
     expiresAt: expiresAtOf(send, b.state)?.toISOString() ?? null,
     view: b.view,
     draftRemovable: await mailboxHasUidplus(deps.db, ctx, send.mailbox_id),
+    ...(endReasonOf(send, b.state) === undefined ? {} : { endReason: endReasonOf(send, b.state) }),
     currentId: b.state === "superseded" ? await newestVersionOf(deps.db, ctx, send.id) : null,
     quote: b.quote,
     delegates,

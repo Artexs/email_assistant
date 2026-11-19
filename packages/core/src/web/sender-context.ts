@@ -28,3 +28,12 @@ export const suggestionItemSchema = z
   })
   .strict();
 export type SuggestionItem = z.infer<typeof suggestionItemSchema>;
+
+export const suggestionListSchema = z.array(suggestionItemSchema);
+export type SuggestionList = z.infer<typeof suggestionListSchema>;
+
+// The body of Accept and Dismiss: empty. The id is in the path.
+export const suggestionActionBodySchema = z.object({}).strict();
+
+export const suggestionResultSchema = z.object({ status: z.enum(["accepted", "dismissed"]) }).strict();
+export type SuggestionResult = z.infer<typeof suggestionResultSchema>;

@@ -17,6 +17,8 @@ function placeholders(text: string): string[] {
 // Texts that read the same in Polish and English. The test keeps this list true in both directions.
 const SAME_IN_BOTH: TextKey[] = [
   "brand", // the product name
+  "rp_reply_to", // the name of the mail header "Reply-To"
+  "rp_instruction_count", // "{n} / {max}"
   "menu_title", // "Menu" in both languages
   "tg_title", // the product name "Telegram"
   "tg_link_label", // "Link" in both languages

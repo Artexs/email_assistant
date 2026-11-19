@@ -143,6 +143,8 @@ export interface NoticeTexts {
     check: { pass: string; fail: string; inconclusive: string; noResult: string; none: string };
     pauseReason: Record<TripReason, string>;
     review: (count: number) => string;
+    // The line of the rule suggestions that wait: a count and the link to the Rules page (null: no link, a fixed phrase instead).
+    suggestions: { line: (open: number, link: string | null) => string };
   };
 }
 
@@ -359,6 +361,10 @@ export const noticeTexts = {
         history_fail: "the check of your last 30 days failed",
       },
       review: (count) => `/review: ${count} replied ${count === 1 ? "mail waits" : "mails wait"} for a check.`,
+      suggestions: {
+        line: (open, link) =>
+          `💡 ${open} rule ${open === 1 ? "suggestion waits" : "suggestions wait"} for you · ${link ?? (open === 1 ? "check it in the panel" : "check them in the panel")}`,
+      },
     },
   },
   pl: {
@@ -565,6 +571,9 @@ export const noticeTexts = {
         history_fail: "sprawdzenie ostatnich 30 dni nie przeszło",
       },
       review: (count) => `/review: ${PL_REVIEW[pluralCategory("pl", count)](count)} na sprawdzenie.`,
+      suggestions: {
+        line: (open, link) => `💡 Sugestie reguł do przejrzenia: ${open} · ${link ?? "sprawdź w panelu"}`,
+      },
     },
   },
 } satisfies Record<UserLocale, NoticeTexts>;

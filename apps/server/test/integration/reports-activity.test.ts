@@ -371,7 +371,7 @@ describe("listActivity", () => {
         });
       }
 
-      // The flag on is the longest path: the flag read and the reasons query.
+      // The flag on is the longest path: the flag read and the reasons query; the flag read of `reply_drafts` (off here) is one more.
       await setOrgFeature(trx, ctxA, { flag: "suspicious_mail", enabled: true, actor: "cli", now: NOW });
       await addTriple(0);
       const small = countingPlugin();
@@ -383,7 +383,7 @@ describe("listActivity", () => {
         textsFor("en")
       );
       expect(page3.items).toHaveLength(3);
-      expect(small.counter.count).toBeLessThanOrEqual(9);
+      expect(small.counter.count).toBeLessThanOrEqual(10);
 
       for (let n = 1; n < 20; n += 1) await addTriple(n);
       const large = countingPlugin();
@@ -396,6 +396,43 @@ describe("listActivity", () => {
       );
       expect(page60.items).toHaveLength(60);
       expect(large.counter.count).toBe(small.counter.count);
+    });
+  });
+
+  test("the open reply drafts of a page take ONE query, whatever the number of rows; the flag off reads none", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, ctxA } = await setup(trx);
+      const countFor = async () => {
+        const { counter, plugin } = countingPlugin();
+        const page = await listActivity(trx.withPlugin(plugin), ctxA, { ...query, limit: 100 }, NOW, textsFor("en"));
+        return { count: counter.count, page };
+      };
+      for (let n = 0; n < 2; n += 1) {
+        await insertTriaged(trx, ctxA, a.mailboxId, {
+          category: "needs_reply",
+          createdAt: ago(HOUR),
+          receivedAt: ago(HOUR + n * MINUTE),
+        });
+      }
+      const off = await countFor();
+      expect(off.page.items.every((item) => item.reply === undefined)).toBe(true);
+
+      await setOrgFeature(trx, ctxA, { flag: "reply_drafts", enabled: true, actor: "cli", now: NOW });
+      const small = await countFor();
+      expect(small.page.items.every((item) => item.reply?.sendId === null)).toBe(true);
+      // The flag read is in both runs; the flag on adds the one read of the open drafts.
+      expect(small.count).toBe(off.count + 1);
+
+      for (let n = 2; n < 20; n += 1) {
+        await insertTriaged(trx, ctxA, a.mailboxId, {
+          category: "needs_reply",
+          createdAt: ago(HOUR),
+          receivedAt: ago(HOUR + n * MINUTE),
+        });
+      }
+      const large = await countFor();
+      expect(large.page.items).toHaveLength(20);
+      expect(large.count).toBe(small.count);
     });
   });
 

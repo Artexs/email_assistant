@@ -413,7 +413,7 @@ describe("two taps at once", () => {
 });
 
 describe("listOpenSuggestions and countOpenSuggestions", () => {
-  test("11 they return the open rows of the mailbox, oldest first, with the reason; ended rows and other mailboxes stay out", async () => {
+  test("11 they return the open rows of the mailbox, newest first, with the reason; ended rows and other mailboxes stay out", async () => {
     await withRollback(db, async (trx) => {
       const org = await suggestOrg(trx);
       const other = await secondMailbox(trx, org);
@@ -427,14 +427,14 @@ describe("listOpenSuggestions and countOpenSuggestions", () => {
       await insertSuggestion(trx, org, { value: "ended@acme.pl", kind: "vip", status: "dismissed" });
       await insertSuggestion(trx, org, { value: "x@acme.pl", kind: "vip", mailboxId: other.mailboxId });
       const items = await listOpenSuggestions(trx, org.ctx, org.mailboxId);
-      expect(items.map((item) => item.id)).toEqual([first, second]);
-      expect(items[0]).toMatchObject({
+      expect(items.map((item) => item.id)).toEqual([second, first]);
+      expect(items[1]).toMatchObject({
         kind: "vip",
         scope: "address",
         pattern: "a@acme.pl",
         reason: { received: 8, answered: 6 },
       });
-      expect(items[0]?.createdAt.getTime()).toBe(ago(5).getTime());
+      expect(items[1]?.createdAt.getTime()).toBe(ago(5).getTime());
       expect(await countOpenSuggestions(trx, org.ctx, org.mailboxId)).toBe(2);
       expect(await countOpenSuggestions(trx, org.ctx, other.mailboxId)).toBe(1);
     });

@@ -6,7 +6,8 @@ import { apiDoc } from "../../platform/openapi";
 export const reportDocs = {
   getActivity: apiDoc({
     operationId: "getActivity",
-    summary: "One page of the activity list, newest first; `before` is the cursor of the next page.",
+    summary:
+      "One page of the activity list, newest first; `before` is the cursor of the next page. While the flag `reply_drafts` is on each item has `reply: { sendId }`: the open reply draft of the mail, or null (the row offers Draft reply).",
     tags: ["activity"],
     query: activityQuerySchema,
     ok: { status: 200, schema: activityPageSchema },

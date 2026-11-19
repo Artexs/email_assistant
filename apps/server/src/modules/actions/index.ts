@@ -99,6 +99,7 @@ export {
   listActionsForEmail,
   listActionsForEmails,
   listOpenReplyEmailIds,
+  listOpenReplySendIdsOfEmails,
   listOpenReplySendsOfThread,
   listMailboxesWithOpenReplySends,
   listSweepReplySends,

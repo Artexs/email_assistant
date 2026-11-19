@@ -36,6 +36,7 @@ export {
 } from "./lifecycle";
 export {
   listOpenReplyEmailIds,
+  listOpenReplySendIdsOfEmails,
   listOpenReplySendsOfThread,
   listMailboxesWithOpenReplySends,
   listSweepReplySends,

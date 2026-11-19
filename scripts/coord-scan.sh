@@ -5,7 +5,7 @@
 # holds "F<n>-s<nn>" or "F<n> stage <nn>". It reads only git and `limen jobs`; it changes nothing.
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
-subjects=$(git log master --format=%s -n 4000)
+subjects=$(git log master --format=%s -n 4000 | grep -vi "carry-over")
 running=$(limen jobs --running 2>/dev/null | grep RUNNING || true)
 for dir in spec/features/active/F*/; do
   ticket=$(basename "$dir" | cut -d- -f1)

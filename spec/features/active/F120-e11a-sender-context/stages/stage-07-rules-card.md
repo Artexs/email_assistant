@@ -38,3 +38,10 @@ Carry-over reads: `apps/web/src/islands/RulesPage.tsx`, `components/rules/Newsle
 ## Done when
 
 All tests pass. Then the Proof command with the web tail.
+
+## First commit of this stage (carry-over from the stage 06 review, PASS a9aee92c)
+Backend hardening before the card (small, with tests and a mutation log each):
+- N1: `acceptSuggestion` for a blocklist row re-runs the protection check of `suggestionsFor` (delegate, Sent reply, known domain). If the sender is now protected, withdraw the row and answer 409 `not_available`; no rule is added. Counter-example to pin: open blocklist suggestion `spam@acme.pl`, then an active delegate `spam@acme.pl` is added, then accept gives 409 and no rule. The web card must show the 409 as "the suggestion is no longer valid".
+- TG-1: test 8 (no address in logs) also wraps the dismiss call in `captureLogs()`.
+- N2: a dismiss on a paused mailbox answers 404 like accept (symmetric).
+- N3 (decision to record, no change): the weekly suggestion line goes to every report member, not only owners; the count is org-wide like the other week stats.

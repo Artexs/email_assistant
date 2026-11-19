@@ -21,6 +21,7 @@ export { readProfiles } from "./profiles";
 export {
   acceptSuggestion,
   countOpenSuggestions,
+  countOpenSuggestionsOfOrg,
   dismissSuggestion,
   listOpenSuggestions,
   type AcceptResult,
@@ -30,6 +31,7 @@ export {
   type SuggestionDeps,
   type SuggestionVia,
 } from "./suggestion-commands";
+export { suggestionRoutes, type SuggestionRouteDeps } from "./routes";
 export { rulePatternOf, SUGGESTION_DISMISS_DAYS, SUGGESTION_OPEN_DAYS } from "./suggest";
 export {
   profileLockKey,

@@ -41,3 +41,10 @@ The docs say what the code does (PD-009). No code change except a doc test that 
 
 ## Carry-over from the stage 13 review (2026-11-18)
 See `../review-13.md`: rollback text N1 (strict view fields), the tap-flood cost N3 and a per-mail tap limit, the ended-request window limit N9.
+
+## Carry-over from stage 15 and its review (2026-11-19)
+
+- Rollback text: stage 15 added two optional strict fields to the panel read model, `ApprovalDetail.endReason` and `replyAllAdds` (item and detail), and `reply` on each activity row. A browser tab that runs the older page code rejects an answer that holds them until the tab reloads (`z.strictObject`); an older server never sends them. Write it next to the stage 13 note on strict view fields. No migration.
+- Limit: a page reload while a redraft waits turns Redraft on again, and a second line gets the same `requestId` from the server (only the first line is stored). The server never refuses a redraft while one waits for the same send. A fix would be a 409 for a waiting redraft of the same send.
+- Consent: stage 15 added no consent text and no panel button of its own. The panel reuses the F116 card (`TelegramLink`, `POST /api/telegram/consent`; e2e `loops-panel.spec.ts` T8). The consent sentence for reply data, `TELEGRAM_CONSENT_VERSION`, `TERMS_VERSION` and `REPLY_CONSENT_SINCE` stay in this stage (N14 above).
+- Texts: the panel and the Telegram card now say "The system sent nothing." / "System nic nie wysłał." for `answered` and `sent_by_user` (a user may have sent the reply). The card text for `draft_missing` still says "Not sent: …" and was left as it is. Describe the final wording in the capability page.

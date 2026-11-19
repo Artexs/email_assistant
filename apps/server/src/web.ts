@@ -18,6 +18,7 @@ import {
   queueMailboxRemovedNotices,
 } from "./modules/channels";
 import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
+import { suggestionRoutes } from "./modules/contacts";
 import { delegateRoutes, delegationHooks, delegationRoutes } from "./modules/delegation";
 import { loopRoutes } from "./modules/loops";
 import {
@@ -428,6 +429,7 @@ export function apiRouters(
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
     api.route("/", replyRoutes({ db, preview: extras.stylePreview ?? null }));
     api.route("/", rulesRoutes({ db, now }));
+    api.route("/", suggestionRoutes({ db, now }));
     api.route("/", activityRoutes({ db, now, sender: { db, credentialsKey: config.CREDENTIALS_KEY } }));
     api.route("/", statsRoutes(statsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", triageRoutes({ db, now, actionsScope: extras.actionsScope }));

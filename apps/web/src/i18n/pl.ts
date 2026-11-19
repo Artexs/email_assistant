@@ -5,6 +5,7 @@ import { plSettings } from "./texts/pl-settings";
 import { plActivity } from "./texts/pl-activity";
 import { plApprovals } from "./texts/pl-approvals";
 import { plReply } from "./texts/pl-reply";
+import { plReplyPanel } from "./texts/pl-reply-panel";
 import { plPhone } from "./texts/pl-phone";
 
 // Polish texts. The key order and the section comments follow `en.ts` and `texts/en-*.ts`, so the files read side by side.
@@ -16,6 +17,7 @@ export const pl: Record<TextKey, string> = {
   ...plActivity,
   ...plApprovals,
   ...plReply,
+  ...plReplyPanel,
   ...plPhone,
 };
 

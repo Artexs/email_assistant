@@ -460,12 +460,21 @@ describe("the texts of the copy check (the mail client edit)", () => {
 
   test("the texts of the reply close reasons say that nothing was sent (en, pl)", () => {
     const reasons = ["answered", "sent_by_user", "newer_mail", "original_moved", "suspicious"] as const;
+    // `answered` and `sent_by_user` say "The system sent nothing", as the panel does (a user may have sent the reply).
+    const bySystem = new Set(["answered", "sent_by_user"]);
     for (const reason of reasons) {
-      expect(textTables.en.approvals.sendResult.expired[reason]("S")).toContain("Nothing was sent.");
-      expect(textTables.pl.approvals.sendResult.expired[reason]("S")).toContain("Nic nie wysłano.");
+      expect(textTables.en.approvals.sendResult.expired[reason]("S")).toContain(
+        bySystem.has(reason) ? "The system sent nothing." : "Nothing was sent."
+      );
+      expect(textTables.pl.approvals.sendResult.expired[reason]("S")).toContain(
+        bySystem.has(reason) ? "System nic nie wysłał." : "Nic nie wysłano."
+      );
     }
     expect(textTables.en.approvals.sendResult.expired.answered("S")).toBe(
-      "⌛ You already answered this mail. Nothing was sent. · S"
+      "⌛ You already answered this mail. The system sent nothing. · S"
+    );
+    expect(textTables.pl.approvals.sendResult.expired.answered("S")).toBe(
+      "⌛ Na tę wiadomość już odpowiedziano. System nic nie wysłał. · S"
     );
   });
 
@@ -814,8 +823,12 @@ describe("renderSendResult", () => {
     ["delegation_closed", "⌛ Not sent: the delegation was closed · Fwd: Offer", "draft"],
     ["policy_changed", "⌛ Not sent: the setting was changed · Fwd: Offer", "both"],
     ["draft_changed", "✏️ You edited this draft in your mail client. Send it from there. · Fwd: Offer", "both"],
-    ["answered", "⌛ You already answered this mail. Nothing was sent. · Fwd: Offer", "both"],
-    ["sent_by_user", "⌛ It looks like you sent it from your mail client. Nothing was sent. · Fwd: Offer", "closing"],
+    ["answered", "⌛ You already answered this mail. The system sent nothing. · Fwd: Offer", "both"],
+    [
+      "sent_by_user",
+      "⌛ It looks like you sent it from your mail client. The system sent nothing. · Fwd: Offer",
+      "closing",
+    ],
     [
       "newer_mail",
       "⌛ A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow. · Fwd: Offer",

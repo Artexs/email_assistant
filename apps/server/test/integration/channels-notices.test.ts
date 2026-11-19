@@ -1819,8 +1819,8 @@ describe("send result notices", () => {
       await isolateChannels(trx);
       const o = await sendOrg(trx);
       const cases: [string, string, boolean][] = [
-        ["answered", "You already answered this mail. Nothing was sent.", true],
-        ["sent_by_user", "It looks like you sent it from your mail client. Nothing was sent.", false],
+        ["answered", "You already answered this mail. The system sent nothing.", true],
+        ["sent_by_user", "It looks like you sent it from your mail client. The system sent nothing.", false],
         [
           "newer_mail",
           "A newer mail arrived in this thread. Nothing was sent. Read the newer mail; a new draft may follow.",

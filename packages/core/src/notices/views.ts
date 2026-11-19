@@ -276,6 +276,9 @@ const weeklyReportView = z.strictObject({
   week: weekStatsSchema,
   timeZone,
   answeredWaiting: z.number().int().min(0),
+  // The rule suggestions that wait for the owner (flag `sender_suggestions`): a count and the link to the Rules page. Optional: a
+  // row queued before this key, or with the flag off, has none.
+  suggestions: z.strictObject({ open: z.number().int().min(0), panelUrl: panelUrlSchema.optional() }).optional(),
 });
 
 // The mail host guard refuses a host of the mailbox. The view holds the mailbox address only: no host name, no network address.

@@ -4,6 +4,7 @@ import { approvalRoutes, replyApprovalRoutes } from "../../src/modules/channels"
 import { insertDefaultSettings, updateMailboxSettings } from "../../src/modules/config";
 import { delegationHooks } from "../../src/modules/delegation";
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
+import { activityRoutes } from "../../src/modules/reports";
 import { isOrgSuspended, setOrgFeature } from "../../src/modules/tenancy";
 import type { Db } from "../../src/platform/db";
 
@@ -104,6 +105,7 @@ export function replyWebKit(db: Db) {
       routers: (api) => {
         api.route("/", approvalRoutes(routeDeps));
         api.route("/", replyApprovalRoutes(routeDeps));
+        api.route("/", activityRoutes({ db, now: () => NOW }));
       },
     });
     return { org, box, theirBox, app, setFlags: (next: Flags) => setFlags(org.orgId, next) };

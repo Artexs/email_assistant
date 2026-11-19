@@ -5,6 +5,8 @@ import { ApprovalActions, RejectReason } from "../components/approvals/ApprovalA
 import { ApprovalDetailPanel } from "../components/approvals/ApprovalDetailPanel";
 import { ApprovalEditDialog } from "../components/approvals/ApprovalEditDialog";
 import { ApprovalList } from "../components/approvals/ApprovalList";
+import { ReplyControls } from "../components/approvals/ReplyControls";
+import { useReplyActions } from "../components/approvals/use-reply-actions";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -12,6 +14,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale, type TextKey } from "../i18n";
+import type { Notice } from "../lib/approvals-notice";
 import { ApiError } from "../lib/api";
 import { fetchApproval, fetchApprovals, postApprove, postReject, postRejectReason } from "../lib/approvals-api";
 import { canEdit, editStart } from "../lib/approvals-edit";
@@ -23,15 +26,6 @@ import { useNow } from "../lib/use-now";
 import { useReloadOn } from "../lib/use-reload-on";
 import { useResource } from "../lib/use-resource";
 import { useSelectedId } from "../lib/use-selected-id";
-
-// A line under the page title: `info` is a status (a result or a conflict that the page already handled), `error` is the banner.
-interface Notice {
-  tone: "info" | "error";
-  key: TextKey;
-  reason?: TextKey;
-  // The version number of `appr_edit_saved`.
-  n?: number;
-}
 
 const PREPARING_POLL_MS = 5_000;
 
@@ -129,6 +123,19 @@ function Approvals() {
   useEffect(() => {
     if (editing !== null && editing !== id) setEditing(null);
   }, [editing, id]);
+
+  // The redraft and the recipient choice of a reply. They open the new version in place of this one (the URL is replaced).
+  const reply = useReplyActions({
+    id,
+    open: (next) => select(next, "replace"),
+    say: setNotice,
+    refresh: () => {
+      list.reload();
+      reloadMe();
+    },
+    reloadDetail: detail.reload,
+    focusStatus,
+  });
 
   // The flag is off: the API answers like for an unknown path.
   if (!list.loading && list.error instanceof ApiError && list.error.status === 404) {
@@ -308,14 +315,27 @@ function Approvals() {
   } else {
     const owner = me?.role === "owner";
     const allowed = decisions(open, { owner, canWrite: canWrite(me) });
+    // A reply that still has a gap cannot be approved (the server answers 409 `has_gaps`): Approve is off and says why.
+    const gaps = open.kind === "reply" ? (open.view?.gaps ?? []) : [];
     detailContent = (
       <div className="flex flex-col gap-4">
         {back}
         <ApprovalDetailPanel detail={open} now={now}>
+          {open.kind === "reply" && open.state === "waiting" && owner && canWrite(me) && (
+            <ReplyControls
+              key={open.id}
+              detail={open}
+              waiting={reply.waiting}
+              busy={reply.busy || busy}
+              onRedraft={(line) => void reply.redraft(open.id, line)}
+              onRecipients={(mode) => void reply.recipients(open.id, mode)}
+            />
+          )}
           <ApprovalActions
             decisions={allowed}
             draftReady={open.draftReady}
-            busy={busy}
+            busy={busy || reply.busy || reply.waiting}
+            approveBlock={gaps.length > 0 ? "rp_approve_gaps" : null}
             ownerOnly={me !== null && !owner && (open.state === "waiting" || open.state === "held")}
             canEdit={canEdit(open, { owner, canWrite: canWrite(me) }) && editStart(open) !== null}
             editRef={editButtonRef}

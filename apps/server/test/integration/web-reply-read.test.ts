@@ -267,6 +267,40 @@ describe("GET /api/replies/requests/:id", () => {
     expect(await res.json()).toEqual({ status: "superseded", reasonCode: null, sendId: newer.sendId });
     expect(sameThread.sendId).not.toBe(newer.sendId);
   });
+
+  test("7b. superseded with no open reply in the thread answers sendId null; a closed reply is not named", async () => {
+    const w = await kit.setup();
+    const thread = "<thread-closed@x.test>";
+    const lost = await kit.mailOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - 3_600_000) });
+    const newer = await kit.draftOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - 60_000) });
+    const request = await db
+      .insertInto("reply_requests")
+      .values({
+        org_id: w.box.ctx.orgId,
+        mailbox_id: w.box.mailboxId,
+        email_id: lost,
+        thread_key: thread,
+        folder: "INBOX",
+        trigger: "tap",
+        status: "superseded",
+        requested_by: w.org.ownerId,
+      })
+      .returning("id")
+      .executeTakeFirstOrThrow();
+    expect(await (await status(w, request.id)).json()).toEqual({
+      status: "superseded",
+      reasonCode: null,
+      sendId: newer.sendId,
+    });
+
+    await db.updateTable("actions").set({ status: "rejected" }).where("id", "=", newer.sendId).execute();
+
+    expect(await (await status(w, request.id)).json()).toEqual({
+      status: "superseded",
+      reasonCode: null,
+      sendId: null,
+    });
+  });
 });
 
 // The route runs in the tenant scope of the session, so the database policy hides another organization's rows before the query filter
