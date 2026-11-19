@@ -6,7 +6,7 @@ opened: 2026-11-19
 
 ## Outcome
 
-An operator sets the provider name `deepseek` and its API key, restarts, and every LLM call of the product, the evals and the judge goes to DeepSeek, priced in the call rows and the cost readers. One registry holds every provider; no module, script or eval carries its own provider code. Owner, 2026-11-20: switch the provider by name plus a key; check that the provider code is in one place.
+An operator sets the provider name `deepseek` and its API key, restarts, and every LLM call of the product, the evals and the judge goes to DeepSeek, priced in the call rows and the cost readers. Today one variable (`LLM_PROVIDER`) already picks the provider and one registry holds the provider code; what is missing is the DeepSeek row of that registry (its API shape, errors, prices) and its legal line. A short audit stage first proves that no provider code sits outside the registry. Owner, 2026-11-20.
 
 ## Scope
 
