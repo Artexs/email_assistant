@@ -1,16 +1,19 @@
-# F124 stage 02 — what is not proven (2026-11-20)
+# F124 stage 02 — what is open after the build (2026-11-20)
 
-Built and committed on branch of job `2026-11-19-f124-stage-02-continue-c98074c5`: `--parallel=4` in `test:unit` and `test:int`; one database per test worker for `test:int`; narrow filters in 5 tests; docs line. Logs of the runs: `/tmp/f124-s02/` (not kept in the repo).
+Built: `--parallel=4` in `test:unit` and `test:int`; one database per `test:int` worker (`apps/server/test/worker-db.ts`, switch `EA_TEST_WORKER_DB=1`); narrow row filters in 6 tests; `db:worktree --drop` also drops `<name>_w<n>`; `max_connections=200` in `deploy/compose.dev.yaml`. Logs: `/tmp/f124-s02/` (not in the repo).
 
-## Not run (the job ran out of time)
+## Not measured under load (a coordinator step re-measures on a quiet machine)
 
-1. The Stage 02 Proof of `plan.md` § Proof (lint, typecheck, unit once, int 5 times, runs 4 and 5 under `taskset -c 0-3`). Only one int run after the last big change passed with 0 failures (`bun run test:int`, 343 s, load average 20 from other jobs).
-2. The time limits (unit under 12 s, int under 80 s): measured 49 s and 343 s on a loaded machine; not comparable with the plan. Needs a quiet machine.
-3. Guard checks (remove the guard, see the test fail, restore): not done for the worker-database switch, the `--parallel=4` flags and the row filters.
+- The 5 int runs, each under 80 s, runs 4 and 5 under `taskset -c 0-3`, and unit under 12 s. The machine ran about 15 jobs at once (load 10 to 20). Measured once each, merged with master: unit 47 s (7,146 tests, 513 files); int 361 s (5,937 tests, 436 files).
+- Connection peak per job: sampled 19 to 22 (target was 12). The race files need 16 at once in one worker. `max_connections=200` applies when the dev `db` container restarts; it was not restarted.
+- The first `master` CI run after the land (see the CI paragraph in `plan.md` § Log).
 
-## Open questions
+## Final runs at the merge commit (one each)
 
-1. Connections: peak per job was 19 to 22 (sampled with `ss`), above the target of 12. The cause is real: race files open two pools (app and owner role) and race 8 transactions on each, so one worker needs 16 at once. A lower number needs weaker races. Built instead: `max_connections=200` in `deploy/compose.dev.yaml` (takes effect when the dev `db` container restarts; not restarted). Proposed: accept.
-2. `db-worktree --drop` does not drop the worker databases (`email_assistant_<name>_w1..w4`) of a job: add that, or drop by hand.
-3. CI: the worker databases need `POSTGRES_PASSWORD`; the code falls back to `postgres` (the CI service password), so `ci.yml` is unchanged. Unverified on CI.
-4. `cli-streams-other.test.ts` afterAll hook timed out once (5 s) under load while dropping databases; it did not repeat in the next run.
+- `bun run lint`: fails on master itself, in `apps/server/src/deploy-logs.test.ts:105` (prettier). Not this stage's file; not fixed here. `final-lint.log`.
+- `bun run typecheck`: pass. `bun run test:unit:ci`: pass, `4x PARALLEL`.
+- `bun run test:int:ci`: 5,932 pass, 2 fail, both in `cli-streams-other.test.ts`: the case "drop: dropped" and an afterAll hook timed out at 5 s (DROP DATABASE under load). The file passes alone (53 pass, `final-cli-streams-alone.log`). The same hook timed out once before (a run in the middle of the job); the file's cases drop several databases, so it is the slowest file under load. If it repeats on a quiet machine, quarantine rule applies.
+
+## Guard checks
+
+Done and saved: see the final message of the job (worker-database switch, parallel flags, `env: process.env`, worker-database drop, filters). The filter of `lab-demo-seed` does not fail in a serial run: its counts change only when another file writes at the same time.
