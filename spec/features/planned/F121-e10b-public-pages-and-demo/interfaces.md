@@ -13,14 +13,14 @@ Part of [`plan.md`](plan.md). A stage that creates a name below keeps it. A work
   - `proofUrl(path, ref = docsGitRef()): string` → `${REPO_URL}/blob/${ref}/${path}`.
 - Stage 01, build integration `claimCheck` (in `astro.config.mjs` next to `linkCheck`): runs `claimProblems`; any problem fails the build with the list; logs one line `claim_check ok <n>`.
 - Stage 02, component `ClaimsTable.astro` (`lang: "en" | "pl"`), `Subprocessors.astro` (`lang`), both read data. `subprocessorView(row, lang)` in `apps/docs/src/security/subprocessor-view.ts`: a placeholder field (`<…>`) → "Not confirmed yet" / "Jeszcze nie potwierdzone"; a placeholder `termsUrl` → null.
-- Stage 03, component `CostTable.astro` (`lang`); `costRows(): { mailsPerDay: 50 | 100 | 200; llmUsd; hostingUsd; backupUsd; totalUsd; marginUsd }[]` in `apps/docs/src/pricing.ts`, each rounded to 2 decimals; `marginUsd = round2(price − round2(totalUsd))`; `basis` from `costToRun`.
+- Stage 03, component `CostTable.astro` (`lang`); `costRows(compute = costToRun): { mailsPerDay: 50 | 100 | 200; llmUsd; hostingUsd; backupUsd; totalUsd; marginUsd }[]` in `apps/docs/src/pricing.ts`, each rounded to 2 decimals half up (as `cost-model-doc.test.ts`); `marginUsd = round2(price − round2(totalUsd))`; `basis` from `costToRun`.
 - Stage 05: `POLISH_SET` gains `security`, `pricing`; the strict set of `scripts/stale.ts` = `index`, `start*`, `security`, `pricing`.
 - Stage 11, component `DemoVideo.astro` (`lang`): renders a `<video>` with two `<track>` only when the three files exist in `apps/docs/public/demo/` at build; else nothing. `DEMO_VIDEO_SHA256: string | null` in `apps/docs/src/demo-video.ts` (null = no download); `scripts/demo-fetch.ts` downloads and checks it.
 
 ## Core (`packages/core/src/site.ts`)
 
 - Stage 03: `PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH = 25`.
-- Read only: `PRODUCT_NAME`, `DOCS_ORIGIN`, `DOCS_BASE`; from `@ea/core`: `costToRun`, `pilotCost` (F107 stage 08), `subprocessors` (F107 stage 01).
+- Read only: `PRODUCT_NAME`, `DOCS_ORIGIN`, `DOCS_BASE`; from `@ea/core`: `costToRun(mailsPerDay, { mailboxesPerHost?, pilot? })`, `pilotCost`, `costModel`; from `@ea/core/web`: `subprocessors` (10 rows after F138 stage 02).
 
 ## Server
 
@@ -28,9 +28,9 @@ Part of [`plan.md`](plan.md). A stage that creates a name below keeps it. A work
 
 ## Shots and demo (`apps/web/e2e`)
 
-- Stage 07: `DEMO_SEED_FILE` env, default `apps/web/e2e/demo/demo-seed.json`. `shotSource(): { kind: "demo"; file: string } | { kind: "e2e" }` in `docs-shots/`. The run logs `shots_source demo|e2e`. Demo owner `demo-owner@demo.test`; import with `replace: true`.
+- Stage 07: `DEMO_SEED_FILE` env, default `apps/web/e2e/demo/demo-seed.json`. `shotSource(): { kind: "demo"; file: string } | { kind: "e2e" }` in `docs-shots/source.ts`; stage 10 calls it too. The run logs `shots_source demo|e2e`. Demo owner `demo-owner@demo.test`; import with `replace: true`.
 - Stage 09, `apps/web/e2e/demo/`: `DEMO_STEPS: readonly { id: string; seconds: number; caption: Texts; live: boolean }[]` (`steps.ts`); `toVtt(cues: readonly { stepId: string; startMs: number; endMs: number }[], lang): string` (cue times already shifted by the trim); `ffmpegArgs({ input, output, trimStartMs }): string[]` (`encode.ts`); `demoDbProblem(url, others): string | null` (`db-guard.ts`; name must end `_demo`).
-- Stage 10: `bun run demo:record --seed <file> [--out <dir>]` (default `tmp/demo/`, git-ignored), env `DEMO_DATABASE_URL`. Output `demo.mp4`, `demo.en.vtt`, `demo.pl.vtt`; prints duration, size, sha256.
+- Stage 10: `bun run demo:record [--seed <file>] [--out <dir>]` (default `tmp/demo/`, git-ignored), env `DEMO_DATABASE_URL`; no `--seed` → `shotSource()` decides (e2e seed until G2, D10); logs `demo_source e2e|demo`. Output `demo.mp4`, `demo.en.vtt`, `demo.pl.vtt`; prints duration, size, sha256.
 
 ## Fake Telegram (`tools/fake-telegram`)
 

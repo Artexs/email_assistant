@@ -1,6 +1,8 @@
 # F121 stage 05 — Polish security and pricing, strict set
 
-Part of [`../plan.md`](../plan.md). New user-facing Polish text: Opus review before the land. Decision 6 (epic). Needs stages 02, 03, 04.
+Needs stage 02: `security.mdx`, `ClaimsTable` and `Subprocessors` with `lang`, the `pl` texts of `publicClaims`. Needs stage 03: `pricing.mdx`, `CostTable` with `lang`. Needs stage 04: the security link on `pricing.mdx` and `pl/index.mdx` (tone, front matter).
+
+Part of [`../plan.md`](../plan.md). New user-facing Polish text: Opus review before the land. Decision 6 (epic).
 
 Carry-over reads: `apps/docs/src/front-matter.ts` (`POLISH_SET`), `apps/docs/scripts/stale.ts` (strict rule), `apps/docs/src/polish.test.ts`, `pl/index.mdx` (stage 04) for tone and front matter, the panel Polish strings (`apps/web/src/i18n/pl*`) for the same terms.
 
@@ -16,7 +18,7 @@ Carry-over reads: `apps/docs/src/front-matter.ts` (`POLISH_SET`), `apps/docs/scr
 
 **Test.**
 1. `polish.test.ts` (extend): each new pl page has `source`, a 16-hex `sourceHash`, the same `##` count and links as its source.
-2. Browser check: `/pl/security/` shows the Polish text of the first claim; `/pl/pricing/` has 3 table rows; axe zero violations.
+2. Browser check: `/pl/security/` shows the Polish text of the first claim; `/pl/pricing/` has 3 table rows; axe zero violations; neither page holds `gemini` (case-insensitive).
 
 ## Step 2 — Sets
 

@@ -1,6 +1,8 @@
 # F121 stage 08 — Read-only viewer in the fake Telegram
 
-Part of [`../plan.md`](../plan.md). Decision 12 (epic), notes §4.5. Runs next to 02–06.
+Needs: nothing new; it reads `tools/fake-telegram` at HEAD. May run next to every other stage.
+
+Part of [`../plan.md`](../plan.md). Decision 12 (epic), notes §4.5.
 
 Carry-over reads: `tools/fake-telegram/src/server.ts`, `control.ts`, `state.ts` (how chats, messages and buttons are stored), its tests, `docs/capabilities/digest-and-notices.md` (what bot messages look like).
 

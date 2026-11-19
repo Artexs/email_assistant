@@ -1,12 +1,14 @@
 # F121 stage 09 — Demo script: spike, steps, captions, encoder arguments
 
-Part of [`../plan.md`](../plan.md). Decisions P5, D6, D7, D8, decision 12 (epic). Needs stage 08 and coordinator step C1 (the seed file; the coordinator passes its path). Review before the land (Polish captions). Stage 10 runs the recording; this stage builds the pure parts and decides the step list (review 1 N16: the old stage was too big).
+Needs stage 08: `GET /_fake/view` (the spike shows the Telegram step through it). Reads the e2e seed at HEAD; does not wait for C1 (D10). May run next to 01–07.
+
+Part of [`../plan.md`](../plan.md). Decisions P5, D7, D8, D10, decision 12 (epic). Review before the land (Polish captions). Stage 10 runs the recording; this stage builds the pure parts and decides the step list (review 1 N16: the old stage was too big).
 
 Carry-over reads: notes §4.5 (script), `apps/web/e2e/env.ts`, `servers.ts`, `global-setup.ts`, `docs/capabilities/live-lab.md` rule 24.7 (what an import makes), `docs/capabilities/tenancy-and-plans.md` (`org:flag`), `docs/capabilities/triage.md` (rules before AI: a VIP sender rule makes a mail urgent with LLM triage off), the stage 08 view.
 
 ## Step 1 — Spike (≤ 30 min; result in the final message and in `apps/web/e2e/demo/README.md`)
 
-For each of the 8 steps (connect a mailbox; shadow days passed; the "what I would have done" report; "Turn on recommended"; an urgent mail arrives and the Telegram notice shows; an approval with an edit in the panel; a delegation and its chaser; Undo of an automatic move) decide: live or from seed state, and how. Rules (D7): panel, product CLIs (`org:flag`, `telegram:link`, `mailbox:connect`) and GreenMail delivery only; no SQL. Flags for the import org: those the steps need, by `org:flag` (Q2). More than 2 steps not live → stop and ask.
+For each of the 8 steps (connect a mailbox; shadow days passed; the "what I would have done" report; "Turn on recommended"; an urgent mail arrives and the Telegram notice shows; an approval with an edit in the panel; a delegation and its chaser; Undo of an automatic move) decide on the e2e seed (D10): live or from seed state, which e2e organization and user show it, and how. Rules (D7): panel, product CLIs (`org:flag`, `telegram:link`, `mailbox:connect`) and GreenMail delivery only; no SQL. Flags: those the steps need, by `org:flag` (Q2). More than 2 steps not live → stop and ask. The table has one column for the demo source, left `open`: the follow-up ticket fills it.
 
 ## Step 2 — Steps and captions
 

@@ -1,6 +1,8 @@
 # F121 stage 11 — Video on the site
 
-Part of [`../plan.md`](../plan.md). `[risky]` deploy workflow: a new download step with a token. Decisions D8, P4, P5. Needs stages 04 and 10. Review before the land. Extra proof link: `flock /tmp/email-assistant-shared-tests.lock bun run docs:test > /tmp/f121-s11/site.log 2>&1` before `echo PROOF_OK`.
+Needs stage 04: the home pages `index.mdx` and `pl/index.mdx` (the video place). Needs stage 01: the `publish_held_pages` input in `docs-deploy.yml` and the hold in `deployDecision` (both stages edit them). Needs stage 10: the `demo:record` script that the release checklist names. It uses a committed fixture video, not a stage 10 output. Playwright: lock rule until F136 lands.
+
+Part of [`../plan.md`](../plan.md). `[risky]` deploy workflow: a new download step with a token. Decisions D8, P4, P5. Review before the land. Extra proof link: `flock /tmp/email-assistant-shared-tests.lock bun run docs:test > /tmp/f121-s11/site.log 2>&1` before `echo PROOF_OK`.
 
 Carry-over reads: `.github/workflows/docs-deploy.yml`, `apps/docs/scripts/workflows.test.ts`, `apps/docs/integrations/csp-finalize.ts`, `packages/core/src/web/` (`docsCspProblem`, `publicContentScan`), `apps/docs/integrations/public-content.ts`, `apps/docs/src/components/Shot.astro` (on/off pattern), `docs/release-checklist.md`.
 

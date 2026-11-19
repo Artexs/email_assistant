@@ -1,6 +1,8 @@
 # F121 stage 07 — Shots from the demo seed
 
-Part of [`../plan.md`](../plan.md). `[risky]` public data: a wrong import or a missed scan puts data on a public site. Decisions D5, D6. Needs stage 01. Extra proof link: `flock /tmp/email-assistant-shared-tests.lock bun run docs:shots > /tmp/f121-s07/shots.log 2>&1` before `echo PROOF_OK`.
+Needs: nothing new; it reads the shot run, `importDemo` and the e2e seed at HEAD. May run next to 01 and 08 (01 also edits `astro.config.mjs`: merge, re-prove). Playwright: lock rule until F136 lands.
+
+Part of [`../plan.md`](../plan.md). `[risky]` public data: a wrong import or a missed scan puts data on a public site. Decisions D5, D6. Extra proof link: `flock /tmp/email-assistant-shared-tests.lock bun run docs:shots > /tmp/f121-s07/shots.log 2>&1` before `echo PROOF_OK`.
 
 Carry-over reads: `apps/web/e2e/docs-shots/` (global setup, spec), `apps/docs/src/shots.ts`, `notes/2026-11-18-f112-s11-shot-run.md`, `docs/capabilities/live-lab.md` rule 24 (export and import guards), `apps/server/src/modules/lab/demo-seed/`, `apps/server/test/integration/lab-demo-seed.test.ts` (how tests make a seed).
 
@@ -11,7 +13,7 @@ Carry-over reads: `apps/web/e2e/docs-shots/` (global setup, spec), `apps/docs/sr
 **Files.** `apps/web/e2e/docs-shots/` (global setup, a new `source.ts`), tests.
 
 **Decisions.**
-- `shotSource()`: `DEMO_SEED_FILE` if set, else the default path; `demo` when the file exists, else `e2e` (today's run). An env path that does not exist is an error (`demo_seed_missing`), not a silent fallback.
+- `shotSource()` (stage 10 calls it too, D5): `DEMO_SEED_FILE` if set, else the default path; `demo` when the file exists, else `e2e` (today's run). An env path that does not exist is an error (`demo_seed_missing`), not a silent fallback.
 - Demo import: `importDemo` (no new import code) with `SEND_SCOPE` unset and `replace: true`, so a rerun on the same DB works (the shot path never connects a mailbox, so the paused placeholder stays and `--replace` is allowed; review 1 N9). Owner address `demo-owner@demo.test`, a constant that is not an e2e seed user (the e2e wipe deletes those).
 - Sign-in (review 1 N10): the import makes the owner without a password. The setup gives the owner a password and accepts the current terms through the same product paths the e2e seed uses for its users (the Better Auth sign-up or reset path, then `POST /api/me/terms`); no SQL. The worker names the path it used.
 - Flags: the import org keeps every flag off; the existing `shotFeaturesProblem` check runs on it. Data that a flagged feature made in the demo week stays hidden, because the panel hides it while the flag is off. Only the five pages of today's shot list are shot.

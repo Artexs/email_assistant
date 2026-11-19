@@ -1,6 +1,8 @@
 # F121 stage 06 — API and autonomy-evidence reference
 
-Part of [`../plan.md`](../plan.md). Decisions P6, P7, D4. Needs stage 01; the API intro links the stage 02 claim, so it lands after stage 02. Review before the land (flagged routes, Q4).
+Needs stage 01: `OWNER_REVIEW_PENDING` holding `reference/api` and `reference/autonomy-evidence`. Needs stage 02: the private-network claim id in `publicClaims` and its `#claim-<id>` anchor on `/security/`. May run next to 03, 04, 05.
+
+Part of [`../plan.md`](../plan.md). Decisions P6, P7, D4. Review before the land (flagged routes, Q4).
 
 Carry-over reads: `apps/server/src/platform/openapi.ts`, `apps/server/src/openapi-routes.test.ts` (how the app is built with fakes), `docs/capabilities/web-panel.md` rule 6, ADR 0023, `apps/docs/src/in-place.ts` (read-in-place pattern), `apps/docs/src/reference.test.ts`, `docs/capabilities/trust.md`, ADR 0028, `notes/2026-11-18-f110-s25-docs.md`, `apps/docs/src/flagged-text.ts`.
 
@@ -27,7 +29,7 @@ Mutation: add a fake route with an `apiDoc` in the test app → test 2 fails; or
 
 **Goal.** A developer and a buyer read the API and the evidence rules.
 
-**Files.** New `apps/docs/src/content/docs/reference/api.mdx` with a component that renders the file (method, path, summary, tag, auth: session or public, request and answer schema names); new `reference/autonomy-evidence.mdx`; sidebar entries.
+**Files.** New `apps/docs/src/content/docs/reference/api.mdx` with a component that renders the file (method, path, summary, tag, auth: session or public, request schema, and every answer status with its schema name: a route can have two success answers, `apiDoc` `alsoOk`); new `reference/autonomy-evidence.mdx`; sidebar entries.
 
 **Decisions.**
 - API page: grouped by tag, sorted by path; intro: session cookie auth; a link to the security page claim about the private network (no own statement of reachability: claims live only in `publicClaims`, review 1 N12); "Some routes answer only while an operator turns a feature on." (Q4) Schema bodies are shown collapsed (`<details>`), no script.
@@ -35,12 +37,13 @@ Mutation: add a fake route with an `apiDoc` in the test app → test 2 fails; or
 - Both pages English only; front matter `capabilities` set.
 
 **Test.**
-5. `reference.test.ts` (extend): the API page lists every `operationId` of the file once.
+5. `reference.test.ts` (extend): the API page lists every `operationId` of the file once; for an operation with two success statuses (an `alsoOk` route in the file), both statuses show.
+8. The built API page holds no `gemini` (case-insensitive).
 6. Each number on the evidence page equals its constant (test reads the rendered text or the component data).
 7. `flagged-text.test.ts` passes.
 
 **Check.** `bun test apps/server/src/scripts apps/docs/src`, `bun run api:spec --check`, `bun run docs:build`.
 
-**Done when.** Tests 1–7 pass; Proof prints `PROOF_OK`.
+**Done when.** Tests 1–8 pass; Proof prints `PROOF_OK`.
 
 **Out of scope.** Generating a client; changing any route or `apiDoc`; a CI step beyond the unit drift test (the test runs in `test:unit`).
