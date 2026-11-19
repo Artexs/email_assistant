@@ -30,3 +30,7 @@ Runs the stage 01 drafter on the `needs_reply` cases of `lab-01` with the reply 
 - **Check:** `bun test apps/server/src/modules/triage apps/server/src/scripts` (the eval tests).
 - **Done when:** the reports and the gate file are committed, or the final message says step 3 waits for the coordinator; the Proof prints `PROOF_OK`.
 - **Out of scope:** product wiring, any DB change.
+
+## Moved 2026-11-19 (F138)
+
+Step 3 (holdout and injection runs) now runs in F138 stage 06. The judge is `gpt-6.1-terra` (ADR 0037 model rule), not Gemini. The old "provider must differ (PD-026)" rule is replaced by the rule that the judge model differs from the drafter model. F115 gate G1 reads the F138 stage 06 reports. This stage is landed; do not run step 3 here.
