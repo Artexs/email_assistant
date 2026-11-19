@@ -24,6 +24,7 @@ export {
   listOrgFeatureRowsOfAll,
   listQuietHoursOf,
   setDigestTimes,
+  setMemberNoticeRoutes,
   setMemberQuietHours,
   setMemberReportChannel,
   setUserLocale,

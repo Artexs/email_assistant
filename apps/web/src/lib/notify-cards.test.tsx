@@ -18,6 +18,12 @@ const view = (over: Partial<NotifyView> = {}): NotifyView => ({
   reportMailboxId: null,
   mailboxes: [{ id: MAILBOX, address: "boss@x.test" }],
   telegramLinked: true,
+  routes: {},
+  routeDefaults: {
+    urgent: { telegram: true, push: false },
+    approvals: { telegram: true, push: false },
+    updates: { telegram: true, push: false },
+  },
   ...over,
 });
 

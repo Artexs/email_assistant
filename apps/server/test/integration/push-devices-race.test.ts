@@ -110,8 +110,8 @@ describe("two subscribes of one user at once", () => {
     expect(run.second.ok).toBe(true);
     const rows = await rowsOf(org.ownerId);
     expect(rows).toHaveLength(1);
-    expect(run.first).toEqual({ id: rows[0]?.id ?? "", created: true });
-    expect(run.second.ok && run.second.value).toEqual({ id: rows[0]?.id ?? "", created: false });
+    expect(run.first).toEqual({ id: rows[0]?.id ?? "", created: true, sessionChanged: true });
+    expect(run.second.ok && run.second.value).toEqual({ id: rows[0]?.id ?? "", created: false, sessionChanged: true });
     // The second session won the row: it re-bound the device.
     const [row] = await db
       .selectFrom("push_subscriptions")

@@ -4,6 +4,7 @@ import type { FetchMessageObject, ImapFlow } from "imapflow";
 
 import { HardError, SoftError } from "../../../platform/errors";
 import { renderSeedMessage, SYNTHETIC_MESSAGE_ID_DOMAIN } from "../seed";
+import { isTestAddress } from "../test-address";
 
 import { connectImapClient, toMailError, type ImapConnectOptions } from "./client";
 import { withCleanupNotes } from "./probe";
@@ -53,7 +54,7 @@ export interface ProbeMoveReport {
 /** Refuses every address except the test mailbox (the same guard as `seedMailbox`). */
 export function assertTestAddress(address: string, testAddress: string | undefined): void {
   if (testAddress === undefined) throw new HardError("TEST_MAILBOX_ADDRESS is not set: probe refused");
-  if (testAddress.trim().toLowerCase() !== address.trim().toLowerCase()) {
+  if (!isTestAddress(address, testAddress)) {
     throw new HardError("the address is not the test mailbox (TEST_MAILBOX_ADDRESS): probe refused");
   }
 }
