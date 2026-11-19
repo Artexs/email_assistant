@@ -1,6 +1,6 @@
 # Triage
 
-> Checked against the code at `5ba3e0bc`, 2026-11-18.
+> Checked against the code at `8a9a834c`, 2026-11-19.
 
 ## What it does now
 
