@@ -145,7 +145,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
 - **Source:** `apps/server/src/platform/auth-sso-required.ts` (the first two) and the session hook in `apps/server/src/platform/auth.ts` (the third). Level `info`. The line holds the user id only.
-- **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
+- **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. (`reset_request_refused_sso` also fires for an SSO-only member: no password account and a membership in an organization with a provider; no "SSO required" is needed for it.) The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
 - **Fix:** No action for one line. A real member signs in with the company account. If the IdP is down, the operator runs `bun run org:sso --org-id <id> --require off`. The break-glass owner is never refused.
 - **Status:** won't fix (a refusal is the expected answer)
 
