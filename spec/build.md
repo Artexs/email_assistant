@@ -92,3 +92,4 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 ## Owner rule 2026-11-19: do not wait, run in parallel
 
 Work only on tickets in `spec/features/active/` until all are closed (owner, 2026-11-19). Start every ready active stage at once. Start no ticket from `planned/`. A planned ticket starts only after the owner says so. Only the VPS deploy runs one at a time, and only one migration is in build. Tell the owner about real conflicts.
+- Exception (owner, 2026-11-19): F138 stage 01 builds now so that the F115 stage 02 runs use an OpenAI judge. The rest of F138 stays planned.

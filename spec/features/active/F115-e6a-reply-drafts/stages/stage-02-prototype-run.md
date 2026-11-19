@@ -31,6 +31,6 @@ Runs the stage 01 drafter on the `needs_reply` cases of `lab-01` with the reply 
 - **Done when:** the reports and the gate file are committed, or the final message says step 3 waits for the coordinator; the Proof prints `PROOF_OK`.
 - **Out of scope:** product wiring, any DB change.
 
-## Resume 2026-11-20 (owner rule: only active tickets)
+## Resume on OpenAI (owner, 2026-11-19)
 
-The move of step 3 to F138 stage 06 is undone: F138 is planned and does not start before the active tickets close. Step 3 (holdout from 171 of 260, injection grading of the 10 ungraded drafts, gate file) resumes on Gemini after the free quota resets (about 08:15 UTC 2026-11-20). Resume commands: `notes/2026-11-19-f115-s02-prototype-run.md`. F115 gate G1 reads these reports.
+The owner allowed F138 stage 01 (judge on OpenAI: the judge model must differ from the drafter model) as an exception. After it lands, step 3 runs with judge `gpt-6.1-terra`: the holdout runs again in full (the judge model is in the state file name, so the 171 Gemini-judged cases are not reused), then injection grading, then the gate file. Use `--concurrency 2 --rpm 30` and stop on any 429. Resume commands otherwise as in `notes/2026-11-19-f115-s02-prototype-run.md`. F115 gate G1 reads these reports.
