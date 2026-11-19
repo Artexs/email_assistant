@@ -5,7 +5,7 @@ import { withTenantScope, type DB, type Db } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
 import { deleteSenderContextRowsOf, lockProfilesOfOrg, normalizedAddress } from "../contacts";
 
-import { DSR_ADDRESS_MAP, normalizeDsrAddress } from "./address-map";
+import { DSR_ADDRESS_MAP, normalizeDsrAddress, replaceAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";
 import { addressPatterns, findOpenActions, matchSubject, rowCondition, type AddressPatterns } from "./dsr-match";
 import { blankDigestsNamingLoops, eraseManyMailOutbox } from "./outbox";
@@ -80,12 +80,12 @@ function cleanedValue(
         select u.v from unnest(${ref}) with ordinality as u(v, n) where ${normalizedAddress("u.v")} <> ${patterns.address} order by u.n
       )`;
     case "text": {
-      const replaced = sql`regexp_replace(${ref}, ${patterns.text}, ${REMOVED}, 'gi')`;
+      const replaced = replaceAddress(ref, patterns.text, REMOVED);
       const limit = TEXT_LIMITS[key];
       return limit === undefined ? replaced : sql`left(${replaced}, ${limit})`;
     }
     case "json":
-      return sql`regexp_replace(${ref}::text, ${patterns.json}, ${REMOVED}, 'gi')::jsonb`;
+      return sql`${replaceAddress(sql`${ref}::text`, patterns.json, REMOVED)}::jsonb`;
     case "equal":
       return nullable ? sql`null` : sql`''`;
   }

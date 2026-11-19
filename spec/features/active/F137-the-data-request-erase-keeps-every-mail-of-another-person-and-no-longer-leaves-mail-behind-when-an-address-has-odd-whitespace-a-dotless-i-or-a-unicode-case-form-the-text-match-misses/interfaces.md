@@ -8,6 +8,7 @@ Names that one stage creates and a later stage uses. Code detail beyond these is
 - `ADDRESS_RULE_PROBES: readonly string[]` (stage 02) — the 66 strings of `probe-strings.md`, same order. May live in a sibling file of the same folder.
 - `addressCaseForms(letter: string): readonly string[]` (stage 03) — every string whose `normalizeSenderAddress` form is `letter`, with `letter` first. Single code points from a lazy, cached scan of 1–0x10FFFF (no surrogates). For `i` also the two-code-point forms `"i\u0307"` and `"I\u0307"` (besides `I` and U+0130). For a letter with no other form: `[letter]`. Input is one code point that is already in rule form.
 - `normalizeSenderAddress` keeps its signature and output (D1).
+- `addressCasedCodePoints(): readonly number[]` (stage 03, added) — every code point that has another case form under the rule, or is the form of such a letter, ascending; the boundary classes of `addressRegex` take it.
 
 ## Server, `apps/server/src/modules/contacts/address-sql.ts`
 
