@@ -7,6 +7,7 @@ import {
   type BriefSections,
 } from "../loops/brief";
 import type { CoreTexts } from "../texts";
+import { minimalTexts } from "../texts/minimal";
 import type { Category, MailboxMode } from "../triage/categories";
 import type { SenderRuleKind } from "../triage/rules";
 import type { SuspiciousReason } from "../triage/suspicious";
@@ -98,6 +99,9 @@ export interface DigestBrief {
   links?: BriefRenderOptions["links"];
   // The count line of a later digest: waiting lines and promises due. Null: no line.
   openLoops: { waiting: number; promised: number } | null;
+  // The same two counts in every digest of a brief, the first of the day too (loops and the delegations due today, with or without the
+  // consent of the member): the `minimal` digest prints them. Absent: `openLoops`.
+  loopCounts?: { waiting: number; promised: number };
 }
 
 export interface DigestInput {
@@ -135,9 +139,25 @@ export interface DigestShown {
   lineOf: Record<string, number>;
 }
 
+// The facts of a digest that the `minimal` Telegram render prints: counts and the clock, never a mail or a mailbox address.
+export interface DigestMinimalFacts {
+  // The instant of the header: the slot time of a scheduled digest, else the time of the build.
+  at: Date;
+  scheduled: boolean;
+  late: boolean;
+  timeZone: string;
+  action: Record<"urgent" | "needs_reply" | "delegation" | "unsure", number>;
+  other: Record<"info" | "notification" | "spam", number>;
+  // Mailboxes that are paused, have a login error, a blocked host, never synced or synced late.
+  mailboxProblems: number;
+  // The open loops that the brief counts; null when the digest has no brief.
+  openLoops: { waiting: number; promised: number } | null;
+}
+
 export interface RenderedDigest {
   message: OutMessage;
   shown: DigestShown;
+  minimal: DigestMinimalFacts;
 }
 
 function sumCounts(counts: Partial<Record<Category, number>>, list: readonly Category[]): number {
@@ -160,6 +180,61 @@ function headerLine(input: DigestInput, texts: CoreTexts): string {
     return texts.digest.header(slot.time, day, slot.late);
   }
   return texts.digest.headerNow(formatDay(now, timeZone, texts.locale), localDateTime(now, timeZone).time);
+}
+
+// The mailbox lines that are not the plain "Last sync" line.
+function hasProblem(mailbox: DigestMailbox, now: Date): boolean {
+  if (mailbox.status !== "active") return true;
+  return mailbox.lastSyncedAt === null || now.getTime() - mailbox.lastSyncedAt.getTime() > SYNC_LATE_MS;
+}
+
+export function digestMinimalFacts(input: DigestInput): DigestMinimalFacts {
+  const { timeZone, counts } = input;
+  const slot = input.kind === "scheduled" ? input.slot : null;
+  const openLoops = input.brief === undefined ? null : (input.brief.loopCounts ?? input.brief.openLoops);
+  const countOf = (category: Category): number => counts[category] ?? 0;
+  return {
+    at: slot === null ? input.now : localToInstant(slot.date, slot.time, timeZone),
+    scheduled: slot !== null,
+    late: slot !== null && slot.late,
+    timeZone,
+    action: {
+      urgent: countOf("urgent"),
+      needs_reply: countOf("needs_reply"),
+      delegation: countOf("delegation"),
+      unsure: countOf("unsure"),
+    },
+    other: { info: countOf("info"), notification: countOf("notification"), spam: countOf("spam") },
+    mailboxProblems: input.mailboxes.filter((mailbox) => hasProblem(mailbox, input.now)).length,
+    openLoops,
+  };
+}
+
+// The digest as text for a member who gets `minimal`: the header (the clock and the day), the counts of the two sections, the number
+// of mailboxes with a problem, the open loops, and the link to the panel (`link`: the URL line, or the "Open the panel" line).
+export function renderDigestMinimal(facts: DigestMinimalFacts, texts: CoreTexts, link: string): OutMessage {
+  const { at, timeZone } = facts;
+  const day = formatDay(at, timeZone, texts.locale);
+  const lines = [
+    facts.scheduled
+      ? texts.digest.header(localDateTime(at, timeZone).time, day, facts.late)
+      : texts.digest.headerNow(day, localDateTime(at, timeZone).time),
+  ];
+  const section = (title: string, counts: Partial<Record<Category, number>>): string => {
+    const parts = CATEGORY_ORDER.flatMap((category) => {
+      const count = counts[category] ?? 0;
+      return count > 0 ? [`${count} ${texts.digest.moreName[category](count)}`] : [];
+    });
+    const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    return parts.length === 0 ? `${title} · ${total}` : `${title} · ${total}: ${parts.join(", ")}`;
+  };
+  lines.push(section(texts.digest.actionTitle, facts.action), section(texts.digest.otherTitle, facts.other));
+  if (facts.mailboxProblems > 0) lines.push(minimalTexts(texts.locale).mailboxProblems(facts.mailboxProblems));
+  const loops = facts.openLoops;
+  if (loops !== null && loops.waiting + loops.promised > 0)
+    lines.push(texts.brief.openLoops(loops.waiting, loops.promised));
+  lines.push(link);
+  return { text: lines.join("\n"), buttons: [] };
 }
 
 function mailboxLine(input: DigestInput, mailbox: DigestMailbox, texts: CoreTexts): string {
@@ -357,6 +432,7 @@ function cutToLimit(text: string): string {
 
 // The message and the loops of the brief that its text names (a line that the 4096 cut dropped is not named).
 export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): RenderedDigest {
+  const minimal = digestMinimalFacts(input);
   const urgentIds = new Set(input.brief?.urgentEmailIds ?? []);
   const listed = sortItems(input.items.filter((item) => !urgentIds.has(item.emailId))).slice(
     0,
@@ -371,6 +447,7 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
       return {
         message,
         shown: sections === null ? { surfaced: [], stale: [], lineOf } : { ...shownIds(sections), lineOf },
+        minimal,
       };
     }
     // The spam review lines go first, then the normal rows, then the lines of the brief from the bottom section up.
@@ -390,6 +467,7 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
     return {
       message: { text: cutToLimit(message.text), buttons: [] },
       shown: { surfaced: [], stale: [], lineOf: {} },
+      minimal,
     };
   }
 }

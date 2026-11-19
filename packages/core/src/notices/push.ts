@@ -81,7 +81,8 @@ const PAGE: Record<NoticeKind | "test", string> = {
   weekly_report: "/stats",
   trust_report_ready: "/report",
   autonomy_paused: "/settings",
-  loop_consent: "/settings",
+  // Every loop-consent line links to the approvals list (the full view does the same).
+  loop_consent: "/approvals",
   test: "/settings",
 };
 

@@ -23,6 +23,7 @@ import { whyTexts, type WhyTexts } from "./why";
 import { wouldDoTexts, type WouldDoTexts } from "./would-do";
 
 export { botCommandNames } from "./bot";
+export { minimalTexts, minimalTextTables, type MinimalTexts } from "./minimal";
 export { pushTexts, pushTextTables, type PushTexts } from "./push";
 export type { ActionTense, SendPhraseStatus } from "./would-do";
 export type {

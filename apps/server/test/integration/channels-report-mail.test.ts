@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { renderDigest, textsFor } from "@ea/core";
+import { renderDigestWithBrief, textsFor } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -128,7 +128,10 @@ describe("digest rows by mail (steps 1, tests 1 to 3 and 6)", () => {
       expect(digests).toHaveLength(1);
       const digestId = digests[0]?.id ?? "";
       expect(rows.map((row) => row.digest_id)).toEqual([digestId, digestId]);
-      expect(rows[0]?.view).toEqual(rows[1]?.view);
+      // The Telegram row also holds the counts of the minimal level; the rest of the two views is the same.
+      const { minimal, ...telegramView } = rows[0]?.view as Record<string, unknown>;
+      expect(minimal).toBeDefined();
+      expect(telegramView).toEqual(rows[1]?.view as Record<string, unknown>);
       // A repeat adds nothing, and the next slot adds a pair.
       await digest(trx, new Date(SLOT_NOW.getTime() + 60_000));
       expect(await rowsOf(trx, o.orgId)).toHaveLength(2);
@@ -250,7 +253,7 @@ describe("the digest with the loop and spam review features off", () => {
         .where("id", "=", o.mailboxId)
         .executeTakeFirstOrThrow();
       await digest(trx);
-      const fixture = renderDigest(
+      const fixture = renderDigestWithBrief(
         {
           kind: "scheduled",
           now: SLOT_NOW,
@@ -279,8 +282,15 @@ describe("the digest with the loop and spam review features off", () => {
       const rows = await rowsOf(trx, o.orgId);
       expect(rows.map((row) => row.channel)).toEqual(["telegram", "mail"]);
       for (const row of rows) {
-        // Exactly these keys: no `loopIds`, no `lineOf`, nothing of the spam review line.
-        expect(JSON.stringify(row.view)).toBe(JSON.stringify({ text: fixture.text, buttons: fixture.buttons }));
+        // Exactly these keys: no `loopIds`, no `lineOf`, nothing of the spam review line. The Telegram row also holds the counts of
+        // the minimal level (as stored JSON: dates are strings); the mail row renders the full text only and holds none.
+        const minimal = row.channel === "telegram" ? { minimal: JSON.parse(JSON.stringify(fixture.minimal)) } : {};
+        const expected: Record<string, unknown> = {
+          text: fixture.message.text,
+          buttons: fixture.message.buttons,
+          ...minimal,
+        };
+        expect(row.view as Record<string, unknown>).toEqual(expected);
       }
     });
   });

@@ -412,6 +412,9 @@ describe("outbox view columns (F088)", () => {
     expect(values("outbox_kind_check")).toEqual([...noticeKinds].sort());
     expect(values("outbox_channel_check")).toEqual([...noticeChannels].sort());
     expect(values("outbox_locale_check")).toEqual([...userLocales].sort());
-    expect(values("outbox_detail_check")).toEqual([...noticeDetails].sort());
+    // The list of core has `minimal` before the column does: the migration of the detail setting widens the CHECK, and this line then
+    // goes back to the whole list (`noticeDetails`).
+    expect(values("outbox_detail_check")).toEqual(["full"]);
+    expect([...noticeDetails].sort()).toEqual(["full", "minimal"]);
   });
 });
