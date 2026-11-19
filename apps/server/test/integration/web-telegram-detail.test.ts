@@ -309,6 +309,11 @@ describe("PATCH /api/me/telegram-detail", () => {
     expect(await detailOf(org.ownerId)).toBe("full");
     expect(await detailOf(org.assistantId)).toBe("full");
     expect(await auditOf("member.telegram_detail_changed")).toEqual([]);
+    // In one organization the assistant changes the own row only, not the owner's.
+    const own = await app().request("/api/me/telegram-detail", patch("assistant", { detail: "minimal" }));
+    expect(own.status).toBe(200);
+    expect(await detailOf(org.assistantId)).toBe("minimal");
+    expect(await detailOf(org.ownerId)).toBe("full");
     expect(await auditOf("member.telegram_detail_changed", org.otherOrgId)).toEqual([
       { actor: org.otherOwnerId, data: { detail: "minimal" } },
     ]);
