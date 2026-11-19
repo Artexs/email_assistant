@@ -714,3 +714,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: owner message of 2026-11-19: "close all of them without further waiting… use only the logs and anything else that is there for current time. So that's my decision".
 - Undo: move a ticket back to `active/` and run its open check; flags off with `org:flag --off`.
 - Source: owner chat.
+
+### 2026-11-20 · F138 plan defaults: "history" means any dated record; measured Gemini model name kept in the cost record · rule-exception · new
+
+- Decision: F138 plan D17 reads "history" in the acceptance grep as any dated record (old ADR text, `docs/product/**`, `known-alerts.md`, dated roadmap lines, `docs/owner-decisions.md`). D16 keeps `gemini-3.5-flash-lite` in `pilotCost.models` and `docs/cost-model.md` as a measured record. Terms version bump (Q1) and the stage 06 spend cap $2.50 (Q5, expected under $0.10) stay on defaults.
+- Why: plan refresh of 2026-11-20 (questions.md Q8, Q9); the coordinator took the defaults.
+- Undo: narrow the ticket Acceptance line, then re-run the F138 stage 05 grep.
+- Source: `spec/features/active/F138-*/questions.md`.
