@@ -90,3 +90,6 @@ Every deploy to the VPS is a release: `deploy/release.sh <tag>` from a tag. No b
 - Baselines read 2026-11-19 ~19:05 UTC (read only): 2 organizations, 1 pilot mailbox; pilot flags on: `sent_sync`, `security_log`, `review_command` (rows); all others off (default); users 2, both `terms_version` `2026-11-12` (current `TERMS_VERSION` `2026-11-19`); `auto` without `grant`: 0; actions with `supersedes_action_id`: 0; `auth_sessions`: only `password` (4); server `"level":"error"` lines in 24 h: 0; disk 20 GB free; `OPERATOR_TELEGRAM_CHAT_ID` set in `.env`.
 - Release gate note for `v0.4.x`: `drafter-v1` prompt text changed since `v0.3.1` (F115 stage 02 dev tuning) with no holdout report (checklist step 3). `reply_drafts` is off everywhere; `v0.3.0` shipped the prompt the same way. The coordinator decides.
 - Sim stack: `deploy/compose.sim.yaml` changed since `v0.3.1` (checklist step 4). The lab already runs with that content. Do not rebuild `ea-sim` while its live run is active.
+
+## Limen land picks the ticket from the label (2026-11-19)
+`limen land` of job `…5dc00e68` (label "F138 stage 01 (judge on OpenAI, for F115 s02)") closed F115, not F138: F138 is in `planned/`, so it matched the active F115 in the label. Fix: `git revert` of the close commit (`47e80b72`). Rule: a job label names only its own ticket.
