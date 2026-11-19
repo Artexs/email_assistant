@@ -4,11 +4,13 @@ import { membershipRoleSchema, userLocaleSchema, type MembershipRole, type UserL
 import { sql, type Transaction } from "kysely";
 
 import { CryptoKeyVersionError, type SecretBox } from "../../../platform/crypto";
-import type { DB, TenantContext } from "../../../platform/db";
+import { pushDedupKey, type DB, type TenantContext } from "../../../platform/db";
 import { errorFields } from "../../../platform/errors";
 import { createLog } from "../../../platform/log";
+import type { OutboxKind } from "../repo";
 import type { DbOrTrx } from "../repo/shared";
 
+import { queueTelegramFallback } from "./fallback";
 import type { PushTarget } from "./send";
 
 // The push devices of the members. One row per browser. The endpoint and the keys live only inside `secret`
@@ -20,10 +22,8 @@ const log = createLog("channels");
 /** A user keeps at most this many devices; the next subscribe removes a dead device first, else the oldest. */
 export const MAX_DEVICES_PER_USER = 10;
 
-/** The device key of the dedup of a push row: the Telegram key of the event, the word `push` and the device id. */
-export function pushDedupKey(key: string, subscriptionId: string): string {
-  return `${key}:push:${subscriptionId}`;
-}
+// The device key of the dedup of a push row (`<Telegram key>:push:<device id>`); the readers of a Telegram key use `dedupKeyOrPush`.
+export { pushDedupKey };
 
 export function endpointHash(endpoint: string): string {
   return createHash("sha256").update(endpoint, "utf8").digest("hex");
@@ -330,7 +330,7 @@ export async function loadDeviceSecret(
   }
 }
 
-// The device goes. Its `pending` and `sending` push rows end `failed` / `no_device` first; its `sent` and `failed` rows stay as
+// The device goes. Its `pending` and `sending` push rows end `failed` / `no_device` first (each may fall back to Telegram); its `sent` and `failed` rows stay as
 // history (the key clears only the device column). With `userId`, only a device of that user goes. True when a device was deleted.
 export async function removeDevice(
   trx: Transaction<DB>,
@@ -342,14 +342,41 @@ export async function removeDevice(
   if (opts?.userId !== undefined) device = device.where("user_id", "=", opts.userId);
   const found = await device.forUpdate().executeTakeFirst();
   if (!found) return false;
-  await trx
+  const ended = await trx
     .updateTable("outbox")
     .set({ status: "failed", error_code: "no_device", locked_at: null })
     .where("org_id", "=", ctx.orgId)
     .where("channel", "=", "push")
     .where("push_subscription_id", "=", id)
     .where("status", "in", ["pending", "sending"])
+    .returning([
+      "id",
+      "user_id",
+      "kind",
+      "dedup_key",
+      "view",
+      "locale",
+      "mailbox_id",
+      "email_id",
+      "loop_id",
+      "created_at",
+    ])
     .execute();
+  // A row that ends `no_device` falls back to Telegram when the member can get it there (`queueTelegramFallback`).
+  for (const row of ended) {
+    await queueTelegramFallback(trx, ctx, {
+      id: row.id,
+      userId: row.user_id,
+      kind: row.kind as OutboxKind,
+      dedupKey: row.dedup_key,
+      view: row.view,
+      locale: row.locale,
+      mailboxId: row.mailbox_id,
+      emailId: row.email_id,
+      loopId: row.loop_id,
+      createdAt: row.created_at,
+    });
+  }
   const result = await trx
     .deleteFrom("push_subscriptions")
     .where("org_id", "=", ctx.orgId)

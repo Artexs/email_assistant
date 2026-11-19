@@ -218,6 +218,35 @@ describe("the buttons of the card follow the recipient rules", () => {
     });
   });
 
+  test("7b. the Reply-To line and the Use Reply-To button skip an own mailbox and its +tag form", async () => {
+    await withRollback(db, async (trx) => {
+      const r = await rig(trx);
+      const { emailId } = await draftedReply(trx, r.box, r.clock, { from: "anna@client.test" });
+      const [local, domain] = r.box.address.split("@") as [string, string];
+      const ownTagged = `${local}+news@${domain}`;
+      await setMailAddresses(trx, emailId, { to: [r.box.address], replyTo: [r.box.address, ownTagged] });
+
+      await cardOut(trx, r);
+
+      // Only own addresses: no line and no button (the line and the service agree).
+      const only = renderedOf((await outboxOf(trx, r, "approval")).at(-1) as never);
+      expect(only.text).not.toContain(textTables.en.approvals.reply.replyTo);
+      expect(only.buttons[1]?.map((button) => button.data.slice(0, 2))).toEqual(["rd"]);
+
+      // A real other address next to them: only that one shows.
+      await setMailAddresses(trx, emailId, {
+        to: [r.box.address],
+        replyTo: [ownTagged, "Office <Office@Client.test>", r.box.address],
+      });
+      await trx.deleteFrom("outbox").where("org_id", "=", r.box.ctx.orgId).where("kind", "=", "approval").execute();
+      await cardOut(trx, r);
+      const both = renderedOf((await outboxOf(trx, r, "approval")).at(-1) as never);
+      expect(both.text).toContain(`${textTables.en.approvals.reply.replyTo} office@client.test`);
+      expect(both.text).not.toContain(ownTagged);
+      expect(both.buttons[1]?.map((button) => button.data.slice(0, 2))).toEqual(["rd", "ru"]);
+    });
+  });
+
   test("8. the Draft reply button of an urgent notice goes to the owner whose consent covers reply data, not to a second owner without it", async () => {
     await withRollback(db, async (trx) => {
       const r = await rig(trx);

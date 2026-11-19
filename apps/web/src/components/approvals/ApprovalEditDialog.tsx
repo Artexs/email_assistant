@@ -16,6 +16,7 @@ import {
   type EditValues,
 } from "../../lib/approvals-edit";
 import { recipientLabel } from "../../lib/approvals-view";
+import { copyChecked } from "../../lib/replies-view";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
@@ -163,7 +164,10 @@ export function ApprovalEditDialog({
           <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
             <DialogHeader>
               <DialogTitle>{t("appr_edit_title")}</DialogTitle>
-              <DialogDescription>{t("appr_edit_hint")}</DialogDescription>
+              <DialogDescription>
+                {t(detail.view !== null && copyChecked(detail.view) ? "rp_edit_hint_editable" : "appr_edit_hint")}
+                {detail.view?.gaps !== undefined && detail.view.gaps.length > 0 && ` ${t("rp_edit_gaps_hint")}`}
+              </DialogDescription>
             </DialogHeader>
             {!detail.draftRemovable && <p className="text-sm">{t("appr_edit_no_remove")}</p>}
             <div className="flex flex-col gap-1.5">

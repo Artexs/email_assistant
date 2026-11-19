@@ -29,7 +29,8 @@ export const approvalDocs = {
   }),
   getApproval: apiDoc({
     operationId: "getApproval",
-    summary: "One send in any state, with the text that the committer would send.",
+    summary:
+      "One send in any state, with the text that the committer would send. A send that the system closed (`expired`) names the reason in `endReason`; a reply also carries `redraftsLeft`, `recipientsMode` and, while Reply all is offered, `replyAllAdds`.",
     tags,
     params,
     ok: { status: 200, schema: approvalDetailSchema },

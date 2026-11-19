@@ -520,6 +520,24 @@ describe("POST /api/me/push/test", () => {
     expect(left).toHaveLength(1);
   });
 
+  test("a device sealed under another key version answers 500 internal, stays, and is not tried (a configuration fault, not a dead device)", async () => {
+    const { id } = await register(owner);
+    // The server key is now another version than the one that sealed the stored secret.
+    await db.updateTable("push_subscriptions").set({ key_version: 2 }).where("id", "=", id).execute();
+    const logs = captureLogs();
+    try {
+      const res = await app().request("/api/me/push/test", as(owner, { method: "POST", body: {} }));
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: "internal" });
+    } finally {
+      logs.stop();
+    }
+    expect(push.calls).toHaveLength(0);
+    expect((await devicesOf(org.ownerId)).map((d) => d.id)).toContain(id);
+    // The failed call rolled back with its transaction: it wrote no audit row and used no part of the hourly limit.
+    expect(await auditOf("push.test_sent")).toHaveLength(0);
+  });
+
   test("the payload language is the locale of the user", async () => {
     const { receiver } = await register(owner);
     await db.updateTable("users").set({ locale: "en" }).where("id", "=", org.ownerId).execute();

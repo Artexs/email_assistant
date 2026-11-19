@@ -13,6 +13,10 @@ import {
 const ID = "00000000-0000-4000-8000-000000000001";
 
 describe("the bodies of the reply routes are strict and capped", () => {
+  test("the raw limit of the instruction is 1000 characters (the service cleans and caps it at 300)", () => {
+    expect(REPLY_INSTRUCTION_RAW_MAX).toBe(1000);
+  });
+
   test("a request takes an id and an optional line, nothing else", () => {
     expect(replyRequestBodySchema.safeParse({ emailId: ID }).success).toBe(true);
     expect(

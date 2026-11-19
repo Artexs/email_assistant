@@ -26,7 +26,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Source:** the push sender (`channels.push`, `channels/push-sender.ts`), level `error`, once per run.
 - **Cause:** `CREDENTIALS_KEY_VERSION` in `.env` is not the version that sealed the stored push devices. The key was changed, or the server runs an old `.env`.
 - **Fix:** put the right `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION` back and restart. Nothing is lost: the sender removes no device and fails no row for this error; all push rows wait 10 minutes, then the sender tries again, and a row older than 24 h ends `expired`. A key change with the SAME version makes the stored devices unreadable instead: the sender removes each one (`push_secret_unreadable`, the rows end `no_device`) and the members turn notices on again in Settings (`deploy/README.md`).
-- **Status:** fixed
+- **Status:** open until the key is restored (a configuration alert: it fires on every run until `CREDENTIALS_KEY_VERSION` matches the stored devices again).
 
 ---
 

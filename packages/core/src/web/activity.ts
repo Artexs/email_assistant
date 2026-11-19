@@ -99,6 +99,9 @@ export const activityItemSchema = z.object({
   // The count-only line about the sender (ADR 0034). The key is absent while the flag `sender_context` is off, so the answer is
   // the one of before; null when there is no profile of the sender in the mail's mailbox or retention cleared the address.
   sender: senderLineSchema.nullable().optional(),
+  // The reply draft of the mail. The key is absent while the flag `reply_drafts` is off. `sendId`: the open reply draft of this mail (the row links
+  // to it), null when there is none (the row offers "Draft reply").
+  reply: z.strictObject({ sendId: z.uuid().nullable() }).optional(),
 });
 export type ActivityItem = z.infer<typeof activityItemSchema>;
 

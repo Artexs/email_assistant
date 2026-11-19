@@ -62,7 +62,23 @@ export const approvalReplyFields = {
   instruction: z.string().max(300).nullable().optional(),
   redraftsLeft: z.number().int().min(0).max(MAX_REDRAFTS).optional(),
   recipientsMode: z.enum(replyRecipientModes).optional(),
+  // The addresses that Reply all would add to Cc (1 to 10); only while the button shows. The panel lists them before the tap.
+  replyAllAdds: z.array(z.string().max(320)).min(1).max(10).optional(),
 };
+
+// Why a send of any kind ended without a tap (the `status_reason` of an `expired` send; the list is `closeSendReasons` of the server, a test
+// ties the two). The detail of such a send names it, so the panel says why nothing was sent.
+export const approvalEndReasons = [
+  "answered",
+  "newer_mail",
+  "original_moved",
+  "policy_changed",
+  "suspicious",
+  "sent_by_user",
+  "draft_changed",
+  "draft_missing",
+] as const;
+export type ApprovalEndReason = (typeof approvalEndReasons)[number];
 
 export const approvalItemSchema = z.strictObject({
   ...itemFields,
@@ -95,6 +111,8 @@ export const approvalDetailSchema = z.strictObject({
   expiresAt: z.iso.datetime().nullable(),
   heldBy: heldBySchema.nullable(),
   view: approvalViewSchema.nullable(),
+  // Only for `expired`: the reason that the system closed the send (absent for a timeout and for the other states).
+  endReason: z.enum(approvalEndReasons).optional(),
   draftRemovable: z.boolean(), // the mailbox has UIDPLUS: an edit or a reject removes the old Drafts copy
   currentId: z.uuid().nullable(), // the newest version, only for `superseded`
   quote: z.string().max(APPROVAL_QUOTE_MAX).nullable(),

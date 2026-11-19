@@ -11,6 +11,7 @@ import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { CategoryPicker } from "./CategoryPicker";
 import { DelegateAction } from "./DelegateAction";
+import { DraftReplyAction } from "./DraftReplyAction";
 
 export interface ActionButtonsProps {
   item: ActivityItem;
@@ -70,7 +71,7 @@ export function ActionButtons({ item, onPatch, onGone }: ActionButtonsProps) {
   const rightCategory = isLabelCategory(item.category) ? item.category : null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {rightCategory !== null && (
         <Button
           type="button"
@@ -106,6 +107,7 @@ export function ActionButtons({ item, onPatch, onGone }: ActionButtonsProps) {
         </Button>
       )}
       <DelegateAction item={item} onGone={onGone} />
+      <DraftReplyAction item={item} />
       <CategoryPicker
         open={pickerOpen}
         onOpenChange={setPickerOpen}

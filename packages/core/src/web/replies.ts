@@ -1,3 +1,4 @@
+import { cleanUserText } from "../outgoing/user-text";
 import { REPLY_BLOCK_REASONS } from "../replies/eligibility";
 import { replyRecipientModes } from "../triage/payloads";
 
@@ -11,6 +12,18 @@ import { z } from "./zod";
 // The instruction of a user is one line of 1 to 300 characters after cleaning. The raw limit is wider (cleaning removes
 // characters); the service decides the real limit and answers 400 `validation`. A text over the raw limit never reaches the service.
 export const REPLY_INSTRUCTION_RAW_MAX = 1000;
+// The instruction of a user is one line of 1 to 300 characters after cleaning (the column holds 300). The panel counts with the same rule
+// as the service, so the button turns on only for a line that the service accepts.
+export const REPLY_INSTRUCTION_MAX = 300;
+
+// The text of a user, cleaned: control and direction characters gone, one line. null: empty or too long. It is data for the model and is
+// never a recipient, a folder or a command.
+export function cleanReplyInstruction(text: string): string | null {
+  const clean = cleanUserText(text, { oneLine: true });
+  const length = Array.from(clean).length;
+  return length < 1 || length > REPLY_INSTRUCTION_MAX ? null : clean;
+}
+
 // The panel polls the request every 2 seconds for at most one minute.
 export const REPLY_POLL_INTERVAL_MS = 2000;
 export const REPLY_POLL_MAX_MS = 60_000;

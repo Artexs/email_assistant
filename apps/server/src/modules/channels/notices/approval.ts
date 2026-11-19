@@ -1,6 +1,5 @@
 import {
   approvalViewOf,
-  bareAddress,
   buildOutgoingMessage,
   draftPayloadSchema,
   draftVersion,
@@ -61,13 +60,14 @@ export function panelListUrlOf(base: string | undefined): string | undefined {
 // The text the owner sees is the text the committer sends (same builder, same inputs).
 // `panelBase`: the base URL of the panel when the link goes on the card (the caller checks the flag `approvals_page`).
 // `draftRow`: the draft of the send when the caller has read it. `quote` is the whole quote that the committer sends
-// (up to 8000 characters); the view holds the quote cut for a card.
+// (up to 8000 characters); the view holds the quote cut for a card. `replyAllAdds` (a reply only, when Reply all is offered): the
+// addresses that Reply all would add to Cc, so the panel shows them before the tap; the card shows no list and does not carry them.
 export async function approvalViewFor(
   db: DbOrTrx,
   ctx: TenantContext,
   send: SendRow,
   options: { panelBase?: string; draftRow?: DraftRow; loopHooks?: LoopHooks } = {}
-): Promise<{ view: ApprovalView; subject: string; quote: string | null }> {
+): Promise<{ view: ApprovalView; subject: string; quote: string | null; replyAllAdds?: string[] }> {
   if (send.depends_on_action_id === null) throw new Error("send has no draft");
   const draftRow = options.draftRow ?? (await getDraft(db, ctx, send.depends_on_action_id));
   if (draftRow === undefined) throw new Error("draft not found");
@@ -130,22 +130,20 @@ export async function approvalViewFor(
   // (the flag `sent_sync` or the switch of the mailbox is off): the card says "I cannot see your sent mail".
   if (draft.kind === "reply" && !(await isSentVisible(db, ctx, mailbox.id))) view.sentVisible = false;
   // A reply goes to the stored From. The card also shows the Reply-To of the original when it names other addresses
+  let replyAllAdds: string[] | undefined;
   if (draft.kind === "reply" && email !== null && send.email_id !== null) {
     const emailId = send.email_id;
-    const from = email.from_address?.toLowerCase() ?? null;
     const mail = (await replyFactsOf(db, ctx, [emailId])).get(emailId);
     const replyTo = mail?.replyTo ?? [];
-    // Bare addresses only (a stored entry may hold a display name): the line shows what a tap on Use Reply-To would send to.
-    const others = [
-      ...new Set(
-        replyTo.flatMap((entry) => {
-          const bare = bareAddress(entry);
-          return bare === null ? [] : [bare.toLowerCase()];
-        })
-      ),
-    ]
-      .filter((address) => address !== from && address.length <= 320)
-      .slice(0, 5);
+    // The addresses that a tap on Use Reply-To could send to: `otherReplyTo` is the one rule (no sender, no own mailbox, also not
+    // its `+tag` form, bare addresses only), so the line and the button agree. Lower case, at most 5.
+    const others =
+      mail === undefined || mail.fromAddress === null
+        ? []
+        : otherReplyTo({ from: mail.fromAddress, replyTo, own: mail.ownAddresses })
+            .map((address) => address.toLowerCase())
+            .filter((address) => address.length <= 320)
+            .slice(0, 5);
     if (others.length > 0) view.replyTo = others;
     // The buttons that change the recipients: only when there is something to change to (the rules of the service are the same ones).
     if (mail !== undefined && mail.fromAddress !== null) {
@@ -157,13 +155,19 @@ export async function approvalViewFor(
       });
       if (draft.recipients !== "all" && participants.length > 0 && participants.length <= REPLY_CC_MAX) {
         view.canReplyAll = true;
+        replyAllAdds = participants;
       }
       if (draft.recipients !== "reply_to" && otherReplyTo({ ...facts, replyTo }).length > 0) {
         view.canUseReplyTo = true;
       }
     }
   }
-  return { view, subject: message.subject, quote: message.parts.quote };
+  return {
+    view,
+    subject: message.subject,
+    quote: message.parts.quote,
+    ...(replyAllAdds === undefined ? {} : { replyAllAdds }),
+  };
 }
 
 // A card that the renderer refuses (a follow-up whose To and Cc do not fit one message, rule 2,400 characters) is refused again at

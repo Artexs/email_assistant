@@ -1,7 +1,7 @@
 import { userLocaleSchema, type UserLocale } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
+import { dedupKeyOrPush, type DB, type Db, type TenantContext } from "../../platform/db";
 
 import { OUTBOX_REMOVED_TEXT } from "./repo";
 import { sendIdOfCardKey } from "./review-keys";
@@ -11,6 +11,11 @@ type DbOrTrx = Db | Transaction<DB>;
 // The dedup key of an approval card of one send: `approval:<id>` (the detector) or `approval:<id>:r<n>` (a review card of a reply). A send id is a UUID, so the LIKE pattern has no wildcard of its own.
 function cardKeyOfSend(sendId: string) {
   return sql<boolean>`(dedup_key = ${`approval:${sendId}`} or dedup_key like ${`approval:${sendId}:r%`})`;
+}
+
+// The same cards and their push rows (`approval:<send id>:push:<device id>`): the rows that the answer to the send must end.
+function cardOrPushKeyOfSend(sendId: string) {
+  return sql<boolean>`(${cardKeyOfSend(sendId)} or ${dedupKeyOrPush(sql.raw<string>("dedup_key"), `approval:${sendId}`)})`;
 }
 
 export interface CardOfSend {
@@ -49,15 +54,17 @@ export async function listCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: s
   }));
 }
 
-// A card that no sender took: the send has its answer, so the card never goes out (its buttons would answer "closed").
-// Only `pending` rows: a `sending` row is in flight and finishes. Returns the number of cards changed.
+// A card that no sender took: the send has its answer, so the card never goes out (its buttons would answer "closed"). The push rows of
+// the request (one per device, held by quiet hours or waiting for a retry) end the same way, so no push for a decided send goes out.
+// Only `pending` rows: a `sending` row is in flight and finishes (a push that goes out opens the approvals page, which shows the
+// decided state). Returns the number of cards changed.
 export async function failPendingCardsOfSend(db: DbOrTrx, ctx: TenantContext, sendId: string): Promise<number> {
   const result = await db
     .updateTable("outbox")
     .set({ status: "failed", error_code: "answered_elsewhere", locked_at: null })
     .where("org_id", "=", ctx.orgId)
     .where("kind", "=", "approval")
-    .where(cardKeyOfSend(sendId))
+    .where(cardOrPushKeyOfSend(sendId))
     .where("status", "=", "pending")
     .executeTakeFirst();
   return Number(result.numUpdatedRows);
@@ -141,7 +148,7 @@ export async function listClosedFollowUpCards(
       sql<boolean>`exists (
       select 1 from outbox card
       where card.org_id = actions.org_id and card.kind = 'approval'
-        and card.dedup_key = 'approval:' || actions.id::text
+        and ${dedupKeyOrPush(sql.raw<string>("card.dedup_key"), sql`'approval:' || actions.id::text`)}
         and (card.status = 'pending'
           or (card.status = 'sent'
             and card.text is not null and card.text <> '' and card.text <> ${OUTBOX_REMOVED_TEXT}
