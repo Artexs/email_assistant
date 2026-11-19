@@ -3,6 +3,7 @@ name: Docs deploy
 # Publishes the docs site to GitHub Pages (ADR 0030 point 2).
 # - A pushed tag `v<x.y.z>` deploys only when it is the newest release tag (apps/docs/scripts/deploy-gate.ts).
 # - A manual run deploys the ref chosen in the GitHub UI, also an old tag (rollback).
+# - While OWNER_REVIEW_PENDING (apps/docs/src/publish-gate.ts) is not empty, no tag deploys, and a manual run deploys only with the box publish_held_pages.
 # A deploy first runs every job of ci.yml (job `checks`), then makes the screenshots from the e2e seed (no real data, no secret) and builds the site with them.
 # A run that does not deploy (an older tag) stops after the gate: no checks, no build.
 # A pushed release tag whose version has no release in CHANGELOG.md fails the gate (error changelog_missing, a red run, not a skip).
@@ -10,7 +11,13 @@ name: Docs deploy
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      # The owner's own act: deploy although pages wait for the owner's review (OWNER_REVIEW_PENDING in apps/docs/src/publish-gate.ts).
+      publish_held_pages:
+        description: Deploy although pages wait for the owner's review
+        type: boolean
+        default: false
 
 # Least privilege: the workflow reads the repository. Only the `deploy` job gets the Pages permissions.
 permissions:
@@ -44,6 +51,7 @@ jobs:
           GATE_EVENT: ${{ github.event_name }}
           GATE_REF_TYPE: ${{ github.ref_type }}
           GATE_REF_NAME: ${{ github.ref_name }}
+          GATE_PUBLISH_HELD: ${{ inputs.publish_held_pages }}
         run: git tag --list 'v*' | bun apps/docs/scripts/deploy-gate.ts
   # Every job of ci.yml (ci, e2e, image, docs) at this ref, before anything is built for the public site. A red job stops the deploy.
   checks:

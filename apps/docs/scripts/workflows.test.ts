@@ -129,9 +129,12 @@ describe("docs-deploy.yml", () => {
     expect(Object.keys(deploy.jobs).join(" ")).toBe("gate checks build deploy");
   });
 
-  test("it runs on a v* tag push and by hand, with no input", () => {
+  test("it runs on a v* tag push and by hand, with one boolean input that defaults to false", () => {
     expect(deploy.on.push).toEqual({ tags: ["v*"] });
-    expect(deploy.on.workflow_dispatch).toEqual({});
+    expect(deploy.on.workflow_dispatch).toMatchObject({
+      inputs: { publish_held_pages: { type: "boolean", default: false } },
+    });
+    expect(Object.keys((deploy.on.workflow_dispatch as { inputs: object }).inputs)).toEqual(["publish_held_pages"]);
     expect(Object.keys(deploy.on).sort()).toEqual(["push", "workflow_dispatch"]);
   });
 
@@ -189,6 +192,7 @@ describe("docs-deploy.yml", () => {
       GATE_EVENT: "${{ github.event_name }}",
       GATE_REF_TYPE: "${{ github.ref_type }}",
       GATE_REF_NAME: "${{ github.ref_name }}",
+      GATE_PUBLISH_HELD: "${{ inputs.publish_held_pages }}",
     });
     expect(gate?.run).toBe("git tag --list 'v*' | bun apps/docs/scripts/deploy-gate.ts");
     // A pipe needs pipefail (the `bash` shell of Actions sets it): a failed `git tag` must fail the step.

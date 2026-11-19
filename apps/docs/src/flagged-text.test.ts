@@ -15,6 +15,7 @@ import {
   literalParts,
   NO_VISIBLE_TEXT,
 } from "./flagged-text";
+import { type PublicClaim, publicClaims } from "./security/claims";
 
 const CONTENT_DIR = join(import.meta.dir, "content/docs");
 const CORE_TEXT_DIRS = ["texts", "digest"].map((name) => join(import.meta.dir, "../../../packages/core/src", name));
@@ -126,6 +127,35 @@ describe("the pages of the docs site", () => {
         problems: [],
       });
     }
+  });
+});
+
+// The claims of the security page are data, not `.mdx`: the page scan does not see them.
+const claimTextProblems = (claims: readonly PublicClaim[]): string[] =>
+  claims.flatMap((claim) =>
+    (["en", "pl"] as const).flatMap((lang) =>
+      [claim.text[lang], claim.condition?.[lang] ?? ""].flatMap((text) =>
+        flaggedTextProblems(text).map((problem) => `${claim.id} ${lang} ${problem}`)
+      )
+    )
+  );
+
+describe("the public claims", () => {
+  test("no claim text or condition, in either language, holds a string of a default-off flag", () => {
+    expect(claimTextProblems(publicClaims)).toEqual([]);
+  });
+  test("the scan reads the en and pl text and the condition of a claim", () => {
+    const base = { id: "c", ledger: ["C001"], proofs: ["a"], text: { en: "Fine.", pl: "Dobrze." }, condition: null };
+    expect(claimTextProblems([base])).toEqual([]);
+    expect(claimTextProblems([{ ...base, text: { en: "Turn on Track my sent mail.", pl: "x" } }])).toEqual([
+      `c en sent_sync: ${en.sent_switch}`,
+    ]);
+    expect(claimTextProblems([{ ...base, text: { en: "x", pl: pl.sent_switch } }])).toEqual([
+      `c pl sent_sync: ${pl.sent_switch}`,
+    ]);
+    expect(claimTextProblems([{ ...base, condition: { en: "Use /review", pl: "x" } }])).toEqual([
+      "c en review_command: /review",
+    ]);
   });
 });
 

@@ -6,6 +6,7 @@ import { type LlmCall, type LlmClient, LlmConfigError, LlmSoftError, type LlmUsa
 import { type CaseResult, delegateAddress, parseCaseResults, runEval } from "./eval";
 import { judgeReplyDraft, judgeReusable, summarizeJudge } from "./eval-judge";
 import { evalExitCode } from "./eval-report";
+import { judgeVersions } from "./prompts";
 
 type Step = Record<string, unknown> | Error;
 
@@ -356,6 +357,32 @@ describe("judgeReplyDraft", () => {
     expect(prompts[0]).toContain("POINT-ONE-MARKER");
     expect(prompts[0]).toContain("MUST-NOT-MARKER");
     expect(prompts[0]).toContain("DRAFT-BODY");
+  });
+
+  test("the judge gets the older thread mail of the case: judge-v3 quotes it, judge-v2 does not show it", async () => {
+    const prompts: string[] = [];
+    const llm: LlmClient = {
+      modelOf: () => "fake",
+      endpointOf: () => "standard",
+      async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
+        prompts.push(req.prompt);
+        return { data: replyAnswer as T, usage: { ...classifierUsage, role: "judge", promptVersion: "judge-v3" } };
+      },
+    };
+    const threaded = { ...replyCase, thread: [{ from: "Old <old@partner.test>", subject: "s", body: "OLDER-MARKER" }] };
+    const sleep = async () => undefined;
+    await judgeReplyDraft({ sleep }, threaded, "DRAFT-BODY", setup(llm), { retries: 0 });
+    await judgeReplyDraft(
+      { sleep },
+      threaded,
+      "DRAFT-BODY",
+      { ...setup(llm), prompt: judgeVersions["judge-v2"] },
+      {
+        retries: 0,
+      }
+    );
+    expect(prompts[0]).toContain("> OLDER-MARKER");
+    expect(prompts[1]).not.toContain("OLDER-MARKER");
   });
 
   test("a soft error retries; a final error is a code and a config error goes up", async () => {
