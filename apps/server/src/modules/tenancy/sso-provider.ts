@@ -11,6 +11,7 @@ import {
   insertSsoProvider,
   isDomainTakenByOther,
   lockOrganization,
+  deleteResetLinksOfPasswordlessMembers,
   lockSsoProvider,
   readSsoState,
   updateSsoProvider,
@@ -129,6 +130,9 @@ export async function setSsoProvider(
 
     if (!current) {
       await insertSsoProvider(trx, ctx, { issuer: input.issuer, domain, oidcConfig: input.oidcConfig, now: input.now });
+      // From now on the public reset request refuses these members (`isSsoOnlyMember`): a link made before must not work either.
+      const resetLinks = await deleteResetLinksOfPasswordlessMembers(trx, ctx);
+      if (resetLinks > 0) log.info("sso_reset_links_removed", { org_id: ctx.orgId, count: resetLinks });
       await audit("new", ctx.orgId, { linksRemoved: 0, sessionsEnded: 0 });
       return { kind: "new" };
     }

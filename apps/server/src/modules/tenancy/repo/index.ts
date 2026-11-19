@@ -57,6 +57,7 @@ export {
 } from "./sso";
 export {
   clearSsoRequired,
+  deleteResetLinksOfPasswordlessMembers,
   deleteSsoProvider,
   insertSsoProvider,
   isDomainTakenByOther,
