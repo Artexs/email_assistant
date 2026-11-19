@@ -1,6 +1,6 @@
 # F121 plan — E10b Public pages and demo
 
-> **Status 2026-11-19 — planned.** Plan base: `c68ce51e`. 11 stages and one conditional fix stage; nothing built. [scouts.md](scouts.md), [questions.md](questions.md), [interfaces.md](interfaces.md).
+> **Status 2026-11-19 — planned.** Plan base: `c68ce51e`. 12 stages and one conditional fix stage; nothing built. [scouts.md](scouts.md), [questions.md](questions.md), [interfaces.md](interfaces.md).
 
 ## Input
 
@@ -23,14 +23,14 @@ Owner words that bound it:
 
 ### Design
 
-- **D1** Publication hold: `OWNER_REVIEW_PENDING` (interfaces.md) lists page ids. While it is not empty, a pushed `v*` tag does not deploy the docs (a green skip with the reason `owner_review_pending`); a manual run (the owner's own act) still deploys. Initial value `["index", "security", "pricing"]`, set in stage 01 before any content lands. Owner gate G1 empties it. Rejected: Starlight `draft` pages (links from home to a draft break the link check; home cannot be a draft).
-- **D2** Claims: a typed list `publicClaims` in `apps/docs`; each row cites ids of `docs/legal/claims.md` (F107) and repo paths. Build check: every path exists; every cited id exists and its source is not `gap` or `unverified`. Links point to `REPO_URL/blob/<docsGitRef()>/<path>`. Rejected: hand-written Markdown links (no check).
-- **D3** Cost table renders `costToRun` at build time; a unit test compares the rendered rows with `costToRun` (2 decimals). The price is one constant in `packages/core/src/site.ts`.
-- **D4** OpenAPI: `bun run api:spec` writes `docs/api/openapi.json` from the real app built with fakes (as `openapi-routes.test.ts` does). A unit test fails when the committed file differs from a fresh build. The docs page reads the file in place. Rejected: building the server inside the docs build.
+- **D1** Publication hold: while `OWNER_REVIEW_PENDING` (the five new page ids) is not empty, a pushed tag does not deploy the docs (green skip); a manual run deploys only with the box `publish_held_pages`. Stage 01 sets it before any page lands; G1 empties it. Rejected: Starlight drafts (home cannot be one; links break).
+- **D2** Claims: typed `publicClaims`; each cites ledger ids of `docs/legal/claims.md` and repo paths that those rows name. The build fails on a missing path, a weak row (`gap`/`unverified` anywhere in the source) or a missing condition. Rejected: hand-written links.
+- **D3** Cost table renders `costToRun` at build; a test compares the built cells. One price constant in `site.ts`.
+- **D4** OpenAPI: `bun run api:spec` writes `docs/api/openapi.json` from the app built with fakes; a unit drift test. Rejected: the server inside the docs build.
 - **D5** Shots: the shot run imports the demo seed when `DEMO_SEED_FILE` (default `apps/web/e2e/demo/demo-seed.json`) exists, else it keeps the e2e seed (today). The committed file waits for G2.
 - **D6** Demo seed: one export of run day 5 (shadow days 1–3, assist from day 4) by coordinator step C1; it lives outside git until G2 (`~/.local/share/email-assistant/demo/demo-seed-day5.json`, mode 0600).
-- **D7** Recording runs on the e2e stack (LLM triage off) under the shared lock, with the imported seed. It drives only the panel, product CLIs and GreenMail delivery, never raw SQL. A step that cannot run live shows its result from the seed state, and its caption says the day. More than two such steps = stop and ask.
-- **D8** Video files: `demo.mp4` (H.264, ≤ 15 MB), `demo.en.vtt`, `demo.pl.vtt`, assets of the GitHub release `demo-video` (a non-`v` tag, so no deploy trigger). The deploy build downloads them when present; else the home page has no video. Never in git.
+- **D7** Recording runs on the e2e servers (LLM triage off) with its own `*_demo` database, under the shared lock, with the imported seed. It drives only the panel, product CLIs and GreenMail delivery, never raw SQL. A step that cannot run live shows its result from the seed state, and its caption says the day. More than two such steps = stop and ask.
+- **D8** Video: `demo.mp4` (H.264, ≤ 15 MB) and two VTT, assets of the release `demo-video` (no deploy trigger), never in git. The deploy downloads them only when `DEMO_VIDEO_SHA256` is set and matches.
 - **D9** No migration, no `bun.lock` change, no new package. CI never runs ffmpeg.
 
 ## Facts checked (2026-11-19, base `c68ce51e`, read by the planner)
@@ -47,7 +47,7 @@ Owner words that bound it:
 ## Not verified
 
 - Which demo-script steps run live on the e2e stack (stage 09 spike, D7).
-- `<video>` and `<track>` under the docs CSP (stage 10 browser check).
+- `<video>` and `<track>` under the docs CSP (stage 11 browser check; no playback assert).
 - Size of a day-5 seed (C1 measures; G2 needs < 5 MB).
 
 ## Done when
@@ -75,38 +75,39 @@ Owner words that bound it:
 mkdir -p /tmp/f121-sNN && bun run lint > /tmp/f121-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f121-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f121-sNN/unit.log 2>&1 && bun run docs:build > /tmp/f121-sNN/docs.log 2>&1 && echo PROOF_OK
 ```
 
-Stages 07, 09, 10, 11 add their own link to the chain (in the stage file).
+Stages 07, 10, 11, 12 add their own link to the chain (in the stage file).
 
 ## Coordinator steps and owner gates
 
-- **C1** (start at the build start; VPS pre-approved; spend ≤ $5, PD-023): on the sim stack, `bun run lab demo-reset`; after run day 5, a trial export, then `bun run lab demo-export --day 5 --out <file>`; copy to the D6 path; record size and row counts in `notes/`. Backup: not needed (the reset touches only the demo org); rollback: none. Stage 09 waits for it.
-- **C2** (after stage 11): cold-read scout, text in stage 11. Findings → stage 12.
+- **C1** (start at the build start; VPS pre-approved; spend ≤ $5, PD-023): on the sim stack, `bun run lab demo-reset`; after run day 5, a trial export, then `bun run lab demo-export --day 5 --out <file>`; copy to the D6 path; `demo-reset --date` (else it waits for Monday); record size and counts in `notes/`. No backup needed (demo org only); rollback: none. Stage 09 waits.
+- **C2** (after stage 12): cold-read scout, pack from stage 12. Findings → stage 13.
 - **G1** owner: read the built site, then empty `OWNER_REVIEW_PENDING`. Default: the list stays; no new page goes public.
 - **G2** owner: commit the C1 seed at the D5 path (public repo). Default: not committed; shots stay on the e2e seed.
-- **G3** owner: upload the stage 09 files to release `demo-video`. Default: not uploaded; no video on the site.
+- **G3** owner: watch and upload the stage 10 files; the coordinator pins the sha256. Default: not uploaded; no video.
 
 ## Review
 
-Review job before the land (`claude-opus-5-5`, high): stages 01, 02, 05, 07, 09, 10 (09 and 10 for the Polish captions and the home line). Others land on the worker's proof.
+Review job before the land (`claude-opus-5-5`, high): stages 01, 02, 03, 04, 05, 06, 07, 09, 11 (price, claims, Polish text, flagged routes, deploy). Others land on the proof.
 
 ## Stages
 
 - 01 [Publication hold and claim check](stages/stage-01-hold-and-claim-check.md) `[risky]` publication path.
 - 02 [Security page (en)](stages/stage-02-security-page.md) `[risky]` security claims.
 - 03 [Pricing page (en)](stages/stage-03-pricing-page.md).
-- 04 [Home page (en)](stages/stage-04-home-page.md).
-- 05 [Polish twins and strict set](stages/stage-05-polish.md).
+- 04 [Home page (en and pl)](stages/stage-04-home-page.md).
+- 05 [Polish security and pricing, strict set](stages/stage-05-polish.md).
 - 06 [API and autonomy-evidence reference](stages/stage-06-reference.md).
 - 07 [Shots from the demo seed](stages/stage-07-demo-shots.md) `[risky]` public data.
 - 08 [Fake Telegram viewer](stages/stage-08-telegram-viewer.md).
-- 09 [Demo record command](stages/stage-09-demo-record.md).
-- 10 [Video on the site](stages/stage-10-video-on-site.md) `[risky]` deploy workflow.
-- 11 [Close-out: axe, docs, cold-read pack](stages/stage-11-close-out.md).
-- 12 (conditional) Cold-read fixes: only when C2 finds a mismatch; the coordinator writes it from the findings.
+- 09 [Demo script: spike, steps, captions](stages/stage-09-demo-script.md).
+- 10 [Demo record command](stages/stage-10-demo-record.md).
+- 11 [Video on the site](stages/stage-11-video-on-site.md) `[risky]` deploy workflow.
+- 12 [Close-out: axe, docs, cold-read pack](stages/stage-12-close-out.md).
+- 13 (conditional) Cold-read fixes: only when C2 finds a mismatch; the coordinator writes it from the findings.
 
 ## How to run (coordinator)
 
-Order: 01 first. Then 02 → 03 → 04 (one sidebar), 06 and 08 next to them. 05 after 04. 07 after 01. 09 after 08 and C1. 10 after 04 and 09. 11 after 05, 06, 07, 10. Stage 03 waits for F107 stage 08.
+Order: 01 first. Then 02 → 03 → 04 (one sidebar); 06 after 02; 08 next to them. 05 after 04. 07 after 01. 09 after 08 and C1. 10 after 09. 11 after 04 and 10. 12 after 05, 06, 07, 11. Stage 03 waits for F107 stage 08.
 
 ```
 limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high \
@@ -119,12 +120,12 @@ Land each with `limen land <id> --yes --keep-open`; drop the job DB.
 
 ## Planning progress
 
-- [written] ticket, plan, interfaces, questions, scouts (4 scouts), stages 01–11. Word counts in § Log.
+- [written] ticket, plan, interfaces, questions, scouts (4 scouts), stages 01–12; review 1 applied.
 
 ## Cold review
 
-Pending.
+Model `claude-opus-5-5`, high: the plan has `[risky]` stages (publication, security claims, public data, deploy). Job `2026-11-18-f121-plan-review-9cb589a4`; result in [plan-review-1.md](plan-review-1.md): 3 blocking, 1 unverified, 17 notes; all fixed, none rejected. Per finding: [plan-review-1-response.md](plan-review-1-response.md).
 
 ## Log
 
-- 2026-11-19: written at `c68ce51e`. Words: plan ≤ 1,500, stages 318–614 (`wc -w`).
+- 2026-11-19: written at `c68ce51e`; review 1 applied. Words: plan ≤ 1,500, stages ≤ 700 (`wc -w`).

@@ -12,15 +12,16 @@ Carry-over reads: `apps/web/e2e/docs-shots/` (global setup, spec), `apps/docs/sr
 
 **Decisions.**
 - `shotSource()`: `DEMO_SEED_FILE` if set, else the default path; `demo` when the file exists, else `e2e` (today's run). An env path that does not exist is an error (`demo_seed_missing`), not a silent fallback.
-- Demo import: `importDemo` (no new import code) into the shot run's own database with `SEND_SCOPE` unset, `--email` = a fixed `.test` owner address; then sign in as that owner. The import guards run as they do for the CLI.
-- Flags for the shown pages: only the pages the shot list has today (onboarding, mailboxes, settings, rules, activity); no flagged page is shot (owner rule).
+- Demo import: `importDemo` (no new import code) with `SEND_SCOPE` unset and `replace: true`, so a rerun on the same DB works (the shot path never connects a mailbox, so the paused placeholder stays and `--replace` is allowed; review 1 N9). Owner address `demo-owner@demo.test`, a constant that is not an e2e seed user (the e2e wipe deletes those).
+- Sign-in (review 1 N10): the import makes the owner without a password. The setup gives the owner a password and accepts the current terms through the same product paths the e2e seed uses for its users (the Better Auth sign-up or reset path, then `POST /api/me/terms`); no SQL. The worker names the path it used.
+- Flags: the import org keeps every flag off; the existing `shotFeaturesProblem` check runs on it. Data that a flagged feature made in the demo week stays hidden, because the panel hides it while the flag is off. Only the five pages of today's shot list are shot.
 - The run logs `shots_source demo` or `shots_source e2e` once.
 - The imported mailbox is paused (rule 24.7): the alt texts of the shots say what the picture shows; update them when the source is `demo` (alt text per source in `shots.ts`).
 
 **Test.**
 1. `shotSource` with no env and no file → `e2e`; with the default file present → `demo`; with env set to a missing path → throws `demo_seed_missing`.
 2. Integration (own DB): a seed made the way `lab-demo-seed.test.ts` makes one, imported by the shot setup → the owner sees the org "Kordelan demo (import)", one mailbox, ≥ 1 activity row.
-3. Mutation: skip the import's address scan in a local edit → test of rule 24.4 in `demo-seed.test.ts` fails (prove the shot path calls the guarded import, not a copy).
+3. A seed whose one email body holds `boss@example.com` makes the shot setup fail with `non_test_address` and imports nothing (proves the shot path uses the guarded `importDemo`). Mutation: call the insert step without the scan → test 3 fails.
 
 ## Step 2 — Image-path check
 
@@ -28,13 +29,16 @@ Carry-over reads: `apps/web/e2e/docs-shots/` (global setup, spec), `apps/docs/sr
 
 **Files.** A new rule in the docs build integrations (next to `linkCheck`) and its test.
 
-**Decisions.** Every `<img src>` in the built HTML points into the shots folder, Starlight's own assets, `favicon.svg`, or `public/brand/`. Anything else fails the build with `image_outside <src>`.
+**Decisions.** Every image source in the built HTML and CSS points into the shots folder, Starlight's own assets, `favicon.svg`, or `public/brand/`: `<img src>`, each `srcset` entry, `<source src|srcset>`, `<video poster>`, and CSS `url()` of an image type (review 1 N11). Anything else fails the build with `image_outside <src>`. The demo video files (stage 11) are media, not images; this check ignores `.mp4` and `.vtt`.
 
 **Test.**
 4. A built page with `<img src="/email_assistant/shots/x.png">` passes; `<img src="/email_assistant/other.png">` fails `image_outside`.
+5. `srcset="/email_assistant/shots/a.png 1x, /email_assistant/x.png 2x"` fails on the second entry; `poster="/email_assistant/x.jpg"` fails; CSS `url(/email_assistant/x.png)` fails.
+6. Two shot setups in a row on the same DB with the same seed both succeed (the `replace` path); the org count named "Kordelan demo (import)" is 1.
+7. The import org has no flag on (`shotFeaturesProblem` returns null).
 
 **Check.** `bun test apps/web/e2e/docs-shots apps/docs/integrations`, the integration test file, `bun run docs:build`, the shots run under the lock (with no seed file: source `e2e`; with a test seed in `DEMO_SEED_FILE`: source `demo`).
 
-**Done when.** Tests 1–4 pass; both shot runs succeed and the logs show both sources; Proof prints `PROOF_OK`.
+**Done when.** Tests 1–7 pass; both shot runs succeed and the logs show both sources; Proof prints `PROOF_OK`.
 
 **Out of scope.** Committing a seed (G2); new shot pages; the video.

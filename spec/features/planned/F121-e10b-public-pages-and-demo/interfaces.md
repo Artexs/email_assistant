@@ -4,18 +4,18 @@ Part of [`plan.md`](plan.md). A stage that creates a name below keeps it. A work
 
 ## Docs app (`apps/docs`)
 
-- Stage 01, `apps/docs/src/publish-gate.ts`: `OWNER_REVIEW_PENDING: readonly string[]` (English page ids, for example `"security"`). `publishHoldReason(pending): string | null` → `"owner_review_pending <ids>"` or null. `deployDecision` (in `scripts/deploy-gate.ts`) gains a `pending: readonly string[]` input; a pushed tag that would deploy returns `{ deploy: false, reason: "skip: owner_review_pending <ids>" }` (no `error`). `workflow_dispatch` ignores it.
+- Stage 01, `apps/docs/src/publish-gate.ts`: `OWNER_REVIEW_PENDING: readonly string[]` (English page ids; initial `index`, `security`, `pricing`, `reference/api`, `reference/autonomy-evidence`). `publishHoldReason(pending): string | null` → `"owner_review_pending <ids>"` or null. `deployDecision` gains inputs `pending: readonly string[]` and `publishHeld: boolean` (the dispatch input `publish_held_pages`, default false); held → `{ deploy: false, reason: "skip: owner_review_pending <ids>" }`, no `error`. `main(…, pending = OWNER_REVIEW_PENDING)`: a parameter, never env.
 - Stage 01, `apps/docs/src/security/claims.ts`:
   - `Texts = { en: string; pl: string }` (reuse the core type if one exists).
   - `PublicClaim = { id: string; text: Texts; ledger: readonly string[]; proofs: readonly string[]; condition: Texts | null }`. `ledger` = row ids of `docs/legal/claims.md` (`C018`); `proofs` = repo paths, relative to the repo root.
   - `publicClaims: readonly PublicClaim[]` (stage 01: empty array; stage 02 fills it).
-  - `claimProblems(claims, root, ledgerText): string[]`, each `claim <id> <reason>`; reasons: `proof_missing <path>`, `ledger_missing <C…>`, `ledger_weak <C…>` (source starts with `gap` or `unverified`), `no_proof`, `duplicate_id`.
+  - `claimProblems(claims, root, ledgerText): string[]`, each `claim <id> <reason>`; reasons: `proof_missing <path>`, `proof_not_in_ledger <path>`, `ledger_missing <C…>`, `ledger_weak <C…>` (source cell holds the word `gap` or `unverified` anywhere), `condition_missing`, `no_proof`, `duplicate_id`.
   - `proofUrl(path, ref = docsGitRef()): string` → `${REPO_URL}/blob/${ref}/${path}`.
 - Stage 01, build integration `claimCheck` (in `astro.config.mjs` next to `linkCheck`): runs `claimProblems`; any problem fails the build with the list; logs one line `claim_check ok <n>`.
-- Stage 02, component `ClaimsTable.astro` (`lang: "en" | "pl"`), `Subprocessors.astro` (`lang`), both read data, no hand text in the page body for rows.
-- Stage 03, component `CostTable.astro` (`lang`); `costRows(): { mailsPerDay: 50 | 100 | 200; llmUsd; hostingUsd; backupUsd; totalUsd; marginUsd }[]` in `apps/docs/src/pricing.ts`, rounded to 2 decimals; `basis` from `costToRun`.
+- Stage 02, component `ClaimsTable.astro` (`lang: "en" | "pl"`), `Subprocessors.astro` (`lang`), both read data. `subprocessorView(row, lang)` in `apps/docs/src/security/subprocessor-view.ts`: a placeholder field (`<…>`) → "Not confirmed yet" / "Jeszcze nie potwierdzone"; a placeholder `termsUrl` → null.
+- Stage 03, component `CostTable.astro` (`lang`); `costRows(): { mailsPerDay: 50 | 100 | 200; llmUsd; hostingUsd; backupUsd; totalUsd; marginUsd }[]` in `apps/docs/src/pricing.ts`, each rounded to 2 decimals; `marginUsd = round2(price − round2(totalUsd))`; `basis` from `costToRun`.
 - Stage 05: `POLISH_SET` gains `security`, `pricing`; the strict set of `scripts/stale.ts` = `index`, `start*`, `security`, `pricing`.
-- Stage 10, component `DemoVideo.astro` (`lang`): renders a `<video>` with two `<track>` only when the three files exist in `apps/docs/public/demo/` at build; else nothing.
+- Stage 11, component `DemoVideo.astro` (`lang`): renders a `<video>` with two `<track>` only when the three files exist in `apps/docs/public/demo/` at build; else nothing. `DEMO_VIDEO_SHA256: string | null` in `apps/docs/src/demo-video.ts` (null = no download); `scripts/demo-fetch.ts` downloads and checks it.
 
 ## Core (`packages/core/src/site.ts`)
 
@@ -28,8 +28,9 @@ Part of [`plan.md`](plan.md). A stage that creates a name below keeps it. A work
 
 ## Shots and demo (`apps/web/e2e`)
 
-- Stage 07: `DEMO_SEED_FILE` env, default `apps/web/e2e/demo/demo-seed.json`. `shotSource(): { kind: "demo"; file: string } | { kind: "e2e" }` in `docs-shots/`. The run logs `shots_source demo|e2e`.
-- Stage 09: `bun run demo:record --seed <file> [--out <dir>]` (default out `tmp/demo/`, ignored by git). Script table `DEMO_STEPS: readonly { id: string; seconds: number; caption: Texts; live: boolean }[]` in `apps/web/e2e/demo/steps.ts`. `toVtt(steps, lang): string`. Output files `demo.mp4`, `demo.en.vtt`, `demo.pl.vtt`.
+- Stage 07: `DEMO_SEED_FILE` env, default `apps/web/e2e/demo/demo-seed.json`. `shotSource(): { kind: "demo"; file: string } | { kind: "e2e" }` in `docs-shots/`. The run logs `shots_source demo|e2e`. Demo owner `demo-owner@demo.test`; import with `replace: true`.
+- Stage 09, `apps/web/e2e/demo/`: `DEMO_STEPS: readonly { id: string; seconds: number; caption: Texts; live: boolean }[]` (`steps.ts`); `toVtt(cues: readonly { stepId: string; startMs: number; endMs: number }[], lang): string` (cue times already shifted by the trim); `ffmpegArgs({ input, output, trimStartMs }): string[]` (`encode.ts`); `demoDbProblem(url, others): string | null` (`db-guard.ts`; name must end `_demo`).
+- Stage 10: `bun run demo:record --seed <file> [--out <dir>]` (default `tmp/demo/`, git-ignored), env `DEMO_DATABASE_URL`. Output `demo.mp4`, `demo.en.vtt`, `demo.pl.vtt`; prints duration, size, sha256.
 
 ## Fake Telegram (`tools/fake-telegram`)
 

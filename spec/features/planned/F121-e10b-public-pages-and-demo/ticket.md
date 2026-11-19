@@ -40,7 +40,7 @@ One job per stage; order in `plan.md` § How to run. No migration, no `bun.lock`
 
 - Plan after: none (F107, F110, F113, F114 have `stages/`).
 - Build after: F113 (E2b), F100 (E3a, done), F110 (E4-B), F107 (E7-T4; stage 03 of this plan needs its stage 08 `costToRun`), F114 (E8b), all in `spec/features/done/`.
-- Gate: — for the build start. Before stage 09: coordinator step C1 (demo week run and export, ≥ 5 days lead; start it at the build start). Publication: owner gates G1 (pages), G2 (demo seed in git), G3 (video asset); default for each: prepare, do not publish.
+- Gate: — for the build start. Before stage 09: coordinator step C1 (demo week run and export, 5–12 days lead; start it at the build start). Publication: owner gates G1 (pages), G2 (demo seed in git), G3 (video asset); default for each: prepare, do not publish.
 
 ## Notes
 

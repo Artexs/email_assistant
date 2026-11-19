@@ -2,55 +2,56 @@
 
 Part of [`../plan.md`](../plan.md). `[risky]` publication path. Decisions D1, D2. Interfaces: `interfaces.md` § Docs app (stage 01).
 
-Carry-over reads: ADR 0030 (§ Built), `apps/docs/scripts/deploy-gate.ts` and its test, `.github/workflows/docs-deploy.yml`, `apps/docs/src/in-place.ts` (`REPO_URL`, `docsGitRef`), `apps/docs/integrations/link-check.ts`, `docs/legal/claims.md` (head: how `gap` and `unverified` mark a source).
+Carry-over reads: ADR 0030 § Built, `apps/docs/scripts/deploy-gate.ts` and its test (the script-level test that starts the real script), `.github/workflows/docs-deploy.yml`, `apps/docs/src/in-place.ts` (`REPO_URL`, `docsGitRef`), `apps/docs/integrations/link-check.ts`, `apps/docs/src/flagged-text.test.ts`, `docs/legal/claims.md` (header and the source cells).
 
-This stage must land before any F121 page: it is the hold that keeps new pages private.
+This stage lands before any F121 page: it is the hold that keeps new pages off the site.
 
 ## Step 1 — The hold
 
-**Goal.** A pushed release tag does not publish the docs while a page waits for the owner.
-
-**Files.** New `apps/docs/src/publish-gate.ts` and test; `apps/docs/scripts/deploy-gate.ts` and its test; a comment line in `docs-deploy.yml` if the gate step needs the list (the gate script reads the TS constant from the checked-out ref, no new workflow input).
+**Files.** New `apps/docs/src/publish-gate.ts` and test; `apps/docs/scripts/deploy-gate.ts` and test; `docs-deploy.yml` (one dispatch input).
 
 **Decisions.**
-- `OWNER_REVIEW_PENDING = ["index", "security", "pricing"]` now. A page id that has no page yet is allowed (stages 02–04 add them); stage 11 test checks every id is a real page.
-- The hold is checked after every other rule: an older tag still says "not the newest"; a tag without a changelog release is still a red `changelog_missing`.
-- Manual runs ignore the hold: the owner runs them, and a manual run is the rollback path.
-- The skip writes the reason to the job summary like the other skips.
+- `OWNER_REVIEW_PENDING = ["index", "security", "pricing", "reference/api", "reference/autonomy-evidence"]`. An id without a page yet is allowed now; stage 12 checks each id is a page.
+- `main` gets the list as a parameter whose default is the imported constant. No env override, no CLI flag: nothing outside a commit can lift the hold.
+- Pushed tag: the hold is checked after every other rule (older tag still "not the newest"; missing changelog release still the red `changelog_missing`). Held → `deploy: false`, reason `skip: owner_review_pending <ids>`, no `error`.
+- Manual run: a new boolean input `publish_held_pages` (default `false`). List not empty and input false → the same skip. Input true → deploy (the owner's own act; also the rollback path). List empty → the input does not matter.
+- The skip prints its reason to the log like the other skips.
 
 **Test.**
-1. Newest tag `v0.3.0`, changelog has `0.3.0`, pending `["security"]` → `deploy: false`, reason `skip: owner_review_pending security`, no `error`.
+1. Newest tag `v0.3.0`, changelog has `0.3.0`, pending `["security"]` → `deploy: false`, reason `skip: owner_review_pending security`, no error.
 2. Same, pending `[]` → `deploy: true`.
-3. Pending `["security"]`, event `workflow_dispatch` on `master` → `deploy: true`.
-4. Pending `["security"]`, tag `v0.3.0` with no changelog release → `error: changelog_missing 0.3.0` (the error wins).
-5. Pending `["security"]`, older tag → reason "not the newest release" (unchanged).
-6. `publishHoldReason(["index","pricing"])` = `owner_review_pending index pricing`; `publishHoldReason([])` = null.
+3. Pending `["security"]`, dispatch on `master`, `publish_held_pages` false → skip; true → `deploy: true`.
+4. Pending `["security"]`, tag `v0.3.0` without changelog release → `error: changelog_missing 0.3.0`.
+5. Pending `["security"]`, older tag → "not the newest release".
+6. Script level: the existing real-script test passes `[]` through the `main` parameter and still sees `deploy=true`; a new real-script test with the default (the real constant) and a newest tag sees `deploy=false` and `owner_review_pending`.
+7. `workflows.test.ts`: the dispatch input exists, type boolean, default false.
 
-Mutation: remove the pending check in `deployDecision` → test 1 fails.
+Mutation: `main` passes `[]` instead of the constant → test 6 fails.
 
 ## Step 2 — Claim type and check
 
-**Goal.** The security page can only cite a proof that exists and a ledger row that is not weak.
-
-**Files.** New `apps/docs/src/security/claims.ts` (with `publicClaims = []`) and test; new `apps/docs/integrations/claim-check.ts` and test; `apps/docs/astro.config.mjs` (add the integration next to `linkCheck`).
+**Files.** New `apps/docs/src/security/claims.ts` (`publicClaims = []`) and test; new `apps/docs/integrations/claim-check.ts` and test; `astro.config.mjs` (next to `linkCheck`); `flagged-text.test.ts`.
 
 **Decisions.**
-- Ledger parse: a row is `| C<3 digits> | claim | source | condition |`; the source cell is weak when its trimmed text starts with `gap` or `unverified` (any case). Parse only rows that match; a missing file throws.
-- A claim needs at least one proof (`no_proof`) and at least one ledger id. Proof paths are files or folders that exist in the checkout; no `..`, no absolute path, no URL (`proof_missing`).
-- The integration runs in `astro:build:done`, fails the build with all problems in one error, and logs `claim_check ok <n>`.
+- Ledger row: `| C<3 digits> | claim | source | condition |`. **Weak** when the source cell holds the word `gap` or `unverified` anywhere (case-insensitive, word boundary), not only at the start (review 1 B1: 7 rows carry it mid-cell, for example C033, C036).
+- A claim needs ≥ 1 ledger id and ≥ 1 proof. A proof is a repo path that exists (no `..`, no absolute path, no URL) and that a cited ledger row names in its source cell: the path, its file name, or `ADR NNNN` for `docs/decisions/NNNN-*.md`. Else `proof_not_in_ledger`.
+- When a cited ledger row has a condition other than `—`, the claim's `condition` must not be null (`condition_missing`).
+- The integration runs in `astro:build:done`, fails with all problems, logs `claim_check ok <n>`.
+- `flagged-text.test.ts` also scans the `en` and `pl` text of `publicClaims` (review 1 N2).
 
-**Test.** With a temp root holding `docs/legal/claims.md` rows `C001` (source `ADR 0003`), `C002` (source `gap: …`), `C003` (source `unverified — …`) and a file `a/b.ts`:
-7. Claim `x` ledger `[C001]`, proofs `[a/b.ts]` → `[]`.
-8. Proofs `[a/missing.ts]` → `["claim x proof_missing a/missing.ts"]`.
-9. Ledger `[C002]` → `ledger_weak C002`; `[C003]` → `ledger_weak C003`; `[C999]` → `ledger_missing C999`.
-10. Proofs `[]` → `no_proof`; two claims with id `x` → `duplicate_id`; proof `../etc` → `proof_missing ../etc`.
-11. `proofUrl("docs/decisions/0003-x.md", "v0.3.0")` = `https://github.com/Artexs/email_assistant/blob/v0.3.0/docs/decisions/0003-x.md` (use `REPO_URL`).
-12. The integration with one bad claim throws; with none, it logs `claim_check ok 0`.
+**Test.** Temp root with `docs/legal/claims.md` rows `C001` (source `ADR 0003; a/b.ts`, condition `—`), `C002` (`gap: …`), `C003` (`unverified — …`), `C004` (`OpenAI terms … unverified: contract not in repo`), `C005` (source `a/b.ts`, condition `LLM_PROVIDER`), files `a/b.ts`, `docs/decisions/0003-x.md`, `a/c.ts`:
+8. Claim `x`, ledger `[C001]`, proofs `[a/b.ts, docs/decisions/0003-x.md]` → `[]`.
+9. Proof `a/missing.ts` → `proof_missing a/missing.ts`; proof `a/c.ts` → `proof_not_in_ledger a/c.ts`; `../etc` → `proof_missing ../etc`.
+10. Ledger `[C002]`, `[C003]`, `[C004]` → `ledger_weak` each; `[C999]` → `ledger_missing C999`.
+11. Ledger `[C005]` with `condition: null` → `condition_missing`.
+12. Proofs `[]` → `no_proof`; two claims `x` → `duplicate_id`.
+13. `proofUrl("docs/decisions/0003-x.md", "v0.3.0")` = `${REPO_URL}/blob/v0.3.0/docs/decisions/0003-x.md`.
+14. The integration with one bad claim throws; with none, logs `claim_check ok 0`.
 
-Mutation: drop the `gap` branch of the weak rule → test 9 fails.
+Mutation: weak rule back to "starts with" → test 10 (C004) fails.
 
 **Check.** `bun test apps/docs/src apps/docs/scripts apps/docs/integrations`.
 
-**Done when.** Tests 1–12 pass, `bun run docs:build` logs `claim_check ok 0`, and the Proof prints `PROOF_OK`.
+**Done when.** Tests 1–14 pass, `docs:build` logs `claim_check ok 0`, Proof prints `PROOF_OK`.
 
-**Out of scope.** Claim rows (stage 02); any change to `docs/legal/claims.md` or the registry.
+**Out of scope.** Claim rows (stage 02); edits to the ledger or the registry.

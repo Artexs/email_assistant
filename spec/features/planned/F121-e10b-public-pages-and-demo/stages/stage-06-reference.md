@@ -1,6 +1,6 @@
 # F121 stage 06 — API and autonomy-evidence reference
 
-Part of [`../plan.md`](../plan.md). Decisions P6, P7, D4. Needs stage 01. Runs next to 02–04.
+Part of [`../plan.md`](../plan.md). Decisions P6, P7, D4. Needs stage 01; the API intro links the stage 02 claim, so it lands after stage 02. Review before the land (flagged routes, Q4).
 
 Carry-over reads: `apps/server/src/platform/openapi.ts`, `apps/server/src/openapi-routes.test.ts` (how the app is built with fakes), `docs/capabilities/web-panel.md` rule 6, ADR 0023, `apps/docs/src/in-place.ts` (read-in-place pattern), `apps/docs/src/reference.test.ts`, `docs/capabilities/trust.md`, ADR 0028, `notes/2026-11-18-f110-s25-docs.md`, `apps/docs/src/flagged-text.ts`.
 
@@ -30,7 +30,7 @@ Mutation: add a fake route with an `apiDoc` in the test app → test 2 fails; or
 **Files.** New `apps/docs/src/content/docs/reference/api.mdx` with a component that renders the file (method, path, summary, tag, auth: session or public, request and answer schema names); new `reference/autonomy-evidence.mdx`; sidebar entries.
 
 **Decisions.**
-- API page: grouped by tag, sorted by path; intro: session cookie auth; the panel is on a private network, so the API is not reachable from the internet (ADR 0017); "Some routes answer only while an operator turns a feature on." Schema bodies are shown collapsed (`<details>`), no script.
+- API page: grouped by tag, sorted by path; intro: session cookie auth; a link to the security page claim about the private network (no own statement of reachability: claims live only in `publicClaims`, review 1 N12); "Some routes answer only while an operator turns a feature on." (Q4) Schema bodies are shown collapsed (`<details>`), no script.
 - Evidence page (P6): only what no default-off flag gates. Read `trust.md` and the flags: list the facts that hold with every flag off (for example the go/no-go bar per category and where the numbers come from, the grant and re-gate rule that F110 noted as unflagged). Numbers come from code constants through an import, not typed by hand. If fewer than 3 unflagged facts exist, write no evidence page and say so in the final message (the coordinator decides).
 - Both pages English only; front matter `capabilities` set.
 
