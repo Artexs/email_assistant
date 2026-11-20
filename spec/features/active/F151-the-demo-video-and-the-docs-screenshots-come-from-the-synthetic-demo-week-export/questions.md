@@ -27,3 +27,17 @@ The imported mailbox stays `paused` (the import has no password). The Mailboxes 
 ## Q5 [minor] Off-camera product settings of the demo organization
 
 The setup turns on `user_quiet_hours` and sets no quiet hours for the owner, so a take at night still gets the urgent notice. It turns `auto` off on the imported mailbox, so the re-gate sends no `autonomy_paused` notice. It links the owner to the fake Telegram chat, so the bot's welcome texts, the trust report and the approval card are in the chat that step 5 shows. Default: accept all. Option: refuse takes between 22:00 and 07:00 Warsaw instead of the flag.
+
+## Q6 [minor] A trial export never makes an upload candidate (refresh 1, 2026-11-20)
+
+Stages 05–07 build and prove on a demo export of run day 1 or later, so they do not wait for the end of day 5 (2026-11-27T23:00Z). A trial export has only shadow days and fewer mails.
+
+- **Default (D12, D13):** a seed with day < 5 prints `not for upload: trial_seed`, also with a final gate file. A seed of an ended day 5, 6 or 7 counts as final (review 2, F4). The pick rules do not relax for a trial. The day-5 take (C3) is a follow-up ticket ([`followup-final-take.md`](followup-final-take.md)).
+- Option: allow an upload candidate from any day once the gate file is final.
+
+## Q7 [important: production] Hold the classifier setup until the final take (review 2, F7; 2026-11-20)
+
+The final take (C3) refuses when the classifier of the demo week and the production prompt at the take's checkout differ (`demo_prompt_mismatch`, `demo_seed_mixed_models`). The trial takes do not see this risk.
+
+- **Default:** the coordinator makes no release that changes the sim-stack classifier (provider, model, prompt) from 2026-11-23 to the day-5 export, and lands no change of the production classifier prompt pointer before the final take. A ticket that needs such a change before then is an owner question.
+- Option: no hold; a change restarts the demo week (seven more days) or the take runs at an older commit.
