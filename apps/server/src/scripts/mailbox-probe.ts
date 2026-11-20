@@ -77,8 +77,8 @@ async function runSend(
 async function main(argv: string[]): Promise<number> {
   const out = createCliOutput(outputName(probeSubOf(argv)));
   const args = parseMailboxProbeArgs(argv);
-  const password = args && (await readPassword());
-  if (!args || password === undefined) {
+  const password = args === null ? undefined : await readPassword();
+  if (args === null || password === undefined) {
     out.fail(probeUsage(probeSubOf(argv)));
     return 1;
   }

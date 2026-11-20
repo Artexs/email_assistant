@@ -1,11 +1,12 @@
 import { resolve } from "node:path";
 
+import type { TCPSocketListener } from "bun";
 import { afterEach, describe, expect, test } from "bun:test";
 
 const entry = resolve(import.meta.dir, "mailbox-probe.ts");
 const repoRoot = resolve(import.meta.dir, "../../../..");
 
-let server: ReturnType<typeof Bun.listen> | undefined;
+let server: TCPSocketListener | undefined;
 
 afterEach(() => {
   server?.stop(true);
@@ -15,7 +16,7 @@ afterEach(() => {
 // A listener that counts connections: a probe that passes the address guard connects to it.
 function listen(): { port: number; connections: () => number } {
   let count = 0;
-  server = Bun.listen({
+  const listener = Bun.listen({
     hostname: "127.0.0.1",
     port: 0,
     socket: {
@@ -27,7 +28,8 @@ function listen(): { port: number; connections: () => number } {
       },
     },
   });
-  return { port: server.port, connections: () => count };
+  server = listener;
+  return { port: listener.port, connections: () => count };
 }
 
 async function run(args: string[], env: Record<string, string>) {
