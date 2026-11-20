@@ -36,9 +36,6 @@ const failure = { ruleId: HARD, severity: ERROR };
 
 const serverFile = "apps/server/src/__size-fixture.ts";
 
-/** The `wc -l` count of a file: the number of newline characters. */
-const wcLines = (file: string): number => readFileSync(path.join(repoRoot, file), "utf8").split("\n").length - 1;
-
 describe("size rule", () => {
   test(
     "400 lines: no size message",
@@ -144,26 +141,12 @@ describe("size rule", () => {
 });
 
 describe("size exceptions", () => {
-  const exceptionsFile = path.join(repoRoot, "size-exceptions.json");
-  const allowed = ["apps/server/src/scripts/e2e-seed.ts"];
-
   test(
-    "the list is a live split plan, or it is gone with its block",
+    "no exception list is left: a file that was listed fails over 800 lines like every other",
     async () => {
-      if (existsSync(exceptionsFile)) {
-        const entries: { file: string; stage: string }[] = JSON.parse(readFileSync(exceptionsFile, "utf8"));
-        expect(entries.length).toBeGreaterThan(0);
-        for (const { file } of entries) {
-          expect(allowed).toContain(file);
-          expect(existsSync(path.join(repoRoot, file))).toBe(true);
-          expect(wcLines(file)).toBeGreaterThan(800);
-          // A listed file warns and does not fail.
-          expect(await sizeMessages(file, linesText(801))).toEqual([warning]);
-        }
-      } else {
-        expect(readFileSync(path.join(repoRoot, "eslint.config.js"), "utf8")).not.toContain("size-exceptions");
-        expect(await sizeMessages("apps/server/src/scripts/e2e-seed.ts", linesText(801))).toEqual([warning, failure]);
-      }
+      expect(existsSync(path.join(repoRoot, "size-exceptions.json"))).toBe(false);
+      expect(readFileSync(path.join(repoRoot, "eslint.config.js"), "utf8")).not.toContain("size-exceptions");
+      expect(await sizeMessages("apps/server/src/scripts/e2e-seed.ts", linesText(801))).toEqual([warning, failure]);
     },
     TIMEOUT
   );

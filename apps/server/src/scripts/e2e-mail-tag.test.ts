@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, test } from "bun:test";
 
@@ -11,6 +11,17 @@ import {
   mailTagFromEnv,
   taggedAddress,
 } from "./e2e-seed-args";
+
+// The seed script and its parts: the text that the two source checks below read.
+const SEED_DIR = `${import.meta.dir}/e2e-seed`;
+const seedSource = (): string =>
+  [
+    readFileSync(`${import.meta.dir}/e2e-seed.ts`, "utf8"),
+    ...readdirSync(SEED_DIR)
+      .filter((name) => /^seed-.*\.ts$/.test(name))
+      .sort()
+      .map((name) => readFileSync(`${SEED_DIR}/${name}`, "utf8")),
+  ].join("\n");
 
 async function withTag<T>(tag: string | undefined, run: () => T | Promise<T>): Promise<T> {
   const before = process.env.E2E_MAIL_TAG;
@@ -70,7 +81,7 @@ describe("GreenMail addresses of the seed", () => {
   });
 
   test("the list holds every address function that the seed gives to seedAssistMailbox", () => {
-    const source = readFileSync(`${import.meta.dir}/e2e-seed.ts`, "utf8");
+    const source = seedSource();
     const used = new Set(source.match(/\be2e\w+Mailbox\b/g) ?? []);
     used.delete("e2eDeleteMailbox");
     expect([...used].sort()).toEqual(Object.keys(E2E_GREENMAIL_MAILBOXES).sort());
@@ -79,7 +90,7 @@ describe("GreenMail addresses of the seed", () => {
 
 describe("assertTaggedMailbox", () => {
   test("seedAssistMailbox calls the guard before it inserts", () => {
-    const source = readFileSync(`${import.meta.dir}/e2e-seed.ts`, "utf8");
+    const source = readFileSync(`${SEED_DIR}/seed-assist-mailbox.ts`, "utf8");
     const body = source.slice(source.indexOf("async function seedAssistMailbox("));
     expect(body.indexOf("assertTaggedMailbox(address, mailTagFromEnv(process.env))")).toBeGreaterThan(0);
     expect(body.indexOf("assertTaggedMailbox(")).toBeLessThan(body.indexOf("insertMailbox("));
