@@ -26,6 +26,11 @@ export const PREVIEW_DAILY_LIMIT = 10;
 export interface PreviewDeps {
   db: Db;
   llm: LlmClient;
+  /**
+   * Whether the provider of the drafter role may get personal data (`LlmProvider.realMail`). The preview sends the profile of the
+   * mailbox (names, address, signature, writing style): with `false` it makes no call and answers `llm_off`.
+   */
+  realMail: boolean;
   // `LLM_DAILY_CAP`: a preview counts in it like a tap, so it stops at 100 %.
   dailyCap: number;
   now(): Date;
@@ -47,12 +52,15 @@ export type StylePreview = (ctx: TenantContext, mailboxId: string, values: Profi
  * no `email_id`: they count in the daily cap like a tap, and the preview limit counts them. Nothing is stored and nothing is sent.
  * The answer passes `checkReplyBody` inside `draftReply`. One preview of a mailbox runs at a time: a second answers `busy`, so a burst
  * cannot pass the limit.
+ * The call carries the real profile, so a provider without a sub-processor row (`realMail: false`) gets no preview at all: a fixed
+ * profile would not show the owner's own style, and the real one must not leave. The answer is `failed` with `llm_off`, before any read.
  */
 export function createStylePreview(deps: PreviewDeps): StylePreview {
   const running = new Set<string>();
   return async (ctx, mailboxId, values) => {
     const checked = checkProfileInput(values);
     if (!checked.ok) return { kind: "invalid", field: checked.field, code: checked.code };
+    if (!deps.realMail) return { kind: "failed", reason: "llm_off" };
     const key = `${ctx.orgId}:${mailboxId}`;
     if (running.has(key)) return { kind: "busy" };
     running.add(key);

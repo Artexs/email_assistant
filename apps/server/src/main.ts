@@ -65,7 +65,7 @@ import { assertAppRole, checkDb, createDb } from "./platform/db";
 import { errorFields } from "./platform/errors";
 import { createHeartbeat } from "./platform/heartbeat";
 import { createApp } from "./platform/http";
-import { createLlmClient, llmEndpointFields, type LlmProviderId } from "./platform/llm";
+import { createLlmClient, llmEndpointFields, llmProviders, type LlmProviderId } from "./platform/llm";
 import { createLog, installConsoleGuard, setLogFormat, setLogLevel, setLogRelease } from "./platform/log";
 import { installProcessGuard } from "./platform/process-guard";
 import { createScheduler } from "./platform/scheduler";
@@ -341,7 +341,13 @@ if (scope !== null) {
     now: () => new Date(),
     onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
   });
-  stylePreview = createStylePreview({ db, llm, dailyCap: config.LLM_DAILY_CAP, now: () => new Date() });
+  stylePreview = createStylePreview({
+    db,
+    llm,
+    realMail: llmProviders[llmTable.roles.drafter.provider].realMail,
+    dailyCap: config.LLM_DAILY_CAP,
+    now: () => new Date(),
+  });
   // The sample drafts are queued for the drafter job above, so they follow its scope: with `synthetic` only test mail is a candidate.
   replySamples = replySampleScope(scope, () => new Date());
   scheduler.add("replies.drafter", "*/15 * * * * *", () => {

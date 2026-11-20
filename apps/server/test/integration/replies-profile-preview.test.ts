@@ -62,6 +62,7 @@ interface SetupOpts {
   locale?: "pl" | "en";
   script?: Parameters<typeof fakeLlm>[0];
   noPreview?: boolean;
+  realMail?: boolean;
 }
 
 async function setup(opts: SetupOpts = {}) {
@@ -80,7 +81,13 @@ async function setup(opts: SetupOpts = {}) {
   const preview: StylePreview | null =
     opts.noPreview === true
       ? null
-      : createStylePreview({ db, llm: fake.llm, dailyCap: opts.dailyCap ?? 300, now: () => new Date() });
+      : createStylePreview({
+          db,
+          llm: fake.llm,
+          realMail: opts.realMail ?? true,
+          dailyCap: opts.dailyCap ?? 300,
+          now: () => new Date(),
+        });
   const app = webTestApp({
     db,
     sessions: { owner: org.ownerId, assistant: org.assistantId, other: org.otherOwnerId },
@@ -102,6 +109,17 @@ async function previewRows(orgId: string) {
 }
 
 describe("POST /api/mailboxes/:id/profile/preview", () => {
+  test("0. a provider without a sub-processor row (realMail false): no call, no profile leaves, no llm.call row, the answer is llm_off", async () => {
+    const { org, mine, fake, post } = await setup({ realMail: false });
+    const res = await post(mine, { displayName: "Anna Nowak", signature: "Anna", writingStyle: "Krótko i ciepło." });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ kind: "failed", reason: "llm_off" });
+    expect(fake.requests).toHaveLength(0);
+    expect(await previewRows(org.orgId)).toHaveLength(0);
+    // A bad value is still an answer of the card (400), the same as with a real-mail provider.
+    expect((await post(mine, { displayName: "a@b" })).status).toBe(400);
+  });
+
   test("1. a fake model: the answer is a body, one llm.call row with no email_id, nothing is stored and no real mail is sent", async () => {
     const { org, ctx, mine, fake, post } = await setup();
     // A real mail in the mailbox: the preview never reads it.
