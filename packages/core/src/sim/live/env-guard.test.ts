@@ -65,6 +65,29 @@ describe("checkSimEnv", () => {
     expect(checkSimEnv({ ...valid, SEND_TEST_ADDRESSES: " Anna@Klient.test " }, ALLOWED)).toEqual([]);
   });
 
+  test.each<[string, string | undefined, string[], SimEnvIssue[]]>([
+    ["an address with spaces and capitals", " LAB@example.test ", ["lab@example.test"], []],
+    [
+      "two addresses when one is allowed",
+      "lab@example.test, other@example.test",
+      ["lab@example.test"],
+      ["send_address_not_scenario"],
+    ],
+    [
+      "two allowed addresses with spaces and a trailing comma",
+      "lab@example.test , other@example.test,",
+      ["lab@example.test", "other@example.test"],
+      [],
+    ],
+    ["an allowed list with spaces and capitals", "lab@example.test", ["  LAB@Example.test "], []],
+    ["an allowed address that does not end in .test", "lab@mytest", ["lab@mytest"], ["send_address_not_scenario"]],
+    ["an empty list", "", ["lab@example.test"], []],
+    ["a list of blanks and commas", " , ,", ["lab@example.test"], []],
+    ["an unset list", undefined, ["lab@example.test"], []],
+  ])("the send addresses: %s", (_name, raw, allowed, issues) => {
+    expect(checkSimEnv({ ...valid, SEND_TEST_ADDRESSES: raw }, allowed)).toEqual(issues);
+  });
+
   test("several wrong keys come in the fixed order, and no issue holds a value", () => {
     const secret = "9999:very-secret-token-value-123456";
     const issues = checkSimEnv(
