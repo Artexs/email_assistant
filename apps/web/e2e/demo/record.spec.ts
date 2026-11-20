@@ -11,7 +11,7 @@ import { t } from "../../src/i18n";
 import { en } from "../../src/i18n/en";
 import { E2E_BASE_URL, E2E_TELEGRAM_URL } from "../env";
 import { connectGreenMail, mailboxAddress, seedActivity, signIn } from "../helpers";
-import { DEMO_STEPS, type DemoCue } from "../lib/demo/steps";
+import { DEMO_STEPS, stepView, type DemoCue } from "../lib/demo/steps";
 import { botBody, urgentNotice } from "../lib/demo/notice";
 import { DEMO_VIDEO_SIZE, DEMO_VIEWPORT } from "../lib/demo/record-args";
 import { shotSource } from "../lib/shot-source";
@@ -43,7 +43,8 @@ async function pageText(page: Page): Promise<string> {
 
 test("the demo recording follows the eight steps of the script", async ({ browser }) => {
   if (WORK_DIR === "") throw new Error("demo_work_dir_missing");
-  if (shotSource().kind !== "e2e") throw new Error("demo_source_recording_not_built");
+  const source = shotSource().kind;
+  if (source !== "e2e") throw new Error("demo_source_recording_not_built");
   mkdirSync(WORK_DIR, { recursive: true });
   const seed = readSeed();
   const project = "desktop";
@@ -94,7 +95,8 @@ test("the demo recording follows the eight steps of the script", async ({ browse
   // Runs one step: `act` does the visible work; `during` is work off camera that runs inside the step (it fills the step's time). The
   // page text then passes the public-content check. The step ends after its planned `seconds`, never sooner: a longer `act` makes it longer.
   async function step(id: string, act: () => Promise<void>, during?: () => Promise<void>): Promise<void> {
-    const planned = DEMO_STEPS.find((candidate) => candidate.id === id);
+    const found = DEMO_STEPS.find((candidate) => candidate.id === id);
+    const planned = found === undefined ? undefined : stepView(found, source);
     if (planned === undefined) throw new Error(`demo_unknown_step ${id}`);
     const startMs = Date.now() - startedAt;
     // eslint-disable-next-line no-console
