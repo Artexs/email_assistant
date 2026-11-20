@@ -327,6 +327,16 @@ describe("T3 a mail that is not delegable", () => {
     });
   });
 
+  test("04-T6: a sender that is an own mailbox by the one rule (İlker@Example.com, ilker@example.com)", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await trx.updateTable("mailboxes").set({ address: "İlker@Example.com" }).where("id", "=", s.mailboxId).execute();
+      await trx.updateTable("emails").set({ from_address: "ilker@example.com" }).where("id", "=", s.emailId).execute();
+      expect(await delegateMail(depsOf(trx), s.ctx, pick(s))).toEqual({ kind: "not_delegable" });
+      expect(await delegationsOf(trx, s)).toEqual([]);
+    });
+  });
+
   test("a mail of the system itself (its Message-ID names an action of the mailbox)", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
