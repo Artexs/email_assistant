@@ -251,7 +251,11 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "updated_at",
     "loop_wait_days"
   ),
-  mailboxes: byOrg(
+  mailboxes: byOrgExcluding(
+    {
+      uidvalidity: "stale copy of the INBOX cursor; dropped by the contract migration",
+      last_uid: "stale copy of the INBOX cursor; dropped by the contract migration",
+    },
     "id",
     "org_id",
     "protocol",
@@ -261,8 +265,6 @@ export const EXPORT_MAP: Readonly<Record<string, ExportTable>> = {
     "smtp_host",
     "smtp_port",
     "status",
-    "uidvalidity",
-    "last_uid",
     "last_synced_at",
     "capabilities",
     "folder_map",

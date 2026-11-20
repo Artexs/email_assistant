@@ -453,7 +453,7 @@ describe("freeze", () => {
     });
     expect(manifest?.frozenAt).toBe("2026-11-14");
     expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: v1 audit pending (0 wrong)");
-  });
+  }, 60_000); // this test starts CLI processes; the 5 s default fails under load
 
   test("freeze with the CLI floors prints codes and counts and writes no manifest; a second freeze is refused", async () => {
     const c = await complete();
