@@ -152,3 +152,60 @@ describe("approvalViewOf", () => {
     expect(approvalViewSchema.safeParse({ ...view, cc: [...cc, "x@y.pl"] }).success).toBe(false);
   });
 });
+
+describe("approvalViewOf by kind", () => {
+  const followUp = {
+    kind: "follow_up",
+    loop_id: "55555555-5555-4555-8555-555555555555",
+    to: ["a@firma.pl", "b@firma.pl"],
+    cc: ["c@firma.pl"],
+    language: "en",
+    sent_at: "2026-11-05T09:00:00Z",
+    subject: "Oferta",
+    quote: "Please send the offer.",
+    n: 2,
+  } satisfies DraftPayload;
+  const reply = {
+    kind: "reply",
+    to: ["klient@firma.pl"],
+    cc: [],
+    language: "en",
+    body: "Thanks.",
+    request_id: "44444444-4444-4444-8444-444444444444",
+    folder: "INBOX",
+    recipients: "from",
+  } satisfies DraftPayload;
+  const flags = { external: true, synthetic: false, recipientInactive: false };
+
+  test("a follow-up has no sender and lists every recipient and its number", () => {
+    const view = approvalViewOf(build(followUp), { draft: followUp, original, ...flags });
+    expect(view.kind).toBe("follow_up");
+    expect(view.sender).toBeNull();
+    expect(view.recipient).toEqual({ name: null, address: "a@firma.pl" });
+    expect(view.to).toEqual(["a@firma.pl", "b@firma.pl"]);
+    expect(view.cc).toEqual(["c@firma.pl"]);
+    expect(view.followUpNumber).toBe(2);
+    expect(view.gaps).toBeUndefined();
+  });
+
+  test("a delegation view has none of the follow-up and reply fields", () => {
+    const view = approvalViewOf(build(delegation), { draft: delegation, original, ...flags });
+    expect(Object.keys(view).sort()).toEqual(
+      ["body", "dueDate", "kind", "quote", "recipient", "recipientInactive", "sender", "subject", "synthetic"].sort()
+    );
+    expect(view.sender).toEqual({ label: "klient@firma.pl", external: true });
+  });
+
+  test("a reply view lists at most 20 gaps", () => {
+    const body = Array.from({ length: 25 }, (_, i) => `[[gap ${i}]]`).join(" ");
+    const draft = { ...reply, body };
+    const view = approvalViewOf(build(draft), { draft, original, ...flags });
+    expect(view.gaps).toEqual(Array.from({ length: 20 }, (_, i) => `gap ${i}`));
+  });
+
+  test("a message with no recipient is refused", () => {
+    expect(() => approvalViewOf({ ...build(delegation), to: [] }, { draft: delegation, original, ...flags })).toThrow(
+      /^message has no recipient$/
+    );
+  });
+});

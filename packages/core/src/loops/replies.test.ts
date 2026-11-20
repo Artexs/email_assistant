@@ -358,3 +358,51 @@ describe("addresses compare by the one address rule (03-T1, 03-T7)", () => {
     expect(isAutoReply({ autoSubmitted: null, precedence: null, fromAddress: " NO-REPLY@Example.com" })).toBe(true);
   });
 });
+
+describe("the message ids of In-Reply-To and References", () => {
+  const other = { subject: "x", fromAddress: "obcy@example.test" };
+
+  test("a loop with an empty message id matches no empty header", () => {
+    expect(match({ ...other, inReplyTo: "", referencesHeader: "" }, { messageId: "" })).toBeNull();
+    expect(match({ ...other, inReplyTo: "   ", referencesHeader: "  " }, { messageId: "  " })).toBeNull();
+  });
+
+  test("an unclosed bracket is no id, in the header or in the loop", () => {
+    expect(match({ ...other, inReplyTo: "<last@own.test" }, { messageId: "<last@own.test" })).toBeNull();
+    expect(match({ ...other, referencesHeader: "last@own.test>" }, { messageId: "last@own.test>" })).toBeNull();
+  });
+
+  test("the id of the loop is the one id of its value; a value with two ids names none", () => {
+    expect(match({ ...other, inReplyTo: "<a@x.test>" }, { messageId: "<a@x.test> <b@x.test>" })).toBeNull();
+    expect(match({ ...other, inReplyTo: "<b@x.test>" }, { messageId: "<a@x.test> <b@x.test>" })).toBeNull();
+  });
+
+  test("an id in any position of a header with two ids matches", () => {
+    expect(match({ ...other, inReplyTo: "<last@own.test> <b@x.test>" })).toBe("thread");
+    expect(match({ ...other, inReplyTo: "<b@x.test> <last@own.test>" })).toBe("thread");
+  });
+
+  test("only the first 20 000 characters of a header are read", () => {
+    expect(match({ ...other, inReplyTo: `${" ".repeat(19_980)}<last@own.test>` })).toBe("thread");
+    expect(match({ ...other, inReplyTo: `${" ".repeat(20_000)}<last@own.test>` })).toBeNull();
+    expect(match({ ...other, referencesHeader: `${" ".repeat(20_000)}<last@own.test>` })).toBeNull();
+  });
+});
+
+describe("isAutoReply senders and edge forms", () => {
+  const base = { autoSubmitted: null, precedence: null, fromAddress: "anna@example.test" };
+
+  test("a dot in the local part of a system sender is a word break", () => {
+    expect(isAutoReply({ ...base, fromAddress: "mailer.daemon@example.test" })).toBe(true);
+    expect(isAutoReply({ ...base, fromAddress: "no.reply@example.test" })).toBe(true);
+  });
+
+  test("an address with no at sign is read as a local part", () => {
+    expect(isAutoReply({ ...base, fromAddress: "noreply" })).toBe(true);
+    expect(isAutoReply({ ...base, fromAddress: "anna" })).toBe(false);
+  });
+
+  test("a leading at sign gives an empty local part", () => {
+    expect(isAutoReply({ ...base, fromAddress: "@noreply" })).toBe(false);
+  });
+});
