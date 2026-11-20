@@ -1,7 +1,6 @@
+import { storedAddressForm } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
-
-import { storedAddressForm } from "@ea/core";
 
 import { analyzeSent, writeExtraction } from "../../src/modules/loops";
 import { writeSentSwitch } from "../../src/modules/mail/repo";
