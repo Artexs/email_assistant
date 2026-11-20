@@ -32,8 +32,7 @@ Edge cases: two stages that edit `eslint.config.js` (01, 02, 03, 10, 11) or `lay
 
 ## Facts checked
 
-- `eslint .` lints 2,359 files, prints 11 warnings now and exits 0 on warnings; CI runs `bun run lint` with no `--max-warnings`; lint-staged runs `eslint --fix` (scout 3, 2026-11-20).
-- The two-severity probe works on ESLint 9.23.0 (scout 3).
+- `eslint .` lints 2,359 files, exits 0 on warnings (11 now); CI and lint-staged pass no `--max-warnings`; the two-severity probe works on ESLint 9.23.0 (scout 3, 2026-11-20).
 - Non-test files over 800 at base: the three in D4 (`wc -l`, this job). Test file `apps/server/test/integration/fixtures.ts` is 805 (excluded by D2).
 - `main.ts` exports nothing; `composition.test.ts` and three `*-docs.test.ts` files read its text and match `scheduler.add("<name>"`; it registers 22 jobs (scout 4, `grep`, this job).
 - `web.ts` exports 19 names; about 30 integration tests import them from `./web` (scout 4).
@@ -54,7 +53,6 @@ The ticket acceptance (`ticket.md` § Acceptance, 5 items).
 - Format only the files of the stage. Keep tool scripts in `/tmp/f143-sNN/`, never in the worktree.
 - Run `bun run graph:modules` if the stage adds or removes an import between modules or roots; commit its output.
 - A stage that splits a file in `SIZE_EXCEPTIONS` deletes its entry (D4).
-- Each stage ends with the move proof logs in `/tmp/f143-sNN/` and names them in the final message.
 
 ## Proof
 
@@ -68,7 +66,7 @@ None. No migration, no `bun.lock` change, no real system.
 
 ## Review
 
-Stages 03 (start-up) and 09 (auth) are `[risky]` and get an Opus review before the land. Stage 01 gets a Sonnet review (it sets the guard). The others land on the worker's proof and move logs.
+Stages 03 and 09 (`[risky]`): Opus review before the land. Stage 01 (the guard): Sonnet review. The others land on the proof and the move logs.
 
 ## Stages
 
@@ -96,7 +94,7 @@ Move the ticket to `active/` and commit it. Spawn every stage at once (or as slo
 
 - Scouts: 4 (`scouts.md`).
 - Files: `ticket.md`, `plan.md`, `questions.md`, stages 01–11 [written].
-- Word counts (`wc -w`, before the review): plan 1,470, stages 603 / 535 / 692 / 426 / 606 / 444 / 568 / 463 / 650 / 465 / 564.
+- Word counts (`wc -w`, before the review): plan 1,483, stages 603 / 535 / 692 / 426 / 606 / 444 / 568 / 463 / 650 / 465 / 564.
 
 ## Cold review
 
