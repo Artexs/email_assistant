@@ -251,8 +251,7 @@ const logEventSelectors = [
 ];
 
 // CLI standard (docs/cli.md): a tool returns its exit code to `runCli` and prints through `createCliOutput`. The two exit sites and the
-// files of `cli-pending.json` (tools not converted yet; the list shrinks per stage) are outside the rule. `time-rewrite-check.ts` is the
-// temporary dev tool of the time-spelling ticket; the stage that deletes it deletes this entry.
+// files of `cli-pending.json` (tools not converted yet; the list shrinks per stage) are outside the rule.
 const cliPending = Object.values(
   JSON.parse(readFileSync(path.resolve(__dirname, serverSrc, "scripts/cli-pending.json"), "utf8"))
 ).flat();
@@ -298,7 +297,7 @@ export default tseslint.config(
   },
   {
     files: [`${serverSrc}/scripts/**/*.ts`],
-    ignores: ["**/*.test.ts", `${serverSrc}/scripts/time-rewrite-check.ts`, ...cliPending],
+    ignores: ["**/*.test.ts", ...cliPending],
     // Flat config replaces the options of a rule: the server scripts keep the log-line selectors.
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors, ...cliProcessSelectors] },
   },
@@ -321,7 +320,7 @@ export default tseslint.config(
       "**/e2e/**",
     ],
     plugins: { ea },
-    rules: { "ea/no-time-literals": "warn" },
+    rules: { "ea/no-time-literals": "error" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
