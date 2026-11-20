@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
-import { DKIM_LIMITS, dkimCoversOneClickHeaders, dkimSignaturesOf, dkimSignaturesSchema } from "./dkim-signature";
+import {
+  DKIM_LIMITS,
+  dkimCoversOneClickHeaders,
+  dkimSignaturesOf,
+  dkimSignaturesSchema,
+  type DkimSignature,
+} from "./dkim-signature";
 
 const COVERED = "from:list-unsubscribe:list-unsubscribe-post";
 
@@ -74,6 +80,69 @@ describe("dkimSignaturesOf", () => {
     const [signature] = dkimSignaturesOf(["DKIM-Signature: v=1; d=a.example; h=from; bh=x; b=y; l=100"]);
     expect(signature).toEqual({ d: "a.example", h: ["from"] });
     expect(dkimCoversOneClickHeaders(signature?.h ?? [])).toBe(false);
+  });
+});
+
+describe("dkimSignaturesOf: the tags of one header line", () => {
+  test.each<{ name: string; line: string; expected: DkimSignature[] }>([
+    {
+      name: "empty parts between and after the tags are skipped",
+      line: "DKIM-Signature: d=a.example;; h=from; ;  ;",
+      expected: [{ d: "a.example", h: ["from"] }],
+    },
+    {
+      name: "no space after the colon of the header name",
+      line: "DKIM-Signature:d=a.example;h=from",
+      expected: [{ d: "a.example", h: ["from"] }],
+    },
+    {
+      name: "spaces around the tag names",
+      line: "DKIM-Signature:  d  =a.example ;  h\t=from",
+      expected: [{ d: "a.example", h: ["from"] }],
+    },
+    {
+      name: "the first = splits a tag: a later = stays in the value of a tag that is not read",
+      line: "DKIM-Signature: d=a.example; h=from; b=ab=c==",
+      expected: [{ d: "a.example", h: ["from"] }],
+    },
+    {
+      name: "the first = splits a tag: a later = stays in the value of h and drops that name",
+      line: "DKIM-Signature: d=a.example; h=from:to=x:subject",
+      expected: [{ d: "a.example", h: ["from", "subject"] }],
+    },
+    {
+      name: "a tag name is case sensitive: D and d are two tags",
+      line: "DKIM-Signature: D=b.example; d=a.example; h=from",
+      expected: [{ d: "a.example", h: ["from"] }],
+    },
+    {
+      name: "a colon inside a tag value is not the end of the header name",
+      line: "DKIM-Signature: d=a.example; h=from:to; x=a:b",
+      expected: [{ d: "a.example", h: ["from", "to"] }],
+    },
+    {
+      name: "a tag that is not read may be empty",
+      line: "DKIM-Signature: d=a.example; h=from; z=",
+      expected: [{ d: "a.example", h: ["from"] }],
+    },
+    {
+      name: "an empty h gives a signature with no names",
+      line: "DKIM-Signature: d=a.example; h=",
+      expected: [{ d: "a.example", h: [] }],
+    },
+  ])("$name", ({ line, expected }) => {
+    expect(dkimSignaturesOf([line])).toEqual(expected);
+  });
+
+  test.each([
+    { name: "a tag with no =", line: "DKIM-Signature: d=a.example; h=from; v" },
+    { name: "a tag whose name is empty (the = comes first)", line: "DKIM-Signature: d=a.example; h=from; =1" },
+    { name: "a tag whose name is only white space", line: "DKIM-Signature: d=a.example; h=from;  =1" },
+    { name: "a repeated tag that is not read", line: "DKIM-Signature: d=a.example; h=from; bh=1; bh=2" },
+    { name: "a repeated tag with spaces around its name", line: "DKIM-Signature: d=a.example; h=from; v=1;  v =1" },
+    { name: "a repeated h", line: "DKIM-Signature: d=a.example; h=from; h=to" },
+  ])("$name gives no signature", ({ line }) => {
+    expect(dkimSignaturesOf([line])).toEqual([]);
   });
 });
 

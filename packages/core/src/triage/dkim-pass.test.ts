@@ -165,6 +165,112 @@ describe("the Authentication-Results parser and the alignment of the trusted res
   });
 });
 
+describe("the lexing of the Authentication-Results value and the alignment, edge cases", () => {
+  test.each([
+    {
+      name: "a comment between pass and header.d counts as a space",
+      value: "interia.pl; dkim=pass(ok)header.d=c.example",
+      expected: true,
+    },
+    {
+      name: "an escaped ( does not open a nested comment",
+      value: "interia.pl (a \\( b); dkim=pass header.d=c.example",
+      expected: true,
+    },
+    {
+      name: "a quote inside a comment is text",
+      value: 'interia.pl; dkim=pass header.d=c.example (a " b)',
+      expected: true,
+    },
+    {
+      name: "a ( inside a quoted string is text",
+      value: 'interia.pl; dkim=pass header.d=c.example; x="a(b"',
+      expected: true,
+    },
+    {
+      name: "a ) inside a quoted string is text",
+      value: 'interia.pl; dkim=pass header.d=c.example; x="a)b"',
+      expected: true,
+    },
+    {
+      name: "an empty comment and an empty quoted string",
+      value: 'interia.pl; dkim=pass header.d=c.example () ; x=""',
+      expected: true,
+    },
+    {
+      name: "a quoted domain is a placeholder, not a domain",
+      value: 'interia.pl; dkim=pass header.d="c.example"',
+      expected: false,
+    },
+    {
+      name: "an open comment that ends in a backslash",
+      value: "interia.pl; dkim=pass header.d=c.example (a\\",
+      expected: false,
+    },
+    {
+      name: "an open quote that ends in a backslash",
+      value: 'interia.pl; dkim=pass header.d=c.example; x="a\\',
+      expected: false,
+    },
+    { name: "a lone open parenthesis", value: "interia.pl; dkim=pass header.d=c.example (", expected: false },
+    { name: "a lone quote", value: 'interia.pl; dkim=pass header.d=c.example "', expected: false },
+    { name: "a stray ) before the result", value: "interia.pl) ; dkim=pass header.d=c.example", expected: false },
+    { name: "a ) after a closed comment", value: "interia.pl; dkim=pass header.d=c.example (a))", expected: false },
+    {
+      name: "spaces around = and tabs before the result",
+      value: "interia.pl;\t dkim = pass\theader.d = c.example",
+      expected: true,
+    },
+    {
+      name: "full-width letters are folded after the split",
+      value: "interia.pl; ｄｋｉｍ=ｐａｓｓ ｈｅａｄｅｒ.ｄ=ｃ.example",
+      expected: true,
+    },
+    { name: "pass and header.d in two results", value: "interia.pl; dkim=pass; header.d=c.example", expected: false },
+    { name: "a longer word after pass", value: "interia.pl; dkim=passed header.d=c.example", expected: false },
+    { name: "pass at the end of the result with no header.d", value: "interia.pl; dkim=pass", expected: false },
+    { name: "header.d glued to a word before it", value: "interia.pl; dkim=pass xheader.d=c.example", expected: false },
+    { name: "header.d inside a longer tag", value: "interia.pl; dkim=pass smtp.header.d=c.example", expected: false },
+    {
+      name: "the signing domain with a trailing dot",
+      value: "interia.pl; dkim=pass header.d=c.example.",
+      expected: true,
+    },
+    {
+      name: "the signing domain with several trailing dots",
+      value: "interia.pl; dkim=pass header.d=c.example..",
+      expected: true,
+    },
+    { name: "header.d with spaces around =", value: "interia.pl; dkim=pass header.d = c.example", expected: true },
+    {
+      name: "header.d first, then more tags",
+      value: "interia.pl; dkim=pass header.d=c.example header.i=@c.example",
+      expected: true,
+    },
+    { name: "an empty header.d", value: "interia.pl; dkim=pass header.d=", expected: false },
+    {
+      name: "the first part is the id, not a result",
+      value: "dkim=pass header.d=c.example; interia.pl",
+      expected: false,
+    },
+  ])("$name", ({ value, expected }) => {
+    expect(alignedCovered(value, TRUSTED, "c.example")).toBe(expected);
+  });
+
+  test.each([
+    { name: "spaces, capitals and a trailing dot", fromDomain: " News.C.Example. ", expected: true },
+    { name: "several trailing dots", fromDomain: "news.c.example..", expected: true },
+    { name: "only white space", fromDomain: "   ", expected: false },
+    {
+      name: "a domain below the signing domain with a sibling label",
+      fromDomain: "news.other.example",
+      expected: false,
+    },
+  ])("a From domain with $name", ({ fromDomain, expected }) => {
+    expect(alignedCovered("interia.pl; dkim=pass header.d=news.c.example", TRUSTED, fromDomain)).toBe(expected);
+  });
+});
+
 describe("hasCoveredDkimPass", () => {
   const PASS = "interia.pl; dkim=pass header.d=c.example";
   const full = ["from", "list-unsubscribe", "list-unsubscribe-post"];
