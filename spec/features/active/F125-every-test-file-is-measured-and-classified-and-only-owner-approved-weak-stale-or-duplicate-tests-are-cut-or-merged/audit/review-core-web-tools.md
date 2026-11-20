@@ -900,12 +900,12 @@ Table candidates that the scan did not flag (no row, noted in the evidence): `we
 
 ## Note check
 
-Job base `5b66ee6f`; master `e418c3e9` merged last (an earlier merge of `9a4febd2` came first; they brought `scripts/e2e-parallel-check.sh`, a proof file, a temp-folder leak guard in `apps/server/src/scripts` and test cleanups, and no `packages/core` file). Docs keys moved after continuation 2 (see Continuation 3 above): the next continuation rescans before it reads docs items. The 150 core items of this job are unaffected by the merge.
+Job base `5b66ee6f`; master `594869e9` merged last (earlier merges of `9a4febd2` and `e418c3e9` came first; they brought `scripts/e2e-parallel-check.sh`, a proof file, a temp-folder leak guard in `apps/server/src/scripts`, test cleanups and video docs (F121), and no `packages/core` file). Docs keys moved after continuation 2 (see Continuation 3 above): the next continuation rescans before it reads docs items. The 150 core items of this job are unaffected by the merge.
 
 - Key rescan at the base (12,079 rows, core 2,132 keys; the 61 `S11` keys and 89 `S10` files of this job all resolve): `/tmp/f125-s04c3/rescan.log`.
 - File counts (600 read rows, 60 `not read` rows, 660 in all; no item is in both lists and no read item is duplicated; the Core section holds 450 read and 45 `not read`): `/tmp/f125-s04c3/file-check.log`.
 - Files this branch changes against master (only this review file; no test file, no `bun.lock`, no `.env`): `/tmp/f125-s04c3/own-changes.log`.
 - `bun run typecheck` after the last merge, exit 0: `/tmp/f125-s04c3/typecheck.log`.
 - `bun run lint` after the last merge, exit 0, 0 errors and 11 warnings: `/tmp/f125-s04c3/lint.log`.
-- `bun run test:unit:ci` after the last merge, exit 0, 7,461 pass, 0 fail: `/tmp/f125-s04c3/unit.log`.
+- `bun run test:unit:ci` after the last merge, exit 0, 7,464 pass, 0 fail: `/tmp/f125-s04c3/unit.log`.
 - Exit codes of the three runs: `/tmp/f125-s04c3/status.log`.
