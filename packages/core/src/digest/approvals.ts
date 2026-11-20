@@ -47,8 +47,7 @@ function chatQuoteText(text: string): { text: string; replaced: boolean } {
   const clean = lines
     .map((line, index) => {
       if (index < headerLines && SENDER_LINE.test(line)) {
-        const prefix = line.slice(0, line.indexOf(": ") + 2);
-        return `${prefix}${hideLinksKeepAddresses(line.slice(prefix.length))}`;
+        return hideLinksKeepAddresses(line);
       }
       return hideLinks(line);
     })
@@ -127,7 +126,7 @@ export function renderApprovalRequest(
   }
   // A follow-up shows text of the user's Sent mail: the remains of an escape sequence in it are dropped.
   head.push(
-    `${texts.common.subject}: ${cleanSubject(followUp && view.subject !== null ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
+    `${texts.common.subject}: ${cleanSubject(followUp ? withoutEscapeRemains(view.subject) : view.subject, texts)}`
   );
   if (view.dueDate !== null) head.push(`${t.due}: ${view.dueDate}`);
   if (followUp && view.followUpNumber !== undefined) head.push(t.followUp.number(view.followUpNumber));
@@ -150,26 +149,26 @@ export function renderApprovalRequest(
     if (view.kind === "reply" && view.sentVisible === false) lines.push(t.reply.sentHidden);
     return lines.join("\n");
   };
-  const quoteAt = (max: number) => {
-    if (view.quote === null) return null;
-    const cut = quoteCut(view.quote.text, max);
+  const quoteFrom = (source: { text: string; cut: boolean }, max: number) => {
+    const cut = quoteCut(source.text, max);
     const shown = chatQuoteText(cut.text);
-    return { ...shown, text: followUp ? withoutEscapeRemains(shown.text) : shown.text, cut: view.quote.cut || cut.cut };
+    return { ...shown, text: followUp ? withoutEscapeRemains(shown.text) : shown.text, cut: source.cut || cut.cut };
   };
+  // An empty quote shows no block and no cut note: there is nothing to show and nothing was cut.
+  const quoteAt = (max: number) => (view.quote === null || view.quote.text === "" ? null : quoteFrom(view.quote, max));
 
   let body = view.body;
   let bodyNote = false;
   let quote = quoteAt(APPROVAL_QUOTE_CHARS);
   let text = build(body, bodyNote, quote);
-  if (text.length > MESSAGE_MAX_CHARS && view.quote !== null) {
+  if (text.length > MESSAGE_MAX_CHARS && quote !== null && view.quote !== null) {
     // The quote shrinks until the text fits; its note lines count, because the cut flag is set from the first step on.
     let max = Math.min(APPROVAL_QUOTE_CHARS, Array.from(view.quote.text).length);
     while (text.length > MESSAGE_MAX_CHARS && max > 0) {
       max = Math.max(0, Math.min(max - 1, max - (text.length - MESSAGE_MAX_CHARS)));
-      quote = quoteAt(max);
-      text = build(body, bodyNote, quote === null ? null : { ...quote, cut: true });
+      quote = { ...quoteFrom(view.quote, max), cut: true };
+      text = build(body, bodyNote, quote);
     }
-    if (quote !== null) quote = { ...quote, cut: true };
   }
   if (text.length > MESSAGE_MAX_CHARS) {
     // A guard: the templates never make a body this long.
@@ -178,7 +177,6 @@ export function renderApprovalRequest(
     body = `${cutEnd(view.body, room - 1)}…`;
     bodyNote = true;
     text = build(body, bodyNote, quote);
-    if (text.length > MESSAGE_MAX_CHARS) text = build(body, bodyNote, quote === null ? null : { ...quote, text: "" });
   }
   // The recipients never shrink (the owner decides on them), so a card that cannot hold them does not render at all.
   if (text.length > MESSAGE_MAX_CHARS) throw new RangeError("the approval card does not fit one message");

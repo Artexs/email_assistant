@@ -5,6 +5,7 @@ import { textTables } from "./index";
 // The error texts of a failed send and the rejected lines: each case pins the whole text of one locale.
 describe("approval texts: the cause of a failed send", () => {
   test.each([
+    ["en", 1, "", "The send failed 1 time"],
     ["en", 3, "", "The send failed 3 times"],
     ["pl", 1, "", "Wysyłanie nie powiodło się 1 raz"],
     ["pl", 3, "", "Wysyłanie nie powiodło się 3 razy"],
