@@ -15,7 +15,7 @@ Part of [`../plan.md`](../plan.md). Decisions D1, D2, D4, D5, D11.
 **Goal.** `results/final.md` in this ticket folder:
 
 1. The core score from `mutation.log` and the line `audit 86.45 %`.
-2. A table of the 122 functions of `audit/review-core-web-tools.md` § GAP: `file | function | audit count | final count | stage`. The audit count is the GAP table value. The final count comes from `bun scripts/test-audit/mutation-gaps.ts --in /tmp/f154-s18/full/mutation.json --min 1`. A function renamed or split by D9 uses the name the stage results file gives.
+2. A table of the 122 functions of `audit/review-core-web-tools.md` § GAP: `file | function | audit count | final count | stage`. The audit count is the GAP table value. The final count comes from `bun scripts/test-audit/mutation-gaps.ts --in /tmp/f154-s18/full/mutation.json --min 1`. Use `--by fn` to match the audit rows; an audit row that the D1 row ids split (for example the three `rejected` texts) gets the sum. A function renamed or split by D9 uses the name its stage results file gives.
 3. Every function whose final count is 5 or more: the stage results file must list each of its remaining mutants with a D5 class. Name any function where that fails.
 4. New GAP functions: functions with 5 or more counted mutants that are not in the 122 (code added after the audit) — a list only; they are not this ticket's work.
 

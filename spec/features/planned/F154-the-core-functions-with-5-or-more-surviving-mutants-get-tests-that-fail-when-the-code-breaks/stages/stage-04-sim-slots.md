@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Method: plan.md § Stage method. Decisions P
 
 | File | Function | Count |
 | --- | --- | --- |
-| `sim/sent-slot.ts` | (module level): the `sentSlotSchema` refinement | 33 (top 10) |
+| `sim/sent-slot.ts` | (module level): the `sentSlotSchema` and `sentLabelSchema` refinements | 33 (top 10) |
 | `sim/sent-slot.ts` | `labelIssues` (private; through `sentSlotSchema`) | 6 |
 | `sim/scenario.ts` | `validateScenario` | 23 |
 | `sim/slot.ts` | (module level): the slot schema refinement | 6 |
@@ -32,6 +32,9 @@ Each refusal asserts the exact issue list `[{ path, message }]` (path array and 
 3. Hard-case rules: for each tag of the sent hard-case table, one row that breaks its rule, with the exact message, for example `"<tag> sets expectsReply to true"`, `"<tag> has no due label"`, `"<tag> has a time-word due"`, `"<tag> has no promise label"`, `"<tag> needs a thread mail"`, `"<tag> needs a quoted mail"`, `"<tag> needs more than 10 recipients"`. The recipients edge: exactly 10 recipients fails, 11 passes.
 4. Defaults: a slot without `quoted` parses to `quoted: false`; without the defaulted list field to `[]`.
 5. Limits: `brief` of 300 characters parses, 301 fails, `""` fails.
+
+`sentLabelSchema` (the checker label; `promise` is a boolean there):
+5a. A valid label parses. `promise: true` with `promiseDue: null`, and `promise: false` with `promiseDue` set → `[["promiseDue"], "promise and promiseDue are set together"]`; `due` set with `expectsReply: false` → `[["due"], "due needs expectsReply"]`; both broken → both issues in that order. Build the valid label from the existing fixtures (`blindHash` is 64 hex characters).
 
 `sim/slot.ts` schema:
 6. `category: "urgent"` without `urgencySource` → `[["urgencySource"], "urgencySource is set if and only if the category is urgent"]`; a non-urgent slot with `urgencySource` → the same.

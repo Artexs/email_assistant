@@ -11,7 +11,8 @@ Part of [`../plan.md`](../plan.md). Method: plan.md § Stage method. Decisions P
 | `digest/approvals.ts` | `renderApprovalRequest` | 29 (top 10) |
 | `digest/approvals.ts` | `chatQuoteText` (private), `replyRecipientLines` (private) | 11, 10 |
 | `digest/approvals.ts` | `renderApprovalSetRequest` | 6 |
-| `texts/approvals.ts` | `tries`, `softCap`, `contentSoft`, `rejected` | 9, 9, 8, 6 |
+| `texts/approvals.ts` | `tries`, `softCap`, `contentSoft` | 9, 9, 8 |
+| `texts/approvals.ts` | `rejected`: three functions of that name (`followUp.rejected`, `sendResult.rejected`, `edit.rejected`; distinct row ids by plan D1) | 6 together |
 
 At `HEAD` the approval texts are split into `texts/approvals-en.ts` and `texts/approvals-pl.ts` (D9): the four text functions now exist once per locale. Measure and cover both locale files.
 
@@ -40,10 +41,10 @@ Use the view builders of `digest/approvals.test.ts` and `approvals-follow-up.tes
 `renderApprovalSetRequest`:
 11. One case per surviving mutant cluster (the set title and its count line), with the exact text.
 
-Text functions (both locales, `test.each` over `en` and `pl`):
+Text functions go into a new `texts/approvals.test.ts` (plan D8), read through `textTables[locale].approvals`, `test.each` over `en` and `pl`:
 12. `tries(1, "")`, `tries(3, "")`, `tries(3, "550")` → the exact strings at `HEAD` (code `""` means no code).
 13. `contentSoft("")` (unknown) and `contentSoft("552")`; `softCap("452")`.
-14. `rejected(null, "Faktura")` and `rejected("Anna", "Faktura")`.
+14. `followUp.rejected(null)` and `("Anna")`; `sendResult.rejected(null, "Faktura")` and `("Anna", "Faktura")`; `edit.rejected("09:15")`. Exact strings; for example English `sendResult.rejected("Anna", "Faktura")` → `"✖️ Rejected by Anna · Faktura"` (read at `a5399ff1`).
 
 A text whose current output reads wrong (a missing word, a wrong form) is a P3 question, not an expected value.
 

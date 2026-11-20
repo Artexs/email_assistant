@@ -6,33 +6,34 @@ Source: `spec/features/active/F125-…/audit/report.md` § 4 and `audit/review-c
 
 ## Input
 
-Owner words (ticket): "The 122 functions with 5 or more surviving mutants get cases that fail when the code breaks, starting with the 10 largest, and a mutation rerun shows the survivors fall." Out of scope: "Mutation runs outside `packages/core`." and "A change of product code to make a mutant easier to kill." Acceptance: the four lines of `ticket.md` § Acceptance.
+Owner words (ticket): "The 122 functions with 5 or more surviving mutants get cases that fail when the code breaks, starting with the 10 largest, and a mutation rerun shows the survivors fall." Out of scope: "A change of product code to make a mutant easier to kill."
 
 ### Product and scope
 
-- **P1 All 122 functions are planned** (default, owner to confirm; `questions.md` Q1). The outcome names 122; the acceptance names the top 10. Stages 02–10 hold the top 10; stages 11–17 hold the rest. Rejected: plan only the top 10 (the outcome would stay false).
-- **P2 No product code changes.** Tests only, plus the audit tool of stage 01. A private helper (`ipv4Allowed`, `isOneEditApart`, `deobfuscate`) is tested through the exported function that calls it. Never export a helper for a test. Rejected: export helpers (a product change the ticket forbids).
-- **P3 A bug is not pinned.** When a surviving mutant shows that the current code is wrong, the worker writes no case that pins the wrong output. The worker lists it under "Bugs" in the stage results file and in the final message. The coordinator opens a ticket. Rejected: fix it in the stage (product change).
+- **P1 All 122 functions are planned** (default, owner to confirm; `questions.md` Q1). The outcome names 122; the acceptance names the top 10 (stages 02–10). Rejected: only the top 10 (the outcome would stay false).
+- **P2 No product code changes.** Tests only, plus the stage 01 tool. A private helper is tested through the exported caller that each stage table names (column "Through"). Never export a helper for a test. Rejected: export helpers (a product change).
+- **P3 A bug is not pinned.** A surviving mutant that shows wrong current code gets no case that pins the wrong output; the worker lists it under "Bugs" in the results file and the final message; the coordinator opens a ticket. Rejected: fix it in the stage.
 
 ### Design
 
-- **D1 Function attribution.** A mutant belongs to the innermost enclosing named function: a function declaration, a method, or an arrow or function expression whose direct parent is a variable declaration or a property assignment. An anonymous callback (`.map(…)`, `.superRefine(…)`) passes up. With none: `(module level)`. Probe 2026-11-20 on the audit run (`/tmp/f125-s03/run-4/mutation.json`): 122 functions, 1,260 mutants (the audit's 1,257 plus 3 unstable ones). Rejected: manual reading (workers would not agree).
-- **D2 Counted statuses.** `Survived` and `NoCoverage` count. `Timeout`, `Killed`, `Ignored`, `CompileError`, `RuntimeError` do not.
-- **D3 Per-stage measure.** Each stage measures its own source files before and after, with `--mutate` globs, at its own commit (the audit data is stale for some files). The full run is stage 18 only.
-- **D4 One mutation run at a time.** `mutation.sh` takes `flock /tmp/email-assistant-mutation.lock` around Stryker (stage 01): Stryker runs at concurrency 8, and parallel runs overload the seat (`notes/2026-11-20-test-cpu-load.md`).
-- **D5 Target per function.** After the stage, each listed function has fewer than 5 counted mutants, or each remaining one is listed in the results file with one class: `equivalent` (no input changes the output; one-line reason), `unreachable` (no input reaches it; one-line reason), `bug` (P3), `unstable` (status changes between runs). A function that falls but stays at 5 or more with an unlisted survivor fails the stage.
-- **D6 Every new case kills.** Each new case or `test.each` row kills at least one mutant in the after run (`mutation-gaps.ts --before/--after` exits 1 otherwise). This is the ticket's "fails when its function is broken once".
-- **D7 Test rules.** `docs/code-patterns.md` § Tests: one named behaviour, exact expected value (`toBe`, `toEqual`, exact issue list), `test.each` for repeated shapes. A string-literal mutant is killed by an exact text or an exact issue `{ path, message }`, never by `toContain` of a fragment the mutant keeps.
-- **D8 Test file.** Cases go into the existing `*.test.ts` next to the source. Exception: stage 07 writes `triage/suspicious-auth.test.ts`, because stage 06 edits `triage/suspicious.test.ts` at the same time.
-- **D9 Moved code.** When a function from the GAP list is renamed, moved or split at `HEAD` (for example `texts/bot.ts` was split after the audit), the stage follows the code by behaviour and records the new name. A function gone at `HEAD` gets the line `gone` in the results file.
-- **D10 Results file.** Each stage commits `results/stage-NN.md` in this ticket folder: the `--before/--after` output (per-function table and new-case kill table), the remaining-mutant classes of D5, and "Bugs". It is the acceptance evidence.
-- **D11 Score check** (default, owner to confirm; Q2). Stage 18 compares the full-run score with 86.45 %. When the score falls and the drop is in files that no F154 stage touched (new code from other tickets), stage 18 records the files and the coordinator opens a follow-up. It does not fail F154 for code F154 did not touch.
+- **D1 Function attribution.** A mutant belongs to the innermost named function: a declaration, a method, or an arrow or function expression whose parent is a variable or a property. An anonymous callback passes up. With none: `(module level)`. This short name is the audit form. The row id is the short name when unique in the file; else the dotted chain of named ancestors, outermost first (`en.followUp.rejected`), plus `@<start line>` if it still repeats. Probe on the audit run (`/tmp/f125-s03/run-4/mutation.json`) by short name: 122 functions, 1,260 mutants (3 more than the audit: unstable mutants, not checked one by one).
+- **D2 Counted statuses.** `Survived` and `NoCoverage`; no other.
+- **D3 Per-stage measure.** Each stage measures its own files before and after with `--mutate` globs (the audit data is stale for some files). Only stage 18 runs all of core.
+- **D4 One mutation run at a time.** `mutation.sh` takes a `flock` around Stryker (stage 01): it runs at concurrency 8 (`notes/2026-11-20-test-cpu-load.md`).
+- **D5 Target per function.** Every listed function must fall (ticket acceptance). After the stage it has fewer than 5 counted mutants, or each remaining one is listed by its key (file, line, column, mutator, replacement) with a class — `equivalent` (no input changes the output), `unreachable`, `bug` (P3), `unstable` — and a one-line reason. Cap: at most 3 `equivalent` plus `unreachable` per function and 10 per stage; above it the stage stops and asks. These rows go under "Self-classed" in the results file, for the coordinator's spot-check.
+- **D6 Every new case kills a survivor.** Each new case or `test.each` row kills at least one mutant that was `Survived` or `NoCoverage` before and is `Killed` after (D5 key). `mutation-gaps.ts --before/--after` exits 1 otherwise. This is the ticket's "fails when its function is broken once".
+- **D7 Test rules.** `docs/code-patterns.md` § Tests: one named behaviour, an exact expected value, `test.each` for repeated shapes. A string-literal mutant dies by an exact text or issue `{ path, message }`, never by `toContain`.
+- **D8 Test file.** Cases go into the `<source>.test.ts` next to the source; the stage creates it when missing. Two parallel stages never write one file: stage 07 writes `triage/suspicious-auth.test.ts` (stage 06 owns `suspicious.test.ts`); stage 05 owns `texts/approvals.test.ts`; stage 13 owns `texts/notices.test.ts`, `texts/minimal.test.ts`, `texts/loop-taps.test.ts` and `texts/bot.test.ts`. No stage edits `texts/index.test.ts`.
+- **D9 Moved code.** A GAP function renamed, moved or split at `HEAD` (for example `texts/bot.ts`) is followed by behaviour under its new name. A function gone at `HEAD` gets `gone` in the results file.
+- **D10 Results file.** Each stage commits `results/stage-NN.md` in this ticket folder: the `--before/--after` output, the D5 "Self-classed" rows, and "Bugs". It is the acceptance evidence.
+- **D11 Score check** (default, owner to confirm; Q2). Stage 18 compares the full-run score with 86.45 %. A drop in files no stage of this ticket touched is recorded; the coordinator opens a follow-up; this ticket does not fail for it.
 
 ## Facts checked
 
-- `mutation.json` of the Bun Stryker runner holds `files[path].source`, `files[path].mutants[].location.start` (1-based line and column), `status`, `killedBy` and `testFiles[path].tests[]` with `id` and `name` (read 2026-11-20 from `/tmp/f125-s03/run-4/mutation.json`).
+- `mutation.json` holds `files[path].source`, mutant `location.start` (1-based), `status`, `killedBy`, and `testFiles[path].tests[]` with `id` and `name` (read 2026-11-20 from the audit run).
 - A full default run of `packages/core` took 19 min 42 s (same run's `mutation.log`).
 - `disableBail: true` in `mutation.sh`, so `killedBy` lists every killing test (D6 relies on it).
+- `check:job` runs the bare-code scan (`apps/server/src/bare-codes.test.ts`). It reads comments of every `.ts` file, tests included, and strings of non-test files.
 
 ## Not verified
 
@@ -41,24 +42,24 @@ Owner words (ticket): "The 122 functions with 5 or more surviving mutants get ca
 ## Done when
 
 1. `results/stage-02.md` … `results/stage-17.md` exist; each shows fewer counted mutants in every listed function and meets D5.
-2. Each stage's new-case table shows no case with 0 kills.
+2. Each stage's new-case table shows no case with 0 kills of a before-survivor (D6).
 3. `results/final.md` (stage 18) lists all 122 functions with the audit count and the final count, and the core score ≥ 86.45 % or the D11 record.
 
 ## Rules for every stage
 
-- Work method: `## Stage method` below. Read `docs/code-patterns.md` § Tests first.
 - Change no file under `packages/core/src` except `*.test.ts`. A changed source file fails the stage.
-- Run each mutation run in `/tmp/f154-sNN/`. Never run it outside `mutation.sh`.
+- Mutation runs go to `/tmp/f154-sNN/`, only through `mutation.sh`.
 - Do not run `test:unit` or `test:int`; run one file with `bun test <file>` (`.agents/limen/reminders.md`).
-- A stage's expected values come from the planner's reading or probe at `a5399ff1`. When the code at `HEAD` gives another value: a code change since the plan base → use the `HEAD` value and note it in the results file; no such change → P3 (a bug or a plan error), a question in the final message.
+- Expected values come from the planner's reading or probe at `a5399ff1`. Another value at `HEAD`: after a code change since then → use it and note it; else a question (P3 or a plan error).
 - "The code's result at `HEAD`" in a stage means: pin the current exact value, after a check that it is not a P3 bug.
+- No plan code in code, comments, strings or test names: no `D5`, `P2`, `stage 3`, `F154`, `review 1`, `PD-012`. Name the rule in words. `check:job` runs the bare-code scan and fails on them.
 - A gap in a decision is a question in the final message, not a choice.
 - Format only the stage's files.
 
 ## Stage method (stages 02–17)
 
-1. Before any edit: `bash scripts/test-audit/mutation.sh /tmp/f154-sNN/before --mutate '<glob>'…` with the stage's source files (globs relative to `packages/core`, for example `src/replies/schema.ts`).
-2. `bun scripts/test-audit/mutation-gaps.ts --in /tmp/f154-sNN/before/mutation.json --min 1` lists every counted mutant per function. Read the mutants of the listed functions.
+1. Before any edit: `bash scripts/test-audit/mutation.sh /tmp/f154-sNN/before --mutate '<glob>'…` (globs relative to `packages/core`, for example `src/replies/schema.ts`).
+2. `bun scripts/test-audit/mutation-gaps.ts --in /tmp/f154-sNN/before/mutation.json --min 1`; read the mutants of the listed functions.
 3. Write the cases. Check each with `bun test <file>`.
 4. After: the same `mutation.sh` command into `/tmp/f154-sNN/after`.
 5. `bun scripts/test-audit/mutation-gaps.ts --before …/before/mutation.json --after …/after/mutation.json > /tmp/f154-sNN/gaps.md`; fix until D5 and D6 hold; write `results/stage-NN.md` (D10).
@@ -109,13 +110,12 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- Scouts: 0. The job task said "Do not use limen wait or any tool that waits for another job"; the planner read the audit and the code at `a5399ff1` and ran the probes itself.
-- All 18 stage files written. Words: see § Log.
+- Scouts: 0 (the job task forbade waiting on jobs); the planner read the code and ran probes itself. All 18 stages written.
 
 ## Cold review
 
-Model `claude-sonnet-5-5`: no `[risky]` stage, no risk area of the board's review line (tests and an audit tool only). The job was started without a wait (job task rule); the coordinator files its message as `plan-review-1.md`.
+Model `claude-sonnet-5-5` (no `[risky]` stage, no risk area). PASS at `73dab91b`, 11 notes (`plan-review-1.md`). Fixed 1–8 and 11 (stage 12 values, Through columns, D5 cap, D6 survivors, bare-code rule, D1 ids, D8 files, `sentLabelSchema`, lock wait budget). Note 9: D1 softened. Note 10: no change.
 
 ## Log
 
-- 2026-11-20 plan written at `a5399ff1`. `wc -w`: plan.md under 1,500; stage files 323–700.
+- 2026-11-20 plan written at `a5399ff1`; review 1 fixes after it. `wc -w` limits hold.

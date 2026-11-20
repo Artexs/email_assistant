@@ -6,18 +6,20 @@ Part of [`../plan.md`](../plan.md). Method: plan.md § Stage method. Decisions P
 
 ## Functions (audit counts at `4ce3f351`)
 
-| File at the audit | Function | Count |
-| --- | --- | --- |
-| `texts/notices.ts` | `loopsNone`, `urgent`, `loops`, `staysInAiFolder`, `cost` | 8, 8, 6, 5, 5 |
-| `texts/bot.ts` | `lastSync`, `approvalsLine` | 14, 8 |
-| `texts/minimal.ts` | `reviewInPanel` | 12 |
-| `texts/loop-taps.ts` | `more` | 8 |
+| File at the audit | Function | Through (exported) | Count |
+| --- | --- | --- | --- |
+| `texts/notices.ts` | `loopsNone`, `urgent`, `loops`, `staysInAiFolder`, `cost` | `textTables[locale].notices` (`texts/index.ts`) | 8, 8, 6, 5, 5 |
+| `texts/bot.ts` | `lastSync`, `approvalsLine` | `textTables[locale]` bot group | 14, 8 |
+| `texts/minimal.ts` | `reviewInPanel` | `textTables[locale]` minimal group | 12 |
+| `texts/loop-taps.ts` | `more` | `textTables[locale]` loop-taps group | 8 |
 
 At `HEAD`, `texts/notices.ts` and `texts/bot.ts` are split into `-en.ts` and `-pl.ts` files (plan D9): each function now exists once per locale. Measure and cover both locale files; the results table names the function per file.
 
 Mutate globs: `src/texts/notices.ts`, `src/texts/notices-en.ts`, `src/texts/notices-pl.ts`, `src/texts/bot.ts`, `src/texts/bot-en.ts`, `src/texts/bot-pl.ts`, `src/texts/bot-common.ts`, `src/texts/minimal.ts`, `src/texts/loop-taps.ts`. No test file in a glob.
 
 ## Cases (fixed values)
+
+Test files (plan D8): `texts/notices.test.ts`, `texts/minimal.test.ts`, `texts/loop-taps.test.ts` (new) and `texts/bot.test.ts`. Not `texts/index.test.ts`. A name that repeats in one file gets the dotted row id of plan D1; cover each.
 
 Each case is a `test.each` over both locales with the exact string at `HEAD`. A string that reads wrong in Polish (case, number form) is a P3 question, not an expected value.
 

@@ -6,14 +6,15 @@ Part of [`../plan.md`](../plan.md). Method: plan.md § Stage method. Decisions P
 
 ## Functions (audit counts at `4ce3f351`)
 
-| File | Function | Count |
-| --- | --- | --- |
-| `sim/live/calendar-days.ts` | `isRealDate`, `formatDay` | 13, 5 |
-| `sim/live/executive.ts` | `cardsOf`, `kindOf` | 10, 9 |
-| `sim/live/date-shift.ts` | `shiftDatesInText` | 9 |
-| `sim/live/run-plan.ts` | `planLiveRun` | 8 |
-| `sim/live/env-guard.ts` | `sendAddressesAllowed` (private; through `checkSimEnv`) | 6 |
-| `sim/live/message.ts` | `parseLabMessageId` | 5 |
+| File | Function | Through (exported) | Count |
+| --- | --- | --- | --- |
+| `sim/live/calendar-days.ts` | `isRealDate`, `formatDay` | themselves | 13, 5 |
+| `sim/live/executive.ts` | `cardsOf` | itself | 10 |
+| `sim/live/executive.ts` | `kindOf` (private) | `cardsOf` (the card `kind`) | 9 |
+| `sim/live/date-shift.ts` | `shiftDatesInText` | itself | 9 |
+| `sim/live/run-plan.ts` | `planLiveRun` | itself | 8 |
+| `sim/live/env-guard.ts` | `sendAddressesAllowed` (private) | `checkSimEnv` | 6 |
+| `sim/live/message.ts` | `parseLabMessageId` | itself | 5 |
 
 Mutate globs: one per file above.
 
@@ -24,7 +25,7 @@ Mutate globs: one per file above.
 3. `parseLabMessageId`: build ids with `labMessageId` and the slot and run id shapes of `sim/live/message.test.ts` (the `LAB_ID` pattern refuses other shapes). Bracketed and bare forms → the same `{ slotId, runId }`; spaces around → trimmed; only an opening or only a closing bracket → `null`; a foreign id `<x@y>` → `null`.
 4. `checkSimEnv` send addresses: allowed list `["lab@example.test"]`; raw `" LAB@example.test "` → no issue; `"lab@example.test, other@example.test"` → the send-address issue; `""` and unset → the code's result at `HEAD`.
 5. `shiftDatesInText`: a Polish and an English date in one text shifted by 7 days → the exact text; a date-like string that is not a real date → unchanged; the flag the `BooleanLiteral` mutant flips → its branch once.
-6. `kindOf`: one card of each kind → the exact kind string.
+6. `kindOf` through `cardsOf`: one button of each kind → the exact kind string.
 7. `cardsOf`: a message with a callback and no id, an id and no callback, and both → the exact card list (kills `||` vs `&&`).
 8. `planLiveRun`: two slots at the same time → the tie order at `HEAD`; out-of-order slots → sorted by `at` (kills `<=`).
 
