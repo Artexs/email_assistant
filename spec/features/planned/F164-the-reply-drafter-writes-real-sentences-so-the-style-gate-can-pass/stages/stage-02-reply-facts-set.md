@@ -5,7 +5,7 @@ Part of [`../plan.md`](../plan.md). Decisions: P1, D3.
 
 ## Step 1 — the set file and its loader
 
-- **Goal:** a dev-only set where the manager's instruction line gives the facts, so "a full sentence where the facts are known" can be measured.
+- **Goal:** a dev-only set where the instruction line gives the facts.
 - **Files:** a new `evals/cases/reply-facts.json`; the reply-set loader of the drafter eval (`scripts/lib/eval-drafter-source.ts`); the eval args; `evals/README.md`.
 - **Interface:**
   - Case schema `replyFactsCaseSchema = evalCaseSchema.extend({ instruction: string, mustHold: string[] })`, in the eval source module (not in `@ea/core`: only the eval reads it).
@@ -46,7 +46,7 @@ Part of [`../plan.md`](../plan.md). Decisions: P1, D3.
   6. 12 results, one `missing_fact` → `passed: false`, one failure.
 - **Check:** `bun test` on the verdict test file; break the gap removal once and see case 3 fail.
 - **Done when:** cases 1–6 pass.
-- **Out of scope:** a real run (stage 04 runs it); any judge change.
+- **Out of scope:** a real run (stage 04); a judge change.
 
 ## Done when (stage)
 

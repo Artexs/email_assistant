@@ -25,3 +25,7 @@ A reply draft holds full sentences where the manager's facts are known, not only
 
 ## Notes
 Needs a plan first (owner rule: prompt change runs the gate). About $1 to $2 of model runs; use the VPS key in the job environment only, as before.
+
+## Sequenced
+Plan after: none (the style ticket F122 is done; the reply-drafts ticket F115 has its stages, and drafter-v4 is in code).
+Build after: F122 (in `done/`). Gate: none from the owner; stages 04 and 05 need the OpenAI key in the job environment, which the coordinator gives (as for the F122 gate run).
