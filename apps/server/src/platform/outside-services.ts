@@ -11,8 +11,7 @@ export const OUTSIDE_SERVICE_KEYS: Readonly<Record<string, string | { exempt: st
   TELEGRAM_BOT_TOKEN: "telegram",
   OPENAI_API_KEY: "openai",
   DEEPSEEK_API_KEY: {
-    exempt:
-      "dev, tests and evals only; config refuses LLM_PROVIDER=deepseek with TRIAGE_LLM_SCOPE=all (the config refusal)",
+    exempt: "dev, tests and evals only; config refuses LLM_PROVIDER=deepseek with TRIAGE_LLM_SCOPE=all",
   },
   OPENAI_OWN_API_KEY: { exempt: "the key of an LLM server that the operator runs; it never reaches OpenAI" },
   OPENAI_BASE_URL: "openai",
