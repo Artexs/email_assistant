@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -29,7 +30,7 @@ export async function senderFlags(db: DbOrTrx, ctx: TenantContext): Promise<Send
 
 // How old the last Sent pass may be for the profile to say "the user never wrote to this sender". The Sent pass runs with the
 // mail sync (every few minutes), so a pass older than a day means that it fails or the mailbox does not sync.
-export const SENT_COVERAGE_FRESH_MS = 24 * 60 * 60 * 1000;
+export const SENT_COVERAGE_FRESH_MS = DAY_MS;
 
 // Sent coverage of one mailbox at `now`: the profile can say "the user never wrote to this sender" only when Sent mail is
 // tracked and current. True when the flag `sent_sync` is on, the mailbox switch is on, `first_pass_at` is set, the last Sent
