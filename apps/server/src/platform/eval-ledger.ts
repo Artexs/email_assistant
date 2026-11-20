@@ -12,10 +12,12 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
 
+import { HOUR_MS } from "@ea/core";
+
 export const MONTH_CAP_USD = 20;
 export const RUN_CAP_USD = 1;
 
-const STALE_LOCK_MS = 6 * 3_600_000;
+const STALE_LOCK_MS = 6 * HOUR_MS;
 
 // The spend ledger lives outside git: one JSON line per run. An empty or relative value counts as unset; with no
 // usable directory the run cannot count its spend, so it refuses (use --spend-ledger).
