@@ -10,3 +10,11 @@ Base for all four files: `73801f3e`. Each file was split with the history merge 
 - Setup list of the old file (no hook, no mock, no `let`): `ID`, `NOW`, `TZ`, `CONTROL`, `view`, `request`, `recipient` in the helpers file; `SET_ID`, `item` in the set-request part; `PANEL_URL`, `SEND_LINE_EN` in the request-texts part; `SendKind`, `sendKinds`, `closings`, `result`, `joined` in the send-results part.
 - References repointed: `docs/capabilities/delegation.md` (request and send-results parts), `docs/capabilities/drafts-and-send.md` (all six parts).
 
+## packages/core/src/digest/digest.test.ts
+
+- Old: 1,344 lines, 103 cases.
+- Parts: `digest-rows` 308, `digest-lines` 428, `digest-polish-order` 209, `digest-limit` 139, `digest-minimal` 235 (all `.test.ts`); helpers file `digest.test-helper.ts` 63.
+- Proof: `split-proof PASS cases=103`. No `assertions` line.
+- Setup list of the old file (no hook, no mock, no `let`): `timeZone`, `now`, `slot`, `mailbox`, `uuid`, `item`, `input`, `render`, `blockStarts` in the helpers file; `act` in the rows part; `emailIdOf` in the lines part; `digestOfLength` in the limit part.
+- References repointed: `docs/capabilities/digest-and-notices.md` (all five parts), `docs/capabilities/trust.md` (rows and lines parts: why lines, spam review line).
+
