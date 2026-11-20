@@ -840,3 +840,4 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - 2026-11-20 · F125 G1 · scope · Prose pins: keep the 4 capability-page pins; a follow-up ticket replaces the source regexes of `main.test.ts` and `composition.test.ts` with behaviour tests. Undo: drop the follow-up. · new
 - 2026-11-20 · F125 G1 · user-visible · The draft schema must refuse an invalid date (`2026-13-01`), as a follow-up ticket; an unknown web query key stays accepted. Undo: drop the follow-up. · new
 - 2026-11-20 · F125 G1 · scope · One low-priority follow-up ticket extends the time-literal rule to tests, splits the test files over 800 lines, then extends the size lint to tests. Undo: drop the ticket. · new
+- 2026-11-20 · F150 plan · scope · The in-place operator pages of the docs site (`deploy/README.md`, `docs/release-checklist.md`) stay out of the bare-code scan for now; they join the follow-up with `docs/capabilities/`. Undo: add them to stage 04. · new
