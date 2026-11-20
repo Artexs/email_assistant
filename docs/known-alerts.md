@@ -33,7 +33,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-18 (F115 stage 07; not seen live)
 - **Source:** `apps/server/src/modules/replies/draft-one.ts` (job `replies.drafter`, level `error`).
 - **Cause:** `reply_llm_config_error`: the model of the role `drafter` answered with a configuration error (a bad key, a model that does not exist, a blocked project). The request goes back to `pending` in 5 minutes with no try, and the other requests of the run wait through the pause of the job. `reply_draft_error`: a database error or a bug after the claim of a request; the request is released with a counted try, and the third ends it `failed` / `internal`.
-- **Fix:** `reply_llm_config_error`: check `LLM_DRAFTER_PROVIDER`, `LLM_DRAFTER_MODEL` and the API key of that provider (`deploy/README.md` § Reply drafts), then restart the server. `reply_draft_error`: read `error_code` and the stack of the line, file a bug with the request id (no mail text is in the line).
+- **Fix:** `reply_llm_config_error`: check `LLM_PROVIDER` and the API key of that provider (and `OPENAI_OWN_MODEL` on an own endpoint) (`deploy/README.md` § Reply drafts), then restart the server. `reply_draft_error`: read `error_code` and the stack of the line, file a bug with the request id (no mail text is in the line).
 - **Status:** investigating
 
 ### `draft_copy_kept` (fields `action_id`, `reason`; level `info`, not an alert)
@@ -990,8 +990,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Source:** `apps/server/src/modules/triage/pause.ts` (`[triage]`, level `error`). The line holds the code, the length of the pause and its end only. It holds no hint: the hint for each code is in the Fix line below. The pause uses the same backoff as a soft error and the mail gets no try count.
 - **Cause:** A bad or missing key, no access or billing, a wrong region or project, or an unknown model name. Retrying the mail does not help. Gemini codes: `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`. OpenAI codes (`LLM_PROVIDER=openai`): `http_401` (bad key), `http_403` (no access or region), `http_404` (unknown model), `http_429_quota`, `http_400_schema`, `schema_not_strict`. `http_429_quota`: no money on the OpenAI account or the project budget is spent. `http_400_schema`: OpenAI rejects the strict schema, so every mail would fail. `schema_not_strict`: our own check found a schema object that breaks the strict rules (a code change).
 - **Fix:** One line for each code.
-  - Gemini `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`: check `GEMINI_API_KEY`, `GEMINI_MODEL_CLASSIFIER` and the Google project (billing, region). Then restart the server.
-  - OpenAI `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_MODEL_CLASSIFIER`, `OPENAI_BASE_URL` (`llm_settings` and `llm:check` show the endpoint kind and host) and the OpenAI project (billing, budget, model access).
+  - Gemini `http_401`, `http_402`, `http_403`, `http_404`, `http_400_key`, `http_400_precondition`: check `GEMINI_API_KEY` and the Google project (billing, region). Then restart the server.
+  - OpenAI `http_401`, `http_403`, `http_404`: check `OPENAI_API_KEY`, `OPENAI_BASE_URL` (`llm_settings` and `llm:check` show the endpoint kind and host) and the OpenAI project (billing, budget, model access).
   - OpenAI `http_429_quota`: add credit or raise the budget, then wait for the pause to end or restart the server. `/status` and the digest show `⏸ LLM paused … (http_429_quota)` (F100 stage 07; flag `llm_pause_line`).
   - OpenAI `http_400_schema`: run `bun run llm:check --provider openai`, check the strict schema adapter and the rejected keywords (`notes/2026-11-06-openai-api-facts.md`).
   - OpenAI `schema_not_strict`: make every property required and nullable, `additionalProperties: false`.
