@@ -29,7 +29,10 @@ const TEST_FILE = /\.test\.tsx?$|\.test-helper\.ts$|(^|\/)(test|e2e)\//;
 
 // Files whose comments name test fixtures by a short label that the same file defines: they are not plan codes.
 const FIXTURE_LABELS: Record<string, RegExp> = {
-  "apps/server/test/integration/channels-card-sync.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-decisions.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-helpers.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-hooks.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-probes.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
   "apps/server/test/integration/web-approvals-kit.ts": /\bU\d\b/, // the two owners
   "apps/server/test/integration/web-delegations.test.ts": /\b[DU]\d\b/, // the six delegations and the two owners
 };
