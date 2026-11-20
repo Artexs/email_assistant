@@ -11,6 +11,13 @@ Maintenance tools of the test audit (not product code, not run in CI). Own `tsco
 - **Mutation run** (`mutation.sh`): `bash scripts/test-audit/mutation.sh <out dir> [--mutate <glob>]… [--with-static]` copies `packages/core/src` to a work folder under `${XDG_CACHE_HOME:-$HOME/.cache}/ea-test-audit/mutation.*` (never `/tmp`; an `EXIT` trap removes it), installs pinned Stryker and the Bun runner there (never in the repo), runs `stryker run` with `disableBail: true` and copies `mutation.json` and `mutation.log` to `<out dir>`. Needs Node 22 or higher. Default mutate: `src/**/*.ts`, `!src/**/*.test.ts`, `!src/**/*.test-helper.ts`. Static mutants (module-level code) are ignored unless `--with-static` (they need tens of CPU hours).
 - **Mutation summary** (`mutation-summary.ts`): `bun scripts/test-audit/mutation-summary.ts --in <out dir>/mutation.json --data <ticket folder>/audit/data` writes `mutation-tests.tsv` (per Stryker test: scan `key`, kills, unique kills, `in_cover`, flags `S10`/`S11`; `unjoined` when no JUnit row matches), `mutation-files.tsv`, `mutation-survived.tsv`, `mutation-baseline.tsv` and `mutation-summary.md`. Reads `junit-cases.tsv`. `bun scripts/test-audit/mutation-summary.ts --compare <run-1>/mutation.json <run-2>/mutation.json` lists the mutants whose status differs between two runs (by file, line, column, mutator, replacement).
 
+## Mutation notes
+
+- Two runs on 4ce3f351: 21,250 mutants each; 6 status differences (0.03 %), all between `Killed` and `Survived`: `replies/digits.ts` 297:21, 368:17, 372:23 (two regex mutants) killed in run 1, survived in run 2; `testmail/batch.ts` 107:5 survived then killed; `triage/suspicious.ts` 342:7 killed then survived. A guess, not verified: the digit-budget test of `replies/digits.test.ts` hits its 5 s timeout on a loaded machine (it did in the dry run of an earlier attempt). Phase B compares `Killed` against `Survived` and `NoCoverage` for every mutant outside these 6 places, and never `Timeout`.
+- The default run ignores static mutants (module-level code, 7,819 of 21,250): a run takes about 28 min instead of tens of CPU hours. Score at 4ce3f351: 86.45 % against 85.53 % in the F3 probe (core changed and grew since 54fe78f).
+- Mutants compare by (file, line, column, mutator, replacement): Stryker ids are not compared.
+- `mutation-tests.tsv` has 9 of 2,769 Stryker tests `unjoined` (0.33 %): they are newer than `junit-cases.tsv` (`llm-providers.test.ts`, `cost-model.test.ts`, `site.test.ts`). Run `join-cli.ts` again, then the summary, to close them.
+
 ## Coverage notes
 
 - Bun 1.4.4 writes the int lcov (with the preload of `bunfig.toml`) without error: 854 source files in the stage 02 run (N2 holds).
