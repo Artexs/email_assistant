@@ -12,7 +12,7 @@ import { buildImportRows, mapIdsInJson, mapIdsInText, PLACEHOLDER_SECRET } from 
 import { DEMO_SEED_FORMAT, DemoSeedError, IMPORT_ORG_NAME, type DemoSeed } from "./types";
 
 // The pure parts of the demo seed (scan, shape, id map, import rules). The database tests are in
-// `test/integration/lab-demo-seed.test.ts`.
+// `test/integration/lab-demo-seed-export.test.ts`, `lab-demo-seed-import.test.ts` and `lab-demo-seed-refusals.test.ts`.
 
 const uuid = (n: number): string => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const ORG = uuid(1);

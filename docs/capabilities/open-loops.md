@@ -129,7 +129,9 @@ Nothing the user waits for should slip. The assistant reads the user's own Sent 
 - `apps/server/test/integration/actions-follow-up-switch.test.ts`
 - `apps/server/test/integration/actions-follow-up-recipients.test.ts`
 - `apps/server/test/integration/actions-follow-up-sent.test.ts`
-- `apps/server/test/integration/follow-up-cards.test.ts`
+- `apps/server/test/integration/follow-up-cards-approval.test.ts`
+- `apps/server/test/integration/follow-up-cards-results.test.ts`
+- `apps/server/test/integration/follow-up-cards-closed.test.ts`
 - `apps/server/test/integration/channels-consent.test.ts`
 - `apps/server/test/integration/channels-digest-brief.test.ts`
 - `apps/server/test/integration/channels-digest-brief-race.test.ts`
