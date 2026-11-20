@@ -1,348 +1,53 @@
-import { resolve } from "node:path";
+import type { GateEvidenceDeps } from "@ea/core";
 
-import { type GateEvidenceDeps, onboardingOf, scopeInfoOf, type ScopeEnv } from "@ea/core";
-import { getConnInfo } from "@hono/bun";
-import type { Context } from "hono";
-
-import { autoSetter, orgPlanHooks, sentSwitchHooks, settingsDeps, trustEvidenceOf, uidplusOf } from "./composition";
-import { actionRoutes, countWaitingApprovals, type ActionsScope, type SendScope } from "./modules/actions";
-import { auditEvents, hasAuditEvent, recordAudit, recordAuditOnce } from "./modules/audit";
+import { orgPlanHooks, settingsDeps, uidplusOf } from "./composition";
+import { actionRoutes, type ActionsScope, type SendScope } from "./modules/actions";
 import {
   approvalRoutes,
-  replyApprovalRoutes,
   cardEditHooks,
   channelRoutes,
-  getChatLinkForUser,
-  listUrgentNoticeTimes,
   pushRoutes,
   queueMailboxRemovedNotices,
+  replyApprovalRoutes,
 } from "./modules/channels";
-import { countSenderRules, rulesRoutes, settingsRoutes, type SettingsRouteDeps } from "./modules/config";
+import { rulesRoutes, settingsRoutes } from "./modules/config";
 import { suggestionRoutes } from "./modules/contacts";
 import { delegateRoutes, delegationHooks, delegationRoutes } from "./modules/delegation";
 import { loopRoutes } from "./modules/loops";
 import {
+  WEB_MAIL_TIMEOUTS,
   createMailOAuthClients,
-  getSentSyncView,
-  listMailboxes,
-  listSyncFolders,
   mailOAuthCallbackRoutes,
   mailOAuthRoutes,
   mailRoutes,
   openImapProvider,
-  setSentSync,
-  setSyncFolderEnabled,
+  verifySmtpLogin,
   type ApplyGrantDeps,
   type MailOAuthClients,
-  type TestMailRule,
-  verifySmtpLogin,
-  WEB_MAIL_TIMEOUTS,
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
 import { replyRoutes, type ReplySampleScope, type StylePreview } from "./modules/replies";
-import { activityRoutes, statsRoutes, type StatsRouteDeps } from "./modules/reports";
-import {
-  anySsoUsable,
-  getMemberNotify,
-  getUserAuthProfile,
-  isBreakGlassOwner,
-  isFeatureOn,
-  isOrgSuspended,
-  isPasswordSignInRefused,
-  isSsoOnlyMember,
-  listMembershipsOfUser,
-  resolveSsoMember,
-  setUserTerms,
-  tenancyRoutes,
-  type TenancyRouteDeps,
-} from "./modules/tenancy";
-import { goNoGoFor, newsletterRoutes, reviewRoutes, triageRoutes } from "./modules/triage";
-import { hasEndedCheck, queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
-import {
-  createAuth,
-  expiredSessionCookie,
-  listUserSessions,
-  verifyOwnPassword,
-  type AuthDeps,
-  type AuthEventKind,
-} from "./platform/auth";
-import { createLockoutStore } from "./platform/auth-lockout";
-import { createAuthMailer, createAuthMailTasks } from "./platform/auth-mail";
+import { activityRoutes, statsRoutes } from "./modules/reports";
+import { tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
+import { newsletterRoutes, reviewRoutes, triageRoutes } from "./modules/triage";
+import { queueHistoryCheckOnConnect, trustRoutes } from "./modules/trust";
 import type { AuthMailKind } from "./platform/auth-mail-texts";
-import { backupCodesLeft } from "./platform/auth-two-factor";
-import {
-  authMailSettings,
-  mailAllowLocal,
-  mailTrustedAuthservIds,
-  operatorUserIds,
-  pushConfigOf,
-  webTrustedOrigins,
-  webTrustedProxies,
-  testMailRule,
-  type Config,
-} from "./platform/config";
+import { mailAllowLocal, mailTrustedAuthservIds, pushConfigOf, testMailRule, type Config } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db, TenantContext } from "./platform/db";
-import { errorFields } from "./platform/errors";
-import { buildTrustedProxies, signInMethodOf, type WebDeps, type WebSession } from "./platform/http";
-import { createLog } from "./platform/log";
+import type { WebDeps } from "./platform/http";
 import { dnsLookupAll } from "./platform/net-address";
 import { postOneClick, type OneClickResult } from "./platform/public-http";
-import { checkPwnedPassword } from "./platform/pwned";
-
-// The composition root of the web: the parts that need more than one module.
-const log = createLog("web");
-
-const eventNames = {
-  login: auditEvents.webLogin,
-  password_set: auditEvents.webPasswordSet,
-  password_changed: auditEvents.webPasswordChanged,
-  login_locked: auditEvents.webLoginLocked,
-  sessions_revoked: auditEvents.webSessionsRevoked,
-  other_sessions_revoked: auditEvents.webOtherSessionsRevoked,
-  two_factor_enabled: auditEvents.webTwoFactorEnabled,
-  two_factor_disabled: auditEvents.webTwoFactorDisabled,
-  backup_codes_generated: auditEvents.webBackupCodesGenerated,
-  backup_code_used: auditEvents.webBackupCodeUsed,
-  two_factor_locked: auditEvents.webTwoFactorLocked,
-  two_factor_refused: auditEvents.webTwoFactorRefused,
-} satisfies Record<AuthEventKind, string>;
-
-// A login or a password change is a row in the audit log of the user's oldest organization. It never throws.
-export function auditWebEvent(db: Db): AuthDeps["onEvent"] {
-  return async (kind, userId, data) => {
-    try {
-      const [membership] = await listMembershipsOfUser(db, userId);
-      if (!membership) {
-        log.warn("web_no_organization", { user_id: userId });
-        return;
-      }
-      await recordAudit(
-        db,
-        { orgId: membership.org_id },
-        { event: eventNames[kind], actor: userId, data: { via: "web", ...data } }
-      );
-    } catch (error) {
-      log.error("web_audit_failed", { kind, ...errorFields(error) });
-    }
-  };
-}
-
-// An SSO sign-in or refusal is a row in the provider's organization. `ssoPlugins` catches a failure and logs it.
-export function auditSsoEvent(db: Db): NonNullable<AuthDeps["onSsoEvent"]> {
-  return async (event) => {
-    await recordAudit(
-      db,
-      { orgId: event.orgId },
-      {
-        event: event.kind === "login" ? auditEvents.ssoLogin : auditEvents.ssoRefused,
-        actor: event.userId ?? "system",
-        data: event.data,
-      }
-    );
-  };
-}
-
-// The accepted terms and their audit row go in one transaction, in the user's oldest organization. It never throws.
-export function termsAcceptedHandler(db: Db, now: () => Date): AuthDeps["onTermsAccepted"] {
-  return async (userId, version) => {
-    try {
-      const [membership] = await listMembershipsOfUser(db, userId);
-      await db.transaction().execute(async (trx) => {
-        await setUserTerms(trx, userId, version, now());
-        if (membership) {
-          await recordAudit(
-            trx,
-            { orgId: membership.org_id },
-            { event: auditEvents.webTermsAccepted, actor: userId, data: { via: "web", version } }
-          );
-        }
-      });
-    } catch (error) {
-      log.error("terms_record_failed", { user_id: userId, ...errorFields(error) });
-    }
-  };
-}
-
-// A failed auth mail is an operator notice in the user's oldest organization. It never throws.
-export function authMailFailedHandler(
-  db: Db,
-  notify: WebExtras["onAuthMailFailed"]
-): (userId: string, kind: AuthMailKind, code: string) => void {
-  return (userId, kind, code) => {
-    if (!notify) return;
-    void (async () => {
-      try {
-        const [membership] = await listMembershipsOfUser(db, userId);
-        if (!membership) return;
-        notify({ orgId: membership.org_id }, userId, kind, code);
-      } catch (error) {
-        log.error("web_auth_mail_notice_failed", { user_id: userId, ...errorFields(error) });
-      }
-    })();
-  };
-}
-
-export type WebRuntime = WebDeps & { close(): Promise<void> };
-
-const LOOPBACK_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
-
-export function scopeInfos(config: Config): TenancyRouteDeps["scopes"] {
-  return {
-    triage: scopeInfoOf("triage", config.TRIAGE_LLM_SCOPE),
-    actions: scopeInfoOf("actions", config.ACTIONS_SCOPE),
-    send: scopeInfoOf("send", config.SEND_SCOPE),
-  };
-}
-
-export function scopeEnvOf(config: Config): ScopeEnv {
-  return {
-    triage: config.TRIAGE_LLM_SCOPE,
-    actions: config.ACTIONS_SCOPE,
-    send: config.SEND_SCOPE,
-  };
-}
-
-export function countMailboxes(db: Db): TenancyRouteDeps["countMailboxes"] {
-  return async (ctx) => {
-    const rows = await listMailboxes(db, ctx);
-    return { total: rows.length, inAuthError: rows.filter((row) => row.status === "auth_error").length };
-  };
-}
-
-// The badge of the nav. 0 while the flag `approvals_page` is off; `tenancy` gets it as a function (it must not import `actions`).
-export function approvalsWaiting(db: Db): TenancyRouteDeps["approvalsWaiting"] {
-  return async (ctx) => ((await isFeatureOn(db, ctx, "approvals_page")) ? countWaitingApprovals(db, ctx) : 0);
-}
-
-// With `trust_ladder` on, onboarding asks for a channel (per user) and a finished history check (per organization).
-// `null`: the flag is off and onboarding is as before. The member row and the check are read with the organization of the caller only.
-async function trustOnboardingOf(
-  db: Db,
-  ctx: TenantContext,
-  userId: string
-): Promise<{ reportByMail: boolean; reportReady: boolean } | null> {
-  if (!(await isFeatureOn(db, ctx, "trust_ladder"))) return null;
-  const notify = await getMemberNotify(db, ctx, userId);
-  return {
-    reportByMail: notify !== undefined && notify.report_channel !== "telegram",
-    reportReady: await hasEndedCheck(db, ctx),
-  };
-}
-
-// The Telegram item is per user, the others per organization.
-export function onboardingDeps(
-  db: Db,
-  botUsername: (() => Promise<string>) | null
-): Pick<TenancyRouteDeps, "onboarding" | "telegram" | "keepMode"> {
-  const linked = async (ctx: TenantContext, userId: string) =>
-    (await getChatLinkForUser(db, ctx, userId)) !== undefined;
-  return {
-    onboarding: async (ctx, userId) =>
-      onboardingOf({
-        mailboxCount: (await listMailboxes(db, ctx)).length,
-        telegramLinked: await linked(ctx, userId),
-        telegramAvailable: botUsername !== null,
-        modeChosen: await hasAuditEvent(db, ctx, [auditEvents.mailboxModeChanged, auditEvents.onboardingModeKept]),
-        ruleCount: await countSenderRules(db, ctx),
-        trust: await trustOnboardingOf(db, ctx, userId),
-      }),
-    telegram: async (ctx, userId) => ({
-      available: botUsername !== null,
-      linked: await linked(ctx, userId),
-      botUsername: botUsername ? await botUsername().catch(() => null) : null,
-    }),
-    keepMode: async (ctx, userId, now) => {
-      await recordAuditOnce(db, ctx, {
-        actor: userId,
-        event: auditEvents.onboardingModeKept,
-        data: { via: "web" },
-        at: now,
-      });
-    },
-  };
-}
-
-// `botUsername` only tells whether Telegram is on: a server without a bot never blocks `done`.
-export function homePathOf(
-  db: Db,
-  botUsername: (() => Promise<string>) | null = null
-): NonNullable<WebDeps["homePath"]> {
-  return async (userId) => {
-    const [membership] = await listMembershipsOfUser(db, userId);
-    if (!membership) return "/onboarding";
-    const ctx = { orgId: membership.org_id };
-    const state = await onboardingDeps(db, botUsername).onboarding(ctx, userId);
-    return state.done ? "/activity" : "/onboarding";
-  };
-}
-
-// The stats route reads the three evidence sources of M8 through the trust reader. `reports` may not import `trust`,
-// so this root passes the reader.
-export function statsRouteDeps(
-  db: Db,
-  now: () => Date,
-  testMail: TestMailRule,
-  gate?: GateEvidenceDeps
-): StatsRouteDeps {
-  return {
-    db,
-    now,
-    urgentNotices: listUrgentNoticeTimes,
-    testMail,
-    trustEvidence: trustEvidenceOf(db, now, gate, testMail),
-  };
-}
-
-// The web calls the same setters as the CLI, with the one `settingsDeps` builder.
-export function settingsRouteDeps(
-  db: Db,
-  now: () => Date,
-  testMail: TestMailRule,
-  gate?: GateEvidenceDeps
-): SettingsRouteDeps {
-  const settings = settingsDeps(db, now, gate);
-  const setAuto = autoSetter(settings, testMail);
-  return {
-    db,
-    now,
-    settings,
-    goNoGo: (ctx, id, at) => goNoGoFor(db, ctx, id, at, testMail),
-    setAuto: async (ctx, id, input) => {
-      const result = await setAuto(ctx, id, input);
-      return result.kind === "refused"
-        ? { kind: "refused", gate: result.gate, ...(result.evidence ? { blocks: result.evidence.blocks } : {}) }
-        : { kind: "changed", change: result.change };
-    },
-    listSyncFolders: async (ctx, id) =>
-      (await listSyncFolders(db, ctx, id, { enabledOnly: false })).map(({ key, role, path, enabled }) => ({
-        key,
-        role,
-        path,
-        enabled,
-      })),
-    setSyncFolder: (ctx, id, input) =>
-      setSyncFolderEnabled(db, ctx, id, input.key, input.enabled, input.actor, input.now),
-    getSentSync: (ctx, id) => getSentSyncView(db, ctx, id, now()),
-    setSentSync: async (ctx, id, input) =>
-      (await setSentSync(db, ctx, id, { enabled: input.enabled, actor: input.actor, at: input.now }, sentSwitchHooks))
-        .result,
-  };
-}
-
-export function distPath(config: Config, cwd = process.cwd()): string {
-  return resolve(cwd, config.WEB_DIST);
-}
-
-// @hono/bun throws without the Bun server (app.request in tests).
-export function peerAddress(c: Context): string | undefined {
-  try {
-    return getConnInfo(c).remote.address;
-  } catch {
-    return undefined;
-  }
-}
+import {
+  approvalsWaiting,
+  countMailboxes,
+  onboardingDeps,
+  scopeEnvOf,
+  scopeInfos,
+  settingsRouteDeps,
+  statsRouteDeps,
+} from "./web-route-deps";
 
 export interface WebExtras {
   secrets: SecretBox;
@@ -510,120 +215,5 @@ export function apiPublicRouters(
         ...extras.mailOAuthLogin,
       })
     );
-  };
-}
-
-// null: the web is off.
-export function webDeps(config: Config, db: Db, extras: WebExtras): WebRuntime | null {
-  if (config.WEB_BASE_URL === undefined) {
-    log.info("web_off", { config_key: "WEB_BASE_URL" });
-    return null;
-  }
-  const baseUrl = new URL(config.WEB_BASE_URL);
-  if (baseUrl.protocol === "http:" && !LOOPBACK_HOSTS.includes(baseUrl.hostname)) {
-    log.warn("web_cookies_not_secure", { config_key: "WEB_BASE_URL" });
-  }
-  const origins = [baseUrl.origin, ...webTrustedOrigins(config)];
-  const settings = authMailSettings(config);
-  const mailer = settings === null ? null : createAuthMailer(settings);
-  const mailTasks =
-    mailer === null
-      ? null
-      : createAuthMailTasks({
-          mailer,
-          localeOf: async (userId) => (await getUserAuthProfile(db, userId))?.locale ?? "pl",
-          onFailed: authMailFailedHandler(db, extras.onAuthMailFailed),
-        });
-  if (mailTasks === null) log.info("auth_mail_off");
-  else log.info("auth_mail_on");
-  if (config.AUTH_PWNED_CHECK === "off") log.warn("pwned_check_off", { config_key: "AUTH_PWNED_CHECK" });
-  const lockout = createLockoutStore(db);
-  const onEvent = auditWebEvent(db);
-  const sendLockoutMail: AuthDeps["sendLockoutMail"] =
-    mailTasks === null
-      ? undefined
-      : ({ userId, email }) => {
-          mailTasks.start({ kind: "lockout", userId, to: email, url: `${baseUrl.origin}/forgot` });
-        };
-  const handle = createAuth({
-    databaseUrl: config.DATABASE_URL,
-    baseUrl: config.WEB_BASE_URL,
-    secret: config.WEB_AUTH_SECRET ?? "", // the config check guarantees it
-    trustedOrigins: origins,
-    onEvent,
-    onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
-    resetLinkTtlSeconds: 3_600,
-    lockout,
-    keepsTwoFactor: (userId) => isBreakGlassOwner(db, userId),
-    passwordSignInRefused: (userId) => isPasswordSignInRefused(db, userId),
-    ssoOnlyMember: (userId) => isSsoOnlyMember(db, userId),
-    resolveSsoMember: (identity) => resolveSsoMember(db, identity),
-    onSsoEvent: auditSsoEvent(db),
-    ...(config.AUTH_PWNED_CHECK === "on"
-      ? { pwnedCheck: (password: string) => checkPwnedPassword(password, { fetch, timeoutMs: 5_000 }) }
-      : {}),
-    sendLockoutMail,
-    sendResetPassword:
-      mailTasks === null
-        ? undefined
-        : async ({ userId, email, url }) => {
-            mailTasks.start({ kind: "reset", userId, to: email, url });
-          },
-  });
-  const dist = distPath(config);
-  const now = () => new Date();
-
-  const getSession = async (headers: Headers): Promise<WebSession | null> => {
-    const response = await handle.auth.api.getSession({ headers, returnHeaders: true });
-    if (!response?.response) return null;
-    return {
-      userId: response.response.user.id,
-      sessionId: response.response.session.id,
-      twoFactorEnabled: response.response.user.twoFactorEnabled === true,
-      signInMethod: signInMethodOf(response.response.session.signInMethod),
-      setCookie: response.headers.getSetCookie(),
-    };
-  };
-
-  const operators = operatorUserIds(config);
-  log.info("web_operators", { count: operators.size });
-  log.info("web_on");
-  return {
-    auth: { handler: (req) => handle.auth.handler(req), getSession },
-    db,
-    now,
-    dist,
-    baseUrl,
-    trustedOrigins: new Set(origins),
-    trustedProxies: buildTrustedProxies(webTrustedProxies(config)),
-    connInfo: peerAddress,
-    listMembershipsOfUser: (userId) => listMembershipsOfUser(db, userId),
-    homePath: homePathOf(db, extras.botUsername),
-    publicRouters: apiPublicRouters(config, db, extras, now),
-    routers: apiRouters(
-      config,
-      db,
-      extras,
-      now,
-      (userId) => listUserSessions(handle, userId),
-      (userId) => backupCodesLeft(handle, userId),
-      {
-        lockout,
-        onEvent,
-        sendLockoutMail,
-        verifyPassword: (headers, password) => verifyOwnPassword(handle, headers, password),
-        expiredSessionCookie: () => expiredSessionCookie(handle),
-      }
-    ),
-    operatorUserIds: operators,
-    isOrgSuspended: (orgId) => isOrgSuspended(db, { orgId }),
-    anySsoUsable: () => anySsoUsable(db),
-    resetRequestOpen: mailTasks !== null,
-    close: async () => {
-      if (mailTasks !== null) {
-        await Promise.race([mailTasks.idle(), new Promise((resolve) => setTimeout(resolve, 5_000))]);
-      }
-      await handle.close();
-    },
   };
 }
