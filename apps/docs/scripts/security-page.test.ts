@@ -13,7 +13,7 @@ import { publicSubprocessors } from "../src/security/subprocessor-view";
 // On the real build (the security page and the two reference pages): the docs build runs into a folder of its own (on the device of the build: Astro renames files into it),
 // so `dist` stays as it was. One docs build takes 4 to 15 seconds.
 const DOCS = join(import.meta.dir, "..");
-const WORK_ROOT = join(DOCS, "dist-security-test");
+const WORK_ROOT = join(DOCS, ".dist-security-test");
 setDefaultTimeout(60_000);
 
 let html = "";
