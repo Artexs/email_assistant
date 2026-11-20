@@ -44,7 +44,7 @@ The six cases (names at HEAD; the audit line numbers drifted):
 
 ## Facts checked (2026-11-20, HEAD a5399ff1)
 
-- A spawned `main.ts` with only `PATH`, `DATABASE_URL=postgres://app:x@127.0.0.1:1/x`, `CREDENTIALS_KEY` (32 bytes of 1), `EA_RELEASE=f155-r1` (stage 01 uses `test-r1`), `LOG_FORMAT=json` exits 1. Stdout holds a `features_off` line and stderr a `db_role_check_failed` line, both with `"release":"f155-r1"` (local probe).
+- A spawned `main.ts` with only `PATH`, `DATABASE_URL=postgres://app:x@127.0.0.1:1/x`, `CREDENTIALS_KEY` (32 bytes of 1), `EA_RELEASE=f155-r1`, `LOG_FORMAT=json` exits 1. Stdout holds a `features_off` line and stderr a `db_role_check_failed` line, both with `"release":"f155-r1"` (local probe).
 - `scripts/job-run.ts` sets the release before the DB; it writes no log line before the DB answers (read).
 - `createOAuthTokens` touches the DB only on a token call, so a builder with `{} as never` as the DB works (read: `modules/mail/oauth/tokens.ts`).
 - `OpenDeps` is exported from `modules/mail`; `oauthTokens` is optional there and required in the input of `committerDeps` (read).
@@ -89,7 +89,7 @@ Move the ticket to `active/` and commit. Spawn stage 01 now; spawn stage 02 when
 
 - Scouts: 0. The job task forbade any tool that waits for another job; the planner read the code itself.
 - [written] ticket.md § Slices, § Sequenced; plan.md; stage 01; stage 02; questions.md.
-- Word counts (`wc -w`, after the review fixes): see § Cold review.
+- Word counts: see the final message of the fix job.
 
 ## Cold review
 
@@ -102,5 +102,3 @@ Model: `claude-opus-5-5` at `high`, because stage 02 moves the wiring of the ope
 - N4: D3 cites the right facts.
 - N5: stage 02 case 6 break is "the entry ignores `io.readFile`".
 - N6–N9: no change.
-
-Word counts after the fixes: see the final message of the fix job.
