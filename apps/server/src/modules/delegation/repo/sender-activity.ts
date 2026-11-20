@@ -29,7 +29,9 @@ export async function delegationCountsByDelegateAddress(
   const address = normalizedAddress("d.email");
   const rows = await db
     .selectFrom("delegations as dn")
-    .innerJoin("delegates as d", (join) => join.onRef("d.id", "=", "dn.delegate_id").onRef("d.org_id", "=", "dn.org_id"))
+    .innerJoin("delegates as d", (join) =>
+      join.onRef("d.id", "=", "dn.delegate_id").onRef("d.org_id", "=", "dn.org_id")
+    )
     .select([sql<string>`${address}`.as("address"), sql<number>`count(*)::int`.as("delegations")])
     .where("dn.org_id", "=", ctx.orgId)
     .where("dn.mailbox_id", "=", options.mailboxId)
