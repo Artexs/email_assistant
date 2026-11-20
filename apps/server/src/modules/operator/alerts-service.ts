@@ -1,9 +1,16 @@
-import { DAY_MS, SLO_KINDS, type SloKind } from "@ea/core";
+import {
+  DAY_MS,
+  renderSloAlert,
+  SLO_KINDS,
+  SLO_TEST_FACTS,
+  SLO_TEST_IDS,
+  type SloKind,
+  type UserLocale,
+} from "@ea/core";
 
 import type { Db } from "../../platform/db";
 
 import { listAlerts, type OpsAlertRow } from "./alerts-repo";
-import { sloAlertText, TEST_FACTS, TEST_IDS, type AlertLocale } from "./slo-texts";
 
 // The two service functions of the CLIs `ops:alerts` and `ops:alert-test`.
 
@@ -28,7 +35,7 @@ export async function sendTestAlerts(input: {
   kinds: readonly SloKind[];
   send: ((text: string) => Promise<void>) | null;
   now: Date;
-  locale?: AlertLocale;
+  locale: UserLocale;
   report?: (result: TestAlertResult) => void;
 }): Promise<TestAlertResult[]> {
   const results: TestAlertResult[] = [];
@@ -41,15 +48,17 @@ export async function sendTestAlerts(input: {
       add({ kind, outcome: "no_chat" });
       continue;
     }
-    const text = sloAlertText({
-      kind,
-      phase: "test",
-      facts: TEST_FACTS[kind],
-      ids: TEST_IDS[kind],
-      openedAt: input.now,
-      now: input.now,
-      locale: input.locale,
-    });
+    const text = renderSloAlert(
+      {
+        kind,
+        phase: "test",
+        facts: SLO_TEST_FACTS[kind],
+        ids: SLO_TEST_IDS[kind],
+        openedAt: input.now,
+        now: input.now,
+      },
+      input.locale
+    );
     await input.send(text);
     add({ kind, outcome: "sent" });
   }

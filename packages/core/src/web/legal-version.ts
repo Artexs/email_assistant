@@ -1,6 +1,6 @@
 // The one format of a legal version: the terms version (`terms.ts`) and the Telegram consent version (`telegram.ts`).
 // A version is the UTC date of the change, `YYYY-MM-DD`; a second change on the same day adds `.2`, a third `.3`, and so on.
-// The bare date is counter 1. The old terms history holds the spelling `YYYY-MM-DD-N`; it is read as the same version as
+// The bare date is counter 1. The old terms history holds a hyphen spelling (`2026-11-18-2`); it is read as the same version as
 // `YYYY-MM-DD.N`, and only the dot spelling is written. No stored string changes.
 // Pure: no clock (the caller passes today), no Node import (the browser imports this file through `@ea/core/web`).
 
