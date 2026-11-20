@@ -87,6 +87,21 @@ Runbook for the first deploy with the changed log drivers (F103 stage 19):
 
 On the dev machine, the next `up` of the shared dev stack also recreates `db` and `greenmail`.
 
+## Docs site (owner steps)
+
+The docs site (`apps/docs`, ADR 0030) deploys from `.github/workflows/docs-deploy.yml`. The deploy workflow is not part of the VPS release. The demo video on its home page is the only owner step here (owner gate G3). The default is no video: with no pin the deploy downloads nothing and the home page shows no video.
+
+1. **Record.** On the dev machine, from a demo-seed run (`docs/release-checklist.md`, the step "When the demo flow changed"): `flock /tmp/email-assistant-shared-tests.lock bun run demo:record --seed <demo seed file>`. The command writes three files to `tmp/demo/` (git-ignored): `demo.mp4`, `demo.en.vtt` and `demo.pl.vtt`. It prints the sha256 of each. Use the video only when the log has `demo_source demo`. A video with `demo_source e2e: not for upload` is never uploaded.
+2. **Watch it.** The video and both caption files are public text and public pictures. The owner reads them first.
+3. **Upload** to the release `demo-video`. The tag `demo-video` is not `v*`, so the upload starts no deploy.
+   - First time: `gh release create demo-video tmp/demo/demo.mp4 tmp/demo/demo.en.vtt tmp/demo/demo.pl.vtt --title "Demo video" --notes "Demo video of the docs site"`
+   - A new take: `gh release upload demo-video tmp/demo/demo.mp4 tmp/demo/demo.en.vtt tmp/demo/demo.pl.vtt --clobber`
+   - The release holds exactly these three files. An extra file makes the deploy fail (`demo_video_extra`). A file over 20 MB fails (`demo_video_size`).
+4. **Pin.** The coordinator commits the three sha256 values to `DEMO_VIDEO_SHA256` and `DEMO_CAPTION_SHA256` (`en`, `pl`) in `apps/docs/src/demo-video.ts`. An upload with `--clobber` changes nothing on the site until that commit: the next deploy build stops with `demo_video_hash <file>` when a downloaded file does not match its pin.
+5. **Deploy.** The next release tag deploys the site, or a manual run of the workflow "Docs deploy" in the GitHub UI (`docs/release-checklist.md` step 7; the publication hold `OWNER_REVIEW_PENDING` still applies). The step "Download the pinned demo video" runs `bun apps/docs/scripts/demo-fetch.ts` before `docs:build`; the log has `demo_video on`.
+
+To remove the video: set `DEMO_VIDEO_SHA256` and both `DEMO_CAPTION_SHA256` values back to `null` in one commit. The next deploy shows no video.
+
 ## Env split (an existing host)
 
 Use this once, on a host that has no `deploy/db.env` and still holds the database passwords in `.env` (ADR 0019). A new host starts split (§ First install). The tool moves the three passwords, and `MIGRATOR_DATABASE_URL` if `.env` has it, to `deploy/db.env`. It never prints a value and leaves no copy of `.env`.

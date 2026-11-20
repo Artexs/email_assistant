@@ -81,10 +81,10 @@ async function mailboxEnv(db: DbOrTrx, ctx: TenantContext, mailboxId: string, no
   if (organization === undefined) return null;
   return {
     mailboxId,
-    ownAddresses: mailboxes.map((mailbox) => mailbox.address.toLowerCase()),
+    ownAddresses: mailboxes.map((mailbox) => mailbox.address),
     timeZone: organization.timezone,
     waitDays: settings?.loop_wait_days ?? FOLLOW_UP_MIN_WAIT_DAYS,
-    delegates: delegates.map((delegate) => ({ id: delegate.id, email: delegate.email.toLowerCase() })),
+    delegates: delegates.map((delegate) => ({ id: delegate.id, email: delegate.email })),
     now,
   };
 }
