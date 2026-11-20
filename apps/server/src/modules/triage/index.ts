@@ -137,6 +137,7 @@ export type {
   JudgeVersion,
   PromptEntry,
 } from "./prompts";
+export { EXCERPT_CHARS, THREAD_MAILS } from "./prompts/classifier-v2";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";
 export { createLlmPause } from "./pause";
 export type { LlmPause } from "./pause";
