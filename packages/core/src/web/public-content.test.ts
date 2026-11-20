@@ -140,3 +140,68 @@ describe("allow list", () => {
     expect(() => parseAllowList(" | reason\n")).toThrow("allow_entry_invalid line 1");
   });
 });
+
+describe("IPv4 address classes", () => {
+  test("172.31.255.1 is a private address and passes", () => {
+    expect(publicContentProblems("ip 172.31.255.1 x", [])).toEqual([]);
+  });
+  test.each([
+    "172.15.0.1",
+    "172.32.0.1",
+    "192.169.1.1",
+    "0.0.0.1",
+    "192.0.3.1",
+    "198.51.101.7",
+    "203.0.114.9",
+    "8.8.8.8",
+    "8.20.0.1",
+    "8.168.0.1",
+    "8.0.2.1",
+    "192.1.2.1",
+    "192.51.100.1",
+    "8.51.100.1",
+    "198.52.100.1",
+    "8.0.113.1",
+    "203.1.113.1",
+    "192.0.113.1",
+  ])("%s is a public address and fails", (address) => {
+    expect(publicContentProblems(`ip ${address} x`, [])).toEqual([{ rule: "R3", match: address }]);
+  });
+});
+
+describe("external asset forms", () => {
+  test.each([
+    [`<img src='//cdn.x.io/a.png'>`, "//cdn.x.io/a.png"],
+    [`<img src=" https://cdn.x.io/a.png ">`, " https://cdn.x.io/a.png "],
+    [`<img SRCSET='//cdn.x.io/a.png 2x'>`, "//cdn.x.io/a.png"],
+    [`<link REL="stylesheet" HREF="https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+    [`a{background:url('https://cdn.x.io/i.png')}`, "https://cdn.x.io/i.png"],
+    [`a{background:url( 'https://cdn.x.io/i.png' )}`, "https://cdn.x.io/i.png"],
+    [`<p style="background:url('https://cdn.x.io/i.png')">`, "https://cdn.x.io/i.png"],
+  ])("%s fails with its url", (html, url) => {
+    expect(publicContentProblems(html, [])).toEqual([{ rule: "R4", match: url }]);
+  });
+  test.each([`<img src="${DOCS_ORIGIN}/a.png">`, `<img src="${DOCS_ORIGIN}">`, `<img src="/https://cdn.x.io/a.png">`])(
+    "%s passes",
+    (html) => {
+      expect(publicContentProblems(html, [])).toEqual([]);
+    }
+  );
+});
+
+describe("parseAllowList lines", () => {
+  test("it skips an indented comment line and a line of spaces", () => {
+    expect(parseAllowList("   # indented\n   \nok | fine\n")).toEqual(["ok"]);
+  });
+  test("it trims the spaces around the entry and the reason", () => {
+    expect(parseAllowList("  1.2.3.4  |  demo  ")).toEqual(["1.2.3.4"]);
+  });
+  test.each([
+    ["no separator", "a\n", "allow_entry_invalid line 1"],
+    ["a bar without spaces", "a|b\n", "allow_entry_invalid line 1"],
+    ["an empty entry", "# c\n | reason\n", "allow_entry_invalid line 2"],
+    ["an empty reason", "ok | fine\n\nx | \n", "allow_entry_invalid line 3"],
+  ])("%s throws with the line number", (_name, text, message) => {
+    expect(() => parseAllowList(text)).toThrow(new Error(message));
+  });
+});
