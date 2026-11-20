@@ -2,7 +2,7 @@ import { isIP } from "node:net";
 
 import { sso, discoverOIDCConfig, DiscoveryError } from "@better-auth/sso";
 import type { HydratedOIDCConfig, SSOUserResolution, SSOUserResolutionInput } from "@better-auth/sso";
-import type { SsoIdentity, SsoRefusal, SsoResolution } from "@ea/core";
+import { MINUTE_MS, type SsoIdentity, type SsoRefusal, type SsoResolution } from "@ea/core";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 
 import { errorFields } from "./errors";
@@ -150,7 +150,7 @@ async function reportSsoEvent(deps: SsoDeps, event: SsoEvent): Promise<void> {
 }
 
 // A resolution that no callback session followed (the plugin rolled back) is dropped after this time.
-const PENDING_LOGIN_MAX_AGE_MS = 60_000;
+const PENDING_LOGIN_MAX_AGE_MS = MINUTE_MS;
 
 function resolver(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   return async (input: SSOUserResolutionInput): Promise<SSOUserResolution> => {

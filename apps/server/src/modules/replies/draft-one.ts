@@ -1,4 +1,11 @@
-import { profileFallbacks, replyEligibility, resolveReplyStyle, type DrafterInput, type ReplyLanguage } from "@ea/core";
+import {
+  type DrafterInput,
+  MINUTE_MS,
+  profileFallbacks,
+  replyEligibility,
+  type ReplyLanguage,
+  resolveReplyStyle,
+} from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
@@ -25,9 +32,9 @@ const log = createLog("replies");
 
 // A hard error or a failed write counts a try; the third ends the request.
 export const MAX_TRIES = 3;
-const RETRY_WAIT_MS = 5 * 60_000;
+const RETRY_WAIT_MS = 5 * MINUTE_MS;
 // A request that a user waits for (a tap, a redraft, a sample) ends here when it is not done.
-export const USER_REQUEST_TIMEOUT_MS = 10 * 60_000;
+export const USER_REQUEST_TIMEOUT_MS = 10 * MINUTE_MS;
 
 // `synthetic`: only test mail goes to the model. `all`: every mail.
 export type ReplyLlmScope = { kind: "synthetic"; testMail: TestMailRule } | { kind: "all" };

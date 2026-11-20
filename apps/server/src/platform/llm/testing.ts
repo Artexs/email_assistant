@@ -33,6 +33,7 @@ export function createFixedLlmClient(
       {
         apiKeyName: "TEST_API_KEY",
         apiKey: opts.apiKey ?? "MARKER-KEY",
+        // eslint-disable-next-line ea/no-time-literals -- a requests-per-minute count (a limit nobody reaches), not a time
         rpm: opts.rpm ?? 60_000,
         baseUrl: null,
         endpoint: "standard",
