@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F152-the-restore-drill-rerun-on-the-release-that-carries-the-tcp-wait-ends-with-restore-ok-at-the-first-run` (🟠 ACTIVE): The restore drill rerun on the release that carries the TCP wait ends with restore ok at the first run
 - `F151-the-demo-video-and-the-docs-screenshots-come-from-the-synthetic-demo-week-export` (🟠 ACTIVE): The demo video and the docs screenshots come from the synthetic demo-week export
 - `F122-e6b-style-from-sent` (🟠 ACTIVE): An owner gets a writing style suggested from their own sent mail
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
@@ -63,7 +62,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F155-the-source-text-regexes-in-main-test-ts-and-composition-test-ts-are-replaced-by-behaviour-tests` (🟢 PROVEN): The source-text regexes in main.test.ts and composition.test.ts are replaced by behaviour tests; landed 2026-11-20
 - `F154-the-core-functions-with-5-or-more-surviving-mutants-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): The core functions with 5 or more surviving mutants get tests that fail when the code breaks; landed 2026-11-20
 - `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
-- 2026-11: 132 landed. spec/features/done/2026-11/
+- 2026-11: 133 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
