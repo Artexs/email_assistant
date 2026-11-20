@@ -442,11 +442,7 @@ describe("mail repository: emails", () => {
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       const stamp = new Date("2026-11-20T10:00:00Z");
       const read = () =>
-        trx
-          .selectFrom("emails")
-          .select("move_pending_at")
-          .where("id", "=", id)
-          .executeTakeFirstOrThrow();
+        trx.selectFrom("emails").select("move_pending_at").where("id", "=", id).executeTakeFirstOrThrow();
 
       await setMovePending(trx, a.ctx, id, stamp);
       expect(await read()).toEqual({ move_pending_at: stamp });

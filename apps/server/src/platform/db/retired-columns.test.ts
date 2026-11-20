@@ -1,6 +1,7 @@
-import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+
+import { describe, expect, test } from "bun:test";
 
 // Guard: no code names the retired columns of `emails` (`inbox_uid`, `undo_pending_at`).
 // Until the contract migration drops them they still typecheck (they are in `schema.ts`) and raw `sql`
@@ -33,7 +34,10 @@ const ROOTS = ["apps", "packages", "tools", "scripts"];
 const EXTENSIONS = [".ts", ".tsx", ".astro", ".js", ".sql"];
 const SKIPPED_DIRS = new Set(["node_modules", "dist", ".astro", ".cache", ".turbo", "build", "coverage", ".output"]);
 
-type SourceFile = { path: string; text: string };
+interface SourceFile {
+  path: string;
+  text: string;
+}
 
 /** One finding per retired name on a line: `<path>:<line> <name>`. */
 export function findRetiredNames(
