@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import type { BlockList } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -486,6 +486,7 @@ describe("requireOperator", () => {
       expect(noTotp.headers.get("location")).toBe("/settings?two_factor=required");
     } finally {
       errorSpy.mockRestore();
+      rmSync(dist, { recursive: true, force: true });
     }
   });
 

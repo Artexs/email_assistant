@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { evalCaseSchema, miniScenario, type EvalCase } from "@ea/core";
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { renderSuspiciousReport, suspiciousInputOfCase, suspiciousRows } from "../modules/triage";
 import { readSlots, writeJson } from "../platform/sim-files";
 
 import { parseEvalArgs } from "./eval-args";
 import { runSuspicious } from "./eval-suspicious";
-import { createMiniCorpus, fixtureText, type MiniCorpus } from "./sim-fixtures.test-helper";
+import { createMiniCorpus, fixtureText, type MiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
 
 function makeCase(id: string, patch: Partial<EvalCase> & { hardCases?: string[]; headers?: Record<string, string> }) {
   const { hardCases = [], headers = {}, ...rest } = patch;
@@ -162,6 +162,7 @@ describe("eval --suspicious command", () => {
 
 describe("holdout report", () => {
   let mini: MiniCorpus | undefined;
+  afterAll(removeAllCorpora);
   afterEach(() => {
     mini?.cleanup();
     mini = undefined;
