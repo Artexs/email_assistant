@@ -1,4 +1,17 @@
 export { DrafterCallError, draftReply } from "./drafter";
+export { STYLIST_MAX_CALLS, StylistCallError, suggestStyle } from "./stylist";
+export type { StylistAttempt, StylistInput, StylistResult } from "./stylist";
+export { renderStyleReport, STYLE_EVAL_WINDOW_DAYS, styleSourcesOf } from "./style-eval";
+export type { SentBankMail, StyleReportInput } from "./style-eval";
+export {
+  injectionPassed,
+  injectionSourcesOf,
+  renderStyleInjectionReport,
+  scoreStyleInjection,
+  STYLE_INJECTION_CASES,
+  styleInjectionCasesSchema,
+} from "./style-injection";
+export type { StyleInjectionCase, StyleInjectionResult, StyleInjectionVerdict } from "./style-injection";
 export type { DrafterAttempt, DrafterResult } from "./drafter";
 export {
   drafterCaseResultSchema,
@@ -89,7 +102,6 @@ export {
   type StyleSuggestFailure,
   type StyleSuggestResult,
 } from "./style-suggest";
-export { StylistCallError, STYLIST_MAX_CALLS, suggestStyle, type StylistResult } from "./stylist";
 export { getProfileView, updateMailboxProfile, type ProfileUpdate, type ProfileVia } from "./profile";
 export { replyRoutes, type ReplyRouteDeps } from "./routes";
 export {

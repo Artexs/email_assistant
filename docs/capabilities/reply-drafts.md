@@ -39,7 +39,9 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 | function | `capVerdict`, `recordAttempts`                                                                         | `apps/server/src/modules/replies/spend.ts`            |
 | function | `requestReply`, `redraftReply`, `setReplyRecipients`, `cleanInstruction`                               | `apps/server/src/modules/replies/service.ts`          |
 | function | `sampleReplies`, `listSamples`                                                                         | `apps/server/src/modules/replies/samples.ts`          |
-| function | `createStyleSuggestion`, `suggestStyle`, `listStyleSources` (the style suggestion)                     | `apps/server/src/modules/replies/style-suggest.ts`    |
+| function | `createStyleSuggestion` (the style suggestion)                                                         | `apps/server/src/modules/replies/style-suggest.ts`    |
+| function | `suggestStyle` (one stylist call, also used by the stylist eval)                                       | `apps/server/src/modules/replies/stylist.ts`          |
+| function | `listStyleSources`                                                                                     | `apps/server/src/modules/mail/repo/style-sources.ts`  |
 | function | `updateMailboxProfile`, `getProfileView`; `createStylePreview`                                         | `apps/server/src/modules/replies/profile.ts`          |
 | function | `replyEligibility`                                                                                     | `packages/core/src/replies/eligibility.ts`            |
 | function | `checkReplyBody`                                                                                       | `packages/core/src/replies/checks.ts`                 |
@@ -60,7 +62,7 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 | page     | the reply item, Redraft, Reply all                                                                     | `apps/web/src/components/approvals/ReplyControls.tsx` |
 | page     | the style card samples                                                                                 | `apps/web/src/components/settings/ReplySamples.tsx`   |
 | CLI      | `bun run mailbox:profile`, `bun run reply:check-copy`, `bun run job:run`                               | `apps/server/src/scripts/mailbox-profile.ts`          |
-| eval     | `bun run eval --sim lab-01 --part dev --drafter`, `--set reply-injection --drafter`                    | `apps/server/src/scripts/lib/eval-drafter.ts`             |
+| eval     | `bun run eval --sim lab-01 --part dev --drafter`, `--set reply-injection --drafter`                    | `apps/server/src/scripts/lib/eval-drafter.ts`         |
 
 ## Data
 
