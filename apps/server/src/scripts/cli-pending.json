@@ -1,28 +1,9 @@
 {
-  "org": [
-    "apps/server/src/scripts/lib/invite-delivery.ts",
-    "apps/server/src/scripts/org-create.ts",
-    "apps/server/src/scripts/org-flag.ts",
-    "apps/server/src/scripts/org-invite.ts",
-    "apps/server/src/scripts/org-member.ts",
-    "apps/server/src/scripts/org-plan.ts",
-    "apps/server/src/scripts/org-sso.ts",
-    "apps/server/src/scripts/org-status.ts",
-    "apps/server/src/scripts/web-invite.ts"
-  ],
   "mailbox-cli": [
     "apps/server/src/scripts/mailbox-audit.ts",
     "apps/server/src/scripts/mailbox-backfill.ts",
     "apps/server/src/scripts/mailbox-seed.ts",
     "apps/server/src/scripts/mailbox-signals.ts"
-  ],
-  "delegation": [
-    "apps/server/src/scripts/delegates.ts",
-    "apps/server/src/scripts/delegations.ts",
-    "apps/server/src/scripts/digest-times.ts",
-    "apps/server/src/scripts/reply-check-copy.ts",
-    "apps/server/src/scripts/rules.ts",
-    "apps/server/src/scripts/trust-history-check.ts"
   ],
   "testmail-ops": [
     "apps/server/src/scripts/credentials-check.ts",

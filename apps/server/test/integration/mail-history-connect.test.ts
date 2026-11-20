@@ -297,7 +297,7 @@ describe("trust:history-check", () => {
     }
   });
 
-  test("a suspended organization, an unknown mailbox, another organization's mailbox and bad arguments exit 1 and write no row", async () => {
+  test("a suspended organization, an unknown mailbox and another organization's mailbox exit 1, bad arguments exit 2, and none writes a row", async () => {
     const a = await seedCommitted();
     const b = await seedCommitted();
     try {
@@ -314,9 +314,9 @@ describe("trust:history-check", () => {
       expect(crossed.code).toBe(1);
 
       const bad = await run("--org-id", "nope", "--mailbox-id", b.mailboxId);
-      expect(bad.code).toBe(1);
+      expect(bad.code).toBe(2);
       expect(bad.err).toContain("usage:");
-      expect((await run("--org-id", b.orgId)).code).toBe(1);
+      expect((await run("--org-id", b.orgId)).code).toBe(2);
 
       expect(await checksOf(a.orgId)).toEqual([]);
       expect(await checksOf(b.orgId)).toEqual([]);

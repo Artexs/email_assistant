@@ -156,7 +156,7 @@ describe("org:create CLI", () => {
       "--trial-days",
       "5",
     ]);
-    expect(refused.code).toBe(1);
+    expect(refused.code).toBe(2);
     expect(refused.stderr).toContain("usage: bun run org:create");
   });
 });
