@@ -23,3 +23,12 @@ Test code follows the same time and size rules as product code. The time-literal
 
 - `bun run lint` fails on a time literal in a test file and on a test file over 800 lines.
 - No test file is over 800 lines; the case count (JUnit) is the same before and after the splits.
+
+## Slices
+
+20 stages, one worker job each: `plan.md` § Stages. Time fixes 01–03 and the proof tool 05 run in parallel; 04 turns the time rule on everywhere; splits 06–19 run in parallel once their time stage and 05 have landed; 20 turns the size rule on. No owner checkpoint.
+
+## Sequenced
+
+- Plan after: none.
+- Build after: the test audit (F125) cut stages, so its cuts do not conflict with these edits. Gate: none (low priority, owner 2026-11-20).
