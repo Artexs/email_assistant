@@ -155,7 +155,9 @@ for (const [lang, path] of [
   ["en", `${DOCS_BASE}/`],
   ["pl", `${DOCS_BASE}/pl/`],
 ] as const) {
-  test(`F121-04 the ${lang} home page has the product name as h1, the tutorial as first link, and links to security and pricing`, async ({ page }) => {
+  test(`F121-04 the ${lang} home page has the product name as h1, the tutorial as first link, and links to security and pricing`, async ({
+    page,
+  }) => {
     await open(page, path);
     await expect(page.locator("main h1")).toHaveText(PRODUCT_NAME);
     const links = page.locator("main .sl-markdown-content a[href]");

@@ -68,8 +68,20 @@ export function brokenLinks(dist: string, pagePath: string, links: readonly stri
 
 const CLAIM_IDS = new Set(publicClaims.map((claim) => claim.id));
 const HOMES = [
-  { lang: "en", path: "", base: `${DOCS_BASE}/`, source: "src/content/docs/index.mdx", differentId: "what-is-different" },
-  { lang: "pl", path: "pl", base: `${DOCS_BASE}/pl/`, source: "src/content/docs/pl/index.mdx", differentId: "co-jest-inne" },
+  {
+    lang: "en",
+    path: "",
+    base: `${DOCS_BASE}/`,
+    source: "src/content/docs/index.mdx",
+    differentId: "what-is-different",
+  },
+  {
+    lang: "pl",
+    path: "pl",
+    base: `${DOCS_BASE}/pl/`,
+    source: "src/content/docs/pl/index.mdx",
+    differentId: "co-jest-inne",
+  },
 ] as const;
 
 describe("the built home pages", () => {
@@ -135,7 +147,9 @@ describe("the checks catch a broken page", () => {
     expect(brokenLinks(out, `${DOCS_BASE}/`, [`${DOCS_BASE}/security/#claim-nope`])).toEqual([
       `${DOCS_BASE}/security/#claim-nope`,
     ]);
-    expect(brokenLinks(out, `${DOCS_BASE}/`, [`${DOCS_BASE}/security/#claim-mail-storage`, "https://example.test/x"])).toEqual([]);
+    expect(
+      brokenLinks(out, `${DOCS_BASE}/`, [`${DOCS_BASE}/security/#claim-mail-storage`, "https://example.test/x"])
+    ).toEqual([]);
   });
 
   test("a page that has no link to /security/ is found", () => {
