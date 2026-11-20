@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { localDateTime, localToInstant } from "../digest/local-time";
-import { addDays } from "../time";
+import { addDays, MINUTE_MS } from "../time";
 import { senderHistorySchema, type SenderHistory } from "../triage/sender-history";
 import type { UrgencySource } from "../triage/urgency-profile";
 
@@ -39,7 +39,6 @@ const urgencyOrder: readonly UrgencySource[] = ["text", "vip", "context"];
 
 const WEEKDAYS = 5;
 const DAYS = 7;
-const MINUTE_MS = 60_000;
 const MIN_PARENT_GAP_MS = 10 * MINUTE_MS;
 
 type Window = readonly [number, number];

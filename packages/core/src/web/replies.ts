@@ -1,5 +1,6 @@
 import { cleanUserText } from "../outgoing/user-text";
 import { REPLY_BLOCK_REASONS } from "../replies/eligibility";
+import { MINUTE_MS } from "../time";
 import { replyRecipientModes } from "../triage/payloads";
 
 import { approvalEditAnswerSchema, approvalEditClosedCodes, approvalClosedStates } from "./approvals";
@@ -26,7 +27,7 @@ export function cleanReplyInstruction(text: string): string | null {
 
 // The panel polls the request every 2 seconds for at most one minute.
 export const REPLY_POLL_INTERVAL_MS = 2000;
-export const REPLY_POLL_MAX_MS = 60_000;
+export const REPLY_POLL_MAX_MS = MINUTE_MS;
 
 // POST /api/replies. A missing instruction asks for a plain draft.
 export const replyRequestBodySchema = z.strictObject({

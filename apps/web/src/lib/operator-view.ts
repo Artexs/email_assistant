@@ -1,3 +1,4 @@
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core/web";
 import type { OperatorOrgDetail, OperatorOrgRow } from "@ea/core/web";
 
 import { dateLocale, t, tp } from "../i18n";
@@ -18,17 +19,14 @@ export function llmTodayText(llm: OperatorOrgRow["llmToday"]): string {
   return llm.unpricedCalls > 0 ? `${line} ${t("op_llm_unpriced", { count: llm.unpricedCalls })}` : line;
 }
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-
 // A past time as "5 min ago". A time in the future (clock skew) reads as "just now".
 export function ageText(at: string | null, now: Date): string {
   if (at === null) return t("op_never");
   const ms = now.getTime() - new Date(at).getTime();
-  if (ms < MINUTE) return t("op_just_now");
-  if (ms < HOUR) return t("op_minutes_ago", { count: Math.floor(ms / MINUTE) });
-  if (ms < 48 * HOUR) return t("op_hours_ago", { count: Math.floor(ms / HOUR) });
-  return t("op_days_ago", { count: Math.floor(ms / (24 * HOUR)) });
+  if (ms < MINUTE_MS) return t("op_just_now");
+  if (ms < HOUR_MS) return t("op_minutes_ago", { count: Math.floor(ms / MINUTE_MS) });
+  if (ms < 2 * DAY_MS) return t("op_hours_ago", { count: Math.floor(ms / HOUR_MS) });
+  return t("op_days_ago", { count: Math.floor(ms / DAY_MS) });
 }
 
 // A day in UTC, so the operator reads the same date as the server rows. No value reads as "none".
