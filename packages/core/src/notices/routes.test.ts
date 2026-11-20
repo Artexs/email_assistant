@@ -7,7 +7,8 @@ import {
   noticeRouteValues,
   noticeRoutesPatchSchema,
   noticeRoutesSchema,
-  routeOfKind,
+  type EffectiveRoute,
+  type NoticeRoutes,
   type NoticeRouteValue,
 } from "./routes";
 
@@ -15,6 +16,23 @@ const both = { telegram: true, push: true };
 const telegram = { telegram: true, push: false };
 const push = { telegram: false, push: true };
 const none = { telegram: false, push: false };
+
+// The route of one kind: the group of the kind and the stored choice of that group (the composition of
+// `apps/server/src/modules/channels/notice-fan-out.ts`).
+function routeFor(input: {
+  routes: NoticeRoutes;
+  kind: NoticeKind;
+  hasChat: boolean;
+  hasDevice: boolean;
+}): EffectiveRoute {
+  const group = noticeGroupOf(input.kind);
+  return effectiveRoute({
+    stored: group === null ? undefined : input.routes[group],
+    hasChat: input.hasChat,
+    hasDevice: input.hasDevice,
+    group,
+  });
+}
 
 describe("effectiveRoute", () => {
   test("1. urgent, no choice, chat and device: Telegram and push", () => {
@@ -101,11 +119,11 @@ describe("noticeGroups", () => {
   test("a notice of a kind with no group never goes to push, also for a member who chose push everywhere", () => {
     const routes = { urgent: "push", approvals: "push", updates: "push" } as const;
     for (const kind of ["digest", "approval_edit", "reply_prompt", "reply_result", "loop_consent"] as const) {
-      expect(routeOfKind({ routes, kind, hasChat: true, hasDevice: true })).toEqual(telegram);
+      expect(routeFor({ routes, kind, hasChat: true, hasDevice: true })).toEqual(telegram);
     }
-    expect(routeOfKind({ routes, kind: "urgent", hasChat: true, hasDevice: true })).toEqual(push);
-    expect(routeOfKind({ routes: {}, kind: "sync_ok", hasChat: true, hasDevice: true })).toEqual(telegram);
-    expect(routeOfKind({ routes: {}, kind: "approval_set", hasChat: true, hasDevice: true })).toEqual(both);
+    expect(routeFor({ routes, kind: "urgent", hasChat: true, hasDevice: true })).toEqual(push);
+    expect(routeFor({ routes: {}, kind: "sync_ok", hasChat: true, hasDevice: true })).toEqual(telegram);
+    expect(routeFor({ routes: {}, kind: "approval_set", hasChat: true, hasDevice: true })).toEqual(both);
   });
 });
 

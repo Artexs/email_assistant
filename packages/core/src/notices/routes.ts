@@ -1,7 +1,6 @@
 import { z } from "../web/zod";
 
-import type { NoticeKind } from "./kinds";
-import { noticeGroupNames, noticeGroupOf, type NoticeGroup } from "./push";
+import { noticeGroupNames, type NoticeGroup } from "./push";
 
 // Which channels a notice goes to. One pure rule: the user picks a channel per group (`memberships.notice_routes`), the code
 // adds what exists (a Telegram link, a live push device). No Node module here.
@@ -68,20 +67,4 @@ export function effectiveRoute(input: EffectiveRouteInput): EffectiveRoute {
   const push = (choice === "push" || choice === "both") && hasDevice;
   if (!telegram && !push) return { telegram: hasChat, push: hasDevice };
   return { telegram, push };
-}
-
-/** The route of one kind: the group of the kind and the stored choice of that group. */
-export function routeOfKind(input: {
-  routes: NoticeRoutes;
-  kind: NoticeKind;
-  hasChat: boolean;
-  hasDevice: boolean;
-}): EffectiveRoute {
-  const group = noticeGroupOf(input.kind);
-  return effectiveRoute({
-    stored: group === null ? undefined : input.routes[group],
-    hasChat: input.hasChat,
-    hasDevice: input.hasDevice,
-    group,
-  });
 }

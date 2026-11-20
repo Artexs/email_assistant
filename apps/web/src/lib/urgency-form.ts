@@ -22,8 +22,6 @@ export interface UrgencyDraft {
   deadlines: DeadlineDraft[];
 }
 
-export const EMPTY_URGENCY_DRAFT: UrgencyDraft = { topics: [], deadlines: [] };
-
 export function draftFromProfile(profile: UrgencyProfile | null): UrgencyDraft {
   if (profile === null) return { topics: [], deadlines: [] };
   return {
