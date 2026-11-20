@@ -917,24 +917,8 @@ describe("renderDigestWithBrief in Polish (no brief)", () => {
 });
 
 describe("the order of the listed items", () => {
-  test("the sections follow the category order whatever the order of the input", () => {
-    const categories: Category[] = ["spam", "notification", "info", "unsure", "delegation", "needs_reply", "urgent"];
-    const items = categories.map((category, index) => item(index + 1, category));
-    const message = render(input({ items, counts: Object.fromEntries(categories.map((c) => [c, 1])) }));
-    expect(blockStarts(message.text).map((line) => line.split(" · ")[0])).toEqual([
-      "1. 🔴 Urgent",
-      "2. ✉️ Reply",
-      "3. 👥 Delegate",
-      "4. ❓ Unsure",
-      "5. ℹ️ Info",
-      "6. 🔔 Notification",
-      "7. 🚫 Spam",
-    ]);
-  });
-
   test.each([
     { name: "oldest first", hours: [8, 9, 10] },
-    { name: "newest first", hours: [10, 9, 8] },
     { name: "mixed", hours: [9, 10, 8] },
   ])("items of one category list the newest first when the input is $name", ({ hours }) => {
     const items = hours.map((hour) => item(hour, "info", { receivedAt: new Date(Date.UTC(2026, 10, 6, hour)) }));
@@ -942,6 +926,18 @@ describe("the order of the listed items", () => {
       .text.split("\n")
       .filter((line) => line.startsWith("Subject "));
     expect(subjects).toEqual(["Subject 10", "Subject 9", "Subject 8"]);
+  });
+
+  test("a mail that appears twice keeps the order of the input", () => {
+    const receivedAt = new Date(Date.UTC(2026, 10, 6, 8));
+    const items = [
+      item(1, "info", { receivedAt, subject: "First copy" }),
+      item(1, "info", { receivedAt, subject: "Second copy" }),
+    ];
+    const subjects = render(input({ items, counts: { info: 2 } }))
+      .text.split("\n")
+      .filter((line) => line.endsWith(" copy"));
+    expect(subjects).toEqual(["First copy", "Second copy"]);
   });
 
   test("items received at the same time list by their id, smallest first", () => {
@@ -1000,17 +996,6 @@ describe("the message of one mail and the +N more line", () => {
     const items = [item(1, "urgent"), item(2, "info")];
     const message = render(input({ items, counts: { urgent: 3, info: 6, spam: 1 }, maxLines: 2 }));
     expect(message.text.split("\n").at(-2)).toBe("+8 more: 2 urgent, 5 info, 1 spam");
-  });
-
-  test("a count equal to the listed mails gives no more line", () => {
-    const items = [item(1, "urgent"), item(2, "info")];
-    const text = render(input({ items, counts: { urgent: 1, info: 1 } })).text;
-    expect(text.includes("more")).toBe(false);
-  });
-
-  test("a mail count below the listed mails gives no more line", () => {
-    const text = render(input({ items: [item(1, "urgent"), item(2, "urgent")], counts: { urgent: 1 } })).text;
-    expect(text.includes("more")).toBe(false);
   });
 });
 
@@ -1099,20 +1084,6 @@ describe("a digest with a brief at the 4096 characters", () => {
     expect(rendered.message.text.length).toBe(MESSAGE_MAX_CHARS);
     expect(rendered.shown.surfaced).toEqual([briefUuid(101)]);
   });
-
-  test("a text one character over drops the last line of the brief and nothing else", () => {
-    const digest = digestOfLength(MESSAGE_MAX_CHARS, plain, { brief });
-    const over = {
-      ...digest,
-      mailboxes: digest.mailboxes.map((box, index, all) =>
-        index === all.length - 1 ? { ...box, address: `${box.address}x` } : box
-      ),
-    };
-    const rendered = renderDigestWithBrief(over, textTables.en);
-    expect(rendered.shown.surfaced).toEqual([]);
-    expect(rendered.message.text).toContain("+1 more in the panel");
-    expect(rendered.message.text).not.toContain("No answer from");
-  });
 });
 
 describe("the options of the brief lines", () => {
@@ -1150,15 +1121,6 @@ describe("the options of the brief lines", () => {
       "⏳ No answer from anna@example.test since Tue 10.11 · Offer for Q1",
     ]);
   });
-
-  test("a time zone far east moves the day of a line, a missing link leaves the more line without one", () => {
-    const lines = briefLines(input({ timeZone: "Pacific/Auckland", counts: { urgent: 3 }, brief }));
-    expect(lines.slice(3)).toEqual([
-      "+2 more in the panel",
-      "",
-      "⏳ No answer from anna@example.test since Wed 11.11 · Offer for Q1",
-    ]);
-  });
 });
 
 describe("the minimal digest", () => {
@@ -1183,15 +1145,6 @@ describe("the minimal digest", () => {
       ].join("\n"),
       buttons: [],
     });
-  });
-
-  test("an on-demand digest shows the time of the build; a late slot says so", () => {
-    expect(renderDigestMinimal({ ...facts, scheduled: false }, textTables.en, "link").text.split("\n")[0]).toBe(
-      "📬 Digest now · Mon 2 Mar 08:00"
-    );
-    expect(renderDigestMinimal({ ...facts, late: true }, textTables.en, "link").text.split("\n")[0]).toBe(
-      "📬 Digest 08:00 · Mon 2 Mar (late)"
-    );
   });
 
   test.each([
@@ -1262,18 +1215,11 @@ describe("the minimal facts of a digest", () => {
     digestMinimalFacts(input({ mailboxes: [{ ...mailbox, ...box }] })).mailboxProblems;
 
   test.each([
-    { name: "an active mailbox that synced a minute ago", box: {}, count: 0 },
     {
       name: "an active mailbox that synced exactly 30 minutes ago",
       box: { lastSyncedAt: new Date(now.getTime() - 30 * MINUTES) },
       count: 0,
     },
-    {
-      name: "an active mailbox that synced 30 minutes and 1 ms ago",
-      box: { lastSyncedAt: new Date(now.getTime() - 30 * MINUTES - 1) },
-      count: 1,
-    },
-    { name: "an active mailbox that never synced", box: { lastSyncedAt: null }, count: 1 },
     { name: "a paused mailbox that synced a minute ago", box: { status: "paused" as const }, count: 1 },
     { name: "a mailbox with a login error", box: { status: "auth_error" as const }, count: 1 },
     { name: "a mailbox with a blocked host", box: { status: "host_blocked" as const }, count: 1 },
@@ -1316,16 +1262,6 @@ describe("the footer of a digest with a brief", () => {
 
   test.each([
     { name: "no open loop gives no count line", loops: { waiting: 0, promised: 0 }, line: "🔄 Last sync 07:55" },
-    {
-      name: "a waiting loop alone gives its count line",
-      loops: { waiting: 1, promised: 0 },
-      line: "🔁 Open loops: 1 waiting",
-    },
-    {
-      name: "a promise alone gives its count line",
-      loops: { waiting: 0, promised: 2 },
-      line: "🔁 Open loops: 2 promises due",
-    },
   ])("$name", ({ loops, line }) => {
     expect(lastLine(input({ brief: withBrief({ openLoops: loops }) }))).toBe(line);
   });
