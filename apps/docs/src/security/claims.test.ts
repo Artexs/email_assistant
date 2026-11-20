@@ -13,7 +13,7 @@ const PAGES = [
   { file: "../content/docs/security.mdx", heading: "## What this product does not promise" },
   { file: "../content/docs/pl/security.mdx", heading: "## Czego ten produkt nie obiecuje" },
 ];
-function readPage({ file }: { file: string }): string {
+function readPage(file: string): string {
   return readFileSync(join(import.meta.dir, file), "utf8");
 }
 
@@ -223,7 +223,7 @@ describe("the public claims of the security page", () => {
       claim.condition?.pl ?? "",
     ]);
     expect(sevenDayLimitProblems(claimTexts)).toEqual([]);
-    for (const file of PAGES) {
+    for (const { file } of PAGES) {
       expect(sevenDayLimitProblems(readPage(file).split("\n"))).toEqual([]);
     }
   });
@@ -239,7 +239,7 @@ describe("the public claims of the security page", () => {
 
   test("the section of what the product does not promise holds no line about the 7-day limit, in either language", () => {
     for (const { file, heading } of PAGES) {
-      const lines = readPage({ file, heading }).split("\n");
+      const lines = readPage(file).split("\n");
       const start = lines.findIndex((line) => line.trim() === heading);
       expect(start).toBeGreaterThanOrEqual(0);
       const rest = lines.slice(start + 1);
