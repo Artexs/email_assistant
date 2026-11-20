@@ -145,11 +145,7 @@ describe("size rule", () => {
 
 describe("size exceptions", () => {
   const exceptionsFile = path.join(repoRoot, "size-exceptions.json");
-  const allowed = [
-    "apps/server/src/modules/delegation/repo.ts",
-    "apps/server/src/scripts/e2e-seed-args.ts",
-    "apps/server/src/scripts/e2e-seed.ts",
-  ];
+  const allowed = ["apps/server/src/scripts/e2e-seed-args.ts", "apps/server/src/scripts/e2e-seed.ts"];
 
   test(
     "the list is a live split plan, or it is gone with its block",
