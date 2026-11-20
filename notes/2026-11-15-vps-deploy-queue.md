@@ -182,6 +182,21 @@ Release N+1 is `v0.4.3` (`a03575252`); rollback target `v0.4.2` (`deploy/rollbac
 - `ea-sim` containers untouched (up 25 h at 19:49Z). Crontab 2 lines (unchanged).
 - Not changed: the DB beyond the release migration (no restore, no `down -v`), `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack (not rebuilt).
 
+## Release v0.4.4 (2026-11-20, 20:52 UTC; job `2026-11-20-f062-release-v0-4-4-with-two-mig-48f50988`): release ok v0.4.4, server env ok
+
+Release N+1 is `v0.4.4` (`fb1df6d64`, "Release v0.4.4"). It holds two migrations: `20261120100001_style_text_copy.sql` (data only: the organization signature `organizations.style_text` moves into the mailbox profiles, then the column is emptied) and `20261120110001_drop_old_cursor_columns.sql` (contract step of v0.4.3: drops `emails.inbox_uid`, `emails.undo_pending_at`, `mailboxes.uidvalidity`, `mailboxes.last_uid` and the trigger `emails_copy_renamed_columns`). Logs on the VPS: `~/ea-logs/f062-release/` (`00-pre-counts.log`, `release.log`, `01-after.log`, `02-watch.log`; `watch.sh` is the v0.4.3 watch script with a new header).
+
+- Rollback: `deploy/rollback.sh` alone goes to `v0.4.3` (no SQL; v0.4.3 names no dropped column). A rollback to `v0.4.2` or older is not possible on this schema: restore the backup `ea-20261120T204545Z.dump.age` that `release.sh` took before the migration (`deploy/README.md` § Synced folders, § Backups). Rollback target now `v0.4.3`.
+- CI: run 44811308593 (workflow CI: ci, image, docs, e2e) on `fb1df6d64` success at 20:45Z; the only workflow on that commit. Tag `git tag -a v0.4.4 -m v0.4.4 fb1df6d64`, pushed 20:45Z; `git ls-remote origin 'refs/tags/v0.4.4^{}'` → `fb1df6d64370…`.
+- Pre-checks (20:27Z): `ea_env_split_state` → `split`; state `current=v0.4.3 previous=v0.4.2 pending=` empty; checkout at `v0.4.3`, `git status` clean; 18 G free. Far from the 03:30 backup cron.
+- Pre counts (`00-pre-counts.log`): organizations with non-null `style_text` 0 (non-blank 0); profiles with a signature 0; mailboxes 1; the four old columns present 4. So the copy migration had nothing to copy: no mailbox signature came from it. The migration prints no row counts (dbmate logs only `Applied: … in 121ms`).
+- Release (20:45:44Z, `nohup bash -c 'deploy/release.sh v0.4.4; echo RELEASE_RC=$?'`): `backup ok ea-20261120T204545Z.dump.age 720439`; `Applying: 20261120100001_style_text_copy.sql` (121 ms), `Applying: 20261120110001_drop_old_cursor_columns.sql` (166 ms); server recreated and healthy 20:52Z; `server env ok keys=38`; old image `ea-server:v0.4.2` untagged; `release ok v0.4.4 previous v0.4.3`; `RELEASE_RC=0`. State now `current=v0.4.4 previous=v0.4.3 pending=` empty; checkout at `v0.4.4`, `git status` clean.
+- After (20:53Z, `01-after.log`): `bash deploy/check-server-env.sh` → `server env ok keys=38`, rc 0. `information_schema.columns` count of the four dropped columns: 0. Organizations with non-null `style_text`: 0. Mailboxes with no INBOX folder row: 0. Triggers on `emails`/`mailboxes`: only `emails_skip_tombstoned`; no function named like `copy` or `neutral` left.
+- Start log: first `sync_done`, `sent_sync_done` and `sync_folder_done` of the new server inside 13 minutes (6, 6, 30), 0 `error`. Warns: the same 5 start-up config warns as v0.4.3 (`actions_scope`, `operator_contact_empty`, `scope_targets`, `send_scope`, `triage_scope`).
+- 30-minute watch (checklist step 10), 20:53:17Z–21:23:37Z (`02-watch.log`, a tick each 5 minutes over `deploy/logs.sh --since 40m`): `EA_RELEASE=v0.4.4`; each of 6 ticks `error_40m=0`, health 200, container `healthy restarts=0`; `sync_done` count grew 3 → 15. Error events in the window: none. Warn events: the 5 start-up warns once each. `ops:alerts` rc 0: only resolved alerts (`slo_backup_age` 2026-11-20 16:35Z–16:45Z and 2026-11-18–19; `slo_sync_lag` 2026-11-17–19). No rollback.
+- `ea-sim` containers untouched (up 27 h at 21:24Z). Crontab 2 lines (unchanged).
+- Not changed: the DB beyond the release migrations (no restore, no `down -v`), `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack (not rebuilt).
+
 ## Demo run for F151 (C1)
 
 Started 2026-11-20 16:36 UTC on the VPS sim stack (`ea-sim`) by `demo-reset --yes`, beside the live lab day run (owner decision 2026-11-20: do not wait for it).
