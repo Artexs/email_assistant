@@ -102,7 +102,10 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 ## Tests
 
 - `apps/server/test/integration/ops-slo-job.test.ts`
-- `apps/server/test/integration/slo-checks.test.ts`
+- `apps/server/test/integration/slo-checks-sync-lag.test.ts`
+- `apps/server/test/integration/slo-checks-urgent.test.ts`
+- `apps/server/test/integration/slo-checks-urgent-quiet.test.ts`
+- `apps/server/test/integration/slo-checks-llm-errors.test.ts`
 - `apps/server/test/integration/ops-alerts-repo.test.ts`
 - `packages/core/src/ops/alert-text.test.ts`
 - `packages/core/src/ops/events.test.ts`
