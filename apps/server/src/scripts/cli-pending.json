@@ -1,9 +1,1 @@
-{
-  "lab": [
-    "apps/server/src/scripts/lab-env-check.ts",
-    "apps/server/src/scripts/lab.ts",
-    "apps/server/src/scripts/sim-compose-check.ts",
-    "apps/server/src/scripts/triage-cost.ts",
-    "apps/server/src/scripts/triage-label.ts"
-  ]
-}
+{}

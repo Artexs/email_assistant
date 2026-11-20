@@ -32,16 +32,13 @@ import {
 } from "../modules/lab";
 import { configureMailHosts, openImapProvider, verifySmtpLogin } from "../modules/mail";
 import { deleteOrganization } from "../modules/privacy";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliSpec } from "../platform/cli";
 import { loadConfig, llmRoleTable, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
-import { parseLabArgs, usage } from "./lab-args";
+import { cliDescriptions, parseLabArgs } from "./lab-args";
 import { runLabCommand } from "./lib/lab-run";
-
-const cli = createCliOutput("lab");
 
 const SCENARIO = "lab-01";
 const SIM_ROOT = resolve(import.meta.dir, "../../../../evals/sim");
@@ -67,16 +64,13 @@ function sleepUnlessAborted(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
-async function main(): Promise<number> {
-  const command = parseLabArgs(process.argv.slice(2));
-  if (!command) {
-    cli.fail(usage);
-    return 1;
-  }
+// Parse first: a bad argument is a usage error (exit 2) before the env guard, the config or the database.
+const main: CliSpec["main"] = async (argv, out) => {
+  const command = parseLabArgs(argv);
 
   const stateDir = process.env.LAB_STATE_DIR ?? "";
   if (!isAbsolute(stateDir)) {
-    cli.fail("refused: LAB_STATE_DIR must be an absolute path");
+    out.fail("refused: LAB_STATE_DIR must be an absolute path");
     return 1;
   }
 
@@ -177,7 +171,7 @@ async function main(): Promise<number> {
               const spend = await spendOf(runId);
               return spend.kind === "unpriced" ? "unpriced" : spend.usd;
             },
-            say: (line) => cli.print(line),
+            say: (line) => out.print(line),
             heartbeat: (status) => writeServeStatus(stateDir, status),
             envIssues: () => labEnvIssues(process.env, corpus),
             takeLock: () => takeServeLock(stateDir),
@@ -189,16 +183,13 @@ async function main(): Promise<number> {
       },
       now: () => new Date(),
       hex4: () => randomUUID().replaceAll("-", "").slice(0, 4),
-      cli,
+      cli: out,
     });
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    cli.fail(describeError(error));
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "lab", descriptions: cliDescriptions, main });
+}
