@@ -317,7 +317,7 @@ describe("delegations", () => {
       // guard: the stored form holds `i` + U+0307, the From does not
       expect(await find("ilker@example.com")).toEqual(expected);
       expect(await find("İLKER@example.com")).toEqual(expected);
-      // pin (02-T9)
+      // pin: another address finds nothing
       expect(await find("other@example.com")).toBeUndefined();
     });
   });
