@@ -159,7 +159,9 @@ describe("the pricing page", () => {
     expect(bodyRows(html)).toEqual(
       costRows().map((row) => [
         String(row.mailsPerDay),
-        ...[row.llmUsd, row.hostingUsd, row.backupUsd, row.totalUsd, row.marginUsd].map((value) => formatUsd(value, "pl")),
+        ...[row.llmUsd, row.hostingUsd, row.backupUsd, row.totalUsd, row.marginUsd].map((value) =>
+          formatUsd(value, "pl")
+        ),
       ])
     );
     const text = pageText(html);

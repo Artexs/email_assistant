@@ -153,7 +153,9 @@ test("F121-03 the pricing page shows the banner, the price and three cost rows, 
   await expectNoA11yViolations(page);
 });
 
-test("F121-05 the Polish security page shows the Polish text of the first claim, and no Gemini text", async ({ page }) => {
+test("F121-05 the Polish security page shows the Polish text of the first claim, and no Gemini text", async ({
+  page,
+}) => {
   await open(page, `${DOCS_BASE}/pl/security/`);
   await expect(page.locator("main h1")).toHaveText("Bezpieczeństwo i dane");
   await expect(page.locator("main tr#claim-never-sends-alone td").first()).toHaveText(publicClaims[0]?.text.pl ?? "");

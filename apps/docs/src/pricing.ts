@@ -55,7 +55,8 @@ export function basisNote(
 }
 
 export const ROUNDING_NOTE = "Each amount is rounded to the cent, so the parts may not add up to the total.";
-export const ROUNDING_NOTE_PL = "Każda kwota jest zaokrąglona do centa, więc części mogą nie sumować się do łącznej kwoty.";
+export const ROUNDING_NOTE_PL =
+  "Każda kwota jest zaokrąglona do centa, więc części mogą nie sumować się do łącznej kwoty.";
 export const roundingNote = (lang: Lang = "en"): string => (lang === "pl" ? ROUNDING_NOTE_PL : ROUNDING_NOTE);
 
 export const hostSizeNote = (lang: Lang = "en"): string =>
