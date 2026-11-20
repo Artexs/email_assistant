@@ -44,6 +44,7 @@ describe("presetForAddress", () => {
   test.each<[string, PresetKey | null]>([
     ["@interia.pl", "interia"],
     ["jan@ interia.pl ", "interia"],
+    ["gmail.com", null],
   ])("%p gives %p", (address, expected) => {
     expect(presetForAddress(address)).toBe(expected);
   });
