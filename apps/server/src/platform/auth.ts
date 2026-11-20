@@ -1,4 +1,4 @@
-import { TERMS_VERSION } from "@ea/core";
+import { HOUR_MS, TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
 import { serialize as serializeCookie } from "hono/utils/cookie";
@@ -302,7 +302,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
 
   const resetLimiter = createAddressLimiter({
     max: 3,
-    windowMs: 3_600_000,
+    windowMs: HOUR_MS,
     now,
   });
 

@@ -71,6 +71,8 @@ import { createLog, installConsoleGuard, setLogFormat, setLogLevel, setLogReleas
 import { installProcessGuard } from "./platform/process-guard";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
+import { createRunTracker } from "./start/runs";
+import { createShutdown } from "./start/shutdown";
 import { webDeps } from "./web";
 
 const log = createLog("main");
@@ -159,6 +161,8 @@ if (config.WEB_BASE_URL !== undefined && config.OPERATOR_CONTACT === undefined) 
 }
 
 const scheduler = createScheduler();
+// The newest run of each job that shutdown waits for.
+const runs = createRunTracker();
 scheduler.add("mail.sync", mailSyncCron(config), mailSync.run);
 log.info("mail_sync_interval", { minutes: Number(config.MAIL_SYNC_EVERY_MIN) });
 scheduler.add("platform.heartbeat", "*/5 * * * *", heartbeat.tick);
@@ -196,11 +200,8 @@ const operator = createOperatorNotices({
   send: operatorSend,
   locale: config.OPERATOR_LOCALE,
 });
-let operatorRun: Promise<void> = Promise.resolve();
-scheduler.add("channels.operator", "0 13 * * * *", () => {
-  operatorRun = operator.run();
-  return operatorRun;
-});
+// prettier-ignore
+scheduler.add("channels.operator", "0 13 * * * *", runs.track("channels.operator", () => operator.run()));
 log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" });
 
 // The service-level alerts. The job runs in every case: with no operator chat the `slo_alert_sent` line is the send.
@@ -218,24 +219,14 @@ const sloChecks: SloCheckEntry[] = [
   // null when BACKUP_STATUS_FILE is empty: the check is off and an open alert of this kind stays as it is.
   { kind: "slo_backup_age", run: (now) => checkBackupAge((path) => readFile(path, "utf8"), now, slo) },
 ];
-let sloRun: Promise<void> = Promise.resolve();
-scheduler.add("ops.slo", "30 */5 * * * *", () => {
-  sloRun = runSloTick(
+// prettier-ignore
+scheduler.add("ops.slo", "30 */5 * * * *", runs.track("ops.slo", () =>
+  runSloTick(
     { db, checks: sloChecks, send: operatorSend, cfg: slo, log, locale: config.OPERATOR_LOCALE },
     new Date()
-  );
-  return sloRun;
-});
+  )
+));
 
-// The run of the triage worker that is going now. Shutdown waits for it.
-let triageRun: Promise<void> = Promise.resolve();
-let loopsAnalyzeRun: Promise<void> = Promise.resolve();
-let repliesDrafterRun: Promise<void> = Promise.resolve();
-let repliesSweepRun: Promise<void> = Promise.resolve();
-let historyRun: Promise<void> = Promise.resolve();
-let tripwireRun: Promise<void> = Promise.resolve();
-let loopsMatchRun: Promise<void> = Promise.resolve();
-let contactsRefreshRun: Promise<void> = Promise.resolve();
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process.
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
 // The style preview of the reply drafts: it needs the model client, so it exists only while the LLM scope is on.
@@ -267,11 +258,8 @@ try {
   await db.destroy().catch(() => undefined);
   process.exit(1);
 }
-let regateRun: Promise<void> = Promise.resolve();
-scheduler.add("trust.regate", "20 */5 * * * *", () => {
-  regateRun = regateAll({ ...regateDeps, run: "job" }, new Date()).then(() => undefined);
-  return regateRun;
-});
+const regateJob = () => regateAll({ ...regateDeps, run: "job" }, new Date()).then(() => undefined);
+scheduler.add("trust.regate", "20 */5 * * * *", runs.track("trust.regate", regateJob));
 log.info("job_scheduled", { job: "trust.regate" });
 if (scope !== null) {
   log.info("llm_settings", { ...llmEndpointFields(llmTable, "classifier") });
@@ -292,10 +280,8 @@ if (scope !== null) {
     readProfile: senderProfileReader({ db, credentialsKey: config.CREDENTIALS_KEY, now: () => new Date() }),
     onCapReached: (ctx, mailboxId, dayStart) => operator.capReached(ctx, mailboxId, dayStart, config.LLM_DAILY_CAP),
   });
-  scheduler.add("triage.worker", "*/15 * * * * *", () => {
-    triageRun = triage.run();
-    return triageRun;
-  });
+  // prettier-ignore
+  scheduler.add("triage.worker", "*/15 * * * * *", runs.track("triage.worker", () => triage.run()));
   // The history check of the trust ladder: it reads mail, classifies a sample with the model client and the pause of the triage worker, and writes the checks.
   const history = createHistoryJob({
     db,
@@ -313,10 +299,8 @@ if (scope !== null) {
     ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
     now: () => new Date(),
   });
-  scheduler.add("trust.history", "*/15 * * * * *", () => {
-    historyRun = history.run();
-    return historyRun;
-  });
+  // prettier-ignore
+  scheduler.add("trust.history", "*/15 * * * * *", runs.track("trust.history", () => history.run()));
   log.info("job_scheduled", { job: "trust.history" });
   // The Sent analysis of the open loops uses the same model client and the same scope: with the scope off, no mail goes out.
   const loopJobs = createLoopJobs({
@@ -327,10 +311,8 @@ if (scope !== null) {
     scope,
     now: () => new Date(),
   });
-  scheduler.add("loops.analyze", "35 * * * * *", () => {
-    loopsAnalyzeRun = loopJobs.analyze.run().then(() => undefined);
-    return loopsAnalyzeRun;
-  });
+  // prettier-ignore
+  scheduler.add("loops.analyze", "35 * * * * *", runs.track("loops.analyze", () => loopJobs.analyze.run().then(() => undefined)));
   log.info("job_scheduled", { job: "loops.analyze" });
   // The reply drafter: it scans triaged `needs_reply` mail, claims the requests and writes a draft that waits for one tap. It never
   // sends. It has its own LLM pause, the same model client and the same scope: with the scope off, no mail goes out.
@@ -354,10 +336,8 @@ if (scope !== null) {
   });
   // The sample drafts are queued for the drafter job above, so they follow its scope: with `synthetic` only test mail is a candidate.
   replySamples = replySampleScope(scope, () => new Date());
-  scheduler.add("replies.drafter", "*/15 * * * * *", () => {
-    repliesDrafterRun = replyJobs.drafter.run().then(() => undefined);
-    return repliesDrafterRun;
-  });
+  // prettier-ignore
+  scheduler.add("replies.drafter", "*/15 * * * * *", runs.track("replies.drafter", () => replyJobs.drafter.run().then(() => undefined)));
   log.info("job_scheduled", { job: "replies.drafter" });
 }
 // The tripwire of the trust ladder: a category whose moves the user corrects loses its `auto`. It reads corrections and checks, not
@@ -369,17 +349,13 @@ const tripwire = createTripwireJob({
   ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
   now: () => new Date(),
 });
-scheduler.add("trust.tripwire", "0 * * * * *", () => {
-  tripwireRun = tripwire.run();
-  return tripwireRun;
-});
+// prettier-ignore
+scheduler.add("trust.tripwire", "0 * * * * *", runs.track("trust.tripwire", () => tripwire.run()));
 log.info("job_scheduled", { job: "trust.tripwire" });
 // The close rules need no model: they run with the scope off too, so a reply still closes its loop.
 const loopMatch = createLoopMatchJob({ db, now: () => new Date() });
-scheduler.add("loops.match", "50 */2 * * * *", () => {
-  loopsMatchRun = loopMatch.run().then(() => undefined);
-  return loopsMatchRun;
-});
+// prettier-ignore
+scheduler.add("loops.match", "50 */2 * * * *", runs.track("loops.match", () => loopMatch.run().then(() => undefined)));
 log.info("job_scheduled", { job: "loops.match" });
 // The sender profiles: one recompute of each active mailbox with the flag `sender_context` on, hourly at minute 7. It reads the
 // database only and calls no model, so it runs with the scope off too.
@@ -389,10 +365,8 @@ const contactsRefresh = createContactsRefreshJob({
   testMail: testMailRule(config),
   now: () => new Date(),
 });
-scheduler.add("contacts.refresh", "0 7 * * * *", () => {
-  contactsRefreshRun = contactsRefresh.run().then(() => undefined);
-  return contactsRefreshRun;
-});
+// prettier-ignore
+scheduler.add("contacts.refresh", "0 7 * * * *", runs.track("contacts.refresh", () => contactsRefresh.run().then(() => undefined)));
 log.info("job_scheduled", { job: "contacts.refresh" });
 // The sweep of the reply drafts: it closes an open reply whose mail was answered, left its folder or got a newer mail in its thread. It
 // reads the database only and calls no model and no mailbox, so it runs with the scope off too.
@@ -403,17 +377,10 @@ const replySweep = createReplySweep({
   uidplus,
   now: () => new Date(),
 });
-scheduler.add("replies.sweep", "40 */5 * * * *", () => {
-  repliesSweepRun = replySweep.run().then(() => undefined);
-  return repliesSweepRun;
-});
+// prettier-ignore
+scheduler.add("replies.sweep", "40 */5 * * * *", runs.track("replies.sweep", () => replySweep.run().then(() => undefined)));
 log.info("job_scheduled", { job: "replies.sweep" });
 
-// The runs of the committer, the returned job and the send jobs that are going now. Shutdown waits for them.
-let committerRun: Promise<void> = Promise.resolve();
-let returnedRun: Promise<void> = Promise.resolve();
-let expiryRun: Promise<void> = Promise.resolve();
-let chaserRun: Promise<void> = Promise.resolve();
 const scopeOfActions = actionsScope(config);
 const limitsOfSends = sendLimits(config);
 log.info("send_limits", {
@@ -433,43 +400,27 @@ const committer = createCommitterJob(
     onSendLimited: (ctx, hit) => operator.sendLimitReached(ctx, hit),
   })
 );
-scheduler.add("actions.committer", "*/15 * * * * *", () => {
-  committerRun = committer.run();
-  return committerRun;
-});
+// prettier-ignore
+scheduler.add("actions.committer", "*/15 * * * * *", runs.track("actions.committer", () => committer.run()));
 const expiry = createExpiryJob({ db, now: () => new Date(), hooks, uidplus });
-scheduler.add("actions.expiry", "0 7 * * * *", () => {
-  expiryRun = expiry.run();
-  return expiryRun;
-});
+// prettier-ignore
+scheduler.add("actions.expiry", "0 7 * * * *", runs.track("actions.expiry", () => expiry.run()));
 log.info("job_scheduled", { job: "actions.expiry" });
 // The one chaser (delegation reminders, loop follow-ups, stale and expired loops). It replaces `delegation.chaser`.
 const chaser = createLoopChaserJob({ db, now: () => new Date() });
-scheduler.add("loops.chaser", "20 */15 * * * *", () => {
-  chaserRun = chaser.run().then(() => undefined);
-  return chaserRun;
-});
+// prettier-ignore
+scheduler.add("loops.chaser", "20 */15 * * * *", runs.track("loops.chaser", () => chaser.run().then(() => undefined)));
 log.info("job_scheduled", { job: "loops.chaser" });
 const returned = createReturnedJob({ db, now: () => new Date() });
-scheduler.add("triage.returned", "*/15 * * * * *", () => {
-  returnedRun = returned.run();
-  return returnedRun;
-});
+// prettier-ignore
+scheduler.add("triage.returned", "*/15 * * * * *", runs.track("triage.returned", () => returned.run()));
 
-// The daily retention run. Shutdown waits for it.
-let retentionRun: Promise<void> = Promise.resolve();
+// The daily retention run.
 const retention = createRetentionJob({ db, now: () => new Date() });
-scheduler.add("platform.retention", "0 40 2 * * *", () => {
-  retentionRun = retention.run();
-  return retentionRun;
-});
+// prettier-ignore
+scheduler.add("platform.retention", "0 40 2 * * *", runs.track("platform.retention", () => retention.run()));
 log.info("job_scheduled", { job: "platform.retention" });
 
-// The runs of the notifier and the digest job that are going now. Shutdown waits for them.
-let channelRun: Promise<void> = Promise.resolve();
-let digestRun: Promise<void> = Promise.resolve();
-let reportMailRun: Promise<void> = Promise.resolve();
-let pushRun: Promise<void> = Promise.resolve();
 // The report mail sender (ADR 0022): it APPENDs the `mail` rows into the user's own INBOX. It runs with or without the
 // Telegram runtime, because a mail-only member needs no bot. It never sends: no SMTP sender is built for it. Rows exist only when the flag
 // `report_mail` is on, and the sender checks the flag again before each APPEND.
@@ -485,10 +436,8 @@ const reportMail = createReportMailSender({
   now: () => new Date(),
   ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
 });
-scheduler.add("channels.report_mail", "*/15 * * * * *", () => {
-  reportMailRun = reportMail.run();
-  return reportMailRun;
-});
+// prettier-ignore
+scheduler.add("channels.report_mail", "*/15 * * * * *", runs.track("channels.report_mail", () => reportMail.run()));
 log.info("job_scheduled", { job: "channels.report_mail" });
 // The push sender (E9b, ADR 0032): the `push` rows of the outbox go to the browsers of the members as Web Push messages. It needs the VAPID keys
 // and no Telegram bot: a push-only member has none. Without the keys the job does not exist and the rows would wait (they exist
@@ -499,10 +448,8 @@ if (pushKeys === null) {
   log.info("push_off");
 } else {
   const pushSender = createPushSender({ db, box: secrets, keys: pushKeys, fetch, now: () => new Date() });
-  scheduler.add("channels.push", "*/15 * * * * *", () => {
-    pushRun = pushSender.run();
-    return pushRun;
-  });
+  // prettier-ignore
+  scheduler.add("channels.push", "*/15 * * * * *", runs.track("channels.push", () => pushSender.run()));
   log.info("job_scheduled", { job: "channels.push" });
 }
 if (config.TELEGRAM_BOT_TOKEN === undefined) {
@@ -532,14 +479,10 @@ if (config.TELEGRAM_BOT_TOKEN === undefined) {
     ...(config.WEB_BASE_URL === undefined ? {} : { webBaseUrl: config.WEB_BASE_URL }),
   });
   telegram = runtime;
-  scheduler.add("channels.notifier", "*/15 * * * * *", () => {
-    channelRun = runtime.notify();
-    return channelRun;
-  });
-  scheduler.add("channels.digest", "5 * * * * *", () => {
-    digestRun = runtime.scheduleDigests();
-    return digestRun;
-  });
+  // prettier-ignore
+  scheduler.add("channels.notifier", "*/15 * * * * *", runs.track("channels.notifier", () => runtime.notify()));
+  // prettier-ignore
+  scheduler.add("channels.digest", "5 * * * * *", runs.track("channels.digest", () => runtime.scheduleDigests()));
   runtime.startPolling();
 }
 void heartbeat.tick();
@@ -560,53 +503,24 @@ const app = createApp({ checkDb: () => checkDb(db), web });
 // idleTimeout: the connect route runs a mailbox login inside the request; Bun's default is 10 s.
 const server = Bun.serve({ port: config.PORT, idleTimeout: 90, fetch: app.fetch });
 
-const SHUTDOWN_WAIT_MS = 30_000;
-// bot.stop() can wait for the network.
-const TELEGRAM_STOP_WAIT_MS = 10_000;
-
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-let stopping = false;
-
-async function shutdown(): Promise<void> {
-  if (stopping) return;
-  stopping = true;
-  scheduler.stop();
-  // Together with the wait below the sum stays under stop_grace_period (45 s).
-  if (telegram !== null) {
-    await Promise.race([telegram.stop().catch(() => undefined), sleep(TELEGRAM_STOP_WAIT_MS)]);
-  }
-  // A kill in the middle of a batch makes the next start count an attempt for each claimed mail. Wait for the batch, but not for ever.
-  await Promise.race([
-    Promise.allSettled([
-      triageRun,
-      loopsAnalyzeRun,
-      repliesDrafterRun,
-      repliesSweepRun,
-      historyRun,
-      regateRun,
-      tripwireRun,
-      loopsMatchRun,
-      contactsRefreshRun,
-      committerRun,
-      returnedRun,
-      expiryRun,
-      chaserRun,
-      channelRun,
-      digestRun,
-      reportMailRun,
-      pushRun,
-      operatorRun,
-      sloRun,
-      retentionRun,
-    ]),
-    sleep(SHUTDOWN_WAIT_MS),
-  ]);
-  await server.stop();
-  await web?.close();
-  await db.destroy();
-  process.exit(0);
-}
+// The steps are read at shutdown time: `telegram` is set late and must be seen as it is then.
+const shutdown = createShutdown(() => {
+  const runtime = telegram;
+  return {
+    stopScheduler: () => scheduler.stop(),
+    stopTelegram: runtime === null ? null : () => runtime.stop(),
+    settled: () => runs.settled(),
+    stopServer: () => server.stop(),
+    closeWeb: async () => {
+      await web?.close();
+    },
+    destroyDb: () => db.destroy(),
+    exit: (code) => process.exit(code),
+    sleep,
+  };
+});
 
 process.on("SIGTERM", () => void shutdown());
 process.on("SIGINT", () => void shutdown());

@@ -1,10 +1,11 @@
+import { DAY_MS, HOUR_MS } from "@ea/core";
+
 import { auditEvents, recordAudit } from "../../modules/audit";
 import type { Db, TenantContext } from "../../platform/db";
 import { E2E_LOOPS_OLD_CONSENT, E2E_LOOPS_SUBJECTS } from "../e2e-seed-args";
 
 import { insertMails, inTransaction } from "./e2e-activity-rows";
 
-const HOUR = 60 * 60_000;
 const FIRST_UID = 930_001;
 
 export interface LoopsSeedIds {
@@ -27,7 +28,7 @@ export async function seedLoopsRows(
     const [replyEmailId] = await insertMails(trx, ctx, mailboxId, [
       {
         uid: FIRST_UID,
-        receivedAt: ago(2 * HOUR),
+        receivedAt: ago(2 * HOUR_MS),
         subject: E2E_LOOPS_SUBJECTS.reply,
         from: "anna@e2e.test",
         category: "needs_reply",
@@ -38,7 +39,7 @@ export async function seedLoopsRows(
       },
       {
         uid: FIRST_UID + 1,
-        receivedAt: ago(3 * HOUR),
+        receivedAt: ago(3 * HOUR_MS),
         subject: E2E_LOOPS_SUBJECTS.unsure,
         from: "boss@e2e.test",
         category: "unsure",
@@ -49,7 +50,7 @@ export async function seedLoopsRows(
       },
       {
         uid: FIRST_UID + 2,
-        receivedAt: ago(4 * HOUR),
+        receivedAt: ago(4 * HOUR_MS),
         subject: E2E_LOOPS_SUBJECTS.newsletter,
         from: "news@e2e.test",
         category: "info",
@@ -72,14 +73,14 @@ export async function seedLoopsRows(
         user_id: ownerId,
         channel: "telegram",
         external_chat_id: chatId,
-        linked_at: ago(24 * HOUR),
+        linked_at: ago(DAY_MS),
       })
       .execute();
     await recordAudit(trx, ctx, {
       event: auditEvents.webTelegramConsent,
       actor: ownerId,
       data: { via: "web", version: E2E_LOOPS_OLD_CONSENT },
-      at: ago(24 * HOUR),
+      at: ago(DAY_MS),
     });
     return { replyEmailId };
   });

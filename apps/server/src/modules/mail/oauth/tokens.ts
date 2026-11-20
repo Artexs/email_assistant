@@ -1,3 +1,5 @@
+import { MINUTE_MS } from "@ea/core";
+
 import type { SecretBox } from "../../../platform/crypto";
 import type { Db, TenantContext } from "../../../platform/db";
 import { SoftError } from "../../../platform/errors";
@@ -15,7 +17,7 @@ import { readOAuthSecret, saveOAuthSecret, withMailboxOAuthLock } from "./secret
 const log = createLog("mail");
 
 /** A cached token is used only while at least this much of its life is left. */
-export const TOKEN_MIN_LEFT_MS = 5 * 60_000;
+export const TOKEN_MIN_LEFT_MS = 5 * MINUTE_MS;
 
 export interface OAuthTokensDeps {
   /** The pool. The refresh opens its own transaction on it (`withMailboxOAuthLock`), never inside the caller's one. */

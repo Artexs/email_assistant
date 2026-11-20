@@ -1,4 +1,4 @@
-import type { SmtpSecurity } from "@ea/core";
+import { MINUTE_MS, type SmtpSecurity } from "@ea/core";
 import { createTransport, type SMTPTransportOptions } from "nodemailer";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
 import XOAuth2 from "nodemailer/lib/xoauth2";
@@ -309,7 +309,7 @@ export async function openSmtpSender(
         name: "ea-mail",
         connectionTimeout: 30_000,
         greetingTimeout: 30_000,
-        socketTimeout: 60_000,
+        socketTimeout: MINUTE_MS,
         transactionLog: true,
         logger,
       });
