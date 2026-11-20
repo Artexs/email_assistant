@@ -1,6 +1,6 @@
-# F151 stage 06 — Shots from the export, docs and owner gates
+# F151 stage 07 — Shots from the export, docs and owner gates
 
-Needs stage 05: the `uploadVerdict` lines and the README result line. Needs coordinator step C1: the export file.
+Needs stage 06: the `uploadVerdict` lines and the README result line. Needs coordinator step C1: the export file.
 
 Part of [`../plan.md`](../plan.md). Decisions P4, P6, D10.
 
@@ -11,7 +11,7 @@ The docs shots are made once from the export and pass every check. The owner gat
 ## Step 1 — shots from the export
 
 Run the shots with the export (Proof). The shot code needs no change (P6). A failure is a finding:
-- `public_content <rule> <match> in shot <name>` on demo-week text: stop and ask (stage 05 rule); no allow-list entry.
+- `public_content <rule> <match> in shot <name>` on demo-week text: stop and ask (stage 06 rule); no allow-list entry.
 - a shot that differs because mailbox A is paused: the demo alt texts (`DEMO_SHOTS`) already say "demo organization"; fix only an alt text that is now false.
 
 Record in the note (step 3) the size of the export in bytes and the result line of the run. Never copy the export into the repo.
@@ -28,7 +28,7 @@ Record in the note (step 3) the size of the export in bytes and the result line 
 Append a section "F151" to `notes/2026-11-20-f121-close-out.md`:
 - What the video shows now: all eight steps live, the model answers replayed from the demo week (Q2), the global proof from the real gate file (Q1).
 - G2: the export size and "under 5 MB: yes|no"; the command; "a commit to the public repo cannot be taken back".
-- G3: the verdict of the stage 05 run; what makes it an upload candidate (a final gate file, then a new take); the upload and pin steps stay as in F121's text.
+- G3: the verdict of the stage 06 run; what makes it an upload candidate (a final gate file, then a new take); the upload and pin steps stay as in F121's text.
 - C2: drop `f121_demo` at close; a new take later needs a new `*_demo` database.
 
 ## Decisions
@@ -46,7 +46,7 @@ No new unit test: this stage changes docs and runs the shots. The shots run is t
 ## Proof
 
 ```
-mkdir -p /tmp/f151-s06 && DEMO_SEED_FILE="$HOME/.local/share/email-assistant/demo/demo-seed-day5.json" bun run docs:shots > /tmp/f151-s06/shots.log 2>&1 && DEMO_SEED_FILE="$HOME/.local/share/email-assistant/demo/demo-seed-day5.json" DOCS_SHOTS=on bun run docs:build > /tmp/f151-s06/docs.log 2>&1 && echo SHOTS_OK
+mkdir -p /tmp/f151-s07 && DEMO_SEED_FILE="$HOME/.local/share/email-assistant/demo/demo-seed-day5.json" bun run docs:shots > /tmp/f151-s07/shots.log 2>&1 && DEMO_SEED_FILE="$HOME/.local/share/email-assistant/demo/demo-seed-day5.json" DOCS_SHOTS=on bun run docs:build > /tmp/f151-s07/docs.log 2>&1 && echo SHOTS_OK
 ```
 
 Use `flock /tmp/email-assistant-shared-tests.lock` before each command while `CLAUDE.md` still names the lock for `docs:shots`. Then the last line of `bun run check:job`.

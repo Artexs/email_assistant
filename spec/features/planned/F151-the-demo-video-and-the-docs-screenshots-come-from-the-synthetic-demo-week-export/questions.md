@@ -26,4 +26,4 @@ The imported mailbox stays `paused` (the import has no password). The Mailboxes 
 
 ## Q5 [minor] Off-camera product settings of the demo organization
 
-The setup turns on `user_quiet_hours` and sets no quiet hours for the owner, so a take at night still gets the urgent notice; it links the owner to the fake Telegram chat, so the bot's welcome texts are in the chat that step 5 shows. Default: accept both. Option: refuse takes between 22:00 and 07:00 Warsaw instead of the flag.
+The setup turns on `user_quiet_hours` and sets no quiet hours for the owner, so a take at night still gets the urgent notice. It turns `auto` off on the imported mailbox, so the re-gate sends no `autonomy_paused` notice. It links the owner to the fake Telegram chat, so the bot's welcome texts, the trust report and the approval card are in the chat that step 5 shows. Default: accept all. Option: refuse takes between 22:00 and 07:00 Warsaw instead of the flag.

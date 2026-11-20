@@ -6,9 +6,9 @@ Part of [`../plan.md`](../plan.md). Decisions P2, P5, D9.
 
 ## Goal
 
-The video keeps only the steps: the time between two steps (the product working off camera) is cut. Each step has its live flag and caption per source. The e2e video stays as it is now.
+The video keeps only the steps: the time between two steps (the product working off camera) is cut. Each step has its live flag and caption per source. The e2e steps keep their content; the cut applies to both sources (back-to-back e2e steps have no gap of 1 s, so nothing is cut there).
 
-## Interfaces (stage 05 uses these names)
+## Interfaces (stage 06 uses these names)
 
 - `type DemoSource = "e2e" | "demo"`.
 - `DEMO_STEPS`: each step keeps `id` and `seconds`; `live` and `caption` become `Record<DemoSource, boolean>` and `Record<DemoSource, DemoText>`.
@@ -56,4 +56,4 @@ Break check: make `cutPlan` keep the 999 ms rule at `>` instead of `>=`; test 2 
 
 ## Out of scope
 
-- The demo-source steps in the spec (stage 05). A run of `demo:record` (stage 05).
+- The demo-source steps in the spec and a run of `demo:record` (stage 06).
