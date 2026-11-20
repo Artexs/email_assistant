@@ -18,6 +18,7 @@ const classifierUsage: LlmUsage = {
   tokensOut: 20,
   latencyMs: 50,
   endpoint: "standard",
+  provider: "openai" as const,
 };
 
 const allTwos = {
@@ -63,6 +64,7 @@ function routedLlm(scripts: { classifier: Step[]; judge: Step[] }) {
   const llm: LlmClient = {
     modelOf: () => "fake",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const role = req.role as "classifier" | "judge";
       const script = scripts[role];
@@ -339,6 +341,7 @@ describe("judgeReplyDraft", () => {
     const llm: LlmClient = {
       modelOf: () => "fake",
       endpointOf: () => "standard",
+      providerOf: () => "openai",
       async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
         prompts.push(req.prompt);
         return { data: replyAnswer as T, usage: { ...classifierUsage, role: "judge", promptVersion: "judge-v1" } };
@@ -364,6 +367,7 @@ describe("judgeReplyDraft", () => {
     const llm: LlmClient = {
       modelOf: () => "fake",
       endpointOf: () => "standard",
+      providerOf: () => "openai",
       async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
         prompts.push(req.prompt);
         return { data: replyAnswer as T, usage: { ...classifierUsage, role: "judge", promptVersion: "judge-v3" } };

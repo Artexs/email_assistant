@@ -1,8 +1,15 @@
-import { costPerMail, DEFAULT_MAILS_PER_DAY, type LlmEndpointKind, llmPrices, monthlyCost } from "@ea/core";
+import {
+  costPerMail,
+  DEFAULT_MAILS_PER_DAY,
+  type LlmEndpointKind,
+  type LlmProviderId,
+  llmPrices,
+  monthlyCost,
+} from "@ea/core";
 
 import type { UsageRow } from "../modules/triage";
 
-// The pure part of `triage:cost`: the report lines of one (model, endpoint) group. No I/O.
+// The pure part of `triage:cost`: the report lines of one (provider, model, endpoint) group. No I/O.
 
 function percentile(sorted: number[], p: number): number | null {
   if (sorted.length === 0) return null;
@@ -26,14 +33,20 @@ function nonNull(values: (number | null)[]): number[] {
   return values.filter((v): v is number => v !== null);
 }
 
-/** Groups rows by model and endpoint, in the order of first sight. */
-export function groupUsage(
-  rows: readonly UsageRow[]
-): { model: string; endpoint: LlmEndpointKind; rows: UsageRow[] }[] {
-  const groups = new Map<string, { model: string; endpoint: LlmEndpointKind; rows: UsageRow[] }>();
+export interface UsageGroup {
+  /** `null`: the rows have no provider (written before the provider was logged). */
+  provider: LlmProviderId | null;
+  model: string;
+  endpoint: LlmEndpointKind;
+  rows: UsageRow[];
+}
+
+/** Groups rows by provider, model and endpoint, in the order of first sight. */
+export function groupUsage(rows: readonly UsageRow[]): UsageGroup[] {
+  const groups = new Map<string, UsageGroup>();
   for (const row of rows) {
-    const key = `${row.endpoint}\u0000${row.model}`;
-    const group = groups.get(key) ?? { model: row.model, endpoint: row.endpoint, rows: [] };
+    const key = `${row.provider ?? ""}\u0000${row.endpoint}\u0000${row.model}`;
+    const group = groups.get(key) ?? { provider: row.provider, model: row.model, endpoint: row.endpoint, rows: [] };
     group.rows.push(row);
     groups.set(key, group);
   }
@@ -41,12 +54,7 @@ export function groupUsage(
 }
 
 /** Each row is priced at the rate of its own endpoint: an EU row at the EU rate, an own row at 0. */
-export function modelReportLines(
-  model: string,
-  endpoint: LlmEndpointKind,
-  rows: readonly UsageRow[],
-  days: number
-): string[] {
+export function modelReportLines({ provider, model, endpoint, rows }: UsageGroup, days: number): string[] {
   // Latency comes from stored results only: the latency of an error `llm.call` row includes the rate-limiter wait.
   const latencies = nonNull(rows.map((r) => r.latency_ms)).sort((a, b) => a - b);
   const costs = nonNull(
@@ -57,7 +65,7 @@ export function modelReportLines(
 
   const lines = [
     "",
-    `model ${model} endpoint ${endpoint}`,
+    `provider ${provider ?? "-"} model ${model} endpoint ${endpoint}`,
     `  LLM results: ${rows.length}`,
     `  LLM results per day (observed, over ${days} days): ${perDay.toFixed(2)}`,
     `  average tokens in / out: ${num(average(nonNull(rows.map((r) => r.tokens_in))))} / ${num(average(nonNull(rows.map((r) => r.tokens_out))))}`,

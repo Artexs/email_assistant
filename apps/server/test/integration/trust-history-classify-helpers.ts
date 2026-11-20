@@ -143,6 +143,7 @@ export function fakeLlm(
     calls,
     modelOf: () => opts.model ?? MODEL,
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate(req) {
       calls.push({ prompt: req.prompt });
       const failure = opts.fail?.(calls.length);
@@ -166,6 +167,7 @@ export function fakeLlm(
           tokensOut: 0,
           latencyMs: opts.delayMs ?? 1,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

@@ -51,6 +51,7 @@ function fakeLlm(category: Category, delegateId: string | null = null): FakeLlm 
     calls: 0,
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate(req) {
       llm.calls += 1;
       const answer = {
@@ -77,6 +78,7 @@ function fakeLlm(category: Category, delegateId: string | null = null): FakeLlm 
           tokensOut: 20,
           latencyMs: 300,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

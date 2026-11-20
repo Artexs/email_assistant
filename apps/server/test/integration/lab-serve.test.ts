@@ -204,6 +204,7 @@ async function llmCall(trx: Transaction<DB>, org: { orgId: string; mailboxId: st
       promptVersion: "test",
       model: MODEL,
       endpoint: "standard",
+      provider: "openai" as const,
       outcome: "ok",
       tokensIn: 1000,
       tokensOut: 200,

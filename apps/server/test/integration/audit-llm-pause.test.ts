@@ -27,6 +27,7 @@ async function call(trx: Transaction<DB>, a: { orgId: string; mailboxId: string 
       promptVersion: "test",
       model: "test-model",
       endpoint: "standard",
+      provider: "openai" as const,
       outcome,
       tokensIn: null,
       tokensOut: null,

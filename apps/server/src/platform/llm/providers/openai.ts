@@ -4,9 +4,11 @@ import type { ResponseCreateParamsNonStreaming } from "openai/resources/response
 import type { ReasoningEffort } from "openai/resources/shared";
 
 import type { GenerateFn, GenerateRequest, GenerateResult } from "../client";
-import { DEFAULT_OPENAI_BASE_URL, isOpenAiHost } from "../endpoint";
 import { isNetworkError, isRecord, LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 import type { ConfigCode, SoftCode } from "../errors";
+
+import { DEFAULT_OPENAI_BASE_URL, isOpenAiHost } from "./endpoint";
+import { checkOpenAiEnv, openAiSettings, openaiEnvShape } from "./openai-env";
 
 import type { LlmProvider } from "./index";
 
@@ -212,6 +214,10 @@ export const openaiProvider = {
   defaults: { timeoutMs: 30000, rpm: 60 },
   realMail: true,
   removedEnvKeys: ["OPENAI_MODEL_CLASSIFIER", "OPENAI_REASONING_EFFORT"] as const,
+  envShape: openaiEnvShape,
+  ownModelKey: "OPENAI_OWN_MODEL" as const,
+  check: checkOpenAiEnv,
+  settings: openAiSettings,
   // A null base URL only comes from a hand-made table: it takes the default, never the env of the SDK.
   createGenerate: (opts) => createOpenAiGenerate({ ...opts, baseUrl: opts.baseUrl ?? DEFAULT_OPENAI_BASE_URL }),
   classifyError: classifyOpenAiError,
