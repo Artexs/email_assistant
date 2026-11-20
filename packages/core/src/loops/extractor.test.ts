@@ -66,6 +66,16 @@ describe("sentSkipReason", () => {
     expect(sentSkipReason({ ...base, to: manyTo, cc: manyCc })).toBe("too_many");
   });
 
+  test("04-T1: own addresses and recipients compare by the one address rule (padding, case)", () => {
+    expect(sentSkipReason({ ...base, ownAddresses: ["Boss@Example.com"], to: [" boss@example.com"], cc: [] })).toBe(
+      "own_only"
+    );
+    // The dotted capital I and the final sigma fold the same way on both sides.
+    expect(sentSkipReason({ ...base, ownAddresses: ["νίκοσ@example.gr"], to: ["ΝΊΚΟΣ@example.gr"], cc: [] })).toBe(
+      "own_only"
+    );
+  });
+
   test("a mix of own and other addresses is not own_only", () => {
     expect(sentSkipReason({ ...base, to: ["boss@corp.example", "anna@example.com"] })).toBeNull();
   });

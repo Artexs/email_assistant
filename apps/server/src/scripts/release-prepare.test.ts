@@ -8,13 +8,11 @@ import { parseReleasePrepareArgs } from "./release-prepare-args";
 import { isGreaterVersion } from "./release-prepare-lib";
 
 const script = join(import.meta.dir, "release-prepare.ts");
-const root = join(tmpdir(), "f114-s06");
 let work = "";
 let counter = 0;
 
 beforeAll(() => {
-  mkdirSync(root, { recursive: true });
-  work = mkdtempSync(join(root, "prepare-"));
+  work = mkdtempSync(join(tmpdir(), "f114-s06-prepare-"));
 });
 afterAll(() => {
   rmSync(work, { recursive: true, force: true });
