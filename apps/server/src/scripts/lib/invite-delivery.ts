@@ -2,7 +2,7 @@ import type { UserLocale } from "@ea/core";
 
 import { createAuth } from "../../platform/auth";
 import { createAuthMailer } from "../../platform/auth-mail";
-import type { CliOutput } from "../../platform/cli";
+import type { CliRawOutput } from "../../platform/cli";
 import { authMailSettings, type Config, webTrustedOrigins } from "../../platform/config";
 import type { Db } from "../../platform/db";
 import { auditWebEvent, termsAcceptedHandler } from "../../web";
@@ -17,7 +17,7 @@ export interface InviteDeliveryInput {
   locale: UserLocale;
   /** --print: print even when the sender is on. */
   print: boolean;
-  out: CliOutput;
+  out: CliRawOutput;
 }
 
 /** Makes a 24 h setup link, then mails it (sender on, no --print) or prints it to stdout. Returns the exit code. The link never goes to the log. */
@@ -63,7 +63,7 @@ export async function deliverInvite(input: InviteDeliveryInput): Promise<number>
       return 0;
     }
 
-    process.stdout.write(
+    out.write(
       [
         "Open this link within 24 hours:",
         link,

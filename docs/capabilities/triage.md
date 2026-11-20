@@ -131,7 +131,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 | function | `listAnsweredCandidates`, `countAnsweredWaiting`, `answerAnsweredCheck`                                                               | `apps/server/src/modules/triage/answered-check.ts`     |
 | function | `createLlmPause`                                                                                                                      | `apps/server/src/modules/triage/pause.ts`              |
 | function | `goNoGoFor`, `setCategoryAutoWithGate`                                                                                                | `apps/server/src/modules/triage/gate.ts`               |
-| job      | `trust.history`, `trust.regate`, `trust.tripwire` (F110; schedules and rules in [trust.md](trust.md) rules 7, 9, 10)                  | `apps/server/src/main.ts`                              |
+| job      | `trust.history`, `trust.regate`, `trust.tripwire` (F110; schedules and rules in [trust.md](trust.md) rules 7, 9, 10)                  | `apps/server/src/start/triage.ts` and `apps/server/src/start/jobs.ts`|
 | CLI      | `bun run trust:history-check` (queues a history check, F110)                                                                          | `apps/server/src/scripts/trust-history-check.ts`       |
 | function | `setCategoryAutoWithEvidence`, `regateAll`, `runTripwire` (F110; [trust.md](trust.md))                                                | `apps/server/src/modules/trust/index.ts`               |
 | function | `classifyStored` (the classify path of the history check, no write)                                                                   | `apps/server/src/modules/triage/classify-stored.ts`    |

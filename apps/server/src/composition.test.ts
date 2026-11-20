@@ -11,6 +11,7 @@ import type { OAuthTokens } from "./modules/mail";
 import { loadConfig } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db } from "./platform/db";
+import { startSource } from "./start/source.test-helper";
 
 // Every composition root that opens mailboxes (the sync job, the committer, the web Reconnect) gets the token store.
 // A call without it would fail every OAuth mailbox with "oauth not wired", or leave a Reconnect without a cache drop. The
@@ -33,7 +34,7 @@ function callOf(source: string, name: string): string {
 }
 
 describe("the history job is wired in main.ts", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("it is scheduled every 15 seconds, once, and only inside the block of the triage scope that is not off", () => {
     const start = main.indexOf("if (scope !== null) {");
@@ -49,7 +50,7 @@ describe("the history job is wired in main.ts", () => {
 });
 
 describe("the triage job gets the profile reader in main.ts (F120 stage 11)", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("createTriageJob gets readProfile from senderProfileReader with the credentials key", () => {
     const start = main.indexOf("createTriageJob({");
@@ -61,7 +62,7 @@ describe("the triage job gets the profile reader in main.ts (F120 stage 11)", ()
 });
 
 describe("the sender profile job is wired in main.ts", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("it runs hourly at minute 7 (six fields: second 0), once, outside the block of the triage scope", () => {
     expect(main).toContain('scheduler.add("contacts.refresh", "0 7 * * * *"');
@@ -82,7 +83,7 @@ describe("the sender profile job is wired in main.ts", () => {
 // passes the composed own-mail check. A root that passed `isOwnActionId` alone would store, triage and sample the report mail.
 describe("the own-mail check is composed in every root (F110 stage 20)", () => {
   test("main.ts: the sync job and the history job get isOwnMailOf; the CLI backfill too", () => {
-    const main = read("main.ts");
+    const main = startSource();
     expect(callOf(main, "createMailSyncJob")).toContain("isOwnActionId: isOwnMailOf(db)");
     expect(callOf(main, "createHistoryJob")).toContain("isOwnActionId: isOwnMailOf(db)");
     expect(callOf(read("scripts/mailbox-backfill.ts"), "backfillMailbox")).toContain("isOwnActionId: isOwnMailOf(db)");
@@ -99,9 +100,9 @@ describe("the own-mail check is composed in every root (F110 stage 20)", () => {
         }
       }
       expect(found.sort()).toEqual([
-        "main.ts: isOwnMailOf(db)",
-        "main.ts: isOwnMailOf(db)",
         "scripts/mailbox-backfill.ts: isOwnMailOf(db)",
+        "start/mail.ts: isOwnMailOf(db)",
+        "start/triage.ts: isOwnMailOf(db)",
       ]);
     })();
   });
@@ -133,7 +134,7 @@ describe("the docs say what the report mail does (F110 stage 20 review)", () => 
 });
 
 describe("the push sender is wired in main.ts (F118 stage 08)", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("it is scheduled every 15 seconds, once, only with the VAPID keys, outside the Telegram block, and the shutdown waits for its run", () => {
     expect(main.split('scheduler.add("channels.push", "*/15 * * * * *"')).toHaveLength(2);
@@ -155,7 +156,7 @@ describe("the push sender is wired in main.ts (F118 stage 08)", () => {
 });
 
 describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("it is scheduled every 15 seconds, once, outside the Telegram block, and the shutdown waits for its run", () => {
     expect(main.split('scheduler.add("channels.report_mail", "*/15 * * * * *"')).toHaveLength(2);
@@ -177,7 +178,7 @@ describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
 });
 
 describe("the tripwire job is wired in main.ts", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("it is scheduled every minute, once, and outside the block of the triage scope (it calls no model)", () => {
     const start = main.indexOf("if (scope !== null) {");
@@ -194,7 +195,7 @@ describe("the tripwire job is wired in main.ts", () => {
 });
 
 describe("the token store is wired into every composition root", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("main.ts: the sync job and the committer deps get the shared tokens", () => {
     expect(callOf(main, "createMailSyncJob")).toContain("oauthTokens: mailOAuth.tokens");
@@ -252,7 +253,6 @@ describe("the token store is wired into every composition root", () => {
       }
       expect(callers.sort()).toEqual([
         "composition.ts",
-        "main.ts",
         "modules/actions/committer.ts",
         // The report mail adapter opens the mailbox for an APPEND into its INBOX; it passes no sender.
         "modules/channels/report-mailbox-imap.ts",
@@ -263,6 +263,8 @@ describe("the token store is wired into every composition root", () => {
         "scripts/job-run.ts",
         // The copy probe opens the mailbox of one draft with the shared opener and a token store.
         "scripts/reply-check-copy.ts",
+        "start/jobs.ts",
+        "start/mail.ts",
       ]);
     })();
   });
@@ -419,7 +421,7 @@ describe("gateEvidenceDir", () => {
 });
 
 describe("the gate evidence is built once at start (F110 stage 02)", () => {
-  const main = read("main.ts");
+  const main = startSource();
 
   test("main.ts reads the gate files once and hands the result to the web settings deps and the triage job", () => {
     expect(main.match(/gateEvidenceOf\(/g)).toHaveLength(1);

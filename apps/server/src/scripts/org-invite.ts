@@ -1,26 +1,19 @@
 import { DAY_MS } from "@ea/core";
 
 import { createOrganizationWithOwner } from "../modules/tenancy";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
 import { deliverInvite } from "./lib/invite-delivery";
-import { orgInviteUsage, parseOrgInviteArgs } from "./org-invite-args";
-
-const out = createCliOutput("org-invite");
+import { cliDescriptions, parseOrgInviteArgs } from "./org-invite-args";
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "23505";
 }
 
-async function main(): Promise<number> {
-  const options = parseOrgInviteArgs(process.argv.slice(2));
-  if (!options) {
-    out.fail(orgInviteUsage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseOrgInviteArgs(argv);
 
   const config = loadConfig();
   if (config.WEB_BASE_URL === undefined || config.WEB_AUTH_SECRET === undefined) {
@@ -44,7 +37,8 @@ async function main(): Promise<number> {
       });
     } catch (error) {
       // The transaction rolled back: no organization exists.
-      out.fail(isUniqueViolation(error) ? "user with this email already exists" : `failed: ${describeError(error)}`);
+      if (!isUniqueViolation(error)) throw error;
+      out.fail("user with this email already exists");
       return 1;
     }
     const { orgId, userId } = created;
@@ -59,17 +53,11 @@ async function main(): Promise<number> {
       print: options.print,
       out,
     });
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "org-invite", descriptions: cliDescriptions, main });
+}

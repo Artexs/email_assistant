@@ -55,7 +55,7 @@ The system keeps mail text only for a limited time. Once a day the job `platform
 
 | Kind     | Name                                                       | Where                                                    |
 | -------- | ---------------------------------------------------------- | -------------------------------------------------------- |
-| job      | `platform.retention` (`0 40 2 * * *`: daily at 02:40)      | `apps/server/src/main.ts`                                |
+| job      | `platform.retention` (`0 40 2 * * *`: daily at 02:40)      | `apps/server/src/start/jobs.ts`                          |
 | function | `createRetentionJob`, `RETENTION_TEXT_DAYS`                | `apps/server/src/retention.ts`                           |
 | function | `clearMailBodies`, `clearMailHeaders`, `PENDING_BODY_DAYS` | `apps/server/src/modules/mail/repo/retention.ts`         |
 | function | `clearSentBodies`, `clearSentHeaders`                      | `apps/server/src/modules/mail/repo/retention.ts`         |

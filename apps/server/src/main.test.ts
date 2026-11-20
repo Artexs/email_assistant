@@ -4,6 +4,8 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
+import { startSource } from "./start/source.test-helper";
+
 const mainPath = join(import.meta.dir, "main.ts");
 
 describe("main", () => {
@@ -40,7 +42,7 @@ describe("main", () => {
   // Source-level pin of the wiring: the `ops.slo` tick sends through the one operator send that
   // `channels.operator` also gets (a function when OPERATOR_TELEGRAM_CHAT_ID is set, null when it is unset).
   test("the ops.slo job and the operator notices share one operator send", () => {
-    const source = readFileSync(mainPath, "utf8");
+    const source = startSource();
     expect(source).toMatch(/const operatorSend =\s+operatorChat === null\s+\? null\s+: async/);
     expect(source).toMatch(
       /createOperatorNotices\(\{\s+db,\s+now: \(\) => new Date\(\),\s+send: operatorSend,\s+locale: config\.OPERATOR_LOCALE,\s+\}\)/
@@ -59,7 +61,7 @@ describe("main", () => {
   // The disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
   // and the job runs that list.
   test("the ops.slo check list holds the disk and backup-age entries", () => {
-    const source = readFileSync(mainPath, "utf8");
+    const source = startSource();
     expect(source).toContain(`{ kind: "slo_disk", run: () => checkDisk(statfs, slo) }`);
     expect(source).toMatch(
       /\{ kind: "slo_backup_age", run: \(now\) => checkBackupAge\(\(path\) => readFile\(path, "utf8"\), now, slo\) \}/

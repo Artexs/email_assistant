@@ -4,6 +4,8 @@ import path from "node:path";
 import { featureFlags, noticeViewSchemas } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
+import { startSource } from "./start/source.test-helper";
+
 // The sender-context docs name what the code has: every flag of the epic, the job that `main.ts` schedules, the log events, the
 // accepted ADR, the order of the flags in the deploy guide, and the rollback SQL for each strict outbox view that holds a key of
 // the feature. A new flag, job or view key that nobody wrote down fails here (same idea as `open-loops-docs.test.ts`).
@@ -19,9 +21,7 @@ const deployGuide = read("deploy/README.md");
 const flags = Object.entries(featureFlags)
   .filter(([, flag]) => flag.epic === "E11a")
   .map(([name]) => name);
-const jobs = [...read("apps/server/src/main.ts").matchAll(/scheduler\.add\("(contacts\.[a-z]+)"/g)].map(
-  (match) => match[1] ?? ""
-);
+const jobs = [...startSource().matchAll(/scheduler\.add\("(contacts\.[a-z]+)"/g)].map((match) => match[1] ?? "");
 
 // The section of the deploy guide, from its heading to the next `## ` heading.
 function deploySection(): string {
