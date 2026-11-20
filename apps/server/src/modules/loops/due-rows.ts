@@ -1,9 +1,9 @@
 // Row reader of the open-loops metric (M2) for loops. Dates, ids and codes only: no text, no address.
-import type { LoopDueRow } from "@ea/core";
+import { normalizeAddress, type LoopDueRow } from "@ea/core";
 import { sql } from "kysely";
 import { z } from "zod";
 
-import type { TenantContext } from "../../platform/db";
+import { normalizedAddress, type TenantContext } from "../../platform/db";
 import { SYNTHETIC_MESSAGE_ID_LIKE, type TestMailRule } from "../mail";
 
 import { loopKindSchema, type DbOrTrx } from "./repo";
@@ -31,7 +31,12 @@ export async function loopDueRows(
 ): Promise<LoopDueRow[]> {
   const mailbox = q.mailboxId == null ? sql`true` : sql`l.mailbox_id = ${q.mailboxId}`;
   const senders = q.testMail?.senders ?? [];
-  const testSender = senders.length === 0 ? sql`false` : sql`lower(l.counterpart) in (${sql.join(senders)})`;
+  const testSender =
+    senders.length === 0
+      ? sql`false`
+      : sql`${normalizedAddress("l.counterpart")} in (${sql.join(senders.map(normalizeAddress))})`;
+  // not an address: the synthetic message id marker
+  const realMessage = sql`(l.message_id IS NULL OR l.message_id NOT ILIKE ${SYNTHETIC_MESSAGE_ID_LIKE})`;
   const { rows } = await sql<unknown>`
     SELECT l.id, l.kind, l.due_at, l.surfaced_at, l.closed_at, l.close_reason,
       (
@@ -42,7 +47,7 @@ export async function loopDueRows(
     WHERE l.org_id = ${ctx.orgId}
       AND l.due_at >= ${q.range.start} AND l.due_at < ${q.range.end}
       AND ${mailbox}
-      AND (l.message_id IS NULL OR l.message_id NOT ILIKE ${SYNTHETIC_MESSAGE_ID_LIKE})
+      AND ${realMessage}
       AND NOT COALESCE(${testSender}, false)
     ORDER BY l.due_at, l.id
   `.execute(db);

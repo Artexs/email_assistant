@@ -321,7 +321,7 @@ Built in S1b: `createPlanned`, `listActionsForEmail`, `listSummaries`. The triag
 
 - **Owns:** `delegates`, `delegations`.
 - **Built in S4** (`apps/server/src/modules/delegation/`):
-  - `repo.ts`: the queries of both tables (`insertDelegate`, `listDelegates`, `insertDelegation`, `lockDelegation`, `findOpenDelegationByMessageIds`, `listDueDelegations`, the conditional status setters, `countOpenDelegations`, `listAnsweredUnnotified`, `markAnsweredNotified`). The index exports only the service, the read functions and the state functions, no raw writers.
+  - `repo/` (`delegates.ts`, `delegations.ts` for the writes, `delegations-read.ts`): the queries of both tables (`insertDelegate`, `listDelegates`, `insertDelegation`, `lockDelegation`, `findOpenDelegationByMessageIds`, `listDueDelegations`, the conditional status setters, `countOpenDelegations`, `listAnsweredUnnotified`, `markAnsweredNotified`). The index exports only the service, the read functions and the state functions, no raw writers.
   - `service.ts`: `addDelegate` (refuses a mailbox address of the organization), `setDelegateState`, `createDelegation`, `detectReply`, `markAnswered`, `cancelDelegation`, `closeDelegation`, and `delegationHooks` (the implementation of `DelegationHooks`). Each closing function locks the delegation first, then its reminder sends.
   - `chaser.ts`: `createChaserJob`, `runChaserForMailbox`, `reminderDecision`. Rules: `docs/capabilities/delegation.md` § Rules.
   - CLIs: `delegates:add|list|disable|enable`, `delegations:list|done` (§4; runbook `deploy/README.md` "Delegates").
