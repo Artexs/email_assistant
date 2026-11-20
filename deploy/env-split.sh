@@ -44,17 +44,34 @@ copy_lines() {
 # Prints how many lines of file $2 start with `<key>=` (key $1).
 count_key() { grep -c -- "^$1=" "$2" || true; }
 
-# Stops with a refusal when a D5 key stands twice in .env.
+# Prints how many lines of file $2 assign key $1 in any form Docker Compose env_file reads:
+# `KEY=`, `  KEY=`, `export KEY=`, `KEY =` (a loose match; the key name is the only argument that varies).
+count_key_loose() { grep -Ec -- "^[[:space:]]*(export[[:space:]]+)?$1[[:space:]]*=" "$2" || true; }
+
+# Stops with a refusal when .env holds a D5 key in a form other than `KEY=` at the line start (it would stay in .env), or twice.
 check_no_duplicates() {
-  local key duplicated=()
+  local key loose strict duplicated=() odd=()
   [[ -f .env ]] || return 0
   for key in "${EA_D5_KEYS[@]}"; do
-    (($(count_key "$key" .env) > 1)) && duplicated+=("$key")
+    loose="$(count_key_loose "$key" .env)"
+    strict="$(count_key "$key" .env)"
+    ((loose > strict)) && odd+=("$key")
+    ((loose > 1)) && duplicated+=("$key")
   done
+  if ((${#odd[@]} > 0)); then
+    refuse "key with export, indent or space before = in .env: $(IFS=,; echo "${odd[*]}")"
+  fi
   if ((${#duplicated[@]} > 0)); then
     refuse "key twice in .env: $(IFS=,; echo "${duplicated[*]}")"
   fi
   return 0
+}
+
+# Gives the temp file $1 the owner and mode of the file it replaces ($2), so a run as root keeps the deploy user's access.
+keep_owner_and_mode() {
+  [[ -f "$2" ]] || return 0
+  chown --reference="$2" "$1" || fail "could not keep the owner of $2"
+  chmod --reference="$2" "$1" || fail "could not keep the mode of $2"
 }
 
 # Makes a temp file from the template $1 and sets TMP_NEW to its name (no command substitution: the exit trap must see the name).
@@ -82,19 +99,20 @@ undo() {
     fi
     cat deploy/db.env
   } >"$tmp"
+  keep_owner_and_mode "$tmp" .env
   mv "$tmp" .env || fail "could not replace .env"
   rm -f deploy/db.env
   echo "env split undone moved=$lines"
 }
 
 split() {
-  local state key line missing=() bad=() found=0 tmp
+  local state key line missing=() bad=() found=0 tmp db_lines=() db_line same
+  check_no_duplicates
   state="$(ea_env_split_state)"
   if [[ "$state" == split ]]; then
     echo "env split: already split"
     return 0
   fi
-  check_no_duplicates
 
   if [[ "$state" == old ]]; then
     for key in "${EA_D5_KEYS[@]}"; do
@@ -116,14 +134,28 @@ split() {
     done
     refuse "no complete old layout, missing: $(IFS=,; echo "${missing[*]:-.env}")"
   fi
+  # Lines are compared in bash: a secret line never enters the argument list of a command (visible in /proc/<pid>/cmdline).
+  while IFS= read -r line || [[ -n "$line" ]]; do db_lines+=("$line"); done <deploy/db.env
   for key in "${EA_D5_KEYS[@]}"; do
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      [[ "$line" == "$key="* ]] || continue
       found=$((found + 1))
-      grep -Fxq -- "$line" deploy/db.env || bad+=("$key")
-    done < <(grep -- "^$key=" .env || true)
+      same=0
+      for db_line in ${db_lines[@]+"${db_lines[@]}"}; do
+        [[ "$db_line" == "$line" ]] && same=1
+      done
+      ((same == 1)) || bad+=("$key")
+    done <.env
   done
   if ((${#bad[@]} > 0)); then
     refuse "value differs between .env and deploy/db.env: $(IFS=,; echo "${bad[*]}")"
+  fi
+  # db.env must hold all three passwords before .env loses its lines.
+  for key in POSTGRES_PASSWORD MIGRATOR_PASSWORD APP_PASSWORD; do
+    (($(count_key "$key" deploy/db.env) == 1)) || missing+=("$key")
+  done
+  if ((${#missing[@]} > 0)); then
+    refuse "deploy/db.env lacks: $(IFS=,; echo "${missing[*]}")"
   fi
   finish_env "$found" finished
 }
@@ -134,6 +166,7 @@ finish_env() {
   new_temp .env.split-XXXXXX
   tmp="$TMP_NEW"
   copy_lines "$tmp" .env 1
+  keep_owner_and_mode "$tmp" .env
   mv "$tmp" .env || fail "could not replace .env"
   echo "env split ok $2=$1"
 }

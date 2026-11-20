@@ -115,4 +115,12 @@ describe("deploy/check-server-env.sh", () => {
     expect(run().code).toBe(2);
     expect(existsSync(join(root, "docker.argv"))).toBe(false);
   });
+
+  test("N4. an empty env list is a failure (exit 2), not ok keys=0", () => {
+    stubDocker([]);
+    const result = run();
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("no keys");
+  });
 });
