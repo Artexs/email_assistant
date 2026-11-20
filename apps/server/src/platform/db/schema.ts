@@ -277,6 +277,7 @@ export interface Emails {
   locked_at: Timestamp | null;
   mailbox_id: string;
   message_id_header: string | null;
+  move_pending_at: Timestamp | null;
   moved_at: Timestamp | null;
   next_attempt_at: Timestamp | null;
   org_id: string;
@@ -285,6 +286,7 @@ export interface Emails {
   returned_at: Timestamp | null;
   skip_reason: string | null;
   source_folder: Generated<string>;
+  source_uid: Int8 | null;
   status: Generated<string>;
   subject: string | null;
   thread_key: string;

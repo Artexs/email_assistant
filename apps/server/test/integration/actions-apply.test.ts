@@ -102,7 +102,7 @@ async function insertMail(
     folder,
     sourceFolder: opts.sourceFolder,
     uid: opts.rowUid,
-    inboxUid: opts.inboxUid,
+    sourceUid: opts.inboxUid,
     contentHash: hash,
     movedAt: opts.movedAt,
     actions: opts.actions,

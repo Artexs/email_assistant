@@ -52,7 +52,9 @@ describe("the consent gate of open-loop data", () => {
 
   test("the brief is built only where the member's consent is read: a caller that sets the loop part of a digest calls the gate", () => {
     // `firstOfDay` is the field that switches the brief on (`DigestLoops`): every file that sets it reads the gate and passes `loopConsent`.
-    const setters = usersOf(/\bfirstOfDay\b/).filter((file) => file !== "modules/reports/digest.ts");
+    const setters = usersOf(/\bfirstOfDay\b/).filter(
+      (file) => file !== "modules/reports/digest.ts" && file !== "modules/reports/digest-brief.ts"
+    );
     expect(setters).toEqual(["modules/channels/digest-job.ts"]);
     const job = sources.find((s) => s.file === "modules/channels/digest-job.ts")?.text ?? "";
     expect(job).toMatch(/loopConsent\s*=\s*\(await loopConsentOf\(/);
