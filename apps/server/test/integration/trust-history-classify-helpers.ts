@@ -47,7 +47,7 @@ export async function seedMails(db: Db, box: HistoryBox, mails: readonly SeedMai
     thread_key: `test:${randomUUID()}`,
     content_hash: "h",
     uid: 1000 + index,
-    inbox_uid: 1000 + index,
+    source_uid: 1000 + index,
     folder: mail.folder ?? "INBOX",
     source_folder: mail.folder ?? "INBOX",
     status: "skipped",
