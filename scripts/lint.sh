@@ -23,7 +23,7 @@ dir=node_modules/.cache/eslint
 key=$(
   {
     cat eslint.config.js package.json bun.lock \
-      apps/server/src/modules/layers.json apps/server/src/scripts/cli-pending.json
+      apps/server/src/modules/layers.json
     find tools/eslint-rules -type f -not -path '*/node_modules/*' | sort | xargs cat
     find . -name 'tsconfig*.json' -not -path '*/node_modules/*' -not -path './.git/*' | sort | xargs cat
     ls apps/server/src/modules

@@ -1,0 +1,5 @@
+key	reason
+apps/server/src/scripts/time-rewrite-check.test.ts:43	The file is gone at master; no cut stage looks for it (audit/report.md § 3).
+apps/server/src/main.test.ts:42	Owner, 2026-11-20: not rewritten in the cut stages; a follow-up ticket replaces the source regexes with behaviour tests (audit/report.md § 3).
+apps/server/src/main.test.ts:52	Same decision as main.test.ts:42.
+apps/server/src/main.test.ts:61	Same decision as main.test.ts:42.

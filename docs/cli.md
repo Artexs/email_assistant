@@ -1,6 +1,6 @@
 # CLI standard
 
-Every command-line tool of the repository follows this page. A tool is a `package.json` script that runs a file in `apps/server/src/scripts/` or `tools/<name>/src/`. An agent finds each tool, its risk and its exit codes with `bun run cli:list` and `bun run <tool> --help`. The list comes from the tools' own descriptions, so it cannot go stale. Design input: `notes/2026-11-15-cli-standard.md`. Build plan: `spec/features/active/F129-*/plan.md` (decisions D1–D13). Old tools move to this standard stage by stage; `apps/server/src/scripts/cli-pending.json` names the files that are not converted yet.
+Every command-line tool of the repository follows this page. A tool is a `package.json` script that runs a file in `apps/server/src/scripts/` or `tools/<name>/src/`. An agent finds each tool, its risk and its exit codes with `bun run cli:list` and `bun run <tool> --help`. The list comes from the tools' own descriptions, so it cannot go stale. Design input: `notes/2026-11-15-cli-standard.md`. Build plan: `spec/features/active/F129-*/plan.md` (decisions D1–D13). No tool is exempt; `apps/server/src/scripts/cli-standard.test.ts` runs the standard against every tool command.
 
 The pure vocabulary (`CliDescription`, `CLI_RISKS`, `CLI_NEEDS`, `EXIT`, `UsageError`, `renderHelp`, `renderToolTable`, `cliDescriptionSchema`) is in `packages/core/src/cli/`. The runtime (`runCli`, `runCliCode`, `exitCodeOf`) is in `apps/server/src/platform/cli.ts`.
 
@@ -96,7 +96,7 @@ Prints one row per tool command: name, risk, needs and summary, sorted by name. 
 
 - A `danger` run that changes data needs `--confirm <organization name>`, compared with `orgNameMatches` as `org:delete` and the web delete do. `org:dsr --erase` takes `--confirm <address>`. A missing confirm exits 2. A wrong one exits 1 and changes nothing. Read modes and `org:export` need no confirm. `--dry-run` exists only where a tool has it today.
 - No extra environment check blocks the operator on the VPS: `--confirm` is the only guard.
-- The same tools work in production: `$C run --rm cli bun run <name>`.
+- The same tools work in production: `$C run --rm cli bun run <name>`. The list of tools there: `$C run --rm cli bun run cli:list`.
 - There is no shared "not a dev DB" guard. The existing refusals (`e2e:seed`, `db:worktree`) stay.
 
 ## Code shape
@@ -119,15 +119,14 @@ Prints one row per tool command: name, risk, needs and summary, sorted by name. 
 
 ## Convert a tool
 
-Steps for stages 05–15 of F129. Do them in this order.
+Steps to bring an old tool to the standard. Do them in this order.
 
 1. The args file exports `cliDescriptions` and a parser that throws `UsageError` or returns a typed value. An inline parser moves there.
 2. The entry ends with `if (import.meta.main) await runCli({ prefix, descriptions: cliDescriptions, main, close })`. Tests import entries, so the `import.meta.main` guard stays. `main` parses first, then loads config. A tool with its own outer catch returns `exitCodeOf(error)` and prints `unreachable:` for 3.
 3. `process.exit`, `process.stdout.write` and `process.stderr.write` become a return code, `out.write` and `out.writeErr`.
 4. Bad arguments return 2. A refusal returns 1. An unreachable outside system returns 3.
 5. Change every caller of a changed code or usage line in the same commit: grep `.github/`, `scripts/*.sh`, `deploy/`, `apps/web/e2e`, `apps/docs/e2e`, `apps/server/test`, `docs/`, `evals/`.
-6. Remove the file from `cli-pending.json`. Never add one back.
-7. Args unit test: one valid case and each invalid case → usage.
+6. Args unit test: one valid case and each invalid case → usage.
 
 Output text stays byte for byte, except usage lines, the exit codes of this page and the line of an unreachable error.
 
