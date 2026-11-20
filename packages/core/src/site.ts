@@ -1,10 +1,10 @@
 // The product name and the public docs site address. One source for the docs app, the panel and the checks.
 
+import type { UserLocale } from "./tenancy";
+
 export const PRODUCT_NAME = "Email Assistant";
 export const DOCS_ORIGIN = "https://artexs.github.io";
 export const DOCS_BASE = "/email_assistant";
-
-export type DocsLocale = "en" | "pl";
 
 /**
  * Absolute URL of a docs page or file. English has no locale prefix; `pl` adds `/pl`.
@@ -13,7 +13,7 @@ export type DocsLocale = "en" | "pl";
  * A `?query` or `#anchor` after the path stays as it is.
  * A `pl` path never starts with `/pl/`: the function adds that prefix itself.
  */
-export function docsUrl(path: string, locale: DocsLocale): string {
+export function docsUrl(path: string, locale: UserLocale): string {
   if (!path.startsWith("/")) throw new Error(`docsUrl path must start with "/": ${path}`);
   const pathOnly = path.split(/[?#]/, 1)[0] ?? path;
   const segments = pathOnly.split("/");

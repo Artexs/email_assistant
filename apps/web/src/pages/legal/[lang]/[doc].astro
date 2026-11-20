@@ -1,5 +1,5 @@
 ---
-import { TERMS_VERSION } from "@ea/core/web";
+import { TERMS_VERSION, userLocales, type UserLocale } from "@ea/core/web";
 import type { MarkdownInstance } from "astro";
 
 import DataCategoriesTable from "../../../components/legal/DataCategoriesTable.astro";
@@ -7,17 +7,17 @@ import SubprocessorsTables from "../../../components/legal/SubprocessorsTables.a
 import Public from "../../../layouts/Public.astro";
 import { en } from "../../../i18n/en";
 import { pl } from "../../../i18n/pl";
-import { fillSlots, legalDocs, legalLangs, type LegalDoc } from "../../../lib/legal";
+import { fillSlots, legalDocs, type LegalDoc } from "../../../lib/legal";
 
 export function getStaticPaths() {
-  return legalLangs.flatMap((lang) => legalDocs.map((doc) => ({ params: { lang, doc } })));
+  return userLocales.flatMap((lang) => legalDocs.map((doc) => ({ params: { lang, doc } })));
 }
 
 // The text of each page is Markdown in `src/legal/<lang>/<doc>.md`. The frame (draft line, version, tables) is here, so a
 // text stage writes text only. The frame reads no env value.
 const sources = import.meta.glob<MarkdownInstance<Record<string, unknown>>>("../../../legal/*/*.md", { eager: true });
 
-const { lang, doc } = Astro.params as { lang: "pl" | "en"; doc: LegalDoc };
+const { lang, doc } = Astro.params as { lang: UserLocale; doc: LegalDoc };
 const texts = lang === "pl" ? pl : en;
 const titles = {
   privacy: texts.legal_privacy_title,

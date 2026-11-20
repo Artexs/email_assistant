@@ -1,4 +1,4 @@
-import { isLoopbackApiRoot, type SloThresholds } from "@ea/core";
+import { isLoopbackApiRoot, userLocales, type SloThresholds } from "@ea/core";
 import { z } from "zod";
 
 import { addressPattern, emptyAsUndefined, parseList } from "./config-shared";
@@ -29,7 +29,7 @@ export const opsShape = {
       .optional()
   ),
   // The language of the operator alert texts: `en` or `pl`. Empty = `en`.
-  OPERATOR_LOCALE: z.preprocess(emptyAsUndefined, z.enum(["en", "pl"]).default("en")),
+  OPERATOR_LOCALE: z.preprocess(emptyAsUndefined, z.enum(userLocales).default("en")),
   // Service levels of the operator alerts. Empty = the default. Whole numbers, except SLO_DISK_FREE_GB (decimals).
   // Minutes since the last sync before a mailbox counts as late.
   SLO_SYNC_LAG_MIN: z.preprocess(emptyAsUndefined, z.coerce.number().int().min(5).max(1440).default(15)),

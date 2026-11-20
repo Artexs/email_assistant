@@ -1,10 +1,11 @@
 ---
 // The demo video of the home page: `<DemoVideo lang="en" />` on its own line. It renders nothing unless `demo.mp4` and both caption files stand in
 // `apps/docs/public/demo/` at build (`demo-video.ts`). No autoplay. The captions of the page language are the default track.
+import type { UserLocale } from "@ea/core";
 import { demoFilesExist, demoVideoView } from "../demo-video";
 
 interface Props {
-  lang: "en" | "pl";
+  lang: UserLocale;
 }
 
 const { lang } = Astro.props;

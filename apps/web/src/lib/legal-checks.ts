@@ -3,12 +3,12 @@ import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { dataCategories, subprocessors } from "@ea/core/web";
+import { dataCategories, subprocessors, userLocales, type UserLocale } from "@ea/core/web";
 
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
 
-import { isAllowedPlaceholder, legalDocs, legalLangs, type LegalDoc, type LegalLang } from "./legal";
+import { isAllowedPlaceholder, legalDocs, type LegalDoc } from "./legal";
 
 // Checks of the legal Markdown sources. Test use only: it reads files with Node APIs, so no island
 // imports it.
@@ -16,11 +16,11 @@ import { isAllowedPlaceholder, legalDocs, legalLangs, type LegalDoc, type LegalL
 const here = dirname(fileURLToPath(import.meta.url));
 export const legalSourceRoot = join(here, "..", "legal");
 
-export function legalSourcePath(lang: LegalLang, doc: LegalDoc): string {
+export function legalSourcePath(lang: UserLocale, doc: LegalDoc): string {
   return join(legalSourceRoot, lang, `${doc}.md`);
 }
 
-export function readLegalSource(lang: LegalLang, doc: LegalDoc): string {
+export function readLegalSource(lang: UserLocale, doc: LegalDoc): string {
   return readFileSync(legalSourcePath(lang, doc), "utf8");
 }
 
@@ -52,8 +52,8 @@ export function headingTitles(markdown: string): string[] {
 
 // The Markdown files under `src/legal` that are not one of the six pages.
 export function strayLegalFiles(): string[] {
-  const expected = new Set(legalLangs.flatMap((lang) => legalDocs.map((doc) => `${lang}/${doc}.md`)));
-  return legalLangs
+  const expected = new Set(userLocales.flatMap((lang) => legalDocs.map((doc) => `${lang}/${doc}.md`)));
+  return userLocales
     .flatMap((lang) => readdirSync(join(legalSourceRoot, lang)).map((file) => `${lang}/${file}`))
     .filter((file) => !expected.has(file));
 }
@@ -70,13 +70,13 @@ export function legalTextsDigest(parts: readonly string[]): string {
 }
 
 // The texts that the version guard covers, in a fixed order: the six Markdown files (languages, then documents, as in
-// `legalLangs` and `legalDocs`), both registries as JSON, then the `en` and `pl` value of every `legal_*` key (sorted by
+// `userLocales` and `legalDocs`), both registries as JSON, then the `en` and `pl` value of every `legal_*` key (sorted by
 // key) and of `tg_consent_text`.
 export function legalTextParts(): string[] {
   const keys = [...Object.keys(en).filter((key) => key.startsWith("legal_")), "tg_consent_text"].sort();
   const texts = (table: Record<string, string>) => keys.map((key) => `${key}=${table[key] ?? ""}`);
   return [
-    ...legalLangs.flatMap((lang) => legalDocs.map((doc) => readLegalSource(lang, doc))),
+    ...userLocales.flatMap((lang) => legalDocs.map((doc) => readLegalSource(lang, doc))),
     JSON.stringify(subprocessors),
     JSON.stringify(dataCategories),
     ...texts(en),

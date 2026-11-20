@@ -1,3 +1,4 @@
+import { userLocaleSchema } from "../tenancy";
 import { z } from "../web/zod";
 
 import type { NoticeKind } from "./kinds";
@@ -50,7 +51,7 @@ export const pushPayloadSchema = z.strictObject({
   kind: z.enum(pushPayloadKinds),
   count: z.number().int().min(0).max(99_999),
   itemId: z.string().min(1).max(64).nullable(),
-  lang: z.enum(["pl", "en"]),
+  lang: userLocaleSchema,
 });
 export type PushPayload = z.infer<typeof pushPayloadSchema>;
 

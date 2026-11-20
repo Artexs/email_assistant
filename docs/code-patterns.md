@@ -130,6 +130,8 @@ A module that has something to tell a user through the outbox (digests and notic
 
 Every text that a user reads has an English and a Polish version, from the first commit. Two surfaces, two dictionaries (F098).
 
+The language of a product text is `UserLocale`; the lint rule `ea/no-locale-union` bans a copy. The language of a mail or a draft is another concept.
+
 **The null rule.** `users.locale` is `pl`, `en` or null. A null value means a different language on each surface:
 
 - Panel: `resolveLocale(users.locale, browserTag)` from `@ea/core`. Null → the browser language (`navigator.language` starting with `pl` → Polish), else English.

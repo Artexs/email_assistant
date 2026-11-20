@@ -8,6 +8,7 @@ import {
   roundedCostRow,
   type CostToRun,
   type RoundedCostRow,
+  type UserLocale,
 } from "@ea/core";
 
 export const PRICING_MAILS_PER_DAY = [50, 100, 200] as const;
@@ -31,10 +32,8 @@ export function costBasis(compute: CostCompute = costToRun): CostToRun["basis"] 
   return compute(PRICING_MAILS_PER_DAY[0]).basis;
 }
 
-export type Lang = "en" | "pl";
-
 /** Dollars: `$0.62` in English, `0,62 USD` in Polish (the decimal comma of the Polish pages). */
-export function formatUsd(value: number, lang: Lang = "en"): string {
+export function formatUsd(value: number, lang: UserLocale = "en"): string {
   return lang === "pl" ? `${value.toFixed(2).replace(".", ",")} USD` : `$${value.toFixed(2)}`;
 }
 
@@ -42,7 +41,7 @@ export function formatUsd(value: number, lang: Lang = "en"): string {
 export function basisNote(
   basis: CostToRun["basis"],
   pilot: Pick<typeof pilotCost, "weeks" | "measuredOn"> = pilotCost,
-  lang: Lang = "en"
+  lang: UserLocale = "en"
 ): string {
   const first = pilot.weeks[0];
   const last = pilot.weeks[pilot.weeks.length - 1];
@@ -57,16 +56,16 @@ export function basisNote(
 export const ROUNDING_NOTE = "Each amount is rounded to the cent, so the parts may not add up to the total.";
 export const ROUNDING_NOTE_PL =
   "Każda kwota jest zaokrąglona do centa, więc części mogą nie sumować się do łącznej kwoty.";
-export const roundingNote = (lang: Lang = "en"): string => (lang === "pl" ? ROUNDING_NOTE_PL : ROUNDING_NOTE);
+export const roundingNote = (lang: UserLocale = "en"): string => (lang === "pl" ? ROUNDING_NOTE_PL : ROUNDING_NOTE);
 
-export const hostSizeNote = (lang: Lang = "en"): string =>
+export const hostSizeNote = (lang: UserLocale = "en"): string =>
   lang === "pl"
     ? `Hosting zakłada ${costModel.mailboxesPerHost} skrzynek na jednym serwerze.`
     : `Hosting assumes ${costModel.mailboxesPerHost} mailboxes per host.`;
 
 /** The price for the plan card: whole dollars lose their cents (`$25`, `25 USD`), other prices keep two decimals. */
 export const placeholderPrice = (
-  lang: Lang = "en",
+  lang: UserLocale = "en",
   priceUsd: number = PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH
 ): string => formatUsd(priceUsd, lang).replace(/[.,]00(?= USD$|$)/, "");
 
