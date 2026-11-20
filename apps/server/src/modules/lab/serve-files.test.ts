@@ -105,6 +105,12 @@ describe("the serve lock", () => {
     );
     const lock = takeServeLock(dir);
     expect(lock).toBeDefined();
+    expect(JSON.parse(readFileSync(lockPath(), "utf8"))).toEqual({
+      host: hostname(),
+      ns: realNs(),
+      pid: process.pid,
+      token: expect.not.stringMatching(/^old$/),
+    });
     lock?.release();
   });
 
@@ -132,6 +138,10 @@ describe("the serve lock", () => {
     utimesSync(lockPath(), old, old);
     const lock = takeServeLock(dir, () => new Date(), me);
     expect(lock).toBeDefined();
+    expect(JSON.parse(readFileSync(lockPath(), "utf8"))).toEqual({
+      ...me,
+      token: expect.not.stringMatching(/^first-serve$/),
+    });
     lock?.release();
   });
 
@@ -140,6 +150,10 @@ describe("the serve lock", () => {
     writeLock({ host: me.host, ns: me.ns, pid: 1, token: "before-the-restart" });
     const lock = takeServeLock(dir, () => new Date(), me);
     expect(lock).toBeDefined();
+    expect(JSON.parse(readFileSync(lockPath(), "utf8"))).toEqual({
+      ...me,
+      token: expect.not.stringMatching(/^before-the-restart$/),
+    });
     lock?.release();
   });
 
