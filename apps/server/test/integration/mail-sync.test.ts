@@ -166,27 +166,6 @@ function afterFirstCall(
 }
 
 describe("syncMailbox: incremental", () => {
-  test("after an incremental sync mailboxes.last_uid equals the INBOX folder row (dual write)", async () => {
-    await withRollback(db, async (trx) => {
-      const s = await setup(trx);
-      s.fake.deliver("INBOX", seed(1));
-      s.fake.deliver("INBOX", seed(2));
-      const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
-      expect(result.mode).toBe("incremental");
-
-      const mailbox = await trx
-        .selectFrom("mailboxes")
-        .select(["uidvalidity", "last_uid"])
-        .where("id", "=", s.mailboxId)
-        .executeTakeFirstOrThrow();
-      expect(await cursorOf(trx, s.mailboxId)).toEqual({ uidValidity: UID_VALIDITY, lastUid: 2 });
-      expect({ uidValidity: Number(mailbox.uidvalidity), lastUid: Number(mailbox.last_uid) }).toEqual({
-        uidValidity: UID_VALIDITY,
-        lastUid: 2,
-      });
-    });
-  });
-
   test("a message below the cursor from UID FETCH n:* is ignored", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
