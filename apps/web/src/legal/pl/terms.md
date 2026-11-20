@@ -26,7 +26,7 @@ Ten regulamin mówi, jak działa usługa i czego możesz się po niej spodziewa�
 ## Twoja skrzynka
 
 - Usługa przechowuje hasło skrzynki w postaci zaszyfrowanej. Używaj hasła aplikacji, gdy dostawca poczty je oferuje. Zapisany sekret otwiera całą skrzynkę.
-- Nowa skrzynka jest w trybie podglądu. W trybie podglądu asystent niczego nie zmienia w skrzynce i tylko zgłasza, co by zrobił.
+- Nowa skrzynka jest w trybie podglądu. W trybie podglądu asystent niczego nie zmienia w skrzynce i tylko zgłasza, co by zrobił. Jedynym wyjątkiem jest poczta z raportem, o którą poprosił członek.
 - W trybie asystenta asystent może przenosić wiadomości, oznaczać je flagą, oznaczać jako przeczytane i zapisywać szkice w folderze szkiców skrzynki. Przeniesienie lub oznaczenie jako przeczytane następuje tylko dla kategorii, którą właściciel ustawił jako automatyczną i która przeszła bramkę jakości. Wiadomości, co do których asystent nie jest pewny, są przenoszone tylko wtedy, gdy właściciel włączy osobny przełącznik.
 - Asystent nigdy nie wysyła wiadomości bez właściciela. Właściciel dotyka Wyślij przy dokładnym tekście, w Telegramie lub w panelu. Bez dotknięcia wysyłka wygasa po 48 godzinach (szkic odpowiedzi: po 7 dniach).
 - Asystent nigdy nie usuwa wiadomości z Twojej skrzynki.

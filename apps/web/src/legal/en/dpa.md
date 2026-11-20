@@ -14,7 +14,9 @@ The processor processes the mail only to run these functions for the controller:
 - **Triage:** to sort each mail into a category, with a short reason.
 - **Actions:** to move, flag or mark mail as read, as the mode and the switches of each mailbox allow.
 - **Drafts:** to write drafts of replies and questions. A draft is sent only after an owner approves it.
-- **Digests:** to tell the members about urgent mail, problems and drafts that wait, in Telegram or by push notice to a registered phone or browser.
+- **Digests:** to tell the members about urgent mail, problems and drafts that wait, in Telegram or by push notice to a registered phone or browser. With report by mail on, also by a mail that the processor puts into the INBOX of a mailbox that the member chose.
+- **Open loops:** to find what a member asked or promised in the own sent mail of the mailbox, and to remind the member of it. This runs only with the feature on.
+- **Newsletters:** to find newsletters and, after an owner taps Unsubscribe, to send one request to the link that the newsletter wrote, so that the sender removes the mailbox from the list. This runs only with the feature on.
 - **Delegation follow-up:** to remind a delegate of a task, with a draft that needs the same approval.
 
 ## Data and data subjects

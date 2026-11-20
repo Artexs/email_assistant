@@ -283,7 +283,8 @@ export const dataCategories: readonly DataCategory[] = [
     },
     columns: ["unsubscribe_requests.*"],
     // The sender is a third party. A data-request erase of the sender deletes the row (`address-map.ts`, rule `delete`).
-    subjects: ["others"],
+    // The member is a subject too: the row tells that the mailbox of a member left a list.
+    subjects: ["users", "others"],
     kept: untilMailbox,
   },
   {

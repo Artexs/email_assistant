@@ -26,7 +26,7 @@ These terms say how the service works and what you can expect from it. They desc
 ## Your mailbox
 
 - The service stores the password of a mailbox encrypted. Use an app password when the mail provider has one. The stored secret opens the whole mailbox.
-- A new mailbox is in shadow mode. In shadow mode the assistant changes nothing in the mailbox and only reports what it would do.
+- A new mailbox is in shadow mode. In shadow mode the assistant changes nothing in the mailbox and only reports what it would do. The one exception is a report mail that a member asked for.
 - In assist mode, the assistant can move mail, flag it, mark it as read and save drafts in the Drafts folder of the mailbox. A move or a mark as read happens only for a category that the owner set to run by itself and that passed the quality gate. Mail that the assistant is unsure about moves only when the owner turns on a separate switch for it.
 - The assistant never sends a mail without an owner. The owner taps Send on the exact text, in Telegram or in the panel. Without a tap the send ends after 48 hours (a reply draft: after 7 days).
 - The assistant never deletes mail in your mailbox.

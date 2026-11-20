@@ -14,7 +14,9 @@ Podmiot przetwarzający przetwarza pocztę wyłącznie po to, aby realizować dl
 - **Sortowanie:** aby przypisać każdej wiadomości kategorię z krótkim uzasadnieniem.
 - **Działania:** aby przenosić wiadomości, oznaczać je flagą lub jako przeczytane, gdy pozwalają na to tryb i przełączniki każdej skrzynki.
 - **Szkice:** aby pisać szkice odpowiedzi i pytań. Szkic jest wysyłany dopiero po zatwierdzeniu przez właściciela.
-- **Podsumowania:** aby informować członków o pilnej poczcie, problemach i szkicach, które czekają, w Telegramie lub w powiadomieniu push na zarejestrowanym telefonie albo w przeglądarce.
+- **Podsumowania:** aby informować członków o pilnej poczcie, problemach i szkicach, które czekają, w Telegramie lub w powiadomieniu push na zarejestrowanym telefonie albo w przeglądarce. Gdy włączony jest raport pocztą, także wiadomością, którą podmiot przetwarzający wkłada do skrzynki INBOX skrzynki wybranej przez członka.
+- **Otwarte sprawy:** aby znaleźć we własnej wysłanej poczcie skrzynki to, o co prosił lub co obiecał członek, i mu o tym przypomnieć. Działa to tylko przy włączonej funkcji.
+- **Newslettery:** aby znaleźć newslettery i, gdy właściciel dotknie Wypisz, wysłać jedno żądanie pod link, który napisał newsletter, aby nadawca usunął skrzynkę z listy. Działa to tylko przy włączonej funkcji.
 - **Przypomnienia dla wykonawców:** aby przypomnieć wykonawcy o zleceniu, szkicem, który wymaga takiego samego zatwierdzenia.
 
 ## Dane i osoby

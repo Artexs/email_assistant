@@ -850,7 +850,7 @@ One flag at a time, one pilot organization first: `$C run --rm cli bun run org:f
 
 1. `trust_ladder`. Then queue a check if a mailbox needs one at once: `$C run --rm cli bun run trust:history-check --org-id <uuid> --mailbox-id <uuid>`. The job `trust.history` runs it; the check ends `done` or `no_result` within an hour, costs at most $0.25, and the report page `/report` shows it. With the gate file of today (provisional) no category is recommended.
 2. `user_quiet_hours`. 3. `report_mail` (set `WEB_BASE_URL` first; one member chooses the channel in Settings). 4. `why_lines`, then `spam_review_line`. 5. `panel_review`. 6. `urgency_editor`.
-3. `bulk_unsubscribe` last. Set `MAIL_TRUSTED_AUTHSERV_IDS` only to providers that write their own `Authentication-Results` header on top of the mail. The privacy text does not yet name the one-click request (owner decision 2026-11-18): decide that first.
+3. `bulk_unsubscribe` last. Set `MAIL_TRUSTED_AUTHSERV_IDS` only to providers that write their own `Authentication-Results` header on top of the mail. Turn it on only on a release that carries the legal version that names the one-click request.
 
 `FEATURES_OFF=<key,key>` in `.env` plus `$C up -d server` forces flags off for every organization.
 

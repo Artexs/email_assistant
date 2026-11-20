@@ -37,12 +37,12 @@ export const subprocessors: readonly Subprocessor[] = [
     id: "openai",
     name: "OpenAI",
     purpose: {
-      en: "AI model that sorts mail and writes drafts",
-      pl: "Model AI, który sortuje pocztę i pisze szkice odpowiedzi",
+      en: "AI model that sorts mail, writes drafts and finds open loops in own sent mail",
+      pl: "Model AI, który sortuje pocztę, pisze szkice odpowiedzi i znajduje otwarte sprawy we własnej wysłanej poczcie",
     },
     dataReceived: {
-      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender, and for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization",
-      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca, a do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji",
+      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender, and for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization; for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail",
+      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca, a do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji; do otwartych spraw: temat, lokalny czas wysłania, liczba adresatów i do 8000 znaków treści własnej wysłanej wiadomości",
     },
     location: {
       en: "No EU region is used (standard endpoint, ADR 0015). <to confirm: country>",
@@ -56,12 +56,12 @@ export const subprocessors: readonly Subprocessor[] = [
     id: "gemini",
     name: "Google Gemini API",
     purpose: {
-      en: "AI model that sorts mail and writes drafts",
-      pl: "Model AI, który sortuje pocztę i pisze szkice odpowiedzi",
+      en: "AI model that sorts mail, writes drafts and finds open loops in own sent mail",
+      pl: "Model AI, który sortuje pocztę, pisze szkice odpowiedzi i znajduje otwarte sprawy we własnej wysłanej poczcie",
     },
     dataReceived: {
-      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender",
-      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca",
+      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender; for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail",
+      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca; do otwartych spraw: temat, lokalny czas wysłania, liczba adresatów i do 8000 znaków treści własnej wysłanej wiadomości",
     },
     location: {
       en: "No EU location (docs/architecture.md §6). <to confirm: country>",
