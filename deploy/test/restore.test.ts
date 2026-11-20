@@ -565,16 +565,22 @@ describe("restore.sh waits for the final database server (step db-ready)", () =>
     expect(sleepCalls()).toEqual(["sleep 1", "sleep 1", "sleep 1"]);
   });
 
-  test("F139-2. a new-host restore waits the same way", () => {
+  test("F139-2. a new-host restore waits the same way, with 3 pauses, after up", () => {
     setSwitch("init-probes", "3\n");
     const result = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
     expect(result.output).not.toContain("restore failed at");
     expect(result.code).toBe(0);
     const lines = dockerCalls();
+    const up = indexOfCall(lines, " up -d --wait db");
     const firstTables = indexOfCall(lines, "pg_tables");
     const probes = lines.map((line, index) => (line.includes(PROBE) ? index : -1)).filter((index) => index >= 0);
+    expect(up).toBeGreaterThanOrEqual(0);
     expect(probes).toHaveLength(4);
-    for (const index of probes) expect(index).toBeLessThan(firstTables);
+    for (const index of probes) {
+      expect(index).toBeGreaterThan(up);
+      expect(index).toBeLessThan(firstTables);
+    }
+    expect(sleepCalls()).toEqual(["sleep 1", "sleep 1", "sleep 1"]);
     expect(result.stdout).toContain("db ready probes=4");
   });
 
