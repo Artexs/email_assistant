@@ -135,6 +135,7 @@ describe("operator reads (F099 D14, D17, D18)", () => {
           promptVersion: "p1",
           model,
           endpoint: "standard",
+          provider: "openai" as const,
           outcome: "ok",
           tokensIn: tokens === null ? null : tokens,
           tokensOut: tokens === null ? null : tokens / 5,

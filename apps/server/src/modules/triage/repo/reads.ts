@@ -2,8 +2,10 @@ import {
   categorySchema,
   readSenderRule,
   toEndpointKind,
+  toProviderId,
   type Category,
   type LlmEndpointKind,
+  type LlmProviderId,
   type SenderRuleKind,
 } from "@ea/core";
 import { sql, type NotNull } from "kysely";
@@ -35,10 +37,22 @@ export interface UsageRow {
   model: string;
   /** Where the call ran, from the `llm.call` row of the same mail. `standard` when no row says otherwise. */
   endpoint: LlmEndpointKind;
+  /** The provider from the `llm.call` row of the same mail. `null` when the row is old and has no provider. */
+  provider: LlmProviderId | null;
   tokens_in: number | null;
   tokens_out: number | null;
   latency_ms: number | null;
   created_at: Date;
+}
+// One string key of the nearest `ok` `llm.call` row of the same mail as the triage result.
+function callKey(key: "endpoint" | "provider") {
+  return sql<string | null>`(
+    SELECT a.data->>${key} FROM audit_log a
+    WHERE a.org_id = triage_results.org_id AND a.email_id = triage_results.email_id
+      AND a.event = 'llm.call' AND a.reason_code = 'ok'
+    ORDER BY abs(extract(epoch FROM a.created_at - triage_results.created_at)), a.id DESC
+    LIMIT 1
+  )`;
 }
 // Rows with a model (LLM results) created at or after `since`, oldest first.
 export async function listUsageSince(
@@ -59,14 +73,9 @@ export async function listUsageSince(
       "triage_results.tokens_out",
       "triage_results.latency_ms",
       "triage_results.created_at",
-      // `triage_results` has no endpoint column: the nearest `ok` `llm.call` row of the same mail names it.
-      sql<string | null>`(
-        SELECT a.data->>'endpoint' FROM audit_log a
-        WHERE a.org_id = triage_results.org_id AND a.email_id = triage_results.email_id
-          AND a.event = 'llm.call' AND a.reason_code = 'ok'
-        ORDER BY abs(extract(epoch FROM a.created_at - triage_results.created_at)), a.id DESC
-        LIMIT 1
-      )`.as("endpoint_key"),
+      // `triage_results` has no endpoint or provider column: the nearest `ok` `llm.call` row of the same mail names them.
+      callKey("endpoint").as("endpoint_key"),
+      callKey("provider").as("provider_key"),
     ])
     .where("triage_results.org_id", "=", ctx.orgId)
     .where("emails.org_id", "=", ctx.orgId)
@@ -78,7 +87,11 @@ export async function listUsageSince(
     .orderBy("triage_results.id")
     .$narrowType<{ model: NotNull }>()
     .execute();
-  return rows.map(({ endpoint_key, ...row }) => ({ ...row, endpoint: toEndpointKind(endpoint_key) }));
+  return rows.map(({ endpoint_key, provider_key, ...row }) => ({
+    ...row,
+    endpoint: toEndpointKind(endpoint_key),
+    provider: toProviderId(provider_key),
+  }));
 }
 // The latest result per email, created in the window `after < created_at <= until` (index triage_results_org_created_idx).
 function latestInWindow(orgId: string, range: { after: Date; until: Date }) {

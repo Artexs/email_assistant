@@ -46,6 +46,23 @@ describe("unitCost", () => {
     expect(unpriced).toMatchObject({ unpricedCalls: 1, llmUsdWeek: 0 });
   });
 
+  test("a deepseek call is priced by its model at the standard rate: no provider key is needed", () => {
+    const cost = unitCost(
+      [
+        llmCallRow({
+          model: "deepseek-flash",
+          endpoint: "standard",
+          tokensIn: 1_000_000,
+          tokensOut: 1_000_000,
+          at: new Date("2026-11-20T10:00:00Z"),
+        }),
+      ],
+      { mailboxes: 1 }
+    );
+    expect(cost.llmUsdWeek).toBeCloseTo(1.5, 10);
+    expect(cost.unpricedCalls).toBe(0);
+  });
+
   test("zero mailboxes count as one", () => {
     expect(unitCost(week(), { mailboxes: 0 })).toEqual(unitCost(week(), { mailboxes: 1 }));
     expect(unitCost(week(), { mailboxes: 0 }).mailboxes).toBe(1);

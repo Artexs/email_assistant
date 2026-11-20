@@ -64,6 +64,7 @@ export async function recordAttempts(
         promptVersion: prompt.version,
         model: attempt.usage?.model ?? llm.modelOf(prompt.role),
         endpoint: attempt.usage?.endpoint ?? llm.endpointOf(prompt.role),
+        provider: attempt.usage?.provider ?? llm.providerOf(prompt.role),
         outcome: attempt.outcome,
         tokensIn: attempt.usage?.tokensIn ?? null,
         tokensOut: attempt.usage?.tokensOut ?? null,

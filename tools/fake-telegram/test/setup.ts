@@ -129,6 +129,7 @@ export function urgentLlm(): LlmClient {
   return {
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate(req) {
       return {
         data: req.schema.parse(urgentAnswer),
@@ -140,6 +141,7 @@ export function urgentLlm(): LlmClient {
           tokensOut: 20,
           latencyMs: 300,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

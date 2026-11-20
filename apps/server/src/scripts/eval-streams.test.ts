@@ -90,6 +90,7 @@ function fakeClient(
   return {
     modelOf: () => MODEL,
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls;
       calls += 1;
@@ -109,6 +110,7 @@ function fakeClient(
           tokensOut: 20,
           latencyMs: 5,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

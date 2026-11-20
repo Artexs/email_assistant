@@ -129,6 +129,7 @@ function capturingLlm(): CapturingLlm {
     prompts: [] as string[],
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate(req) {
       llm.prompts.push(req.prompt);
       return {
@@ -148,6 +149,7 @@ function capturingLlm(): CapturingLlm {
           tokensOut: 20,
           latencyMs: 300,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

@@ -1,6 +1,6 @@
 import type { LlmEndpointKind } from "@ea/core";
 
-import { DEEPSEEK_HOST } from "./providers/deepseek-host";
+import { DEEPSEEK_HOST } from "./deepseek-host";
 
 /** The default endpoint of the `openai` provider. */
 export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";

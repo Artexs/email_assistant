@@ -367,6 +367,7 @@ describe("buildDigestMessage", () => {
         promptVersion: "test",
         model: "test-model",
         endpoint: "standard",
+        provider: "openai" as const,
         outcome: "http_429_quota",
         tokensIn: null,
         tokensOut: null,

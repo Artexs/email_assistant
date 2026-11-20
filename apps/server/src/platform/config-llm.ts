@@ -2,9 +2,16 @@ import { type LlmRole, llmRoleModels, llmRoles, providerEffort, SIM_STACK_NAME, 
 import { z } from "zod";
 
 import { ConfigError, emptyAsUndefined } from "./config-shared";
-import { type LlmProviderId, llmProviderIds, llmProviders, type LlmRoleSettings, type LlmRoleTable } from "./llm";
-import { DEFAULT_OPENAI_BASE_URL, type LlmEndpoint, parseLlmBaseUrl } from "./llm/endpoint";
-import { DEEPSEEK_BASE_URL } from "./llm/providers/deepseek";
+import {
+  type LlmProviderId,
+  defaultLlmProviderId,
+  llmProviderIds,
+  llmProviders,
+  type LlmProviderSettings,
+  type LlmRowSettings,
+  type LlmRoleSettings,
+  type LlmRoleTable,
+} from "./llm";
 
 // The RPD of the Gemini free tier is not known, so the cap stays 300.
 const defaultLlmDailyCap = 300;
@@ -55,6 +62,12 @@ const removedKeyShape = Object.fromEntries(removedEnvKeys.map((key) => [key, z.s
 const apiKeyField = () => z.preprocess(emptyAsUndefined, z.string().optional());
 const positiveIntField = (fallback: number) => z.coerce.number().int().positive().default(fallback);
 
+type UnionToIntersection<U> = (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
+type RowEnvShape = UnionToIntersection<(typeof llmProviders)[LlmProviderId]["envShape"]>;
+
+// The extra keys of every registry row (an endpoint, an own server): the rows own their names and their rules.
+const rowEnvShape = Object.assign({}, ...llmProviderIds.map((id) => llmProviders[id].envShape)) as RowEnvShape;
+
 type Prefix<P extends LlmProviderId> = (typeof llmProviders)[P]["envPrefix"];
 type ProviderEnvShape = {
   [P in LlmProviderId as `${Prefix<P>}_API_KEY`]: ReturnType<typeof apiKeyField>;
@@ -77,18 +90,11 @@ const providerEnvShape = Object.fromEntries(
 // The env keys of the LLM providers and roles, and the triage scope. `config.ts` spreads them into the schema.
 export const llmShape = {
   // The provider of every role: its tiers pick the models. A restart applies it.
-  LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("openai")),
+  LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default(defaultLlmProviderId)),
   // `<P>_API_KEY`, `<P>_TIMEOUT_MS` and `<P>_RPM` of every registry row (secret: never print or log a key).
   ...providerEnvShape,
-  // The key an own server gets, when it needs one. Secret: never print or log it. Empty = the fixed dummy key.
-  // An own endpoint never gets OPENAI_API_KEY: that key belongs to OpenAI.
-  OPENAI_OWN_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // The one model of an own endpoint: every role on openai uses it. Read only when the endpoint is own. Empty = not set.
-  OPENAI_OWN_MODEL: z.preprocess(emptyAsUndefined, z.string().optional()),
-  // The endpoint of the openai provider; platform/llm/endpoint checks it. Empty = the default.
-  OPENAI_BASE_URL: z.preprocess(emptyAsUndefined, z.string().default(DEFAULT_OPENAI_BASE_URL)),
-  // "own" = the URL is a server the operator runs (any host over https). The only value.
-  OPENAI_ENDPOINT_KIND: z.preprocess(emptyAsUndefined, z.literal("own").optional()),
+  // The extra keys of the rows (an own endpoint and its model, the base URL): see `envShape` of a row.
+  ...rowEnvShape,
   // The name of this stack. Only the live lab (`SIM_STACK_NAME`, generated mail only) may send mail to a provider
   // without a sub-processor row. Empty = not set.
   LAB_STACK: z.preprocess(emptyAsUndefined, z.string().optional()),
@@ -103,60 +109,15 @@ export const llmShape = {
 
 type LlmConfig = z.infer<z.ZodObject<typeof llmShape>>;
 
-interface ProviderBlock {
-  /** Env key name, for messages: "GEMINI_API_KEY". */
-  apiKeyName: string;
-  apiKey: string | undefined;
-  timeoutMs: number;
-  rpm: number;
-  /** null: the provider has one fixed endpoint (Gemini). A function: it throws for an unchecked bad value. */
-  endpoint: () => LlmEndpoint | null;
+/** The settings of one row; null when its endpoint value is bad (`check` of the row reports it). */
+function rowSettings(config: LlmConfig, id: LlmProviderId): LlmRowSettings | null {
+  try {
+    return llmProviders[id].settings(config);
+  } catch (error) {
+    if (error instanceof ConfigError) return null;
+    throw error;
+  }
 }
-
-/** The key an own server gets when `OPENAI_OWN_API_KEY` is not set. The SDK needs some key; Ollama ignores it. */
-const OWN_DUMMY_API_KEY = "own";
-
-/** True for an own endpoint. A bad value is no endpoint: `configSchema` reports it. */
-function openAiIsOwn(c: LlmConfig): boolean {
-  const parsed = parseLlmBaseUrl(c.OPENAI_BASE_URL, c.OPENAI_ENDPOINT_KIND === "own");
-  return !("error" in parsed) && parsed.endpoint === "own";
-}
-
-/** The endpoint of the openai provider. `configSchema` has checked the value, so an error here is a bug. */
-function openAiEndpoint(c: LlmConfig): LlmEndpoint {
-  const parsed = parseLlmBaseUrl(c.OPENAI_BASE_URL, c.OPENAI_ENDPOINT_KIND === "own");
-  if ("error" in parsed) throw new ConfigError(["OPENAI_BASE_URL"]);
-  return parsed;
-}
-
-/** The key, timeout and rate of one row, read through its prefix. */
-function rowEnv(c: LlmConfig, id: LlmProviderId) {
-  const prefix = llmProviders[id].envPrefix;
-  return {
-    apiKeyName: `${prefix}_API_KEY`,
-    apiKey: c[`${prefix}_API_KEY`],
-    timeoutMs: c[`${prefix}_TIMEOUT_MS`],
-    rpm: c[`${prefix}_RPM`],
-  };
-}
-
-// One block per registry row: the type forces a block for each provider.
-const providerBlocks: Record<LlmProviderId, (config: LlmConfig) => ProviderBlock> = {
-  gemini: (c) => ({ ...rowEnv(c, "gemini"), endpoint: () => null }),
-  // An own endpoint never gets the OpenAI key: the row holds the own key or the dummy, so the start needs no
-  // OPENAI_API_KEY and the key can reach no other host.
-  openai: (c) => ({
-    ...rowEnv(c, "openai"),
-    apiKeyName: openAiIsOwn(c) ? "OPENAI_OWN_API_KEY" : "OPENAI_API_KEY",
-    apiKey: openAiIsOwn(c) ? (c.OPENAI_OWN_API_KEY ?? OWN_DUMMY_API_KEY) : c.OPENAI_API_KEY,
-    endpoint: () => openAiEndpoint(c),
-  }),
-  // The host is fixed and the key is its own: no OpenAI value reaches it.
-  deepseek: (c) => ({
-    ...rowEnv(c, "deepseek"),
-    endpoint: () => ({ url: DEEPSEEK_BASE_URL, host: new URL(DEEPSEEK_BASE_URL).hostname, endpoint: "standard" }),
-  }),
-};
 
 const REMOVED_KEY_MESSAGE = "removed: every role uses the tiers of LLM_PROVIDER (F141); delete this line";
 
@@ -187,17 +148,12 @@ function checkRealMail(config: LlmConfig, ctx: z.RefinementCtx): void {
 // The LLM checks of `configSchema`.
 export function checkLlm(config: LlmConfig, ctx: z.RefinementCtx): void {
   checkRemovedKeys(config, ctx);
-  // Always checked, also with TRIAGE_LLM_SCOPE=off: the message names the key and never holds the value.
-  const endpoint = parseLlmBaseUrl(config.OPENAI_BASE_URL, config.OPENAI_ENDPOINT_KIND === "own");
-  if ("error" in endpoint) {
-    ctx.addIssue({ code: "custom", path: ["OPENAI_BASE_URL"], message: endpoint.error });
-  }
-  if (config.LLM_PROVIDER === "openai" && openAiIsOwn(config) && config.OPENAI_OWN_MODEL === undefined) {
-    ctx.addIssue({ code: "custom", path: ["OPENAI_OWN_MODEL"], message: "needed for an own endpoint" });
-  }
+  // Always checked, also with TRIAGE_LLM_SCOPE=off: each row checks its own keys.
+  for (const id of llmProviderIds) llmProviders[id].check(config, ctx);
   checkRealMail(config, ctx);
-  const block = providerBlocks[config.LLM_PROVIDER](config);
-  if (config.TRIAGE_LLM_SCOPE !== "off" && block.apiKey === undefined) {
+  // A bad endpoint value is reported by the row check; the key rule then has nothing to read.
+  const block = rowSettings(config, config.LLM_PROVIDER);
+  if (block !== null && config.TRIAGE_LLM_SCOPE !== "off" && block.apiKey === undefined) {
     ctx.addIssue({ code: "custom", path: [block.apiKeyName], message: "needed when TRIAGE_LLM_SCOPE is not off" });
   }
 }
@@ -238,13 +194,16 @@ export function runOverrides(judged: LlmRole, flags: LlmRunFlags): Record<LlmRol
 /** The operator text of a `ConfigError` that `llmRoleTable` throws for a run flag. Names a flag or a key, never a value. */
 export function runFlagError(error: ConfigError): string {
   if (error.keys.includes("reasoningEffort")) return "--reasoning-effort is not accepted by this provider";
-  if (error.keys.includes("OPENAI_OWN_MODEL")) return "OPENAI_OWN_MODEL is missing: an own endpoint needs its model";
+  const ownModelKey = llmProviderIds
+    .map((id) => llmProviders[id].ownModelKey)
+    .find((key) => error.keys.includes(key ?? ""));
+  if (ownModelKey) return `${ownModelKey} is missing: an own endpoint needs its model`;
   return `config error: ${error.keys.join(", ")}`;
 }
 
 /**
  * The role table. Every role runs on LLM_PROVIDER, or on the provider a tool override names. The model is the override
- * model, else the one model of an own endpoint (`OPENAI_OWN_MODEL`), else the provider's model for the role's tier. The
+ * model, else the one model of an own endpoint (`ownModelKey` of the row), else the provider's model for the role's tier. The
  * effort is the override effort, else the role's level as the provider takes it (an own endpoint gets none).
  * `LLM_<ROLE>_TIMEOUT_MS` and `LLM_<ROLE>_RPM` apply to the role wherever it runs.
  */
@@ -252,12 +211,11 @@ export function llmRoleTable(
   config: LlmConfig,
   overrides: Partial<Record<LlmRole, LlmRoleOverride>> = {}
 ): LlmRoleTable {
-  const providerRow = (provider: LlmProviderId) => providerBlocks[provider](config);
-  const isOwn = (provider: LlmProviderId) => providerRow(provider).endpoint()?.endpoint === "own";
+  const providerRow = (provider: LlmProviderId) => llmProviders[provider].settings(config);
   // The one model of an own endpoint. A missing key is a config error, also for a tool override that moves a role there.
-  const ownModel = (): string => {
-    if (config.OPENAI_OWN_MODEL === undefined) throw new ConfigError(["OPENAI_OWN_MODEL"]);
-    return config.OPENAI_OWN_MODEL;
+  const ownModel = (provider: LlmProviderId, settings: LlmRowSettings): string => {
+    if (settings.ownModel === null) throw new ConfigError([llmProviders[provider].ownModelKey ?? "ownModel"]);
+    return settings.ownModel;
   };
   const rowOf = (role: LlmRole): LlmRoleSettings => {
     const override = overrides[role];
@@ -266,7 +224,8 @@ export function llmRoleTable(
     if (override?.reasoningEffort !== undefined && providerEffort(provider, "none") === null) {
       throw new ConfigError(["reasoningEffort"]);
     }
-    const own = isOwn(provider);
+    const settings = providerRow(provider);
+    const own = settings.endpoint === "own";
     // An own server gets no `reasoning` field, whatever an override says.
     const reasoningEffort = own ? null : (override?.reasoningEffort ?? providerEffort(provider, effort));
     const keyed = role === "classifier" ? undefined : role;
@@ -274,8 +233,8 @@ export function llmRoleTable(
     const roleRpm = keyed === undefined ? undefined : config[roleKey(keyed, "RPM")];
     return {
       provider,
-      model: override?.model ?? (own ? ownModel() : tierModel(provider, tier)),
-      timeoutMs: roleTimeout ?? providerRow(provider).timeoutMs,
+      model: override?.model ?? (own ? ownModel(provider, settings) : tierModel(provider, tier)),
+      timeoutMs: roleTimeout ?? settings.timeoutMs,
       rpm: roleRpm ?? null,
       reasoningEffort,
     };
@@ -283,18 +242,8 @@ export function llmRoleTable(
 
   const providers = Object.fromEntries(
     llmProviderIds.map((id) => {
-      const block = providerRow(id);
-      const endpoint = block.endpoint();
-      return [
-        id,
-        {
-          apiKeyName: block.apiKeyName,
-          apiKey: block.apiKey,
-          rpm: block.rpm,
-          baseUrl: endpoint?.url ?? null,
-          endpoint: endpoint?.endpoint ?? "standard",
-        },
-      ];
+      const { apiKeyName, apiKey, rpm, baseUrl, endpoint } = providerRow(id);
+      return [id, { apiKeyName, apiKey, rpm, baseUrl, endpoint } satisfies LlmProviderSettings];
     })
   ) as LlmRoleTable["providers"];
 

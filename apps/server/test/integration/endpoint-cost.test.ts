@@ -34,6 +34,7 @@ function call(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, endpo
     role: "classifier" as const,
     promptVersion: "p1",
     model: "gpt-6-luna",
+    provider: "openai" as const,
     outcome: "ok",
     tokensIn: 1000,
     tokensOut: 1000,
@@ -85,6 +86,7 @@ describe("endpoint in llm.call rows and cost readers (F111 stage 03)", () => {
         promptVersion: "p1",
         model: "SpeakLeash/bielik-11b-v3.1:Q4_K_M",
         endpoint: "own",
+        provider: "openai" as const,
         outcome: "ok",
         tokensIn: 1_000_000,
         tokensOut: 1_000_000,
@@ -140,6 +142,7 @@ describe("endpoint in llm.call rows and cost readers (F111 stage 03)", () => {
         promptVersion: "p1",
         model: "gemma3:12b",
         endpoint: "own",
+        provider: "openai" as const,
         outcome: "ok",
         tokensIn: 1_000_000,
         tokensOut: 0,
@@ -181,6 +184,7 @@ describe("endpoint in llm.call rows and cost readers (F111 stage 03)", () => {
           promptVersion: "classifier-v2",
           model: "gpt-6-luna",
           endpoint,
+          provider: "openai" as const,
           outcome: "ok",
           tokensIn: 1000,
           tokensOut: 1000,
@@ -195,7 +199,7 @@ describe("endpoint in llm.call rows and cost readers (F111 stage 03)", () => {
       expect(rows.map((row) => row.endpoint).sort()).toEqual(["eu", "standard"]);
       const groups = groupUsage(rows);
       expect(groups.map((g) => `${g.model}/${g.endpoint}`).sort()).toEqual(["gpt-6-luna/eu", "gpt-6-luna/standard"]);
-      const text = groups.map((g) => modelReportLines(g.model, g.endpoint, g.rows, 1).join("\n")).join("\n");
+      const text = groups.map((g) => modelReportLines(g, 1).join("\n")).join("\n");
       expect(text).toContain("model gpt-6-luna endpoint eu");
       expect(text).toContain("average cost per mail: $0.000660");
       expect(text).toContain("average cost per mail: $0.000600");

@@ -87,6 +87,8 @@ export interface LlmUsage {
   promptVersion: string;
   /** Where the call ran; it goes to the audit row. */
   endpoint: LlmEndpointKind;
+  /** The provider row of the role; it goes to the audit row. */
+  provider: LlmProviderId;
 }
 
 export interface LlmCall<T, R extends LlmRole> {
@@ -105,6 +107,8 @@ export interface LlmClient {
   modelOf(role: LlmRole): string;
   /** The endpoint kind of the role's provider row. The error branch has no usage and reads this. */
   endpointOf(role: LlmRole): LlmEndpointKind;
+  /** The provider of the role's row. The error branch has no usage and reads this, like `endpointOf`. */
+  providerOf(role: LlmRole): LlmProviderId;
   generate<T, R extends LlmRole>(call: LlmCall<T, R>): Promise<{ data: T; usage: LlmUsage }>;
 }
 
@@ -164,6 +168,7 @@ export function createLlmClient(opts: {
   return {
     modelOf: (role) => opts.table.roles[role].model,
     endpointOf: (role) => opts.table.providers[opts.table.roles[role].provider].endpoint,
+    providerOf: (role) => opts.table.roles[role].provider,
 
     async generate(call) {
       const row = opts.table.roles[call.role];
@@ -193,6 +198,7 @@ export function createLlmClient(opts: {
           tokensOut: result.tokensOut,
           latencyMs: now() - started,
           endpoint: opts.table.providers[row.provider].endpoint,
+          provider: row.provider,
         };
         log.debug("llm_call_ok", {
           role: call.role,

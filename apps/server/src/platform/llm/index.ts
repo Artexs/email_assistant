@@ -19,7 +19,7 @@ export {
   LlmSoftError,
   softCodes,
 } from "./errors";
-export type { LlmProvider, LlmProviderId } from "./providers";
-export { llmProviderIds, llmProviders } from "./providers";
+export type { LlmEnv, LlmProvider, LlmProviderId, LlmRowSettings } from "./providers";
+export { defaultLlmProviderId, llmProviderIds, llmProviders } from "./providers";
 export type { LlmProviderSettings, LlmRoleSettings, LlmRoleTable } from "./settings";
 export { llmEndpointFields, uniformRoleTable } from "./settings";

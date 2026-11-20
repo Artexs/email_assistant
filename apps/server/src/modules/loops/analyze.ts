@@ -142,6 +142,7 @@ async function recordCall(
       promptVersion: prompt.version,
       model: call.usage?.model ?? deps.llm.modelOf(prompt.role),
       endpoint: call.usage?.endpoint ?? deps.llm.endpointOf(prompt.role),
+      provider: call.usage?.provider ?? deps.llm.providerOf(prompt.role),
       outcome: call.outcome,
       tokensIn: call.usage?.tokensIn ?? null,
       tokensOut: call.usage?.tokensOut ?? null,

@@ -7,6 +7,7 @@ import {
   llmTiers,
   providerEffort,
   tierModel,
+  toProviderId,
 } from "./llm-providers";
 import { llmRoles } from "./llm-roles";
 import { costPerMail, llmPrices, priceRowFor } from "./triage/cost";
@@ -53,5 +54,12 @@ describe("llm provider catalog", () => {
     expect(llmRoleModels.judge.tier).toBe("strong");
     for (const role of llmRoles) if (role !== "judge") expect(llmRoleModels[role].tier).toBe("light");
     expect(llmRoleModels.drafter.effort).toBe("low");
+  });
+});
+
+describe("toProviderId", () => {
+  test("a catalog id reads as itself; a missing, damaged or unknown value reads null", () => {
+    for (const id of llmProviderIds) expect(toProviderId(id)).toBe(id);
+    for (const value of [undefined, null, "", "anthropic", 7, {}]) expect(toProviderId(value)).toBeNull();
   });
 });
