@@ -15,7 +15,15 @@ import { sql, type Transaction } from "kysely";
 import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
-import { incomingCountsBySender, ownAddressesOf, senderWindow, type SenderScope, type TestMailRule } from "../mail";
+import {
+  incomingCountsBySender,
+  ownAddressesOf,
+  senderWindow,
+  theirReplyDelaysBySender,
+  userReplyDelaysBySender,
+  type SenderScope,
+  type TestMailRule,
+} from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -155,12 +163,6 @@ interface SentRow {
   last_at: Date;
 }
 
-interface DelayRow {
-  addr: string;
-  n: number;
-  median: number;
-}
-
 interface DelegationRow {
   addr: string;
   n: number;
@@ -255,37 +257,9 @@ export async function readSenderActivity(
     GROUP BY ${normalizedAddress("a.addr")}
   `.execute(db);
 
-  // The user's delay is the first Sent reply after the mail whose `parent_message_id` is the Message-ID of the mail; it goes
-  // to the sender (or has no stored recipient). A delay of 0 or less (clock skew) is no sample.
+  // The delays of the user's replies and of the replies to the user (the mail module owns both reads). A scope skips them.
   const userDelays =
-    only !== undefined
-      ? skipped<DelayRow>()
-      : await sql<DelayRow>`
-    WITH win AS (${win})
-    SELECT addr, count(*)::int AS n, percentile_cont(0.5) WITHIN GROUP (ORDER BY hours) AS median
-    FROM (
-      SELECT w.address AS addr, extract(epoch FROM (r.sent_at - w.received_at)) / 3600 AS hours
-      FROM win w
-      JOIN LATERAL (
-        SELECT s.sent_at
-        FROM sent_emails s
-        WHERE s.org_id = ${ctx.orgId}
-          AND s.mailbox_id = ${mailboxId}
-          AND s.origin = 'user'
-          AND s.parent_message_id = w.message_id_header
-          AND s.sent_at > w.received_at
-          AND s.sent_at >= ${since}
-          AND ${notAutomatic("s.auto_submitted")}
-          AND (cardinality(s.to_addresses || s.cc_addresses) = 0 OR EXISTS (
-            SELECT 1 FROM unnest(s.to_addresses || s.cc_addresses) AS r(x) WHERE ${normalizedAddress("r.x")} = w.address
-          ))
-        ORDER BY s.sent_at, s.id
-        LIMIT 1
-      ) r ON true
-    ) d
-    WHERE hours > 0 AND hours <= ${MAX_DELAY_HOURS}
-    GROUP BY addr
-  `.execute(db);
+    only !== undefined ? [] : await userReplyDelaysBySender(db, ctx, windowOptions, { maxHours: MAX_DELAY_HOURS });
 
   // The mails that the user answered with a Sent reply, whoever the reply went to (a reply goes to the Reply-To address, not
   // always to the sender). The profile counts `answered` from the IMAP flag only; this count is for the suggestion rules.
@@ -306,40 +280,8 @@ export async function readSenderActivity(
     GROUP BY w.address
   `.execute(db);
 
-  // Their delay is the time from a Sent mail to the incoming mail that names its Message-ID in In-Reply-To (a whole id, as
-  // `replyMatch`; `<id>` tokens when there are any, else bare words). One sample per incoming mail: the newest Sent mail it names.
   const theirDelays =
-    only !== undefined
-      ? skipped<DelayRow>()
-      : await sql<DelayRow>`
-    WITH win AS (${win}), own_sent AS MATERIALIZED (
-      SELECT s.id, s.sent_at, regexp_replace(btrim(s.message_id), '^<|>$', '', 'g') AS ref
-      FROM sent_emails s
-      WHERE s.org_id = ${ctx.orgId} AND s.mailbox_id = ${mailboxId} AND s.origin = 'user' AND s.message_id IS NOT NULL
-    ), named AS MATERIALIZED (
-      SELECT w.id, w.address AS addr, w.received_at, t.id AS ref
-      FROM win w
-      CROSS JOIN LATERAL unnest(
-        COALESCE(
-          NULLIF(ARRAY(SELECT m[1] FROM regexp_matches(left(w.in_reply_to, 2000), '<([^<>[:space:]]+)>', 'g') AS m), '{}'),
-          ARRAY(
-            SELECT x FROM unnest(regexp_split_to_array(btrim(left(w.in_reply_to, 2000)), '[[:space:]]+')) AS x
-            WHERE x <> '' AND x !~ '[<>]'
-          )
-        )
-      ) AS t(id)
-      WHERE w.in_reply_to IS NOT NULL
-    )
-    SELECT addr, count(*)::int AS n, percentile_cont(0.5) WITHIN GROUP (ORDER BY hours) AS median
-    FROM (
-      SELECT DISTINCT ON (n.id) n.addr, extract(epoch FROM (n.received_at - s.sent_at)) / 3600 AS hours
-      FROM named n
-      JOIN own_sent s ON s.ref = n.ref AND s.sent_at < n.received_at
-      ORDER BY n.id, s.sent_at DESC, s.id
-    ) d
-    WHERE hours > 0 AND hours <= ${MAX_DELAY_HOURS}
-    GROUP BY addr
-  `.execute(db);
+    only !== undefined ? [] : await theirReplyDelaysBySender(db, ctx, windowOptions, { maxHours: MAX_DELAY_HOURS });
 
   const delegations =
     only !== undefined
@@ -417,15 +359,15 @@ export async function readSenderActivity(
     const item = byAddress.get(row.addr);
     if (item !== undefined) item.repliedBySent90 = row.n;
   }
-  for (const row of userDelays.rows) {
-    const item = byAddress.get(row.addr);
-    if (item !== undefined && row.n >= MIN_DELAY_SAMPLES) item.medianUserReplyHours = row.median;
+  for (const row of userDelays) {
+    const item = byAddress.get(row.address);
+    if (item !== undefined && row.samples >= MIN_DELAY_SAMPLES) item.medianUserReplyHours = row.medianHours;
   }
-  for (const row of theirDelays.rows) {
-    const item = byAddress.get(row.addr);
+  for (const row of theirDelays) {
+    const item = byAddress.get(row.address);
     if (item === undefined) continue;
-    item.replySamplesTheirs = row.n;
-    if (row.n >= MIN_DELAY_SAMPLES) item.medianTheirReplyHours = row.median;
+    item.replySamplesTheirs = row.samples;
+    if (row.samples >= MIN_DELAY_SAMPLES) item.medianTheirReplyHours = row.medianHours;
   }
   for (const row of delegations.rows) {
     const item = byAddress.get(row.addr);

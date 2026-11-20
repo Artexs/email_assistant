@@ -203,9 +203,12 @@ export {
   incomingCountsBySender,
   ownAddressesOf,
   senderWindow,
+  theirReplyDelaysBySender,
+  userReplyDelaysBySender,
 } from "./repo";
 export type {
   IncomingCounts,
+  ReplyDelays,
   SenderScope,
   SenderWindow,
   SenderWindowOptions,
