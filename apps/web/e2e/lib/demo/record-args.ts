@@ -64,7 +64,7 @@ export function preflightProblem(args: RecordArgs, { env, exists = existsSync }:
   return demoDbProblem(app, others) ?? demoDbProblem(migrator, others);
 }
 
-// The size and length limits of the finished video (plan D8: at most 15 MB; the script plans 116 s).
+// The size and length limits of the finished video (at most 15 MB; the script plans 116 s).
 export function videoProblem(video: { bytes: number; seconds: number }): string | null {
   if (video.bytes > MAX_VIDEO_BYTES) return `video_too_large ${video.bytes}`;
   if (!(video.seconds >= MIN_VIDEO_SECONDS && video.seconds <= MAX_VIDEO_SECONDS)) {

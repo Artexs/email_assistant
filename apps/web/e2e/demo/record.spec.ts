@@ -17,7 +17,7 @@ import { DEMO_VIDEO_SIZE, DEMO_VIEWPORT } from "../lib/demo/record-args";
 import { shotSource } from "../lib/shot-source";
 import { readSeed } from "../seed";
 
-// The recording of the demo video (stage 10 of the public pages plan). One page records the whole video: the steps of `DEMO_STEPS` run in
+// The recording of the demo video (the public pages and demo ticket). One page records the whole video: the steps of `DEMO_STEPS` run in
 // order, each as one owner of the e2e seed (README.md, the spike table), and the page switches between the panel and the read-only view
 // of the fake Telegram. The sign-ins happen before the recording starts, in a context that records nothing: no password or sign-in form is
 // in the video. The spec writes the cue times (ms from the video start) and the raw video to `DEMO_WORK_DIR`; the command encodes it.
