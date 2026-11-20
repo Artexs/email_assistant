@@ -6,9 +6,18 @@ import { senderHistorySchema } from "../triage/sender-history";
 import { defaultWeekSpec, miniScenario } from "./fixtures";
 import { hardCaseRules } from "./hard-cases";
 import { senderHistoryFor } from "./history-gen";
-import { batchSlots, planBank } from "./plan-bank";
+import {
+  batchSlots,
+  buildSlot,
+  planBank,
+  type ContextState,
+  type Env,
+  type GroupDraws,
+  type Planned,
+} from "./plan-bank";
 import type { PlanSpec } from "./plan-spec";
 import { createRng } from "./random";
+import type { Scenario } from "./scenario";
 import { slotSchema, valueCategories, type Slot } from "./slot";
 
 const spec: PlanSpec = {
@@ -231,4 +240,200 @@ describe("batchSlots", () => {
     expect(batched[25]?.batch).toBe("batch-004");
     expect(batched.map((s) => s.id)).toEqual(bank.holdout.map((s) => s.id));
   });
+});
+
+describe("buildSlot", () => {
+  const AT = "2026-11-16T09:00:00.000Z";
+  const envOf = (scenario: Scenario = miniScenario): Env => ({
+    scenario,
+    spec,
+    part: "dev",
+    persons: new Map(scenario.personas.map((p) => [p.key, p])),
+  });
+  const draws = (over: Partial<GroupDraws> = {}): GroupDraws => ({
+    langs: ["pl"],
+    lengths: ["short"],
+    formats: ["plain"],
+    signatures: [true],
+    threads: [false],
+    sources: [undefined],
+    ...over,
+  });
+  const build = (
+    plan: Planned,
+    over: { draws?: Partial<GroupDraws>; seed?: number; context?: ContextState; scenario?: Scenario } = {}
+  ) =>
+    buildSlot(
+      envOf(over.scenario),
+      plan,
+      0,
+      draws(over.draws),
+      createRng(over.seed ?? 1),
+      over.context ?? { next: 0 },
+      AT
+    );
+  const swapTo = (key: string): NonNullable<Planned["rule"]> => ({
+    id: "bounce",
+    short: "bnc",
+    categories: ["info"],
+    kind: "synthetic",
+    replyInjection: false,
+    apply: (slot) => ({ ...slot, persona: key }),
+  });
+  const withProfile = (profile: Partial<Scenario["urgency"]["profile"]>, vip = ["prezes"]): Scenario => ({
+    ...miniScenario,
+    urgency: { vip, profile: { ...miniScenario.urgency.profile, ...profile } },
+  });
+
+  test("a planned reply of a persona and topic has exactly the fields of the plan, the draws and the time", () => {
+    expect(build({ id: "b-inf-0001", category: "info", persona: "kasia", topic: "audyt" })).toEqual({
+      id: "b-inf-0001",
+      part: "dev",
+      persona: "kasia",
+      direction: "in",
+      to: ["szef"],
+      cc: [],
+      lang: "pl",
+      category: "info",
+      topic: "audyt",
+      hardCases: [],
+      kind: "synthetic",
+      style: { length: "short", format: "plain", signature: true, greeting: "informal" },
+      headers: {},
+      attachments: [],
+      thread: [],
+      brief: "Persona kasia reports a status on Audyt roczny for the executive's awareness",
+      receivedAt: AT,
+    });
+  });
+
+  test("a delegation slot names the delegate of the scenario and a draft of that kind", () => {
+    expect(build({ id: "b-del-0001", category: "delegation" }, { seed: 5 })).toEqual({
+      id: "b-del-0001",
+      part: "dev",
+      persona: "vendor-c",
+      direction: "in",
+      to: ["szef"],
+      cc: [],
+      lang: "pl",
+      category: "delegation",
+      topic: "faktury",
+      hardCases: [],
+      kind: "synthetic",
+      expectedDelegate: "marek",
+      expectedDraft: "delegation",
+      style: { length: "short", format: "plain", signature: false, greeting: "formal" },
+      headers: {},
+      attachments: [],
+      thread: [],
+      brief: "a task in oferty: asks the executive to have Faktury i platnosci handled by the team",
+      receivedAt: AT,
+    });
+  });
+
+  test("a newsletter slot gets list headers of its own host and no greeting", () => {
+    expect(
+      build({ id: "b-not-0001", category: "notification", persona: "news-d" }, { draws: { langs: ["en"] }, seed: 6 })
+    ).toEqual({
+      id: "b-not-0001",
+      part: "dev",
+      persona: "news-d",
+      direction: "in",
+      to: ["szef"],
+      cc: [],
+      lang: "en",
+      category: "notification",
+      topic: "fuzja",
+      hardCases: [],
+      kind: "synthetic",
+      style: { length: "short", format: "plain", signature: false, greeting: "none" },
+      headers: { "List-Id": "<news-d.lists.news-d.test>", "List-Unsubscribe": "<https://lists.news-d.test/u/1021>" },
+      attachments: [],
+      thread: [],
+      brief: "a system message about Fuzja z Beta, sent by Persona news-d, with no personal text",
+      receivedAt: AT,
+    });
+  });
+
+  test.each(["pl", "en"] as const)("a vip urgent slot in %s comes from the only VIP persona", (lang) => {
+    const slot = build(
+      { id: "b-urg-0001", category: "urgent" },
+      { draws: { langs: [lang], sources: ["vip"] }, seed: 3 }
+    );
+    expect([slot.persona, slot.urgencySource, slot.contextRef]).toEqual(["prezes", "vip", undefined]);
+    expect(slot.brief).toBe("a short request about Fuzja z Beta from an important person; no deadline words");
+  });
+
+  test("a vip urgent slot with no VIP persona in the scenario stops with a message", () => {
+    expect(() =>
+      build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["vip"] }, scenario: withProfile({}, []) })
+    ).toThrow("the scenario has no VIP persona for the vip urgency source");
+  });
+
+  test("context urgent slots alternate between the topics and the deadlines of the profile", () => {
+    const context = { next: 0 };
+    const slots = [0, 1, 2, 3].map(() =>
+      build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["context"] }, seed: 2, context })
+    );
+    expect(slots.map((slot) => slot.contextRef)).toEqual([
+      { kind: "topic", index: 0 },
+      { kind: "deadline", index: 0 },
+      { kind: "topic", index: 1 },
+      { kind: "deadline", index: 1 },
+    ]);
+    expect(slots.map((slot) => slot.topic)).toEqual([undefined, undefined, undefined, undefined]);
+    expect(slots[1]?.brief).toBe(
+      "about Oferta dla klienta A (due 2026-11-20), needs action today, does not say how pressing it is"
+    );
+    expect(context.next).toBe(4);
+  });
+
+  test("a profile with deadlines and no topic gives deadlines only", () => {
+    const scenario = withProfile({ topics: [] });
+    const context = { next: 0 };
+    const refs = [0, 1].map(
+      () =>
+        build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["context"] }, scenario, context })
+          .contextRef
+    );
+    expect(refs).toEqual([
+      { kind: "deadline", index: 0 },
+      { kind: "deadline", index: 0 },
+    ]);
+  });
+
+  test("a profile with topics and no deadline gives topics only", () => {
+    const scenario = withProfile({ deadlines: [] });
+    const context = { next: 1 };
+    const slot = build(
+      { id: "b-urg-0001", category: "urgent" },
+      { draws: { sources: ["context"] }, scenario, context }
+    );
+    expect(slot.contextRef).toEqual({ kind: "topic", index: 0 });
+  });
+
+  test("a profile with no topic and no deadline stops with a message", () => {
+    expect(() =>
+      build(
+        { id: "b-urg-0001", category: "urgent" },
+        { draws: { sources: ["context"] }, scenario: withProfile({ topics: [], deadlines: [] }) }
+      )
+    ).toThrow("the urgency profile has no topic or deadline");
+  });
+
+  test.each([
+    ["prezes", true, "formal"],
+    ["anna", false, "informal"],
+  ])(
+    "a rule that replaces the sender by %s: the signature is %s and the greeting follows the new sender",
+    (key, signature, greeting) => {
+      const slot = build({ id: "h-bnc-01", category: "info", persona: "kasia", rule: swapTo(key) }, { seed: 4 });
+      expect([slot.persona, slot.hardCases, slot.style.signature, slot.style.greeting]).toEqual([
+        key,
+        ["bounce"],
+        signature,
+        greeting,
+      ]);
+    }
+  );
 });

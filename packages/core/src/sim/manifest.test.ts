@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, test } from "bun:test";
 
 import type { CaseText } from "./files";
@@ -8,11 +10,12 @@ import {
   manifestBody,
   manifestSchema,
   nextVersion,
+  partHash,
   type FreezeInput,
 } from "./manifest";
 import { planBank } from "./plan-bank";
 import { planWeek } from "./plan-week";
-import { simParts, valueCategories, type SimPart, type ValueCategory } from "./slot";
+import { simParts, valueCategories, type SimPart, type Slot, type ValueCategory } from "./slot";
 
 const floors = { minDev: 5, minHoldout: 20, hardShare: 0.8 };
 
@@ -69,7 +72,10 @@ describe("freeze", () => {
     input.texts.dev.delete(dev.id);
     const holdout = plainSlot(input, "holdout", "spam");
     input.labels.holdout.delete(holdout.id);
-    expect(freezeIssues(input, floors).map((issue) => issue.code)).toEqual(["unwritten", "unlabelled"]);
+    expect(freezeIssues(input, floors)).toEqual([
+      { code: "unwritten", detail: `dev ${dev.id}` },
+      { code: "unlabelled", detail: `holdout ${holdout.id}` },
+    ]);
     expect(input.slots.week.some((slot) => slot.direction === "sent")).toBe(true);
   });
 
@@ -139,8 +145,74 @@ describe("freeze", () => {
     expect(found.map((issue) => issue.detail.split(" ")[0])).toContain("html_only");
   });
 
+  test("a category with exactly the floor of kept cases has no issue; one case fewer names both numbers", () => {
+    const input = complete();
+    const urgent = manifestBody(input).counts.dev.urgent as number;
+    const tooFew = (f: typeof floors) =>
+      freezeIssues(input, f).filter((issue) => issue.code === "too_few" && issue.detail.startsWith("dev urgent "));
+    expect(tooFew({ ...floors, minDev: urgent })).toEqual([]);
+    expect(tooFew({ ...floors, minDev: urgent + 1 })).toEqual([
+      { code: "too_few", detail: `dev urgent ${urgent}|${urgent + 1}` },
+    ]);
+  });
+
+  test("a tag with exactly the share of its planned cases has no issue; one case fewer names both numbers", () => {
+    const input = complete();
+    const german = (part: "dev" | "holdout") =>
+      input.slots[part].find((s) => s.hardCases.length === 1 && s.hardCases[0] === "german") as Slot;
+    const drop = (part: "dev" | "holdout") =>
+      input.texts[part].set(german(part).id, { ...text(german(part).id), dropped: true });
+    const hardIssues = () =>
+      freezeIssues(input, { ...floors, hardShare: 0.5 }).filter((issue) => issue.code === "hard_too_few");
+    drop("holdout");
+    expect(hardIssues()).toEqual([]);
+    drop("dev");
+    expect(hardIssues()).toEqual([{ code: "hard_too_few", detail: "german 0|2" }]);
+  });
+
+  test("the tags that lost cases are listed in the order of their names", () => {
+    const input = complete();
+    // Planned in the order german, then delegation_missing_data; the names sort the other way.
+    for (const tag of ["german", "delegation_missing_data"]) {
+      const slot = input.slots.holdout.find((s) => s.hardCases.length === 1 && s.hardCases[0] === tag);
+      input.texts.holdout.set((slot as { id: string }).id, { ...text((slot as { id: string }).id), dropped: true });
+    }
+    const found = freezeIssues(input, { ...floors, hardShare: 1 }).filter((issue) => issue.code === "hard_too_few");
+    expect(found).toEqual([
+      { code: "hard_too_few", detail: "delegation_missing_data 1|2" },
+      { code: "hard_too_few", detail: "german 1|2" },
+    ]);
+  });
+
   test("nextVersion adds one minor step", () => {
     expect(nextVersion("1")).toBe("1.1");
     expect(nextVersion("1.1")).toBe("1.2");
+  });
+});
+
+describe("partHash", () => {
+  const base = planBank(miniScenario, miniPlanSpec).dev[0] as Slot;
+  const slotOf = (key: string): Slot => ({ ...base, id: `b-${key}` });
+  const texts = new Map(["a", "b", "c"].map((key) => [`b-${key}`, text(`b-${key}`)]));
+  const hashOf = (pairs: unknown[]) => createHash("sha256").update(JSON.stringify(pairs)).digest("hex");
+
+  test.each([
+    ["a", "b", "c"],
+    ["a", "c", "b"],
+    ["b", "a", "c"],
+    ["b", "c", "a"],
+    ["c", "a", "b"],
+    ["c", "b", "a"],
+  ])("the hash of the slots in the order %s, %s, %s is the hash of the pairs sorted by id", (first, second, third) => {
+    const order = [first, second, third];
+    const sorted = ["a", "b", "c"].map((key) => [slotOf(key), text(`b-${key}`)]);
+    expect(partHash(order.map(slotOf), texts)).toBe(hashOf(sorted));
+  });
+
+  test("a dropped text and a slot with no text leave the hash", () => {
+    const some = new Map(texts);
+    some.set("b-b", { ...text("b-b"), dropped: true });
+    some.delete("b-c");
+    expect(partHash(["c", "b", "a"].map(slotOf), some)).toBe(hashOf([[slotOf("a"), text("b-a")]]));
   });
 });

@@ -141,4 +141,70 @@ describe("toEvalCase", () => {
     expect(result.thread.map((m) => m.from)).toEqual(["kasia@mini.test", "szef@mini.test"]);
     expect(result.thread.map((m) => m.body)).toEqual(["first body", "second body"]);
   });
+
+  test("the first three of four parents are left out; the last three stay in time order", async () => {
+    const parents = ["1", "2", "3", "4"].map((n) => {
+      const s = slot({ id: `w-1-00${n}`, part: "week", receivedAt: `2026-11-16T0${n}:00:00.000Z` });
+      return { slot: s, text: text({ id: s.id, subject: `Mail ${n}`, body: `body ${n}` }) };
+    });
+    const reply = slot({ id: "w-1-005", part: "week", receivedAt: "2026-11-16T09:00:00.000Z" });
+    const result = await join(reply, text({ id: reply.id }), fakeHtml().deps, parents);
+    expect(result.thread.map((m) => m.subject)).toEqual(["Mail 2", "Mail 3", "Mail 4"]);
+    expect(result.thread.map((m) => m.receivedAt)).toEqual([
+      "2026-11-16T02:00:00.000Z",
+      "2026-11-16T03:00:00.000Z",
+      "2026-11-16T04:00:00.000Z",
+    ]);
+  });
+
+  test("an empty parent list keeps the thread of the slot", async () => {
+    const s = slot({ thread: [{ persona: "szef", brief: "first" }] });
+    const result = await join(s, text({ thread: [{ subject: "Re: a", body: "one" }] }), fakeHtml().deps, []);
+    expect(result.thread).toEqual([
+      {
+        from: "szef@mini.test",
+        subject: "Re: a",
+        body: "one",
+        receivedAt: new Date(new Date(at).getTime() - HOUR_MS).toISOString(),
+      },
+    ]);
+  });
+
+  test("a thread mail of the slot with no text entry gets an empty subject and body", async () => {
+    const s = slot({
+      thread: [
+        { persona: "kasia", brief: "first" },
+        { persona: "szef", brief: "second" },
+      ],
+    });
+    const result = await join(s, text({ thread: [{ subject: "Re: a", body: "one" }] }));
+    expect(result.thread.map((m) => [m.subject, m.body])).toEqual([
+      ["Re: a", "one"],
+      ["", ""],
+    ]);
+  });
+
+  test("a recipient key that is no persona stops the join with its key", async () => {
+    await expect(join(slot({ to: ["nobody"] }), text())).rejects.toThrow("unknown persona key: nobody");
+  });
+
+  test("an html-only mail hands the dep its sender, recipients, date and an empty html when it has none", async () => {
+    const htmlOnly = fakeHtml();
+    const s = slot({ to: ["szef", "anna"], fromOverride: "mailer-daemon@mini.test" });
+    await join(s, text({ body: "", subject: "Faktura" }), htmlOnly.deps);
+    expect(htmlOnly.calls).toEqual([
+      {
+        subject: "Faktura",
+        html: "",
+        from: "Persona kasia <mailer-daemon@mini.test>",
+        to: ["szef@mini.test", "anna@mini.test"],
+        date: new Date(at),
+      },
+    ]);
+  });
+
+  test("the cc keys become addresses in order", async () => {
+    const result = await join(slot({ cc: ["prezes", "anna"] }), text());
+    expect(result.cc).toEqual(["prezes@mini.test", "anna@mini.test"]);
+  });
 });

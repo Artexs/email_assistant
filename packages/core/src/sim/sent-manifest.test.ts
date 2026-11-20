@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, test } from "bun:test";
 
 import { miniScenario, miniSentBlind, miniSentLabel, miniSentSlot, miniSentText } from "./fixtures";
@@ -47,6 +49,14 @@ describe("sentFreezeIssues", () => {
     expect(issues.map((issue) => issue.code)).toEqual(["label_disagrees", "too_few"]);
   });
 
+  test("two disagreeing fields are listed in one issue, joined by a comma", () => {
+    const issues = sentFreezeIssues(
+      input({ label: { ...label, id: "s-0001", due: "2026-11-21", promiseDue: "2026-11-26" } }),
+      { minDev: 0, minHoldout: 0 }
+    );
+    expect(issues).toEqual([{ code: "label_disagrees", detail: "sent-dev s-0001 due,promiseDue" }]);
+  });
+
   test("a missing label is unlabelled; a missing text is unwritten", () => {
     expect(sentFreezeIssues(input({ label: null }), { minDev: 0, minHoldout: 0 })).toEqual([
       { code: "unlabelled", detail: "sent-dev s-0001" },
@@ -87,16 +97,32 @@ describe("sentManifestBody", () => {
     expect(b.parts["sent-holdout"]).toEqual(a.parts["sent-holdout"]);
   });
 
-  test("the hash does not depend on the order of the slots", () => {
-    const two = input();
-    const second: SentSlot = { ...miniSentSlot, id: "s-0003" };
-    two.slots["sent-dev"] = [second, miniSentSlot];
-    two.texts["sent-dev"] = new Map([
-      ["s-0003", { ...miniSentText, id: "s-0003" }],
-      ["s-0001", miniSentText],
-    ]);
-    const reversed = { ...two, slots: { ...two.slots, "sent-dev": [miniSentSlot, second] } };
-    expect(sentManifestBody(two).parts["sent-dev"]).toEqual(sentManifestBody(reversed).parts["sent-dev"]);
+  test.each([
+    ["a", "b", "c"],
+    ["a", "c", "b"],
+    ["b", "a", "c"],
+    ["b", "c", "a"],
+    ["c", "a", "b"],
+    ["c", "b", "a"],
+  ])("the hash of the slots in the order %s, %s, %s is the hash of the pairs sorted by id", (first, second, third) => {
+    const order = [first, second, third];
+    const slot = (key: string): SentSlot => ({ ...miniSentSlot, id: `s-${key}` });
+    const text = (key: string): SentText => ({ ...miniSentText, id: `s-${key}`, body: `body ${key}` });
+    const texts = new Map(["a", "b", "c"].map((key) => [`s-${key}`, text(key)]));
+    const sorted = ["a", "b", "c"].map((key) => [slot(key), text(key)]);
+    const expected = createHash("sha256").update(JSON.stringify(sorted)).digest("hex");
+    expect(sentPartHash(order.map(slot), texts)).toBe(expected);
+  });
+
+  test("a slot with no text is left out of the hash, the count, and the hard-case count", () => {
+    const body = input();
+    body.slots["sent-dev"] = [miniSentSlot, { ...miniSentSlot, id: "s-0007", hardCases: ["thanks_only"] }];
+    const result = sentManifestBody(body);
+    const expected = createHash("sha256")
+      .update(JSON.stringify([[miniSentSlot, miniSentText]]))
+      .digest("hex");
+    expect(result.parts["sent-dev"]).toEqual({ cases: 1, sha256: expected });
+    expect(result.hardCases).toEqual({});
   });
 
   test("a planned id with no slot is dropped; hard cases are counted", () => {
