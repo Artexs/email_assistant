@@ -1,42 +1,43 @@
-# F162 stage 01 — privacy pages, registries, legal version and code ties `[risky]`
+# F162 stage 01 — in-app texts, registries, legal version and ledger rows `[risky]`
 
 Needs: nothing new; F153 (landed) wrote rows C261, C262 and the version `2026-11-20`.
 Part of [`../plan.md`](../plan.md). Review: `claude-opus-5-5` before the land.
 
 ## Step 1 — the in-app texts (one legal version)
 
-- **Goal:** the privacy page (en and pl), the AI rows of the sub-processor registry and the data-category registry say P3–P7, and one new legal version carries the change.
-- **Seams:** `apps/web/src/legal/{en,pl}/privacy.md`; `packages/core/src/legal/subprocessors.ts` (`openai` and `gemini` `dataReceived`: add "for open loops: subject, local send time, number of recipients and up to 8,000 characters of the text of own Sent mail", same meaning in Polish); `packages/core/src/legal/data-categories.ts` (`unsubscribe-data`, P5; fix its comment); `packages/core/src/web/terms.ts` (`TERMS_HISTORY`, D4).
-- **Decisions:** P1, P3 (the "AI model" bullet gets one sentence group after the triage and reply-draft parts; "AI results" gets the stored ask or promise), P4 (new bullet "Newsletter senders" in "Who receives data", before "Mail provider"), P6 ("Digests and notices" purpose and "Mail provider" bullet), P7 (two purpose bullets), D3, D5. The pl and en pages keep the same `##` headings.
-- **Interfaces:** the version string comes from `nextLegalVersion` at the last commit; `legal-version.test.ts` prints the line to append.
-- **Out of scope:** the DPIA and records texts other than the one `unsubscribe-data` row (stage 02); the docs site (stage 03); any `tg_consent_text` change (it already names the open-loops data).
+- **Goal:** every digest input says P3–P7 and P9, and one new legal version carries the change.
+- **Seams:**
+  - `apps/web/src/legal/{en,pl}/privacy.md`: "AI model" (P3, after the triage and reply-draft parts), "AI results" (the stored ask or promise), "Why and on what basis" (P7, and P6 in "Digests and notices"), "Who receives data" (new "Newsletter senders" bullet before "Mail provider", P4; P6 in "Mail provider"; the P4 clause in "Transfers outside the EEA"), "AI and decisions" and the shadow-mode sentences (P9).
+  - `apps/web/src/legal/{en,pl}/dpa.md` "Nature and purpose": open loops, newsletters, and report mail in "Digests" (P6, P7); the shadow-mode sentence if the page has one (P9).
+  - `apps/web/src/legal/{en,pl}/terms.md`: the shadow-mode sentence (P9).
+  - `packages/core/src/legal/subprocessors.ts`: `openai` and `gemini` `purpose` adds "finds open loops in own sent mail"; `dataReceived` adds "for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail" (Polish: same facts, D3 forms).
+  - `packages/core/src/legal/data-categories.ts`: `unsubscribe-data` (P5) and its comment.
+  - `packages/core/src/web/terms.ts`: `TERMS_HISTORY` (D4).
+- **Decisions:** P1, P3–P7, P9, D3, D4, D5. The pl and en pages keep the same `##` headings.
+- **Interfaces:** the version string comes from `nextLegalVersion`; `legal-version.test.ts` prints the line to append. Per D4 the entry goes in with the first commit that changes a digest input, and each later commit re-digests it.
+- **Out of scope:** `tg_consent_text` (it already names the open-loops data); the DPIA and record B other than the `unsubscribe-data` row (stage 03).
 
-## Step 2 — ledger rows and the operator line
+## Step 2 — ledger rows, the row count and the operator line
 
-- **Goal:** each new claim has a row; changed claims have their rows changed.
-- **Seams:** `docs/legal/claims.md` (D1: section "Later additions (F162)", rows C263–C266, count table rows and total; rows C136, C139 for the AI registry rows; row C174 says members and other people; any privacy-section row whose text now differs, for example a purposes row); `docs/legal/records-of-processing.md` (only the `unsubscribe-data` subjects cell: `users, others`); `deploy/README.md` (D6).
-- **Decisions:** D1, D6. Each new row ends with "Papers: …" like C261 (C263, C264: privacy policy, registry, DPIA; C265, C266: privacy policy, DPIA).
-- **Out of scope:** rows of the DPIA section (stage 02 checks them).
+- **Goal:** each new claim has a row; changed claims have changed rows.
+- **Seams:** `docs/legal/claims.md` (D1), the row count pin in `apps/docs/src/security/claims.test.ts` (262 → the new total), `docs/legal/records-of-processing.md` (only the `unsubscribe-data` subjects cell: `users, others`), `deploy/README.md` (D6).
+- **New rows** (section "Later additions (F162)"; each ends with "Papers: …" like C261):
+  - C263 — the extractor input (P3 fields; prompt `extractor-v1`). Source: `packages/core/src/loops/extractor.ts` (`extractorInputOf`), `apps/server/src/modules/triage/prompts/extractor-v1.ts` (`buildUserPrompt`). Condition: flag `open_loops`. Papers: privacy policy, registry, DPIA, security page.
+  - C264 — which mail and how often (14 days, 10 recipients, the skip kinds, at most three tries for a failure of the mail, a later try when the service is busy, the stored answer of at most 80 characters). Source: `packages/core/src/loops/extractor.ts` (`sentSkipReason`), `apps/server/src/modules/loops/analyze.ts`, `docs/capabilities/open-loops.md` rule 2. Condition: flag `open_loops`.
+  - C265 — the one-click request (P4). Source: `apps/server/src/platform/public-http.ts`, `docs/capabilities/trust.md` rule 21, `apps/server/src/platform/outside-services.ts`. Condition: flag `bulk_unsubscribe`.
+  - C266 — report mail, also in shadow mode (P6, P9). Source: `docs/capabilities/trust.md` rule 19, `apps/server/src/modules/channels/report-mail-sender.ts`. Condition: flag `report_mail`.
+- **Changed rows:** C136, C139 (AI rows), C174 (members and other people), the DPA purpose rows (C111–C135 range), each shadow-mode and "AI and decisions" row whose text now differs.
 
-## Step 3 — code ties
+## Test
 
-- **Goal:** a change of the extractor input, the prompt pointer or the one-click request fails a test until the papers follow.
-- **Files:** new `apps/server/src/legal-outside-calls.test.ts` (D2). Constants come from `@ea/core` (`EXTRACT_BODY_MAX`, `SENT_MAX_AGE_DAYS`, `SENT_MAX_RECIPIENTS`, `EXTRACT_TEXT_MAX`, `reportMailKinds`), `./modules/triage` (`prompts`), `./modules/loops` (`MAX_ATTEMPTS`; add the export to the loops index if missing), `./platform/public-http` (`ONE_CLICK_BODY`, `ONE_CLICK_USER_AGENT`).
-- **Test** (numbered; exact strings of D3):
-  1. Fixed values: `EXTRACT_BODY_MAX` 8000, `SENT_MAX_AGE_DAYS` 14, `SENT_MAX_RECIPIENTS` 10, `EXTRACT_TEXT_MAX` 80, `MAX_ATTEMPTS` 3, `prompts.extractor.version` `extractor-v1`, `ONE_CLICK_BODY` `List-Unsubscribe=One-Click`, `reportMailKinds` length 4. A change here is the signal to re-check the papers (say so in the test name).
-  2. `test.each` over en and pl privacy pages: each holds the body cap, the age limit and the recipient limit in its D3 form (`8,000 characters` / `8000 znaków`, `14 days` / `14 dni`, `10 recipients` / `10 adresatów`).
-  3. `test.each` over en and pl: each holds `List-Unsubscribe=One-Click`.
-  4. Row C263 holds `8,000 characters`, `extractor-v1` and the word `extractorInputOf` in its source; row C264 holds `14 days`, `10 recipients` and `three`.
-  5. Row C265 holds `ONE_CLICK_BODY` and `ONE_CLICK_USER_AGENT` as text.
-  6. The `openai` and `gemini` `dataReceived` en texts hold `8,000 characters`; pl texts `8000 znaków`.
-  7. `unsubscribe-data` subjects equal `["users", "others"]` (in `data-categories.test.ts` if it has a subjects table, else here).
-  8. `sevenDayLimitProblems` over both privacy pages returns `[]` (exists in `legal-papers.test.ts`: confirm it still passes; no new case).
-  9. `deploy/README.md` does not contain `does not yet name the one-click request`.
-- **Break check:** set `EXTRACT_BODY_MAX` to 7999 locally: cases 1, 2, 4, 6 fail; revert.
-- **Check:** `bun test apps/server/src/legal-outside-calls.test.ts`, then the plan's Proof.
+1. `bun test apps/web/src/lib/legal-version.test.ts` passes with the new last entry; before the entry it fails with the digest line (see it once).
+2. `bun test apps/docs/src/security/claims.test.ts` passes with the new row count.
+3. `bun test apps/server/src/legal-papers.test.ts` passes: ids in order, sources exist, the count table matches, `sevenDayLimitProblems` finds nothing in the pages.
+4. `bun test apps/web/src/lib/legal-checks.test.ts apps/web/src/lib/legal-privacy.test.ts apps/web/src/lib/legal-terms-dpa.test.ts` pass (headings pair, placeholders).
+
+The code ties are stage 02.
 
 ## Done when
 
 - Ticket Acceptance lines 2, 3, 4 hold; line 1 holds for C263–C266.
-- `legal-version.test.ts` passes with the new last entry.
-- The plan's Proof exits 0; the final message copies the `check:job` line.
+- The plan's Proof (without `legal-outside-calls.test.ts`) exits 0; the final message copies the `check:job` line.

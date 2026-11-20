@@ -33,7 +33,7 @@ The privacy page, the claims ledger and the DPIA draft say what the open-loops e
 
 ## Slices
 
-Three stages, one worker job each: 01, then 02 and 03 next to each other. No DB migration, no `bun.lock` change. Detail: `plan.md` § How to run.
+Four stages, one worker job each: 01 first; then 02 and 04 next to each other; 03 after 02. No DB migration, no `bun.lock` change. Detail: `plan.md` § How to run.
 
 ## Sequenced
 
