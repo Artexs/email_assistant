@@ -5,6 +5,7 @@ export * from "./csp";
 export * from "./activity";
 export * from "./delegation";
 export * from "./errors";
+export * from "./legal-version";
 export * from "./loops";
 export * from "./mail-oauth";
 export * from "./mailboxes";
