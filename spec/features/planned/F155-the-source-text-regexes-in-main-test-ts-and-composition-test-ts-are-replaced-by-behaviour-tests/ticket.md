@@ -25,3 +25,12 @@ Tests do not read the text of source files to check wiring. The three cases in `
 - None of the six cases reads a source file as text.
 - Each new case fails when its wiring is removed once.
 - `bun test` of both files passes.
+
+## Slices
+
+Two worker jobs (`plan.md` § Stages). Stage 01 (CLI and web wiring, release stamp) can start now. Stage 02 (operator wiring) waits for the one operator delivery of the operator alert ticket (F147 stage 04). No migration, no `bun.lock` change.
+
+## Sequenced
+
+- Plan after: F147 (stages written; stage 02 uses its `createOperatorDelivery` and the `delivery` field of the notice and tick deps).
+- Build after: F147 stage 04 landed, for stage 02 only. Stage 01 has none. Gate: none. This ticket is not in `docs/product/stage-2/07-foundation-plan.md` or `05-execution-plan.md` § 2; the order comes from the code overlap.
