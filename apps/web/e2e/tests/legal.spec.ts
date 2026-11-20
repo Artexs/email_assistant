@@ -1,18 +1,18 @@
-import { TERMS_VERSION } from "@ea/core/web";
+import { TERMS_VERSION, userLocales, type UserLocale } from "@ea/core/web";
 import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { pl } from "../../src/i18n/pl";
-import { legalDocs, legalLangs, legalPath, type LegalDoc } from "../../src/lib/legal";
+import { legalDocs, legalPath, type LegalDoc } from "../../src/lib/legal";
 import { findPlaceholders, readLegalSource } from "../../src/lib/legal-checks";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, nextAddress } from "../helpers";
 
-function textsOf(lang: (typeof legalLangs)[number]) {
+function textsOf(lang: UserLocale) {
   return lang === "pl" ? pl : en;
 }
 
-function titleOf(lang: (typeof legalLangs)[number], doc: LegalDoc): string {
+function titleOf(lang: UserLocale, doc: LegalDoc): string {
   const texts = textsOf(lang);
   const titles: Record<LegalDoc, string> = {
     privacy: texts.legal_privacy_title,
@@ -36,7 +36,7 @@ test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(addressBase()) });
 });
 
-for (const lang of legalLangs) {
+for (const lang of userLocales) {
   for (const doc of legalDocs) {
     test(`a visitor without a session reads /legal/${lang}/${doc}`, async ({ page }) => {
       const errors = await cspErrors(page);

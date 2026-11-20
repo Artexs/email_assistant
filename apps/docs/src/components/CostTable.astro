@@ -1,9 +1,10 @@
 ---
 // The cost to run one mailbox for one month, at three mail volumes. Every amount comes from `costRows` (the code), never from page text.
+import type { UserLocale } from "@ea/core";
 import { basisNote, costBasis, costRows, formatUsd, hostSizeNote, roundingNote } from "../pricing";
 
 interface Props {
-  lang?: "en" | "pl";
+  lang?: UserLocale;
 }
 
 const { lang = "en" } = Astro.props;
