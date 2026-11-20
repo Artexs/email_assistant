@@ -1,7 +1,9 @@
+import { HOUR_MS } from "../time";
+
 import type { Batch } from "./batch";
 import { idempotencyKey, type CaseState } from "./send-log";
 
-export const KEY_REUSE_MS = 12 * 3_600_000; // margin for a wrong PC clock against the 24 h server-side key expiry
+export const KEY_REUSE_MS = 12 * HOUR_MS; // margin for a wrong PC clock against the 24 h server-side key expiry
 
 export type SendAction =
   | { kind: "send"; caseId: string; attempt: number; key: string; reuse: boolean }

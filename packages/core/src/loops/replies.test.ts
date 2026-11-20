@@ -331,3 +331,30 @@ describe("subject prefixes of other mail programs and out-of-office subjects", (
     }
   });
 });
+
+describe("addresses compare by the one address rule (03-T1, 03-T7)", () => {
+  test("03-T1: the Turkish dotted capital I and the Greek final sigma match their plain forms", () => {
+    expect(match({ fromAddress: "ilker@example.com" }, { toAddresses: ["İlker@Example.com"], ccAddresses: [] })).toBe(
+      "subject"
+    );
+    expect(match({ fromAddress: "νίκοσ@example.gr" }, { toAddresses: ["νίκος@example.gr"], ccAddresses: [] })).toBe(
+      "subject"
+    );
+  });
+
+  test("03-T1: an own address in another spelling never closes", () => {
+    expect(
+      replyMatch(
+        loop({ toAddresses: ["x@example.test"] }),
+        mail({ fromAddress: "νίκος@example.gr", threadKey: "<root@own.test>" }),
+        {
+          ownAddresses: ["νίκοσ@example.gr"],
+        }
+      )
+    ).toBeNull();
+  });
+
+  test("03-T7: the no-reply sender test ignores padding and case", () => {
+    expect(isAutoReply({ autoSubmitted: null, precedence: null, fromAddress: " NO-REPLY@Example.com" })).toBe(true);
+  });
+});

@@ -1,4 +1,5 @@
 import { localToInstant } from "../digest/local-time";
+import { DAY_MS } from "../time";
 import type { SenderHistory } from "../triage/sender-history";
 import type { UrgencySource } from "../triage/urgency-profile";
 
@@ -144,7 +145,7 @@ function weekdayDates(bankStart: string): string[] {
   const start = Date.parse(`${bankStart}T00:00:00Z`);
   return Array.from({ length: BANK_WEEKDAYS }, (_, i) => {
     const offset = Math.floor(i / 5) * 7 + (i % 5);
-    return new Date(start + offset * 86_400_000).toISOString().slice(0, 10);
+    return new Date(start + offset * DAY_MS).toISOString().slice(0, 10);
   });
 }
 

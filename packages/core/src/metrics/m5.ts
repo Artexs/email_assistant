@@ -1,5 +1,6 @@
 // M5: urgent notice time. Minutes from the arrival of an urgent mail to its notice; quiet hours are left out.
 import { isQuietTime } from "../digest/local-time";
+import { MINUTE_MS } from "../time";
 
 export interface UrgentNoticeRow {
   emailId: string;
@@ -14,8 +15,6 @@ export interface UrgentLatency {
   quietHours: number; // rows that arrived in quiet hours (left out of the rest)
   p90Minutes: number | null; // nearest rank, one decimal
 }
-
-const MINUTE_MS = 60_000;
 
 export function urgentLatency(rows: readonly UrgentNoticeRow[], opts: { timeZone: string }): UrgentLatency {
   const minutes: number[] = [];
