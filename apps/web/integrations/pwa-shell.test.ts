@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 // The installable shell: the files that make the panel installable and the rules around them. The worker logic has its own test
-// (`src/lib/service-worker.test.ts`); the served headers are in `apps/server/test/integration/web-http.test.ts`.
+// (`src/lib/service-worker.test.ts`); the served headers are in `apps/server/test/integration/web-http-pages.test.ts`.
 const web = join(import.meta.dir, "..");
 const read = (path: string) => readFileSync(join(web, path), "utf8");
 
