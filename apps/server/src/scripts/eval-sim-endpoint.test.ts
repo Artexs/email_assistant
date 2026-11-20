@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { type LlmEndpointKind, type LlmRole, llmPrices, type Slot } from "@ea/core";
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { gateFileName, gateFileSchema } from "../modules/triage";
 import { loadConfig } from "../platform/config";
@@ -14,7 +14,7 @@ import { readSlots, writeJson } from "../platform/sim-files";
 import { runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
 import { runSim } from "./lib/eval-sim";
-import { completeCorpus, type MiniCorpus } from "./lib/sim-fixtures.test-helper";
+import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./lib/sim-fixtures.test-helper";
 
 // A holdout run per endpoint. Own state and gate files, no budget for an own run, and the
 // guard that stops an uncapped PAID run stays. Fake client, temp dirs: no real call, no money.
@@ -33,6 +33,7 @@ const euConfig = loadConfig({ ...env, OPENAI_API_KEY: "o-key", OPENAI_BASE_URL: 
 const ownConfig = loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11500/v1", OPENAI_OWN_MODEL: OWN_MODEL });
 
 let tmp = "";
+afterAll(removeAllCorpora);
 let corpus: MiniCorpus | undefined;
 let lines: string[] = [];
 let spies: { mockRestore(): void }[] = [];

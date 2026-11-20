@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { type EvalCase, evalCaseSchema, type LlmRole } from "@ea/core";
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { z } from "zod";
 
 import { drafterGateFileSchema, parseDrafterResults } from "../../modules/replies";
@@ -15,7 +15,7 @@ import { parseEvalArgs } from "../eval-args";
 
 import { type DrafterEvalCliDeps, runDrafterEval } from "./eval-drafter";
 import { JUDGE_SAME_MODEL } from "./eval-judge-setup";
-import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
+import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
 
 // The drafter eval runner with a fake LLM client, a temp ledger, runs and gate dirs: no real call, no money.
 
@@ -34,6 +34,7 @@ const injectionCases = z
   .parse(JSON.parse(readFileSync(resolve(import.meta.dir, "../../../../../evals/cases/reply-injection.json"), "utf8")));
 
 let tmp = "";
+afterAll(removeAllCorpora);
 let corpus: MiniCorpus | undefined;
 let lines: string[] = [];
 let stdout = "";

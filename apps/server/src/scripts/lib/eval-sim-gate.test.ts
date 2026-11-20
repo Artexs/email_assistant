@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { type LlmRole, type Slot } from "@ea/core";
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { gateFileName, gateFileSchema } from "../../modules/triage";
 import { loadConfig } from "../../platform/config";
@@ -13,7 +13,7 @@ import { readSlots, writeJson } from "../../platform/sim-files";
 import { parseEvalArgs } from "../eval-args";
 
 import { runSim } from "./eval-sim";
-import { completeCorpus, type MiniCorpus } from "./sim-fixtures.test-helper";
+import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
 
 // The gate file rule at the runSim level: a gate file comes only from a COMPLETE holdout run at the default
 // bar and minimum support with no --limit. Fake LLM client, temp ledger, runs and gate dirs: no real call, no money.
@@ -29,6 +29,7 @@ const MODEL = "gpt-6-luna";
 const REFUSAL_PREFIX = "no gate file:";
 
 let tmp = "";
+afterAll(removeAllCorpora);
 let corpus: MiniCorpus | undefined;
 let lines: string[] = [];
 let spies: { mockRestore(): void }[] = [];

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { type LlmRole, type Slot } from "@ea/core";
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { evalStateFileName, prompts } from "../modules/triage";
 import { type Config, llmRoleTable, loadConfig } from "../platform/config";
@@ -17,7 +17,7 @@ import { parseEvalArgs } from "./eval-args";
 import { evalFailureLine } from "./lib/eval-failure-line";
 import { JUDGE_SAME_MODEL } from "./lib/eval-judge-setup";
 import { runSim, type SimDeps } from "./lib/eval-sim";
-import { completeCorpus, type MiniCorpus } from "./lib/sim-fixtures.test-helper";
+import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./lib/sim-fixtures.test-helper";
 
 // `bun run eval` and `eval --sim` print through createCliOutput: `print` to stdout, `fail` to stderr. Each test reads
 // the two streams apart: console.log is stdout, console.error is stderr. The fake client makes no real call.
@@ -32,6 +32,7 @@ const config: Config = loadConfig({
 const MODEL = "gpt-6-luna";
 
 let tmp = "";
+afterAll(removeAllCorpora);
 let corpus: MiniCorpus | undefined;
 let stdout: string[] = [];
 let stderr: string[] = [];

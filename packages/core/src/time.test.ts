@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
-import { addDays, DAY_MS, HOUR_MS } from "./time";
+import { addDays, DAY_MS, HOUR_MS, MINUTE_MS } from "./time";
 
 describe("time constants", () => {
-  test("an hour and a day in milliseconds", () => {
+  test("a minute, an hour and a day in milliseconds", () => {
+    expect(MINUTE_MS).toBe(60_000);
     expect(HOUR_MS).toBe(3_600_000);
     expect(DAY_MS).toBe(86_400_000);
   });

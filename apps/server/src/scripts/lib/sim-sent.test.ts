@@ -12,7 +12,7 @@ import {
   type SentPart,
   type SentSlot,
 } from "@ea/core";
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { listBatches, SimFileError } from "../../platform/sim-files";
 import { readSentManifest, readSentSlots, readSentTexts, sentEvalCasesOf } from "../../platform/sim-sent-files";
@@ -24,8 +24,10 @@ import {
   miniSentFloors,
   writeSentTexts,
   type SentCorpus,
+  removeAllSentCorpora,
 } from "./sim-sent-fixtures.test-helper";
 
+afterAll(removeAllSentCorpora);
 let corpus: SentCorpus | undefined;
 afterEach(() => {
   corpus?.cleanup();

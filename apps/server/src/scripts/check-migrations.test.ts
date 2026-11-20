@@ -10,13 +10,11 @@ import { CONTRACT_CHECK_AFTER } from "./lib/check-migrations-rules";
 const script = join(import.meta.dir, "check-migrations.ts");
 const cutoff = "20260101000000";
 const newName = "20260201000000_case.sql";
-const root = join(tmpdir(), "f114-s06");
 let work = "";
 let counter = 0;
 
 beforeAll(() => {
-  mkdirSync(root, { recursive: true });
-  work = mkdtempSync(join(root, "run-"));
+  work = mkdtempSync(join(tmpdir(), "f114-s06-run-"));
 });
 afterAll(() => {
   rmSync(work, { recursive: true, force: true });

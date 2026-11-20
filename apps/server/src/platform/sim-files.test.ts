@@ -10,7 +10,7 @@ import {
   type Slot,
   valueCategories,
 } from "@ea/core";
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import {
   createMiniCorpus,
@@ -20,6 +20,7 @@ import {
   completeCorpus,
   runSimInProcess,
   type MiniCorpus,
+  removeAllCorpora,
 } from "../scripts/lib/sim-fixtures.test-helper";
 
 import {
@@ -34,6 +35,7 @@ import {
   writeSlots,
 } from "./sim-files";
 
+afterAll(removeAllCorpora);
 let corpus: MiniCorpus | undefined;
 afterEach(() => {
   corpus?.cleanup();

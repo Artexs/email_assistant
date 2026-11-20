@@ -170,4 +170,16 @@ describe("loopDueRows", () => {
       expect(row?.firstFollowUpAt).toBeNull();
     });
   });
+
+  test("04-T7: a loop to a test sender is a test row by the one rule (İlker@Example.com, ilker@example.com)", async () => {
+    await withRollback(db, async (trx) => {
+      const { orgA } = await seedWeek(trx);
+      const { ctx, mailboxId } = orgA;
+      const range = { start: new Date("2026-11-15T23:00:00Z"), end: new Date("2026-11-22T23:00:00Z") };
+      const id = await insertLoopRow(trx, ctx, mailboxId, { due_at: DUE, counterpart: "ilker@example.com" });
+      expect((await loopDueRows(trx, ctx, { range })).some((row) => row.id === id)).toBe(true);
+      const rows = await loopDueRows(trx, ctx, { range, testMail: { senders: ["İlker@Example.com"] } });
+      expect(rows.some((row) => row.id === id)).toBe(false);
+    });
+  });
 });

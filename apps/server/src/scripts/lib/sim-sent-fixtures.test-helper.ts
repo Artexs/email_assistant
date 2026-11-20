@@ -22,14 +22,42 @@ export interface SentCorpus {
 // The floors that the 20 dev and 60 holdout slots of the mini plan can meet.
 export const miniSentFloors = ["--min-dev", "20", "--min-holdout", "60"];
 
-export async function createSentCorpus(options: { plan?: boolean } = {}): Promise<SentCorpus> {
+// Every folder this helper makes; each test file calls `removeAllSentCorpora` in `afterAll` (see sim-fixtures.test-helper.ts).
+const made = new Set<string>();
+let template: Promise<SentCorpus> | undefined;
+
+function makeRoot(): string {
   const root = mkdtempSync(join(tmpdir(), "f116-sim-sent-"));
+  made.add(root);
+  return root;
+}
+
+function corpusAt(root: string): SentCorpus {
+  return {
+    root,
+    dir: join(root, miniScenario.id),
+    cleanup: () => {
+      rmSync(root, { recursive: true, force: true });
+      made.delete(root);
+    },
+  };
+}
+
+// Removes every folder this helper made in this test file.
+export function removeAllSentCorpora(): void {
+  for (const root of made) rmSync(root, { recursive: true, force: true });
+  made.clear();
+  template = undefined;
+}
+
+export async function createSentCorpus(options: { plan?: boolean } = {}): Promise<SentCorpus> {
+  const root = makeRoot();
   const dir = join(root, miniScenario.id);
   mkdirSync(dir, { recursive: true });
   writeJson(join(dir, "scenario.json"), miniScenario);
   writeJson(join(dir, "sent-plan-spec.json"), miniSentPlanSpec);
   if (options.plan === true) await run(["plan", miniScenario.id, "--bank", "sent", "--root", root]);
-  return { root, dir, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return corpusAt(root);
 }
 
 export async function run(args: string[]): Promise<void> {
@@ -87,19 +115,16 @@ async function writeComplete(c: SentCorpus): Promise<void> {
   }
 }
 
-let template: Promise<SentCorpus> | undefined;
-
 // A copy of the complete corpus: it is built once per test file, then copied.
 export async function completeSentCorpus(): Promise<SentCorpus> {
   if (template === undefined) {
     template = createSentCorpus({ plan: true }).then(async (c) => {
       await writeComplete(c);
-      process.on("exit", c.cleanup);
       return c;
     });
   }
   const source = await template;
-  const root = mkdtempSync(join(tmpdir(), "f116-sim-sent-"));
+  const root = makeRoot();
   cpSync(source.root, root, { recursive: true });
-  return { root, dir: join(root, miniScenario.id), cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return corpusAt(root);
 }
