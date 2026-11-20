@@ -124,7 +124,7 @@ async function storeTriaged(messageId: string, category: "info" | "spam", subjec
 }
 
 describe("testmail-target", () => {
-  test("compare: right, wrong and not synced → exit 2, table and synthetic eval report", async () => {
+  test("compare: right, wrong and not synced → exit 4, table and synthetic eval report", async () => {
     const right = newId("right");
     const wrong = newId("wrong");
     await storeTriaged(right, "info", "secret-subject-1");
@@ -137,7 +137,7 @@ describe("testmail-target", () => {
 
     const { stdout, code } = await run(compareArgs(), JSON.stringify(input));
 
-    expect(code).toBe(2);
+    expect(code).toBe(4);
     expect(stdout).toContain("# Testmail compare: 2026-11-08-a");
     expect(stdout).toMatch(/\| ok \|/);
     expect(stdout).toContain("WRONG");
@@ -172,6 +172,23 @@ describe("testmail-target", () => {
     expect(code).toBe(1);
     expect(stderr).toContain("bad input");
     expect(stdout).toBe("");
+  });
+
+  test("deliver with no sent case → exit 1 and nothing sent yet", async () => {
+    const input = inputOf([{ caseId: "c-a", expected: "info", messageId: null }]);
+
+    const { code, stderr, stdout } = await run(deliverArgs(), JSON.stringify(input), { TEST_MAILBOX_ADDRESS: address });
+
+    expect(code).toBe(1);
+    expect(stderr).toBe("nothing sent yet\n");
+    expect(stdout).toBe("");
+  });
+
+  test("an unknown subcommand → exit 2 and the usage, before stdin is read", async () => {
+    const { code, stderr } = await run(["nope", "--org-id", orgId, "--mailbox-id", mailboxId], "");
+
+    expect(code).toBe(2);
+    expect(stderr).toContain("usage: bun run testmail:target deliver");
   });
 
   test("deliver without TEST_MAILBOX_ADDRESS → exit 1", async () => {

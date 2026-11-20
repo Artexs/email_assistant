@@ -1,20 +1,14 @@
 import { recentAlerts } from "../modules/operator";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliSpec } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
 import { alertLine } from "./lib/ops-alerts-lines";
-import { alertsUsage, parseOpsAlertsArgs } from "./ops-alerts-args";
+import { cliDescriptions, parseOpsAlertsArgs } from "./ops-alerts-args";
 
-const out = createCliOutput("ops-alerts");
-
-async function main(): Promise<number> {
-  const args = parseOpsAlertsArgs(process.argv.slice(2));
-  if (args === null) {
-    out.fail(alertsUsage);
-    return 1;
-  }
+// Prints kinds, times, counts and facts only. An uncaught error (also an unreachable database) is mapped by `runCli`.
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseOpsAlertsArgs(argv);
   const config = loadConfig();
   const db = createDb(config.DATABASE_URL);
   try {
@@ -26,17 +20,11 @@ async function main(): Promise<number> {
     }
     for (const row of rows) out.print(alertLine(row));
     return 0;
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "ops-alerts", descriptions: cliDescriptions, main });
+}
