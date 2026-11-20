@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F153 · the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201)

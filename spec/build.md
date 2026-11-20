@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟠 ACTIVE): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201)
 - `F148-one-legal-version-format-and-parser-exist` (🟠 ACTIVE): One legal version format and parser exist
 - `F146-one-action-id-header-exists-and-the-unread-exports-and-the-weaker-dkim-check-are-removed` (🟠 ACTIVE): One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed
 - `F143-the-files-that-the-last-tickets-grew-past-400-lines-are-split-by-aggregate-and-a-lint-check-warns-over-400-and-fails-over-800` (🟠 ACTIVE): The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
@@ -60,6 +59,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
 - `F145-one-time-ts-spelling-minute-ms-hour-ms-day-ms-is-used-everywhere-and-a-lint-rule-bans-the-literals` (🟢 PROVEN): One time.ts spelling MINUTE_MS HOUR_MS DAY_MS is used everywhere and a lint rule bans the literals; landed 2026-11-20
 - `F144-the-sender-activity-read-is-split-into-readers-owned-by-the-modules-that-own-the-tables` (🟢 PROVEN): The sender activity read is split into readers owned by the modules that own the tables; landed 2026-11-20
 - `F142-loops-delegation-and-the-send-limit-compare-addresses-with-the-one-address-rule-and-a-scan-test-keeps-it-so` (🟢 PROVEN): Loops, delegation and the send limit compare addresses with the one address rule, and a scan test keeps it so; landed 2026-11-20
@@ -69,8 +69,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F135-the-data-request-erase-finds-mail-of-a-sender-whose-address-has-a-greek-final-sigma-or-a-turkish-dotted-capital-i-the-database-and-the-program-lower-case-it-alike` (🟢 PROVEN): the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike); landed 2026-11-19
 - `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟢 PROVEN): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers; landed 2026-11-19
 - `F131-the-large-files-named-in-quality-pass-1-are-split-by-aggregate-findings-4-to-7` (🟢 PROVEN): the large files named in quality pass 1 are split by aggregate (findings 4 to 7); landed 2026-11-19
-- `F120-e11a-sender-context` (🟢 PROVEN): The assistant knows who each sender is to the user and suggests rules from it; landed 2026-11-19
-- 2026-11: 109 landed. spec/features/done/2026-11/
+- 2026-11: 110 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
