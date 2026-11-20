@@ -21,13 +21,13 @@ The gap tool exited 0: every new case kills at least one mutant that survived be
 | `skeleton` | 8 | 1 |
 | `isLookalike` | 9 | 3 |
 
-The other functions of the file (stage 07 owns them) are not counted here.
+The other functions of the file (another stage owns them) are not counted here.
 
-## Cases added (22 test rows in 6 `test.each` / test blocks, one commit)
+## Cases added (34 test rows, one commit)
 
 - `isLookalike`: insertion, deletion, two substitutions, length difference 2, other TLD, three near-swap shapes that are not swaps (different first letter, second letter, tail), an insertion with a different tail, label length edges (4/4, 5/5, 4/5, 5/4), a sender on the known list next to another known domain, and three skeleton matches with labels under 5 letters (so only the skeleton route can answer): `vv`, hyphen, `i` for `l`.
 - `registrableDomain` with punycode: `日本語`, `げ射故`, `쀞ѣѿ`, `膺ご` (several bias rounds, large deltas), `aaaaa늄댎` (a digit sum of 391 after the first round, the bias threshold edge), U+10FFFF (the last valid code point); invalid keeps the label: `{` after `z` in the digit table, a non-ASCII or U+0080 character in the basic part, a hyphen at the start of the encoded part.
-- The 15 values of the stage file that already killed their mutants in the existing tests (plain substitution, adjacent swaps, the known-list case, the two-sided target case, `rn` to `m`) are not added: each killed no before-survivor, so the gap tool would have refused them.
+- Values of the stage file that already killed their mutants in the existing tests (plain substitution, adjacent swaps, the known-list case, the two-sided target case, `rn` to `m`) are not added: each killed no before-survivor, so the gap tool would have refused them.
 
 ## Self-classed (24 rows: over the cap; question in `stage-06-questions.md`)
 
