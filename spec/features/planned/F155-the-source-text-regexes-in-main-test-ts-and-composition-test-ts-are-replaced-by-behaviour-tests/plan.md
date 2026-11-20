@@ -91,4 +91,4 @@ Move the ticket to `active/` and commit. Spawn stage 01 now; spawn stage 02 when
 
 ## Cold review
 
-Model: `claude-opus-5-5` at `high`, because stage 02 moves the wiring of the operator send (sending to people, a risk area of `spec/build.md` TRACK). The job task forbade any tool that waits for another job, so the planner started the review detached and did not wait for it. `plan-review-1.md` does not exist yet: the coordinator files the review's final message there and continues this job to fix the findings (one round).
+Model: `claude-opus-5-5` at `high`, because stage 02 moves the wiring of the operator send (sending to people, a risk area of `spec/build.md` TRACK). The job task forbade any tool that waits for another job, so the planner started the review detached and did not wait for it. Review job: `2026-11-20-f155-plan-review-1c257442` (on this branch, at commit `363e0264`). `plan-review-1.md` does not exist yet: the coordinator files the review's final message there and continues this job to fix the findings (one round).
