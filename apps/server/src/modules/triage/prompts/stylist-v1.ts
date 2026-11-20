@@ -1,8 +1,13 @@
+import { STYLE_CHECK_CODES, type StyleCheckCode } from "@ea/core";
+
 import { neutralize } from "./classifier-v2";
 
 // Any change to the text below needs a new file and version id (`stylist-v2.ts`) and a passing stylist run.
 // The text of this file never holds a mail, an address or a name.
 export const PROMPT_VERSION = "stylist-v1";
+
+/** Why the first answer failed. The retry text holds the codes, never the failed text. */
+export type StylistRetryNote = { reason: "checks"; failures: readonly StyleCheckCode[] } | { reason: "output" };
 
 export interface StylistInput {
   /** The cut texts of the manager's own sent mail, newest first. */
@@ -11,6 +16,8 @@ export interface StylistInput {
   language: "pl" | "en";
   /** Random for each request. */
   nonce: string;
+  /** Set on the second call only. The first call has no retry text. */
+  retry?: StylistRetryNote;
 }
 
 export function buildSystemPrompt(): string {
@@ -54,6 +61,36 @@ function cleanSample(sample: string): string {
   ).trim();
 }
 
+// What each code means, for the retry text.
+const CHECK_RULES: Record<StyleCheckCode, string> = {
+  address: "the description held an e-mail address. Write no e-mail address.",
+  link: "the description held a link or a web address. Write no link and no web address.",
+  phone: "the description held a phone number. Write no phone number.",
+  account_number: "the description held a bank account or card number. Write no account or card number.",
+  control_chars: "the description held a control or hidden character. Write plain text only.",
+  quote_line: 'a line of the description started with ">". Write no quote line.',
+  copied_text: "the description copied a run of words from the sample. Describe the form, never copy words.",
+  name: "the description held a name of a person. Write no name.",
+  too_long: "the description was longer than 1,000 characters. Make it shorter.",
+  language: "the description was not in the language that was asked for. Write all of it in that language.",
+};
+
+function retrySection(retry: StylistRetryNote): string[] {
+  if (retry.reason === "output") {
+    return [
+      "",
+      "Your last answer could not be read: it did not match the schema. Answer again with only JSON that matches the schema.",
+    ];
+  }
+  const codes = STYLE_CHECK_CODES.filter((code) => retry.failures.includes(code));
+  return [
+    "",
+    "Your last answer failed the checks of the system. Failure codes:",
+    ...codes.map((code) => `- ${code}: ${CHECK_RULES[code]}`),
+    "Write the description again and fix every failure. Do not repeat the failed text.",
+  ];
+}
+
 export function buildUserPrompt(input: StylistInput): string {
   const language = input.language === "pl" ? "Polish (pl)" : "English (en)";
   const samples = input.samples.map(cleanSample).filter((sample) => sample !== "");
@@ -66,5 +103,6 @@ export function buildUserPrompt(input: StylistInput): string {
     `<<<SENT_DATA ${input.nonce}>>>`,
     samples.join("\n---\n"),
     `<<<END_SENT_DATA ${input.nonce}>>>`,
+    ...(input.retry === undefined ? [] : retrySection(input.retry)),
   ].join("\n");
 }
