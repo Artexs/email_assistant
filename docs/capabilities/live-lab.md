@@ -122,7 +122,7 @@ The live lab plays the frozen week of made-up mail (`lab-01`, 855 slots) through
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | CLI      | `bun run lab seed`, `reset`, `demo-reset`, `start`, `status`, `stop`, `serve`, `score`, `demo-export`, `demo-import`                  | `apps/server/src/scripts/lab.ts`                                             |
 | CLI      | argument parser and the 10 usage lines                                                                                                | `apps/server/src/scripts/lab-args.ts`                                        |
-| function | command dispatch with the env guard                                                                                                   | `apps/server/src/scripts/lab-run.ts`                                         |
+| function | command dispatch with the env guard                                                                                                   | `apps/server/src/scripts/lib/lab-run.ts`                                         |
 | function | `startLabRun`, `stopLabRun`, `writeRunLedgerLine`                                                                                     | `apps/server/src/modules/lab/start.ts`                                       |
 | function | `seedLabOrg`, `LAB_TARGETS`, `LAB_FLAGS_ON`, `LAB_FLAGS_OFF`                                                                          | `apps/server/src/modules/lab/seed.ts`                                        |
 | function | `createFakeTgClient` (HTTP client of the fake's `/_fake/*` routes)                                                                    | `apps/server/src/modules/lab/fake-tg.ts`                                     |
@@ -185,12 +185,12 @@ ADR 0021 (simulator stack: namespace, env guard, outbound guards, deploy is a re
 - `packages/core/src/sim/live/run-plan.test.ts`, `date-shift.test.ts`, `message.test.ts`, `env-guard.test.ts`, `bot.test.ts`
 - `apps/server/src/scripts/live-date-shift-corpus.test.ts` (the date forms over the whole lab-01 week)
 - `apps/server/src/scripts/lab-env-check.test.ts` (`sim.env.example` passes the guard; the script exit codes)
-- `apps/server/src/scripts/sim-compose-rules.test.ts` (the Compose rules)
+- `apps/server/src/scripts/lib/sim-compose-rules.test.ts` (the Compose rules)
 - `apps/server/src/scripts/sim-runbook.test.ts` (the runbook names real scripts, lab commands, flags, files and services)
 - `apps/server/src/modules/lab/message.test.ts`, `corpus.test.ts`
 - `packages/core/src/sim/live/executive.test.ts`
 - `apps/server/src/scripts/lab-args.test.ts`
-- `apps/server/src/scripts/lab-run.test.ts`
+- `apps/server/src/scripts/lib/lab-run.test.ts`
 - `apps/server/src/modules/lab/state.test.ts`
 - `apps/server/src/modules/lab/score/score.test.ts` (scoreTriage, M1, the renderer, coverage)
 - `apps/server/src/modules/lab/score/sections.test.ts` (delegates, reachable reminders, bot counts, limits, phishing, executive, the cost lines)

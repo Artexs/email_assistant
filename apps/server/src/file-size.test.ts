@@ -15,7 +15,7 @@ const groups: { name: string; pattern: string }[] = [
   { name: "triage eval", pattern: "apps/server/src/modules/triage/eval*.ts" },
   { name: "platform config", pattern: "apps/server/src/platform/config*.ts" },
   { name: "actions send", pattern: "apps/server/src/modules/actions/send*.ts" },
-  { name: "sim commands", pattern: "apps/server/src/scripts/sim-*.ts" },
+  { name: "sim commands", pattern: "apps/server/src/scripts/lib/sim-*.ts" },
   { name: "texts", pattern: "apps/web/src/i18n/**/*.ts" },
 ];
 

@@ -20,7 +20,7 @@ import {
   completeCorpus,
   runSimInProcess,
   type MiniCorpus,
-} from "../scripts/sim-fixtures.test-helper";
+} from "../scripts/lib/sim-fixtures.test-helper";
 
 import {
   corpusDir,

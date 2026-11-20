@@ -2,7 +2,7 @@ import { signalsOfMailbox } from "../modules/mail";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
 import { readSignalsOptions, signalsLines, usage } from "./mailbox-signals-args";
 
 const log = createLog("mailbox-signals");

@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { createCliOutput } from "../platform/cli";
 import { describeError } from "../platform/errors";
 
+import { nextCommands, prepareRelease, releasePrepareUsage } from "./lib/release-prepare-lib";
 import { parseReleasePrepareArgs } from "./release-prepare-args";
-import { nextCommands, prepareRelease, releasePrepareUsage } from "./release-prepare-lib";
 
 const out = createCliOutput("release-prepare");
 
