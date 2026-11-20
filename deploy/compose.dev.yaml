@@ -10,6 +10,8 @@ x-logging-local: &logging-local
 services:
   db:
     logging: *logging-local
+    # Parallel test runs of several Limen jobs share this server: one `test:int` run peaks at about 20 connections.
+    command: ["postgres", "-c", "max_connections=200"]
     ports:
       - "127.0.0.1:5433:5432"
 

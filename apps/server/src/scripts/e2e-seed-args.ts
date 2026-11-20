@@ -9,6 +9,36 @@ export const E2E_PROJECTS = ["mobile", "desktop"] as const;
 
 export type E2eProject = (typeof E2E_PROJECTS)[number];
 
+// The run tag keeps the GreenMail addresses of two runs apart: the GreenMail of the dev stack is shared, and an account is the
+// address. Unset: the address stays as it is (the main checkout and CI). A tag is 1 to 16 lowercase letters or digits.
+export function mailTagFromEnv(env: Record<string, string | undefined>): string {
+  const tag = env.E2E_MAIL_TAG;
+  if (tag === undefined || tag === "") return "";
+  if (!/^[a-z0-9]{1,16}$/.test(tag)) {
+    throw new Error("E2E_MAIL_TAG must be 1 to 16 characters of a-z and 0-9");
+  }
+  return tag;
+}
+
+// Inserts `-<tag>` before the last `@`. An empty tag returns the address unchanged.
+export function taggedAddress(address: string, tag: string): string {
+  if (tag === "") return address;
+  const at = address.lastIndexOf("@");
+  return `${address.slice(0, at)}-${tag}${address.slice(at)}`;
+}
+
+// The address of a mailbox that a run connects to the GreenMail, with the tag of the run.
+export const greenMailAddress = (base: string): string => taggedAddress(base, mailTagFromEnv(process.env));
+
+// The guard of the seed: with a tag set, a GreenMail mailbox without the tag is a bug that would mix the mail of two runs.
+export function assertTaggedMailbox(address: string, tag: string): void {
+  if (tag === "") return;
+  const at = address.lastIndexOf("@");
+  if (at < 0 || !address.slice(0, at).endsWith(`-${tag}`)) {
+    throw new Error(`a GreenMail mailbox of the seed does not carry E2E_MAIL_TAG (${tag})`);
+  }
+}
+
 export const E2E_ASSISTANT_EMAILS: Record<E2eProject, string> = {
   mobile: "e2e-assistant-mobile@x.test",
   desktop: "e2e-assistant-desktop@x.test",
@@ -75,7 +105,8 @@ export const E2E_APPROVALS_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-approvals-member-desktop@x.test",
 };
 export const e2eApprovalsOrgName = (project: E2eProject): string => `E2E Approvals ${project}`;
-export const e2eApprovalsMailbox = (project: E2eProject): string => `e2e-approvals-${project}@e2e.test`;
+export const e2eApprovalsMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-approvals-${project}@e2e.test`);
 // The only address that SEND_SCOPE=self lets through in the e2e server (the first delegate of the approvals organizations).
 export const E2E_SEND_TEST_ADDRESS = "anna@example.com";
 export const E2E_APPROVALS = {
@@ -162,8 +193,10 @@ export const E2E_DELEGATIONS_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-delegations-member-desktop@x.test",
 };
 export const e2eDelegationsOrgName = (project: E2eProject): string => `E2E Delegations ${project}`;
-export const e2eDelegationsMailbox = (project: E2eProject): string => `e2e-delegations-${project}@e2e.test`;
-export const e2eDelegatesMailbox = (project: E2eProject): string => `e2e-delegates-${project}@e2e.test`;
+export const e2eDelegationsMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-delegations-${project}@e2e.test`);
+export const e2eDelegatesMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-delegates-${project}@e2e.test`);
 // The order is the order of the page (newest first). `dueInDays` is counted from the seed time.
 export const E2E_DELEGATIONS = {
   // Open: the draft waits for an approval.
@@ -283,7 +316,8 @@ export const E2E_OPEN_LOOPS_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-open-loops-member-desktop@x.test",
 };
 export const e2eOpenLoopsOrgName = (project: E2eProject): string => `E2E Open Loops ${project}`;
-export const e2eOpenLoopsMailbox = (project: E2eProject): string => `e2e-open-loops-${project}@e2e.test`;
+export const e2eOpenLoopsMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-open-loops-${project}@e2e.test`);
 export const E2E_OPEN_LOOPS_DELEGATE = { name: "Dana Delegate", email: "dana@example.com" } as const;
 // `dueInDays` is counted from the seed time; `"today"` is one hour before the end of the local day of the organization (inside "Due
 // today" at any hour of the run). Open waiting loops are past due on purpose: the chaser plans a follow-up for a past-due `delegated`
@@ -485,7 +519,7 @@ export const E2E_URGENCY_MEMBER_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eUrgencyOrgName = (project: E2eProject): string => `E2E Urgency ${project}`;
 export const e2eUrgencyMailbox = (project: E2eProject, which: "seeded" | "empty"): string =>
-  `e2e-urgency-${which}-${project}@e2e.test`;
+  greenMailAddress(`e2e-urgency-${which}-${project}@e2e.test`);
 export const E2E_URGENCY_SEEDED = {
   topic: { label: "Annual audit", keywords: ["audit", "auditor"] },
   endedLabel: "Tax filing",
@@ -514,14 +548,14 @@ export const E2E_TRUST_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-trust-member-desktop@x.test",
 };
 export const e2eTrustOrgName = (project: E2eProject): string => `E2E Trust ${project}`;
-export const e2eTrustMailbox = (project: E2eProject): string => `e2e-trust-${project}@e2e.test`;
+export const e2eTrustMailbox = (project: E2eProject): string => greenMailAddress(`e2e-trust-${project}@e2e.test`);
 // Three more mailboxes of the same organization for the report page spec, one per state of the page. They are created
 // after the card mailbox, so the Settings page (first mailbox) is unchanged. `done`: a done check, `notification` recommended, `spam`
 // failed, `info` paused, mode shadow. `running`: a check that classifies. `noResult`: a `no_result` check (`no_history`), no trip.
 export const E2E_REPORT_KINDS = ["done", "running", "noResult"] as const;
 export type E2eReportKind = (typeof E2E_REPORT_KINDS)[number];
 export const e2eReportMailbox = (project: E2eProject, kind: E2eReportKind): string =>
-  `e2e-report-${kind.toLowerCase()}-${project}@e2e.test`;
+  greenMailAddress(`e2e-report-${kind.toLowerCase()}-${project}@e2e.test`);
 // One organization per project for the panel review spec. The flags `panel_review` and `trust_ladder` are on; one mailbox
 // with a done history check (so the report page offers the link) and 12 real mails with a triage result and no label (`e2e-review-rows.ts`).
 // The spec labels mail, so it needs its own organization. No delegate: the category select has no `delegation`.
@@ -534,7 +568,7 @@ export const E2E_REVIEW_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-review-member-desktop@x.test",
 };
 export const e2eReviewOrgName = (project: E2eProject): string => `E2E Review ${project}`;
-export const e2eReviewMailbox = (project: E2eProject): string => `e2e-review-${project}@e2e.test`;
+export const e2eReviewMailbox = (project: E2eProject): string => greenMailAddress(`e2e-review-${project}@e2e.test`);
 // The mail of the review organization: `count` mails, the text is made up. The sender address is not in the test sender list and the
 // Message-ID is not a synthetic one, so the mail counts as real.
 export const E2E_REVIEW_MAIL_COUNT = 12;
@@ -571,7 +605,8 @@ export const E2E_NEWSLETTERS_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-newsletters-member-desktop@x.test",
 };
 export const e2eNewslettersOrgName = (project: E2eProject): string => `E2E Newsletters ${project}`;
-export const e2eNewslettersMailbox = (project: E2eProject): string => `e2e-newsletters-${project}@e2e.test`;
+export const e2eNewslettersMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-newsletters-${project}@e2e.test`);
 // `name` is the display name of the newest mail: text of the sender, shown small. The `markup` sender has hostile text in it.
 export const E2E_NEWSLETTER_SENDERS = {
   oneClick: { address: "one-click@news.example", name: "One Click Weekly", count: 3 },
@@ -595,7 +630,8 @@ export const E2E_SUGGESTIONS_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-suggestions-member-desktop@x.test",
 };
 export const e2eSuggestionsOrgName = (project: E2eProject): string => `E2E Suggestions ${project}`;
-export const e2eSuggestionsMailbox = (project: E2eProject): string => `e2e-suggestions-${project}@e2e.test`;
+export const e2eSuggestionsMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-suggestions-${project}@e2e.test`);
 export const E2E_SUGGESTIONS = {
   vip: { pattern: "boss@client.test", kind: "vip", scope: "address", reason: { received: 8, answered: 6 } },
   blocklist: { pattern: "junk@spam.test", kind: "blocklist", scope: "address", reason: { corrected: 3 } },
@@ -629,7 +665,7 @@ export const E2E_LOOPS_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-loops-member-desktop@x.test",
 };
 export const e2eLoopsOrgName = (project: E2eProject): string => `E2E Loops ${project}`;
-export const e2eLoopsMailbox = (project: E2eProject): string => `e2e-loops-${project}@e2e.test`;
+export const e2eLoopsMailbox = (project: E2eProject): string => greenMailAddress(`e2e-loops-${project}@e2e.test`);
 // A consent version older than the current text: the loops spec confirms the new terms.
 export const E2E_LOOPS_OLD_CONSENT = "2026-11-14";
 export const E2E_LOOPS_CHAT_IDS: Record<E2eProject, number> = { mobile: 9_100_001, desktop: 9_100_002 };
@@ -652,7 +688,7 @@ export const E2E_REPLY_STYLE_MEMBER_EMAILS: Record<E2eProject, string> = {
 };
 export const e2eReplyStyleOrgName = (project: E2eProject): string => `E2E Reply Style ${project}`;
 export const e2eReplyStyleMailbox = (project: E2eProject, which: "box" | "oauth"): string =>
-  `e2e-reply-style-${which}-${project}@e2e.test`;
+  greenMailAddress(`e2e-reply-style-${which}-${project}@e2e.test`);
 
 // One organization per project for the reply panel spec (the reply kind on the approvals page and the Draft reply button of the activity
 // rows). The flags `approvals_page` and `reply_drafts` are on and so is the reply switch of the mailbox; the model is off in the e2e
@@ -669,7 +705,8 @@ export const E2E_REPLY_PANEL_MEMBER_EMAILS: Record<E2eProject, string> = {
   desktop: "e2e-reply-panel-member-desktop@x.test",
 };
 export const e2eReplyPanelOrgName = (project: E2eProject): string => `E2E Reply Panel ${project}`;
-export const e2eReplyPanelMailbox = (project: E2eProject): string => `e2e-reply-panel-${project}@e2e.test`;
+export const e2eReplyPanelMailbox = (project: E2eProject): string =>
+  greenMailAddress(`e2e-reply-panel-${project}@e2e.test`);
 export const E2E_REPLY_PANEL = {
   gap: {
     from: "anna@client.test",
@@ -706,6 +743,24 @@ export const E2E_REPLY_PANEL = {
   clean: { from: "dan@client.test", subject: "E2E reply clean" },
   flagged: { from: "erin@client.test", subject: "E2E reply flagged" },
 } as const;
+
+// Every function that returns an address the seed connects to the GreenMail (each one reaches `seedAssistMailbox`). The unit test walks
+// this list and checks it against the calls in `e2e-seed.ts`.
+export const E2E_GREENMAIL_MAILBOXES: Record<string, (project: E2eProject) => string[]> = {
+  e2eApprovalsMailbox: (project) => [e2eApprovalsMailbox(project)],
+  e2eDelegationsMailbox: (project) => [e2eDelegationsMailbox(project)],
+  e2eDelegatesMailbox: (project) => [e2eDelegatesMailbox(project)],
+  e2eOpenLoopsMailbox: (project) => [e2eOpenLoopsMailbox(project)],
+  e2eUrgencyMailbox: (project) => [e2eUrgencyMailbox(project, "seeded"), e2eUrgencyMailbox(project, "empty")],
+  e2eTrustMailbox: (project) => [e2eTrustMailbox(project)],
+  e2eReportMailbox: (project) => E2E_REPORT_KINDS.map((kind) => e2eReportMailbox(project, kind)),
+  e2eReviewMailbox: (project) => [e2eReviewMailbox(project)],
+  e2eNewslettersMailbox: (project) => [e2eNewslettersMailbox(project)],
+  e2eSuggestionsMailbox: (project) => [e2eSuggestionsMailbox(project)],
+  e2eLoopsMailbox: (project) => [e2eLoopsMailbox(project)],
+  e2eReplyStyleMailbox: (project) => [e2eReplyStyleMailbox(project, "box"), e2eReplyStyleMailbox(project, "oauth")],
+  e2eReplyPanelMailbox: (project) => [e2eReplyPanelMailbox(project)],
+};
 
 export interface SeedFile {
   orgId: string;
