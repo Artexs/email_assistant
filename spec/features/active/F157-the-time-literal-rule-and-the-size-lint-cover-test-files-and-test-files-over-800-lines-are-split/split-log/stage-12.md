@@ -19,3 +19,12 @@ Stage base: 57d52e8e. Before runs: `EA_TEST_WORKER_DB=1 bun test --timeout=30000
 - Setup list: `db` and its `afterAll` destroy, `logSpy`, `errorSpy`, `warnSpy`, `warnings`, `beforeEach`, `afterEach` (each part, same text); `T`, `at`, `World`, `world`, `run`, `outbox`, `users` (helpers file, exported).
 - Assertion lines: none.
 - References repointed: `docs/capabilities/open-loops.md` (the three parts).
+
+## apps/server/test/integration/lab-demo-seed.test.ts
+
+- Old lines: 1,122.
+- Parts: `lab-demo-seed-export.test.ts` (the table specs against the database, `exportDemo`; 19 cases), `lab-demo-seed-import.test.ts` (`importDemo`: new org, no sync or send, owner, second import, replace guards; 6 cases), `lab-demo-seed-refusals.test.ts` (`importDemo`: send scope, failing import, source org unchanged, refusals, unchanged file; 5 cases), helpers `lab-demo-seed-helpers.ts`. The `importDemo` describe keeps its name in both import parts.
+- Proof: `split-proof PASS cases=30`.
+- Setup list: `db`, `MARK`, `NOW`, `SEND_OFF`, `orgIds`, `dayAt`, `PLAN`, `RUN`, `Fixture`, `SECRET`, `buildFixture`, `FIXTURE_COUNTS`, `exportOf`, `countsOf`, `orgColumn`, `rowCounts`, `idsOf`, `elsewhere`, `owner`, `snapshot`, `importRefusal` (helpers file, exported). The `afterEach` body became `removeDemoOrgs` in the helpers file; each part registers `afterEach(removeDemoOrgs)` and an `afterAll` that destroys `db`.
+- Assertion lines: none.
+- References repointed: `docs/capabilities/live-lab.md` (two places), the comment in `apps/server/src/modules/lab/demo-seed/demo-seed.test.ts`, the comment in `apps/server/src/modules/lab/demo-seed/tables.ts`.
