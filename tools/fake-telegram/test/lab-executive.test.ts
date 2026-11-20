@@ -371,21 +371,19 @@ test("3: an applied move of an urgent mail and its digest card with Undo: one fu
     expect((await w.tick()).planned).toBe(1);
     w.clock.at = new Date("2026-11-23T12:00:00Z");
     expect((await w.tick()).pressed).toBe(1);
-    await until("undo reverse row", async () => {
-      const rows = await w.trx
-        .selectFrom("actions")
-        .select("id")
-        .where("email_id", "=", emailId)
-        .where("reverses_action_id", "is not", null)
-        .execute();
-      return rows.length === 1;
-    });
-    const feedback = await w.trx
-      .selectFrom("triage_feedback")
-      .select("source")
+    // The test and the server share one connection: a read can run between the Undo's reverse row and its feedback row.
+    // The feedback row is the last write of the Undo transaction, so wait for it, then read both.
+    const readFeedback = () =>
+      w.trx.selectFrom("triage_feedback").select("source").where("email_id", "=", emailId).execute();
+    await until("undo feedback row", async () => (await readFeedback()).length > 0);
+    const reverses = await w.trx
+      .selectFrom("actions")
+      .select("id")
       .where("email_id", "=", emailId)
+      .where("reverses_action_id", "is not", null)
       .execute();
-    expect(feedback).toEqual([{ source: "undo" }]);
+    expect(reverses).toHaveLength(1);
+    expect(await readFeedback()).toEqual([{ source: "undo" }]);
     expect(w.callbackData(w.a.chatId)).toEqual([`fu:${emailId}`]);
   });
 }, 60_000);
