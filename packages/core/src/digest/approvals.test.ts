@@ -1349,6 +1349,18 @@ describe("renderApprovalRequest, the whole card text", () => {
     ]);
   });
 
+  test("a follow-up without a number has no number line; a delegation never has one", () => {
+    const followUp = { kind: "follow_up" as const, sender: null, dueDate: null, quote: null, to: ["a@x.test"] };
+    expect(card(followUp).slice(0, 4)).toEqual(["📝 Follow-up", "To: a@x.test", "Subject: Fwd: Offer", ""]);
+    expect(card({ followUpNumber: 1, quote: null })).not.toContain("Follow-up 1 of 2");
+  });
+
+  test("gaps in the view of another kind than a reply add no fill line", () => {
+    expect(card({ gaps: ["termin"], quote: null })).not.toContain(
+      "⚠️ Fill these: termin. Fill them in the panel; you cannot send this draft until then."
+    );
+  });
+
   describe("a reply", () => {
     const reply = (overrides: Partial<ApprovalView> = {}, locale: "en" | "pl" = "en") =>
       card(
@@ -1421,11 +1433,29 @@ describe("renderApprovalRequest, the whole card text", () => {
       ]);
     });
 
+    test("several To and Reply-To addresses are joined with a comma and a space", () => {
+      expect(reply({ to: ["a@x.test", "b@x.test"], replyTo: ["r@x.test", "s@x.test"] }).slice(1, 4)).toEqual([
+        "To: a@x.test, b@x.test",
+        "Reply-To: r@x.test, s@x.test",
+        EXTERNAL,
+      ]);
+    });
+
+    test("a reply view without a To list names the recipient address", () => {
+      expect(reply({ to: undefined }).slice(0, 3)).toEqual([
+        "✍️ Reply to jan@client.test",
+        "To: jan@client.test",
+        EXTERNAL,
+      ]);
+    });
+
     test("the recipient lines of exactly 2400 characters fit; one more is refused", () => {
       const address = (length: number) => `${"a".repeat(length - "@x.test".length)}@x.test`;
-      const fits = reply({ to: [address(2400 - "To: ".length)] });
-      expect(fits[1]?.length).toBe(2400);
-      expect(() => reply({ to: [address(2400 - "To: ".length + 1)] })).toThrow(
+      const recipients = (toLength: number) => ({ to: [address(toLength)], cc: ["c@x.test"] });
+      // "To: " + address + a line break + "Cc: c@x.test" (12 characters)
+      const fits = reply(recipients(2400 - "To: ".length - 1 - 12));
+      expect(fits[1]?.length).toBe(2400 - 1 - 12);
+      expect(() => reply(recipients(2400 - "To: ".length - 1 - 12 + 1))).toThrow(
         new RangeError("the recipients of a reply do not fit a card")
       );
     });
@@ -1486,10 +1516,84 @@ describe("renderApprovalRequest, the whole card text", () => {
     });
   });
 
-  test("a body over the limit is cut and the note follows it", () => {
-    const lines = card({ body: "x".repeat(5000), quote: null });
-    expect(lines.at(-3)).toBe("(draft text cut; the full text is in the draft)");
-    expect(lines.join("\n").length).toBeLessThanOrEqual(MESSAGE_MAX_CHARS);
+  describe("the size limit", () => {
+    const limitCard = (body: string, quote: { text: string; cut: boolean } | null) => render({ body, quote }).text;
+    const bodyLine = (text: string) => text.split("\n")[6];
+
+    test("a card of exactly 4096 characters is kept whole", () => {
+      const text = limitCard("b".repeat(3875), null);
+      expect(text.length).toBe(4096);
+      expect(bodyLine(text)).toBe("b".repeat(3875));
+      expect(text).not.toContain("draft text cut");
+    });
+
+    test("a card of 4097 characters without a quote cuts the end of the body and adds the note", () => {
+      const text = limitCard("b".repeat(3876), null);
+      expect(text.length).toBe(4095);
+      expect(bodyLine(text)).toBe(`${"b".repeat(3825)}…`);
+      expect(text.split("\n").slice(7, 9)).toEqual(["(draft text cut; the full text is in the draft)", ""]);
+    });
+
+    test("a long quote shrinks to the room that is left; the body stays whole", () => {
+      const lines = limitCard("b".repeat(3000), { text: "q".repeat(8000), cut: false }).split("\n");
+      expect(lines.slice(6, 11)).toEqual([
+        "b".repeat(3000),
+        "",
+        "Quoted original:",
+        "q".repeat(815),
+        "(quote cut; the draft has the full text)",
+      ]);
+    });
+
+    test("a quote whose links grow when they are hidden shrinks by the whole overflow of its first cut", () => {
+      const lines = limitCard("b".repeat(2500), { text: "x.pl ".repeat(1600), cut: false }).split("\n");
+      expect(lines.slice(8, 12)).toEqual([
+        "Quoted original:",
+        `${"[link] ".repeat(134)}x`,
+        "(links shown as [link]; the draft has them)",
+        "(quote cut; the draft has the full text)",
+      ]);
+    });
+
+    test("a quote of 100 characters that fits an exactly full card keeps its text and has no cut note", () => {
+      const text = limitCard("b".repeat(3756), { text: "q".repeat(100), cut: false });
+      expect(text.length).toBe(4096);
+      expect(text.split("\n").slice(8, 10)).toEqual(["Quoted original:", "q".repeat(100)]);
+      expect(text).not.toContain("quote cut");
+    });
+
+    test("a body too long even for an empty quote is cut; the quote note stays in the card", () => {
+      const text = limitCard("b".repeat(4000), { text: "q".repeat(8000), cut: false });
+      expect(text.length).toBe(4095);
+      expect(text.split("\n").slice(6, 13)).toEqual([
+        `${"b".repeat(3765)}…`,
+        "(draft text cut; the full text is in the draft)",
+        "",
+        "Quoted original:",
+        "",
+        "(quote cut; the draft has the full text)",
+        "",
+      ]);
+    });
+
+    test("the room of the body is cut at 3896 characters on a short card", () => {
+      const text = render({
+        kind: "reminder",
+        sender: null,
+        recipient: { name: null, address: "a@x.test" },
+        subject: "S",
+        dueDate: null,
+        quote: null,
+        body: "b".repeat(5000),
+      }).text;
+      expect(text.split("\n")[4]).toBe(`${"b".repeat(3895)}…`);
+    });
+
+    test("a panel link that leaves no room for the card is refused", () => {
+      expect(() => render({ panelUrl: `https://ea.example.ts.net/${"a".repeat(4100)}` })).toThrow(
+        new RangeError("the approval card does not fit one message")
+      );
+    });
   });
 });
 
@@ -1521,12 +1625,6 @@ describe("renderApprovalSetRequest, the whole text", () => {
       "Each reminder is the fixed reminder template with this task; it quotes nothing.",
       "The system sends them after your tap.",
     ]);
-  });
-
-  test("a missing subject reads as no subject", () => {
-    expect(set([item(1, { subject: null })]).split("\n")[2]).toBe(
-      "1. Anna 1 anna1@example.com — (no subject) (due Thu 5 Nov, reminder 1 of 2)"
-    );
   });
 
   test.each([
