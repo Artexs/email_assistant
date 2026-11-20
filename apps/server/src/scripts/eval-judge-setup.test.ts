@@ -4,7 +4,6 @@ import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
 import { llmRoleTable, loadConfig } from "../platform/config";
-import { DEFAULT_JUDGE_MODEL } from "../platform/config-llm";
 import { createLlmClient, type GenerateFn, LlmSoftError } from "../platform/llm";
 
 import { JUDGE_SAME_MODEL, judgeSetupError, simRoleTable } from "./eval-judge-setup";
@@ -30,18 +29,15 @@ describe("judgeSetupError", () => {
   });
 
   test("2: the same model at another effort is refused (self-grading)", () => {
-    const table = tableOf(
-      { LLM_JUDGE_PROVIDER: "openai", LLM_JUDGE_MODEL: "gpt-6-luna", LLM_JUDGE_REASONING: "high" },
-      {}
-    );
+    const table = tableOf({}, { model: "gpt-6-luna" });
     expect(table.roles.classifier.reasoningEffort).toBe("none");
-    expect(table.roles.judge).toMatchObject({ model: "gpt-6-luna", reasoningEffort: "high" });
+    expect(table.roles.judge).toMatchObject({ model: "gpt-6-luna" });
     expect(judgeSetupError(table, at)).toBe(JUDGE_SAME_MODEL);
     expect(JUDGE_SAME_MODEL).toBe("judge model must differ from the model under test (ADR 0037)");
   });
 
   test("the model rule also holds for the drafter role, and compares the drafter row", () => {
-    const config = loadConfig({ ...base, LLM_DRAFTER_PROVIDER: "openai", LLM_DRAFTER_MODEL: "gpt-6-luna" });
+    const config = loadConfig(base);
     const same = llmRoleTable(config, { judge: { provider: "openai", model: "gpt-6-luna" } });
     expect(judgeSetupError(same, at, "drafter")).toBe(JUDGE_SAME_MODEL);
     expect(judgeSetupError(llmRoleTable(config, { judge: {} }), at, "drafter")).toBeNull();
@@ -51,10 +47,23 @@ describe("judgeSetupError", () => {
     expect(judgeSetupError(other, at)).toBeNull();
   });
 
+  test("10: a classifier pinned to the strong tier model is the same model as the judge", () => {
+    const config = loadConfig(base);
+    expect(judgeSetupError(llmRoleTable(config), at)).toBeNull();
+    expect(judgeSetupError(llmRoleTable(config, { classifier: { model: "gpt-6.1-terra" } }), at)).toBe(
+      JUDGE_SAME_MODEL
+    );
+  });
+
+  test("10: an own endpoint has one model, so the judge is the same model", () => {
+    const own = tableOf({ OPENAI_BASE_URL: "http://127.0.0.1:11434/v1", OPENAI_OWN_MODEL: "gemma3:12b" }, {});
+    expect(judgeSetupError(own, at)).toBe(JUDGE_SAME_MODEL);
+  });
+
   test("4: a judge model with no price on the endpoint is refused", () => {
     const eu = { OPENAI_BASE_URL: "https://eu.api.openai.com/v1" };
     expect(judgeSetupError(tableOf(eu, {}), at)).toBe(
-      `no price for model ${DEFAULT_JUDGE_MODEL}: add it to llmPrices before a judged sim run`
+      "no price for model gpt-6.1-terra: add it to llmPrices before a judged sim run"
     );
     expect(judgeSetupError(tableOf({}, { provider: "openai", model: "no-such-model" }), at)).toContain(
       "no price for model no-such-model"
@@ -76,35 +85,33 @@ describe("judgeSetupError", () => {
 });
 
 describe("the default judge", () => {
-  test("5: with only the OpenAI key the judge is gpt-6.1-terra at effort none; LLM_JUDGE_RPM alone keeps the model", () => {
+  test("5: with only the OpenAI key the judge is the strong tier at effort none; LLM_JUDGE_RPM keeps the model", () => {
     expect(tableOf({}, {}).roles.judge).toMatchObject({
       provider: "openai",
       model: "gpt-6.1-terra",
       reasoningEffort: "none",
       rpm: null,
     });
-    expect(tableOf({ LLM_JUDGE_RPM: "20" }, {}).roles.judge).toMatchObject({ model: "gpt-6.1-terra", rpm: 20 });
+    expect(tableOf({ LLM_JUDGE_RPM: "20", LLM_JUDGE_TIMEOUT_MS: "9000" }, {}).roles.judge).toMatchObject({
+      model: "gpt-6.1-terra",
+      rpm: 20,
+      timeoutMs: 9000,
+    });
   });
 
-  test("6: LLM_JUDGE_MODEL equal to the classifier model parses and is refused at setup", () => {
-    const table = tableOf({ LLM_JUDGE_PROVIDER: "openai", LLM_JUDGE_MODEL: "gpt-6-luna" }, {});
-    expect(table.roles.judge.model).toBe("gpt-6-luna");
-    expect(judgeSetupError(table, at)).toBe(JUDGE_SAME_MODEL);
+  test("6: a removed judge key stops config", () => {
+    for (const key of ["LLM_JUDGE_PROVIDER", "LLM_JUDGE_MODEL", "LLM_JUDGE_REASONING"]) {
+      expect(() => loadConfig({ ...base, [key]: "openai" })).toThrow();
+    }
   });
 
-  test("7: LLM_JUDGE_PROVIDER alone, and --judge-provider alone, keep the default model", () => {
-    expect(tableOf({ LLM_JUDGE_PROVIDER: "openai" }, {}).roles.judge.model).toBe("gpt-6.1-terra");
+  test("7: --judge-provider alone keeps the tier model of that provider", () => {
     expect(tableOf({}, { provider: "openai" }).roles.judge.model).toBe("gpt-6.1-terra");
+    expect(tableOf({ GEMINI_API_KEY: "g" }, { provider: "gemini" }).roles.judge.model).toBe("gemini-3.8-flash");
   });
 
-  test("any other judge key leaves the default model in force; LLM_JUDGE_REASONING sets the effort", () => {
-    const table = tableOf({ LLM_JUDGE_TIMEOUT_MS: "9000", LLM_JUDGE_REASONING: "low" }, {});
-    expect(table.roles.judge).toMatchObject({ model: "gpt-6.1-terra", timeoutMs: 9000, reasoningEffort: "low" });
-  });
-
-  test("the model of the flag or the key wins over the default, with the classifier's effort", () => {
+  test("the model of the flag wins over the tier", () => {
     expect(tableOf({}, { model: "gpt-x" }).roles.judge.model).toBe("gpt-x");
-    expect(tableOf({ LLM_JUDGE_PROVIDER: "openai", LLM_JUDGE_MODEL: "gpt-y" }, {}).roles.judge.model).toBe("gpt-y");
   });
 });
 

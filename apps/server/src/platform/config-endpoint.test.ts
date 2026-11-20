@@ -39,8 +39,12 @@ describe("OPENAI_BASE_URL and OPENAI_ENDPOINT_KIND", () => {
       "OPENAI_BASE_URL",
     ]);
     expect(
-      loadConfig({ ...openaiEnv, OPENAI_BASE_URL: "https://llm.example.com/v1", OPENAI_ENDPOINT_KIND: "own" })
-        .OPENAI_BASE_URL
+      loadConfig({
+        ...openaiEnv,
+        OPENAI_BASE_URL: "https://llm.example.com/v1",
+        OPENAI_ENDPOINT_KIND: "own",
+        OPENAI_OWN_MODEL: "own-m",
+      }).OPENAI_BASE_URL
     ).toBe("https://llm.example.com/v1");
     expect(configError({ ...openaiEnv, OPENAI_ENDPOINT_KIND: "eu" }).keys).toEqual(["OPENAI_ENDPOINT_KIND"]);
     expect(
@@ -73,20 +77,18 @@ describe("OPENAI_BASE_URL and OPENAI_ENDPOINT_KIND", () => {
     }
   });
 
-  test("11: the EU URL gives eu and keeps the effort", () => {
-    const table = llmRoleTable(
-      loadConfig({ ...openaiEnv, OPENAI_BASE_URL: "https://eu.api.openai.com/v1/", OPENAI_REASONING_EFFORT: "low" })
-    );
+  test("11: the EU URL gives eu and the tier effort", () => {
+    const table = llmRoleTable(loadConfig({ ...openaiEnv, OPENAI_BASE_URL: "https://eu.api.openai.com/v1/" }));
     expect(table.providers.openai).toMatchObject({ baseUrl: "https://eu.api.openai.com/v1", endpoint: "eu" });
-    expect(table.roles.classifier.reasoningEffort).toBe("low");
+    expect(table.roles.classifier.reasoningEffort).toBe("none");
+    expect(table.roles.drafter.reasoningEffort).toBe("low");
   });
 
   test("11: an own URL gives own and no reasoning effort in any openai row", () => {
     const env = {
       ...openaiEnv,
       OPENAI_BASE_URL: "http://127.0.0.1:11434/v1",
-      OPENAI_REASONING_EFFORT: "low",
-      LLM_DRAFTER_REASONING: "low",
+      OPENAI_OWN_MODEL: "own-m",
     };
     const table = llmRoleTable(loadConfig(env), { judge: { reasoningEffort: "high" } });
     expect(table.providers.openai).toMatchObject({ baseUrl: "http://127.0.0.1:11434/v1", endpoint: "own" });
@@ -95,7 +97,12 @@ describe("OPENAI_BASE_URL and OPENAI_ENDPOINT_KIND", () => {
       expect(table.roles[role].reasoningEffort).toBeNull();
     }
     const withKind = llmRoleTable(
-      loadConfig({ ...openaiEnv, OPENAI_BASE_URL: "https://llm.example.com/v1", OPENAI_ENDPOINT_KIND: "own" })
+      loadConfig({
+        ...openaiEnv,
+        OPENAI_BASE_URL: "https://llm.example.com/v1",
+        OPENAI_ENDPOINT_KIND: "own",
+        OPENAI_OWN_MODEL: "own-m",
+      })
     );
     expect(withKind.providers.openai.endpoint).toBe("own");
     expect(withKind.roles.classifier.reasoningEffort).toBeNull();
@@ -103,12 +110,8 @@ describe("OPENAI_BASE_URL and OPENAI_ENDPOINT_KIND", () => {
 
   test("11: a Gemini role keeps its effort-free row next to an own openai endpoint", () => {
     const table = llmRoleTable(
-      loadConfig({
-        ...openaiEnv,
-        GEMINI_API_KEY: "g",
-        OPENAI_BASE_URL: "http://localhost:11434/v1",
-        LLM_JUDGE_PROVIDER: "gemini",
-      })
+      loadConfig({ ...openaiEnv, GEMINI_API_KEY: "g", OPENAI_BASE_URL: "http://localhost:11434/v1", OPENAI_OWN_MODEL: "m" }),
+      { judge: { provider: "gemini" } }
     );
     expect(table.roles.judge.provider).toBe("gemini");
     expect(table.providers.gemini.endpoint).toBe("standard");

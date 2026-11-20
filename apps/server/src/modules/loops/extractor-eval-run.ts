@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail, type SentPart } from "@ea/core";
+import { costPerMail, type LlmEffortLevel, type SentPart } from "@ea/core";
 
-import { type Config, ConfigError, llmRoleTable, type openAiReasoningEfforts } from "../../platform/config";
+import { type Config, ConfigError, llmRoleTable } from "../../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -53,7 +53,7 @@ export interface ExtractorEvalOptions {
   sentPart?: SentPart;
   provider?: LlmProviderId;
   model?: string;
-  "reasoning-effort"?: (typeof openAiReasoningEfforts)[number];
+  "reasoning-effort"?: LlmEffortLevel;
   limit?: number;
   "spend-ledger"?: string;
   budgetUsd: number;

@@ -87,7 +87,7 @@ export function toResponseParams(
       },
     },
     store: false,
-    // The cast is safe: config limits OPENAI_REASONING_EFFORT to the values of the SDK type.
+    // The cast is safe: the role efforts (`llmEffortLevels`) are values of the SDK type.
     ...(reasoningEffort === null ? {} : { reasoning: { effort: reasoningEffort as ReasoningEffort } }),
   };
 }
@@ -211,6 +211,7 @@ export const openaiProvider = {
   envPrefix: "OPENAI" as const,
   defaults: { timeoutMs: 30000, rpm: 60 },
   realMail: true,
+  removedEnvKeys: ["OPENAI_MODEL_CLASSIFIER", "OPENAI_REASONING_EFFORT"] as const,
   // A null base URL only comes from a hand-made table: it takes the default, never the env of the SDK.
   createGenerate: (opts) => createOpenAiGenerate({ ...opts, baseUrl: opts.baseUrl ?? DEFAULT_OPENAI_BASE_URL }),
   classifyError: classifyOpenAiError,

@@ -31,6 +31,7 @@ export const deepseekProvider = {
   defaults: { timeoutMs: 30000, rpm: 60 },
   // No sub-processor row (owner, 2026-11-19): real mail must not reach DeepSeek.
   realMail: false,
+  removedEnvKeys: [] as const,
   createGenerate: (opts) => createDeepseekGenerate(opts),
   classifyError: classifyOpenAiError,
 } satisfies LlmProvider;

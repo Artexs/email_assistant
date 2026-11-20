@@ -25,10 +25,8 @@ const env = {
   LLM_PROVIDER: "openai",
   OPENAI_API_KEY: "o-key",
 };
-// No judge key: the judge is the default model (gpt-6.1-terra) on the drafter's provider, another model than the drafter.
+// No judge flag: the judge is the strong tier (gpt-6.1-terra) on the drafter's provider, another model than the drafter.
 const judged = loadConfig(env);
-// The judge model set equal to the drafter model: the run refuses it.
-const sameModel = loadConfig({ ...env, LLM_JUDGE_PROVIDER: "openai", LLM_JUDGE_MODEL: "gpt-6-luna" });
 
 const MODEL = "gpt-6-luna";
 const injectionCases = z
@@ -210,7 +208,7 @@ describe("runDrafterEval", () => {
 
   test("3: a judge model equal to the drafter model is a setup error: exit 1, no client, no call", async () => {
     expectRefusedSameModel(
-      await run(injectionArgs(), { config: sameModel, deps: { injectionFile: casesFile(injectionCases) } })
+      await run(injectionArgs(["--judge-model", MODEL]), { deps: { injectionFile: casesFile(injectionCases) } })
     );
   });
 
@@ -392,7 +390,7 @@ describe("runDrafterEval on a corpus part", () => {
     expect(stdout).not.toContain("Case ids (dev only)");
     expect(stdout).toContain("## Second pass input");
     const files = readdirSync(join(tmp, "gate"));
-    expect(files).toEqual(["drafter-drafter-v1-gpt-6-luna-none-mini-v1.json"]);
+    expect(files).toEqual(["drafter-drafter-v1-gpt-6-luna-low-mini-v1.json"]);
     const gate = drafterGateFileSchema.parse(JSON.parse(readFileSync(join(tmp, "gate", files[0] as string), "utf8")));
     expect(gate).toMatchObject({ role: "drafter", part: "holdout", model: MODEL, errors: 0, passed: true });
     expect(gate.numbers.drafts).toBe(result.needsReply.length);
@@ -441,9 +439,9 @@ describe("runDrafterEval on a corpus part", () => {
     };
     await holdout({ fake, extra: ["--drafter-prompt", "drafter-v2", "--judge-prompt", "judge-v1"] });
     expect(new Set(prompts)).toEqual(new Set(["drafter:drafter-v2", "judge:judge-v1"]));
-    expect(readdirSync(join(tmp, "gate"))).toEqual(["drafter-drafter-v2-gpt-6-luna-none-mini-v1.json"]);
+    expect(readdirSync(join(tmp, "gate"))).toEqual(["drafter-drafter-v2-gpt-6-luna-low-mini-v1.json"]);
     expect(readdirSync(join(tmp, "runs")).filter((file) => file.endsWith(".jsonl"))).toEqual([
-      "gpt-6-luna-none-drafter-v2-drafter-sim-mini-v1-holdout-judge-gpt-6.1-terra.jsonl",
+      "gpt-6-luna-low-drafter-v2-drafter-sim-mini-v1-holdout-judge-gpt-6.1-terra.jsonl",
     ]);
     expect(stdout).toContain("drafter-v2");
     expect(stdout).toContain("judge-v1");

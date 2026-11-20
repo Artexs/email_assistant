@@ -47,14 +47,11 @@ describe("LLM_PROVIDER=deepseek", () => {
     expect(table.providers.deepseek.rpm).toBe(7);
   });
 
-  test("1c: every role gets deepseek effort none; OpenAI env keys change nothing on the deepseek row", () => {
-    const table = llmRoleTable(
-      loadConfig({ ...deepseekEnv, OPENAI_API_KEY: "sk-openai", OPENAI_REASONING_EFFORT: "high" })
-    );
-    for (const row of Object.values(table.roles)) {
-      expect(row.provider).toBe("deepseek");
-      expect(row.reasoningEffort).toBe("none");
-    }
+  test("1c: every role runs on deepseek with its level; an OpenAI key changes nothing on the deepseek row", () => {
+    const table = llmRoleTable(loadConfig({ ...deepseekEnv, OPENAI_API_KEY: "sk-openai" }));
+    for (const row of Object.values(table.roles)) expect(row.provider).toBe("deepseek");
+    expect(table.roles.drafter.reasoningEffort).toBe("low");
+    expect(table.roles.classifier.reasoningEffort).toBe("none");
     expect(table.providers.deepseek.apiKey).toBe(KEY);
   });
 
@@ -72,7 +69,7 @@ describe("LLM_PROVIDER=deepseek", () => {
     expect(failure({ ...all, LAB_STACK: "" }).keys).toEqual(["LLM_PROVIDER"]);
   });
 
-  test("2c: a role that picks deepseek with the scope all is refused too, and the error names that key", () => {
+  test("2c: a role key does not pick a provider any more; the removed key is refused and named", () => {
     const env = {
       ...baseEnv,
       LLM_PROVIDER: "openai",
@@ -82,7 +79,7 @@ describe("LLM_PROVIDER=deepseek", () => {
       LLM_DRAFTER_PROVIDER: "deepseek",
     };
     expect(failure(env).keys).toEqual(["LLM_DRAFTER_PROVIDER"]);
-    expect(llmRoleTable(loadConfig({ ...env, LAB_STACK: "ea-sim" })).roles.drafter.provider).toBe("deepseek");
+    expect(llmRoleTable(loadConfig({ ...env, LLM_DRAFTER_PROVIDER: "" })).roles.drafter.provider).toBe("openai");
   });
 
   test("2d: openai and gemini load with the scope all outside the sim stack", () => {
