@@ -17,6 +17,8 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-11-20
+
 ### Removed
 
 - The old mail cursor columns: `emails.inbox_uid`, `emails.undo_pending_at`, `mailboxes.uidvalidity` and `mailboxes.last_uid`, and the trigger that copied the renamed columns. The migration adds an INBOX folder row for a mailbox that has none. A rollback of this release goes to v0.4.3 with `deploy/rollback.sh` alone; an older release needs a restore from the backup that `deploy/release.sh` took before the migration (`deploy/README.md` § Synced folders).
