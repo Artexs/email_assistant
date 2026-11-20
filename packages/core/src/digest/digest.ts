@@ -8,6 +8,7 @@ import {
 } from "../loops/brief";
 import type { CoreTexts } from "../texts";
 import { minimalTexts } from "../texts/minimal";
+import { MINUTE_MS } from "../time";
 import type { Category, MailboxMode } from "../triage/categories";
 import type { SenderRuleKind } from "../triage/rules";
 import type { SuspiciousReason } from "../triage/suspicious";
@@ -28,7 +29,7 @@ export const DIGEST_MAX_LINES = 15;
 // Telegram allows at most 8 buttons in one keyboard row.
 const MAX_ROW_BUTTONS = 8;
 
-const SYNC_LATE_MS = 30 * 60_000;
+const SYNC_LATE_MS = 30 * MINUTE_MS;
 const ACTION_CATEGORIES: readonly Category[] = ["urgent", "needs_reply", "delegation", "unsure"];
 const OTHER_CATEGORIES: readonly Category[] = ["info", "notification", "spam"];
 const CATEGORY_ORDER: readonly Category[] = [...ACTION_CATEGORIES, ...OTHER_CATEGORIES];
