@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { subprocessors } from "@ea/core/web";
 
 import { flaggedTextProblems } from "../src/flagged-text";
+import { blocksWithText, geminiOutsideCondition } from "../src/gemini-text";
 import { publicClaims } from "../src/security/claims";
 import { publicSubprocessors } from "../src/security/subprocessor-view";
 
@@ -41,18 +42,6 @@ const main = (): string => /<main[\s\S]*<\/main>/.exec(html)?.[0] ?? "";
 const rows = (prefix: string): string[] =>
   [...main().matchAll(new RegExp(`<tr id="${prefix}-[^"]*"[\\s\\S]*?</tr>`, "g"))].map((match) => match[0]);
 const cells = (row: string): string[] => [...row.matchAll(/<td>([\s\S]*?)<\/td>/g)].map((match) => match[1] ?? "");
-
-// The visible text of each block that can hold a sentence: a table row, a list item or a paragraph.
-export function blocksWithText(source: string): string[] {
-  return [...source.matchAll(/<(tr|li|p)\b[\s\S]*?<\/\1>/g)].map((match) =>
-    decode(match[0].replace(/<[^>]*>/g, " ")).replace(/\s+/g, " ")
-  );
-}
-
-// A block that names Gemini must say that it is optional and off by default.
-export function geminiOutsideCondition(blocks: readonly string[]): string[] {
-  return blocks.filter((block) => /gemini/i.test(block) && !/optional, off by default/i.test(block));
-}
 
 describe("the built /security/ page", () => {
   test("T5 one claim row for each public claim, in order, with the claim text", () => {

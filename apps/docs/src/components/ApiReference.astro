@@ -1,0 +1,57 @@
+---
+// The API reference: every operation of `docs/api/openapi.json`, grouped by tag, sorted by path. Schemas sit in `<details>`: no script.
+import { apiGroups, apiOperations, loadApiSpec, successAnswers } from "../api-reference";
+
+const groups = apiGroups(apiOperations(loadApiSpec()));
+const json = (value: unknown): string => JSON.stringify(value, null, 2);
+---
+
+{
+  groups.map((group) => (
+    <section>
+      <h2 id={`tag-${group.tag}`}>{group.tag}</h2>
+      {group.operations.map((operation) => (
+        <section>
+          <h3 id={`op-${operation.operationId}`}>
+            <code>{operation.method}</code> <code>{operation.path}</code>
+          </h3>
+          <p>{operation.summary}</p>
+          <ul>
+            <li>
+              Operation: <code>{operation.operationId}</code>
+            </li>
+            <li>Sign-in: {operation.auth === "public" ? "none (public)" : "session cookie"}</li>
+            {operation.parameters.length > 0 && <li>Parameters: {operation.parameters.join("; ")}</li>}
+            {operation.request !== null && (
+              <li>
+                <details>
+                  <summary>Request body: {operation.request.schemaName}</summary>
+                  <pre>
+                    <code>{json(operation.request.schema)}</code>
+                  </pre>
+                </details>
+              </li>
+            )}
+            {operation.answers.map((answer) => (
+              <li>
+                Answer <code>{answer.status}</code>
+                {answer.schemaName !== null && <> · {answer.schemaName}</>}
+                {!successAnswers(operation).includes(answer) && answer.description !== "" && (
+                  <> · {answer.description}</>
+                )}
+                {answer.schema !== null && (
+                  <details>
+                    <summary>Schema</summary>
+                    <pre>
+                      <code>{json(answer.schema)}</code>
+                    </pre>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </section>
+  ))
+}

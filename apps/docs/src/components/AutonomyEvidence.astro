@@ -1,0 +1,13 @@
+---
+// The unflagged facts about earned autonomy. Every number comes from a code constant (`autonomy-evidence.ts`).
+import { autonomyEvidenceFacts } from "../autonomy-evidence";
+---
+
+{
+  autonomyEvidenceFacts().map((fact) => (
+    <section>
+      <h2 id={fact.id}>{fact.title}</h2>
+      <p>{fact.text}</p>
+    </section>
+  ))
+}
