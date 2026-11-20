@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-09
+landed: 2026-11-20
 ---
 
 # F063 · A separate daily LLM limit for spam folder mail

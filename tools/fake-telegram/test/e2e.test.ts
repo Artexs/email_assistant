@@ -107,6 +107,7 @@ test("link, urgent notice, digest and undo run against the fake, the DB and Gree
         batchSize: 5,
         testMail: NO_TEST_SENDERS,
         dailyCap: 300,
+        junkDailyCap: 100,
         now,
       }).run();
       await committer.run();

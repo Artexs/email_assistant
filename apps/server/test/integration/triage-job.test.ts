@@ -100,6 +100,7 @@ function job(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope, at: Date 
     batchSize: 5,
     testMail: NO_TEST_SENDERS,
     dailyCap: 1000,
+    junkDailyCap: 1000,
     now: () => at,
   });
 }
@@ -350,6 +351,7 @@ describe("createTriageJob: pause and errors", () => {
       batchSize: 5,
       testMail: NO_TEST_SENDERS,
       dailyCap: 1000,
+      junkDailyCap: 1000,
       now: () => clock.at,
       ...overrides,
     });
@@ -847,6 +849,7 @@ describe("createTriageJob: daily cap", () => {
         batchSize: 5,
         testMail: NO_TEST_SENDERS,
         dailyCap: 2,
+        junkDailyCap: 1000,
         now: () => now,
       });
 
@@ -888,6 +891,7 @@ describe("createTriageJob: daily cap", () => {
         batchSize: 5,
         testMail: NO_TEST_SENDERS,
         dailyCap: 1,
+        junkDailyCap: 1000,
         now: () => now,
         onCapReached: (hookCtx, hookMailboxId, hookDayStart) =>
           calls.push({ ctx: hookCtx, mailboxId: hookMailboxId, dayStart: hookDayStart }),
@@ -928,6 +932,7 @@ describe("createTriageJob: daily cap", () => {
         batchSize: 5,
         testMail: NO_TEST_SENDERS,
         dailyCap: 1,
+        junkDailyCap: 1000,
         now: () => now,
         onCapReached: () => {
           hookCalls += 1;
@@ -938,6 +943,106 @@ describe("createTriageJob: daily cap", () => {
       expect(hookCalls).toBe(1);
       expect((await emailRow(trx, mailB)).status).toBe("triaged");
       expect(llm.prompts).toHaveLength(1);
+    });
+  });
+});
+
+describe("createTriageJob: junk folder limit", () => {
+  const dayStart = new Date("2026-11-05T08:00:00Z");
+  const junkPath = "Wiadomości-śmieci";
+
+  function junkCapLines(): string[] {
+    return errorSpy.mock.calls
+      .map((call: unknown[]) => String(call[1]))
+      .filter((line: string) => line.startsWith("llm_junk_daily_cap_reached"));
+  }
+
+  // One `llm.call` row for a mail that is already triaged, so the job does not claim it.
+  async function recordCall(
+    trx: Transaction<DB>,
+    ctx: TenantContext,
+    mailboxId: string,
+    folder: string,
+    at: Date
+  ): Promise<void> {
+    const emailId = await insertTestEmail(trx, ctx, mailboxId, { status: "triaged", source_folder: folder });
+    await recordAudit(trx, ctx, {
+      emailId,
+      actor: "system",
+      event: auditEvents.llmCall,
+      reasonCode: "ok",
+      data: { mailbox_id: mailboxId },
+      at,
+    });
+  }
+
+  function junkJob(trx: Transaction<DB>, llm: LlmClient, junkDailyCap: number) {
+    return createTriageJob({
+      runningKey: noGateEvidence.runningKey,
+      db: trx,
+      llm,
+      pause: createLlmPause(),
+      scope: { kind: "all" },
+      batchSize: 5,
+      testMail: NO_TEST_SENDERS,
+      dailyCap: 1000,
+      junkDailyCap,
+      now: () => now,
+    });
+  }
+
+  test("over the junk limit, junk mail waits for the next quota day with one warning; inbox mail still runs", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      await ensureSyncFolders(trx, ctx, mailboxId, [{ key: "junk", path: junkPath, role: "junk" }], now);
+      await recordCall(trx, ctx, mailboxId, junkPath, minutesFromNow(-10));
+      await recordCall(trx, ctx, mailboxId, junkPath, minutesFromNow(-9));
+      const junkMail = await insertTestEmail(trx, ctx, mailboxId, {
+        received_at: minutesFromNow(-30),
+        source_folder: junkPath,
+      });
+      const inboxMail = await insertTestEmail(trx, ctx, mailboxId, { received_at: minutesFromNow(-20) });
+      const llm = fakeLlm();
+      const limited = junkJob(trx, llm, 2);
+
+      await limited.run();
+      await limited.run();
+
+      expect(llm.prompts).toHaveLength(1);
+      expect((await emailRow(trx, inboxMail)).status).toBe("triaged");
+      const waiting = await trx
+        .selectFrom("emails")
+        .select(["status", "attempts", "next_attempt_at"])
+        .where("id", "=", junkMail)
+        .executeTakeFirstOrThrow();
+      expect(waiting).toEqual({ status: "pending", attempts: 0, next_attempt_at: new Date("2026-11-06T08:00:00Z") });
+      expect(junkCapLines()).toEqual([
+        `llm_junk_daily_cap_reached org_id=${ctx.orgId} mailbox_id=${mailboxId} count=2 day_start=${dayStart.toISOString()} until=2026-11-06T08:00:00.000Z`,
+      ]);
+    });
+  });
+
+  test("only junk folder calls of the quota day count against the junk limit", async () => {
+    await withRollback(db, async (trx) => {
+      await pauseOtherMailboxes(trx);
+      const { ctx, mailboxId } = await mailboxWithSettings(trx);
+      await ensureSyncFolders(trx, ctx, mailboxId, [{ key: "junk", path: junkPath, role: "junk" }], now);
+      // Three inbox calls today and two junk calls of the day before: one junk call is left under a limit of 1.
+      for (let i = 0; i < 3; i += 1) await recordCall(trx, ctx, mailboxId, "INBOX", minutesFromNow(-10 + i));
+      await recordCall(trx, ctx, mailboxId, junkPath, new Date(dayStart.getTime() - 60_000));
+      await recordCall(trx, ctx, mailboxId, junkPath, new Date(dayStart.getTime() - 120_000));
+      const junkMail = await insertTestEmail(trx, ctx, mailboxId, {
+        received_at: minutesFromNow(-30),
+        source_folder: junkPath,
+      });
+      const llm = fakeLlm();
+
+      await junkJob(trx, llm, 1).run();
+
+      expect(llm.prompts).toHaveLength(1);
+      expect((await emailRow(trx, junkMail)).status).toBe("triaged");
+      expect(junkCapLines()).toEqual([]);
     });
   });
 });
