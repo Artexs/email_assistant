@@ -216,6 +216,29 @@ Findings that hold for many rows:
 | 198 | int/mail-folders-cli.test.ts:95 | S9 | KEEP | unsure | - | `mailbox:settings sync-folder` exits 1 for a missing folder row (needs the DB) and for `--key inbox` (the parse twin is `src/scripts/mailbox-settings-args.test.ts:105`). Idea: drop the `inbox` half, one spawn less. Not a row cut: the DB half stays. | 0 | 2.20 |
 | 199 | int/triage-known-domains.test.ts:508 | S9 | KEEP | unsure | - | The default read of sent recipients is the newest 5000 mails; older mail is not read. Only test of the cap; the time is 5000 inserted rows. A smaller injected cap would be faster but changes the code under test. | 0 | 2.19 |
 | 200 | int/lab-bots.test.ts:504 | S9 | KEEP | K3 | - | The address guard of the bots: a recipient that is not allowed gets nothing and the event holds a code (recipient rule). The client-level twin is the next case in the file. | 0 | 2.19 |
+| 201 | int/mail-sync.test.ts:728 | S9 | KEEP | K3 | - | Without an outer transaction each chunk commits on its own: a crash keeps chunk 1 and the next run stores the rest. Near twin of row 140 (same script); it differs in the transaction mode, which row 140 cannot show. Kept. | 0 | 2.18 |
+| 202 | int/org-cli.test.ts:87 | S9 | KEEP | unsure | - | `org:plan` suspend then resume: output lines and the stored plan and `resumed_at`; no organization name in the output. DB behind a script. The arg twin is `src/scripts/org-plan-args.test.ts`. | 0 | 2.17 |
+| 203 | int/replies-answered-pass.test.ts:130 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: the reply is in Sent and the copy is gone, so the send ends `sent_by_user`. Real GreenMail. | 0 | 2.17 |
+| 204 | int/mail-seed.test.ts:289 | S9 | KEEP | unsure | - | `auditMailbox`: one entry per enabled folder (INBOX clean, `Oferty` with a missing row, junk not on the server). Needs a real IMAP server. | 0 | 2.17 |
+| 205 | int/mailbox-oauth-cli.test.ts:366 | S9 | KEEP | K3 | - | Canary: no token, refresh token, client secret or code in any OAuth CLI output or console line (secrets). | 0 | 2.16 |
+| 206 | int/graph-committer.test.ts:390 | S9 | KEEP | K3 | - | Two organizations: each mail goes out from its own mailbox with its own token; a refusal for one does not touch the other (tenant isolation). | 0 | 2.16 |
+| 207 | int/lab-reset.test.ts:510 | S9 | KEEP | K3 | - | Reset guard 2 (entry address): another address in `orgs.json` refuses; nothing is deleted (deletion of real data). | 0 | 2.16 |
+| 208 | int/replies-answered-pass.test.ts:161 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: answered and no baseline gives `answered` and the copy stays. Real GreenMail. | 0 | 2.16 |
+| 209 | int/mailbox-cli-streams.test.ts:546 | S9 | KEEP | unsure | - | A backfill whose cursor moves during the chunk: the retry text on stderr and an empty stdout, with a held DB lock. Stream pin of the family of rows 86, 87 and 104; the race needs the DB. | 0 | 2.15 |
+| 210 | int/replies-answered-pass.test.ts:406 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: a Sent reply to another mail (another parent Message-ID) is no answer; the reply is sent. | 0 | 2.14 |
+| 211 | int/replies-answered-pass.test.ts:257 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: a forward to a colleague that keeps the thread headers is no answer; the reply is sent. | 0 | 2.12 |
+| 212 | int/stats-week-cli.test.ts:56 | S9 | MOVE-TO-UNIT | - | new: src/scripts/stats-week-args.test.ts (`readStatsWeekOptions`); int/stats-week-cli.test.ts:75 | Six spawns check `readStatsWeekOptions` (`src/scripts/stats-week-args.ts:21`: a bad week, a bad id, a stray argument); the function is pure and has no unit test. Six cases in the unit file replace them. The wiring (exit 1 on stderr) stays in row 135. | 18 | 2.12 |
+| 213 | int/lab-bots.test.ts:738 | S9 | MOVE-TO-UNIT | - | new: src/modules/lab/bots.test.ts; int/lab-bots.test.ts:222 | A failed read of one delegate inbox does not stop the others, in both orders: pure over the port with a failing `fetchSince`. Uses the fake of row 96. | 30 | 2.09 |
+| 214 | int/replies-answered-pass.test.ts:315 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: a stored answer whose UID now names another mail is not used (its `Auto-Submitted` header does not count). Real GreenMail. | 0 | 2.08 |
+| 215 | int/imap-probe-move.test.ts:38 | S9 | KEEP | unsure | - | `probeMove` runs every write on GreenMail and cleans up: a manual probe tool for a test mailbox (`actions-and-undo.md`); the check needs a real server. | 0 | 2.08 |
+| 216 | int/privacy-dsr-sender-context.test.ts:622 | S9 | KEEP | K3 | - | The CLI erase prints the erased profile count and no address or hash; the profile rows are gone (privacy). | 0 | 2.07 |
+| 217 | int/replies-cli.test.ts:90 | S9 | KEEP | unsure | - | `mailbox:settings switch reply_drafts`: on is stored and shown; off expires the open reply send (`policy_changed`) and prints the count. The twin of the arg parse is `src/scripts/mailbox-settings-args.test.ts`; the expiry needs the DB. | 0 | 2.06 |
+| 218 | int/privacy-dsr-address-parity.test.ts:238 | S9 | KEEP | K3 | - | Every case form of every cased letter gives the same answer in the SQL match as in the program rule (privacy parity of find and erase). A loop over about 1,400 letters, so the time is the work, not a spawn. | 0 | 2.06 |
+| 219 | int/replies-answered-pass.test.ts:295 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: a Sent reply with `Auto-Submitted: no` is an answer and is stored as no automatic mark. | 0 | 2.05 |
+| 220 | int/imap-probe-send.test.ts:185 | S9 | KEEP | unsure | - | `probeSend`: an own Sent copy by the server is reported once and the recipient note stays; a stub SMTP, real IMAP. Manual probe tool of a test mailbox (`drafts-and-send.md`). | 0 | 2.04 |
+| 221 | int/replies-answered-pass.test.ts:497 | S9 | KEEP | K6 | - | `drafts-and-send.md` § Answered pass: a reply reads the Sent folder and the flags of the original; the delegation twin (test 6) reads neither. Pair with the case at `int/replies-answered-pass.test.ts:486`. | 0 | 2.04 |
+| 222 | int/mailbox-cli-streams.test.ts:473 | S9 | KEEP | unsure | - | Stream pin for `mailbox:rescan`: an unknown mailbox goes to stderr, a synced one to stdout. Same family as row 104; needs a synced GreenMail mailbox. | 0 | 2.03 |
+| 223 | int/privacy-dsr-sender-context.test.ts:589 | S9 | KEEP | K3 | - | DSR find: profiles alone are a match; the CLI prints `sender profiles 2`, no spelling warning and no hash (privacy). | 0 | 2.01 |
 
 ## e2e
 
@@ -229,26 +252,26 @@ Input: the 225 `kind` `e2e` rows of `cases.tsv` (`apps/web/e2e`: 217; `apps/docs
 
 | Section | Items selected | In this file (read) | Not read |
 | --- | --- | --- | --- |
-| Integration (`apps/server/test`, `tools/fake-telegram/test`) | 223 | 150 | 73 |
+| Integration (`apps/server/test`, `tools/fake-telegram/test`) | 223 | 223 | 0 |
 | e2e (`apps/web/e2e`, `apps/docs/e2e`) | 0 | 0 | 0 |
 
-Items selected = items in this file (150) + not read (73) = 223. The selection is every flagged int case or group (246 flagged rows in `cases.tsv`; the 20 `unscanned` JUnit cases count as 4 items by loop; group B2 belongs to stage 05 because its first key is in `apps/server/src`). The job cap is 150 items (`plan.md` § Reader method); the 73 not read are the `S9` cases with a time between 2.0 s and 2.8 s, slowest first, 171 s of int time in total. They are listed at the end. One continuation reads them.
+Items selected = items in this file (223) + not read (0) = 223. The selection is every flagged int case or group (246 flagged rows in `cases.tsv`; the 20 `unscanned` JUnit cases count as 4 items by loop; group B2 belongs to stage 05 because its first key is in `apps/server/src`). The first job read 150 items (rows 1-150, cap of `plan.md` § Reader method). The continuation read the other 73, all `S9` cases between 2.0 s and 2.8 s, slowest first (rows 151-223). No item is left `not read`.
 
-Rows per action (150 rows; `Lines` and `Time` are sums over the rows; time is the serial time of the cases in `cases.tsv`):
+Rows per action (223 rows; `Lines` and `Time` are sums over the rows; time is the serial time of the cases in `cases.tsv`):
 
 | Action | Rows | Lines | Time (s) |
 | --- | --- | --- | --- |
-| KEEP | 128 | 0 | 242.5 |
-| MOVE-TO-UNIT | 9 | 198 | 36.1 |
+| KEEP | 197 | 0 | 404.9 |
+| MOVE-TO-UNIT | 13 | 281 | 45.0 |
 | DELETE-DUP | 4 | 62 | 8.0 |
 | MERGE-TABLE | 3 | 52 | 6.2 |
 | REWRITE-WEAK | 4 | 0 | 0.1 |
 | FIX-NEVER-RUNS | 2 | 0 | 0.0 |
 | DELETE-STALE | 0 | 0 | 0 |
 
-**Time saved in the int suite** by `MOVE-TO-UNIT` and `DELETE-DUP` rows: 44.1 s of the 1,125 s serial int total (3.9 %). 33.1 s of it is one move: the lab bot logic (`lab-bots.test.ts`) to a unit file with an in-memory `LabMailClient`. `MERGE-TABLE` saves lines, not time (the same process spawns remain).
+**Time saved in the int suite** by `MOVE-TO-UNIT` and `DELETE-DUP` rows: 53.0 s of the 1,125 s serial int total (4.7 %). 39.9 s of it is one move: the lab bot logic (`lab-bots.test.ts`, 11 rows) to a unit file with an in-memory `LabMailClient`. The continuation added one move outside the lab: the six spawns that check the argument parser of `stats:week` (row 212, 2.1 s). `MERGE-TABLE` saves lines, not time (the same process spawns remain). Of the continuation's 73 rows, 4 are cuts (5 %), worth 9.0 s of their 171.4 s: most slow int cases of 2 to 2.8 s are K3 or K6 checks that need the DB or a real IMAP server.
 
-K rules that kept rows: K3 (security, privacy, destructive guards, exactly-once, tenant isolation) 64 rows; K6 (capability pages) 14; K4 1; K5 2; `unsure` 47.
+K rules that kept rows: K3 (security, privacy, destructive guards, exactly-once, tenant isolation) 98 rows; K6 (capability pages) 29; K4 1; K5 2; `unsure` 67. Rows 151-223 add K3 34, K6 15, `unsure` 20. The K6 rows are the answered-pass and copy-check cases (`docs/capabilities/drafts-and-send.md` § Answered pass, § Copy hash); no unit test of `actions/reply-pass.ts` exists.
 
 **Contract suites (K4).** No cut is proposed in `imap-contract.test.ts`, `smtp-send.test.ts`, `graph-send.test.ts` or the two modules in `test/contract/`. `imap-contract.test.ts` ran 72 cases in 49.8 s at the data base (stage 02, `timing-summary.md`); splitting the file into several files would shorten parallel runs. That is out of scope here (F124 ticket).
 
@@ -256,92 +279,18 @@ K rules that kept rows: K3 (security, privacy, destructive guards, exactly-once,
 
 **FIX-NEVER-RUNS.** `e2e-seed.test.ts:90`: runs nowhere (rows 19 and 20, evidence in row 19). `tools/mail-oauth-spike/*.test.ts` is outside this stage's input (stage 04 reads it).
 
+**Continuation (rows 151-223).** Method as in the first job; keys come from the data base and three files changed after it (`cli-streams-other`, `credentials-check`, `mail-sync`), so a cut stage re-resolves them by name. Checks of the earlier text: the first job listed `scripts/stats-week-args.test.ts` as the unit twin of `stats:week`; it tests only `statsLines`, not `readStatsWeekOptions`, so the six argument spawns of `stats-week-cli.test.ts:56` have no unit twin (row 212, `MOVE-TO-UNIT`, not `DELETE-DUP`). The `mail-seed.test.ts:289` case and `mail-sent-cli.test.ts:186` read DB or IMAP state and stay.
+
 **Proposals that are not row actions** (they change more than one case, so the owner decides):
 
-1. A fake `LabMailClient` (about 40 lines) in `src/modules/lab/` lets `lab-bots.test.ts`, and later `lab-injector.test.ts` and `lab-serve.test.ts`, test their logic as unit tests. The five-method port is `src/modules/lab/mail-client.ts:34`. Rows 96, 98, 114, 130, 143, 144, 145, 150 name it.
+1. A fake `LabMailClient` (about 40 lines) in `src/modules/lab/` lets `lab-bots.test.ts`, and later `lab-injector.test.ts` and `lab-serve.test.ts`, test their logic as unit tests. The five-method port is `src/modules/lab/mail-client.ts:34`. Rows 96, 98, 114, 130, 143, 144, 145, 150, 180, 185, 213 name it; rows 175, 176, 182 and 193 (lab, K3 or real IMAP) could follow later.
 2. The stream tests of the CLIs (`mailbox-cli-streams.test.ts` 44 s, `cli-streams-other.test.ts` 37 s, `testmail-cli.test.ts` streams) spawn a process per line to pin stdout or stderr. A lint rule that every script prints usage and `failed:` through `cli.fail` could replace many spawns; `platform/cli.test.ts` already pins the two streams. Rows 46-48, 86, 87, 104, 122.
-3. Inner reductions of one case (drop a spawn that repeats another case): rows 95, 110, 131. A case cannot be cut in part, so these are KEEP rows with the idea in the evidence.
+3. Inner reductions of one case (drop a spawn that repeats another case): rows 95, 110, 131, 155, 184, 198. A case cannot be cut in part, so these are KEEP rows with the idea in the evidence.
 
-**Findings about the scan.** (1) S8 on int cases is almost always a false positive: of the 79 S8 int rows, 68 drive production code through fixtures, kits or a spawned script, 3 scan source text (`privacy-address-pattern-use.test.ts`), and 8 test a helper (`test/fake-oidc.test.ts`, `test/totp.test.ts`): only those 8 are true S8. (2) Three files changed after the data base (`cli-streams-other`, `credentials-check`, `mail-sync`): their line keys are stale. (3) 20 `unscanned` JUnit cases come from `test.each` loops that the scan does not see. (4) B2 is read by stage 05, not here.
+**Findings about the scan.** (1) S8 on int cases is almost always a false positive: of the 79 S8 int rows, 68 drive production code through fixtures, kits or a spawned script, 3 scan source text (`privacy-address-pattern-use.test.ts`), and 8 test a helper (`test/fake-oidc.test.ts`, `test/totp.test.ts`): only those 8 are true S8. (2) Three files changed after the data base (`cli-streams-other`, `credentials-check`, `mail-sync`): their line keys are stale. (3) 20 `unscanned` JUnit cases come from `test.each` loops that the scan does not see. (4) B2 is read by stage 05, not here. (5) The 73 `S9` cases of 2.0 to 2.8 s are 95 % `KEEP` (69 of 73): a 2 to 2.8 s int case is mostly one DB transaction plus a spawn or a GreenMail login, and the cut candidates are the cases whose logic has no DB or IMAP need (lab bots, `stats:week` arguments).
 
 **Decisions for the owner:** none taken. The proposals above are for G1.
 
 ## Not read
 
-73 items, all `S9` (int case of 2 s or more), slowest first, to be read by a continuation. Time in seconds.
-
-| Key | Flags | Time (s) |
-| --- | --- | --- |
-| int/web-invite-cli.test.ts:164 | S9 | 2.80 |
-| int/mail-sync.test.ts:905 | S9 | 2.75 |
-| int/mail-sync.test.ts:704 | S9 | 2.75 |
-| int/lab-reset.test.ts:640 | S9 | 2.72 |
-| int/privacy-dsr-find.test.ts:435 | S9 | 2.72 |
-| int/privacy-dsr-sent.test.ts:341 | S9 | 2.72 |
-| int/privacy-dsr-erase.test.ts:837 | S9 | 2.71 |
-| int/org-export-cli.test.ts:98 | S9 | 2.71 |
-| int/lab-reset.test.ts:704 | S9 | 2.70 |
-| int/org-member.test.ts:595 | S9 | 2.69 |
-| int/credentials-check.test.ts:267 | S9 | 2.61 |
-| int/replies-answered-pass.test.ts:108 | S9 | 2.58 |
-| int/lab-reset.test.ts:619 | S9 | 2.58 |
-| int/privacy-dsr-erase-outbox.test.ts:460 | S9 | 2.58 |
-| ft/e2e.test.ts:31 | S9 | 2.57 |
-| int/privacy-dsr-erase.test.ts:859 | S9 | 2.57 |
-| int/actions-copy-baseline.test.ts:101 | S9 | 2.56 |
-| int/privacy-dsr-find.test.ts:403 | S9 | 2.55 |
-| int/main-start-log.test.ts:112 | S9 | 2.52 |
-| int/actions-copy-check.test.ts:335 | S9 | 2.50 |
-| int/imap-probe-move.test.ts:99 | S9 | 2.49 |
-| int/channels-report-mail-greenmail.test.ts:101 | S9 | 2.47 |
-| int/privacy-dsr-find.test.ts:467 | S9 | 2.45 |
-| int/channels-digest-brief-copies.test.ts:323 | S9 | 2.45 |
-| int/lab-bots.test.ts:483 | S9 | 2.44 |
-| int/lab-injector.test.ts:226 | S9 | 2.44 |
-| int/lab-reset.test.ts:564 | S9 | 2.44 |
-| int/actions-copy-keep.test.ts:93 | S9 | 2.42 |
-| int/org-invite-cli.test.ts:177 | S9 | 2.40 |
-| int/lab-bots.test.ts:634 | S9 | 2.38 |
-| int/mail-sent-cli.test.ts:186 | S9 | 2.38 |
-| int/lab-bots.test.ts:534 | S9 | 2.38 |
-| int/actions-copy-keep.test.ts:172 | S9 | 2.38 |
-| int/cli-streams-other.test.ts:227 | S9 | 2.37 |
-| int/lab-bots.test.ts:581 | S9 | 2.37 |
-| int/privacy-dsr-sender-context.test.ts:420 | S9 | 2.36 |
-| int/replies-cli.test.ts:150 | S9 | 2.33 |
-| int/org-delete-cli.test.ts:120 | S9 | 2.30 |
-| int/replies-answered-pass.test.ts:273 | S9 | 2.29 |
-| int/actions-copy-check.test.ts:275 | S9 | 2.28 |
-| int/actions-copy-keep.test.ts:158 | S9 | 2.27 |
-| int/imap-sync-greenmail.test.ts:32 | S9 | 2.26 |
-| int/lab-serve.test.ts:286 | S9 | 2.25 |
-| int/lab-reset.test.ts:501 | S9 | 2.22 |
-| int/mail-deliver.test.ts:325 | S9 | 2.21 |
-| int/imap-probe-move.test.ts:74 | S9 | 2.21 |
-| int/actions-copy-check.test.ts:231 | S9 | 2.20 |
-| int/mail-folders-cli.test.ts:95 | S9 | 2.20 |
-| int/triage-known-domains.test.ts:508 | S9 | 2.19 |
-| int/lab-bots.test.ts:504 | S9 | 2.19 |
-| int/mail-sync.test.ts:728 | S9 | 2.18 |
-| int/org-cli.test.ts:87 | S9 | 2.17 |
-| int/replies-answered-pass.test.ts:130 | S9 | 2.17 |
-| int/mail-seed.test.ts:289 | S9 | 2.17 |
-| int/mailbox-oauth-cli.test.ts:366 | S9 | 2.16 |
-| int/graph-committer.test.ts:390 | S9 | 2.16 |
-| int/lab-reset.test.ts:510 | S9 | 2.16 |
-| int/replies-answered-pass.test.ts:161 | S9 | 2.16 |
-| int/mailbox-cli-streams.test.ts:546 | S9 | 2.15 |
-| int/replies-answered-pass.test.ts:406 | S9 | 2.14 |
-| int/replies-answered-pass.test.ts:257 | S9 | 2.12 |
-| int/stats-week-cli.test.ts:56 | S9 | 2.12 |
-| int/lab-bots.test.ts:738 | S9 | 2.09 |
-| int/replies-answered-pass.test.ts:315 | S9 | 2.08 |
-| int/imap-probe-move.test.ts:38 | S9 | 2.08 |
-| int/privacy-dsr-sender-context.test.ts:622 | S9 | 2.07 |
-| int/replies-cli.test.ts:90 | S9 | 2.06 |
-| int/privacy-dsr-address-parity.test.ts:238 | S9 | 2.06 |
-| int/replies-answered-pass.test.ts:295 | S9 | 2.05 |
-| int/imap-probe-send.test.ts:185 | S9 | 2.04 |
-| int/replies-answered-pass.test.ts:497 | S9 | 2.04 |
-| int/mailbox-cli-streams.test.ts:473 | S9 | 2.03 |
-| int/privacy-dsr-sender-context.test.ts:589 | S9 | 2.01 |
+0 items. The 73 items that the first job listed as `not read` (all `S9`, 2.0 s to 2.8 s) are rows 151-223 above. Items selected 223 = items in this file 223.
