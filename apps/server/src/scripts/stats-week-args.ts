@@ -1,9 +1,23 @@
-import { parseArgs } from "node:util";
-
-import { EVIDENCE_MIN_LABELS, M2_KINDS, type WeekStats } from "@ea/core";
+import { EVIDENCE_MIN_LABELS, M2_KINDS, type CliDescription, type WeekStats, UsageError } from "@ea/core";
 import { z } from "zod";
 
-export const usage = "usage: bun run stats:week --org-id <uuid> [--mailbox-id <uuid>] [--week YYYY-MM-DD]";
+import { parseFlags } from "./lib/parse-flags";
+
+export const statsWeekUsage = "bun run stats:week --org-id <uuid> [--mailbox-id <uuid>] [--week YYYY-MM-DD]";
+
+export const cliDescriptions = [
+  {
+    name: "stats:week",
+    summary: "Prints the metrics of one finished week of an organization, one key value line each.",
+    risk: "read",
+    needs: ["db"],
+    usage: statsWeekUsage,
+    exits: {
+      1: "the organization or the mailbox is unknown, or the run failed",
+      3: "the database did not answer",
+    },
+  },
+] satisfies readonly CliDescription[];
 
 export interface StatsWeekOptions {
   orgId: string;
@@ -18,25 +32,31 @@ function isMonday(date: string): boolean {
   return at.toISOString().slice(0, 10) === date && at.getUTCDay() === 1;
 }
 
-export function readStatsWeekOptions(args: string[]): StatsWeekOptions | undefined {
-  try {
-    const { values } = parseArgs({
-      args,
-      options: { "org-id": { type: "string" }, "mailbox-id": { type: "string" }, week: { type: "string" } },
-      strict: true,
-      allowPositionals: false,
-    });
-    const uuid = z.uuid();
-    const orgId = values["org-id"];
-    if (orgId === undefined || !uuid.safeParse(orgId).success) return undefined;
-    const mailboxId = values["mailbox-id"] ?? null;
-    if (mailboxId !== null && !uuid.safeParse(mailboxId).success) return undefined;
-    const week = values.week ?? null;
-    if (week !== null && !(/^\d{4}-\d{2}-\d{2}$/.test(week) && isMonday(week))) return undefined;
-    return { orgId, mailboxId, week };
-  } catch {
-    return undefined;
+const optionsSchema = z.object({
+  orgId: z.uuid(),
+  mailboxId: z.uuid().optional(),
+  week: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine(isMonday)
+    .optional(),
+});
+
+// Throws `UsageError` on any bad argument.
+export function parseStatsWeekArgs(args: string[]): StatsWeekOptions {
+  const { values } = parseFlags({
+    args,
+    options: { "org-id": { type: "string" }, "mailbox-id": { type: "string" }, week: { type: "string" } },
+  });
+  const parsed = optionsSchema.safeParse({
+    orgId: values["org-id"],
+    mailboxId: values["mailbox-id"],
+    week: values.week,
+  });
+  if (!parsed.success) {
+    throw new UsageError("--org-id is required; --org-id and --mailbox-id must be uuids; --week must be a Monday");
   }
+  return { orgId: parsed.data.orgId, mailboxId: parsed.data.mailboxId ?? null, week: parsed.data.week ?? null };
 }
 
 // Every rate has its count; a denominator of 0 prints "-".

@@ -1,10 +1,13 @@
+import { EXIT } from "@ea/core";
+
 import { checkBot, telegramErrorLabel } from "../modules/channels";
-import { createCliOutput } from "../platform/cli";
+import { exitCodeOf, runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { ConfigError, loadConfig, type Config } from "../platform/config";
+import { describeError } from "../platform/errors";
 
-const out = createCliOutput("telegram-check");
+import { cliDescriptions, parseTelegramCheckArgs } from "./telegram-check-args";
 
-function readConfig(): Config | undefined {
+function readConfig(out: CliRawOutput): Config | undefined {
   try {
     return loadConfig();
   } catch (error) {
@@ -17,8 +20,10 @@ function readConfig(): Config | undefined {
   }
 }
 
-async function main(): Promise<number> {
-  const config = readConfig();
+const main: CliSpec["main"] = async (argv, out) => {
+  // Parse first: a bad argument exits 2 before the config or any call.
+  parseTelegramCheckArgs(argv);
+  const config = readConfig(out);
   if (config === undefined) return 1;
   if (config.TELEGRAM_BOT_TOKEN === undefined) {
     out.fail("TELEGRAM_BOT_TOKEN is not set");
@@ -29,14 +34,13 @@ async function main(): Promise<number> {
     out.print(`bot @${username} (id ${id})`);
     return 0;
   } catch (error) {
-    out.fail(`failed: ${telegramErrorLabel(error)}`);
-    return 1;
+    const code = exitCodeOf(error);
+    // A Telegram error is never printed with its message: it can hold the token (`telegramErrorLabel`).
+    out.fail(
+      code === EXIT.unreachable ? `unreachable: ${describeError(error)}` : `failed: ${telegramErrorLabel(error)}`
+    );
+    return code;
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${telegramErrorLabel(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) await runCli({ prefix: "telegram-check", descriptions: cliDescriptions, main });

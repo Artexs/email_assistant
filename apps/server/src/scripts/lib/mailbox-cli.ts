@@ -1,13 +1,11 @@
-import { format } from "node:util";
-
 import { mailOAuthRuntime } from "../../composition";
 import { configureMailHosts, MailAuthError, type OAuthTokens } from "../../modules/mail";
-import { type CliRawOutput, createCliOutput } from "../../platform/cli";
+import type { CliRawOutput } from "../../platform/cli";
 import { loadConfig, mailAllowLocal } from "../../platform/config";
 import { createSecretBox, type SecretBox } from "../../platform/crypto";
 import { assertAppRole, createDb, type Db } from "../../platform/db";
 
-// What an operator CLI on a stored mailbox needs from the outside. The production deps come from `runMailboxCli`; a test builds its own
+// What an operator CLI on a stored mailbox needs from the outside. The production deps come from `withMailboxDeps`; a test builds its own
 // (the fake token registry, a capturing `out`). A CLI never reads a mailbox secret: the mail module opens the mailbox through
 // `openMailboxProvider` with `oauthTokens`.
 export interface CliDeps {
@@ -19,33 +17,27 @@ export interface CliDeps {
   out: CliRawOutput;
 }
 
-/** Builds the production deps (the constant provider registry), runs `run` with the process arguments and closes the database. */
-export async function runMailboxCli(
-  name: string,
-  run: (argv: string[], deps: CliDeps) => Promise<number>
-): Promise<number> {
-  const out = createCliOutput(name);
+/**
+ * Builds the production deps (the constant provider registry), runs `run` with them and closes the database. An entry calls it
+ * inside `main`, after its parse: nothing here runs at module load, so `--help` and a bad flag need no env. A config or setup fault
+ * throws to the entry's outer catch (`reportFailure`).
+ */
+export async function withMailboxDeps(out: CliRawOutput, run: (deps: CliDeps) => Promise<number>): Promise<number> {
+  const config = loadConfig();
+  configureMailHosts({ allowLocal: mailAllowLocal(config) });
+  const db = createDb(config.DATABASE_URL);
   try {
-    const config = loadConfig();
-    configureMailHosts({ allowLocal: mailAllowLocal(config) });
-    const db = createDb(config.DATABASE_URL);
-    try {
-      await assertAppRole(db);
-      const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
-      return await run(process.argv.slice(2), {
-        db,
-        secrets,
-        oauthTokens: mailOAuthRuntime(config, db, secrets).tokens,
-        testAddress: config.TEST_MAILBOX_ADDRESS,
-        out,
-      });
-    } finally {
-      await db.destroy();
-    }
-  } catch (error) {
-    // A config or setup fault. A config error names keys, never values.
-    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
-    return 1;
+    await assertAppRole(db);
+    const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+    return await run({
+      db,
+      secrets,
+      oauthTokens: mailOAuthRuntime(config, db, secrets).tokens,
+      testAddress: config.TEST_MAILBOX_ADDRESS,
+      out,
+    });
+  } finally {
+    await db.destroy();
   }
 }
 

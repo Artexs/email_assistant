@@ -1,50 +1,23 @@
-import { parseArgs } from "node:util";
-
-import { z } from "zod";
+import { EXIT } from "@ea/core";
 
 import { checkBot, createLinkToken, telegramErrorLabel } from "../modules/channels";
-import { createCliOutput } from "../platform/cli";
+import { exitCodeOf, runCli, type CliSpec } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { HardError } from "../platform/errors";
+import { describeError, HardError } from "../platform/errors";
 
 import { pickMemberId } from "./lib/pick-member";
+import { cliDescriptions, parseTelegramLinkArgs } from "./telegram-link-args";
 
-const out = createCliOutput("telegram-link");
-
-const usage = "usage: bun run telegram:link --org-id <uuid> [--user-id <uuid>]";
-
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        "user-id": { type: "string" },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const userId = values["user-id"];
-    if (orgId === undefined || !z.uuid().safeParse(orgId).success) return undefined;
-    if (userId !== undefined && !z.uuid().safeParse(userId).success) return undefined;
-    return { orgId, userId };
-  } catch {
-    return undefined;
-  }
-}
-
-function describeFailure(error: unknown): string {
+function describeFailure(error: unknown, code: number): string {
   if (error instanceof HardError) return error.message;
-  return `failed: ${telegramErrorLabel(error)}`;
+  // A Telegram error is never printed with its message: it can hold the token (`telegramErrorLabel`).
+  return code === EXIT.unreachable ? `unreachable: ${describeError(error)}` : `failed: ${telegramErrorLabel(error)}`;
 }
 
-async function main(): Promise<number> {
-  const options = readOptions();
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  // Parse first: a bad argument exits 2 before the config or the DB.
+  const options = parseTelegramLinkArgs(argv);
 
   const config = loadConfig();
   const token = config.TELEGRAM_BOT_TOKEN;
@@ -63,7 +36,7 @@ async function main(): Promise<number> {
     const { username } = await checkBot(token, { apiRoot: config.TELEGRAM_API_ROOT });
     const link = await createLinkToken(db, { orgId: options.orgId }, userId, new Date());
     const until = link.expiresAt.toISOString().slice(11, 16);
-    process.stdout.write(
+    out.write(
       [
         `Open this link on the user's phone within 15 minutes (until ${until} UTC):`,
         `https://t.me/${username}?start=${link.token}`,
@@ -74,16 +47,12 @@ async function main(): Promise<number> {
     out.print(`link token made for user ${userId}, valid until ${link.expiresAt.toISOString()}`);
     return 0;
   } catch (error) {
-    out.fail(describeFailure(error));
-    return 1;
+    const code = exitCodeOf(error);
+    out.fail(describeFailure(error, code));
+    return code;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(describeFailure(error));
-    process.exit(1);
-  });
+if (import.meta.main) await runCli({ prefix: "telegram-link", descriptions: cliDescriptions, main });
