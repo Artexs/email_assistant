@@ -4,6 +4,8 @@ import path from "node:path";
 import { subprocessors } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
+import { startSource } from "./start/source.test-helper";
+
 // The own-model guide and ADR 0035 state only what the repo can show: every link resolves, every number comes from its report,
 // no page says that this install processes mail in the EU, no page says that a failing model "unlocks no auto" without the
 // code that does it, the results part stays empty until a gate file of an own model exists, and the registry sentence of
@@ -106,7 +108,7 @@ describe("the own-model guide", () => {
   test("the guide names the re-gate that the code has", () => {
     expect(existsSync(path.join(ROOT, "apps/server/src/modules/trust/regate.ts"))).toBe(true);
     expect(guide).toContain("The re-gate runs at every start and every 5 minutes.");
-    expect(read("apps/server/src/main.ts")).toContain('regateAll({ ...regateDeps, run: "start" }');
+    expect(startSource()).toContain('regateAll({ ...regateDeps, run: "start" }');
   });
 });
 

@@ -50,7 +50,7 @@ function borderZones() {
   const sameLayer = new Set(borders.sameLayerEdges.map(({ from, to }) => `${from}>${to}`));
   const moduleDir = (name) => `${serverSrc}/modules/${name}`;
   // Globs only: a `from` list that mixes globs and plain paths is an error of the rule.
-  const roots = [`${serverSrc}/*.ts`, `${serverSrc}/scripts/**`];
+  const roots = [`${serverSrc}/*.ts`, `${serverSrc}/scripts/**`, `${serverSrc}/start/**`];
   const zones = [];
   for (const [name, layer] of layerOf) {
     for (const [other, otherLayer] of layerOf) {
@@ -77,7 +77,7 @@ function borderZones() {
       message: "A module never imports a composition root or a script.",
     });
     zones.push({
-      target: [`${serverSrc}/*.ts`, `${serverSrc}/scripts/**/*.ts`],
+      target: [`${serverSrc}/*.ts`, `${serverSrc}/scripts/**/*.ts`, `${serverSrc}/start/**/*.ts`],
       from: moduleDir(name),
       except: ["./index.ts"],
       message: `Import ${name} only through its index.ts.`,
@@ -89,7 +89,7 @@ function borderZones() {
     message: "platform imports no module and no composition root.",
   });
   // CLI output (platform/cli.ts) is for scripts only. One zone per target: a `from` list that mixes globs and plain paths is an error of the rule.
-  for (const target of [`${serverSrc}/modules`, `${serverSrc}/platform`, `${serverSrc}/*.ts`]) {
+  for (const target of [`${serverSrc}/modules`, `${serverSrc}/platform`, `${serverSrc}/*.ts`, `${serverSrc}/start`]) {
     zones.push({
       target,
       from: `${serverSrc}/platform/cli.ts`,

@@ -570,7 +570,7 @@ Tenancy:
 
 ## 8. Reliability and operations
 
-- **Scheduler** (in the server process, `croner`, one tick never overlaps the next). Every job of `apps/server/src/main.ts`; the detail of a job is on its page:
+- **Scheduler** (in the server process, `croner`, one tick never overlaps the next). Every job of the start files in `apps/server/src/start/` (`main.ts` calls them in order); the detail of a job is on its page:
 
   | Job                    | Schedule                                                                                   | Page                                                        |
   | ---------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |

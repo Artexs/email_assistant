@@ -1,24 +1,17 @@
 import { featureKeys } from "@ea/core";
 
 import { configureFeatures, featureStates, getOrganization, setOrgFeature } from "../modules/tenancy";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { featuresOff, loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
-import { parseOrgFlagArgs, usage } from "./org-flag-args";
-
-const out = createCliOutput("org-flag");
+import { cliDescriptions, parseOrgFlagArgs } from "./org-flag-args";
 
 const state = (enabled: boolean): string => (enabled ? "on" : "off");
 
 // Prints ids, flag keys, on/off and sources only, never the organization name. Returns the exit code.
-async function main(): Promise<number> {
-  const args = parseOrgFlagArgs(process.argv.slice(2));
-  if (!args) {
-    out.fail(usage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseOrgFlagArgs(argv);
 
   const config = loadConfig();
   const killed = featuresOff(config);
@@ -68,17 +61,11 @@ async function main(): Promise<number> {
       out.print(`(FEATURES_OFF holds ${result.flag}: it reads off everywhere)`);
     }
     return 0;
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "org-flag", descriptions: cliDescriptions, main });
+}
