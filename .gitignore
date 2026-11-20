@@ -59,6 +59,8 @@ apps/docs/dist/
 apps/docs/.astro/
 # the screenshots of `bun run docs:shots` (stage 11): made by CI from the e2e seed, never committed
 apps/docs/public/shots/
+# the demo video of the home page: files of the GitHub release `demo-video`, downloaded by the deploy (`apps/docs/scripts/demo-fetch.ts`), never committed
+apps/docs/public/demo/
 # the folders of the test builds in `apps/docs/scripts/*.test.ts` (dot folders: the glob scans skip them)
 apps/docs/.dist-*-test/
 
