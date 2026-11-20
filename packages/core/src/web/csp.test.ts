@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 import { describe, expect, test } from "bun:test";
 
-import { cspProblem, docsCspProblem, inlineScripts, scriptHashSource } from "./csp";
+import { cspProblem, docsCspProblem, inlineScripts, parseDirectives, scriptHashSource } from "./csp";
 import { sha256Base64 } from "./sha256";
 
 const GOOD = `<html><head><meta http-equiv="content-security-policy" content="default-src 'self';img-src 'self' data:;connect-src 'self';font-src 'self';form-action 'self';base-uri 'self';object-src 'none'; script-src 'self' 'sha256-a' 'sha256-b'; style-src 'self' 'unsafe-inline';"></head><body><p>x;</p></body></html>`;
@@ -133,4 +133,25 @@ describe("sha256Base64", () => {
       expect(sha256Base64(text)).toBe(createHash("sha256").update(text).digest("base64"));
     }
   );
+});
+
+describe("parseDirectives", () => {
+  test("it drops spaces and empty parts between semicolons and keeps the inner spaces of a directive", () => {
+    expect(parseDirectives(" default-src 'self' ;; ;  img-src  data: ;")).toEqual([
+      { text: "default-src 'self'", name: "default-src" },
+      { text: "img-src  data:", name: "img-src" },
+    ]);
+  });
+  test("it keeps the case of a directive name", () => {
+    expect(parseDirectives("Default-SRC 'self'")).toEqual([{ text: "Default-SRC 'self'", name: "Default-SRC" }]);
+  });
+  test("it splits a directive name from its sources on any run of white space", () => {
+    expect(parseDirectives("script-src\t'self'\n'none'")).toEqual([
+      { text: "script-src\t'self'\n'none'", name: "script-src" },
+    ]);
+  });
+  test("an empty policy has no directive", () => {
+    expect(parseDirectives("")).toEqual([]);
+    expect(parseDirectives(" ; ;")).toEqual([]);
+  });
 });

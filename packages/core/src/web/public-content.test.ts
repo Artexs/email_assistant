@@ -140,3 +140,130 @@ describe("allow list", () => {
     expect(() => parseAllowList(" | reason\n")).toThrow("allow_entry_invalid line 1");
   });
 });
+
+describe("IPv4 address classes", () => {
+  test.each([
+    "127.0.0.1",
+    "10.1.2.3",
+    "172.16.0.1",
+    "172.31.255.1",
+    "192.168.1.1",
+    "0.0.0.0",
+    "192.0.2.1",
+    "198.51.100.7",
+    "203.0.113.9",
+  ])("%s is a private or documentation address and passes", (address) => {
+    expect(publicContentProblems(`ip ${address} x`, [])).toEqual([]);
+  });
+  test.each([
+    "172.15.0.1",
+    "172.32.0.1",
+    "192.169.1.1",
+    "0.0.0.1",
+    "192.0.3.1",
+    "198.51.101.7",
+    "203.0.114.9",
+    "8.8.8.8",
+  ])("%s is a public address and fails", (address) => {
+    expect(publicContentProblems(`ip ${address} x`, [])).toEqual([{ rule: "R3", match: address }]);
+  });
+  test("an octet over 255 is not an address", () => {
+    expect(publicContentProblems("ip 256.1.1.1 x", [])).toEqual([]);
+  });
+});
+
+describe("external asset forms", () => {
+  test.each([
+    [`<img src="https://cdn.x.io/a.png">`, "https://cdn.x.io/a.png"],
+    [`<img src='//cdn.x.io/a.png'>`, "//cdn.x.io/a.png"],
+    [`<img src=https://cdn.x.io/a.png>`, "https://cdn.x.io/a.png"],
+    [`<img SRC="HTTPS://CDN.x.io/a.png">`, "HTTPS://CDN.x.io/a.png"],
+    [`<img src=" https://cdn.x.io/a.png ">`, " https://cdn.x.io/a.png "],
+    [`<img srcset="https://cdn.x.io/a.png">`, "https://cdn.x.io/a.png"],
+    [`<img SRCSET='//cdn.x.io/a.png 2x'>`, "//cdn.x.io/a.png"],
+  ])("%s fails with its url", (html, url) => {
+    expect(publicContentProblems(html, [])).toEqual([{ rule: "R4", match: url }]);
+  });
+  test("a srcset keeps only the candidates on another origin, each url without its descriptor", () => {
+    expect(publicContentProblems(`<img srcset="/a.png 1x, https://cdn.x.io/b.png 2x">`, [])).toEqual([
+      { rule: "R4", match: "https://cdn.x.io/b.png" },
+    ]);
+    expect(publicContentProblems(`<img srcset="https://c.io/b.png 1x,https://c.io/c.png 2x">`, [])).toEqual([
+      { rule: "R4", match: "https://c.io/b.png" },
+      { rule: "R4", match: "https://c.io/c.png" },
+    ]);
+  });
+  test("a src and a srcset on one tag both count, the src first", () => {
+    expect(publicContentProblems(`<img src="https://cdn.x.io/a.png" srcset="https://c.io/b.png 1x">`, [])).toEqual([
+      { rule: "R4", match: "https://cdn.x.io/a.png" },
+      { rule: "R4", match: "https://c.io/b.png" },
+    ]);
+  });
+  test.each([
+    [`<link rel="stylesheet" href="https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+    [`<link rel="preload" href="https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+    [`<link rel="modulepreload" href="https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+    [`<link rel="icon shortcut" href="https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+    [`<link href="https://cdn.x.io/s.css" rel="Stylesheet">`, "https://cdn.x.io/s.css"],
+    [`<link rel="stylesheet"  href='//cdn.x.io/s.css'>`, "//cdn.x.io/s.css"],
+    [`<link rel=stylesheet href=https://cdn.x.io/s.css>`, "https://cdn.x.io/s.css"],
+    [`<link rel="stylesheet" href = "https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+    [`<link rel="stylesheet" data-rel="x" href="https://cdn.x.io/s.css">`, "https://cdn.x.io/s.css"],
+  ])("%s fails with its href", (html, url) => {
+    expect(publicContentProblems(html, [])).toEqual([{ rule: "R4", match: url }]);
+  });
+  test.each([
+    `<link rel="canonical" href="https://cdn.x.io/s.css">`,
+    `<link rel="stylesheet">`,
+    `<linkx rel="stylesheet" href="https://cdn.x.io/s.css">`,
+    `<link href="https://cdn.x.io/s.css" data-rel="stylesheet">`,
+  ])("%s passes", (html) => {
+    expect(publicContentProblems(html, [])).toEqual([]);
+  });
+  test.each([
+    [`a{background:url('https://cdn.x.io/i.png')}`, "https://cdn.x.io/i.png"],
+    [`a{background:url("https://cdn.x.io/i.png")}`, "https://cdn.x.io/i.png"],
+    [`a{background:url(https://cdn.x.io/i.png)}`, "https://cdn.x.io/i.png"],
+    [`a{background:url( 'https://cdn.x.io/i.png' )}`, "https://cdn.x.io/i.png"],
+    [`a{background:URL(https://cdn.x.io/i.png)}`, "https://cdn.x.io/i.png"],
+    [`<p style="background:url('https://cdn.x.io/i.png')">`, "https://cdn.x.io/i.png"],
+  ])("%s fails with its url", (css, url) => {
+    expect(publicContentProblems(css, [])).toEqual([{ rule: "R4", match: url }]);
+  });
+  test.each([
+    `<img src="${DOCS_ORIGIN}/a.png">`,
+    `<img src="${DOCS_ORIGIN}">`,
+    `<img src="/a.png">`,
+    `<img src="https:cdn.x.io/a.png">`,
+    `<img src="/https://cdn.x.io/a.png">`,
+    `<img src="  ">`,
+  ])("%s passes", (html) => {
+    expect(publicContentProblems(html, [])).toEqual([]);
+  });
+  test("a host that only starts with the docs origin is another origin", () => {
+    expect(publicContentProblems(`<img src="${DOCS_ORIGIN}evil.io/a.png">`, [])).toEqual([
+      { rule: "R4", match: `${DOCS_ORIGIN}evil.io/a.png` },
+    ]);
+  });
+});
+
+describe("parseAllowList lines", () => {
+  test("it keeps the entry of each line and skips blank lines and comment lines", () => {
+    expect(parseAllowList("# c\n\n1.2.3.4 | demo IP\n")).toEqual(["1.2.3.4"]);
+    expect(parseAllowList("a | one\r\n\r\nb | two\n   # c  \n")).toEqual(["a", "b"]);
+  });
+  test("it trims the spaces around the entry and the reason", () => {
+    expect(parseAllowList("  1.2.3.4  |  demo  ")).toEqual(["1.2.3.4"]);
+  });
+  test("a reason may hold the separator", () => {
+    expect(parseAllowList("1.2.3.4 | demo | more")).toEqual(["1.2.3.4"]);
+  });
+  test.each([
+    ["no separator", "a\n", "allow_entry_invalid line 1"],
+    ["a bar without spaces", "a|b\n", "allow_entry_invalid line 1"],
+    ["an empty entry", "# c\n | reason\n", "allow_entry_invalid line 2"],
+    ["an empty reason", "ok | fine\n\nx | \n", "allow_entry_invalid line 3"],
+  ])("%s throws with the line number", (_name, text, message) => {
+    expect(() => parseAllowList(text)).toThrow(new Error(message));
+  });
+});
