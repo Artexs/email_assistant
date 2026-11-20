@@ -52,6 +52,7 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   const trustOn = me?.features.includes("trust_ladder") === true;
   // The style card always shows the name and the signature (every draft kind); the writing style and Preview need the flag.
   const replyDraftsOn = me?.features.includes("reply_drafts") === true;
+  const styleFromSentOn = me?.features.includes("style_from_sent") === true;
   const trust = useResource(() => (trustOn ? loadTrustView(mailbox.id) : Promise.resolve(null)));
 
   // A 404 on the settings means the mailbox is gone (removed in another tab): the list decides what is selected.
@@ -109,7 +110,13 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
         />
       )}
       <LoopSettingsCard settings={data} isOwner={isOwner} onChanged={onChanged} onMissing={reloadMailboxes} />
-      <ReplyStyleCard mailbox={mailbox} isOwner={isOwner} replyDraftsOn={replyDraftsOn} />
+      <ReplyStyleCard
+        mailbox={mailbox}
+        isOwner={isOwner}
+        replyDraftsOn={replyDraftsOn}
+        styleFromSentOn={styleFromSentOn}
+        sentTracking={data.sentTracking}
+      />
     </>
   );
 }

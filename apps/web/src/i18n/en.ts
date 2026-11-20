@@ -40,6 +40,8 @@ export const enPlurals = {
   nl_count: { one: "1 mail in 30 days", other: "{count} mails in 30 days" },
   // The push device card: the test notice
   push_test_sent: { one: "Test notice sent to 1 device.", other: "Test notice sent to {count} devices." },
+  // The result of a style suggestion
+  rs_suggest_result: { one: "Based on 1 sent mail", other: "Based on {count} sent mails" },
 } as const;
 
 export type PluralKey = keyof typeof enPlurals;
