@@ -6,12 +6,15 @@ import { join } from "node:path";
 
 import { DOCS_BASE } from "@ea/core";
 
+export type DemoLang = "en" | "pl";
+
 // The sha256 (lowercase hex) of `demo.mp4` that the owner pinned, or null: no pin means no download and no video on the site.
 // Only the coordinator sets it, after the owner uploaded the video (owner gate G3). An upload with `--clobber` cannot change the site
 // without a commit that changes this value.
 export const DEMO_VIDEO_SHA256: string | null = null;
-
-export type DemoLang = "en" | "pl";
+// The sha256 of each caption file, pinned with the video: the captions are public text on the home page, so an upload with `--clobber`
+// must not change them without a commit either. All three pins are null or all three are set (`demo-video.test.ts`).
+export const DEMO_CAPTION_SHA256: Record<DemoLang, string | null> = { en: null, pl: null };
 
 export const DEMO_VIDEO_FILE = "demo.mp4";
 export const DEMO_CAPTION_FILES: Record<DemoLang, string> = { en: "demo.en.vtt", pl: "demo.pl.vtt" };
