@@ -39,7 +39,7 @@ Every night the VPS makes an encrypted copy of the whole Postgres database and s
 | CLI  | `bun run credentials:check` (run by `restore.sh` before the server starts)                                        | `apps/server/src/scripts/credentials-check.ts` |
 | CLI  | settings of the backup: `BACKUP_DIR`, `AGE_RECIPIENT`, `BACKUP_REMOTE`, `KEEP_DAYS`, `COMPOSE`, `BACKUP_PING_URL` | `deploy/backup.env.example`                    |
 | file | `status.json` in `deploy/backup-status` (the last run; read by the `ops.slo` backup check)                        | `deploy/backup.sh`                             |
-| job  | `platform.heartbeat` (`*/5 * * * *`; the dead-man's-switch, not a backup job)                                     | `apps/server/src/main.ts`                      |
+| job  | `platform.heartbeat` (`*/5 * * * *`; the dead-man's-switch, not a backup job)                                     | `apps/server/src/start/mail.ts`                |
 | CLI  | runbook sections Backups and Update                                                                               | `deploy/README.md`                             |
 
 ## Data

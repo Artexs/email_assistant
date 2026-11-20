@@ -4,6 +4,8 @@ import path from "node:path";
 import { featureFlags } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
+import { startSource } from "./start/source.test-helper";
+
 // The trust-ladder docs name what the code has: every flag of the trust ladder, every job `trust.*` and `channels.report_mail` that
 // `main.ts` schedules, the three migrations of the trust-ladder ticket, the limits that the last step left for the docs, and the accepted ADRs. A new
 // flag or job that nobody wrote down fails here (same idea as `open-loops-docs.test.ts`).
@@ -18,9 +20,9 @@ const deployGuide = read("deploy/README.md");
 const e4bFlags = Object.entries(featureFlags)
   .filter(([, flag]) => flag.epic === "E4-B")
   .map(([name]) => name);
-const jobs = [
-  ...read("apps/server/src/main.ts").matchAll(/scheduler\.add\("(trust\.[a-z]+|channels\.report_mail)"/g),
-].map((match) => match[1] ?? "");
+const jobs = [...startSource().matchAll(/scheduler\.add\("(trust\.[a-z]+|channels\.report_mail)"/g)].map(
+  (match) => match[1] ?? ""
+);
 const migrations = [
   "20261115180001_trust_ladder.sql",
   "20261117120001_history_model_failing.sql",
