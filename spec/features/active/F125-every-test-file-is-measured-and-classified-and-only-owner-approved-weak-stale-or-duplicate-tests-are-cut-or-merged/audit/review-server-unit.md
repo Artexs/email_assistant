@@ -1,12 +1,12 @@
 # Review: `apps/server/src` unit tests (F125 stage 05)
 
-Reader review by `plan.md` § Reader method, § Rules for the classes. Read-only on tests. Base of this review: `f968f274` (HEAD of the job after the last merge of master).
+Reader review by `plan.md` § Reader method, § Rules for the classes. Read-only on tests. Base of this review: `bcbb2e8d` (HEAD of the job after the last merge of master).
 
 Notes for the reader:
 
 - **Keys.** Keys are `file:line` at the base above, from a fresh `bun scripts/test-audit/scan-cli.ts` run on that base, not from the committed `cases.tsv`. Reason: master changed or added test files of this area after stage 02 ran (the config, LLM provider, lint-rule, probe and temp-leak tests, among others); keys in `cases.tsv` for those files are stale. A second fresh scan at the base of the first version of this review (`8507ee9b`) was compared with the scan at the current base by file, describe path and name: 13 items appeared and 1 disappeared; the one that disappeared is the provider-scan case that master renamed, and it keeps its row, so 12 items are new (the time-literal lint rule and the time-rewrite tool, the mailbox probe, the temp-leak guard, and one `toBeTruthy` config case). The older rows are carried over with the new keys; the added items are read again. Group ids are renumbered by the scan (the old T11 and T12 are T13 and T14). After that, master moved the helper-testing files of `scripts/` into `scripts/lib/` (keys of those rows changed, flags did not) and added `scripts/scripts-layout.test.ts` (three new S8 items, read here), so the keys are those of the scan at the final base.
 - **Items.** An item is one flagged case, or one B or T group whose first key is in `apps/server/src` (B1–B3, T4–T16). Order: (a) S1/S7/S8, (b) S2/S3/S4, (c) B groups, (d) T groups, (f) S9. A case in a group is read inside its group row only. S5/S6 cases belong to their group row. S9 items are the five slow cases of the stage 02 run and two cases that are new since stage 02 and took 1 s or more in the run of this job.
-- **S8 is mostly a false positive here.** The S8 items (95) spawn a real script, read the real docs or source tree, run `docker compose config`, or test a pure helper of the same file. Only `modules/mail/fake/raw.test.ts` tests a fake-side helper. Most are `KEEP`, with the K rule where one applies.
+- **S8 is mostly a false positive here.** The S8 items (97) spawn a real script, read the real docs or source tree, run `docker compose config`, or test a pure helper of the same file. Only `modules/mail/fake/raw.test.ts` tests a fake-side helper. Most are `KEEP`, with the K rule where one applies.
 - **Columns.** `Lines` = test lines the action removes (estimate for MERGE-TABLE: body lines + rows − 8; 0 for REWRITE-WEAK and KEEP). `Time (s)` = JUnit time of the cases of the row at the stage 02 run (not time saved). A case that is new since stage 02 has the time of a serial run of `bun test apps/server/src` at the base, made under a machine load of about 30 on 16 cores: it is up to two times too high, and it is not used for any decision.
 - **Unit/int pairs.** None found among the items: `audit/data/unit-int-pairs.tsv` has the header only. Evidence: an exact-name match of all `apps/server/src` case names against all `apps/server/test` case names finds one pair (`end-of-day.test.ts:7`, not a flagged item); B2 is the only item that touches both areas and the two cases check different things.
 
@@ -111,6 +111,10 @@ Notes for the reader:
 | `scripts/scripts-layout.test.ts:24` | `scripts/scripts-layout.test.ts:24` | S8 | KEEP | K2 | – | S8 is a false positive: reads the real folder `scripts/` and the root `package.json`. Layout completeness check: every top-level file is a tool entry or the args file of one (the layout rule of `docs/cli.md`); it guards the next added file. | 0 | 0.000 |
 | `scripts/scripts-layout.test.ts:30` | `scripts/scripts-layout.test.ts:30` | S8 | KEEP | K2 | – | S8 is a false positive: reads `package.json` and the folder. Completeness check: every tool command names an existing file. | 0 | 0.000 |
 | `scripts/scripts-layout.test.ts:35` | `scripts/scripts-layout.test.ts:35` | S8 | KEEP | K2 | – | S8 is a false positive: reads the folder `scripts/lib/`. Completeness check: no helper file in `lib/` is a tool command. | 0 | 0.000 |
+| `start/jobs.test.ts:37` | `start/jobs.test.ts:37` | S8 | KEEP | K2 | – | S8 is a false positive: reads the real `main.ts` and compares the names of the scheduled jobs with the fixed list (22 jobs). Registry completeness check: a new job must be named here and in the shutdown list. | 0 | 0.000 |
+| `start/jobs.test.ts:41` | `start/jobs.test.ts:41` | S8 | KEEP | K2 | – | S8 is a false positive: reads the real `main.ts`. Completeness check: the 20 jobs that shutdown waits for are the tracked ones. The wiring pins in `composition.test.ts` name single jobs; this one guards the whole list. | 0 | 0.000 |
+| `start/runs.test.ts:33` | `start/runs.test.ts:33` | S1 | REWRITE-WEAK | none | – | No `expect`: the case passes when `settled()` does not hang. Proposed: leave the first run pending, resolve the second, and assert `expect(await Promise.race([runs.settled().then(() => "settled"), macrotask().then(() => "waiting")])).toBe("settled")`, so a tracker that still waits for the old run fails. | 0 | 0.000 |
+| `start/runs.test.ts:52` | `start/runs.test.ts:52` | S1 | REWRITE-WEAK | none | – | No `expect`: `await createRunTracker().settled()` only shows that it does not throw or hang. Proposed: `expect(await Promise.race([createRunTracker().settled().then(() => "settled"), macrotask().then(() => "waiting")])).toBe("settled")`, which states the case name (resolves at once). | 0 | 0.000 |
 | `modules/lab/serve-files.test.ts:100` | `modules/lab/serve-files.test.ts:100` | S2 | REWRITE-WEAK | none | – | Only `toBeDefined()` on the lock (same container restarted takes over). Proposed: assert the lock file holds the new token and not the old one after `takeServeLock`, e.g. `expect(readFileSync(lockPath(), "utf8")).not.toContain("old")`. | 0 | 0.000 |
 | `modules/lab/serve-files.test.ts:128` | `modules/lab/serve-files.test.ts:128` | S2 | REWRITE-WEAK | none | – | Only `toBeDefined()` on the lock (a lock of another PID namespace is stale by age). Proposed: assert the lock file holds the new token and not the old one after `takeServeLock`, e.g. `expect(readFileSync(lockPath(), "utf8")).not.toContain("old")`. | 0 | 0.000 |
 | `modules/lab/serve-files.test.ts:138` | `modules/lab/serve-files.test.ts:138` | S2 | REWRITE-WEAK | none | – | Only `toBeDefined()` on the lock (same host and namespace, pid 1, unknown token). Proposed: assert the lock file holds the new token and not the old one after `takeServeLock`, e.g. `expect(readFileSync(lockPath(), "utf8")).not.toContain("old")`. | 0 | 0.000 |
@@ -131,7 +135,7 @@ Notes for the reader:
 | B1 | `modules/triage/eval-cases.test.ts:102`, `modules/triage/eval-cases.test.ts:133` | B | KEEP | K2 | – | Same text in two describes; each reads a different case set (urgent/needs_reply vs info/notification), so it is not a copy. Corpus-size floors guard the next edit of the case file. | 0 | 0.000 |
 | B2 | `platform/db/tenant-scope.test.ts:9`, `apps/server/test/integration/web-tenant-scope.test.ts:260` | B | KEEP | K3 | – | Same one-line body, two intents: unit "outside any scope the scope is null" and int "no scope is left in the test process" (a leak guard after the suite of `web-tenant-scope.test.ts`). Tenant isolation. Not a unit/int pair of one behaviour. | 0 | 0.000 |
 | B3 | `sender-context-docs.test.ts:51`, `trust-docs.test.ts:49` | B | KEEP | K2 | – | Same loop text over different arrays (contacts jobs vs trust jobs); each guards that the docs name its own jobs. Completeness check of docs against jobs. | 0 | 0.000 |
-| T4 | `composition.test.ts:226`, `composition.test.ts:243`, `composition.test.ts:457` | T | KEEP | unsure | – | Three source-pin tests of different wirings (job-run committer deps get a token store, reply-check-copy opener gets a token store, the web passes the gate to the settings deps builder) in different describes; one `test.each` would save about 6 lines and hide the wiring each one names. | 0 | 0.000 |
+| T4 | `composition.test.ts:214`, `composition.test.ts:231`, `composition.test.ts:445` | T | KEEP | unsure | – | Three source-pin tests of different wirings (job-run committer deps get a token store, reply-check-copy opener gets a token store, the web passes the gate to the settings deps builder) in different describes; one `test.each` would save about 6 lines and hide the wiring each one names. | 0 | 0.000 |
 | T5 | `modules/borders.test.ts:21`, `modules/borders.test.ts:34`, `modules/borders.test.ts:47` … (6) | T | KEEP | K2 | – | borders.test.ts is a named K2 file (the module border lint). A `test.each` over (fixture, code, message) would keep every input and save about 30 lines; K2 wins, so it is a note for the owner, not a proposal. | 0 | 0.949 |
 | T6 | `modules/borders.test.ts:73`, `modules/borders.test.ts:85`, `modules/borders.test.ts:123` … (4) | T | KEEP | K2 | – | Same as T5: border lint cases. A table would save about 15 lines; K2 wins. | 0 | 0.056 |
 | T7 | `modules/borders.test.ts:146`, `modules/borders.test.ts:159`, `modules/borders.test.ts:172` … (4) | T | KEEP | K2 | – | Same as T5: border lint "passes" cases. A table would save about 20 lines; K2 wins. | 0 | 0.047 |
@@ -154,14 +158,14 @@ Notes for the reader:
 
 ## Summary
 
-- Items selected: 139. Items in this file: 139. Read: 139. Not read: 0.
+- Items selected: 143. Items in this file: 143. Read: 143. Not read: 0.
 
 | Action | Rows | Cases in rows | Lines | Time of cases (s) |
 | --- | --- | --- | --- | --- |
-| KEEP | 116 | 145 | 0 | 28.365 |
+| KEEP | 118 | 147 | 0 | 28.365 |
 | DELETE-DUP | 0 | 0 | 0 | 0.000 |
 | MERGE-TABLE | 4 | 27 | 133 | 0.398 |
-| REWRITE-WEAK | 19 | 19 | 0 | 0.032 |
+| REWRITE-WEAK | 21 | 21 | 0 | 0.032 |
 | DELETE-STALE | 0 | 0 | 0 | 0.000 |
 | MOVE-TO-UNIT | 0 | 0 | 0 | 0.000 |
 | FIX-NEVER-RUNS | 0 | 0 | 0 | 0.000 |
