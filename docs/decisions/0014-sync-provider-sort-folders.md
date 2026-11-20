@@ -54,6 +54,7 @@ Short form. The task file has the full text of each decision.
 - The columns `mailboxes.uidvalidity` and `mailboxes.last_uid` and the names `emails.inbox_uid` and `emails.undo_pending_at` stay for now
   (`inbox_uid` means "the last known UID in `source_folder`"). The follow-up `spec/features/planned/F062-drop-mailbox-cursor-columns/plan.md` renames and drops them after the pilot weeks.
   2026-11-20: `inbox_uid` and `undo_pending_at` are now `source_uid` and `move_pending_at`; the old names stay in the DB until the contract migration of `spec/features/<lane>/F062-drop-mailbox-cursor-columns/`.
+  2026-11-20: the contract migration `drop_old_cursor_columns` dropped `emails.inbox_uid`, `emails.undo_pending_at`, `mailboxes.uidvalidity` and `mailboxes.last_uid` and the copy trigger. It closed the rollback window of the sort-folder sync (the dual write of the INBOX cursor); the cursor lives only in `mailbox_folders`.
 - The pipeline rule 1 of `docs/architecture.md` is now: the system reads INBOX and the synced folders of `mailbox_folders`.
   It never reads `AI/*`, Sent, Drafts, Trash or the user's own folders.
 - **Known limits (D24).** The system does not fix them in this change.

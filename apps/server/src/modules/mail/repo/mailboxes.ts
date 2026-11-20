@@ -38,10 +38,8 @@ function toAuthReason(value: string | null): AuthErrorReason | null {
   return authErrorReasons.find((reason) => reason === value) ?? null;
 }
 function toMailboxRow(row: Selectable<DB["mailboxes"]>): MailboxRow {
-  // The two columns are an old copy of the INBOX cursor (the cursor is in `mailbox_folders`): they never leave the mapper.
-  const { uidvalidity: _uidvalidity, last_uid: _lastUid, ...rest } = row;
   return {
-    ...rest,
+    ...row,
     smtp_security: row.smtp_security === "starttls" ? "starttls" : "tls",
     send_via: row.send_via === "graph" ? "graph" : "smtp",
     oauth_provider: row.oauth_provider === "microsoft" || row.oauth_provider === "google" ? row.oauth_provider : null,
