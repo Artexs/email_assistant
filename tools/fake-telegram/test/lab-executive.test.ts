@@ -380,12 +380,11 @@ test("3: an applied move of an urgent mail and its digest card with Undo: one fu
         .execute();
       return rows.length === 1;
     });
-    const feedback = await w.trx
-      .selectFrom("triage_feedback")
-      .select("source")
-      .where("email_id", "=", emailId)
-      .execute();
-    expect(feedback).toEqual([{ source: "undo" }]);
+    // The feedback row follows the reverse row a moment later: wait for it, as for the reverse row.
+    const readFeedback = () =>
+      w.trx.selectFrom("triage_feedback").select("source").where("email_id", "=", emailId).execute();
+    await until("undo feedback row", async () => (await readFeedback()).length === 1);
+    expect(await readFeedback()).toEqual([{ source: "undo" }]);
     expect(w.callbackData(w.a.chatId)).toEqual([`fu:${emailId}`]);
   });
 }, 60_000);
