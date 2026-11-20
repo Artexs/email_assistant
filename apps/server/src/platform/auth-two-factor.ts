@@ -4,14 +4,19 @@ import { twoFactor } from "better-auth/plugins";
 
 import type { AuthEventKind, AuthHandle } from "./auth";
 import type { AuthHookPart, AuthPartContext } from "./auth-hooks";
-import { requireSecondFactorCode, TWO_FACTOR_LOCK, WRONG_CODE_ERRORS } from "./auth-two-factor-code";
+import {
+  requireSecondFactorCode,
+  TWO_FACTOR_LOCK,
+  WRONG_CODE_ERRORS,
+  type SecondFactorInput,
+} from "./auth-two-factor-code";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("auth_two_factor");
 
-// The numbers of the two-factor plugin (`TWO_FACTOR_LOCK` lives in `auth-two-factor-code.ts`, which also applies it).
-export { TWO_FACTOR_LOCK };
+// The second-factor check and its lock numbers live in `auth-two-factor-code.ts`; the old path keeps the names.
+export { requireSecondFactorCode, TWO_FACTOR_LOCK, type SecondFactorInput };
 export const TRUST_DEVICE_SECONDS = 2_592_000; // 30 days
 export const BACKUP_CODE_COUNT = 10;
 

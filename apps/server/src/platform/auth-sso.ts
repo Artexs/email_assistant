@@ -53,7 +53,7 @@ function startOf(value: unknown): Date | null {
   return at !== null && !Number.isNaN(at.getTime()) ? at : null;
 }
 
-// What the session hook of `platform/auth.ts` adds to a new session row.
+// What the session hook of `platform/auth-database-hooks.ts` adds to a new session row.
 // `path` is the route template (`/sso/callback/:providerId`), so the match is by prefix, never by the concrete path.
 // `current` is the session of the request, if the endpoint has one (TOTP turn-on, `/change-password`): a session made from an
 // SSO session keeps its method and its start, because Better Auth copies the fields but sets the defaults after them.
@@ -217,7 +217,7 @@ function ssoAuditPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   };
 }
 
-// Plugin order in `platform/auth.ts`: `twoFactorPlugin()`, `...ssoPlugins(...)`, `signInAuditPlugin(report)` last.
+// Plugin order in `platform/auth-hooks.ts`: `twoFactorPlugin()`, `...ssoPlugins(...)`, `signInAuditPlugin(report)` last.
 export function ssoPlugins(deps: SsoDeps) {
   const pending = new Map<string, PendingLogin>();
   return [ssoPlugin(deps, pending), ssoAuditPlugin(deps, pending)] as const;

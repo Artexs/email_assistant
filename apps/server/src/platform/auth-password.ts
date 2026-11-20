@@ -3,6 +3,7 @@ import { APIError, getSessionFromCtx, isAPIError } from "better-auth/api";
 
 import type { AuthDeps, AuthEventKind } from "./auth";
 import type { AuthHookCtx, AuthHookPart, AuthPartContext } from "./auth-hooks";
+import { errorFields } from "./errors";
 import { createLog } from "./log";
 
 const log = createLog("auth");
@@ -149,4 +150,23 @@ export function hooksOf(part: AuthPartContext): AuthHookPart[] {
       },
     },
   ];
+}
+
+// After a password reset: the audit row, the end of the lock, the accepted terms. No error of a step reaches Better Auth.
+export function passwordResetHook(part: AuthPartContext) {
+  const { deps, now, report } = part;
+  return async ({ user }: { user: { id: string } }): Promise<void> => {
+    await report("password_set", user.id);
+    try {
+      await deps.lockout?.clear(user.id, now());
+    } catch (error) {
+      log.error("lockout_clear_failed", { ...errorFields(error) });
+    }
+    // The `before` hook proved that the request held the current version (the body is not readable here).
+    try {
+      await deps.onTermsAccepted(user.id, TERMS_VERSION);
+    } catch (error) {
+      log.error("terms_record_failed", { user_id: user.id, ...errorFields(error) });
+    }
+  };
 }

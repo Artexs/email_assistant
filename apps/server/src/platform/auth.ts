@@ -1,22 +1,14 @@
-import { TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware, isAPIError } from "better-auth/api";
 import { serialize as serializeCookie } from "hono/utils/cookie";
 import type { Transaction } from "kysely";
 import { Pool } from "pg";
 
+import { databaseHooksOf } from "./auth-database-hooks";
 import { authHookParts, authPlugins, runAfter, runBefore, type AuthPartContext } from "./auth-hooks";
 import type { LockoutStore } from "./auth-lockout";
-import { createResetLimiter, RESET_REQUEST_ANSWER, RESET_REQUEST_PATH, type AddressLimiter } from "./auth-password";
-import {
-  isAllowedSsoPath,
-  ssoSessionData,
-  SSO_SIGN_IN_PATH,
-  withoutIdpTokens,
-  type SsoEvent,
-  type SsoIdentity,
-  type SsoResolution,
-} from "./auth-sso";
+import { createResetLimiter, passwordResetHook, RESET_REQUEST_PATH } from "./auth-password";
+import { isAllowedSsoPath, SSO_SIGN_IN_PATH, type SsoEvent, type SsoIdentity, type SsoResolution } from "./auth-sso";
 import { TWO_FACTOR_ALLOWED_PATHS, type CodeApi } from "./auth-two-factor";
 import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
@@ -174,20 +166,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         }
         log.info("password_reset_requested", { user_id: user.id });
       },
-      onPasswordReset: async ({ user }) => {
-        await report("password_set", user.id);
-        try {
-          await deps.lockout?.clear(user.id, now());
-        } catch (error) {
-          log.error("lockout_clear_failed", { ...errorFields(error) });
-        }
-        // The `before` hook proved that the request held the current version (the body is not readable here).
-        try {
-          await deps.onTermsAccepted(user.id, TERMS_VERSION);
-        } catch (error) {
-          log.error("terms_record_failed", { user_id: user.id, ...errorFields(error) });
-        }
-      },
+      onPasswordReset: passwordResetHook(part),
     },
     user: {
       modelName: "users",
@@ -269,47 +248,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       },
     },
     plugins: authPlugins(part),
-    databaseHooks: {
-      session: {
-        create: {
-          // `ctx.context.session` is the session of the request: set only for an endpoint that needs one.
-          before: async (session, ctx) => {
-            const extra = ssoSessionData({
-              path: ctx?.path,
-              current: ctx?.context.session?.session ?? null,
-              now: now(),
-            });
-            if (extra !== undefined) return { data: { ...session, ...extra } };
-            // A password session of a member that "SSO required" refuses: no session. The before hook of the sign-in checks
-            // this too, but outside the transaction of the operator's switch, so a sign-in that passed it just before the
-            // commit would still get a session here, or a two-factor challenge that `/two-factor/verify-totp` turns into one.
-            // This hook covers `/sign-in/email` and `/two-factor/verify-totp` in one place. An error of the check fails closed.
-            if (deps.passwordSignInRefused && (await deps.passwordSignInRefused(session.userId))) {
-              log.info("password_session_refused_sso", { user_id: session.userId });
-              return false;
-            }
-            return undefined;
-          },
-        },
-      },
-      account: {
-        // No IdP token is stored (an `id_token` holds the IdP e-mail in clear).
-        create: { before: async (account) => withoutIdpTokens(account) },
-        update: {
-          before: async (account) => withoutIdpTokens(account),
-          after: async (account, ctx) => {
-            if (
-              ctx?.path === "/change-password" &&
-              typeof account === "object" &&
-              account !== null &&
-              account.providerId === "credential"
-            ) {
-              await report("password_changed", account.userId);
-            }
-          },
-        },
-      },
-    },
+    databaseHooks: databaseHooksOf(part),
     // An OAuth state error redirects here (the default is a Better Auth error page that our server does not serve).
     onAPIError: { onError: onAuthError, errorURL: "/login?sso=failed" },
     logger: {
