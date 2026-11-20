@@ -65,3 +65,6 @@ apps/docs/dist-shots-test/
 # release state of deploy/release.sh and deploy/rollback.sh (the folder is in git, the file is not)
 deploy/release-state/state
 deploy/release-state/state.tmp
+
+# VPS database keys (deploy/env-split.sh)
+deploy/db.env
