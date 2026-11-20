@@ -77,9 +77,10 @@ async function rows(trx: Db | Transaction<DB>, mailboxId: string) {
 
 async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string): Promise<number> {
   const row = await trx
-    .selectFrom("mailboxes")
+    .selectFrom("mailbox_folders")
     .select("last_uid")
-    .where("id", "=", mailboxId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", "inbox")
     .executeTakeFirstOrThrow();
   return Number(row.last_uid);
 }
@@ -123,6 +124,7 @@ describe("sync stores the capture", () => {
       const count = await trx
         .selectFrom("email_headers")
         .select((eb) => eb.fn.countAll<string>().as("n"))
+        .where("org_id", "=", s.ctx.orgId)
         .executeTakeFirstOrThrow();
       expect(Number(count.n)).toBe(2);
     });

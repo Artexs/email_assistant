@@ -114,6 +114,8 @@ import {
   e2eTwoFactorOrgName,
   type E2eProject,
   type SeedFile,
+  assertTaggedMailbox,
+  mailTagFromEnv,
   seedFilePath,
   seedTargetOk,
 } from "./e2e-seed-args";
@@ -139,6 +141,7 @@ async function seedAssistMailbox(
   mode: "assist" | "shadow" = "assist",
   opts: { oauthProvider?: "microsoft" | "google" } = {}
 ): Promise<string> {
+  assertTaggedMailbox(address, mailTagFromEnv(process.env));
   const mailboxId = randomUUID();
   await insertMailbox(db, ctx, {
     id: mailboxId,

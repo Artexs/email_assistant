@@ -5,6 +5,7 @@ import { defineConfig } from "astro/config";
 import claimCheck from "./integrations/claim-check";
 import cspFinalize from "./integrations/csp-finalize";
 import inPlaceCheck from "./integrations/in-place-check";
+import imageCheck from "./integrations/image-check";
 import linkCheck from "./integrations/link-check";
 import publicContent from "./integrations/public-content";
 import shots from "./integrations/shots";
@@ -63,6 +64,8 @@ export default defineConfig({
           ],
         },
         { label: "FAQ", items: [{ slug: "faq" }] },
+        // The public pages come after the FAQ: security (its own stage) and then pricing.
+        { slug: "pricing" },
         { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },
         ...IN_PLACE_PAGES.filter((page) => !inOperate(page)).map((page) => ({ slug: page.id })),
       ],
@@ -77,6 +80,8 @@ export default defineConfig({
     linkCheck(),
     // Every claim of the security page has a ledger row and a proof file that exists.
     claimCheck(),
+    // After the link check: every image source is a file of the shots folder or of the site (`image_outside <src>`).
+    imageCheck(),
     // Where the screenshot files are, and the log line `shots: on|off`.
     shots(),
   ],

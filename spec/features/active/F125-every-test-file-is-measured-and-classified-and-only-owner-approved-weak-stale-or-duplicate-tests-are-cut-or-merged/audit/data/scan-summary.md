@@ -1,12 +1,12 @@
 # Static scan summary
 
-Total rows: 11641 (one per test or it call site).
+Total rows: 11650 (one per test or it call site).
 
 ## Rows per kind
 
 | kind | rows |
 | --- | --- |
-| unit | 5847 |
+| unit | 5856 |
 | int | 5569 |
 | e2e | 225 |
 
@@ -15,14 +15,14 @@ Total rows: 11641 (one per test or it call site).
 | area | rows | unit | int | e2e |
 | --- | --- | --- | --- | --- |
 | packages/core | 2097 | 2097 | 0 | 0 |
-| apps/server/src | 2393 | 2393 | 0 | 0 |
+| apps/server/src | 2394 | 2394 | 0 | 0 |
 | apps/server/test | 5550 | 0 | 5550 | 0 |
 | apps/web/src | 869 | 869 | 0 | 0 |
 | apps/web/integrations | 19 | 19 | 0 | 0 |
 | apps/web/e2e | 217 | 0 | 0 | 217 |
 | apps/docs | 308 | 300 | 0 | 8 |
 | deploy/test | 87 | 87 | 0 | 0 |
-| tools/fake-telegram | 78 | 59 | 19 | 0 |
+| tools/fake-telegram | 86 | 67 | 19 | 0 |
 | tools/mail-oauth-spike | 23 | 23 | 0 | 0 |
 
 ## Flags per area
@@ -37,9 +37,9 @@ Total rows: 11641 (one per test or it call site).
 | apps/web/e2e | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | apps/docs | 0 | 1 | 0 | 0 | 0 | 10 | 0 | 30 | 41 |
 | deploy/test | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 29 | 29 |
-| tools/fake-telegram | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 9 | 10 |
+| tools/fake-telegram | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 17 | 18 |
 | tools/mail-oauth-spike | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 23 | 23 |
-| all | 8 | 16 | 2 | 1 | 16 | 151 | 3 | 253 | 449 |
+| all | 8 | 16 | 2 | 1 | 16 | 151 | 3 | 261 | 457 |
 
 Areas with more than 150 flagged rows: none.
 

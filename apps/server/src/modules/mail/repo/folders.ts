@@ -190,7 +190,6 @@ export async function getJunkFolderPath(db: DbOrTrx, ctx: TenantContext, mailbox
   return row?.path ?? null;
 }
 // Conditional update on the folder row: it changes the cursor only when the stored cursor is still `expected`.
-// The INBOX row also writes the two `mailboxes` columns in the same transaction (a dual write, for a code rollback).
 export async function updateFolderCursor(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -206,18 +205,9 @@ export async function updateFolderCursor(
       .where("id", "=", folderId)
       .where("uidvalidity", "is not distinct from", toInt8(expected.uidValidity))
       .where("last_uid", "is not distinct from", toInt8(expected.lastUid))
-      .returning(["mailbox_id", "key"])
+      .returning("id")
       .executeTakeFirst();
-    if (row === undefined) return false;
-    if (row.key === "inbox") {
-      await trx
-        .updateTable("mailboxes")
-        .set({ uidvalidity: next.uidValidity, last_uid: next.lastUid })
-        .where("org_id", "=", ctx.orgId)
-        .where("id", "=", row.mailbox_id)
-        .execute();
-    }
-    return true;
+    return row !== undefined;
   };
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);
 }
@@ -243,14 +233,6 @@ export async function forceRescan(db: DbOrTrx, ctx: TenantContext, mailboxId: st
       .where("mailbox_id", "=", mailboxId)
       .where("uidvalidity", "is not", null)
       .executeTakeFirst();
-    // A dual write: see the INBOX row above.
-    await trx
-      .updateTable("mailboxes")
-      .set({ uidvalidity: "0" })
-      .where("org_id", "=", ctx.orgId)
-      .where("id", "=", mailboxId)
-      .where("uidvalidity", "is not", null)
-      .execute();
     return result.numUpdatedRows > 0n;
   };
   return db.isTransaction ? run(db as Transaction<DB>) : db.transaction().execute(run);

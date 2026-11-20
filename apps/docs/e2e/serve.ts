@@ -4,7 +4,8 @@ import { join, normalize, sep } from "node:path";
 import { DOCS_BASE } from "@ea/core";
 
 import { createCliOutput } from "../../server/src/platform/cli";
-import { DOCS_DIST, DOCS_TEST_HOST, DOCS_TEST_PORT } from "./site";
+import { docsTestPort } from "../../server/src/scripts/e2e-job-env-args";
+import { DOCS_DIST, DOCS_TEST_HOST } from "./site";
 
 // A static server for `apps/docs/dist` under `DOCS_BASE`, as GitHub Pages serves it: a path that ends in `/` answers with its
 // `index.html`, everything else that is not a file answers 404 with `404.html`. It sets no header: the CSP is the page's own meta tag.
@@ -65,6 +66,10 @@ if (import.meta.main) {
     out.fail("apps/docs/dist/index.html is missing: run `bun run docs:build` first");
     process.exit(1);
   }
-  const server = Bun.serve({ hostname: DOCS_TEST_HOST, port: DOCS_TEST_PORT, fetch: (request) => handle(request) });
+  const server = Bun.serve({
+    hostname: DOCS_TEST_HOST,
+    port: docsTestPort(process.env),
+    fetch: (request) => handle(request),
+  });
   out.print(`serving ${DOCS_DIST} at http://${DOCS_TEST_HOST}:${server.port}${DOCS_BASE}/`);
 }

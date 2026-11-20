@@ -768,3 +768,22 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: plan defaults, taken by the coordinator after the cold review.
 - Undo: edit the question and the stage; none ships before stage 04.
 - Source: `spec/features/active/F141-*/questions.md`.
+
+### 2026-11-20 · F124 stage 02: dev Postgres max_connections 200; one database per test worker; one weaker assertion · rule-exception · new
+
+- Decision: (1) `deploy/compose.dev.yaml` sets `max_connections=200` (applies at the next restart of the dev Postgres); a job peaked at 19–22 connections and two race files need 16 at once. (2) Each `test:int` worker gets its own database (`apps/server/test/worker-db.ts`, `EA_TEST_WORKER_DB=1`); `db:worktree --drop` also drops `<name>_w1..w4`. (3) The `channels-operator` "send null" case uses `toContainEqual`, not an exact event list.
+- Why: removes the 8 deadlocks (4 of 5 traced to DDL in the schema Down/Up tests) without a serial exception list.
+- Undo: remove the `command:` line in `deploy/compose.dev.yaml`; delete `worker-db.ts`, its call in `preload.ts` and `EA_TEST_WORKER_DB=1` in `test:int`; restore `expectEvent` in `channels-operator.test.ts`.
+- Source: `spec/features/active/F124-*/stage-02-open.md`.
+
+### 2026-11-20 · F062 stage 02: two extra mapper checks; rollback SQL removed from the README · scope · new
+
+- Decision: (1) `mail-repo.test.ts` gets two `not.toHaveProperty` checks on `uidvalidity` and `last_uid` of the mapped row (they read no column, so they survive stage 05). (2) `deploy/README.md` loses rollback sub-bullet (b), the SQL that copied the cursor from `mailboxes` (stale value; stage rule "no SQL").
+- Undo: delete the two lines; restore the bullet from `git show 477f939b^`.
+- Source: `.limen/jobs/2026-11-19-f062-stage-02-54735125/note.md`.
+
+### 2026-11-20 · test scripts get `--timeout=30000` · rule-exception · new
+
+- Decision: `test:unit` and `test:int` carry `--timeout=30000`. The 5 s Bun default failed CPU-bound cases and hooks under load (comment-codes, quietEnd, sim-files, runSim, drafter eval, cli-streams) in at least six jobs and several land checks. Two cases also got their own 60 s timeout.
+- Undo: remove the flag from the two scripts (`package.json` lines 15–16) and the sentence in `docs/code-patterns.md` § Tests.
+- Source: commits `b6433d3c`, `8165f762`, `3e6c1c4b`.
