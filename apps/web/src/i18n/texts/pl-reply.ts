@@ -59,7 +59,7 @@ export const plReply = {
   // The writing style suggested from the sent mail of the owner
   rs_suggest_button: "Zaproponuj mój styl na podstawie wysłanych wiadomości",
   rs_suggest_note:
-    "Jednorazowo wysyła do dostawcy AI maksymalnie 100 wiadomości wysłanych z tej skrzynki z ostatnich 14 dni. Zachowany zostanie tylko tekst, który zapiszesz.",
+    "Wysyła do dostawcy AI, w najwyżej dwóch wywołaniach, maksymalnie 100 wiadomości wysłanych z tej skrzynki z ostatnich 14 dni. Zachowany zostanie tylko tekst, który zapiszesz.",
   rs_suggest_running: "Asystent czyta Twoje wysłane wiadomości…",
   rs_suggest_use: "Użyj tego tekstu",
   rs_suggest_discard: "Odrzuć",
