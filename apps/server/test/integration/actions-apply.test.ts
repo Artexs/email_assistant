@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -24,9 +25,8 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
 const NOW = new Date("2026-11-07T12:00:00Z");
-const RECEIVED = new Date(NOW.getTime() - HOUR);
+const RECEIVED = new Date(NOW.getTime() - HOUR_MS);
 const MESSAGE_ID = "<apply-1@x.test>";
 
 interface Setup {
@@ -114,7 +114,7 @@ async function claim(trx: Transaction<DB>, s: Setup, at: Date = NOW): Promise<Cl
   return claimActions(trx, s.ctx, s.mailboxId, {
     now: at,
     limit: 20,
-    staleBefore: new Date(at.getTime() - 10 * 60_000),
+    staleBefore: new Date(at.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
   });
 }
@@ -279,7 +279,7 @@ describe("applyAction", () => {
   test("a reverse flag of a moved mail keeps source_uid and moved_at when the folder UID changes", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const movedAt = new Date(NOW.getTime() - 30 * 60_000);
+      const movedAt = new Date(NOW.getTime() - 30 * MINUTE_MS);
       const uid = deliverAt(s, "AI/Info", 7);
       await s.fake.setFlags("AI/Info", uid, { add: ["\\Flagged"] });
       const mail = await insertMail(trx, s, {
@@ -404,7 +404,7 @@ describe("applyAction", () => {
 
       const outcomes = [];
       for (const attempt of [0, 1, 2]) {
-        const at = new Date(NOW.getTime() + attempt * 10 * 60_000);
+        const at = new Date(NOW.getTime() + attempt * 10 * MINUTE_MS);
         const [action] = await claim(trx, s, at);
         expect(action?.attempts).toBe(attempt);
         outcomes.push(await applyAction(depsAt(s, trx, at), s.ctx, action as ClaimedAction, s.fake));

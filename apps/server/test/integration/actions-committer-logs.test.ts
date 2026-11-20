@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -37,8 +38,6 @@ afterEach(() => {
   setLogFormat(logFormatFromEnv(process.env));
 });
 
-const HOUR = 3_600_000;
-const MINUTE = 60_000;
 const NOW = new Date("2026-11-20T10:00:00Z");
 const run = randomUUID();
 const CANARY = {
@@ -124,7 +123,7 @@ async function addMail(
     inFake?: boolean;
   } = {}
 ) {
-  const receivedAt = new Date(NOW.getTime() - (opts.ageMs ?? HOUR));
+  const receivedAt = new Date(NOW.getTime() - (opts.ageMs ?? HOUR_MS));
   const messageId = `<${randomUUID()}@x.test>`;
   const delivered = opts.inFake !== false;
   const uid = delivered
@@ -154,11 +153,11 @@ async function addMail(
 
 function pairOf(trx: Transaction<DB>, box: Box, opts: Parameters<typeof insertDraftAndSend>[3] = {}) {
   return insertDraftAndSend(trx, { orgId: box.orgId }, box.mailboxId, {
-    createdAt: new Date(NOW.getTime() - 30 * MINUTE),
+    createdAt: new Date(NOW.getTime() - 30 * MINUTE_MS),
     draftStatus: "applied",
     draftProviderResult: { uid: 1, folder: "Drafts" },
     sendStatus: "approved",
-    approved: { userId: box.userId, at: new Date(NOW.getTime() - MINUTE) },
+    approved: { userId: box.userId, at: new Date(NOW.getTime() - MINUTE_MS) },
     to: CANARY.recipient,
     subject: CANARY.subject,
     bodyText: CANARY.body,
@@ -254,7 +253,7 @@ describe("committer log events", () => {
   test("committer_stale_expired counts the ready actions older than 24 h", async () => {
     await withRollback(db, async (trx) => {
       const box = await addBox(trx);
-      await addMail(trx, box, { count: 2, ageMs: 25 * HOUR });
+      await addMail(trx, box, { count: 2, ageMs: 25 * HOUR_MS });
 
       const { entries } = await captured(() => committerFor(trx, box).run());
 
@@ -622,8 +621,8 @@ describe("expiry log events", () => {
     insertDraftAndSend(trx, { orgId: box.orgId }, box.mailboxId, {
       delegationId: randomUUID(),
       draftProviderResult: { folder: "Drafts", uid: 7 },
-      createdAt: new Date(NOW.getTime() - 24 * HOUR),
-      notifiedAt: new Date(NOW.getTime() - 49 * HOUR),
+      createdAt: new Date(NOW.getTime() - DAY_MS),
+      notifiedAt: new Date(NOW.getTime() - 49 * HOUR_MS),
       requestSent: true,
       to: CANARY.recipient,
       subject: CANARY.subject,
@@ -667,7 +666,7 @@ describe("expiry log events", () => {
       await waiting(trx, box);
       await waiting(trx, box, {
         sendStatus: "approved",
-        approved: { userId: box.userId, at: new Date(NOW.getTime() - 49 * HOUR) },
+        approved: { userId: box.userId, at: new Date(NOW.getTime() - 49 * HOUR_MS) },
         lockedAt: null,
       });
 

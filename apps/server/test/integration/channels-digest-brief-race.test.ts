@@ -8,6 +8,7 @@
 //   5. "Track my sent mail" off and a digest that names a loop of the mailbox leave no copy of the loop in either order.
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -86,7 +87,7 @@ const linkOf = (org: BriefOrg, userId: string) => ({
 const slotAt = (key: string) => ({ key, date: key.slice(0, 10), time: key.slice(11) });
 const inputAt = (now: Date, key: string) => ({
   slot: slotAt(key),
-  periodStart: new Date(now.getTime() - 24 * 3_600_000),
+  periodStart: new Date(now.getTime() - DAY_MS),
   now,
   timeZone: "Europe/Warsaw",
   testMail: NO_TEST_SENDERS,
@@ -154,77 +155,85 @@ describe.each(pairs)("the first digest of the day is one (%s)", (_name, connA, c
     }
   }, 40_000);
 
-  test(`${ROUNDS} orgs: two job processes at once: one digest row, one outbox row, one brief`, async () => {
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const org = await newOrg();
-      const loop = await app.transaction().execute((trx) => waitingLoop(trx, org));
-      await withTimeout(
-        Promise.all([
-          scheduleDigests({ db: connA, now: () => new Date(EIGHT), testMail: NO_TEST_SENDERS }),
-          jitter().then(() =>
-            scheduleDigests({ db: connB, now: () => new Date(Date.parse(EIGHT) + 1000), testMail: NO_TEST_SENDERS })
-          ),
-        ]),
-        15_000
-      );
-      const rows = await digestRows(org);
-      expect(rows).toHaveLength(1);
-      expect(textOf(rows[0] ?? { text: null, view: {} })).toContain("📌 NEEDS YOU TODAY");
-      const digests = await app.selectFrom("digests").select("id").where("org_id", "=", org.ctx.orgId).execute();
-      expect(digests).toHaveLength(1);
-      // The mark carries the time of the digest that committed: the `created_at` of the one outbox row.
-      const marked = await app
-        .selectFrom("open_loops")
-        .select("surfaced_at")
-        .where("id", "=", loop)
-        .executeTakeFirstOrThrow();
-      expect(marked.surfaced_at?.toISOString()).toBe(rows[0]?.created_at.toISOString());
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} orgs: two job processes at once: one digest row, one outbox row, one brief`,
+    async () => {
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const org = await newOrg();
+        const loop = await app.transaction().execute((trx) => waitingLoop(trx, org));
+        await withTimeout(
+          Promise.all([
+            scheduleDigests({ db: connA, now: () => new Date(EIGHT), testMail: NO_TEST_SENDERS }),
+            jitter().then(() =>
+              scheduleDigests({ db: connB, now: () => new Date(Date.parse(EIGHT) + 1000), testMail: NO_TEST_SENDERS })
+            ),
+          ]),
+          15_000
+        );
+        const rows = await digestRows(org);
+        expect(rows).toHaveLength(1);
+        expect(textOf(rows[0] ?? { text: null, view: {} })).toContain("📌 NEEDS YOU TODAY");
+        const digests = await app.selectFrom("digests").select("id").where("org_id", "=", org.ctx.orgId).execute();
+        expect(digests).toHaveLength(1);
+        // The mark carries the time of the digest that committed: the `created_at` of the one outbox row.
+        const marked = await app
+          .selectFrom("open_loops")
+          .select("surfaced_at")
+          .where("id", "=", loop)
+          .executeTakeFirstOrThrow();
+        expect(marked.surfaced_at?.toISOString()).toBe(rows[0]?.created_at.toISOString());
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 describe.each(pairs)("a ⌛ line is named once and the marks keep the first time (%s)", (_name, connA, connB) => {
-  test(`${ROUNDS} orgs: two members' digests at once: one has the ⌛ line, both the waiting line, the marks are one time`, async () => {
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const org = await newOrg({ members: 1 });
-      const second = org.memberIds[0] ?? "";
-      const ids = await app.transaction().execute(async (trx) => ({
-        waiting: await waitingLoop(trx, org),
-        stale: await insertLoopRow(trx, org.ctx, org.mailboxId, {
-          status: "closed",
-          close_reason: "stale",
-          closed_at: new Date("2026-11-19T10:00:00Z"),
-          subject: "Old offer",
-          due_at: new Date("2026-10-01T10:00:00Z"),
-        }),
-      }));
-      const a = new Date(EIGHT);
-      const b = new Date(Date.parse(EIGHT) + 1000);
-      await withTimeout(
-        Promise.all([
-          queueDigest(connA, linkOf(org, org.userId), inputAt(a, "2026-11-20T08:00")),
-          jitter().then(() => queueDigest(connB, linkOf(org, second), inputAt(b, "2026-11-20T08:00"))),
-        ]),
-        15_000
-      );
-      const rows = await digestRows(org);
-      expect(rows).toHaveLength(2);
-      const texts = rows.map(textOf);
-      expect(texts.filter((text) => text.includes("⌛ Closed without an answer: Old offer"))).toHaveLength(1);
-      expect(texts.every((text) => text.includes("⏳ No answer from anna@example.test"))).toBe(true);
-      const marks = await app
-        .selectFrom("open_loops")
-        .select(["id", "surfaced_at", "stale_notified_at"])
-        .where("org_id", "=", org.ctx.orgId)
-        .execute();
-      const waiting = marks.find((row) => row.id === ids.waiting);
-      const stale = marks.find((row) => row.id === ids.stale);
-      // The digest that committed first named the stale loop and set both marks; the second left them as they were.
-      const first = rows.find((row) => textOf(row).includes("⌛"));
-      expect(stale?.stale_notified_at?.toISOString()).toBe(first?.created_at.toISOString());
-      expect(waiting?.surfaced_at?.toISOString()).toBe(first?.created_at.toISOString());
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} orgs: two members' digests at once: one has the ⌛ line, both the waiting line, the marks are one time`,
+    async () => {
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const org = await newOrg({ members: 1 });
+        const second = org.memberIds[0] ?? "";
+        const ids = await app.transaction().execute(async (trx) => ({
+          waiting: await waitingLoop(trx, org),
+          stale: await insertLoopRow(trx, org.ctx, org.mailboxId, {
+            status: "closed",
+            close_reason: "stale",
+            closed_at: new Date("2026-11-19T10:00:00Z"),
+            subject: "Old offer",
+            due_at: new Date("2026-10-01T10:00:00Z"),
+          }),
+        }));
+        const a = new Date(EIGHT);
+        const b = new Date(Date.parse(EIGHT) + 1000);
+        await withTimeout(
+          Promise.all([
+            queueDigest(connA, linkOf(org, org.userId), inputAt(a, "2026-11-20T08:00")),
+            jitter().then(() => queueDigest(connB, linkOf(org, second), inputAt(b, "2026-11-20T08:00"))),
+          ]),
+          15_000
+        );
+        const rows = await digestRows(org);
+        expect(rows).toHaveLength(2);
+        const texts = rows.map(textOf);
+        expect(texts.filter((text) => text.includes("⌛ Closed without an answer: Old offer"))).toHaveLength(1);
+        expect(texts.every((text) => text.includes("⏳ No answer from anna@example.test"))).toBe(true);
+        const marks = await app
+          .selectFrom("open_loops")
+          .select(["id", "surfaced_at", "stale_notified_at"])
+          .where("org_id", "=", org.ctx.orgId)
+          .execute();
+        const waiting = marks.find((row) => row.id === ids.waiting);
+        const stale = marks.find((row) => row.id === ids.stale);
+        // The digest that committed first named the stale loop and set both marks; the second left them as they were.
+        const first = rows.find((row) => textOf(row).includes("⌛"));
+        expect(stale?.stale_notified_at?.toISOString()).toBe(first?.created_at.toISOString());
+        expect(waiting?.surfaced_at?.toISOString()).toBe(first?.created_at.toISOString());
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 describe.each(pairs)("Sent tracking off against a digest that names a loop (%s)", (_name, connA, connB) => {

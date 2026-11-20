@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { parseToolSwitches } from "@ea/core";
+import { parseToolSwitches, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -34,7 +34,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 24 * 3_600_000;
 const NOW = new Date("2026-11-20T13:05:00Z");
 const TZ = "Europe/Warsaw";
 
@@ -244,7 +243,7 @@ describe("remindNow", () => {
   test("T4. a sent delegation that is due tomorrow gets a reminder: no due-date gate", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const d = await openDelegation(trx, s, { status: "sent", dueAt: new Date(NOW.getTime() + DAY) });
+      const d = await openDelegation(trx, s, { status: "sent", dueAt: new Date(NOW.getTime() + DAY_MS) });
       expect((await remind(trx, s, d.id)).kind).toBe("planned");
       expect((await getDelegation(trx, s.ctx, d.id))?.status).toBe("sent");
     });
@@ -256,7 +255,7 @@ describe("remindNow", () => {
       const d = await openDelegation(trx, s, { remindersSent: 1 });
       await trx
         .updateTable("delegations")
-        .set({ last_reminder_at: new Date(NOW.getTime() - 2 * 3_600_000) })
+        .set({ last_reminder_at: new Date(NOW.getTime() - 2 * HOUR_MS) })
         .where("id", "=", d.id)
         .execute();
       expect((await remind(trx, s, d.id)).kind).toBe("planned");
@@ -430,7 +429,7 @@ describe("remindNow: a mail to a person needs a tap", () => {
       await detectNotices({
         db: trx,
         now: () => NOW,
-        startedAt: new Date(NOW.getTime() - 3_600_000),
+        startedAt: new Date(NOW.getTime() - HOUR_MS),
         testMail: NO_TEST_SENDERS,
       });
       const cards = await trx

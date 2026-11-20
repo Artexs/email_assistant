@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -39,7 +40,7 @@ const answer = JSON.stringify({
 });
 
 const pause: LlmPause = {
-  trip: (_kind, _code, at) => new Date(at.getTime() + 5 * 60_000),
+  trip: (_kind, _code, at) => new Date(at.getTime() + 5 * MINUTE_MS),
   isPaused: () => false,
   pausedUntil: () => null,
   pausedSince: () => null,
@@ -56,7 +57,7 @@ async function setupMail(trx: Transaction<DB>) {
   const [email] = await claimEmails(trx, ctx, created.mailboxId, {
     now,
     limit: 10,
-    staleBefore: new Date(now.getTime() - 5 * 60_000),
+    staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
     syntheticOnly: false,
   });
   if (!email) throw new Error("claim failed");
@@ -210,7 +211,7 @@ describe("triage:cost groups by provider", () => {
       // Another organization's row is not counted (the tenant filter of the grouped read).
       const b = await createOrgWithMailbox(trx);
       await addResult(trx, { orgId: b.orgId }, b.mailboxId, "deepseek");
-      const rows = await listUsageSince(trx, ctxA, a.mailboxId, new Date(Date.now() - 3_600_000), {
+      const rows = await listUsageSince(trx, ctxA, a.mailboxId, new Date(Date.now() - HOUR_MS), {
         mail: "real",
         testMail: NO_TEST_SENDERS,
       });

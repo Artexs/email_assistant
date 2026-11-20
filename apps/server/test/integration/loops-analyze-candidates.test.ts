@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -171,7 +172,7 @@ describe("the candidates", () => {
       const ids: string[] = [];
       for (let i = 0; i < 22; i += 1) {
         ids.push(
-          await sentMail(trx, org, { sentAt: new Date(WED.getTime() + i * 60_000), listId: "<l.example.test>" })
+          await sentMail(trx, org, { sentAt: new Date(WED.getTime() + i * MINUTE_MS), listId: "<l.example.test>" })
         );
       }
       const out = await run(trx, org);

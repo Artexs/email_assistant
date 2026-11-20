@@ -1,4 +1,4 @@
-import { encodeCallback, type OutMessage } from "@ea/core";
+import { encodeCallback, type OutMessage, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -263,7 +263,7 @@ describe("the edit of the tapped line", () => {
       const org = await ready(trx);
       const loop = await briefLoop(trx, org);
       const { messageId } = await deliverDigest(trx);
-      const relinked = linkOf(org, { linkedAt: new Date(MESSAGE_AT.getTime() + 60_000) });
+      const relinked = linkOf(org, { linkedAt: new Date(MESSAGE_AT.getTime() + MINUTE_MS) });
       const result = await tap(trx, relinked, lc(loop.id), messageId);
       expect(result).toEqual({ answer: "Done." });
     });

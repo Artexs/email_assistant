@@ -1,4 +1,4 @@
-import { textTables } from "@ea/core";
+import { textTables, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -21,8 +21,6 @@ const db = testDb();
 afterAll(async () => {
   await db.destroy();
 });
-
-const DAY = 24 * HOUR;
 
 // The state after a redraft: the card of version 1 went out, the user wrote a line, the job made version 2 and the card of it is queued.
 async function redrafted(trx: Transaction<DB>, r: Rig) {
@@ -52,13 +50,13 @@ describe("a request is answered once, and only when it ended now", () => {
       // 91 days later by the clock of the job. The requests are moved to the real clock of this run, because retention writes the
       // clock of the database: the detector must read the end time of the request, not the time of the clearing.
       const realNow = new Date();
-      const ended = new Date(realNow.getTime() - 91 * DAY);
+      const ended = new Date(realNow.getTime() - 91 * DAY_MS);
       await trx
         .updateTable("reply_requests")
         .set({ created_at: ended, updated_at: new Date(ended.getTime() + 3 * MINUTE) })
         .where("org_id", "=", r.box.ctx.orgId)
         .execute();
-      const cleared = await clearReplyTexts(trx, r.box.ctx, { before: new Date(realNow.getTime() - 90 * DAY) });
+      const cleared = await clearReplyTexts(trx, r.box.ctx, { before: new Date(realNow.getTime() - 90 * DAY_MS) });
       expect(cleared).toBeGreaterThanOrEqual(1);
       expect((await redraftRequests(trx, r))[0]?.instruction).toBeNull();
       r.clock.now = realNow;
@@ -80,7 +78,7 @@ describe("a request is answered once, and only when it ended now", () => {
       await trx
         .updateTable("reply_requests")
         .set({
-          created_at: new Date(r.clock.now.getTime() - 91 * DAY),
+          created_at: new Date(r.clock.now.getTime() - 91 * DAY_MS),
           updated_at: new Date(r.clock.now.getTime() + 30_000),
         })
         .where("org_id", "=", r.box.ctx.orgId)

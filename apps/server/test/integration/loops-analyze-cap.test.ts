@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -21,7 +22,7 @@ import {
 } from "./loops-analyze-fixtures";
 import { ago, HOUR, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
-const MIN = 60_000;
+const MIN = MINUTE_MS;
 
 // The cap, the retries and the logs of the Sent analysis (step 2).
 const db = testDb();

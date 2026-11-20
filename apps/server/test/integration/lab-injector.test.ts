@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { toLabMessage, type CaseText, type LiveRunPlan, type Slot } from "@ea/core";
+import { toLabMessage, type CaseText, type LiveRunPlan, type Slot, MINUTE_MS } from "@ea/core";
 import { afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { ImapFlow } from "imapflow";
 
@@ -29,7 +29,7 @@ const imapPort = Number(process.env.TEST_IMAP_PORT ?? "3143");
 const smtpPort = Number(process.env.TEST_SMTP_PORT ?? "3025");
 const ROOT = resolve(import.meta.dir, "../../../../evals/sim");
 const T0 = new Date("2026-11-23T08:00:00.000Z");
-const minutes = (count: number): Date => new Date(T0.getTime() + count * 60_000);
+const minutes = (count: number): Date => new Date(T0.getTime() + count * MINUTE_MS);
 const RUN = "day-20261123-0001";
 
 let base: LabCorpus;

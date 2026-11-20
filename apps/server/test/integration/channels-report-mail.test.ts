@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { renderDigestWithBrief, textsFor } from "@ea/core";
+import { renderDigestWithBrief, textsFor, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -53,7 +53,6 @@ afterEach(() => {
   warnSpy.mockRestore();
 });
 
-const HOUR = 3_600_000;
 // Europe/Warsaw is UTC+1 in November: the slot 08:00 is 07:00Z.
 const LINKED = new Date("2026-11-05T20:00:00Z");
 const SLOT_NOW = new Date("2026-11-06T07:00:00Z");
@@ -133,7 +132,7 @@ describe("digest rows by mail (steps 1, tests 1 to 3 and 6)", () => {
       expect(minimal).toBeDefined();
       expect(telegramView).toEqual(rows[1]?.view as Record<string, unknown>);
       // A repeat adds nothing, and the next slot adds a pair.
-      await digest(trx, new Date(SLOT_NOW.getTime() + 60_000));
+      await digest(trx, new Date(SLOT_NOW.getTime() + MINUTE_MS));
       expect(await rowsOf(trx, o.orgId)).toHaveLength(2);
       await digest(trx, new Date("2026-11-06T15:00:00Z"));
       expect(await rowsOf(trx, o.orgId)).toHaveLength(4);
@@ -154,7 +153,7 @@ describe("digest rows by mail (steps 1, tests 1 to 3 and 6)", () => {
         .where("org_id", "=", o.orgId)
         .execute();
       expect(found.map((row) => row.slot_key)).toEqual([SLOT_KEY]);
-      expect(found[0]?.period_start.toISOString()).toBe(new Date(SLOT_NOW.getTime() - 24 * HOUR).toISOString());
+      expect(found[0]?.period_start.toISOString()).toBe(new Date(SLOT_NOW.getTime() - DAY_MS).toISOString());
     });
   });
 
@@ -259,7 +258,7 @@ describe("the digest with the loop and spam review features off", () => {
           now: SLOT_NOW,
           timeZone: "Europe/Warsaw",
           slot: { date: "2026-11-06", time: "08:00", late: false },
-          periodStart: new Date(LINKED.getTime() - 24 * HOUR),
+          periodStart: new Date(LINKED.getTime() - DAY_MS),
           mailboxes: [
             {
               id: box.id,
@@ -437,7 +436,7 @@ describe("weekly report by mail (step 1)", () => {
     detectNotices({
       db: trx,
       now: () => MONDAY,
-      startedAt: new Date(MONDAY.getTime() - 24 * HOUR),
+      startedAt: new Date(MONDAY.getTime() - DAY_MS),
       testMail: NO_TEST_SENDERS,
     });
 
@@ -477,7 +476,7 @@ describe("weekly report by mail (step 1)", () => {
       // An urgent mail has nobody to notify: the other detectors do not run (they read the link times of the members).
       await insertTriaged(trx, o.ctx, o.mailboxId, {
         category: "urgent",
-        createdAt: new Date(MONDAY.getTime() - 60_000),
+        createdAt: new Date(MONDAY.getTime() - MINUTE_MS),
       });
       const urgentBefore = (await rowsOf(trx, o.ctx.orgId, "urgent")).length;
       await tick(trx);
@@ -497,7 +496,7 @@ describe("urgent and the other kinds stay on Telegram (test 5)", () => {
       const now = new Date("2026-11-06T10:00:00Z");
       const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
         category: "urgent",
-        createdAt: new Date(now.getTime() - 10 * 60_000),
+        createdAt: new Date(now.getTime() - 10 * MINUTE_MS),
       });
       await trx
         .insertInto("actions")
@@ -513,7 +512,7 @@ describe("urgent and the other kinds stay on Telegram (test 5)", () => {
       await detectNotices({
         db: trx,
         now: () => now,
-        startedAt: new Date(now.getTime() - 24 * HOUR),
+        startedAt: new Date(now.getTime() - DAY_MS),
         testMail: NO_TEST_SENDERS,
       });
       expect((await rowsOf(trx, o.orgId, "urgent")).map((row) => [row.dedup_key, row.channel])).toEqual([
@@ -561,7 +560,7 @@ describe("the Telegram sender and mail rows (step 2, test 7)", () => {
       const digestId = await insertDigest(trx, o.ctx, {
         userId: o.ownerId,
         slotKey: "2026-11-06T08:00",
-        periodStart: new Date(T.getTime() - 24 * HOUR),
+        periodStart: new Date(T.getTime() - DAY_MS),
         periodEnd: T,
       });
       const telegram = await insertOutbox(trx, o.ctx, {
@@ -588,7 +587,7 @@ describe("the Telegram sender and mail rows (step 2, test 7)", () => {
       });
       expect((await stateOf(trx, telegram ?? "")).status).toBe("sent");
       // A later run sends nothing and leaves the mail row alone.
-      await createOutboxSender({ db: trx, channel, now: () => new Date(T.getTime() + 60_000) }).run();
+      await createOutboxSender({ db: trx, channel, now: () => new Date(T.getTime() + MINUTE_MS) }).run();
       expect(channel.sent).toHaveLength(1);
       expect((await stateOf(trx, mail)).status).toBe("pending");
     });

@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { REPLY_CONSENT_SINCE, renderNotice } from "@ea/core";
+import { REPLY_CONSENT_SINCE, renderNotice, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -18,8 +18,6 @@ import { markAnswered, sweepOrg, sweepReply, type SweepOrg } from "./reply-answe
 // The notice `replies_ready`. Clock: 2026-11-20 10:00Z = 11:00 in Europe/Warsaw (CET).
 const db = testDb();
 const T = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 const at = (offsetMs: number): Date => new Date(T.getTime() + offsetMs);
 
 let errorLines: string[] = [];
@@ -52,8 +50,8 @@ async function team(trx: Transaction<DB>, opts: { consent?: boolean } = {}): Pro
   await isolateChannels(trx);
   const o = await sweepOrg(trx);
   const memberId = await addMember(trx, o.ctx.orgId);
-  await linkChat(trx, o.ctx, o.userId, randomChatId(), at(-HOUR));
-  await linkChat(trx, o.ctx, memberId, randomChatId(), at(-HOUR));
+  await linkChat(trx, o.ctx, o.userId, randomChatId(), at(-HOUR_MS));
+  await linkChat(trx, o.ctx, memberId, randomChatId(), at(-HOUR_MS));
   if (opts.consent === true) await consent(trx, o, o.userId);
   return { ...o, memberId };
 }
@@ -64,12 +62,12 @@ async function consent(trx: Transaction<DB>, o: SweepOrg, userId: string): Promi
     event: auditEvents.webTelegramConsent,
     actor: userId,
     data: { via: "web", version: REPLY_CONSENT_SINCE },
-    at: at(-2 * HOUR),
+    at: at(-2 * HOUR_MS),
   });
 }
 
 const run = (trx: Transaction<DB>, now: Date) =>
-  detectNotices({ db: trx, now: () => now, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+  detectNotices({ db: trx, now: () => now, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
 
 async function readyRows(trx: Transaction<DB>, o: SweepOrg) {
   return trx
@@ -91,8 +89,8 @@ describe("replies_ready: who gets it, and the count", () => {
   test("1. two new drafts give one row for the owner with count 2; a member gets none; the counted sends are marked notified", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      const a = await reply(trx, o, at(-30 * MINUTE));
-      const b = await reply(trx, o, at(-20 * MINUTE));
+      const a = await reply(trx, o, at(-30 * MINUTE_MS));
+      const b = await reply(trx, o, at(-20 * MINUTE_MS));
 
       await run(trx, T);
 
@@ -119,7 +117,7 @@ describe("replies_ready: who gets it, and the count", () => {
   test("1b. the owner with the reply consent gets the Review button; an owner without it gets the count, the consent line and no button", async () => {
     await withRollback(db, async (trx) => {
       const covered = await team(trx, { consent: true });
-      await reply(trx, covered, at(-HOUR));
+      await reply(trx, covered, at(-HOUR_MS));
       await run(trx, T);
       const withReview = renderedOf((await readyRows(trx, covered))[0] as never);
       expect(withReview.buttons).toEqual([[{ text: "📝 Review", data: "rv" }]]);
@@ -127,7 +125,7 @@ describe("replies_ready: who gets it, and the count", () => {
     });
     await withRollback(db, async (trx) => {
       const o = await team(trx);
-      await reply(trx, o, at(-HOUR));
+      await reply(trx, o, at(-HOUR_MS));
       await run(trx, T);
       const message = renderedOf((await readyRows(trx, o))[0] as never);
       expect(message.buttons).toEqual([]);
@@ -141,23 +139,23 @@ describe("replies_ready: who gets it, and the count", () => {
   test("2. a third draft one hour later queues nothing; two hours and one minute after the first row it queues count 3", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      await reply(trx, o, at(-30 * MINUTE));
-      await reply(trx, o, at(-20 * MINUTE));
+      await reply(trx, o, at(-30 * MINUTE_MS));
+      await reply(trx, o, at(-20 * MINUTE_MS));
       await run(trx, T);
       expect(await readyRows(trx, o)).toHaveLength(1);
       // The first row goes out at once: from now on only the gap holds back the next row.
       await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => T }).run();
       expect((await readyRows(trx, o))[0]?.status).toBe("sent");
 
-      const third = await reply(trx, o, at(HOUR));
-      await run(trx, at(HOUR));
+      const third = await reply(trx, o, at(HOUR_MS));
+      await run(trx, at(HOUR_MS));
       expect(await readyRows(trx, o)).toHaveLength(1);
       // 1 h 59 min after the queue time of the first row: still no row.
-      await run(trx, at(2 * HOUR - MINUTE));
+      await run(trx, at(2 * HOUR_MS - MINUTE_MS));
       expect(await readyRows(trx, o)).toHaveLength(1);
 
       // 2 h 1 min after it: the row for the third draft, count 3 (the first two are still open).
-      await run(trx, at(2 * HOUR + MINUTE));
+      await run(trx, at(2 * HOUR_MS + MINUTE_MS));
       const rows = await readyRows(trx, o);
       expect(rows).toHaveLength(2);
       expect(rows.map(countOf)).toEqual([2, 3]);
@@ -168,14 +166,14 @@ describe("replies_ready: who gets it, and the count", () => {
   test("2b. a draft of an answered mail is not counted; if it is the only new one, no row; a suspicious mail is left out too", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      const answered = await reply(trx, o, at(-30 * MINUTE));
+      const answered = await reply(trx, o, at(-30 * MINUTE_MS));
       await markAnswered(trx, o, answered.emailId);
 
       await run(trx, T);
       expect(await readyRows(trx, o)).toHaveLength(0);
 
-      const open = await reply(trx, o, at(-20 * MINUTE));
-      const flagged = await reply(trx, o, at(-10 * MINUTE));
+      const open = await reply(trx, o, at(-20 * MINUTE_MS));
+      const flagged = await reply(trx, o, at(-10 * MINUTE_MS));
       // The newest triage result of the mail decides: it names a reason.
       await trx
         .insertInto("triage_results")
@@ -187,7 +185,7 @@ describe("replies_ready: who gets it, and the count", () => {
           reason_code: "direct_request",
           fields: "{}",
           suspicious_reasons: ["auth_fail"],
-          created_at: at(-5 * MINUTE),
+          created_at: at(-5 * MINUTE_MS),
         })
         .execute();
 
@@ -205,9 +203,9 @@ describe("replies_ready: who gets it, and the count", () => {
       const other = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "clarification",
         to: "boss@x.test",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
       });
-      await reply(trx, o, at(-HOUR));
+      await reply(trx, o, at(-HOUR_MS));
 
       await run(trx, T);
 
@@ -228,8 +226,8 @@ describe("replies_ready: who gets it, and the count", () => {
   test("2c. the flag reply_drafts off: no row and the sends stay unnotified", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      const pair = await reply(trx, o, at(-HOUR));
-      await setOrgFeature(trx, o.ctx, { flag: "reply_drafts", enabled: false, actor: "cli", now: at(-HOUR) });
+      const pair = await reply(trx, o, at(-HOUR_MS));
+      await setOrgFeature(trx, o.ctx, { flag: "reply_drafts", enabled: false, actor: "cli", now: at(-HOUR_MS) });
 
       await run(trx, T);
 
@@ -246,10 +244,10 @@ describe("replies_ready: who gets it, and the count", () => {
   test("2d. a notice that no sender took yet (quiet hours hold it) is not doubled, whatever the clock says", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      await reply(trx, o, at(-HOUR));
+      await reply(trx, o, at(-HOUR_MS));
       await run(trx, T);
-      await reply(trx, o, at(3 * HOUR));
-      await run(trx, at(3 * HOUR));
+      await reply(trx, o, at(3 * HOUR_MS));
+      await run(trx, at(3 * HOUR_MS));
       expect(await readyRows(trx, o)).toHaveLength(1);
     });
   });
@@ -257,12 +255,12 @@ describe("replies_ready: who gets it, and the count", () => {
   test("2e. the panel link is in the view when WEB_BASE_URL is set and the flag approvals_page is on; else it is left out", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      await reply(trx, o, at(-HOUR));
+      await reply(trx, o, at(-HOUR_MS));
       const withBase = (now: Date) =>
         detectNotices({
           db: trx,
           now: () => now,
-          startedAt: at(-HOUR),
+          startedAt: at(-HOUR_MS),
           testMail: NO_TEST_SENDERS,
           webBaseUrl: "https://app.test/",
         });
@@ -275,9 +273,9 @@ describe("replies_ready: who gets it, and the count", () => {
         .set({ status: "failed", error_code: "outdated" })
         .where("kind", "=", "replies_ready")
         .execute();
-      await reply(trx, o, at(3 * HOUR));
-      await upsertOrgFeature(trx, o.ctx, { flag: "approvals_page", enabled: true, setBy: "test", setAt: at(-HOUR) });
-      await withBase(at(3 * HOUR));
+      await reply(trx, o, at(3 * HOUR_MS));
+      await upsertOrgFeature(trx, o.ctx, { flag: "approvals_page", enabled: true, setBy: "test", setAt: at(-HOUR_MS) });
+      await withBase(at(3 * HOUR_MS));
 
       const rows = await readyRows(trx, o);
       expect((rows[1]?.view as { panelUrl?: string }).panelUrl).toBe("https://app.test/approvals");
@@ -337,8 +335,8 @@ describe("the digest line (stage 12)", () => {
   test("a scheduled digest of an owner has one line with the count; a member has none", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx, { consent: true });
-      await reply(trx, o, at(-HOUR));
-      await reply(trx, o, at(-HOUR + MINUTE));
+      await reply(trx, o, at(-HOUR_MS));
+      await reply(trx, o, at(-HOUR_MS + MINUTE_MS));
       // The slot 16:00 local (15:00Z) is after the link of both users (09:00Z).
       for (const userId of [o.userId, o.memberId]) await setDigestTimes(trx, o.ctx, userId, ["16:00"]);
       await scheduleDigests({ db: trx, now: () => new Date("2026-11-20T15:10:00Z"), testMail: NO_TEST_SENDERS });

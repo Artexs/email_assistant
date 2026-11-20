@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { refreshMailboxProfiles, type RefreshDeps } from "../../src/modules/contacts";
@@ -15,12 +16,11 @@ import { createOrgWithMailbox, seedSenderActivity, testCapabilities, type Seeded
 export type Trx = Transaction<DB>;
 
 export const NOW = new Date("2026-11-18T10:00:00Z");
-export const HOUR = 3_600_000;
-export const DAY = 24 * HOUR;
+export { HOUR_MS as HOUR, DAY_MS as DAY } from "@ea/core";
 export const KEY = Buffer.alloc(32, 7).toString("base64");
 export const NO_TEST = { senders: [] as string[] };
 
-export const ago = (days: number, hours = 0): Date => new Date(NOW.getTime() - days * DAY - hours * HOUR);
+export const ago = (days: number, hours = 0): Date => new Date(NOW.getTime() - days * DAY_MS - hours * HOUR_MS);
 export const ms = (value: Date | null | undefined): number | null => value?.getTime() ?? null;
 export const deps = (trx: Trx, testMail = NO_TEST): RefreshDeps => ({ db: trx, credentialsKey: KEY, testMail });
 export const hashOf = (orgId: string, address: string): string => senderKeyHash(KEY, orgId, address);

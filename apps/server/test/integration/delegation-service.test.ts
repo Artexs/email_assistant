@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -509,7 +510,7 @@ describe("delegationHooks", () => {
         delegationId,
         sentMessageId,
         at: now,
-        dueAtWhenNull: new Date(now.getTime() + 3 * 24 * 3_600_000),
+        dueAtWhenNull: new Date(now.getTime() + 3 * DAY_MS),
         actor: "owner-1",
       });
       const make = async (status: string, reason: string | null) => {

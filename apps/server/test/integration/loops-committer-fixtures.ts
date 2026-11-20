@@ -1,7 +1,7 @@
 // Committed rows and real connections for the tests of a loop that closes while the committer sends.
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { sendPayloadFor, type DraftPayload, MINUTE_MS, HOUR_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { claimActions, createFolderResolver, noDelegationHooks, type ApplyDeps } from "../../src/modules/actions";
@@ -14,7 +14,7 @@ import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { createOrgWithMailbox } from "./fixtures";
 import { insertLoopActionPair, insertLoopRow, insertSentRow } from "./loops-fixtures";
 
-export const MINUTE = 60_000;
+export { MINUTE_MS as MINUTE } from "@ea/core";
 export const NOW = new Date();
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const run = randomUUID();
@@ -70,10 +70,10 @@ export async function pair(db: Db, b: Box, i: number): Promise<{ loopId: string;
     const ids = await insertLoopActionPair(trx, b.ctx, loopId, {
       draftStatus: "applied",
       sendStatus: "approved",
-      createdAt: new Date(NOW.getTime() - 60 * MINUTE),
+      createdAt: new Date(NOW.getTime() - HOUR_MS),
       payloads: { draft, send: sendPayloadFor(draft) },
       draft: { provider_result: JSON.stringify({ folder: "Drafts", uid: 1 }) },
-      send: { approved_at: new Date(NOW.getTime() - MINUTE), approved_by: b.userId, approved_via: "telegram" },
+      send: { approved_at: new Date(NOW.getTime() - MINUTE_MS), approved_by: b.userId, approved_via: "telegram" },
     });
     return { loopId, ...ids };
   });
@@ -122,7 +122,7 @@ export const claimAll = (db: Db, b: Box) =>
   claimActions(db, b.ctx, b.mailboxId, {
     now: new Date(),
     limit: 50,
-    staleBefore: new Date(Date.now() - 10 * MINUTE),
+    staleBefore: new Date(Date.now() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
   });
 

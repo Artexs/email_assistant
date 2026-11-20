@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -40,10 +41,8 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
-const MINUTE = 60_000;
 const NOW = new Date("2026-11-07T12:00:00Z");
-const RECEIVED = new Date(NOW.getTime() - HOUR);
+const RECEIVED = new Date(NOW.getTime() - HOUR_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 interface Box {
@@ -271,7 +270,7 @@ describe("createCommitterJob", () => {
       const box = await addBox(trx);
       const first = await addMail(trx, box, {
         messageId: "<r6a@x.test>",
-        receivedAt: new Date(RECEIVED.getTime() - MINUTE),
+        receivedAt: new Date(RECEIVED.getTime() - MINUTE_MS),
         actions: [{ type: "flag" }],
       });
       const second = await addMail(trx, box, { messageId: "<r6b@x.test>", actions: [{ type: "flag" }] });
@@ -282,7 +281,7 @@ describe("createCommitterJob", () => {
 
       const firstState = await actionState(trx, first.actionIds[0] as string);
       expect(firstState).toMatchObject({ status: "ready", locked_at: null, attempts: 0 });
-      expect(firstState.next_attempt_at?.getTime()).toBe(NOW.getTime() + 5 * MINUTE);
+      expect(firstState.next_attempt_at?.getTime()).toBe(NOW.getTime() + 5 * MINUTE_MS);
       expect(await actionState(trx, second.actionIds[0] as string)).toMatchObject({
         status: "ready",
         locked_at: null,
@@ -300,7 +299,7 @@ describe("createCommitterJob", () => {
       // The mailboxes are listed by `created_at`: the bad one comes first.
       await trx
         .updateTable("mailboxes")
-        .set({ created_at: new Date(NOW.getTime() - HOUR) })
+        .set({ created_at: new Date(NOW.getTime() - HOUR_MS) })
         .where("id", "=", bad.mailboxId)
         .execute();
       const good = await addBox(trx, bad);
@@ -325,7 +324,7 @@ describe("createCommitterJob", () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       const box = await addBox(trx);
-      const at = (minutes: number) => new Date(RECEIVED.getTime() - minutes * MINUTE);
+      const at = (minutes: number) => new Date(RECEIVED.getTime() - minutes * MINUTE_MS);
       const summary = await addMail(trx, box, {
         messageId: "<r11a@x.test>",
         receivedAt: at(3),
@@ -371,7 +370,7 @@ describe("createCommitterJob", () => {
       const box = await addBox(trx);
       const throwing = await addMail(trx, box, {
         messageId: "<r12a@x.test>",
-        receivedAt: new Date(RECEIVED.getTime() - MINUTE),
+        receivedAt: new Date(RECEIVED.getTime() - MINUTE_MS),
         actions: [{ type: "flag" }],
       });
       const untried = await addMail(trx, box, { messageId: "<r12b@x.test>", actions: [{ type: "flag" }] });
@@ -415,7 +414,7 @@ describe("createCommitterJob", () => {
       const mail = await addMail(trx, box, { messageId: "<r8@x.test>", actions: [{ type: "flag" }] });
       await trx
         .updateTable("actions")
-        .set({ locked_at: new Date(NOW.getTime() - 11 * MINUTE) })
+        .set({ locked_at: new Date(NOW.getTime() - 11 * MINUTE_MS) })
         .where("id", "=", mail.actionIds[0] as string)
         .execute();
       const opener = openerFor([box]);
@@ -443,7 +442,7 @@ describe("createCommitterJob", () => {
     await withRollback(db, async (trx) => {
       await pauseOtherMailboxes(trx);
       const box = await addBox(trx);
-      const old = new Date(NOW.getTime() - 25 * HOUR);
+      const old = new Date(NOW.getTime() - 25 * HOUR_MS);
       const mail = await addMail(trx, box, {
         messageId: "<r10@x.test>",
         receivedAt: old,
@@ -589,11 +588,11 @@ function sendJob(
 
 function pairOf(trx: Transaction<DB>, box: Box, opts: Parameters<typeof insertDraftAndSend>[3] = {}) {
   return insertDraftAndSend(trx, { orgId: box.orgId }, box.mailboxId, {
-    createdAt: new Date(NOW.getTime() - 30 * MINUTE),
+    createdAt: new Date(NOW.getTime() - 30 * MINUTE_MS),
     draftStatus: "applied",
     draftProviderResult: { uid: 1, folder: "Drafts" },
     sendStatus: "approved",
-    approved: { userId: box.userId as string, at: new Date(NOW.getTime() - MINUTE) },
+    approved: { userId: box.userId as string, at: new Date(NOW.getTime() - MINUTE_MS) },
     ...opts,
   });
 }
@@ -613,7 +612,7 @@ describe("createCommitterJob with sends", () => {
       expect(smtp.calls).toEqual([box.address]);
       expect(smtp.sender.sent).toHaveLength(1);
       expect((await actionState(trx, p.sendId)).status).toBe("applied");
-      expect(await box.fake.searchSinceIn("Sent", new Date(NOW.getTime() - 2 * 24 * 60 * MINUTE))).toHaveLength(1);
+      expect(await box.fake.searchSinceIn("Sent", new Date(NOW.getTime() - 2 * DAY_MS))).toHaveLength(1);
       expect(smtp.sender.closed).toBe(true);
       expect(box.fake.closed).toBe(true);
     });
@@ -770,7 +769,7 @@ describe("createCommitterJob with sends", () => {
 describe("the Undo of a move into a sort folder (U11)", () => {
   const OFFERS = "Oferty";
   const JUNK = "Wiadomości-śmieci";
-  const LATER = new Date(NOW.getTime() + 30 * MINUTE);
+  const LATER = new Date(NOW.getTime() + 30 * MINUTE_MS);
 
   // A mail whose source folder is `Oferty`, moved into AI/Info, with a `ready` reverse. The mail sits in AI/Info on the fake.
   async function movedFromOffers(trx: Transaction<DB>, enabled: boolean) {
@@ -829,7 +828,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       status: "ready",
       payload: { folder: "ai_info" },
       reversesActionId: mail.actionIds[0],
-      createdAt: new Date(RECEIVED.getTime() + MINUTE),
+      createdAt: new Date(RECEIVED.getTime() + MINUTE_MS),
     });
     return { box, ctx, mail, reverseId, offersUid };
   }
@@ -848,7 +847,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
 
         expect(box.fake.calls).toContain("transferByAppend");
         expect(box.fake.calls).not.toContain("moveMessage");
-        const inOffers = await box.fake.searchSinceIn(OFFERS, new Date(RECEIVED.getTime() - 86_400_000));
+        const inOffers = await box.fake.searchSinceIn(OFFERS, new Date(RECEIVED.getTime() - DAY_MS));
         expect(inOffers).toHaveLength(1);
         const email = await emailState(trx, mail.emailId);
         expect(email).toMatchObject({ folder: OFFERS, source_folder: OFFERS, moved_at: null, move_pending_at: null });
@@ -872,7 +871,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
 
       await jobFor(trx, opener, scope).run();
 
-      const since = new Date(RECEIVED.getTime() - 86_400_000);
+      const since = new Date(RECEIVED.getTime() - DAY_MS);
       expect(await box.fake.searchSinceIn(OFFERS, since)).toHaveLength(1);
       expect(await box.fake.searchSinceIn("AI/Info", since)).toHaveLength(1);
       expect(await actionState(trx, reverseId)).toMatchObject({ status: "ready", locked_at: null });
@@ -956,7 +955,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
         status: "ready",
         payload: { folder: "inbox" },
         reversesActionId: mail.actionIds[0],
-        createdAt: new Date(RECEIVED.getTime() + MINUTE),
+        createdAt: new Date(RECEIVED.getTime() + MINUTE_MS),
       });
       box.fake.calls.length = 0;
 
@@ -984,7 +983,7 @@ describe("createCommitterJob with a suspended organization", () => {
       const mailB = await addMail(trx, b, { messageId: "<b1@x.test>", actions: [{ type: "flag" }] });
       const sendA = await pairOf(trx, a);
       const sendB = await pairOf(trx, b, {
-        approved: { userId: b.userId as string, at: new Date(NOW.getTime() - HOUR) },
+        approved: { userId: b.userId as string, at: new Date(NOW.getTime() - HOUR_MS) },
       });
       const opener = openerFor([a, b]);
       const smtp = senderOpener();
