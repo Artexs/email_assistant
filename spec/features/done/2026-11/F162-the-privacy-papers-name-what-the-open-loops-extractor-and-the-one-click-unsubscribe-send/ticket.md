@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F162 · The privacy papers name what the open-loops extractor and the one-click unsubscribe send
