@@ -13,7 +13,7 @@ Owner words (quality pass 2, `spec/quality/2026-11-20-pass-2.md` finding 8, fix)
 - **D3 Event facts and keys in core.** `OperatorEvent` (a union by kind) and `operatorEventKey(event)` live in core. The key is byte-identical to `HEAD`: a changed key sends every past notice again.
 - **D4 Module.** The event notices move from `channels` to `operator` (`operator/notices.ts`); the layer order allows it. Callers get them as hooks from the composition roots, as now.
 - **D5 Schedules stay.** `channels.operator` (hourly, minute 13) and `ops.slo` (every 5 min) keep names, times and order. Rejected: one job (changes timing and the pinned job list).
-- **D6 One delivery.** `deliverOperatorText` (stage 04) sends one text. No operator chat counts as delivered for both lifecycles (as at `HEAD`). A failed send returns false and writes no mark.
+- **D6 One delivery.** `createOperatorDelivery` (stage 04) sends one text. No operator chat counts as delivered for both lifecycles (as at `HEAD`). A failed send returns false and writes no mark.
 - **D7 One log vocabulary** (default; Q2). Every line has an explicit level; a lost alert stays an `error` line, because the release watch counts `level=error` lines (`deploy/README.md`).
   - `operator_alert_sent` info `{ kind, status }`: a text went out (new for events).
   - `operator_alert_unsent` warn `{ kind, status }`: no operator chat; counts as delivered (incidents: was info `slo_alert_sent`).
