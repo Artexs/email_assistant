@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -130,7 +131,7 @@ describe("mail sync job", () => {
       const o = openers();
       for (const box of [a, b]) {
         const fake = createFakeMailProvider({ uidValidity: 7 });
-        fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+        fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
         o.fakes.set(box.address, fake);
       }
 
@@ -150,7 +151,7 @@ describe("mail sync job", () => {
       const box = await addBox(trx);
       const o = openers();
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       o.fakes.set(box.address, fake);
       await trx
         .insertInto("mailbox_folders")
@@ -192,7 +193,7 @@ describe("mail sync job", () => {
       };
       o.failures.set(bad.address, new MailAuthError("IMAP login failed"));
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       o.fakes.set(good.address, fake);
 
       await jobFor(trx, o).run();
@@ -254,7 +255,7 @@ describe("mail sync job", () => {
         })
         .execute();
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.deliver("Oferty", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      fake.deliver("Oferty", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       let broken = true;
       const flaky: FakeMailProvider = {
         ...fake,
@@ -308,7 +309,7 @@ describe("suspended organizations", () => {
       const o = openers();
       for (const box of [a, b]) {
         const fake = createFakeMailProvider({ uidValidity: 7 });
-        fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+        fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
         o.fakes.set(box.address, fake);
       }
 
@@ -361,7 +362,7 @@ describe("suspended organizations", () => {
 
     function deliverOne(o: Opened, box: Box): FakeMailProvider {
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       o.fakes.set(box.address, fake);
       return fake;
     }
@@ -374,7 +375,7 @@ describe("suspended organizations", () => {
           { orgId: box.orgId },
           box.mailboxId,
           "host_blocked",
-          new Date(NOW.getTime() - 3_600_000)
+          new Date(NOW.getTime() - HOUR_MS)
         );
         const o = openers();
         deliverOne(o, box);
@@ -398,7 +399,7 @@ describe("suspended organizations", () => {
           { orgId: box.orgId },
           box.mailboxId,
           "host_blocked",
-          new Date(NOW.getTime() - 3_600_000)
+          new Date(NOW.getTime() - HOUR_MS)
         );
         const o = openers();
         deliverOne(o, box);
@@ -468,7 +469,7 @@ describe("suspended organizations", () => {
           { orgId: box.orgId },
           box.mailboxId,
           "host_blocked",
-          new Date(NOW.getTime() - 3_600_000)
+          new Date(NOW.getTime() - HOUR_MS)
         );
         await suspendOrg(trx, box.orgId);
         const o = openers();
@@ -544,7 +545,7 @@ describe("the way in: a refused host blocks the mailbox", () => {
       const badFake = createFakeMailProvider({ uidValidity: 7 });
       o.fakes.set(bad.address, badFake);
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 3_600_000) });
+      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       o.fakes.set(good.address, fake);
       configureMailHosts({ allowLocal: false, lookup: lookupFor(new Set(["imap.x.test"])) });
       const log = capture();
@@ -628,7 +629,6 @@ describe("the way in: a refused host blocks the mailbox", () => {
 
 // The Sent pass in the sync run (ADR 0029).
 describe("the Sent pass in the sync job", () => {
-  const HOUR = 3_600_000;
   const CANARY = "canary-detail-9f3a@secret.test";
   const SENT_SUBJECT = "Sent subject canary-5c1d";
   const UUID_LOWER = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -659,7 +659,7 @@ describe("the Sent pass in the sync job", () => {
       await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
     }
     if (opts.switchOn !== false) {
-      await writeSentSwitch(trx, ctx, box.mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR) });
+      await writeSentSwitch(trx, ctx, box.mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR_MS) });
     }
     await setFolderMapEntry(trx, ctx, box.mailboxId, "sent", "Sent");
   }
@@ -670,7 +670,7 @@ describe("the Sent pass in the sync job", () => {
       from: "me@corp.test",
       to: [`to${n}@x.test`],
       subject: SENT_SUBJECT,
-      date: new Date(NOW.getTime() - HOUR),
+      date: new Date(NOW.getTime() - HOUR_MS),
       text: "Sent body canary-77aa",
       ...extra,
     };
@@ -678,8 +678,8 @@ describe("the Sent pass in the sync job", () => {
 
   async function fakeWithMail(box: Box, o: Opened, sent: boolean): Promise<FakeMailProvider> {
     const fake = createFakeMailProvider({ uidValidity: 7 });
-    fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR) });
-    if (sent) fake.deliver("Sent", sentSeed(1), { internalDate: new Date(NOW.getTime() - HOUR) });
+    fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
+    if (sent) fake.deliver("Sent", sentSeed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
     o.fakes.set(box.address, fake);
     return fake;
   }
@@ -841,13 +841,13 @@ describe("the Sent pass in the sync job", () => {
       await enableSent(trx, first);
       const o = openers();
       const fake = createFakeMailProvider({ uidValidity: 7 });
-      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR) });
+      fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       fake.deliver("Sent", sentSeed(1, { headers: { "X-EA-Action-Id": randomUUID() } }), {
-        internalDate: new Date(NOW.getTime() - HOUR),
+        internalDate: new Date(NOW.getTime() - HOUR_MS),
       });
       o.fakes.set(first.address, fake);
       const other = createFakeMailProvider({ uidValidity: 7 });
-      other.deliver("INBOX", seed(2), { internalDate: new Date(NOW.getTime() - HOUR) });
+      other.deliver("INBOX", seed(2), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       o.fakes.set(second.address, other);
       // A database-like error: a code, and a detail that holds mail data.
       const failure = Object.assign(new HardError(`check failed for ${CANARY}`), {
@@ -892,7 +892,7 @@ describe("the Sent pass in the sync job", () => {
       const o = openers();
       const fake = await fakeWithMail(box, o, false);
       fake.deliver("Sent", sentSeed(1, { headers: { "X-EA-Action-Id": randomUUID() } }), {
-        internalDate: new Date(NOW.getTime() - HOUR),
+        internalDate: new Date(NOW.getTime() - HOUR_MS),
       });
 
       const capture = captureConsole();
@@ -968,8 +968,8 @@ describe("the Sent pass in the sync job", () => {
     try {
       const o = openers();
       const real = createFakeMailProvider({ uidValidity: 7 });
-      real.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR) });
-      real.deliver("Sent", sentSeed(1), { internalDate: new Date(NOW.getTime() - HOUR) });
+      real.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
+      real.deliver("Sent", sentSeed(1), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       // Before each call on the Sent folder, a second connection asks for the state row lock. A held lock times out.
       const probes: boolean[] = [];
       const probe = async (): Promise<void> => {
@@ -1076,11 +1076,7 @@ describe("mail sync job: log lines are events without server text", () => {
 
   const withMail = (box: Box) => (o: Opened) => {
     const fake = createFakeMailProvider({ uidValidity: 7 });
-    fake.deliver(
-      "INBOX",
-      { ...seed(1), subject: MARKER_SUBJECT },
-      { internalDate: new Date(NOW.getTime() - 3_600_000) }
-    );
+    fake.deliver("INBOX", { ...seed(1), subject: MARKER_SUBJECT }, { internalDate: new Date(NOW.getTime() - HOUR_MS) });
     o.fakes.set(box.address, fake);
   };
 

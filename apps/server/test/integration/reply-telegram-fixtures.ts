@@ -1,4 +1,4 @@
-import { REPLY_CONSENT_SINCE } from "@ea/core";
+import { REPLY_CONSENT_SINCE, HOUR_MS, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { noDelegationHooks } from "../../src/modules/actions";
@@ -18,9 +18,7 @@ import { addMember, isolateChannels, linkChat, randomChatId } from "./fixtures";
 import {
   CLEAN_ANSWER,
   fakeLlm,
-  HOUR,
   jobDeps,
-  MINUTE,
   NOW,
   pairRows,
   runJob,
@@ -52,14 +50,14 @@ export async function rig(trx: Transaction<DB>, opts: { consented?: boolean } = 
   await isolateChannels(trx);
   const box = await setupBox(trx);
   const memberId = await addMember(trx, box.ctx.orgId);
-  await linkChat(trx, box.ctx, box.userId, randomChatId(), new Date(NOW.getTime() - HOUR));
-  await linkChat(trx, box.ctx, memberId, randomChatId(), new Date(NOW.getTime() - HOUR));
+  await linkChat(trx, box.ctx, box.userId, randomChatId(), new Date(NOW.getTime() - HOUR_MS));
+  await linkChat(trx, box.ctx, memberId, randomChatId(), new Date(NOW.getTime() - HOUR_MS));
   if (opts.consented !== false) {
     await recordAudit(trx, box.ctx, {
       event: auditEvents.webTelegramConsent,
       actor: box.userId,
       data: { via: "web", version: REPLY_CONSENT_SINCE },
-      at: new Date(NOW.getTime() - 2 * HOUR),
+      at: new Date(NOW.getTime() - 2 * HOUR_MS),
     });
   }
   const clock: Clock = { now: NOW };
@@ -68,7 +66,7 @@ export async function rig(trx: Transaction<DB>, opts: { consented?: boolean } = 
     userId,
     role,
     chatId: 1,
-    linkedAt: new Date(NOW.getTime() - HOUR),
+    linkedAt: new Date(NOW.getTime() - HOUR_MS),
     locale: "en",
   });
   const deps: CallbackDeps = {
@@ -81,7 +79,7 @@ export async function rig(trx: Transaction<DB>, opts: { consented?: boolean } = 
   };
   const channel = createFakeChannel();
   const tick = () => {
-    clock.now = new Date(clock.now.getTime() + MINUTE);
+    clock.now = new Date(clock.now.getTime() + MINUTE_MS);
   };
   return {
     box,
@@ -100,7 +98,7 @@ export async function rig(trx: Transaction<DB>, opts: { consented?: boolean } = 
       await detectNotices({
         db: trx,
         now: () => clock.now,
-        startedAt: new Date(NOW.getTime() - HOUR),
+        startedAt: new Date(NOW.getTime() - HOUR_MS),
         testMail: NO_TEST_SENDERS,
       });
     },

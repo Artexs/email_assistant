@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -17,7 +18,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-08T12:00:00Z");
-const HOUR = 3_600_000;
 const OFFERS = "Oferty";
 const JUNK = "Wiadomości-śmieci";
 
@@ -45,12 +45,12 @@ function seed(n: number): SeedMessage {
     from: `sender${n}@x.test`,
     to: ["box@x.test"],
     subject: `Mail ${n}`,
-    date: new Date(NOW.getTime() - HOUR),
+    date: new Date(NOW.getTime() - HOUR_MS),
     text: `Body ${n}`,
   };
 }
 
-const ago = (hours: number): Date => new Date(NOW.getTime() - hours * HOUR);
+const ago = (hours: number): Date => new Date(NOW.getTime() - hours * HOUR_MS);
 const deliverOpts = { internalDate: ago(1) };
 
 async function setInboxCursor(trx: Trx, box: Box, lastUid: number): Promise<void> {

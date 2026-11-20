@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { profilePreviewSchema, SAMPLE_MAIL } from "@ea/core";
+import { profilePreviewSchema, SAMPLE_MAIL, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
@@ -236,7 +236,7 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
   test("the limit is per mailbox and per day: another mailbox of the org still previews, and rows of the day before do not count", async () => {
     const { org, mine, fake, post } = await setup();
     const second = await addMailbox(org.orgId);
-    const yesterday = new Date(Date.now() - 30 * 3_600_000);
+    const yesterday = new Date(Date.now() - 30 * HOUR_MS);
     for (let i = 0; i < PREVIEW_DAILY_LIMIT; i += 1) {
       await db
         .insertInto("audit_log")

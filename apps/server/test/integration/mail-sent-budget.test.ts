@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createImapMailProvider } from "../../src/modules/mail/imap/client";
@@ -10,7 +11,7 @@ import { syncSentFolder, syncSentHeaders, type SentSyncDeps } from "../../src/mo
 import { configureFeatures } from "../../src/modules/tenancy";
 
 import { testDb, withRollback } from "./helpers";
-import { ago, depsOf, HOUR, newOrg, put, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
+import { ago, depsOf, newOrg, put, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
 
 // The time budget of one Sent pass.
 
@@ -53,7 +54,7 @@ const never = (): Promise<never> => new Promise<never>(() => undefined);
 // Mail 3 has an action id: its origin lookup runs in chunk 2 (chunk size 2) and uses up the budget.
 function putFive(org: Org) {
   for (let n = 1; n <= 5; n += 1) {
-    put(org, n, ago((6 - n) * HOUR), n === 3 ? { headers: { "X-EA-Action-Id": randomUUID() } } : {});
+    put(org, n, ago((6 - n) * HOUR_MS), n === 3 ? { headers: { "X-EA-Action-Id": randomUUID() } } : {});
   }
 }
 
@@ -77,7 +78,7 @@ function budgetDeps(
 
 describe("the default budget", () => {
   test("is 60 seconds", () => {
-    expect(SENT_PASS_BUDGET_MS).toBe(60_000);
+    expect(SENT_PASS_BUDGET_MS).toBe(MINUTE_MS);
   });
 });
 
@@ -98,7 +99,7 @@ describe("the timer of a call", () => {
     const set = spyOn(globalThis, "setTimeout");
     const clear = spyOn(globalThis, "clearTimeout");
     try {
-      const deadline = startDeadline({ budgetMs: 60_000 }, 1);
+      const deadline = startDeadline({ budgetMs: MINUTE_MS }, 1);
       expect(await deadline.call(async () => 7)).toBe(7);
       const timer = set.mock.results.map((r) => r.value).find((v) => v !== undefined);
       expect(timer).toBeDefined();
@@ -247,9 +248,9 @@ describe("text step budget", () => {
   test("the text step shares the deadline of the header step", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(4 * HOUR));
-      put(org, 2, ago(3 * HOUR), { headers: { "X-EA-Action-Id": randomUUID() } });
-      put(org, 3, ago(2 * HOUR));
+      put(org, 1, ago(4 * HOUR_MS));
+      put(org, 2, ago(3 * HOUR_MS), { headers: { "X-EA-Action-Id": randomUUID() } });
+      put(org, 3, ago(2 * HOUR_MS));
       const clock = manualClock();
       // The header step uses 400 of 500 ms; each text fetch uses 200 ms more.
       const { reader, calls } = hooked(org, {
@@ -280,7 +281,7 @@ describe("text step budget", () => {
   test("budget used up during the text step gives budget, stored texts stay, the rest stay pending", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      for (let n = 1; n <= 3; n += 1) put(org, n, ago((4 - n) * HOUR));
+      for (let n = 1; n <= 3; n += 1) put(org, n, ago((4 - n) * HOUR_MS));
       const clock = manualClock();
       const { reader, calls } = hooked(org, {
         fetchContent: () => {
@@ -309,7 +310,7 @@ describe("text step budget", () => {
   test("one fetchContent that never returns: the pass returns near the budget and makes no later IMAP call", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      for (let n = 1; n <= 3; n += 1) put(org, n, ago((4 - n) * HOUR));
+      for (let n = 1; n <= 3; n += 1) put(org, n, ago((4 - n) * HOUR_MS));
       const { reader, calls } = hooked(org, { fetchContent: never });
       const started = performance.now();
       const result = await syncSentFolder(depsOf(trx, org, { provider: reader, budgetMs: 50 }), org.ctx, org.mailboxId);

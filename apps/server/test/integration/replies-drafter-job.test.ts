@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { nextQuotaDayStart, QUOTA_TIMEZONE } from "@ea/core";
+import { nextQuotaDayStart, QUOTA_TIMEZONE, HOUR_MS, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -32,10 +32,8 @@ import {
   at,
   CLEAN_ANSWER,
   fakeLlm,
-  HOUR,
   jobDeps,
   llmCallRows,
-  MINUTE,
   NOW,
   pairRows,
   queueRequest,
@@ -234,7 +232,7 @@ describe("the drafter job (F115 stage 07)", () => {
         expect([name, run.requested, requests.length, (await requestsOf(trx, s)).length]).toEqual([name, 0, 0, 0]);
       }
       const s = await setupBox(trx);
-      await addReplyMail(trx, s, { receivedAt: new Date(NOW.getTime() - 8 * 24 * HOUR) });
+      await addReplyMail(trx, s, { receivedAt: new Date(NOW.getTime() - 8 * DAY_MS) });
       await addReplyMail(trx, s, { category: "info" });
       const untriaged = await addReplyMail(trx, s);
       await trx.updateTable("emails").set({ status: "pending" }).where("id", "=", untriaged).execute();
@@ -298,7 +296,7 @@ describe("the drafter job (F115 stage 07)", () => {
       expect(await requestOf(trx, waiting?.id ?? "")).toMatchObject({ status: "pending" });
 
       // At the next quota day it drafts.
-      clock.now = new Date(nextQuotaDayStart(NOW, QUOTA_TIMEZONE).getTime() + MINUTE);
+      clock.now = new Date(nextQuotaDayStart(NOW, QUOTA_TIMEZONE).getTime() + MINUTE_MS);
       await jobs.drafter.run({ mailboxId: s.mailboxId });
       expect(await requestOf(trx, waiting?.id ?? "")).toMatchObject({ status: "done" });
     });
@@ -352,7 +350,7 @@ describe("the drafter job (F115 stage 07)", () => {
       expect(sendA?.email_id).toBe(a);
 
       const b = await addReplyMail(trx, s, { threadKey: thread, receivedAt: at(-115) });
-      clock.now = new Date(NOW.getTime() + MINUTE);
+      clock.now = new Date(NOW.getTime() + MINUTE_MS);
       await jobs.drafter.run({ mailboxId: s.mailboxId });
 
       const open = await openReplySends(trx, s);
@@ -407,7 +405,7 @@ describe("the drafter job (F115 stage 07)", () => {
           confidence: 0.9,
           reason_code: "direct_request",
           fields: JSON.stringify({ language: "pl" }),
-          created_at: new Date(NOW.getTime() - MINUTE),
+          created_at: new Date(NOW.getTime() - MINUTE_MS),
         })
         .execute();
       await jobs.drafter.run({ mailboxId: s.mailboxId });
@@ -552,7 +550,7 @@ describe("the drafter job (F115 stage 07)", () => {
         instruction: "Zaproponuj środę.",
         previousSendId: first?.id ?? null,
       });
-      clock.now = new Date(NOW.getTime() + MINUTE);
+      clock.now = new Date(NOW.getTime() + MINUTE_MS);
       await jobs.drafter.run({ mailboxId: s.mailboxId });
 
       const done = await requestOf(trx, redraft);
@@ -591,7 +589,7 @@ describe("the drafter job (F115 stage 07)", () => {
         { userId: s.userId, via: "cli", now: clock.now }
       );
       const late = await queueRequest(trx, s, emailId, "redraft", { previousSendId: second?.id ?? null });
-      clock.now = new Date(NOW.getTime() + 2 * MINUTE);
+      clock.now = new Date(NOW.getTime() + 2 * MINUTE_MS);
       await jobs.drafter.run({ mailboxId: s.mailboxId });
       expect(await requestOf(trx, late)).toMatchObject({ status: "cancelled", reason_code: "closed" });
       expect(requests).toHaveLength(2);
@@ -722,16 +720,16 @@ describe("the drafter job (F115 stage 07)", () => {
       expect(await requestOf(trx, second)).toMatchObject({ status: "pending", attempts: 0 });
       expect((await requestOf(trx, second)).next_attempt_at.getTime()).toBe(NOW.getTime() + 1);
       expect(await requestOf(trx, id)).toMatchObject({ status: "pending", attempts: 0 });
-      expect((await requestOf(trx, id)).next_attempt_at.getTime()).toBe(NOW.getTime() + 5 * MINUTE);
+      expect((await requestOf(trx, id)).next_attempt_at.getTime()).toBe(NOW.getTime() + 5 * MINUTE_MS);
       expect((await llmCallRows(trx, s)).map((row) => row.reason_code)).toEqual(["http_503"]);
 
-      clock.now = new Date(NOW.getTime() + 6 * MINUTE);
+      clock.now = new Date(NOW.getTime() + 6 * MINUTE_MS);
       await jobs.drafter.run({ mailboxId: s.mailboxId });
       expect(await requestOf(trx, id)).toMatchObject({ status: "pending", attempts: 0 });
       expect(requests).toHaveLength(2);
 
       // The pause of the soft error is still on: no run takes the requests, and they end in time.
-      clock.now = new Date(NOW.getTime() + 11 * MINUTE);
+      clock.now = new Date(NOW.getTime() + 11 * MINUTE_MS);
       const last = await jobs.drafter.run({ mailboxId: s.mailboxId });
       expect(last.timedOut).toBe(2);
       expect(await requestOf(trx, id)).toMatchObject({ status: "failed", reason_code: "timeout" });
@@ -748,8 +746,8 @@ describe("the drafter job (F115 stage 07)", () => {
         .updateTable("reply_requests")
         .set({
           status: "drafting",
-          locked_at: new Date(NOW.getTime() - 6 * MINUTE),
-          created_at: new Date(NOW.getTime() - 11 * MINUTE),
+          locked_at: new Date(NOW.getTime() - 6 * MINUTE_MS),
+          created_at: new Date(NOW.getTime() - 11 * MINUTE_MS),
         })
         .where("id", "=", id)
         .execute();
@@ -771,7 +769,7 @@ describe("the drafter job (F115 stage 07)", () => {
       const jobs = createReplyJobs(jobDeps(trx, llm, clock));
       const states: [string, number][] = [];
       for (let i = 0; i < 3; i += 1) {
-        clock.now = new Date(NOW.getTime() + i * 6 * MINUTE);
+        clock.now = new Date(NOW.getTime() + i * 6 * MINUTE_MS);
         await jobs.drafter.run({ mailboxId: s.mailboxId });
         const [request] = await requestsOf(trx, s);
         states.push([request?.status ?? "", request?.attempts ?? -1]);
@@ -976,7 +974,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
         const id = await queueRequest(trx, s, emailId, "tap");
         await trx
           .updateTable("reply_requests")
-          .set({ status: "drafting", locked_at: new Date(NOW.getTime() - 6 * MINUTE), attempts })
+          .set({ status: "drafting", locked_at: new Date(NOW.getTime() - 6 * MINUTE_MS), attempts })
           .where("id", "=", id)
           .execute();
         return id;
@@ -997,7 +995,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
     await withRollback(db, async (trx) => {
       const s = await setupBox(trx);
       await addReplyMail(trx, s);
-      const later = new Date(NOW.getTime() + 7 * MINUTE);
+      const later = new Date(NOW.getTime() + 7 * MINUTE_MS);
       const { llm } = fakeLlm(async () => {
         // Another run took the request back (a stale take-back) while this call was under way.
         await trx
@@ -1022,7 +1020,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
     await withRollback(db, async (trx) => {
       const s = await setupBox(trx);
       await addReplyMail(trx, s);
-      const later = new Date(NOW.getTime() + 7 * MINUTE);
+      const later = new Date(NOW.getTime() + 7 * MINUTE_MS);
       const { llm } = fakeLlm(async () => {
         await trx
           .updateTable("reply_requests")
@@ -1154,7 +1152,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
       await setSwitch(trx, otherMailbox, true);
       const second = { ...s, mailboxId: otherMailbox };
       await addReplyMail(trx, second, { threadKey: "shared-thread", receivedAt: at(-115) });
-      clock.now = new Date(NOW.getTime() + MINUTE);
+      clock.now = new Date(NOW.getTime() + MINUTE_MS);
       // The scan of the first mailbox does not take the mail of the second one.
       await jobs.drafter.run({ mailboxId: s.mailboxId });
       expect(await requestsOf(trx, s)).toHaveLength(1);
@@ -1257,7 +1255,7 @@ describe("the drafter job: one draft per request, exactly once", () => {
     await withRollback(db, async (trx) => {
       const s = await setupBox(trx);
       for (let i = 0; i < 52; i += 1) {
-        await addReplyMail(trx, s, { receivedAt: new Date(NOW.getTime() - HOUR - i * MINUTE) });
+        await addReplyMail(trx, s, { receivedAt: new Date(NOW.getTime() - HOUR_MS - i * MINUTE_MS) });
       }
       const { llm } = fakeLlm(() => CLEAN_ANSWER);
       const run = await runJob(jobDeps(trx, llm, fresh()), s);

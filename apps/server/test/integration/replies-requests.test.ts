@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -26,7 +27,6 @@ afterAll(async () => {
 type Trx = Transaction<DB>;
 
 const NOW = new Date("2026-11-18T10:00:00Z");
-const MIN_MS = 60_000;
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
 
 async function newOrg(trx: Trx) {
@@ -86,7 +86,7 @@ describe("claimReplyRequests", () => {
       const created = await newOrg(trx);
       const ids: string[] = [];
       for (let index = 0; index < 4; index += 1)
-        ids.push((await request(trx, created, { next_attempt_at: ago(MIN_MS) })).id);
+        ids.push((await request(trx, created, { next_attempt_at: ago(MINUTE_MS) })).id);
       return { ...created, ids };
     });
     try {
@@ -109,8 +109,8 @@ describe("claimReplyRequests", () => {
   test("a row that another open transaction holds locked is skipped, not waited for; it is claimed after that transaction ends", async () => {
     const org = await db.transaction().execute(async (trx) => {
       const created = await newOrg(trx);
-      const held = await request(trx, created, { next_attempt_at: ago(MIN_MS), created_at: ago(3 * MIN_MS) });
-      const free = await request(trx, created, { next_attempt_at: ago(MIN_MS), created_at: ago(2 * MIN_MS) });
+      const held = await request(trx, created, { next_attempt_at: ago(MINUTE_MS), created_at: ago(3 * MINUTE_MS) });
+      const free = await request(trx, created, { next_attempt_at: ago(MINUTE_MS), created_at: ago(2 * MINUTE_MS) });
       return { ...created, held: held.id, free: free.id };
     });
     try {
@@ -144,8 +144,8 @@ describe("claimReplyRequests", () => {
   test("2. a drafting row locked 6 min ago is claimed again with attempts + 1; one locked 4 min ago is not", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const stale = await request(trx, org, { status: "drafting", locked_at: ago(6 * MIN_MS), attempts: 1 });
-      const live = await request(trx, org, { status: "drafting", locked_at: ago(4 * MIN_MS), attempts: 1 });
+      const stale = await request(trx, org, { status: "drafting", locked_at: ago(6 * MINUTE_MS), attempts: 1 });
+      const live = await request(trx, org, { status: "drafting", locked_at: ago(4 * MINUTE_MS), attempts: 1 });
 
       const claimed = await claimReplyRequests(trx, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 10 });
 
@@ -153,7 +153,7 @@ describe("claimReplyRequests", () => {
       expect(claimed[0]).toMatchObject({ status: "drafting", attempts: 2 });
       expect(claimed[0]?.locked_at?.getTime()).toBe(NOW.getTime());
       expect(await rowOf(trx, live.id)).toMatchObject({ attempts: 1, status: "drafting" });
-      expect(REPLY_CLAIM_STALE_MS).toBe(5 * MIN_MS);
+      expect(REPLY_CLAIM_STALE_MS).toBe(5 * MINUTE_MS);
     });
   });
 
@@ -161,10 +161,10 @@ describe("claimReplyRequests", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       const other = await newOrg(trx);
-      const due = await request(trx, org, { next_attempt_at: ago(MIN_MS) });
-      const later = await request(trx, org, { next_attempt_at: new Date(NOW.getTime() + MIN_MS) });
+      const due = await request(trx, org, { next_attempt_at: ago(MINUTE_MS) });
+      const later = await request(trx, org, { next_attempt_at: new Date(NOW.getTime() + MINUTE_MS) });
       const done = await request(trx, org, { status: "done" });
-      const foreign = await request(trx, other, { next_attempt_at: ago(MIN_MS) });
+      const foreign = await request(trx, other, { next_attempt_at: ago(MINUTE_MS) });
 
       const claimed = await claimReplyRequests(trx, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 10 });
       expect(claimed.map((row) => row.id)).toEqual([due.id]);
@@ -180,9 +180,9 @@ describe("claimReplyRequests", () => {
   test("the limit and the order: oldest first", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const old = await request(trx, org, { created_at: ago(3 * MIN_MS), next_attempt_at: ago(MIN_MS) });
-      const mid = await request(trx, org, { created_at: ago(2 * MIN_MS), next_attempt_at: ago(MIN_MS) });
-      await request(trx, org, { created_at: ago(MIN_MS), next_attempt_at: ago(MIN_MS) });
+      const old = await request(trx, org, { created_at: ago(3 * MINUTE_MS), next_attempt_at: ago(MINUTE_MS) });
+      const mid = await request(trx, org, { created_at: ago(2 * MINUTE_MS), next_attempt_at: ago(MINUTE_MS) });
+      await request(trx, org, { created_at: ago(MINUTE_MS), next_attempt_at: ago(MINUTE_MS) });
       const claimed = await claimReplyRequests(trx, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 2 });
       expect(claimed.map((row) => row.id)).toEqual([old.id, mid.id]);
     });
@@ -193,7 +193,7 @@ describe("finishReplyRequest and releaseReplyRequest", () => {
   test("finish ends only the claim that holds the row; a lost claim changes nothing", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const { id } = await request(trx, org, { next_attempt_at: ago(MIN_MS) });
+      const { id } = await request(trx, org, { next_attempt_at: ago(MINUTE_MS) });
       const [claimed] = await claimReplyRequests(trx, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 1 });
       const lockedAt = claimed?.locked_at ?? NOW;
 
@@ -216,10 +216,10 @@ describe("finishReplyRequest and releaseReplyRequest", () => {
   test("release gives the row back with the time of the next try; the attempt counts only when asked", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const a = await request(trx, org, { next_attempt_at: ago(MIN_MS) });
-      const b = await request(trx, org, { next_attempt_at: ago(MIN_MS) });
+      const a = await request(trx, org, { next_attempt_at: ago(MINUTE_MS) });
+      const b = await request(trx, org, { next_attempt_at: ago(MINUTE_MS) });
       const claimed = await claimReplyRequests(trx, org.ctx, { mailboxId: org.mailboxId, now: NOW, limit: 2 });
-      const next = new Date(NOW.getTime() + 5 * MIN_MS);
+      const next = new Date(NOW.getTime() + 5 * MINUTE_MS);
 
       expect(
         await releaseReplyRequest(trx, org.ctx, a.id, NOW, { nextAttemptAt: next, countAttempt: true, now: NOW })
@@ -241,10 +241,10 @@ describe("finishReplyRequest and releaseReplyRequest", () => {
   test("a worker that lost its claim to a stale take-back can neither finish nor release the row", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const { id } = await request(trx, org, { next_attempt_at: ago(10 * MIN_MS) });
+      const { id } = await request(trx, org, { next_attempt_at: ago(10 * MINUTE_MS) });
       const [first] = await claimReplyRequests(trx, org.ctx, {
         mailboxId: org.mailboxId,
-        now: ago(7 * MIN_MS),
+        now: ago(7 * MINUTE_MS),
         limit: 1,
       });
       const oldToken = first?.locked_at ?? NOW;
@@ -308,11 +308,11 @@ describe("listReplyRequestsOfEmail and countRedrafts", () => {
       const foreignMail = await insertTestEmail(trx, other.ctx, other.mailboxId);
       const first = await insertReplyRequest(trx, org.ctx, org.mailboxId, mail, {
         trigger: "auto",
-        created_at: ago(3 * MIN_MS),
+        created_at: ago(3 * MINUTE_MS),
       });
       const second = await insertReplyRequest(trx, org.ctx, org.mailboxId, mail, {
         trigger: "tap",
-        created_at: ago(MIN_MS),
+        created_at: ago(MINUTE_MS),
       });
       await insertReplyRequest(trx, org.ctx, org.mailboxId, await insertTestEmail(trx, org.ctx, org.mailboxId));
       await insertReplyRequest(trx, other.ctx, other.mailboxId, foreignMail);

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -212,7 +213,7 @@ describe("auditMailbox", () => {
       const { orgId } = await createOrg(trx);
       const ctx = { orgId };
       const { mailboxId, address } = await connectGreenmail(trx, ctx);
-      const since = new Date(Date.now() - 3_600_000);
+      const since = new Date(Date.now() - HOUR_MS);
       await seedMailbox({ db: trx, secrets }, ctx, mailboxId, { count: 2, testAddress: address });
 
       expect(await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since)).toEqual([
@@ -243,7 +244,7 @@ describe("auditMailbox", () => {
 });
 
 describe("auditMailbox per folder", () => {
-  const since = new Date(Date.now() - 3_600_000);
+  const since = new Date(Date.now() - HOUR_MS);
   const offersPick = { key: "offers", path: "Oferty", role: "sort" } as const;
   const junkPick = { key: "junk", path: "Wiadomości-śmieci", role: "junk" } as const;
 
@@ -397,7 +398,7 @@ describe("mailbox:seed and mailbox:audit CLI", () => {
       expect(right.stdout).toContain("appended 3");
       expect(new Set(await inboxMessageIds(imap)).size).toBe(3);
 
-      const since = new Date(Date.now() - 3_600_000).toISOString();
+      const since = new Date(Date.now() - HOUR_MS).toISOString();
       const lost = await run(auditScript, [...args, "--since", since], {});
       expect(lost.code).toBe(1);
       expect(lost.stdout).toContain("inbox=3 stored=0 missing=3 duplicates=0 cross=0");

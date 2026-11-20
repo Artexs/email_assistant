@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test, type Mock } from "bun:test";
 
 import {
@@ -305,7 +306,7 @@ describe("the other operator CLIs on an OAuth mailbox", () => {
     }
     return box;
   }
-  const since = () => new Date(Date.now() - 3_600_000).toISOString();
+  const since = () => new Date(Date.now() - HOUR_MS).toISOString();
 
   test("5. mailbox:audit after one sync: exit 0, the mail is stored", async () => {
     const box = await syncedBox();

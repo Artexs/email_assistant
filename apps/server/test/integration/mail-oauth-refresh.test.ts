@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format, inspect } from "node:util";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test, type Mock } from "bun:test";
 import type {
   PluginTransformQueryArgs,
@@ -248,7 +249,7 @@ describe("the access token cache", () => {
     const box = await seedMailbox();
     const tokens = tokensOf();
     const first = await tokens.accessToken(ctxA(), box.id, "mail");
-    advance(60_000);
+    advance(MINUTE_MS);
     expect(await tokens.accessToken(ctxA(), box.id, "mail")).toBe(first);
     expect(refreshCalls()).toHaveLength(1);
   });

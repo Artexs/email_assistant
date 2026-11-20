@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
@@ -21,7 +22,6 @@ const repoRoot = resolve(import.meta.dir, "../../../..");
 const settingsScript = resolve(import.meta.dir, "../../src/scripts/mailbox-settings.ts");
 // The script reads the real clock: the rows are dated from it.
 const AT = new Date(Math.floor(Date.now() / 1000) * 1000);
-const DAY = 24 * 3_600_000;
 
 type Created = Awaited<ReturnType<typeof createOrgWithMailbox>>;
 const created: Created[] = [];
@@ -75,7 +75,7 @@ async function setup(opts: { flag: boolean; switchOn?: boolean; rows?: number })
   if (opts.switchOn)
     await db.transaction().execute((trx) => writeSentSwitch(trx, ctx, box.mailboxId, { enabled: true, at: AT }));
   for (let n = 1; n <= (opts.rows ?? 0); n += 1) {
-    const at = new Date(AT.getTime() - n * DAY);
+    const at = new Date(AT.getTime() - n * DAY_MS);
     await insertRows(ctx, [
       {
         mailboxId: box.mailboxId,
@@ -200,7 +200,7 @@ describe("mailbox:settings sent-sync", () => {
     const shown = await runSettings(["show", "--org-id", on.box.orgId, "--mailbox-id", on.box.mailboxId]);
     expect(shown.code).toBe(0);
     expect(shown.stdout).toContain(
-      `sent: on, folder Sent, stored 1, last ${new Date(AT.getTime() - DAY).toISOString()}, first pass pending, error none`
+      `sent: on, folder Sent, stored 1, last ${new Date(AT.getTime() - DAY_MS).toISOString()}, first pass pending, error none`
     );
   });
 

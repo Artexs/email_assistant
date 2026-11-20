@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -12,7 +13,7 @@ import type { DB } from "../../src/platform/db";
 import { testDb, withRollback } from "./helpers";
 import { analysisOf, depsOf, fakeExtractor, loopsOrg, NOW, RUN_AT, sentMail, WED } from "./loops-analyze-fixtures";
 import { insertAnalysisRow } from "./loops-fixtures";
-import { ago, DAY, HOUR, newOrg, type Org, siblingMailbox } from "./mail-sent-fixtures";
+import { ago, newOrg, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
 // The gates and the candidates of the Sent analysis (step 1): the flags, the switch, which rows are read
 // and in which order, and the code filters. The tests run without `app.org_id`: only the `org_id` filter of each query
@@ -78,7 +79,7 @@ describe("the candidates", () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
       const pending = await sentMail(trx, org, { content: "pending" });
-      const old = await sentMail(trx, org, { sentAt: new Date(RUN_AT.getTime() - 15 * DAY) });
+      const old = await sentMail(trx, org, { sentAt: new Date(RUN_AT.getTime() - 15 * DAY_MS) });
       const stored = await sentMail(trx, org);
       const fake = fakeExtractor();
       const out = await run(trx, org, fake);
@@ -225,12 +226,12 @@ describe("the candidates", () => {
       await insertAnalysisRow(trx, org.ctx, org.mailboxId, later, { status: "pending" });
       await trx
         .updateTable("sent_analyses")
-        .set({ next_attempt_at: ago(HOUR), expects_reply: null, has_promise: null, prompt_version: null })
+        .set({ next_attempt_at: ago(HOUR_MS), expects_reply: null, has_promise: null, prompt_version: null })
         .where("sent_email_id", "=", due)
         .execute();
       await trx
         .updateTable("sent_analyses")
-        .set({ next_attempt_at: new Date(RUN_AT.getTime() + HOUR), expects_reply: null })
+        .set({ next_attempt_at: new Date(RUN_AT.getTime() + HOUR_MS), expects_reply: null })
         .where("sent_email_id", "=", later)
         .execute();
       const fake = fakeExtractor();
@@ -244,11 +245,11 @@ describe("the candidates", () => {
   test("a pending retry that is now over 14 days old is skipped too_old", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
-      const id = await sentMail(trx, org, { sentAt: new Date(RUN_AT.getTime() - 16 * DAY) });
+      const id = await sentMail(trx, org, { sentAt: new Date(RUN_AT.getTime() - 16 * DAY_MS) });
       await insertAnalysisRow(trx, org.ctx, org.mailboxId, id, { status: "pending" });
       await trx
         .updateTable("sent_analyses")
-        .set({ next_attempt_at: ago(HOUR), expects_reply: null })
+        .set({ next_attempt_at: ago(HOUR_MS), expects_reply: null })
         .where("sent_email_id", "=", id)
         .execute();
       const fake = fakeExtractor();

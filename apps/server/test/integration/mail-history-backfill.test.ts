@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -43,8 +44,6 @@ afterAll(async () => {
 
 const UID_VALIDITY = 7;
 const NOW = new Date("2026-11-03T12:00:00Z");
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
 const SINCE_DAYS = 30;
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -361,7 +360,7 @@ describe("history purpose: only mail of before the connect", () => {
     await withRollback(db, async (trx) => {
       const s = await syncedMailbox(trx);
       // A live mail that arrived after the last sync tick: UID 5, the cursor is 4.
-      s.fake.deliver("INBOX", seed(9), { internalDate: ago(10 * 60_000) });
+      s.fake.deliver("INBOX", seed(9), { internalDate: ago(10 * MINUTE_MS) });
       const outcome = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, {
         since: sinceOf(),
         purpose: "history",
@@ -390,7 +389,7 @@ describe("history purpose: only mail of before the connect", () => {
   test("the purpose backfill still stores mail above the cursor", async () => {
     await withRollback(db, async (trx) => {
       const s = await syncedMailbox(trx);
-      s.fake.deliver("INBOX", seed(9), { internalDate: ago(10 * 60_000) });
+      s.fake.deliver("INBOX", seed(9), { internalDate: ago(10 * MINUTE_MS) });
       const result = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, { since: sinceOf() });
       expect(result.stored).toBe(3);
     });

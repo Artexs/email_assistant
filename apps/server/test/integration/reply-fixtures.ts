@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import type { Insertable, Transaction } from "kysely";
 
 import {
@@ -75,7 +76,7 @@ export async function putDraftCopy(
   const claimed = await claimActions(trx, home.ctx, home.mailboxId, {
     now,
     limit: 50,
-    staleBefore: new Date(now.getTime() - 10 * 60_000),
+    staleBefore: new Date(now.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
   });
   const send = claimed.find((row) => row.id === ids.sendId);

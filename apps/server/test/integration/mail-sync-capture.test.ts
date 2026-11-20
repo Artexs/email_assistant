@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -193,10 +194,10 @@ describe("sync stores the capture", () => {
   test("5: the backfill stores the header row of an older mail", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      s.fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 5 * 24 * 3_600_000) });
+      s.fake.deliver("INBOX", seed(1), { internalDate: new Date(NOW.getTime() - 5 * DAY_MS) });
 
       const result = await backfillInbox(deps(trx, s.fake), s.ctx, s.mailboxId, {
-        since: new Date(NOW.getTime() - 30 * 24 * 3_600_000),
+        since: new Date(NOW.getTime() - 30 * DAY_MS),
       });
       expect(result.stored).toBe(1);
       const stored = await rows(trx, s.mailboxId);

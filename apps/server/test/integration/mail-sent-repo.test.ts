@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -30,8 +31,6 @@ afterAll(async () => {
 });
 
 const AT = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 
 // `toMatchObject` does not compare the value of a Date: compare the time in ms.
 function ms(value: Date | null | undefined): number | undefined {
@@ -63,8 +62,8 @@ function row(org: Org, n: number, extra: Partial<NewSentEmail> = {}): NewSentEma
     toAddresses: [`to${n}@x.test`],
     ccAddresses: [`cc${n}@x.test`],
     subject: `Subject ${n}`,
-    sentAt: new Date(AT.getTime() - n * HOUR),
-    internalDate: new Date(AT.getTime() - n * HOUR),
+    sentAt: new Date(AT.getTime() - n * HOUR_MS),
+    internalDate: new Date(AT.getTime() - n * HOUR_MS),
     origin: "user",
     actionId: null,
     content: "pending",
@@ -123,7 +122,7 @@ describe("sent sync state", () => {
   test("3: the switch clears the folder, the cursor and the pass fields", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: true, at: new Date(AT.getTime() - DAY) });
+      await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: true, at: new Date(AT.getTime() - DAY_MS) });
       await resetSentCursor(trx, org.ctx, org.mailboxId, { path: "Sent" });
       await updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 7, lastUid: 42 }, { firstPassAt: AT });
       await markSentPass(trx, org.ctx, org.mailboxId, { at: AT, errorCode: "failed" });
@@ -193,7 +192,7 @@ describe("sent sync state", () => {
       const state = await getSentSyncState(trx, org.ctx, org.mailboxId);
       expect(state).toMatchObject({ uidValidity: 7, lastUid: 42 });
       expect(ms(state?.firstPassAt)).toBe(AT.getTime());
-      const later = new Date(AT.getTime() + HOUR);
+      const later = new Date(AT.getTime() + HOUR_MS);
       expect(
         await updateSentCursor(trx, org.ctx, org.mailboxId, { uidValidity: 7, lastUid: 43 }, { firstPassAt: later })
       ).toBe(true);
@@ -340,7 +339,7 @@ describe("sent mail rows", () => {
   test("4: lists pending rows of the path and numbering, inside the window, oldest first", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const day = (n: number) => new Date(AT.getTime() - n * DAY);
+      const day = (n: number) => new Date(AT.getTime() - n * DAY_MS);
       await insertSentEmails(trx, org.ctx, [
         row(org, 1, { internalDate: day(1) }),
         row(org, 2, { internalDate: day(3) }),
@@ -434,7 +433,7 @@ describe("sent mail rows", () => {
   test("7: expire turns old pending rows into headers only", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const day = (n: number) => new Date(AT.getTime() - n * DAY);
+      const day = (n: number) => new Date(AT.getTime() - n * DAY_MS);
       await insertSentEmails(trx, org.ctx, [
         row(org, 1, { internalDate: day(1) }),
         row(org, 2, { internalDate: day(20) }),
@@ -480,7 +479,7 @@ describe("sent mail rows", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
-      await insertSentEmails(trx, a.ctx, [row(a, 1, { internalDate: new Date(AT.getTime() - DAY) })]);
+      await insertSentEmails(trx, a.ctx, [row(a, 1, { internalDate: new Date(AT.getTime() - DAY_MS) })]);
       const mine = await rowByKey(trx, a, row(a, 1).dedupKey);
       const key = { path: "Sent", uidValidity: 7, since: new Date(0), limit: 5 };
       expect(await listPendingSentTexts(trx, b.ctx, a.mailboxId, key)).toEqual([]);

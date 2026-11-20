@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { theirReplyDelaysBySender, userReplyDelaysBySender, type SenderWindowOptions } from "../../src/modules/mail";
@@ -13,12 +14,11 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 24 * HOUR;
 const MAX_HOURS = 100_000;
 
 const windowOf = (mailboxId: string): SenderWindowOptions => ({
   mailboxId,
-  since: new Date(NOW.getTime() - 90 * DAY),
+  since: new Date(NOW.getTime() - 90 * DAY_MS),
   until: NOW,
   testMail: { senders: [] },
 });

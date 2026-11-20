@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -35,7 +36,6 @@ type Trx = Transaction<DB>;
 
 const box = createSecretBox(randomBytes(32).toString("base64"), 1);
 const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
 const CANARY_ENDPOINT = "CANARYENDPOINT";
 
 interface Org {
@@ -123,8 +123,8 @@ describe("upsertPushSubscription", () => {
   test("1: the same endpoint twice with two sessions gives one row bound to the second session; the first call creates", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const first = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
-      const second = await session(trx, o.userId, new Date(NOW.getTime() + 2 * HOUR));
+      const first = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
+      const second = await session(trx, o.userId, new Date(NOW.getTime() + 2 * HOUR_MS));
       const endpoint = endpointOf("same");
       const one = await subscribe(trx, o, o.userId, first, { endpoint, deviceLabel: "Old label" });
       const two = await subscribe(trx, o, o.userId, second, { endpoint, deviceLabel: "New label" });
@@ -144,8 +144,8 @@ describe("upsertPushSubscription", () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const memberId = await addMember(trx, o.orgId);
-      const ownerSession = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
-      const memberSession = await session(trx, memberId, new Date(NOW.getTime() + HOUR));
+      const ownerSession = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
+      const memberSession = await session(trx, memberId, new Date(NOW.getTime() + HOUR_MS));
       const endpoint = endpointOf("owner");
       const made = await subscribe(trx, o, o.userId, ownerSession, { endpoint });
       expect(await subscribe(trx, o, o.userId, ownerSession, { rebindOnly: true })).toBeNull();
@@ -159,7 +159,7 @@ describe("upsertPushSubscription", () => {
         .executeTakeFirstOrThrow();
       expect(row).toEqual({ id: made?.id ?? "", user_id: o.userId, session_id: ownerSession });
       // With `rebindOnly` and the user's own endpoint the device is re-bound to the new session.
-      const newer = await session(trx, o.userId, new Date(NOW.getTime() + 3 * HOUR));
+      const newer = await session(trx, o.userId, new Date(NOW.getTime() + 3 * HOUR_MS));
       expect(await subscribe(trx, o, o.userId, newer, { endpoint, rebindOnly: true })).toEqual({
         id: made?.id ?? "",
         created: false,
@@ -177,7 +177,7 @@ describe("upsertPushSubscription", () => {
   test("3: the 11th endpoint of a user removes the oldest device and fails its open rows as no_device", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + 24 * HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + DAY_MS));
       const ids: string[] = [];
       for (let n = 0; n < MAX_DEVICES_PER_USER; n += 1) {
         const made = await subscribe(trx, o, o.userId, s, { now: new Date(NOW.getTime() + n * 1000) });
@@ -187,7 +187,7 @@ describe("upsertPushSubscription", () => {
       const oldest = ids[0] ?? "";
       const pending = await pushRow(trx, o, oldest);
       const sent = await pushRow(trx, o, oldest, "sent");
-      const newest = await subscribe(trx, o, o.userId, s, { now: new Date(NOW.getTime() + 60_000) });
+      const newest = await subscribe(trx, o, o.userId, s, { now: new Date(NOW.getTime() + MINUTE_MS) });
       expect(newest?.created).toBe(true);
       const left = await trx
         .selectFrom("push_subscriptions")
@@ -208,8 +208,8 @@ describe("upsertPushSubscription", () => {
   test("3b: a full list drops a device without a live session first (null session, then an expired one), a live one last", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const live = await session(trx, o.userId, new Date(NOW.getTime() + 24 * HOUR));
-      const expired = await session(trx, o.userId, new Date(NOW.getTime() - HOUR));
+      const live = await session(trx, o.userId, new Date(NOW.getTime() + DAY_MS));
+      const expired = await session(trx, o.userId, new Date(NOW.getTime() - HOUR_MS));
       const ids: string[] = [];
       for (let n = 0; n < MAX_DEVICES_PER_USER; n += 1) {
         const made = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + n * 1000) });
@@ -236,7 +236,7 @@ describe("upsertPushSubscription", () => {
             .execute()
         ).map((row) => row.id);
 
-      const a = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + 60_000) });
+      const a = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + MINUTE_MS) });
       expect(await idsOf()).toEqual([...ids.filter((id) => id !== ids[3]), a?.id ?? ""]);
       const b = await subscribe(trx, o, o.userId, live, { now: new Date(NOW.getTime() + 61_000) });
       expect(await idsOf()).toEqual([...ids.filter((id) => id !== ids[3] && id !== ids[5]), a?.id ?? "", b?.id ?? ""]);
@@ -256,9 +256,9 @@ describe("upsertPushSubscription", () => {
       const a = await createOrgWithMailbox(trx);
       const memberId = await addMember(trx, a.orgId);
       const b = await createOrgWithMailbox(trx);
-      const s = await session(trx, a.userId, new Date(NOW.getTime() + HOUR));
-      const memberSession = await session(trx, memberId, new Date(NOW.getTime() + HOUR));
-      const bSession = await session(trx, b.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, a.userId, new Date(NOW.getTime() + HOUR_MS));
+      const memberSession = await session(trx, memberId, new Date(NOW.getTime() + HOUR_MS));
+      const bSession = await session(trx, b.userId, new Date(NOW.getTime() + HOUR_MS));
       for (let n = 0; n < MAX_DEVICES_PER_USER; n += 1) await subscribe(trx, a, a.userId, s);
       await subscribe(trx, a, memberId, memberSession);
       await subscribe(trx, b, b.userId, bSession);
@@ -275,7 +275,7 @@ describe("upsertPushSubscription", () => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
       await insertMembership(trx, { orgId: b.orgId }, { userId: a.userId, role: "assistant" });
-      const s = await session(trx, a.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, a.userId, new Date(NOW.getTime() + HOUR_MS));
       const endpoint = endpointOf("two-orgs");
       await subscribe(trx, a, a.userId, s, { endpoint });
       await sql`savepoint f118_elsewhere`.execute(trx);
@@ -288,7 +288,7 @@ describe("upsertPushSubscription", () => {
   test("6: the stored secret holds none of the endpoint or the keys in clear; the device label is the only plain text", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const made = await subscribe(trx, o, o.userId, s, { endpoint: endpointOf("canary") });
       const row = await trx
         .selectFrom("push_subscriptions")
@@ -310,10 +310,10 @@ describe("listLiveDeviceIds and listDeviceViews", () => {
   test("7a: boundAt is the later of the device start and the session start", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const early = new Date(NOW.getTime() - 5 * HOUR);
-      const late = new Date(NOW.getTime() - HOUR);
+      const early = new Date(NOW.getTime() - 5 * HOUR_MS);
+      const late = new Date(NOW.getTime() - HOUR_MS);
       const mk = async (sessionStart: Date, deviceStart: Date) => {
-        const sessionId = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+        const sessionId = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
         await sql`update auth_sessions set created_at = ${sessionStart} where id = ${sessionId}::uuid`.execute(trx);
         return (await subscribe(trx, o, o.userId, sessionId, { now: deviceStart }))?.id ?? "";
       };
@@ -333,7 +333,7 @@ describe("listLiveDeviceIds and listDeviceViews", () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const memberId = await addMember(trx, o.orgId);
-      const live = await subscribe(trx, o, o.userId, await session(trx, o.userId, new Date(NOW.getTime() + HOUR)), {
+      const live = await subscribe(trx, o, o.userId, await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS)), {
         now: new Date(NOW.getTime() - 3000),
       });
       const expired = await subscribe(trx, o, o.userId, await session(trx, o.userId, new Date(NOW.getTime() - 1)), {
@@ -342,12 +342,17 @@ describe("listLiveDeviceIds and listDeviceViews", () => {
       const edge = await subscribe(trx, o, o.userId, await session(trx, o.userId, NOW), {
         now: new Date(NOW.getTime() - 1000),
       });
-      const ended = await subscribe(trx, o, o.userId, await session(trx, o.userId, new Date(NOW.getTime() + HOUR)));
+      const ended = await subscribe(trx, o, o.userId, await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS)));
       await sql`update push_subscriptions set session_id = null where id = ${ended?.id ?? ""}::uuid`.execute(trx);
       // A session of another user (only a bug could write this) does not make the device live.
-      const foreign = await subscribe(trx, o, o.userId, await session(trx, memberId, new Date(NOW.getTime() + HOUR)));
+      const foreign = await subscribe(
+        trx,
+        o,
+        o.userId,
+        await session(trx, memberId, new Date(NOW.getTime() + HOUR_MS))
+      );
       // A device of another user stays out of this user's list.
-      const theirs = await subscribe(trx, o, memberId, await session(trx, memberId, new Date(NOW.getTime() + HOUR)));
+      const theirs = await subscribe(trx, o, memberId, await session(trx, memberId, new Date(NOW.getTime() + HOUR_MS)));
       const ids = await listLiveDeviceIds(trx, { orgId: o.orgId }, o.userId, NOW);
       expect(ids.map((row) => row.id)).toEqual([live?.id ?? ""]);
       expect(ids[0]?.createdAt).toEqual(new Date(NOW.getTime() - 3000));
@@ -379,7 +384,7 @@ describe("removeDevice", () => {
   test("8: pending and sending rows end failed / no_device; sent and failed rows stay; the device column clears", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const made = await subscribe(trx, o, o.userId, s);
       const id = made?.id ?? "";
       const other = await subscribe(trx, o, o.userId, s);
@@ -425,7 +430,7 @@ describe("removeDevice", () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const memberId = await addMember(trx, o.orgId);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const made = await subscribe(trx, o, o.userId, s);
       const pending = await pushRow(trx, o, made?.id ?? "");
       expect(await removeDevice(trx, { orgId: o.orgId }, made?.id ?? "", { userId: memberId })).toBe(false);
@@ -440,7 +445,7 @@ describe("the organization filter", () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
-      const s = await session(trx, a.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, a.userId, new Date(NOW.getTime() + HOUR_MS));
       const endpoint = endpointOf("of-a");
       const made = await subscribe(trx, a, a.userId, s, { endpoint });
       const id = made?.id ?? "";
@@ -470,7 +475,7 @@ describe("loadDeviceSecret", () => {
   test("11: it returns the endpoint and the keys that were stored, and the user and the session of the device", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const endpoint = endpointOf("round");
       const made = await subscribe(trx, o, o.userId, s, { endpoint });
       const loaded = await loadDeviceSecret(trx, { orgId: o.orgId }, made?.id ?? "", box);
@@ -486,7 +491,7 @@ describe("loadDeviceSecret", () => {
   test("12b: a secret of another key version throws and removes nothing: the device and its open rows stay", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const device = await subscribe(trx, o, o.userId, s);
       const row = await pushRow(trx, o, device?.id ?? "");
       const next = createSecretBox(randomBytes(32).toString("base64"), 2);
@@ -505,7 +510,7 @@ describe("loadDeviceSecret", () => {
   test("12: a secret that does not open removes the device, fails its open rows, and logs the device id only", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const bad = await subscribe(trx, o, o.userId, s);
       const wrongKey = await subscribe(trx, o, o.userId, s);
       const swapped = await subscribe(trx, o, o.userId, s);
@@ -564,7 +569,7 @@ describe("markPushSuccess, markPushError and pushDedupKey", () => {
   test("13: success sets the time and clears the error; an error sets a short code; a bad code is refused by the table", async () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
-      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR));
+      const s = await session(trx, o.userId, new Date(NOW.getTime() + HOUR_MS));
       const made = await subscribe(trx, o, o.userId, s);
       const id = made?.id ?? "";
       const read = () =>

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -35,7 +36,6 @@ const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const script = resolve(import.meta.dir, "../../src/scripts/org-dsr.ts");
 const KEY = Buffer.alloc(32, 7).toString("base64");
-const HOUR = 3_600_000;
 
 const orgIds: string[] = [];
 const userIds: string[] = [];
@@ -762,7 +762,7 @@ describe("the sync folder lock and the tombstones", () => {
   test("4. rescan and backfill store none of the erased mails, not as `#2` either; a new mail from the person is stored", async () => {
     const person = unique();
     const NOW = new Date("2026-11-03T12:00:00Z");
-    const day = 86_400_000;
+    const day = DAY_MS;
     const ago = (ms: number) => new Date(NOW.getTime() - ms);
     const { orgId, userId, mailboxId } = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
     orgIds.push(orgId);
@@ -785,7 +785,7 @@ describe("the sync folder lock and the tombstones", () => {
     fake.deliver("INBOX", seed(1, person), { internalDate: ago(20 * day) });
     fake.deliver("INBOX", seed(2, person), { internalDate: ago(10 * day) });
     fake.deliver("INBOX", seed(3, `other-${person}`), { internalDate: ago(5 * day) });
-    fake.deliver("INBOX", seed(4, person), { internalDate: ago(2 * 3_600_000) });
+    fake.deliver("INBOX", seed(4, person), { internalDate: ago(2 * HOUR_MS) });
     const deps: SyncDeps = { db, provider: fake, isOwnActionId: async () => false, now: () => NOW };
     expect((await syncMailbox(deps, ctx, mailboxId)).stored).toBe(1);
     expect((await backfillInbox(deps, ctx, mailboxId, { since: ago(30 * day) })).stored).toBe(3);
@@ -803,7 +803,7 @@ describe("the sync folder lock and the tombstones", () => {
 
     // The mailbox still holds the erased mails. A rescan (UIDVALIDITY changed) and a backfill must not bring them back.
     fake.resetUidValidity(8);
-    fake.deliver("INBOX", seed(5, person), { internalDate: ago(HOUR) });
+    fake.deliver("INBOX", seed(5, person), { internalDate: ago(HOUR_MS) });
     const rescan = await syncMailbox(deps, ctx, mailboxId);
     expect(rescan.mode).toBe("rescan");
     expect(rescan.stored).toBe(1);

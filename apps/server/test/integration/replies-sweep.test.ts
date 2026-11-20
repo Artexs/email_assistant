@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -26,8 +27,6 @@ import {
   T0,
   type SweepOrg,
 } from "./reply-answered-fixtures";
-
-const HOUR = 3_600_000;
 
 // The sweep closes open reply sends whose reason to exist ended. It reads the database only.
 const db = testDb();
@@ -140,8 +139,8 @@ describe("the sweep: answered", () => {
             origin,
             action_id: actionId,
             content: "headers_only",
-            sent_at: new Date(T0.getTime() + HOUR),
-            internal_date: new Date(T0.getTime() + HOUR),
+            sent_at: new Date(T0.getTime() + HOUR_MS),
+            internal_date: new Date(T0.getTime() + HOUR_MS),
           })
           .execute();
       await sentRow("<answered-one@x.test>", "user");
@@ -162,9 +161,9 @@ describe("the sweep: newer mail, moved mail, suspicious mail", () => {
       const o = await sweepOrg(trx);
       const closed = await sweepReply(trx, o);
       const open = await sweepReply(trx, o);
-      await addThreadMail(trx, o.ctx, closed.emailId, { receivedAt: new Date(T0.getTime() + HOUR) });
+      await addThreadMail(trx, o.ctx, closed.emailId, { receivedAt: new Date(T0.getTime() + HOUR_MS) });
       await addThreadMail(trx, o.ctx, open.emailId, {
-        receivedAt: new Date(T0.getTime() + HOUR),
+        receivedAt: new Date(T0.getTime() + HOUR_MS),
         autoSubmitted: "auto-replied",
       });
 
@@ -184,7 +183,7 @@ describe("the sweep: newer mail, moved mail, suspicious mail", () => {
       // A newsletter in the same thread: no open reply, no request, so the drafter let the older draft stand.
       await insertTriaged(trx, o.ctx, o.mailboxId, {
         category: "info",
-        createdAt: new Date(T0.getTime() + HOUR),
+        createdAt: new Date(T0.getTime() + HOUR_MS),
         threadKey: thread,
       });
 
@@ -213,10 +212,10 @@ describe("the sweep: newer mail, moved mail, suspicious mail", () => {
             created_at: at,
           })
           .execute();
-      await result(flagged.emailId, new Date(T0.getTime() + HOUR), ["auth_fail"]);
+      await result(flagged.emailId, new Date(T0.getTime() + HOUR_MS), ["auth_fail"]);
       // A flag that a later result removes is gone: the newest result decides.
-      await result(cleared.emailId, new Date(T0.getTime() + HOUR), ["auth_fail"]);
-      await result(cleared.emailId, new Date(T0.getTime() + 2 * HOUR), []);
+      await result(cleared.emailId, new Date(T0.getTime() + HOUR_MS), ["auth_fail"]);
+      await result(cleared.emailId, new Date(T0.getTime() + 2 * HOUR_MS), []);
 
       const swept = await run(trx, o);
 
@@ -327,7 +326,7 @@ describe("the sweep: policy, locks, tenants, limits", () => {
       // Organization A holds a mail with the same Message-ID and thread key, answered, with a newer mail and a user reply in Sent.
       const aMail = await sweepReply(trx, a, { messageId, threadKey: thread });
       await markAnswered(trx, a, aMail.emailId);
-      await addThreadMail(trx, a.ctx, aMail.emailId, { receivedAt: new Date(T0.getTime() + HOUR) });
+      await addThreadMail(trx, a.ctx, aMail.emailId, { receivedAt: new Date(T0.getTime() + HOUR_MS) });
       await trx
         .insertInto("sent_emails")
         .values({
@@ -343,8 +342,8 @@ describe("the sweep: policy, locks, tenants, limits", () => {
           to_addresses: ["boss@x.test"],
           origin: "user",
           content: "headers_only",
-          sent_at: new Date(T0.getTime() + HOUR),
-          internal_date: new Date(T0.getTime() + HOUR),
+          sent_at: new Date(T0.getTime() + HOUR_MS),
+          internal_date: new Date(T0.getTime() + HOUR_MS),
         })
         .execute();
 
@@ -360,26 +359,30 @@ describe("the sweep: policy, locks, tenants, limits", () => {
     });
   });
 
-  test("8. at most 200 closes per run, oldest first; the rest wait for the next run", async () => {
-    await withRollback(db, async (trx) => {
-      const o = await sweepOrg(trx);
-      const created: string[] = [];
-      for (let index = 0; index < 203; index += 1) {
-        const pair = await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + index * 1000) });
-        await markAnswered(trx, o, pair.emailId);
-        created.push(pair.sendId);
-      }
+  test(
+    "8. at most 200 closes per run, oldest first; the rest wait for the next run",
+    async () => {
+      await withRollback(db, async (trx) => {
+        const o = await sweepOrg(trx);
+        const created: string[] = [];
+        for (let index = 0; index < 203; index += 1) {
+          const pair = await sweepReply(trx, o, { createdAt: new Date(T0.getTime() + index * 1000) });
+          await markAnswered(trx, o, pair.emailId);
+          created.push(pair.sendId);
+        }
 
-      const first = await run(trx, o);
+        const first = await run(trx, o);
 
-      expect(first).toMatchObject({ checked: 203, closed: { answered: 200 } });
-      const states = await trx.selectFrom("actions").select(["id", "status"]).where("id", "in", created).execute();
-      const open = states.filter((row) => row.status === "awaiting_approval").map((row) => row.id);
-      expect(open.sort()).toEqual(created.slice(200).sort());
-      const second = await run(trx, o);
-      expect(second.closed.answered).toBe(3);
-    });
-  }, 60_000);
+        expect(first).toMatchObject({ checked: 203, closed: { answered: 200 } });
+        const states = await trx.selectFrom("actions").select(["id", "status"]).where("id", "in", created).execute();
+        const open = states.filter((row) => row.status === "awaiting_approval").map((row) => row.id);
+        expect(open.sort()).toEqual(created.slice(200).sort());
+        const second = await run(trx, o);
+        expect(second.closed.answered).toBe(3);
+      });
+    },
+    MINUTE_MS
+  );
 
   test("8b. the cap of closes is for the whole run, not for each mailbox", async () => {
     await withRollback(db, async (trx) => {
@@ -451,28 +454,28 @@ describe("newerMailInThread (D7)", () => {
       await insertTestEmail(trx, a.ctx, sibling, {
         thread_key: thread,
         status: "triaged",
-        received_at: new Date(T0.getTime() + HOUR),
+        received_at: new Date(T0.getTime() + HOUR_MS),
         uid: 77,
       });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(false);
 
       // The same thread key in another organization, and another thread of the same mailbox: no.
-      await sweepReply(trx, b, { threadKey: thread, createdAt: new Date(T0.getTime() + HOUR) });
-      await sweepReply(trx, a, { createdAt: new Date(T0.getTime() + HOUR) });
+      await sweepReply(trx, b, { threadKey: thread, createdAt: new Date(T0.getTime() + HOUR_MS) });
+      await sweepReply(trx, a, { createdAt: new Date(T0.getTime() + HOUR_MS) });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(false);
 
       // An older mail of the thread: not newer.
-      await addThreadMail(trx, a.ctx, first.emailId, { receivedAt: new Date(T0.getTime() - HOUR) });
+      await addThreadMail(trx, a.ctx, first.emailId, { receivedAt: new Date(T0.getTime() - HOUR_MS) });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(false);
 
       // An automatic mail, with parameters or in capitals: not newer. `no` is not automatic.
       await addThreadMail(trx, a.ctx, first.emailId, {
-        receivedAt: new Date(T0.getTime() + HOUR),
+        receivedAt: new Date(T0.getTime() + HOUR_MS),
         autoSubmitted: "Auto-Generated; x=1",
       });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(false);
       await addThreadMail(trx, a.ctx, first.emailId, {
-        receivedAt: new Date(T0.getTime() + HOUR),
+        receivedAt: new Date(T0.getTime() + HOUR_MS),
         autoSubmitted: "no",
       });
       expect(await newerMailInThread(trx, a.ctx, first.emailId)).toBe(true);
@@ -551,7 +554,7 @@ describe("the sweep: the cap counts closes, mailboxes are visited by the age of 
       for (let index = 0; index < 5; index += 1) {
         await sweepReply(trx, a, { createdAt: new Date(T0.getTime() + index * 1000) });
       }
-      const answered = await sweepReply(trx, b, { createdAt: new Date(T0.getTime() + HOUR) });
+      const answered = await sweepReply(trx, b, { createdAt: new Date(T0.getTime() + HOUR_MS) });
       await markAnswered(trx, b, answered.emailId);
 
       const result = await sweepOf(trx, [], { closeLimit: 3 }).run({ mailboxIds: [a.mailboxId, b.mailboxId] });
@@ -565,7 +568,7 @@ describe("the sweep: the cap counts closes, mailboxes are visited by the age of 
     await withRollback(db, async (trx) => {
       const older = await sweepOrg(trx);
       const newer = await sweepOrg(trx);
-      const first = await sweepReply(trx, newer, { createdAt: new Date(T0.getTime() + HOUR) });
+      const first = await sweepReply(trx, newer, { createdAt: new Date(T0.getTime() + HOUR_MS) });
       const second = await sweepReply(trx, older, { createdAt: T0 });
       await markAnswered(trx, newer, first.emailId);
       await markAnswered(trx, older, second.emailId);
@@ -720,7 +723,7 @@ describe("the sweep and the pass: moves, junk, spam (review N6, N7)", () => {
       const trash = await sweepReply(trx, o);
       const spam = await sweepReply(trx, o);
       const real = await sweepReply(trx, o);
-      const later = new Date(T0.getTime() + HOUR);
+      const later = new Date(T0.getTime() + HOUR_MS);
       const inJunk = await addThreadMail(trx, o.ctx, junk.emailId, { receivedAt: later });
       await trx.updateTable("emails").set({ folder: "Junk" }).where("id", "=", inJunk).execute();
       const fromJunk = await addThreadMail(trx, o.ctx, junkSource.emailId, { receivedAt: later });
@@ -753,7 +756,7 @@ describe("the sweep and the pass: moves, junk, spam (review N6, N7)", () => {
       expect(await send(trx, real.sendId)).toMatchObject({ status: "expired", status_reason: "newer_mail" });
 
       // The newest result decides: a mail that was spam and is now `needs_reply` counts.
-      await triage(spamMail, "needs_reply", new Date(later.getTime() + HOUR));
+      await triage(spamMail, "needs_reply", new Date(later.getTime() + HOUR_MS));
       await run(trx, o);
       expect(await send(trx, spam.sendId)).toMatchObject({ status: "expired", status_reason: "newer_mail" });
     });
@@ -802,8 +805,8 @@ describe("the sweep: a paused mailbox, and a Sent row whose header is not read y
             origin: "user",
             content,
             auto_submitted: autoSubmitted,
-            sent_at: new Date(T0.getTime() + HOUR),
-            internal_date: new Date(T0.getTime() + HOUR),
+            sent_at: new Date(T0.getTime() + HOUR_MS),
+            internal_date: new Date(T0.getTime() + HOUR_MS),
           })
           .returning("id")
           .executeTakeFirstOrThrow();
@@ -844,8 +847,8 @@ describe("the sweep: a paused mailbox, and a Sent row whose header is not read y
             origin: "user",
             content: "pending",
             auto_submitted: autoSubmitted,
-            sent_at: new Date(T0.getTime() + HOUR),
-            internal_date: new Date(T0.getTime() + HOUR),
+            sent_at: new Date(T0.getTime() + HOUR_MS),
+            internal_date: new Date(T0.getTime() + HOUR_MS),
           })
           .execute();
       await insert("<with-no@x.test>", "no");

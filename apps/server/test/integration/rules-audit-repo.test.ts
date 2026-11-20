@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import type { LlmRole, SenderRule } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -179,7 +180,7 @@ describe("audit repository", () => {
       });
       // The DB clock and the test clock can differ a little: allow 1 min both ways.
       const age = Math.abs(Date.now() - (rows[1]?.created_at.getTime() ?? 0));
-      expect(age).toBeLessThan(60_000);
+      expect(age).toBeLessThan(MINUTE_MS);
 
       expect(await auditRows(trx, b.ctx.orgId)).toHaveLength(0);
     });

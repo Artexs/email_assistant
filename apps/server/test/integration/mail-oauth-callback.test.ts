@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format, inspect } from "node:util";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test, type Mock } from "bun:test";
 
 import {
@@ -449,7 +450,7 @@ describe("the state binding at the callback", () => {
   test("14. an expired state: oauth_state_expired, nothing is redeemed, the row is gone", async () => {
     const { query } = await signIn("google", { address: "a@x.test" });
     const before = fake.calls.length;
-    const later = new Date(Date.now() + OAUTH_STATE_TTL_MS + 60_000);
+    const later = new Date(Date.now() + OAUTH_STATE_TTL_MS + MINUTE_MS);
     expect(await finish("google", query, { now: later })).toEqual(refused("oauth_state_expired"));
     expect(fake.calls.length).toBe(before);
     expect(await stateRows()).toHaveLength(0);

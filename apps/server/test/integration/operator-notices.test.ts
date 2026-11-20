@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { GrammyError, HttpError } from "grammy";
 import { sql, type Transaction } from "kysely";
@@ -20,8 +21,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-12T10:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 
 // The log is JSON; `lines` holds every line of both console streams.
 let lines: string[] = [];
@@ -134,9 +133,9 @@ describe("operator notices: hourly run", () => {
     await withRollback(db, async (trx) => {
       const soon = await createOrgWithMailbox(trx);
       const later = await createOrgWithMailbox(trx);
-      const endsAt = new Date(NOW.getTime() + 2 * DAY);
+      const endsAt = new Date(NOW.getTime() + 2 * DAY_MS);
       await setTrial(trx, soon.orgId, endsAt);
-      await setTrial(trx, later.orgId, new Date(NOW.getTime() + 5 * DAY));
+      await setTrial(trx, later.orgId, new Date(NOW.getTime() + 5 * DAY_MS));
       const { texts, send } = recorder();
       await createNotices({ db: trx, now: () => NOW, send, locale: "en" }).run();
 
@@ -156,7 +155,7 @@ describe("operator notices: hourly run", () => {
   test("trial_ending: locale pl sends the Polish text (OPERATOR_LOCALE)", async () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
-      const endsAt = new Date(NOW.getTime() + 2 * DAY);
+      const endsAt = new Date(NOW.getTime() + 2 * DAY_MS);
       await setTrial(trx, org.orgId, endsAt);
       const { texts, send } = recorder();
       await createNotices({ db: trx, now: () => NOW, send, locale: "pl" }).run();
@@ -169,7 +168,7 @@ describe("operator notices: hourly run", () => {
   test("trial_ending: an ended trial gets the 'ended' text once", async () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
-      const endsAt = new Date(NOW.getTime() - DAY);
+      const endsAt = new Date(NOW.getTime() - DAY_MS);
       await setTrial(trx, org.orgId, endsAt);
       const { texts, send } = recorder();
       const notices = createNotices({ db: trx, now: () => NOW, send, locale: "en" });
@@ -183,14 +182,14 @@ describe("operator notices: hourly run", () => {
     await withRollback(db, async (trx) => {
       const old = await createOrgWithMailbox(trx);
       const fresh = await createOrgWithMailbox(trx);
-      const since = new Date(NOW.getTime() - 25 * HOUR);
+      const since = new Date(NOW.getTime() - 25 * HOUR_MS);
       await setMailboxStatus(trx, { orgId: old.orgId }, old.mailboxId, "auth_error", since);
       await setMailboxStatus(
         trx,
         { orgId: fresh.orgId },
         fresh.mailboxId,
         "auth_error",
-        new Date(NOW.getTime() - 23 * HOUR)
+        new Date(NOW.getTime() - 23 * HOUR_MS)
       );
       const { texts, send } = recorder();
       const notices = createNotices({ db: trx, now: () => NOW, send, locale: "en" });
@@ -204,8 +203,14 @@ describe("operator notices: hourly run", () => {
       expect(mine(texts, old.mailboxId)).toHaveLength(1);
 
       // A new episode: active again, then auth_error with a new status_changed_at.
-      await setMailboxStatus(trx, { orgId: old.orgId }, old.mailboxId, "active", new Date(NOW.getTime() - 20 * HOUR));
-      const again = new Date(NOW.getTime() - 26 * HOUR + 1000);
+      await setMailboxStatus(
+        trx,
+        { orgId: old.orgId },
+        old.mailboxId,
+        "active",
+        new Date(NOW.getTime() - 20 * HOUR_MS)
+      );
+      const again = new Date(NOW.getTime() - 26 * HOUR_MS + 1000);
       await setMailboxStatus(trx, { orgId: old.orgId }, old.mailboxId, "auth_error", again);
       await notices.run();
       expect(mine(texts, old.mailboxId)).toHaveLength(2);
@@ -220,7 +225,7 @@ describe("operator notices: hourly run", () => {
         { orgId: org.orgId },
         org.mailboxId,
         "auth_error",
-        new Date(NOW.getTime() - 30 * HOUR)
+        new Date(NOW.getTime() - 30 * HOUR_MS)
       );
       await suspendOrg(trx, org.orgId);
       const { texts, send } = recorder();
@@ -232,7 +237,7 @@ describe("operator notices: hourly run", () => {
   test("a failed send writes no row and logs one error; the next run sends", async () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
-      await setTrial(trx, org.orgId, new Date(NOW.getTime() + DAY));
+      await setTrial(trx, org.orgId, new Date(NOW.getTime() + DAY_MS));
       const texts: string[] = [];
       let failed = false;
       // Other orgs of the DB may send too: fail only the text of this org, once.
@@ -259,7 +264,7 @@ describe("operator notices: hourly run", () => {
   test("send null: a warn line and the audit row", async () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
-      await setTrial(trx, org.orgId, new Date(NOW.getTime() + DAY));
+      await setTrial(trx, org.orgId, new Date(NOW.getTime() + DAY_MS));
       await createNotices({ db: trx, now: () => NOW, send: null, locale: "en" }).run();
       // The run reads every organization of the DB: another file's committed organization may add a warn line of its own kind.
       expect(eventsOf("operator_alert_unsent")).toContainEqual({
@@ -312,7 +317,7 @@ describe("operator notices: rows of an earlier release", () => {
         }
       );
       const { texts, send } = recorder();
-      await createNotices({ db: trx, now: () => new Date(AT.getTime() + 25 * HOUR), send, locale: "en" }).run();
+      await createNotices({ db: trx, now: () => new Date(AT.getTime() + 25 * HOUR_MS), send, locale: "en" }).run();
       expect(mine(texts, org.mailboxId)).toEqual([]);
       expect(await noticeRows(trx, org.orgId)).toEqual([{ kind: "auth_error_24h", key }]);
     });
@@ -333,7 +338,7 @@ describe("operator notices: capReached", () => {
       expect(texts).toEqual([
         `Mailbox ${org.mailboxId} of org ${org.orgId} reached the daily LLM cap (300 calls) on the quota day from ${dayStart.toISOString()}.`,
       ]);
-      notices.capReached({ orgId: org.orgId }, org.mailboxId, new Date(dayStart.getTime() + DAY), 300);
+      notices.capReached({ orgId: org.orgId }, org.mailboxId, new Date(dayStart.getTime() + DAY_MS), 300);
       await notices.idle();
       expect(texts).toHaveLength(2);
     });
@@ -409,7 +414,7 @@ describe("operator notices: sendLimitReached", () => {
         { kind: "send_limit", key: `send_limit:${org.mailboxId}:2026-11-20` },
       ]);
 
-      const later = new Date(AT.getTime() + 3 * HOUR);
+      const later = new Date(AT.getTime() + 3 * HOUR_MS);
       notices.sendLimitReached(ctx, { mailboxId: org.mailboxId, limit: "mailbox_day", until, at: later });
       await notices.idle();
       expect(texts).toHaveLength(1);
@@ -455,12 +460,12 @@ describe("operator notices: sendLimitReached", () => {
       const ctx = { orgId: org.orgId };
       const { sendId } = await insertDraftAndSend(trx, ctx, org.mailboxId, {
         sendStatus: "approved",
-        approved: { userId: org.userId, at: new Date(NOW.getTime() - HOUR) },
+        approved: { userId: org.userId, at: new Date(NOW.getTime() - HOUR_MS) },
         outgoingMessageId: `<${randomUUID()}@x.test>`,
       });
       await trx
         .updateTable("actions")
-        .set({ last_error: "send_limit:recipient_day", next_attempt_at: new Date(NOW.getTime() + 10 * 60_000) })
+        .set({ last_error: "send_limit:recipient_day", next_attempt_at: new Date(NOW.getTime() + 10 * MINUTE_MS) })
         .where("id", "=", sendId)
         .execute();
       const { texts, send } = recorder();

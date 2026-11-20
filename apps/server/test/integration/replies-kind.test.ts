@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -42,11 +43,9 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const NOW = new Date("2026-11-20T10:00:00Z");
-const CREATED = new Date(NOW.getTime() - HOUR);
-const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+const CREATED = new Date(NOW.getTime() - HOUR_MS);
+const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 const TO = "jan@x.test";
@@ -127,7 +126,7 @@ const claimAll = (conn: Db | Transaction<DB>, s: Setup, send: Parameters<typeof 
   claimActions(conn, s.ctx, s.mailboxId, {
     now: NOW,
     limit: 20,
-    staleBefore: new Date(NOW.getTime() - 10 * MINUTE),
+    staleBefore: new Date(NOW.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send },
   });
 
@@ -412,8 +411,8 @@ describe("a reply send through the committer (F115 stage 04)", () => {
       expect((await row(trx, p.draftId)).status).toBe("applied");
       expect(await row(trx, p.sendId)).toMatchObject({ status: "awaiting_approval", approved_at: null });
       expect(s.sender.calls).toEqual([]);
-      expect(await s.fake.searchSinceIn("Drafts", new Date(CREATED.getTime() - HOUR))).toHaveLength(1);
-      expect(await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - HOUR))).toHaveLength(0);
+      expect(await s.fake.searchSinceIn("Drafts", new Date(CREATED.getTime() - HOUR_MS))).toHaveLength(1);
+      expect(await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - HOUR_MS))).toHaveLength(0);
     });
   });
 

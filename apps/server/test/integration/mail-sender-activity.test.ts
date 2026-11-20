@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { incomingCountsBySender, ownAddressesOf, type SenderWindowOptions } from "../../src/modules/mail";
@@ -17,16 +18,14 @@ afterAll(async () => {
 });
 
 const TEST_SENDER = "ea-test@example.com";
-const MINUTE = 60_000;
-const DAY = 86_400_000;
 
 const options = (mailboxId: string, over: Partial<SenderWindowOptions> = {}) => ({
   mailboxId,
-  since: new Date(NOW.getTime() - 90 * DAY),
+  since: new Date(NOW.getTime() - 90 * DAY_MS),
   until: NOW,
   testMail: { senders: [TEST_SENDER] },
-  since30: new Date(NOW.getTime() - 30 * DAY),
-  unseenBefore: new Date(NOW.getTime() - 7 * DAY),
+  since30: new Date(NOW.getTime() - 30 * DAY_MS),
+  unseenBefore: new Date(NOW.getTime() - 7 * DAY_MS),
   ...over,
 });
 
@@ -67,7 +66,7 @@ describe("incomingCountsBySender", () => {
       const org = await newOrg(trx);
       await seed(trx, org, "x@example.com", [
         { at: ago(91) },
-        { at: new Date(NOW.getTime() + MINUTE) },
+        { at: new Date(NOW.getTime() + MINUTE_MS) },
         { at: ago(90) },
       ]);
       const rows = await countsOf(trx, org);

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { textsFor } from "@ea/core";
+import { textsFor, DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
@@ -35,9 +35,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-11T12:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const query: ActivityQuery = { notRated: false };
 
 async function setup(trx: Transaction<DB>) {
@@ -59,7 +56,7 @@ function ago(ms: number): Date {
 async function insertMoved(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, receivedAt: Date) {
   const emailId = await insertTriaged(trx, ctx, mailboxId, {
     category: "notification",
-    createdAt: ago(HOUR),
+    createdAt: ago(HOUR_MS),
     receivedAt,
     messageId: `<m-${receivedAt.getTime()}-${randomUUID()}@ea-seed.test>`,
     reason: "Automated shipping update.",
@@ -69,9 +66,9 @@ async function insertMoved(trx: Transaction<DB>, ctx: TenantContext, mailboxId: 
     type: "move",
     status: "applied",
     payload: { folder: "ai_notifications" },
-    createdAt: ago(HOUR),
+    createdAt: ago(HOUR_MS),
   });
-  await insertAction(trx, ctx, emailId, { type: "mark_read", status: "applied", createdAt: ago(HOUR - 1000) });
+  await insertAction(trx, ctx, emailId, { type: "mark_read", status: "applied", createdAt: ago(HOUR_MS - 1000) });
   return { emailId };
 }
 
@@ -94,7 +91,7 @@ describe("listActivity", () => {
   test("describes a moved mail: phrase, actions, undoable", async () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
-      const { emailId } = await insertMoved(trx, ctxA, a.mailboxId, ago(HOUR));
+      const { emailId } = await insertMoved(trx, ctxA, a.mailboxId, ago(HOUR_MS));
       const page = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       expect(page.nextBefore).toBeNull();
       expect(page.items).toHaveLength(1);
@@ -104,11 +101,14 @@ describe("listActivity", () => {
       expect(item.category).toBe("notification");
       expect(item.phrase).toBe("done: move to AI/Notifications, mark read");
       expect(item.actions.map((x) => x.phrase)).toEqual(["done: move to AI/Notifications", "done: mark read"]);
-      expect(item.actions.map((x) => x.appliedAt)).toEqual([ago(HOUR).toISOString(), ago(HOUR - 1000).toISOString()]);
+      expect(item.actions.map((x) => x.appliedAt)).toEqual([
+        ago(HOUR_MS).toISOString(),
+        ago(HOUR_MS - 1000).toISOString(),
+      ]);
       expect(item.undoable).toBe(true);
       expect(item.undoPending).toBe(false);
       expect(item.aiText).toBe("Automated shipping update.");
-      expect(item.receivedAt).toBe(ago(HOUR).toISOString());
+      expect(item.receivedAt).toBe(ago(HOUR_MS).toISOString());
       expect(item.feedback).toBeNull();
       expect(item.delegation).toBeNull();
     });
@@ -119,8 +119,8 @@ describe("listActivity", () => {
       const { a, ctxA } = await setup(trx);
       const { emailId } = await insertTriagedWithActions(trx, ctxA, a.mailboxId, {
         category: "notification",
-        createdAt: ago(HOUR),
-        receivedAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
+        receivedAt: ago(HOUR_MS),
         messageId: "<undo-1@ea-seed.test>",
         actions: [
           { type: "move", status: "applied", payload: { folder: "ai_notifications" } },
@@ -140,7 +140,7 @@ describe("listActivity", () => {
 
       await trx
         .updateTable("actions")
-        .set({ status: "applied", applied_at: ago(10 * MINUTE) })
+        .set({ status: "applied", applied_at: ago(10 * MINUTE_MS) })
         .where("org_id", "=", a.orgId)
         .where("reverses_action_id", "is not", null)
         .execute();
@@ -162,20 +162,20 @@ describe("listActivity", () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
       const cases: [string, string | null, Date | null, string][] = [
-        ["held", "send_limit:mailbox_hour", new Date(NOW.getTime() + 10 * MINUTE), "approved, waiting: send limit"],
-        ["window over", "send_limit:mailbox_hour", new Date(NOW.getTime() - MINUTE), "approved, sending"],
+        ["held", "send_limit:mailbox_hour", new Date(NOW.getTime() + 10 * MINUTE_MS), "approved, waiting: send limit"],
+        ["window over", "send_limit:mailbox_hour", new Date(NOW.getTime() - MINUTE_MS), "approved, sending"],
         ["no time", "send_limit:mailbox_hour", null, "approved, sending"],
-        ["other error", "smtp_421", new Date(NOW.getTime() + 5 * MINUTE), "approved, sending"],
+        ["other error", "smtp_421", new Date(NOW.getTime() + 5 * MINUTE_MS), "approved, sending"],
       ];
       const expectedBy = new Map<string, string>();
       for (const [index, [, lastError, nextAttemptAt, phrase]] of cases.entries()) {
         const { emailId } = await insertTriagedWithActions(trx, ctxA, a.mailboxId, {
           category: "delegation",
-          createdAt: ago(HOUR),
-          receivedAt: ago(index * MINUTE + HOUR),
+          createdAt: ago(HOUR_MS),
+          receivedAt: ago(index * MINUTE_MS + HOUR_MS),
           messageId: `<held-${index}-${randomUUID()}@ea-seed.test>`,
           reason: "Delegation.",
-          actions: [{ type: "send", status: "approved", approvedAt: ago(2 * HOUR), lastError, nextAttemptAt }],
+          actions: [{ type: "send", status: "approved", approvedAt: ago(2 * HOUR_MS), lastError, nextAttemptAt }],
         });
         expectedBy.set(emailId, phrase);
       }
@@ -194,15 +194,15 @@ describe("listActivity", () => {
       const { a, ctxA } = await setup(trx);
       const info = await insertTriagedWithActions(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
-        receivedAt: ago(1 * HOUR),
+        createdAt: ago(HOUR_MS),
+        receivedAt: ago(1 * HOUR_MS),
         reason: "Newsletter.",
         actions: [{ type: "save_summary", status: "applied", payload: { summary: "A short summary." } }],
       });
       const unsure = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "unsure",
-        createdAt: ago(HOUR),
-        receivedAt: ago(2 * HOUR),
+        createdAt: ago(HOUR_MS),
+        receivedAt: ago(2 * HOUR_MS),
         confidence: 0.45,
         reason: "Hard to tell.",
         fields: { model_category: "info" },
@@ -223,9 +223,9 @@ describe("listActivity", () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
       const delegateId = await insertDelegate(trx, ctxA, { name: "Ola" });
-      const dueAt = new Date(NOW.getTime() + 2 * DAY);
+      const dueAt = new Date(NOW.getTime() + 2 * DAY_MS);
       const { emailId, draftId, sendId } = await insertDraftAndSend(trx, ctxA, a.mailboxId, {
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         delegateId,
         delegateName: "Ola",
         task: "Send the Q4 report",
@@ -251,7 +251,7 @@ describe("listActivity", () => {
   test("shows the latest feedback", async () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
-      const emailId = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR) });
+      const emailId = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR_MS) });
       await insertFeedback(trx, ctxA, {
         emailId,
         verdict: "right",
@@ -269,11 +269,11 @@ describe("listActivity", () => {
   test("pages by the cursor with equal timestamps", async () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
-      const same = ago(2 * HOUR);
+      const same = ago(2 * HOUR_MS);
       const created: string[] = [];
       for (let i = 0; i < 5; i += 1) {
         created.push(
-          await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR), receivedAt: same })
+          await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR_MS), receivedAt: same })
         );
       }
       const seen: string[] = [];
@@ -303,20 +303,20 @@ describe("listActivity", () => {
       const { a, ctxA } = await setup(trx);
       const old = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(100 * DAY),
-        receivedAt: ago(100 * DAY),
+        createdAt: ago(100 * DAY_MS),
+        receivedAt: ago(100 * DAY_MS),
       });
       const mid = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(80 * DAY),
-        receivedAt: ago(80 * DAY),
+        createdAt: ago(80 * DAY_MS),
+        receivedAt: ago(80 * DAY_MS),
       });
       const fresh = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(DAY),
-        receivedAt: ago(DAY),
+        createdAt: ago(DAY_MS),
+        receivedAt: ago(DAY_MS),
       });
-      const clamped = await listActivity(trx, ctxA, { ...query, since: ago(120 * DAY) }, NOW, textsFor("en"));
+      const clamped = await listActivity(trx, ctxA, { ...query, since: ago(120 * DAY_MS) }, NOW, textsFor("en"));
       expect(clamped.items.map((item) => item.emailId)).toEqual([fresh, mid]);
       expect(clamped.items.map((item) => item.emailId)).not.toContain(old);
       const def = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
@@ -327,8 +327,8 @@ describe("listActivity", () => {
   test("filters by organization", async () => {
     await withRollback(db, async (trx) => {
       const { a, b, ctxA, ctxB } = await setup(trx);
-      const mine = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR) });
-      await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: ago(HOUR) });
+      const mine = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR_MS) });
+      await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: ago(HOUR_MS) });
       const page = await listActivity(trx, ctxA, query, NOW, textsFor("en"));
       expect(page.items.map((item) => item.emailId)).toEqual([mine]);
       expect((await listActivity(trx, ctxA, { ...query, mailboxId: b.mailboxId }, NOW, textsFor("en"))).items).toEqual(
@@ -343,23 +343,23 @@ describe("listActivity", () => {
       const delegateId = await insertDelegate(trx, ctxA, { name: "Ola" });
 
       async function addTriple(n: number): Promise<void> {
-        const at = ago(HOUR + n * MINUTE);
+        const at = ago(HOUR_MS + n * MINUTE_MS);
         await insertMoved(trx, ctxA, a.mailboxId, at);
         await insertTriagedWithActions(trx, ctxA, a.mailboxId, {
           category: "info",
-          createdAt: ago(HOUR),
-          receivedAt: ago(HOUR + n * MINUTE + 30_000),
+          createdAt: ago(HOUR_MS),
+          receivedAt: ago(HOUR_MS + n * MINUTE_MS + 30_000),
           actions: [{ type: "save_summary", status: "applied", payload: { summary: `Summary ${n}` } }],
         });
         const { emailId, draftId, sendId } = await insertDraftAndSend(trx, ctxA, a.mailboxId, {
-          createdAt: ago(HOUR),
+          createdAt: ago(HOUR_MS),
           delegateId,
           delegateName: "Ola",
           task: `Task ${n}`,
         });
         await trx
           .updateTable("emails")
-          .set({ received_at: ago(HOUR + n * MINUTE + 45_000) })
+          .set({ received_at: ago(HOUR_MS + n * MINUTE_MS + 45_000) })
           .where("id", "=", emailId)
           .execute();
         await insertDelegation(trx, ctxA, {
@@ -410,8 +410,8 @@ describe("listActivity", () => {
       for (let n = 0; n < 2; n += 1) {
         await insertTriaged(trx, ctxA, a.mailboxId, {
           category: "needs_reply",
-          createdAt: ago(HOUR),
-          receivedAt: ago(HOUR + n * MINUTE),
+          createdAt: ago(HOUR_MS),
+          receivedAt: ago(HOUR_MS + n * MINUTE_MS),
         });
       }
       const off = await countFor();
@@ -426,8 +426,8 @@ describe("listActivity", () => {
       for (let n = 2; n < 20; n += 1) {
         await insertTriaged(trx, ctxA, a.mailboxId, {
           category: "needs_reply",
-          createdAt: ago(HOUR),
-          receivedAt: ago(HOUR + n * MINUTE),
+          createdAt: ago(HOUR_MS),
+          receivedAt: ago(HOUR_MS + n * MINUTE_MS),
         });
       }
       const large = await countFor();
@@ -453,18 +453,18 @@ describe("listActivity: suspicious", () => {
       const { a, b, ctxA, ctxB } = await setup(trx);
       const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["lookalike_domain", "link_mismatch"],
       });
       const clean = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
-        receivedAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
+        receivedAt: ago(2 * HOUR_MS),
       });
       // B holds a flagged mail; A holds none besides its own.
       await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
       const byId = async (ctx: TenantContext) =>
@@ -519,28 +519,32 @@ describe("activity rule hit (F110 stage 16)", () => {
       const { a, b, ctxA, ctxB } = await setup(trx);
       const vip = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "needs_reply",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         fields: { rule: "vip" },
       });
       const black = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "spam",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
         reasonCode: "blocklist",
         fields: { rule: "blocklist" },
       });
       const white = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(3 * HOUR),
+        createdAt: ago(3 * HOUR_MS),
         fields: { rule: "whitelist" },
       });
-      const old = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(4 * HOUR) });
+      const old = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(4 * HOUR_MS) });
       // A value that is no rule reads null.
       const junk = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(5 * HOUR),
+        createdAt: ago(5 * HOUR_MS),
         fields: { rule: "somebody@example.com" },
       });
-      await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: ago(HOUR), fields: { rule: "vip" } });
+      await insertTriaged(trx, ctxB, b.mailboxId, {
+        category: "info",
+        createdAt: ago(HOUR_MS),
+        fields: { rule: "vip" },
+      });
       const byId = async (ctx: TenantContext) =>
         new Map((await listActivity(trx, ctx, query, NOW, textsFor("en"))).items.map((i) => [i.emailId, i.rule]));
 

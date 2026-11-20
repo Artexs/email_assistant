@@ -2,6 +2,7 @@
 // a chat and a device, a waiting approval. Every test runs in a transaction that is rolled back.
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import { detectNotices } from "../../src/modules/channels";
@@ -23,8 +24,6 @@ import {
 } from "./fixtures";
 
 export const T = new Date("2026-11-20T10:00:00Z");
-export const MINUTE = 60_000;
-export const HOUR = 60 * MINUTE;
 export const at = (ms: number) => new Date(T.getTime() + ms);
 export const pushBox = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -40,17 +39,17 @@ export async function world(trx: Transaction<DB>, flag = true): Promise<World> {
   await isolateChannels(trx);
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
-  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE_MS));
   await trx
     .updateTable("mailboxes")
-    .set({ status_changed_at: at(-2 * HOUR) })
+    .set({ status_changed_at: at(-2 * HOUR_MS) })
     .where("id", "=", created.mailboxId)
     .execute();
   if (flag) await setOrgFeature(trx, ctx, { flag: "web_push", enabled: true, actor: "cli", now: T });
   return { ctx, orgId: created.orgId, mailboxId: created.mailboxId, owner: created.userId };
 }
 
-export const chat = (trx: Transaction<DB>, w: World, userId: string, linkedAt = at(-2 * HOUR)) =>
+export const chat = (trx: Transaction<DB>, w: World, userId: string, linkedAt = at(-2 * HOUR_MS)) =>
   linkChat(trx, w.ctx, userId, randomChatId(), linkedAt);
 
 let counter = 0;
@@ -60,7 +59,7 @@ export async function device(
   w: World,
   userId: string,
   createdAt: Date,
-  sessionEnd = at(24 * HOUR)
+  sessionEnd = at(DAY_MS)
 ): Promise<{ id: string; sessionId: string }> {
   counter += 1;
   const receiver = newReceiver();
@@ -93,7 +92,7 @@ export async function setRoutes(trx: Transaction<DB>, w: World, userId: string, 
 
 // One tick of the notice detectors at `now`.
 export async function run(trx: Transaction<DB>, now: Date = T): Promise<void> {
-  await detectNotices({ db: trx, now: () => now, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+  await detectNotices({ db: trx, now: () => now, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
 }
 
 export async function outbox(trx: Transaction<DB>, orgId: string, kind?: string) {
@@ -129,7 +128,7 @@ export const urgentMail = (trx: Transaction<DB>, w: World, triagedAt: Date): Pro
 // A send that waits for an answer (a delegation draft), updated at `updatedAt`.
 export async function waitingSend(trx: Transaction<DB>, w: World, updatedAt: Date) {
   const pair = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
-    createdAt: at(-30 * MINUTE),
+    createdAt: at(-30 * MINUTE_MS),
     draftProviderResult: { folder: "Drafts", uid: 1 },
     subject: "Quarterly offer",
     from: "boss@example.test",

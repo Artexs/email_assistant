@@ -1,3 +1,4 @@
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { backfillInbox, CursorMovedError, syncMailbox, type SeedMessage, type SyncDeps } from "../../src/modules/mail";
@@ -22,7 +23,6 @@ afterAll(async () => {
 
 const UID_VALIDITY = 11;
 const NOW = new Date("2026-11-03T12:00:00Z");
-const DAY_MS = 24 * 3_600_000;
 const MAILS = 12;
 
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
@@ -54,7 +54,7 @@ async function withCommittedMailbox(
     const newFake = () => {
       const fake = createFakeMailProvider({ uidValidity: UID_VALIDITY });
       for (const { n, at } of messages) fake.deliver("INBOX", seed(n), { internalDate: at });
-      fake.deliver("INBOX", seed(1), { internalDate: ago(3_600_000) });
+      fake.deliver("INBOX", seed(1), { internalDate: ago(HOUR_MS) });
       return fake;
     };
     // The first sync stores only the mail of the last day (r1) and sets the cursor.

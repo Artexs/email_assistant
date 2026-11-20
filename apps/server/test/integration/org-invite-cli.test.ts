@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -132,7 +133,7 @@ describe("org:invite CLI", () => {
     const org = await findOrg(target.orgName);
     expect(org?.plan).toBe("trial");
     const expected = before + 30 * DAY_S * 1000;
-    expect(Math.abs((org?.trial_ends_at?.getTime() ?? 0) - expected)).toBeLessThan(3_600_000);
+    expect(Math.abs((org?.trial_ends_at?.getTime() ?? 0) - expected)).toBeLessThan(HOUR_MS);
 
     const user = await db.selectFrom("users").selectAll().where("email", "=", target.email).executeTakeFirstOrThrow();
     expect(user.locale).toBe("pl");

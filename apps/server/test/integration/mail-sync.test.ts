@@ -1,5 +1,6 @@
 import { format } from "node:util";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -61,7 +62,7 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
 const NOW = new Date("2026-11-03T12:00:00Z");
 
 function hoursAgo(hours: number): Date {
-  return new Date(NOW.getTime() - hours * 3_600_000);
+  return new Date(NOW.getTime() - hours * HOUR_MS);
 }
 
 function deps(trx: Db | Transaction<DB>, provider: MailProvider, overrides: Partial<SyncDeps> = {}): SyncDeps {
@@ -1353,7 +1354,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
           folder: "AI/Info",
           uid: n,
           source_uid: n,
-          moved_at: new Date(NOW.getTime() - n * 60_000),
+          moved_at: new Date(NOW.getTime() - n * MINUTE_MS),
         });
       }
       const spy = spyFolderReads(s.fake);
@@ -1586,12 +1587,12 @@ describe("syncMailbox: returned mail below the cursor", () => {
       const [first, second] = await copyRowsOf(trx, s.mailboxId);
       await trx
         .updateTable("emails")
-        .set({ moved_at: new Date(NOW.getTime() - 60_000) })
+        .set({ moved_at: new Date(NOW.getTime() - MINUTE_MS) })
         .where("id", "=", first?.id ?? "")
         .execute();
       await trx
         .updateTable("emails")
-        .set({ moved_at: new Date(NOW.getTime() - 300 * 60_000) })
+        .set({ moved_at: new Date(NOW.getTime() - 5 * HOUR_MS) })
         .where("id", "=", second?.id ?? "")
         .execute();
       for (let n = 1; n <= 100; n += 1) {
@@ -1601,7 +1602,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
           folder: "AI/Info",
           uid: 10000 + n,
           source_uid: 10000 + n,
-          moved_at: new Date(NOW.getTime() - (1 + n) * 60_000),
+          moved_at: new Date(NOW.getTime() - (1 + n) * MINUTE_MS),
         });
       }
       const spy = spyFolderReads(s.fake);
@@ -1795,7 +1796,7 @@ describe("syncMailbox: sync folders", () => {
   const FOLDER_NOW = new Date("2026-11-08T12:00:00Z");
 
   const ago = (hours: number): { internalDate: Date } => ({
-    internalDate: new Date(FOLDER_NOW.getTime() - hours * 3_600_000),
+    internalDate: new Date(FOLDER_NOW.getTime() - hours * HOUR_MS),
   });
   const folderDeps = (trx: Db | Transaction<DB>, provider: MailProvider, overrides: Partial<SyncDeps> = {}) =>
     deps(trx, provider, { now: () => FOLDER_NOW, ...overrides });
@@ -2372,7 +2373,7 @@ describe("syncMailbox: sync folders", () => {
       await markSystemMoved(trx, s, "INBOX", uid);
       await trx
         .updateTable("emails")
-        .set({ move_pending_at: new Date(FOLDER_NOW.getTime() - 60_000) })
+        .set({ move_pending_at: new Date(FOLDER_NOW.getTime() - MINUTE_MS) })
         .where("mailbox_id", "=", s.mailboxId)
         .execute();
       s.fake.deliver("INBOX", seed(1), ago(1));
@@ -2568,7 +2569,7 @@ describe("syncMailbox: sync folders", () => {
         .where("mailbox_id", "=", s.mailboxId)
         .where("key", "=", "offers")
         .execute();
-      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       expect(s.fake.userMove("AI/Info", inFolder, OFFERS)).toBe(inFolder);
 
       await withLogs(async (lines) => {
@@ -2599,7 +2600,7 @@ describe("syncMailbox: sync folders", () => {
         .where("mailbox_id", "=", s.mailboxId)
         .where("key", "=", "offers")
         .execute();
-      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       s.fake.userMove("AI/Info", inFolder, OFFERS);
       const provider: MailProvider = {
         ...s.fake,
@@ -2632,7 +2633,7 @@ describe("syncMailbox: sync folders", () => {
       const s = await folderSetup(trx);
       const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
       const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
-      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       await trx.updateTable("emails").set({ uid: inFolder }).where("id", "=", rowId).execute();
 
       const result = await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
@@ -2671,7 +2672,7 @@ describe("syncMailbox: sync folders", () => {
       await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
       await trx
         .updateTable("emails")
-        .set({ folder: "AI/Info", moved_at: new Date(FOLDER_NOW.getTime() - 3_600_000) })
+        .set({ folder: "AI/Info", moved_at: new Date(FOLDER_NOW.getTime() - HOUR_MS) })
         .where("mailbox_id", "=", s.mailboxId)
         .execute();
       // The system COPY gave the mail its own UID in AI/Info; the INBOX original stays at its UID.
@@ -2706,7 +2707,7 @@ describe("syncMailbox: sync folders", () => {
       await addFolderRow(trx, s, "offers", OFFERS, { lastUid: 0 });
       await s.fake.ensureFolder(OFFERS);
       const { uid, rowId } = await movedFromFolder(trx, s, "inbox", "INBOX");
-      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       s.fake.userMove("INBOX", uid, "AI/Info");
       s.fake.userMove("AI/Info", uid, "INBOX");
 
@@ -2728,7 +2729,7 @@ describe("syncMailbox: sync folders", () => {
       s.fake.deliver(OFFERS, seed(3), ago(1));
       await syncMailbox(folderDeps(trx, s.fake), s.ctx, s.mailboxId);
       expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBeGreaterThan(uid);
-      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       s.fake.userMove("INBOX", uid, "AI/Info");
       expect(s.fake.userMove("AI/Info", uid, OFFERS)).toBe(uid);
       const before = await storedRows(trx, s.mailboxId);
@@ -2759,7 +2760,7 @@ describe("syncMailbox: sync folders", () => {
     await withRollback(db, async (trx) => {
       const s = await folderSetup(trx);
       const { uid, rowId } = await movedFromFolder(trx, s, "junk", JUNK);
-      await markMoved(trx, rowId, "INBOX", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "INBOX", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       expect(s.fake.userMove(JUNK, uid, "INBOX")).toBe(uid);
       expect(s.fake.userMove("INBOX", uid, JUNK)).toBe(uid);
 
@@ -2776,7 +2777,7 @@ describe("syncMailbox: sync folders", () => {
     await withRollback(db, async (trx) => {
       const s = await folderSetup(trx);
       const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
-      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+      await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
       s.fake.userMove(OFFERS, uid, "AI/Info");
       s.fake.userMove("AI/Info", uid, OFFERS);
       const spy = spyFolderReads(s.fake);
@@ -2797,7 +2798,7 @@ describe("syncMailbox: sync folders", () => {
   async function copyOfMovedOffers(trx: Transaction<DB>, s: Setup) {
     const { uid, rowId } = await movedFromFolder(trx, s, "offers", OFFERS);
     const inFolder = s.fake.deliver("AI/Info", seed(1), ago(2));
-    await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - 3_600_000));
+    await markMoved(trx, rowId, "AI/Info", new Date(FOLDER_NOW.getTime() - HOUR_MS));
     await trx.updateTable("emails").set({ uid: inFolder }).where("id", "=", rowId).execute();
     const moved = await trx.selectFrom("emails").selectAll().where("id", "=", rowId).executeTakeFirstOrThrow();
     return { uid, rowId, moved };
@@ -2873,7 +2874,7 @@ describe("syncMailbox: log lines", () => {
   const FOLDER_NOW = new Date("2026-11-08T12:00:00Z");
   const MARKER_SUBJECT = "MARKER-SUBJECT canary-3d9f";
   const ago = (hours: number): { internalDate: Date } => ({
-    internalDate: new Date(FOLDER_NOW.getTime() - hours * 3_600_000),
+    internalDate: new Date(FOLDER_NOW.getTime() - hours * HOUR_MS),
   });
   const folderDeps = (trx: Db | Transaction<DB>, provider: MailProvider) =>
     deps(trx, provider, { now: () => FOLDER_NOW });

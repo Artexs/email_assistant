@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import { noApprovalHooks, noDelegationHooks } from "../../src/modules/actions";
@@ -16,12 +17,9 @@ import { createOrgWithMailbox, insertTriaged } from "./fixtures";
 // a fake model and the job deps with a clock that the test moves.
 
 export const NOW = new Date("2026-11-18T10:00:00Z");
-export const MINUTE = 60_000;
-export const HOUR = 60 * MINUTE;
-export const DAY = 24 * HOUR;
 
 // A time `minutes` after NOW (negative: before).
-export const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+export const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE_MS);
 
 export interface JobBox {
   ctx: TenantContext;
@@ -78,7 +76,7 @@ export interface MailOpts {
 
 // A triaged mail of category `needs_reply` (default) with the captured headers and a stored body.
 export async function addReplyMail(trx: Transaction<DB>, box: JobBox, opts: MailOpts = {}): Promise<string> {
-  const receivedAt = opts.receivedAt ?? new Date(NOW.getTime() - HOUR);
+  const receivedAt = opts.receivedAt ?? new Date(NOW.getTime() - HOUR_MS);
   const emailId = await insertTriaged(trx, box.ctx, box.mailboxId, {
     category: opts.category ?? "needs_reply",
     createdAt: receivedAt,

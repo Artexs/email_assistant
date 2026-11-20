@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -458,27 +459,31 @@ describe("mailbox:probe-move and mailbox:probe-send", () => {
     expect(`${result.stdout}${result.stderr}`).not.toContain(password);
   }, 30_000);
 
-  test("the report lines of a probe go to stdout, stderr stays empty", async () => {
-    const address = `u-${randomUUID()}@localhost`;
-    const env = { TEST_MAILBOX_ADDRESS: address };
-    const move = await run("mailbox-probe", ["move", ...args(address)], { stdin: "pw\n", env });
-    expect(move.code).toBe(0);
-    expect(move.stderr).toBe("");
-    expectPrefixed(move.stdout, "mailbox-probe-move", true);
+  test(
+    "the report lines of a probe go to stdout, stderr stays empty",
+    async () => {
+      const address = `u-${randomUUID()}@localhost`;
+      const env = { TEST_MAILBOX_ADDRESS: address };
+      const move = await run("mailbox-probe", ["move", ...args(address)], { stdin: "pw\n", env });
+      expect(move.code).toBe(0);
+      expect(move.stderr).toBe("");
+      expectPrefixed(move.stdout, "mailbox-probe-move", true);
 
-    // A closed SMTP port: the probe reports the failed send and stops before its long waits for the copy and the mail.
-    const send = await run(
-      "mailbox-probe",
-      ["send", ...args(address, ["--smtp-host", host, "--smtp-port", "1", "--to", address])],
-      {
-        stdin: "pw\n",
-        env,
-      }
-    );
-    expect(send.code).toBe(0);
-    expect(send.stderr).toBe("");
-    expectPrefixed(send.stdout, "mailbox-probe-send", true);
-  }, 60_000);
+      // A closed SMTP port: the probe reports the failed send and stops before its long waits for the copy and the mail.
+      const send = await run(
+        "mailbox-probe",
+        ["send", ...args(address, ["--smtp-host", host, "--smtp-port", "1", "--to", address])],
+        {
+          stdin: "pw\n",
+          env,
+        }
+      );
+      expect(send.code).toBe(0);
+      expect(send.stderr).toBe("");
+      expectPrefixed(send.stdout, "mailbox-probe-send", true);
+    },
+    MINUTE_MS
+  );
 });
 
 describe("mailbox:rescan", () => {
@@ -525,7 +530,7 @@ describe("mailbox:audit", () => {
         "--mailbox-id",
         mailboxId,
         "--since",
-        new Date(Date.now() - 3_600_000).toISOString(),
+        new Date(Date.now() - HOUR_MS).toISOString(),
       ]);
       expect(result.stderr).toBe("");
       expect(result.stdout).toContain("[mailbox-audit] inbox=0 stored=0 missing=0 duplicates=0 cross=0");
@@ -555,50 +560,56 @@ describe("mailbox:backfill", () => {
 });
 
 describe("mailbox:backfill cursor", () => {
-  test("a cursor that moves during the backfill: the retry text goes to stderr, stdout stays empty", async () => {
-    const { orgId, userId } = await createOrg(db);
-    try {
-      const { mailboxId, address, imap } = await connectGreenmail({ orgId });
-      await syncOnce(orgId, mailboxId, imap);
-      // One mail in the window that the regular sync has not stored: the backfill writes a chunk.
-      await seedMailbox({ db, secrets }, { orgId }, mailboxId, { count: 1, testAddress: address });
-      const folder = await db
-        .selectFrom("mailbox_folders")
-        .select("id")
-        .where("mailbox_id", "=", mailboxId)
-        .where("key", "=", "inbox")
-        .executeTakeFirstOrThrow();
+  test(
+    "a cursor that moves during the backfill: the retry text goes to stderr, stdout stays empty",
+    async () => {
+      const { orgId, userId } = await createOrg(db);
+      try {
+        const { mailboxId, address, imap } = await connectGreenmail({ orgId });
+        await syncOnce(orgId, mailboxId, imap);
+        // One mail in the window that the regular sync has not stored: the backfill writes a chunk.
+        await seedMailbox({ db, secrets }, { orgId }, mailboxId, { count: 1, testAddress: address });
+        const folder = await db
+          .selectFrom("mailbox_folders")
+          .select("id")
+          .where("mailbox_id", "=", mailboxId)
+          .where("key", "=", "inbox")
+          .executeTakeFirstOrThrow();
 
-      const poller = testDb();
-      const started: { running?: Promise<Result> } = {};
-      await db.transaction().execute(async (trx) => {
-        // Hold the folder lock: the backfill has read its cursor and waits for this lock before it writes the chunk.
-        await sql`select id from mailbox_folders where id = ${folder.id} for update`.execute(trx);
-        started.running = run("mailbox-backfill", ["--org-id", orgId, "--mailbox-id", mailboxId]);
-        // Poll on another pool: pg_stat_activity is a snapshot per transaction, and the main pool has one connection.
-        const deadline = Date.now() + 20_000;
-        while (true) {
-          const waiting = await sql<{ n: string }>`
+        const poller = testDb();
+        const started: { running?: Promise<Result> } = {};
+        await db.transaction().execute(async (trx) => {
+          // Hold the folder lock: the backfill has read its cursor and waits for this lock before it writes the chunk.
+          await sql`select id from mailbox_folders where id = ${folder.id} for update`.execute(trx);
+          started.running = run("mailbox-backfill", ["--org-id", orgId, "--mailbox-id", mailboxId]);
+          // Poll on another pool: pg_stat_activity is a snapshot per transaction, and the main pool has one connection.
+          const deadline = Date.now() + 20_000;
+          while (true) {
+            const waiting = await sql<{ n: string }>`
             select count(*)::text as n from pg_stat_activity
             where datname = current_database() and wait_event_type = 'Lock'`.execute(poller);
-          if (Number(waiting.rows[0]?.n ?? "0") > 0) break;
-          if (Date.now() > deadline) throw new Error("the backfill never waited for the folder lock");
-          await Bun.sleep(50);
-        }
-        await sql`update mailbox_folders set last_uid = coalesce(last_uid, 0) + 1 where id = ${folder.id}`.execute(trx);
-      });
-      await poller.destroy();
-      // The transaction has committed: the backfill gets the lock and sees the moved cursor.
-      const result = await (started.running ?? Promise.reject(new Error("the backfill did not start")));
-      expect(result.code).toBe(1);
-      expect(result.stdout).not.toContain("[mailbox-backfill]");
-      expect(result.stderr).toBe(
-        "[mailbox-backfill] the regular sync moved the cursor during the backfill; run the same command again (the dedup key stops duplicates)\n"
-      );
-    } finally {
-      await removeOrg(orgId, userId);
-    }
-  }, 60_000);
+            if (Number(waiting.rows[0]?.n ?? "0") > 0) break;
+            if (Date.now() > deadline) throw new Error("the backfill never waited for the folder lock");
+            await Bun.sleep(50);
+          }
+          await sql`update mailbox_folders set last_uid = coalesce(last_uid, 0) + 1 where id = ${folder.id}`.execute(
+            trx
+          );
+        });
+        await poller.destroy();
+        // The transaction has committed: the backfill gets the lock and sees the moved cursor.
+        const result = await (started.running ?? Promise.reject(new Error("the backfill did not start")));
+        expect(result.code).toBe(1);
+        expect(result.stdout).not.toContain("[mailbox-backfill]");
+        expect(result.stderr).toBe(
+          "[mailbox-backfill] the regular sync moved the cursor during the backfill; run the same command again (the dedup key stops duplicates)\n"
+        );
+      } finally {
+        await removeOrg(orgId, userId);
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 describe("mailbox:settings", () => {
@@ -610,46 +621,56 @@ describe("mailbox:settings", () => {
     });
   }
 
-  test("show, mode, sync-folder and expire-ready print to stdout; a missing mailbox fails on stderr", async () => {
-    const created = await box();
-    try {
-      const args = ["--org-id", created.orgId, "--mailbox-id", created.mailboxId];
+  test(
+    "show, mode, sync-folder and expire-ready print to stdout; a missing mailbox fails on stderr",
+    async () => {
+      const created = await box();
+      try {
+        const args = ["--org-id", created.orgId, "--mailbox-id", created.mailboxId];
 
-      const show = await run("mailbox-settings", ["show", ...args]);
-      expect(show.code).toBe(0);
-      expectOnlyStdout(show, "mailbox-settings", "mode: shadow");
-      expect(show.stdout).toContain("[mailbox-settings] sync folder inbox: on, role inbox");
+        const show = await run("mailbox-settings", ["show", ...args]);
+        expect(show.code).toBe(0);
+        expectOnlyStdout(show, "mailbox-settings", "mode: shadow");
+        expect(show.stdout).toContain("[mailbox-settings] sync folder inbox: on, role inbox");
 
-      // No MOVE and no UIDPLUS: `mode assist` warns.
-      await db
-        .updateTable("mailboxes")
-        .set({ capabilities: JSON.stringify({ move: false, uidplus: false }) })
-        .where("id", "=", created.mailboxId)
-        .execute();
-      const assist = await run("mailbox-settings", ["mode", ...args, "--mode", "assist"]);
-      expect(assist.code).toBe(0);
-      expectOnlyStdout(assist, "mailbox-settings", "mode: shadow -> assist");
-      expect(assist.stdout).toContain("[mailbox-settings] warning: moves not supported: moves stay log only");
+        // No MOVE and no UIDPLUS: `mode assist` warns.
+        await db
+          .updateTable("mailboxes")
+          .set({ capabilities: JSON.stringify({ move: false, uidplus: false }) })
+          .where("id", "=", created.mailboxId)
+          .execute();
+        const assist = await run("mailbox-settings", ["mode", ...args, "--mode", "assist"]);
+        expect(assist.code).toBe(0);
+        expectOnlyStdout(assist, "mailbox-settings", "mode: shadow -> assist");
+        expect(assist.stdout).toContain("[mailbox-settings] warning: moves not supported: moves stay log only");
 
-      const same = await run("mailbox-settings", ["mode", ...args, "--mode", "assist"]);
-      expect(same.code).toBe(0);
-      expectOnlyStdout(same, "mailbox-settings", "no change");
+        const same = await run("mailbox-settings", ["mode", ...args, "--mode", "assist"]);
+        expect(same.code).toBe(0);
+        expectOnlyStdout(same, "mailbox-settings", "no change");
 
-      const shadow = await run("mailbox-settings", ["mode", ...args, "--mode", "shadow"]);
-      expect(shadow.code).toBe(0);
-      expectOnlyStdout(shadow, "mailbox-settings", "expired 0 ready actions and sends");
+        const shadow = await run("mailbox-settings", ["mode", ...args, "--mode", "shadow"]);
+        expect(shadow.code).toBe(0);
+        expectOnlyStdout(shadow, "mailbox-settings", "expired 0 ready actions and sends");
 
-      const expire = await run("mailbox-settings", ["expire-ready", ...args]);
-      expect(expire.code).toBe(0);
-      expectOnlyStdout(expire, "mailbox-settings", "expired 0 ready actions");
-      expect(expire.stdout).toContain("[mailbox-settings] ready mailbox actions left: 0");
+        const expire = await run("mailbox-settings", ["expire-ready", ...args]);
+        expect(expire.code).toBe(0);
+        expectOnlyStdout(expire, "mailbox-settings", "expired 0 ready actions");
+        expect(expire.stdout).toContain("[mailbox-settings] ready mailbox actions left: 0");
 
-      const missing = await run("mailbox-settings", ["show", "--org-id", created.orgId, "--mailbox-id", randomUUID()]);
-      expect(missing.code).toBe(1);
-      expect(missing.stdout).toBe("");
-      expectPrefixed(missing.stderr, "mailbox-settings");
-    } finally {
-      await removeOrg(created.orgId, created.userId);
-    }
-  }, 60_000);
+        const missing = await run("mailbox-settings", [
+          "show",
+          "--org-id",
+          created.orgId,
+          "--mailbox-id",
+          randomUUID(),
+        ]);
+        expect(missing.code).toBe(1);
+        expect(missing.stdout).toBe("");
+        expectPrefixed(missing.stderr, "mailbox-settings");
+      } finally {
+        await removeOrg(created.orgId, created.userId);
+      }
+    },
+    MINUTE_MS
+  );
 });

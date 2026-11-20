@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -21,20 +22,7 @@ import { SoftError } from "../../src/platform/errors";
 
 import { insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import {
-  ago,
-  DAY,
-  depsOf,
-  HOUR,
-  newOrg,
-  NOW,
-  put,
-  rowOf,
-  rowsOf,
-  siblingMailbox,
-  stateOf,
-  type Org,
-} from "./mail-sent-fixtures";
+import { ago, depsOf, newOrg, NOW, put, rowOf, rowsOf, siblingMailbox, stateOf, type Org } from "./mail-sent-fixtures";
 
 const db = testDb();
 
@@ -65,11 +53,11 @@ describe("fetchSentTexts and syncSentFolder", () => {
       const org = await newOrg(trx);
       const applied = await insertDraftAndSend(trx, org.ctx, org.mailboxId, {
         sendStatus: "applied",
-        approved: { userId: org.userId, at: ago(2 * DAY) },
+        approved: { userId: org.userId, at: ago(2 * DAY_MS) },
       });
-      put(org, 1, ago(DAY), { text: "Offer by Friday", headers: { "Auto-Submitted": "no" } });
-      put(org, 2, ago(20 * DAY));
-      put(org, 4, ago(2 * DAY), { headers: { "X-EA-Action-Id": applied.draftId } });
+      put(org, 1, ago(DAY_MS), { text: "Offer by Friday", headers: { "Auto-Submitted": "no" } });
+      put(org, 2, ago(20 * DAY_MS));
+      put(org, 4, ago(2 * DAY_MS), { headers: { "X-EA-Action-Id": applied.draftId } });
 
       const result = await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(result).toMatchObject({ status: "done", mode: "initial", stored: 3, system: 1 });
@@ -91,7 +79,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("2: the capture markers list_id and precedence are stored", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(DAY), { headers: { "List-Id": "<team.x.test>", Precedence: "bulk" } });
+      put(org, 1, ago(DAY_MS), { headers: { "List-Id": "<team.x.test>", Precedence: "bulk" } });
       const result = await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(result.texts.stored).toBe(1);
       const row = await rowOf(trx, org, "Subject 1");
@@ -112,11 +100,11 @@ describe("fetchSentTexts and syncSentFolder", () => {
           from: "me@corp.test",
           to: ["to@x.test"],
           subject: "Big",
-          date: ago(DAY),
+          date: ago(DAY_MS),
           text: "x".repeat(5000),
           headers: { "Auto-Submitted": "auto-generated" },
         },
-        { internalDate: ago(DAY), size: 5000 }
+        { internalDate: ago(DAY_MS), size: 5000 }
       );
       const result = await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(result.texts).toEqual({ stored: 1, gone: 0, expired: 0 });
@@ -128,9 +116,9 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("4: the limit takes the oldest pending rows first; the next call takes the rest", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(3 * DAY));
-      put(org, 2, ago(2 * DAY));
-      put(org, 3, ago(DAY));
+      put(org, 1, ago(3 * DAY_MS));
+      put(org, 2, ago(2 * DAY_MS));
+      put(org, 3, ago(DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       const input = await inputOf(trx, org, { limit: 2 });
 
@@ -152,8 +140,8 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("5: a pending row whose mail is gone from the folder becomes gone", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const first = put(org, 1, ago(2 * DAY));
-      put(org, 2, ago(DAY));
+      const first = put(org, 1, ago(2 * DAY_MS));
+      put(org, 2, ago(DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       org.provider.remove("Sent", first);
       const result = await fetchSentTexts(depsOf(trx, org), org.ctx, org.mailboxId, await inputOf(trx, org));
@@ -167,11 +155,11 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("6: a row that waited past the text window turns headers_only without a fetch", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(13 * DAY));
+      put(org, 1, ago(13 * DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect((await rowOf(trx, org, "Subject 1")).content).toBe("pending");
 
-      const later = new Date(NOW.getTime() + 2 * DAY);
+      const later = new Date(NOW.getTime() + 2 * DAY_MS);
       const calls = org.provider.calls.length;
       const result = await fetchSentTexts(
         depsOf(trx, org, { now: () => later }),
@@ -189,7 +177,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("7: a text over the limit is cut to 100000 characters", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(DAY), { text: "y".repeat(150_000) });
+      put(org, 1, ago(DAY_MS), { text: "y".repeat(150_000) });
       await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
       const row = await rowOf(trx, org, "Subject 1");
       expect(row.body_text).toHaveLength(SENT_BODY_TEXT_LIMIT);
@@ -200,9 +188,9 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("8: an error of fetchContent ends the call and goes up; earlier rows stay stored; the next call finishes", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(3 * DAY));
-      put(org, 2, ago(2 * DAY));
-      put(org, 3, ago(DAY));
+      put(org, 1, ago(3 * DAY_MS));
+      put(org, 2, ago(2 * DAY_MS));
+      put(org, 3, ago(DAY_MS));
       const plain: SentFolderReader = org.provider;
       let count = 0;
       const failing: SentFolderReader = {
@@ -265,7 +253,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
       {
         status: "cursor_moved",
         stop: async (trx, org) => {
-          put(org, 9, ago(HOUR), { headers: { "X-EA-Action-Id": randomUUID() } });
+          put(org, 9, ago(HOUR_MS), { headers: { "X-EA-Action-Id": randomUUID() } });
           return {
             sentOriginOf: async (ctx, mailboxId) => {
               await writeSentSwitch(trx, ctx, mailboxId, { enabled: false });
@@ -278,7 +266,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
     for (const { status, stop } of cases) {
       await withRollback(db, async (trx) => {
         const org = await newOrg(trx);
-        put(org, 1, ago(DAY));
+        put(org, 1, ago(DAY_MS));
         await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
         expect((await rowOf(trx, org, "Subject 1")).content).toBe("pending");
 
@@ -302,10 +290,10 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("10: the folder Sent gets only the five read calls", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(2 * DAY));
+      put(org, 1, ago(2 * DAY_MS));
       const calls = org.provider.folderCalls.length;
       await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
-      put(org, 2, ago(DAY));
+      put(org, 2, ago(DAY_MS));
       await syncSentFolder(depsOf(trx, org), org.ctx, org.mailboxId);
       const methods = new Set(
         org.provider.folderCalls
@@ -322,12 +310,12 @@ describe("fetchSentTexts and syncSentFolder", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       // Two pending rows of "Sent", read by the header step only.
-      put(org, 1, ago(3 * DAY), { text: "old one" });
-      put(org, 2, ago(2 * DAY), { text: "old two" });
+      put(org, 1, ago(3 * DAY_MS), { text: "old one" });
+      put(org, 2, ago(2 * DAY_MS), { text: "old two" });
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       // "Wysłane" holds two other mails with the same UIDs.
-      put(org, 3, ago(3 * DAY), { text: "new three" }, "Wysłane");
-      put(org, 4, ago(2 * DAY), { text: "new four" }, "Wysłane");
+      put(org, 3, ago(3 * DAY_MS), { text: "new three" }, "Wysłane");
+      put(org, 4, ago(2 * DAY_MS), { text: "new four" }, "Wysłane");
       await setFolderMapEntry(trx, org.ctx, org.mailboxId, "sent", "Wysłane");
 
       const calls = org.provider.calls.length;
@@ -345,7 +333,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
         ["Subject 4", "Wysłane", "stored", "new four"],
       ]);
 
-      const later = new Date(NOW.getTime() + 15 * DAY);
+      const later = new Date(NOW.getTime() + 15 * DAY_MS);
       const expired = await syncSentFolder(depsOf(trx, org, { now: () => later }), org.ctx, org.mailboxId);
       expect(expired.texts.expired).toBe(2);
       expect((await bySubject()).map((row) => row.content)).toEqual([
@@ -360,7 +348,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("12: a short retention expires a pending row that is older than the retention", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(5 * DAY));
+      put(org, 1, ago(5 * DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect((await rowOf(trx, org, "Subject 1")).content).toBe("pending");
       await trx.updateTable("organizations").set({ data_retention_days: 3 }).where("id", "=", org.ctx.orgId).execute();
@@ -377,8 +365,8 @@ describe("fetchSentTexts and syncSentFolder", () => {
     await withRollback(db, async (trx) => {
       const mine = await newOrg(trx);
       const other = await newOrg(trx);
-      put(mine, 1, ago(DAY));
-      put(other, 1, ago(DAY));
+      put(mine, 1, ago(DAY_MS));
+      put(other, 1, ago(DAY_MS));
       await syncSentHeaders(depsOf(trx, mine), mine.ctx, mine.mailboxId);
       await syncSentHeaders(depsOf(trx, other), other.ctx, other.mailboxId);
 
@@ -398,9 +386,9 @@ describe("fetchSentTexts and syncSentFolder", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       // The highest UID holds the oldest mail; the lowest UID holds the newest.
-      put(org, 1, ago(DAY));
-      put(org, 2, ago(2 * DAY));
-      put(org, 3, ago(3 * DAY));
+      put(org, 1, ago(DAY_MS));
+      put(org, 2, ago(2 * DAY_MS));
+      put(org, 3, ago(3 * DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       // The partial index on pending rows returns the date order by itself; a table scan returns the order of the inserts (the UID order).
       // Without the ORDER BY of the query, this transaction would read the UID order.
@@ -422,15 +410,15 @@ describe("fetchSentTexts and syncSentFolder", () => {
     await withRollback(db, async (trx) => {
       const first = await newOrg(trx);
       const second = await siblingMailbox(trx, first);
-      put(first, 1, ago(13 * DAY));
-      put(first, 2, ago(12 * DAY));
-      put(second, 3, ago(13 * DAY));
+      put(first, 1, ago(13 * DAY_MS));
+      put(first, 2, ago(12 * DAY_MS));
+      put(second, 3, ago(13 * DAY_MS));
       await syncSentHeaders(depsOf(trx, first), first.ctx, first.mailboxId);
       await syncSentHeaders(depsOf(trx, second), second.ctx, second.mailboxId);
 
-      const before = new Date(NOW.getTime() - DAY);
+      const before = new Date(NOW.getTime() - DAY_MS);
       expect(
-        await expireSentTexts(trx, first.ctx, first.mailboxId, { before: new Date(NOW.getTime() - 11 * DAY) })
+        await expireSentTexts(trx, first.ctx, first.mailboxId, { before: new Date(NOW.getTime() - 11 * DAY_MS) })
       ).toBe(2);
       expect(await expireSentTexts(trx, first.ctx, first.mailboxId, { before })).toBe(0);
       expect((await rowsOf(trx, first)).map((row) => row.content)).toEqual(["headers_only", "headers_only"]);
@@ -441,7 +429,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
   test("17: a pass that rethrows a fetchContent error writes no console line with the path, uid or subject", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      const uid = put(org, 1, ago(DAY));
+      const uid = put(org, 1, ago(DAY_MS));
       const plain: SentFolderReader = org.provider;
       const failing: SentFolderReader = {
         folderStatus: (path) => plain.folderStatus(path),
@@ -520,7 +508,7 @@ describe("fetchSentTexts and syncSentFolder", () => {
     test(`14: a row that changed (${move.name}, mail ${mailGone ? "gone" : "present"}) during the fetch gets no text and does not count`, async () => {
       await withRollback(db, async (trx) => {
         const org = await newOrg(trx);
-        const uid = put(org, 1, ago(DAY), { text: "Offer by Friday" });
+        const uid = put(org, 1, ago(DAY_MS), { text: "Offer by Friday" });
         await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
         if (mailGone) org.provider.remove("Sent", uid);
         const plain: SentFolderReader = org.provider;

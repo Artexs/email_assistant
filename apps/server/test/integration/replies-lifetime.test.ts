@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -46,9 +47,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 const NOW = new Date("2026-11-20T10:00:00Z");
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -162,8 +160,8 @@ describe("step 1: the time limit per kind", () => {
   test("1a: a reply never notified is kept at 6 d 23 h and expires as timeout at 7 d 1 min", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const kept = await reply(trx, w, 6 * DAY + 23 * HOUR);
-      const old = await reply(trx, w, 7 * DAY + MINUTE, { to: "ewa@x.test", from: "ewa@x.test" });
+      const kept = await reply(trx, w, 6 * DAY_MS + 23 * HOUR_MS);
+      const old = await reply(trx, w, 7 * DAY_MS + MINUTE_MS, { to: "ewa@x.test", from: "ewa@x.test" });
 
       await expiryJob(trx).run();
 
@@ -176,7 +174,7 @@ describe("step 1: the time limit per kind", () => {
   test("1b: a reply that an owner was told about 49 h ago keeps its 7 days (the 48 h rule skips it)", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, 3 * DAY, { notifiedAt: ago(49 * HOUR), requestSent: true });
+      const p = await reply(trx, w, 3 * DAY_MS, { notifiedAt: ago(49 * HOUR_MS), requestSent: true });
 
       await expiryJob(trx).run();
 
@@ -187,7 +185,7 @@ describe("step 1: the time limit per kind", () => {
   test("1c: a reply with a notice that nobody saw is not closed as not_seen, at the job or at a resume", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, 3 * DAY, { notifiedAt: ago(60 * HOUR) });
+      const p = await reply(trx, w, 3 * DAY_MS, { notifiedAt: ago(60 * HOUR_MS) });
 
       await expiryJob(trx).run();
       const closed = await expireUnseenApprovals(trx, w.ctx, {
@@ -208,8 +206,8 @@ describe("step 1: the time limit per kind", () => {
       const p = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
         delegationId: randomUUID(),
         draftProviderResult: { folder: "Drafts", uid: 7 },
-        createdAt: ago(DAY),
-        notifiedAt: ago(49 * HOUR),
+        createdAt: ago(DAY_MS),
+        notifiedAt: ago(49 * HOUR_MS),
         requestSent: true,
       });
 
@@ -222,13 +220,13 @@ describe("step 1: the time limit per kind", () => {
   test("1e: a held (approved) reply keeps the 48 h rule from the tap", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const kept = await reply(trx, w, 3 * DAY, {
+      const kept = await reply(trx, w, 3 * DAY_MS, {
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(47 * HOUR) },
+        approved: { userId: w.userId, at: ago(47 * HOUR_MS) },
       });
-      const old = await reply(trx, w, 3 * DAY, {
+      const old = await reply(trx, w, 3 * DAY_MS, {
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(49 * HOUR) },
+        approved: { userId: w.userId, at: ago(49 * HOUR_MS) },
         to: "ewa@x.test",
         from: "ewa@x.test",
       });
@@ -243,8 +241,8 @@ describe("step 1: the time limit per kind", () => {
   test("1f: a tap on a reply at 7 d 1 min expires it; at 6 days it approves", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const old = await reply(trx, w, 7 * DAY + MINUTE);
-      const fresh = await reply(trx, w, 6 * DAY, { to: "ewa@x.test", from: "ewa@x.test" });
+      const old = await reply(trx, w, 7 * DAY_MS + MINUTE_MS);
+      const fresh = await reply(trx, w, 6 * DAY_MS, { to: "ewa@x.test", from: "ewa@x.test" });
 
       expect(await tap(trx, w, old.sendId)).toEqual({ kind: "expired", byThisTap: true });
       expect(await row(trx, old.sendId)).toMatchObject({ status: "expired", status_reason: "timeout" });
@@ -255,12 +253,12 @@ describe("step 1: the time limit per kind", () => {
   test("1g: a tap on a reply notified 49 h ago still approves (a delegation send does not)", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, 3 * DAY, { notifiedAt: ago(49 * HOUR) });
+      const p = await reply(trx, w, 3 * DAY_MS, { notifiedAt: ago(49 * HOUR_MS) });
       const other = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
         delegationId: randomUUID(),
         draftProviderResult: { folder: "Drafts", uid: 7 },
-        createdAt: ago(3 * DAY),
-        notifiedAt: ago(49 * HOUR),
+        createdAt: ago(3 * DAY_MS),
+        notifiedAt: ago(49 * HOUR_MS),
       });
 
       expect(await tap(trx, w, p.sendId)).toEqual({ kind: "approved" });
@@ -271,38 +269,38 @@ describe("step 1: the time limit per kind", () => {
   test("1i: the approval list gives a held (approved) reply expiresAt = approved_at + 48 h", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const held = await reply(trx, w, 3 * DAY, {
+      const held = await reply(trx, w, 3 * DAY_MS, {
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(5 * HOUR) },
+        approved: { userId: w.userId, at: ago(5 * HOUR_MS) },
       });
 
       const list = await listApprovals({ db: trx as unknown as Db, sendScope: { kind: "all" } }, w.ctx, NOW);
 
       const item = list.items.find((entry) => entry.id === held.sendId);
       expect(item).toMatchObject({ state: "held" });
-      expect(item?.expiresAt).toBe(new Date(ago(5 * HOUR).getTime() + 48 * HOUR).toISOString());
+      expect(item?.expiresAt).toBe(new Date(ago(5 * HOUR_MS).getTime() + 2 * DAY_MS).toISOString());
     });
   });
 
   test("1h: the approval list gives a reply expiresAt = created_at + 7 d, notified or not", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const plain = await reply(trx, w, 2 * DAY);
-      const told = await reply(trx, w, 3 * DAY, { to: "ewa@x.test", from: "ewa@x.test", notifiedAt: ago(HOUR) });
+      const plain = await reply(trx, w, 2 * DAY_MS);
+      const told = await reply(trx, w, 3 * DAY_MS, { to: "ewa@x.test", from: "ewa@x.test", notifiedAt: ago(HOUR_MS) });
       const other = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
         delegationId: randomUUID(),
         draftProviderResult: { folder: "Drafts", uid: 7 },
-        createdAt: ago(3 * DAY),
-        notifiedAt: ago(HOUR),
+        createdAt: ago(3 * DAY_MS),
+        notifiedAt: ago(HOUR_MS),
       });
 
       const list = await listApprovals({ db: trx as unknown as Db, sendScope: { kind: "all" } }, w.ctx, NOW);
 
       const expires = (id: string) => list.items.find((item) => item.id === id)?.expiresAt;
-      expect(expires(plain.sendId)).toBe(new Date(ago(2 * DAY).getTime() + 7 * DAY).toISOString());
-      expect(expires(told.sendId)).toBe(new Date(ago(3 * DAY).getTime() + 7 * DAY).toISOString());
+      expect(expires(plain.sendId)).toBe(new Date(ago(2 * DAY_MS).getTime() + 7 * DAY_MS).toISOString());
+      expect(expires(told.sendId)).toBe(new Date(ago(3 * DAY_MS).getTime() + 7 * DAY_MS).toISOString());
       // The old rule for another kind: 48 h after the owner was told.
-      expect(expires(other.sendId)).toBe(new Date(ago(HOUR).getTime() + 48 * HOUR).toISOString());
+      expect(expires(other.sendId)).toBe(new Date(ago(HOUR_MS).getTime() + 2 * DAY_MS).toISOString());
     });
   });
 });
@@ -311,7 +309,7 @@ describe("step 2: gaps and the flag", () => {
   test("2a: a reply with a gap is not approvable; the version without it is", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { replyBody: "Tak [[godzina]]" });
+      const p = await reply(trx, w, HOUR_MS, { replyBody: "Tak [[godzina]]" });
 
       expect(await tap(trx, w, p.sendId)).toEqual({ kind: "has_gaps" });
       expect(await row(trx, p.sendId)).toMatchObject({ status: "awaiting_approval" });
@@ -340,8 +338,8 @@ describe("step 2: gaps and the flag", () => {
   test("2b: the edited text is the one that counts: a gap in body_text refuses, a clean body_text over a gap body approves", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const gapInEdit = await reply(trx, w, HOUR, { replyBody: "Tak." });
-      const cleanEdit = await reply(trx, w, HOUR, {
+      const gapInEdit = await reply(trx, w, HOUR_MS, { replyBody: "Tak." });
+      const cleanEdit = await reply(trx, w, HOUR_MS, {
         replyBody: "Tak [[godzina]]",
         to: "ewa@x.test",
         from: "ewa@x.test",
@@ -365,7 +363,7 @@ describe("step 2: gaps and the flag", () => {
   test("2b2: a reply whose draft text cannot be read is not approved (the gap check cannot run)", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR);
+      const p = await reply(trx, w, HOUR_MS);
       await trx
         .updateTable("actions")
         .set({ payload: JSON.stringify({ kind: "reply" }) })
@@ -380,7 +378,7 @@ describe("step 2: gaps and the flag", () => {
   test("2c: flag off: approve answers feature_off and changes nothing", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, { flag: false });
-      const p = await reply(trx, w, HOUR);
+      const p = await reply(trx, w, HOUR_MS);
 
       expect(await tap(trx, w, p.sendId)).toEqual({ kind: "feature_off" });
       expect(await row(trx, p.sendId)).toMatchObject({ status: "awaiting_approval", approved_at: null });
@@ -391,17 +389,17 @@ describe("step 2: gaps and the flag", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, { flag: false });
       await addCredentials(trx, w);
-      const heldReply = await reply(trx, w, HOUR, {
+      const heldReply = await reply(trx, w, HOUR_MS, {
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(MINUTE) },
+        approved: { userId: w.userId, at: ago(MINUTE_MS) },
       });
       await putDraftCopy(trx, w, heldReply, NOW);
       const delegation = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
         draftStatus: "applied",
         draftProviderResult: { folder: "Drafts", uid: 9 },
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(MINUTE) },
-        createdAt: ago(HOUR),
+        approved: { userId: w.userId, at: ago(MINUTE_MS) },
+        createdAt: ago(HOUR_MS),
       });
       const job = () =>
         createCommitterJob({
@@ -433,14 +431,14 @@ describe("step 2: gaps and the flag", () => {
   test("2e: a send of an old claim that the flag change finds in `applying` is not stopped (recovery sends nothing)", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, { flag: false });
-      const p = await reply(trx, w, HOUR, {
+      const p = await reply(trx, w, HOUR_MS, {
         sendStatus: "applying",
-        approved: { userId: w.userId, at: ago(MINUTE) },
+        approved: { userId: w.userId, at: ago(MINUTE_MS) },
       });
       const claimed = await claimActions(trx, w.ctx, w.mailboxId, {
         now: NOW,
         limit: 20,
-        staleBefore: ago(10 * MINUTE),
+        staleBefore: ago(10 * MINUTE_MS),
         filter: { mailbox: { kind: "all" }, send: { kind: "all" }, replies: "off" },
       });
       expect(claimed.map((entry) => entry.id)).toContain(p.sendId);
@@ -450,17 +448,17 @@ describe("step 2: gaps and the flag", () => {
   test("2f: the committer refuses a gap at the claim: failed / has_gaps, no SMTP", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, {
+      const p = await reply(trx, w, HOUR_MS, {
         draftStatus: "applied",
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(MINUTE) },
+        approved: { userId: w.userId, at: ago(MINUTE_MS) },
         replyBody: "Tak [[godzina]]",
       });
       const claimed = (
         await claimActions(trx, w.ctx, w.mailboxId, {
           now: NOW,
           limit: 20,
-          staleBefore: ago(10 * MINUTE),
+          staleBefore: ago(10 * MINUTE_MS),
           filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
         })
       ).find((entry) => entry.id === p.sendId) as ClaimedAction;
@@ -492,10 +490,10 @@ describe("step 2: gaps and the flag", () => {
   test("2f2: the gap in an edited text (body_text) is refused at the claim too", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, {
+      const p = await reply(trx, w, HOUR_MS, {
         draftStatus: "applied",
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(MINUTE) },
+        approved: { userId: w.userId, at: ago(MINUTE_MS) },
         replyBody: "Tak.",
       });
       await trx
@@ -507,7 +505,7 @@ describe("step 2: gaps and the flag", () => {
         await claimActions(trx, w.ctx, w.mailboxId, {
           now: NOW,
           limit: 20,
-          staleBefore: ago(10 * MINUTE),
+          staleBefore: ago(10 * MINUTE_MS),
           filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
         })
       ).find((entry) => entry.id === p.sendId) as ClaimedAction;
@@ -547,7 +545,7 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3a: replaceApproval with a new cc makes version 2 with the cc; the old send is superseded", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { draftStatus: "applied" });
+      const p = await reply(trx, w, HOUR_MS, { draftStatus: "applied" });
 
       const result = await replaceApproval(trx, w.ctx, {
         sendId: p.sendId,
@@ -575,7 +573,7 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3b: replaceApproval refuses an invalid recipient set: nothing is written", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { draftStatus: "applied" });
+      const p = await reply(trx, w, HOUR_MS, { draftStatus: "applied" });
 
       await expect(
         replaceApproval(trx, w.ctx, {
@@ -593,7 +591,7 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3c: replaceApproval with the reply switch off answers drafts_off; a closed send names its state", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { draftStatus: "applied" });
+      const p = await reply(trx, w, HOUR_MS, { draftStatus: "applied" });
       const input = {
         sendId: p.sendId,
         userId: w.userId,
@@ -621,9 +619,9 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3d: closeSend on an applying send answers busy, whatever claimed says", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, {
+      const p = await reply(trx, w, HOUR_MS, {
         sendStatus: "applying",
-        approved: { userId: w.userId, at: ago(MINUTE) },
+        approved: { userId: w.userId, at: ago(MINUTE_MS) },
       });
       for (const claimed of [false, true]) {
         const result = await closeSend(trx, w.ctx, {
@@ -643,15 +641,15 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3e: closeSend on a locked approved row: busy when not claimed, closed when claimed; a stale lock closes", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const locked = await reply(trx, w, HOUR, {
+      const locked = await reply(trx, w, HOUR_MS, {
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(5 * MINUTE) },
-        lockedAt: ago(MINUTE),
+        approved: { userId: w.userId, at: ago(5 * MINUTE_MS) },
+        lockedAt: ago(MINUTE_MS),
       });
-      const stale = await reply(trx, w, HOUR, {
+      const stale = await reply(trx, w, HOUR_MS, {
         sendStatus: "approved",
-        approved: { userId: w.userId, at: ago(30 * MINUTE) },
-        lockedAt: ago(20 * MINUTE),
+        approved: { userId: w.userId, at: ago(30 * MINUTE_MS) },
+        lockedAt: ago(20 * MINUTE_MS),
         to: "ewa@x.test",
         from: "ewa@x.test",
       });
@@ -673,7 +671,7 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3f: closeSend of a sent-and-closed row answers not_open with its state and writes nothing", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { sendStatus: "rejected" });
+      const p = await reply(trx, w, HOUR_MS, { sendStatus: "rejected" });
 
       const result = await closeSend(trx, w.ctx, {
         sendId: p.sendId,
@@ -692,7 +690,7 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3g: closeSend answered, notify false: expired / answered, draft closed, a card edit per sent card, one audit row, notice mark set", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { draftStatus: "applied" });
+      const p = await reply(trx, w, HOUR_MS, { draftStatus: "applied" });
       const cards = [501, 502];
       const owner2 = await trx
         .insertInto("users")
@@ -713,9 +711,9 @@ describe("step 3: replaceApproval and closeSend", () => {
             text: `CARD-${messageId}`,
             buttons: JSON.stringify([]),
             status: "sent",
-            next_attempt_at: ago(HOUR),
-            created_at: ago(HOUR),
-            sent_at: ago(HOUR),
+            next_attempt_at: ago(HOUR_MS),
+            created_at: ago(HOUR_MS),
+            sent_at: ago(HOUR_MS),
             external_message_id: messageId,
           })
           .execute();
@@ -756,7 +754,7 @@ describe("step 3: replaceApproval and closeSend", () => {
   test("3h: closeSend with notify true leaves the notice mark null", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const p = await reply(trx, w, HOUR, { draftStatus: "ready" });
+      const p = await reply(trx, w, HOUR_MS, { draftStatus: "ready" });
 
       await closeSend(trx, w.ctx, {
         sendId: p.sendId,
@@ -785,7 +783,7 @@ describe("step 3: replaceApproval and closeSend", () => {
       const pair = await insertLoopActionPair(trx, w.ctx, loopId, {
         draftStatus: "ready",
         sendStatus: "awaiting_approval",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
 
       const result = await closeSend(trx, w.ctx, {

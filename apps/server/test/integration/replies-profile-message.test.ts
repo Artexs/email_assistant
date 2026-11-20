@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -34,7 +35,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-20T10:00:00Z");
-const CREATED = new Date(NOW.getTime() - 60 * 60_000);
+const CREATED = new Date(NOW.getTime() - HOUR_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 const STYLE = "Pozdrawiam, Jan";
 
@@ -80,7 +81,7 @@ async function world(trx: Transaction<DB>, opts: { styleText?: string | null } =
     draftStatus: "applied",
     draftProviderResult: { uid: 1, folder: "Drafts" },
     sendStatus: "approved",
-    approved: { userId: box.userId, at: new Date(NOW.getTime() - 60_000) },
+    approved: { userId: box.userId, at: new Date(NOW.getTime() - MINUTE_MS) },
     to: "anna@example.com",
     language: "pl",
     from: "boss@x.test",

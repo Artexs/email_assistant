@@ -1,4 +1,4 @@
-import { REPLY_CONSENT_SINCE, textTables } from "@ea/core";
+import { REPLY_CONSENT_SINCE, textTables, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -18,9 +18,7 @@ import {
   CLEAN_ANSWER,
   draftedReply,
   fakeLlm,
-  HOUR,
   jobDeps,
-  MINUTE,
   NOW,
   pairRows,
   requestsOf,
@@ -69,7 +67,7 @@ describe("Redraft", () => {
       });
 
       const llm = fakeLlm(() => CLEAN_ANSWER);
-      r.clock.now = new Date(r.clock.now.getTime() + MINUTE);
+      r.clock.now = new Date(r.clock.now.getTime() + MINUTE_MS);
       await runJob(jobDeps(trx, llm.llm, r.clock), r.box);
       expect(llm.requests[0]?.prompt).toContain("say yes for Tuesday");
       const second = await openSend(trx, r);
@@ -321,12 +319,12 @@ describe("Draft reply", () => {
     // A mail of the category `urgent` that a reply answers.
     const emailId = await addReplyMail(trx, r.box, {
       category: "urgent",
-      receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+      receivedAt: new Date(NOW.getTime() - 10 * MINUTE_MS),
       from: "anna@client.test",
     });
     await trx
       .updateTable("triage_results")
-      .set({ created_at: new Date(NOW.getTime() - 5 * MINUTE) })
+      .set({ created_at: new Date(NOW.getTime() - 5 * MINUTE_MS) })
       .where("email_id", "=", emailId)
       .execute();
     return { r, emailId };
@@ -432,7 +430,7 @@ describe("the line of text and the result: what they never do", () => {
       await handleCallback(r.deps, r.owner, `rd:${sendId}`);
       expect(await handleReplyText(r.deps, r.owner, "x", 1)).toBeUndefined();
       // The chat was linked again after the card went out: message ids belong to one chat, so the old card means nothing.
-      const relinked: LinkedChat = { ...r.owner, linkedAt: new Date(r.clock.now.getTime() + HOUR) };
+      const relinked: LinkedChat = { ...r.owner, linkedAt: new Date(r.clock.now.getTime() + HOUR_MS) };
 
       expect(await handleReplyText(r.deps, relinked, "say yes", cardId)).toBeUndefined();
       expect((await requestsOf(trx, r.box)).filter((row) => row.trigger === "redraft")).toEqual([]);
@@ -445,11 +443,11 @@ describe("the line of text and the result: what they never do", () => {
       const r = await rig(trx);
       const web = await addReplyMail(trx, r.box, {
         category: "info",
-        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE_MS),
       });
       const chat = await addReplyMail(trx, r.box, {
         category: "info",
-        receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 10 * MINUTE_MS),
       });
       const ask = { db: trx, now: () => r.clock.now };
       await requestReply(ask, r.box.ctx, { userId: r.box.userId, via: "web", emailId: web });
@@ -567,21 +565,21 @@ describe("who gets the answer, and which mails get the button", () => {
     await withRollback(db, async (trx) => {
       const r = await rig(trx);
       const second = await addMember(trx, r.box.ctx.orgId, "owner");
-      await linkChat(trx, r.box.ctx, second, randomChatId(), new Date(NOW.getTime() - HOUR));
+      await linkChat(trx, r.box.ctx, second, randomChatId(), new Date(NOW.getTime() - HOUR_MS));
       await recordAudit(trx, r.box.ctx, {
         event: auditEvents.webTelegramConsent,
         actor: second,
         data: { via: "web", version: REPLY_CONSENT_SINCE },
-        at: new Date(NOW.getTime() - 2 * HOUR),
+        at: new Date(NOW.getTime() - 2 * HOUR_MS),
       });
       const ask = { db: trx, now: () => r.clock.now };
       const first = await addReplyMail(trx, r.box, {
         category: "info",
-        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE_MS),
       });
       const other = await addReplyMail(trx, r.box, {
         category: "info",
-        receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 10 * MINUTE_MS),
       });
       await requestReply(ask, r.box.ctx, { userId: r.box.userId, via: "telegram", emailId: first });
       await requestReply(ask, r.box.ctx, { userId: second, via: "telegram", emailId: other });
@@ -604,16 +602,16 @@ describe("who gets the answer, and which mails get the button", () => {
   test("24. draftableMails: only a needs_reply or urgent mail with a clean sender and no open draft; an info mail and an answered mail are left out", async () => {
     await withRollback(db, async (trx) => {
       const r = await rig(trx);
-      const needs = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 40 * MINUTE) });
+      const needs = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 40 * MINUTE_MS) });
       const urgent = await addReplyMail(trx, r.box, {
         category: "urgent",
-        receivedAt: new Date(NOW.getTime() - 30 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 30 * MINUTE_MS),
       });
       const info = await addReplyMail(trx, r.box, {
         category: "info",
-        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE_MS),
       });
-      const answered = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 10 * MINUTE) });
+      const answered = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 10 * MINUTE_MS) });
       await trx
         .insertInto("email_flags")
         .values({
@@ -649,12 +647,12 @@ describe("the question after Redraft: a resend", () => {
           locale: "en",
           // The first send was taken and never marked: the claim is stale and the stored text is sent as it is.
           status: "sending",
-          locked_at: new Date(NOW.getTime() - HOUR),
+          locked_at: new Date(NOW.getTime() - HOUR_MS),
           text: "✍️ Write one line: what should the reply say?",
           buttons: JSON.stringify([]),
           attempts: 0,
           next_attempt_at: NOW,
-          created_at: new Date(NOW.getTime() - HOUR),
+          created_at: new Date(NOW.getTime() - HOUR_MS),
         })
         .execute();
 
@@ -690,10 +688,10 @@ describe("the Draft reply button on the digest", () => {
   test("21. an owner with the consent gets the button on a needs_reply row with no open draft; an info row, a member and an unconsented owner get none", async () => {
     await withRollback(db, async (trx) => {
       const r = await rig(trx);
-      const needs = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE) });
+      const needs = await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE_MS) });
       const info = await addReplyMail(trx, r.box, {
         category: "info",
-        receivedAt: new Date(NOW.getTime() - 20 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 20 * MINUTE_MS),
       });
       const buttons = (message: { buttons: { data: string }[][] }) =>
         message.buttons.flat().map((button) => button.data);
@@ -719,7 +717,7 @@ describe("the Draft reply button on the digest", () => {
     });
     await withRollback(db, async (trx) => {
       const r = await rig(trx, { consented: false });
-      await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE) });
+      await addReplyMail(trx, r.box, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE_MS) });
       const message = await digestNowMessage(commandDeps(trx, r), r.owner);
       expect(message.buttons.flat().some((button) => button.data.startsWith("dr:"))).toBe(false);
     });

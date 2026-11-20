@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -16,10 +17,10 @@ afterAll(async () => {
 
 // Milliseconds in `now` check that the locked_at token survives the round trip.
 const now = new Date("2026-11-05T12:00:00.123Z");
-const staleBefore = new Date(now.getTime() - 5 * 60_000);
+const staleBefore = new Date(now.getTime() - 5 * MINUTE_MS);
 
 function minutesFromNow(minutes: number): Date {
-  return new Date(now.getTime() + minutes * 60_000);
+  return new Date(now.getTime() + minutes * MINUTE_MS);
 }
 
 type SyntheticOnly = false | { testMail: TestMailRule };

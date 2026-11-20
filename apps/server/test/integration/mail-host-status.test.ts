@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -18,7 +19,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-14T12:00:00Z");
-const BLOCKED_AT = new Date(NOW.getTime() - 3_600_000);
+const BLOCKED_AT = new Date(NOW.getTime() - HOUR_MS);
 const PUBLIC = "93.184.216.34";
 
 // The preload (`bunfig.toml`) allows local hosts for GreenMail. Each test sets a refusing policy; this puts the preload policy back.
@@ -158,7 +159,7 @@ describe("recheckBlockedHosts", () => {
       const after = await rowOf(trx, box.mailboxId);
       lines = [];
 
-      const again = await recheckBlockedHosts({ db: trx, now: () => new Date(NOW.getTime() + 60_000) });
+      const again = await recheckBlockedHosts({ db: trx, now: () => new Date(NOW.getTime() + MINUTE_MS) });
 
       expect(await auditOf(trx, box.mailboxId)).toHaveLength(1);
       expect(await rowOf(trx, box.mailboxId)).toEqual(after);
@@ -241,7 +242,7 @@ describe("recheckBlockedHosts", () => {
   test("7: a blocked mailbox of another organization is not changed by a pass of the first", async () => {
     await withRollback(db, async (trx) => {
       const a = await blockedBox(trx);
-      const b = await blockedBox(trx, 60_000);
+      const b = await blockedBox(trx, MINUTE_MS);
       answer((host) => (host === b.imap ? "10.0.0.7" : PUBLIC));
 
       await run(trx);
@@ -275,7 +276,7 @@ describe("recheckBlockedHosts", () => {
   test("9: a failure on one mailbox does not stop the others", async () => {
     await withRollback(db, async (trx) => {
       const first = await blockedBox(trx);
-      const second = await blockedBox(trx, 60_000);
+      const second = await blockedBox(trx, MINUTE_MS);
       let atFirst = false;
       const lookup: LookupAll = async (host) => {
         if (host === first.imap) atFirst = true;
@@ -324,7 +325,7 @@ describe("recheckBlockedHosts against a newer block", () => {
   test("11: a block that begins between the read and the write keeps its status and its episode", async () => {
     await withRollback(db, async (trx) => {
       const box = await blockedBox(trx);
-      const newer = new Date(NOW.getTime() - 60_000);
+      const newer = new Date(NOW.getTime() - MINUTE_MS);
       // The lookup runs after the read of the row. Here a new block of the same mailbox begins: same status, newer episode.
       configureMailHosts({
         allowLocal: false,
@@ -388,7 +389,7 @@ describe("markHostBlocked", () => {
       const { orgId, mailboxId } = await createOrgWithMailbox(trx);
 
       expect(await markHostBlocked(trx, { orgId }, mailboxId, { now: NOW, source: "sync" })).toBe(true);
-      const later = new Date(NOW.getTime() + 60_000);
+      const later = new Date(NOW.getTime() + MINUTE_MS);
       expect(await markHostBlocked(trx, { orgId }, mailboxId, { now: later, source: "committer" })).toBe(false);
 
       const row = await rowOf(trx, mailboxId);

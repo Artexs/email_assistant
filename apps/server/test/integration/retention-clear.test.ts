@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -29,7 +30,6 @@ afterAll(async () => {
 });
 
 const now = new Date("2026-11-12T03:00:00Z");
-const DAY_MS = 24 * 3_600_000;
 const ago = (ms: number): Date => new Date(now.getTime() - ms);
 const before30 = ago(30 * DAY_MS);
 const before90 = ago(90 * DAY_MS);
@@ -790,7 +790,7 @@ describe("deleteOldLinkTokens", () => {
           usedOld: await add(ago(-DAY_MS), ago(2 * DAY_MS)),
           expiredOld: await add(ago(2 * DAY_MS), null),
           future: await add(ago(-DAY_MS), null),
-          usedRecent: await add(ago(-DAY_MS), ago(3_600_000)),
+          usedRecent: await add(ago(-DAY_MS), ago(HOUR_MS)),
         };
       }
       const rowsA = await seed(a);
