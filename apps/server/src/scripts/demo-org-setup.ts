@@ -96,6 +96,20 @@ export async function setupDemoOrg(db: Db, options: SetupDemoOrgOptions): Promis
   return { orgId: imported.orgId, ownerEmail: DEMO_OWNER_EMAIL };
 }
 
+/** The file that the shot spec and the demo recording read to sign in as the demo owner (`apps/web/e2e/.demo-owner.json`). */
+export interface DemoOwnerFile {
+  orgId: string;
+  owner: { email: string; password: string };
+}
+
+/** Writes the owner's sign-in for the e2e specs. The password is the test value of this command, not a secret. */
+export function writeDemoOwnerFile(path: string, result: SetupDemoOrgResult, password: string): DemoOwnerFile {
+  const file: DemoOwnerFile = { orgId: result.orgId, owner: { email: result.ownerEmail, password } };
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(file, null, 2)}\n`);
+  return file;
+}
+
 const out = createCliOutput("demo-org-setup");
 
 // `--seed <file>` and `--out <file>` (where the owner's sign-in is written for the shot spec). Anything else is a refusal.
@@ -128,11 +142,7 @@ async function main(): Promise<number> {
   try {
     await assertAppRole(db);
     const result = await setupDemoOrg(db, { seedFile: args.seed, ownerPassword: DEMO_OWNER_PASSWORD });
-    mkdirSync(dirname(args.out), { recursive: true });
-    writeFileSync(
-      args.out,
-      `${JSON.stringify({ orgId: result.orgId, owner: { email: result.ownerEmail, password: DEMO_OWNER_PASSWORD } }, null, 2)}\n`
-    );
+    writeDemoOwnerFile(args.out, result, DEMO_OWNER_PASSWORD);
     out.print(`demo org ${result.orgId} ready`);
     return 0;
   } finally {
