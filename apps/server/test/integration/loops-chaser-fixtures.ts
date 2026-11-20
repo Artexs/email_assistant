@@ -12,7 +12,7 @@ import { insertLoopActionPair } from "./loops-fixtures";
 // Rows for the tests of the one chaser. The clock is Friday 2026-11-20 07:31 in Warsaw (06:31 UTC, CET);
 // the organization time zone is Europe/Warsaw. A loop is "due yesterday" at Thursday 17:00 Warsaw.
 
-export const DAY_MS = 86_400_000;
+export { DAY_MS } from "@ea/core";
 export const NOW = new Date("2026-11-20T06:31:00Z");
 export const BEFORE_GATE = new Date("2026-11-20T06:29:00Z");
 export const DUE_YESTERDAY = new Date("2026-11-19T16:00:00Z");

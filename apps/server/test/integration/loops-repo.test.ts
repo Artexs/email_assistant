@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -35,7 +36,6 @@ afterAll(async () => {
 type Trx = Transaction<DB>;
 
 const AT = new Date("2026-11-20T10:00:00Z");
-const DAY_MS = 24 * 3_600_000;
 const SUBJECT = "Confidential reorganisation of the audit team";
 
 interface Org {

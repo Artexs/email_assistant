@@ -9,7 +9,7 @@ import { createHarness, GIB_BYTES, indexOfCall, type Harness } from "./release-h
 // Tests of `rollback.sh` are in rollback.test.ts.
 
 let h: Harness;
-const COMPOSE = "docker compose -f deploy/compose.yaml --env-file .env";
+const COMPOSE = "docker compose -f deploy/compose.yaml --env-file deploy/db.env";
 const dockerCalls = (): string[] => h.calls().filter((line) => line.includes(" docker "));
 const stateV010 = {
   current: "v0.1.0",
@@ -80,6 +80,44 @@ describe("release.sh refusals (exit 2, no change)", () => {
   });
 });
 
+describe("release.sh env split", () => {
+  const state = { current: "v0.9.0", current_commit: "commit-v0.9.0", previous: "", previous_commit: "" };
+
+  test.each(["old", "mixed"] as const)(
+    "state %s exits 2 first: no git, backup or docker call, no state write",
+    (envState) => {
+      h.setEnvState(envState);
+      const result = h.run("release.sh", ["v0.9.1"]);
+      expect(result.code).toBe(2);
+      expect(result.output).toContain(`release refused: run deploy/env-split.sh first (state ${envState})`);
+      expect(result.output).not.toContain("sentinel");
+      expect(h.calls()).toEqual([]);
+      expect(h.state()).toBeNull();
+    }
+  );
+
+  test.each([
+    ["the server env holds a key", "1\nserver env bad: APP_PASSWORD\n"],
+    ["the server env cannot be read", "2\nserver env check failed: could not read the server env\n"],
+  ])("when %s, the release fails at verify and the pending mark stays", (_name, switchText) => {
+    h.writeState(state);
+    h.setSwitch("env-check", switchText);
+    const result = h.run("release.sh", ["v0.9.1"]);
+    expect(result.code).toBe(1);
+    expect(result.output).toContain("release failed at verify; roll back with deploy/rollback.sh");
+    expect(result.output).not.toContain("release ok");
+    expect(h.state()).toEqual({ ...state, pending: "v0.9.1" });
+  });
+
+  test("a split host with a clean server env releases", () => {
+    h.writeState(state);
+    const result = h.run("release.sh", ["v0.9.1"]);
+    expect(result.code).toBe(0);
+    expect(result.stdout.trim().split("\n").at(-1)).toBe("release ok v0.9.1 previous v0.9.0");
+    expect(h.calls().filter((line) => line.includes("check-server-env.sh"))).toHaveLength(1);
+  });
+});
+
 describe("release.sh steps", () => {
   test("7. the calls run in order, the state moves current to previous, the last line says ok", () => {
     h.writeState({ current: "v0.1.0", current_commit: "commit-v0.1.0", previous: "", previous_commit: "" });
@@ -96,6 +134,7 @@ describe("release.sh steps", () => {
       `${COMPOSE} run --rm -T migrate`,
       `${COMPOSE} up -d --no-build --wait`,
       `${COMPOSE} exec -T server printenv EA_RELEASE`,
+      "deploy/check-server-env.sh",
     ].map((text) => indexOfCall(calls, text));
     expect(order.every((index) => index >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);

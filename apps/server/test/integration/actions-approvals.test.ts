@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -32,9 +33,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-07T12:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 
 function ago(ms: number): Date {
   return new Date(NOW.getTime() - ms);
@@ -69,8 +67,8 @@ type PairOpts = Parameters<typeof insertDraftAndSend>[3];
 // A draft and a send; the default draft result lets `closeDraftOfSend` build a reverse row.
 function pair(trx: Transaction<DB>, s: Awaited<ReturnType<typeof setup>>, opts: PairOpts = {}) {
   return insertDraftAndSend(trx, s.ctx, s.mailboxId, {
-    createdAt: ago(HOUR),
-    notifiedAt: ago(30 * MINUTE),
+    createdAt: ago(HOUR_MS),
+    notifiedAt: ago(30 * MINUTE_MS),
     draftProviderResult: { folder: "Drafts", uid: 7 },
     ...opts,
   });
@@ -127,7 +125,7 @@ describe("approve", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const delegationId = randomUUID();
-      const p = await pair(trx, s, { notifiedAt: ago(49 * HOUR), delegationId });
+      const p = await pair(trx, s, { notifiedAt: ago(49 * HOUR_MS), delegationId });
       const { hooks, calls } = recordingHooks();
 
       expect(await approve(depsOf(trx, hooks), s.ctx, p.sendId, input(s.userId))).toEqual({
@@ -164,16 +162,16 @@ describe("approve", () => {
       const s = await setup(trx);
       const b = await setup(trx);
       const { hooks } = recordingHooks();
-      const approvedBy = { userId: s.userId, at: ago(HOUR) };
+      const approvedBy = { userId: s.userId, at: ago(HOUR_MS) };
       const run = (id: string, ctx = s.ctx) => approve(depsOf(trx, hooks), ctx, id, input(s.userId));
 
       const applied = await pair(trx, s, { sendStatus: "applied", approved: approvedBy });
       expect(await run(applied.sendId)).toEqual({ kind: "sent" });
-      const applying = await pair(trx, s, { sendStatus: "applying", approved: approvedBy, lockedAt: ago(MINUTE) });
+      const applying = await pair(trx, s, { sendStatus: "applying", approved: approvedBy, lockedAt: ago(MINUTE_MS) });
       expect(await run(applying.sendId)).toEqual({ kind: "sending" });
-      const fresh = await pair(trx, s, { sendStatus: "approved", approved: approvedBy, lockedAt: ago(MINUTE) });
+      const fresh = await pair(trx, s, { sendStatus: "approved", approved: approvedBy, lockedAt: ago(MINUTE_MS) });
       expect(await run(fresh.sendId)).toEqual({ kind: "sending" });
-      const stale = await pair(trx, s, { sendStatus: "approved", approved: approvedBy, lockedAt: ago(11 * MINUTE) });
+      const stale = await pair(trx, s, { sendStatus: "approved", approved: approvedBy, lockedAt: ago(11 * MINUTE_MS) });
       expect(await run(stale.sendId)).toEqual({ kind: "already_approved", at: approvedBy.at, byUserId: s.userId });
       const rejected = await pair(trx, s, { sendStatus: "rejected" });
       expect(await run(rejected.sendId)).toEqual({ kind: "rejected" });
@@ -256,15 +254,15 @@ describe("reject", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const { hooks } = recordingHooks();
-      const approved = { userId: s.userId, at: ago(HOUR) };
+      const approved = { userId: s.userId, at: ago(HOUR_MS) };
       const run = (id: string) => reject(depsOf(trx, hooks), s.ctx, id, input(s.userId));
 
       const free = await pair(trx, s, { sendStatus: "approved", approved });
       expect(await run(free.sendId)).toEqual({ kind: "rejected" });
-      const held = await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(MINUTE) });
+      const held = await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(MINUTE_MS) });
       expect(await run(held.sendId)).toEqual({ kind: "already", status: "approved" });
       expect((await row(trx, held.sendId)).status).toBe("approved");
-      const stale = await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(11 * MINUTE) });
+      const stale = await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(11 * MINUTE_MS) });
       expect(await run(stale.sendId)).toEqual({ kind: "rejected" });
 
       const done = await pair(trx, s, { sendStatus: "applied", approved });
@@ -351,7 +349,7 @@ describe("approveSet and rejectSet", () => {
       const s = await setup(trx);
       const { hooks } = recordingHooks();
       const setId = randomUUID();
-      const old = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID(), notifiedAt: ago(49 * HOUR) });
+      const old = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID(), notifiedAt: ago(49 * HOUR_MS) });
       const fresh = await pair(trx, s, { setId, reminder: 1, delegationId: randomUUID() });
 
       expect(await approveSet(depsOf(trx, hooks), s.ctx, setId, input(s.userId))).toMatchObject({
@@ -369,7 +367,7 @@ describe("sendAgain", () => {
     const p = await pair(trx, s, {
       delegationId: randomUUID(),
       sendStatus: "failed",
-      approved: { userId: s.userId, at: ago(2 * HOUR) },
+      approved: { userId: s.userId, at: ago(2 * HOUR_MS) },
       ...opts,
     });
     await trx.updateTable("actions").set({ status_reason: reason }).where("id", "=", p.sendId).execute();
@@ -445,7 +443,7 @@ describe("sendAgain", () => {
       const clarification = await pair(trx, s, {
         kind: "clarification",
         sendStatus: "failed",
-        approved: { userId: s.userId, at: ago(2 * HOUR) },
+        approved: { userId: s.userId, at: ago(2 * HOUR_MS) },
       });
       await trx
         .updateTable("actions")
@@ -512,7 +510,7 @@ describe("notice queries", () => {
       const listed = await pair(trx, s, { notifiedAt: null });
       await pair(trx, s, { notifiedAt: null, draftStatus: "ready" });
       await pair(trx, s, { notifiedAt: null, setId: randomUUID(), reminder: 1, delegationId: randomUUID() });
-      await pair(trx, s, { notifiedAt: ago(MINUTE) });
+      await pair(trx, s, { notifiedAt: ago(MINUTE_MS) });
       const paused = await setup(trx);
       await pair(trx, paused, { notifiedAt: null });
       await trx.updateTable("mailboxes").set({ status: "paused" }).where("id", "=", paused.mailboxId).execute();
@@ -549,7 +547,7 @@ describe("notice queries", () => {
   test("listSendResultsToNotify and markResultNotified", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const approved = { userId: s.userId, at: ago(2 * HOUR) };
+      const approved = { userId: s.userId, at: ago(2 * HOUR_MS) };
       const failed = await pair(trx, s, { sendStatus: "failed" });
       const expired = await pair(trx, s, { sendStatus: "expired" });
       const rejected = await pair(trx, s, { sendStatus: "rejected" });
@@ -564,24 +562,28 @@ describe("notice queries", () => {
         trx.updateTable("actions").set(patch).where("id", "=", id).execute();
       await set(appended.sendId, {
         provider_result: JSON.stringify({ sent_copy: "appended" }),
-        applied_at: ago(MINUTE),
+        applied_at: ago(MINUTE_MS),
       });
       await set(pendingFresh.sendId, {
         provider_result: JSON.stringify({ sent_copy: "pending" }),
-        applied_at: ago(MINUTE),
+        applied_at: ago(MINUTE_MS),
       });
       await set(pendingOld.sendId, {
         provider_result: JSON.stringify({ sent_copy: "pending" }),
-        applied_at: ago(11 * MINUTE),
+        applied_at: ago(11 * MINUTE_MS),
       });
-      await set(notified.sendId, { result_notified_at: ago(MINUTE) });
-      await set(noResult.sendId, { provider_result: null, applied_at: ago(MINUTE) });
-      await set(recovered.sendId, { provider_result: JSON.stringify({ recovered: true }), applied_at: ago(MINUTE) });
+      await set(notified.sendId, { result_notified_at: ago(MINUTE_MS) });
+      await set(noResult.sendId, { provider_result: null, applied_at: ago(MINUTE_MS) });
+      await set(recovered.sendId, { provider_result: JSON.stringify({ recovered: true }), applied_at: ago(MINUTE_MS) });
       for (const [index, id] of [failed, expired, rejected, appended, noResult, recovered, pendingOld].entries()) {
-        await set(id.sendId, { updated_at: ago((20 - index) * MINUTE) });
+        await set(id.sendId, { updated_at: ago((20 - index) * MINUTE_MS) });
       }
 
-      const rows = await listSendResultsToNotify(trx, s.ctx, { limit: 50, now: NOW, pendingCopyMaxAgeMs: 10 * MINUTE });
+      const rows = await listSendResultsToNotify(trx, s.ctx, {
+        limit: 50,
+        now: NOW,
+        pendingCopyMaxAgeMs: 10 * MINUTE_MS,
+      });
       expect(rows.map((r) => r.id)).toEqual([
         failed.sendId,
         expired.sendId,
@@ -601,33 +603,33 @@ describe("notice queries", () => {
 });
 
 describe("expiry queries", () => {
-  const STALE_BEFORE = ago(10 * MINUTE);
+  const STALE_BEFORE = ago(10 * MINUTE_MS);
   const opts = { now: NOW, limit: 50, staleBefore: STALE_BEFORE };
 
   test("listExpiredApprovals gives the first reason that applies", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const approved = (hours: number) => ({ userId: s.userId, at: ago(hours * HOUR) });
-      const timeout = await pair(trx, s, { notifiedAt: ago(49 * HOUR), requestSent: true });
-      const both = await pair(trx, s, { notifiedAt: ago(49 * HOUR), draftStatus: "failed", requestSent: true });
+      const approved = (hours: number) => ({ userId: s.userId, at: ago(hours * HOUR_MS) });
+      const timeout = await pair(trx, s, { notifiedAt: ago(49 * HOUR_MS), requestSent: true });
+      const both = await pair(trx, s, { notifiedAt: ago(49 * HOUR_MS), draftStatus: "failed", requestSent: true });
       // The request of this one never reached an owner: it is not a timeout.
-      const unseen = await pair(trx, s, { notifiedAt: ago(49 * HOUR) });
+      const unseen = await pair(trx, s, { notifiedAt: ago(49 * HOUR_MS) });
       const missing = await pair(trx, s, { draftStatus: "failed" });
       const undone = await pair(trx, s, { draftStatus: "undone" });
-      const unnotified = await pair(trx, s, { notifiedAt: null, createdAt: ago(8 * DAY) });
-      const recent = await pair(trx, s, { notifiedAt: null, createdAt: ago(DAY) });
-      const fresh = await pair(trx, s, { notifiedAt: ago(47 * HOUR) });
+      const unnotified = await pair(trx, s, { notifiedAt: null, createdAt: ago(8 * DAY_MS) });
+      const recent = await pair(trx, s, { notifiedAt: null, createdAt: ago(DAY_MS) });
+      const fresh = await pair(trx, s, { notifiedAt: ago(47 * HOUR_MS) });
       const held = await pair(trx, s, { sendStatus: "approved", approved: approved(49) });
       const heldStale = await pair(trx, s, {
         sendStatus: "approved",
         approved: approved(49),
-        lockedAt: ago(11 * MINUTE),
+        lockedAt: ago(11 * MINUTE_MS),
       });
       const young = await pair(trx, s, { sendStatus: "approved", approved: approved(47) });
       const inFlight = await pair(trx, s, {
         sendStatus: "approved",
         approved: approved(49),
-        lockedAt: ago(MINUTE),
+        lockedAt: ago(MINUTE_MS),
       });
 
       const found = await listExpiredApprovals(trx, s.ctx, s.mailboxId, opts);
@@ -651,17 +653,17 @@ describe("expiry queries", () => {
   test("countApprovals", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const approved = { userId: s.userId, at: ago(HOUR) };
-      await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(11 * MINUTE) });
-      await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(MINUTE) });
+      const approved = { userId: s.userId, at: ago(HOUR_MS) };
+      await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(11 * MINUTE_MS) });
+      await pair(trx, s, { sendStatus: "approved", approved, lockedAt: ago(MINUTE_MS) });
       await pair(trx, s, { sendStatus: "approved", approved });
-      await pair(trx, s, { notifiedAt: ago(2 * HOUR) });
-      await pair(trx, s, { notifiedAt: ago(5 * HOUR) });
+      await pair(trx, s, { notifiedAt: ago(2 * HOUR_MS) });
+      await pair(trx, s, { notifiedAt: ago(5 * HOUR_MS) });
       await pair(trx, s, { notifiedAt: null });
 
       expect(await countApprovals(trx, s.ctx, { send: { kind: "all" } })).toEqual({
         waiting: 3,
-        oldestNotifiedAt: ago(5 * HOUR),
+        oldestNotifiedAt: ago(5 * HOUR_MS),
         approvedHeld: 0,
         approvedSending: 3,
       });
@@ -684,12 +686,12 @@ describe("tenant isolation", () => {
       const b = await setup(trx);
       const { hooks } = recordingHooks();
       const setId = randomUUID();
-      const old = await pair(trx, a, { notifiedAt: ago(49 * HOUR) });
+      const old = await pair(trx, a, { notifiedAt: ago(49 * HOUR_MS) });
       const set = await pair(trx, a, { setId, reminder: 1, delegationId: randomUUID(), notifiedAt: null });
       const failed = await pair(trx, a, { sendStatus: "failed" });
       const held = await pair(trx, a, {
         sendStatus: "approved",
-        approved: { userId: a.userId, at: ago(49 * HOUR) },
+        approved: { userId: a.userId, at: ago(49 * HOUR_MS) },
       });
       await trx.updateTable("actions").set({ status_reason: "smtp_error" }).where("id", "=", failed.sendId).execute();
 
@@ -708,11 +710,11 @@ describe("tenant isolation", () => {
       const results = await listSendResultsToNotify(trx, b.ctx, {
         limit: 10,
         now: NOW,
-        pendingCopyMaxAgeMs: 10 * MINUTE,
+        pendingCopyMaxAgeMs: 10 * MINUTE_MS,
       });
       expect(results).toEqual([]);
       expect(await markResultNotified(trx, b.ctx, failed.sendId, NOW)).toBe(false);
-      const opts = { now: NOW, limit: 50, staleBefore: ago(10 * MINUTE) };
+      const opts = { now: NOW, limit: 50, staleBefore: ago(10 * MINUTE_MS) };
       expect(await listExpiredApprovals(trx, b.ctx, a.mailboxId, opts)).toEqual([]);
       expect(await countApprovals(trx, b.ctx, { send: { kind: "all" } })).toEqual({
         waiting: 0,

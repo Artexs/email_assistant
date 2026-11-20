@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { encodeCallback } from "@ea/core";
+import { encodeCallback, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { createCommitterJob, noDelegationHooks } from "../../src/modules/actions";
@@ -30,10 +30,8 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 const T0 = new Date("2026-11-07T12:00:00Z");
-const RECEIVED = new Date(T0.getTime() - HOUR);
+const RECEIVED = new Date(T0.getTime() - HOUR_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 const run = randomUUID();
@@ -64,7 +62,7 @@ describe("actions logs", () => {
           secretKind: "password",
           keyVersion: secret.keyVersion,
         });
-        await linkChat(trx, ctx, userId, randomChatId(), new Date(T0.getTime() - HOUR));
+        await linkChat(trx, ctx, userId, randomChatId(), new Date(T0.getTime() - HOUR_MS));
         const fake: FakeMailProvider = createFakeMailProvider();
 
         // A synthetic mail: delivered to the fake INBOX unless `inFake` is false.
@@ -117,7 +115,7 @@ describe("actions logs", () => {
         for (let attempt = 0; attempt < 3; attempt += 1) {
           fake.failOn("setFlags", new HardError(MARKERS.error), 1);
           await committer.run();
-          clock = new Date(clock.getTime() + 6 * MINUTE);
+          clock = new Date(clock.getTime() + 6 * MINUTE_MS);
         }
         const states = await trx.selectFrom("actions").select(["id", "status", "status_reason"]).execute();
         const stateOf = (id: string) => states.find((row) => row.id === id);
@@ -137,7 +135,7 @@ describe("actions logs", () => {
           .where("id", "=", applied.emailId)
           .executeTakeFirstOrThrow();
         expect(movedRow.folder).toBe("AI/Info");
-        expect(await fake.searchSinceIn("AI/Info", new Date(RECEIVED.getTime() - HOUR))).toHaveLength(1);
+        expect(await fake.searchSinceIn("AI/Info", new Date(RECEIVED.getTime() - HOUR_MS))).toHaveLength(1);
 
         // The Undo tap on the mail with applied changes.
         const link: LinkedChat = {
@@ -145,7 +143,7 @@ describe("actions logs", () => {
           userId,
           role: "owner",
           chatId: 1,
-          linkedAt: new Date(T0.getTime() - HOUR),
+          linkedAt: new Date(T0.getTime() - HOUR_MS),
           locale: "en",
         };
         const tap = await handleCallback(
@@ -181,16 +179,16 @@ describe("actions logs", () => {
         await createReturnedJob({ db: trx, now: () => clock }).run();
 
         // The failed-notice detector.
-        await markSynced(trx, ctx, mailboxId, new Date(clock.getTime() - 5 * MINUTE));
+        await markSynced(trx, ctx, mailboxId, new Date(clock.getTime() - 5 * MINUTE_MS));
         await trx
           .updateTable("mailboxes")
-          .set({ status_changed_at: new Date(T0.getTime() - HOUR) })
+          .set({ status_changed_at: new Date(T0.getTime() - HOUR_MS) })
           .where("id", "=", mailboxId)
           .execute();
         await detectNotices({
           db: trx,
           now: () => clock,
-          startedAt: new Date(T0.getTime() - HOUR),
+          startedAt: new Date(T0.getTime() - HOUR_MS),
           testMail: NO_TEST_SENDERS,
         });
         const outbox = await trx

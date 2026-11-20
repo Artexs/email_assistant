@@ -8,7 +8,7 @@ import { createHarness, indexOfCall, type Harness } from "./release-harness";
 // F114 stage 05, tests 12–14 and 16: `deploy/rollback.sh` in a temp layout with recording stubs (see release-harness.ts).
 
 let h: Harness;
-const COMPOSE = "docker compose -f deploy/compose.yaml --env-file .env";
+const COMPOSE = "docker compose -f deploy/compose.yaml --env-file deploy/db.env";
 const stateV010 = {
   current: "v0.1.0",
   current_commit: "commit-v0.1.0",
@@ -22,7 +22,7 @@ beforeEach(() => {
 afterEach(() => h.cleanup());
 
 describe("rollback.sh", () => {
-  test("11. db.env present and the target has no deploy/compose-lib.sh: exit 2, no docker call, state unchanged; without db.env it runs", () => {
+  test("11. db.env present and the target has no deploy/compose-lib.sh: exit 2, no docker call, state unchanged", () => {
     h.writeState({
       ...stateV010,
       current: "v0.1.1",
@@ -46,18 +46,31 @@ describe("rollback.sh", () => {
     expect(h.run("rollback.sh").code).toBe(0);
   });
 
-  test("11b. without db.env the same target (no helper) rolls back", () => {
-    h.writeState({
+  test("a host that is not split exits 2 and changes nothing; a split host rolls back and runs no env check", () => {
+    const state = {
       ...stateV010,
       current: "v0.1.1",
       current_commit: "commit-v0.1.1",
       previous: "v0.1.0",
       previous_commit: "commit-v0.1.0",
-    });
-    h.setSwitch("no-compose-lib");
+    };
+    h.writeState(state);
+    const before = readFileSync(join(h.root, "deploy", "release-state", "state"), "utf8");
+    for (const envState of ["old", "mixed"] as const) {
+      h.setEnvState(envState);
+      const refused = h.run("rollback.sh");
+      expect(refused.code, envState).toBe(2);
+      expect(refused.output).toContain(`rollback refused: run deploy/env-split.sh first (state ${envState})`);
+      expect(refused.output).not.toContain("sentinel");
+      expect(h.calls(), envState).toEqual([]);
+      expect(readFileSync(join(h.root, "deploy", "release-state", "state"), "utf8")).toBe(before);
+    }
+
+    h.setEnvState("split");
     const result = h.run("rollback.sh");
     expect(result.code).toBe(0);
     expect(result.stdout.trim().split("\n").at(-1)).toBe("rollback ok v0.1.0");
+    expect(h.calls().some((line) => line.includes("check-server-env.sh"))).toBe(false);
   });
 
   test("12. after a failed release the target is current: retag, checkout, up --no-build, pending cleared", () => {

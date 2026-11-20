@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -50,7 +51,7 @@ async function weeklyRow(trx: Transaction<DB>, orgId: string, baseUrl: string | 
   await detectNotices({
     db: trx,
     now: () => MONDAY_0900,
-    startedAt: new Date(MONDAY_0900.getTime() - 24 * 3_600_000),
+    startedAt: new Date(MONDAY_0900.getTime() - DAY_MS),
     testMail: NO_TEST_SENDERS,
     ...(baseUrl === undefined ? {} : { webBaseUrl: baseUrl }),
   });

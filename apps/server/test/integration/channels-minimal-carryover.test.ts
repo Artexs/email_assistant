@@ -2,7 +2,7 @@
 // `queueNotice` at both levels. Every test runs in a transaction that is rolled back.
 import { randomUUID } from "node:crypto";
 
-import { noticeRenderers } from "@ea/core";
+import { noticeRenderers, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -54,7 +54,6 @@ afterEach(() => {
 
 // 11:00 in Europe/Warsaw (UTC+1): outside the default quiet hours.
 const T = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
 const BASE = "https://ea.example.ts.net";
 const CANARY = "CANARY-SUBJECT-5e17";
 
@@ -76,7 +75,7 @@ async function world(trx: Transaction<DB>, member: Level): Promise<World> {
   const ctx = { orgId: created.orgId };
   await insertDefaultSettings(trx, ctx, created.mailboxId);
   const chatId = randomChatId();
-  await linkChat(trx, ctx, created.userId, chatId, new Date(T.getTime() - 30 * 24 * HOUR));
+  await linkChat(trx, ctx, created.userId, chatId, new Date(T.getTime() - 30 * DAY_MS));
   await setOrgFeature(trx, ctx, { flag: "telegram_minimal", enabled: true, actor: "cli", now: T });
   await trx
     .updateTable("memberships")
@@ -92,7 +91,7 @@ const linkOf = (w: World, locale: "en" | "pl" = "en"): LinkedChat => ({
   userId: w.userId,
   role: "owner",
   chatId: w.chatId,
-  linkedAt: new Date(T.getTime() - 30 * 24 * HOUR),
+  linkedAt: new Date(T.getTime() - 30 * DAY_MS),
   locale,
 });
 
@@ -225,7 +224,7 @@ describe("the edit of a card through the sender at the minimal level", () => {
         .set({ status: "approved", approved_by: w.userId, approved_at: T })
         .where("id", "=", sendId)
         .execute();
-      const later = new Date(T.getTime() + 60_000);
+      const later = new Date(T.getTime() + MINUTE_MS);
       await queueCardEdits(trx, w.ctx, { sendId, outcome: "approved_held", heldBy: "paused", at: later });
       await trx
         .updateTable("memberships")
@@ -253,7 +252,7 @@ describe("the edit of a card through the sender at the minimal level", () => {
         .set({ status: "approved", approved_by: w.userId, approved_at: T })
         .where("id", "=", sendId)
         .execute();
-      const later = new Date(T.getTime() + 60_000);
+      const later = new Date(T.getTime() + MINUTE_MS);
       await queueCardEdits(trx, w.ctx, { sendId, outcome: "approved", at: later });
       await createOutboxSender({ db: trx, channel, now: () => later, webBaseUrl: BASE }).run();
       const link = `${BASE}/approvals?id=${sendId}`;
@@ -266,7 +265,7 @@ describe("the edit of a card through the sender at the minimal level", () => {
       const w = await world(trx, "minimal");
       const { sendId } = await approvalCard(trx, w);
       await createOutboxSender({ db: trx, channel: createFakeChannel(), now: () => T, webBaseUrl: BASE }).run();
-      await queueCardEdits(trx, w.ctx, { sendId, outcome: "approved", at: new Date(T.getTime() + 60_000) });
+      await queueCardEdits(trx, w.ctx, { sendId, outcome: "approved", at: new Date(T.getTime() + MINUTE_MS) });
       const row = await trx
         .selectFrom("outbox")
         .select("view")

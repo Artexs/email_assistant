@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -101,20 +102,28 @@ async function race(conn: Db): Promise<void> {
 }
 
 describe("B1 two picks of one mail at once with different delegates", () => {
-  test(`${LOOPS} loops, app role: one delegation, one pair, the other call answers exists`, async () => {
-    await race(db);
-  }, 60_000);
+  test(
+    `${LOOPS} loops, app role: one delegation, one pair, the other call answers exists`,
+    async () => {
+      await race(db);
+    },
+    MINUTE_MS
+  );
 
-  test(`${LOOPS} loops, table-owner role: one delegation, one pair, the other call answers exists`, async () => {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs this test");
-    const owner = createDb(url);
-    try {
-      await race(owner);
-    } finally {
-      await owner.destroy();
-    }
-  }, 60_000);
+  test(
+    `${LOOPS} loops, table-owner role: one delegation, one pair, the other call answers exists`,
+    async () => {
+      const url = process.env.MIGRATOR_DATABASE_URL;
+      if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs this test");
+      const owner = createDb(url);
+      try {
+        await race(owner);
+      } finally {
+        await owner.destroy();
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 describe("the key conflict", () => {
