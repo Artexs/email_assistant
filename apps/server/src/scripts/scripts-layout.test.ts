@@ -14,15 +14,12 @@ const toolFiles = new Set(
     .filter(([bun, file]) => bun === "bun" && file?.startsWith(SCRIPTS) && file.endsWith(".ts"))
     .map(([, file]) => (file as string).slice(SCRIPTS.length))
 );
-// A dev tool of the one-time time-spelling ticket: its stages run it by path and its last stage deletes it.
-// It has no `package.json` name. Delete this entry with the two files.
-const TEMPORARY = new Set(["time-rewrite-check.ts", "time-rewrite-check-values.ts"]);
 const argsFileOf = (file: string) => file.replace(/\.ts$/, "-args.ts");
 const isTest = (file: string) => /\.test(-helper)?\.ts$/.test(file);
 
 describe("scripts layout", () => {
   test("every top-level file of scripts/ is a tool entry or the args file of one", () => {
-    const allowed = new Set([...toolFiles, ...[...toolFiles].map(argsFileOf), ...TEMPORARY]);
+    const allowed = new Set([...toolFiles, ...[...toolFiles].map(argsFileOf)]);
     const top = readdirSync(import.meta.dir).filter((file) => file.endsWith(".ts") && !isTest(file));
     expect(top.filter((file) => !allowed.has(file))).toEqual([]);
   });
