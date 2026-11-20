@@ -15,15 +15,12 @@ describe("withoutCodesAfter", () => {
     expect(run([{ type: "verify_failed_status", enabled: false }])).toBe(false);
   });
 
-  test("path A: after the failed verify, turning TOTP off clears the warning", () => {
-    expect(run([{ type: "verify_failed_status", enabled: true }, { type: "turned_off" }])).toBe(false);
-  });
-
-  test("path B: after the failed verify, a new enrolment that shows the codes clears the warning", () => {
-    expect(run([{ type: "verify_failed_status", enabled: true }, { type: "verified" }])).toBe(false);
-  });
-
-  test("new backup codes clear the warning", () => {
-    expect(run([{ type: "verify_failed_status", enabled: true }, { type: "codes_made" }])).toBe(false);
+  const failed: FlowEvent = { type: "verify_failed_status", enabled: true };
+  test.each<[string, FlowEvent]>([
+    ["path A: after the failed verify, turning TOTP off clears the warning", { type: "turned_off" }],
+    ["path B: after the failed verify, a new enrolment that shows the codes clears the warning", { type: "verified" }],
+    ["new backup codes clear the warning", { type: "codes_made" }],
+  ])("%s", (_name, event) => {
+    expect(run([failed, event])).toBe(false);
   });
 });
