@@ -1,7 +1,6 @@
 import { z } from "../web/zod";
 
-import type { NoticeKind } from "./kinds";
-import { noticeGroupNames, noticeGroupOf, type NoticeGroup } from "./push";
+import { noticeGroupNames, type NoticeGroup } from "./push";
 
 // Which channels a notice goes to. One pure rule: the user picks a channel per group (`memberships.notice_routes`), the code
 // adds what exists (a Telegram link, a live push device). No Node module here.
