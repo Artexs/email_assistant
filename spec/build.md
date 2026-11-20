@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
@@ -63,7 +62,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F149-telegram-callbacks-dispatch-through-a-family-registry` (🟢 PROVEN): Telegram callbacks dispatch through a family registry; landed 2026-11-20
 - `F148-one-legal-version-format-and-parser-exist` (🟢 PROVEN): One legal version format and parser exist; landed 2026-11-20
 - `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟢 PROVEN): One operator alert path with texts in core and one locale type exist; landed 2026-11-20
-- 2026-11: 125 landed. spec/features/done/2026-11/
+- 2026-11: 126 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 

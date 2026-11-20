@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-14
+landed: 2026-11-20
 ---
 
 # F125 · Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
