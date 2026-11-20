@@ -99,6 +99,6 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 - `apps/server/test/integration/replies-drafter-job.test.ts`, `apps/server/test/integration/replies-drafter-committed.test.ts`
 - `apps/server/test/integration/replies-lifetime.test.ts`, `apps/server/test/integration/replies-answered-pass.test.ts`, `apps/server/test/integration/replies-sweep.test.ts`
 - `apps/server/test/integration/replies-switch.test.ts`, `apps/server/test/integration/replies-retention.test.ts`, `apps/server/test/integration/replies-outcomes.test.ts`
-- `apps/server/test/integration/channels-reply-review.test.ts`, `apps/server/test/integration/channels-reply-redraft.test.ts`, `apps/server/test/integration/channels-replies-ready.test.ts`
+- `apps/server/test/integration/channels-reply-review-taps.test.ts`, `apps/server/test/integration/channels-reply-review-cards.test.ts`, `apps/server/test/integration/channels-reply-redraft.test.ts`, `apps/server/test/integration/channels-replies-ready.test.ts`
 - `apps/server/test/integration/web-reply-routes.test.ts`, `apps/server/test/integration/web-reply-panel.test.ts`, `apps/server/test/integration/web-reply-samples.test.ts`, `apps/server/test/integration/web-telegram.test.ts`
 - `apps/web/e2e/tests/reply-panel.spec.ts`, `apps/web/e2e/tests/reply-style.spec.ts`
