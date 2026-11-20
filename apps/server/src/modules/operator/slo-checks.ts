@@ -154,7 +154,7 @@ const oneDecimal = (value: number): number => Math.round(value * 10) / 10;
 /**
  * Free space of the volume `cfg.diskPath` (`bavail` blocks are the ones an unprivileged process may use; GB means 1024^3 bytes, as
  * `df -h` shows). Firing: free percent below `diskFreePct` or free GB below `diskFreeGb`. Clear: both at least 5 points and 0.5 GB
- * above them. Else `between`. A volume that cannot be read throws: the job logs `slo_check_failed` and skips the kind this tick.
+ * above them. Else `between`. A volume that cannot be read throws: the job logs `operator_check_failed` and skips the kind this tick.
  */
 export async function checkDisk(
   statfs: StatFs,

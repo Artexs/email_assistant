@@ -4,6 +4,7 @@ import type { UserLocale } from "../tenancy";
 
 import {
   renderSloAlert,
+  renderTestAlert,
   SLO_TEST_FACTS as TEST_FACTS,
   SLO_TEST_IDS as TEST_IDS,
   type SloTextInput,
@@ -170,5 +171,30 @@ describe("what never goes out", () => {
         }
       }
     }
+  });
+});
+
+describe("renderTestAlert", () => {
+  const AT = new Date("2026-11-18T10:00:00.000Z");
+
+  test("an event kind gives `TEST <kind>` and the text of its sample event", () => {
+    expect(renderTestAlert("send_limit", AT, "en")).toBe(
+      "TEST send_limit\nMailbox 00000000-0000-4000-8000-000000000007 of org 00000000-0000-4000-8000-000000000006 hit the send limit mailbox_hour at 2026-11-18T10:00:00.000Z; its sends wait until 2026-11-18T11:00:00.000Z."
+    );
+  });
+
+  test("the sample of trial_ending ends in three days, in Polish", () => {
+    expect(renderTestAlert("trial_ending", AT, "pl")).toBe(
+      "TEST trial_ending\nOkres próbny organizacji 00000000-0000-4000-8000-000000000006 kończy się 2026-11-21T10:00:00.000Z."
+    );
+  });
+
+  test("an incident kind gives its test text", () => {
+    expect(renderTestAlert("slo_disk", AT, "en")).toBe(
+      renderSloAlert(
+        { kind: "slo_disk", phase: "test", facts: TEST_FACTS.slo_disk, ids: [], openedAt: AT, now: AT },
+        "en"
+      )
+    );
   });
 });
