@@ -371,6 +371,7 @@ describe("statusMessage", () => {
             promptVersion: "test",
             model: "gemini-3.5-flash-lite",
             endpoint: "standard",
+            provider: "openai" as const,
             outcome,
             tokensIn: null,
             tokensOut: null,

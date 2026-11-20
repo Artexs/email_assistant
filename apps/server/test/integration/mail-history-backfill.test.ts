@@ -222,6 +222,7 @@ describe("history purpose: backfillInbox", () => {
       const llm = {
         modelOf: () => "fake-model",
         endpointOf: () => "standard",
+        providerOf: () => "openai",
         async generate(req) {
           prompts.push(req.prompt);
           return {
@@ -241,6 +242,7 @@ describe("history purpose: backfillInbox", () => {
               tokensOut: 1,
               latencyMs: 1,
               endpoint: "standard",
+              provider: "openai" as const,
             },
           };
         },
@@ -437,6 +439,7 @@ describe("history purpose: only mail of before the connect", () => {
       const llm = {
         modelOf: () => "fake-model",
         endpointOf: () => "standard",
+        providerOf: () => "openai",
         async generate(req) {
           return {
             data: req.schema.parse({
@@ -455,6 +458,7 @@ describe("history purpose: only mail of before the connect", () => {
               tokensOut: 1,
               latencyMs: 1,
               endpoint: "standard",
+              provider: "openai" as const,
             },
           };
         },

@@ -528,6 +528,7 @@ async function llmCalls(trx: Trx, org: { orgId: string; mailboxId: string }, out
         promptVersion: "v1",
         model: "test-model",
         endpoint: "standard",
+        provider: "openai" as const,
         outcome,
         tokensIn: null,
         tokensOut: null,

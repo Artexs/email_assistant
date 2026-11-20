@@ -12,7 +12,7 @@ export interface LlmRoleSettings {
 }
 
 export interface LlmProviderSettings {
-  /** Env key name, for messages: "GEMINI_API_KEY". */
+  /** Env key name, for messages, for example the key of a registry row. */
   apiKeyName: string;
   /** Secret: never print or log it. */
   apiKey: string | undefined;

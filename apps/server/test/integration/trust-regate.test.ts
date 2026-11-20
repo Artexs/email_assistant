@@ -197,6 +197,7 @@ function llmOf(beforeAnswer?: () => Promise<void>): LlmClient {
   return {
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate(req) {
       await beforeAnswer?.();
       return {
@@ -209,6 +210,7 @@ function llmOf(beforeAnswer?: () => Promise<void>): LlmClient {
           tokensOut: 20,
           latencyMs: 300,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

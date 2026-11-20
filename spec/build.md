@@ -16,14 +16,16 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟠 ACTIVE): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201)
+- `F142-loops-delegation-and-the-send-limit-compare-addresses-with-the-one-address-rule-and-a-scan-test-keeps-it-so` (🟠 ACTIVE): Loops, delegation and the send limit compare addresses with the one address rule, and a scan test keeps it so
 - `F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry` (🟠 ACTIVE): One variable picks the LLM provider for the whole application: OpenAI, Gemini or DeepSeek, with one API key
 - `F136-every-limen-job-runs-the-playwright-suites-in-parallel-with-no-shared-lock` (🟠 ACTIVE): Every Limen job runs the Playwright suites in parallel with no shared lock
+- `F129-every-command-line-tool-follows-one-standard-and-agents-find-each-tool-its-risk-and-its-exit-codes-in-one-generated-list` (🟠 ACTIVE): Every command-line tool follows one standard, and agents find each tool, its risk and its exit codes in one generated list
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
 - `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
-- `F068-actions-transitions-runtime` (🟠 ACTIVE): The `actions.status` writers take their guards from the transitions map, and no writer admits an edge that no caller uses
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
 
 ## NEXT
@@ -67,7 +69,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
 - `F116-e5b-open-loops` (🟢 PROVEN): E5b Open loops; landed 2026-11-19
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
-- 2026-11: 104 landed. spec/features/done/2026-11/
+- 2026-11: 105 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 

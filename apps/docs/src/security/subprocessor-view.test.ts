@@ -109,9 +109,9 @@ describe("publicSubprocessors", () => {
   });
 
   test("the default provider is the one that the server config runs without a key", () => {
+    const registry = readFileSync(join(import.meta.dir, "../../../server/src/platform/llm/providers/index.ts"), "utf8");
+    expect(registry).toContain(`defaultLlmProviderId: LlmProviderId = "${DEFAULT_LLM_PROVIDER}"`);
     const config = readFileSync(join(import.meta.dir, "../../../server/src/platform/config-llm.ts"), "utf8");
-    expect(config).toContain(
-      `LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("${DEFAULT_LLM_PROVIDER}"))`
-    );
+    expect(config).toContain("z.enum(llmProviderIds).default(defaultLlmProviderId)");
   });
 });
