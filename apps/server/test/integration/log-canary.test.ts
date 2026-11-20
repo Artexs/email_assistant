@@ -270,6 +270,8 @@ describe("log canary", () => {
           runningKey: noGateEvidence.runningKey,
           db: trx,
           llm: createFixedLlmClient(generate, {
+            // The 400 of this test is the Gemini form of a bad key, so the row must be the Gemini one.
+            provider: "gemini",
             model: "fake-model",
             apiKey: CANARY.botToken,
             timeoutMs: 1000,

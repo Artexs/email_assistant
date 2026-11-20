@@ -45,6 +45,7 @@ function twoProviderTable(): LlmRoleTable {
     providers: {
       openai: { apiKeyName: "OPENAI_API_KEY", apiKey: "o-key", rpm: 60, baseUrl: null, endpoint: "standard" },
       gemini: { apiKeyName: "GEMINI_API_KEY", apiKey: "g-key", rpm: 30, baseUrl: null, endpoint: "standard" },
+      deepseek: { apiKeyName: "DEEPSEEK_API_KEY", apiKey: "d-key", rpm: 30, baseUrl: null, endpoint: "standard" },
     },
   };
 }

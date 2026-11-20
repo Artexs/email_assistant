@@ -1,6 +1,4 @@
-import type { LlmEndpointKind, LlmRole } from "@ea/core";
-
-import type { LlmProviderId } from "./providers";
+import { type LlmEndpointKind, type LlmProviderId, llmProviderIds, type LlmRole } from "@ea/core";
 
 /** One row of the role table: where the calls of one role go. */
 export interface LlmRoleSettings {
@@ -31,11 +29,14 @@ export interface LlmRoleTable {
   providers: Record<LlmProviderId, LlmProviderSettings>;
 }
 
-/** Tests and one-provider tools: every role gets the same row; both provider rows are the same. */
+/** Tests and one-provider tools: every role gets the same row; every provider row is the same. */
 export function uniformRoleTable(row: LlmRoleSettings, provider: LlmProviderSettings): LlmRoleTable {
   return {
     roles: { classifier: row, judge: row, drafter: row, extractor: row },
-    providers: { gemini: provider, openai: provider },
+    providers: Object.fromEntries(llmProviderIds.map((id) => [id, provider])) as Record<
+      LlmProviderId,
+      LlmProviderSettings
+    >,
   };
 }
 

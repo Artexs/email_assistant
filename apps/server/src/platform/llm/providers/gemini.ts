@@ -90,13 +90,16 @@ export const geminiClientOptions = (apiKey: string) => ({
   httpOptions: { baseUrl: GEMINI_BASE_URL },
 });
 
-function createGenerate(opts: { apiKey: string }): GenerateFn {
+function createGenerate(opts: Parameters<LlmProvider["createGenerate"]>[0]): GenerateFn {
   const ai = new GoogleGenAI(geminiClientOptions(opts.apiKey));
   return async (req) => toGeminiResult(await ai.models.generateContent(toGenerateParams(req)));
 }
 
-export const geminiProvider: LlmProvider = {
-  label: "Gemini",
+export const geminiProvider = {
+  envPrefix: "GEMINI" as const,
+  // Measured on AI Studio (free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12.
+  defaults: { timeoutMs: 30000, rpm: 12 },
+  realMail: true,
   createGenerate,
   classifyError: classifyGeminiError,
-};
+} satisfies LlmProvider;

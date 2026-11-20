@@ -1,5 +1,5 @@
 import { createLlmClient, type GenerateFn, type LlmClient } from "./client";
-import { type LlmProviderId, llmProviders } from "./providers";
+import { type LlmProviderId, llmProviderIds, llmProviders } from "./providers";
 import { uniformRoleTable } from "./settings";
 
 /**
@@ -20,7 +20,7 @@ export function createFixedLlmClient(
     sleep?: (ms: number) => Promise<void>;
   }
 ): LlmClient {
-  const provider = opts.provider ?? "gemini";
+  const provider = opts.provider ?? llmProviderIds[0];
   return createLlmClient({
     table: uniformRoleTable(
       {

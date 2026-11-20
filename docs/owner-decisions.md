@@ -787,3 +787,5 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Decision: `test:unit` and `test:int` carry `--timeout=30000`. The 5 s Bun default failed CPU-bound cases and hooks under load (comment-codes, quietEnd, sim-files, runSim, drafter eval, cli-streams) in at least six jobs and several land checks. Two cases also got their own 60 s timeout.
 - Undo: remove the flag from the two scripts (`package.json` lines 15–16) and the sentence in `docs/code-patterns.md` § Tests.
 - Source: commits `b6433d3c`, `8165f762`, `3e6c1c4b`.
+- 2026-11-20 · F141 stage 03 hardening · privacy · The style preview is disabled (answer `llm_off`) for a provider with `realMail: false` (DeepSeek), on every stack; a synthetic profile would not show the owner's own style. Undo: set `realMail: true` on the row, or build a synthetic variant in `replies/preview.ts`. · new
+- 2026-11-20 · F141 stage 03 hardening · security · `OPENAI_BASE_URL` refuses `api.deepseek.com` and its sub-domains for every endpoint kind (closes the "own endpoint" route). Undo: drop the `endsWith` clause or the check in `platform/llm/endpoint.ts`. · new

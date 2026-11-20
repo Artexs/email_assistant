@@ -87,6 +87,8 @@ describe("triage logs", () => {
           runningKey: noGateEvidence.runningKey,
           db: trx,
           llm: createFixedLlmClient(generate, {
+            // The config400 above is the Gemini form of a bad key, so the row must be the Gemini one.
+            provider: "gemini",
             model: "fake-model",
             apiKey: MARKERS.key,
             timeoutMs: 1000,

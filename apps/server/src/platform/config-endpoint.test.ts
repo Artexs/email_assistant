@@ -48,6 +48,21 @@ describe("OPENAI_BASE_URL and OPENAI_ENDPOINT_KIND", () => {
     ).toEqual(["OPENAI_BASE_URL"]);
   });
 
+  test("10: the DeepSeek host stops the start for every kind and scope: no false 'own' reaches it with real mail", () => {
+    for (const kind of [undefined, "own"]) {
+      for (const scope of ["off", "synthetic", "all"]) {
+        const error = configError({
+          ...openaiEnv,
+          TRIAGE_LLM_SCOPE: scope,
+          OPENAI_BASE_URL: "https://api.deepseek.com",
+          OPENAI_ENDPOINT_KIND: kind,
+        });
+        expect(error.keys).toEqual(["OPENAI_BASE_URL"]);
+        expect(error.message).not.toContain("api.deepseek.com");
+      }
+    }
+  });
+
   test("11: no key gives the standard default on the openai provider row; empty counts as unset", () => {
     for (const env of [openaiEnv, { ...openaiEnv, OPENAI_BASE_URL: "", OPENAI_ENDPOINT_KIND: "" }]) {
       const table = llmRoleTable(loadConfig(env));

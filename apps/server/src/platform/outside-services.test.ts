@@ -5,7 +5,7 @@ import { type ActiveWhen, subprocessors } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { configSchema } from "./config";
-import { llmProviderIds } from "./llm";
+import { llmProviderIds, llmProviders } from "./llm";
 import { OUTSIDE_CALL_CLASSES, OUTSIDE_SERVICE_KEYS } from "./outside-services";
 
 const configKeys = Object.keys(configSchema.shape);
@@ -13,12 +13,14 @@ const rowIds = new Set(subprocessors.map((row) => row.id));
 const outsideKey = /(_URL|_HOST|_API_KEY|_TOKEN|_ENDPOINT|_API_ROOT)$|^MAIL_OAUTH_/;
 
 describe("sub-processor registry and config", () => {
-  test("1. every LLM provider has exactly one row that is active when an LLM role uses it", () => {
+  test("1. every LLM provider that may get real mail has exactly one row; a provider that may not has none", () => {
     for (const provider of llmProviderIds) {
       const rows = subprocessors.filter(
         (row) => row.activeWhen.kind === "llmProvider" && row.activeWhen.provider === provider
       );
-      expect({ provider, rows: rows.map((row) => row.id) }).toEqual({ provider, rows: [expect.any(String)] });
+      // `realMail: false` is the registry flag that config turns into the refusal of `TRIAGE_LLM_SCOPE=all`.
+      const expected = llmProviders[provider].realMail ? [expect.any(String)] : [];
+      expect({ provider, rows: rows.map((row) => row.id) }).toEqual({ provider, rows: expected });
     }
     const named = subprocessors.flatMap((row) =>
       row.activeWhen.kind === "llmProvider" ? [row.activeWhen.provider] : []
