@@ -10,7 +10,7 @@ Source, word for word (`spec/quality/2026-11-20-pass-2.md` finding 10): "A new f
 
 - **D1 Two records, one per layer.** Core holds `callbackKinds`, keyed by kind: `{ family, prefix, encode, decode }`. The server holds `callbackHandlers`, keyed by family. Reason: `@ea/core` is pure and cannot hold server handlers; a codec per kind removes the switches. Rejected: one record with prefix lists and handlers (the quality-pass text; it breaks the core border).
 - **D2 Wire format frozen.** Each of the 33 kinds encodes to the same bytes as at the plan base. Buttons already in chats, the lab bot (it builds `rw:` by hand) and a rollback depend on it. Existing assertions in `callback.test.ts` and `callback-loop.test.ts` stay as they are; stage 02 changes only the asserts of removed predicates (same truth values).
-- **D3 Parse by prefix.** Split the data at the first `:`: the prefix is before it, the rest after it (no rest when there is no `:`). Look the prefix up in a `Map` built from `callbackKinds`. Never index a plain object with data: `__proto__`, `constructor` and `toString` must give `null`. An unknown prefix gives `null`. The decoder of the kind checks the rest with an anchored pattern, as today (lowercase UUID, category codes, reason codes, canonical base64url for `dp`). Rejected: a table of whole-string regexes tried in order (keeps the order dependency).
+- **D3 Parse by prefix.** Split the data at the first `:`: the prefix is before it, the rest after it (no rest when there is no `:`). Look the prefix up in a `Map` built from `callbackKinds`. Never index a plain object with data, neither by prefix nor by category or reason code: `__proto__`, `constructor` and `toString` in any position must give `null`. An unknown prefix gives `null`. The decoder of the kind checks the rest with an anchored pattern, as today (lowercase UUID, category codes, reason codes, canonical base64url for `dp`). Rejected: a table of whole-string regexes tried in order (keeps the order dependency).
 - **D4 Prefix rule.** Every prefix is two lowercase letters and unique across kinds. A test checks both.
 - **D5 Families and members** (as at the plan base): `feedback` = right, edit, undo, pick, cancel, review_right, review_pick, review_edit, review_cancel; `answered` = answered_yes, answered_no; `reply` = the 6 `reply_*` kinds; `loop` = the 5 `loop_*` kinds; `delegate` = delegate_open, delegate_pick; `approval` = approve, reject, approve_set, reject_set, send_again, went_out, delegation_done, reject_reason, mistake. `callbackFamilies` lists them in this order.
 - **D6 Family types.** Core keeps `FeedbackCallback`, `AnsweredCallback`, `ReplyCallback`, `LoopCallback`, `DelegateCallback` and adds `ApprovalCallback` (today a local `Exclude` in `approval-taps.ts`). `CallbackOfFamily<F>` is derived from `callbackKinds`; a type test proves it equals the named union for each family.
@@ -73,12 +73,13 @@ Move the ticket to `active/` and commit. Spawn stage 01 (board worker model, `--
 
 - Scouts: 3 (`scouts.md`).
 - ticket.md [written], plan.md [written], stage 01 [written], stage 02 [written].
-- Word counts (`wc -w`, before the review): plan.md 1,186; stage 01 696; stage 02 699; ticket.md 325.
+- Word counts (`wc -w`, after the review fixes): plan.md 1340; stage 01 699; stage 02 698; ticket.md 325.
 
 ## Cold review
 
-Model: `claude-opus-5-5`, because stage 01 is `[risky]` (parse of untrusted Telegram data). Result: pending.
+Model: `claude-opus-5-5`, because stage 01 is `[risky]` (parse of untrusted Telegram data). Job `2026-11-20-f149-plan-review-fa0e0f7b`, verdict PASS, 10 notes, no blocking finding (`plan-review-1.md`). All 10 fixed:
+N1 prototype keys in the code position added to stage 01 test 4, D3 widened, a break check added; N2 test 8 dropped; N3 stage 02 break check now breaks `dispatchCallback`; N4 `@ts-expect-error` type test (stage 02) and a typecheck break (stage 01); N5 separate `rv:<id>` case; N6 `callbackHandlers` exported from `callbacks.ts`, the key test replaced by the type test; N7 `ag:` added to `questions.md`; N8 `pickerMessage` row and `open-loops.md` rule 9 added to the docs step; N9 the prefix Done-when limited to the codec files, comments excluded; N10 `channels-reply-redraft-repair.test.ts` added. Unverified item (load of `callbacks.ts` with no DB): stage 02 names the fallback.
 
 ## Log
 
-- 2026-11-20 planned at e8f6f2b1.
+- 2026-11-20 planned at e8f6f2b1; cold review 1 fixed.
