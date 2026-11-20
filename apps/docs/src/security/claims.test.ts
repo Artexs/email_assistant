@@ -186,4 +186,43 @@ describe("the public claims of the security page", () => {
       expect(claim.condition?.en.toLowerCase()).toContain("optional, off by default");
     }
   });
+
+  // The 7-day limit is for the mail that the assistant classifies. The earlier mails of the thread go along as context, with no
+  // age limit (`listThreadContext` in `apps/server/src/modules/mail/repo/lookup.ts` filters only on `received_at`). A text that names
+  // the 7-day limit must say that it is about the classified mail and name the thread context, so a reader cannot take the limit for all mail that the AI gets.
+  const SEVEN_DAYS = /older than 7 days|starszej niż 7 dni|starszych niż 7 dni/i;
+  const CONTEXT = /context|kontekst/i;
+  const CLASSIFIED = /classif|klasyfik/i;
+  const sevenDayProblems = (texts: readonly string[]): string[] =>
+    texts.filter((text) => SEVEN_DAYS.test(text) && !(CONTEXT.test(text) && CLASSIFIED.test(text)));
+
+  test("a text that names the 7-day limit also names the thread context", () => {
+    expect(sevenDayProblems(["It does not send mail older than 7 days."])).toEqual([
+      "It does not send mail older than 7 days.",
+    ]);
+    expect(sevenDayProblems(["Nie wysyła wiadomości starszych niż 7 dni."]).length).toBe(1);
+    // The first wording of the claim named "context" for another reason and still said the false thing.
+    expect(
+      sevenDayProblems([
+        "It sends up to three earlier mails of the same thread as context. It does not send mail older than 7 days.",
+      ]).length
+    ).toBe(1);
+    expect(sevenDayProblems(["Mail older than 7 days is not classified; context mails can be older."])).toEqual([]);
+  });
+
+  test("no claim, in either language, and no line of the page names the 7-day limit without the thread context", () => {
+    const claimTexts = publicClaims.flatMap((claim) => [
+      claim.text.en,
+      claim.text.pl,
+      claim.condition?.en ?? "",
+      claim.condition?.pl ?? "",
+    ]);
+    expect(sevenDayProblems(claimTexts)).toEqual([]);
+    const page = readFileSync(join(import.meta.dir, "../content/docs/security.mdx"), "utf8");
+    expect(sevenDayProblems(page.split("\n"))).toEqual([]);
+    const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
+    expect(receives?.text.en).toMatch(/older than 7 days/);
+    expect(receives?.text.en).toMatch(/thread as context/);
+    expect(receives?.text.pl).toMatch(/kontekst/);
+  });
 });

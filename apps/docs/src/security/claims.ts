@@ -45,8 +45,8 @@ export const publicClaims: readonly PublicClaim[] = [
   {
     id: "ai-provider-receives",
     text: {
-      en: "This install uses OpenAI as the AI model. For each mail the assistant sends the text, subject and sender, the delegates, and up to three earlier mails of the same thread as context. It does not send mail older than 7 days, unless the operator loads old mail once.",
-      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej wiadomości asystent wysyła treść, temat i nadawcę, delegatów oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie wysyła wiadomości starszych niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę.",
+      en: 'This install uses OpenAI as the AI model. For each mail that it classifies, the assistant sends the text, subject and sender, the delegates, and up to three earlier mails of the same thread as context. It does not classify a mail that is older than 7 days, unless the operator loads old mail once. The 7-day limit is about the mail that the assistant classifies. The section "What this product does not promise" says what goes along as thread context.',
+      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat i nadawcę, delegatów oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę. Limit 7 dni dotyczy klasyfikowanej wiadomości. Sekcja „Czego ten produkt nie obiecuje” mówi, co trafia do AI jako kontekst wątku.",
     },
     ledger: ["C030", "C031", "C032"],
     proofs: [
