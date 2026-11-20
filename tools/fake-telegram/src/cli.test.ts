@@ -80,7 +80,7 @@ describe("fake-tg cli", () => {
   test("--help prints the summary and exits 0 with no server", async () => {
     const result = await run(["--help"], "http://127.0.0.1:1");
     expect(result.code).toBe(0);
-    expect(result.out).toContain(cliDescriptions[0].summary);
+    expect(result.out).toContain(cliDescriptions[0]?.summary ?? "");
     expect(result.out).toContain("risk: dev · needs: none");
   });
 
