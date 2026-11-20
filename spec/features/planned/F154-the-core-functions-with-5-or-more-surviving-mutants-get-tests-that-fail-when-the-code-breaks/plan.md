@@ -1,6 +1,6 @@
 # F154 plan — core functions with 5 or more surviving mutants get tests that kill them
 
-> **Status 2026-11-20 — planned.** Plan base: a5399ff1. Eighteen stages: 01 first; 02–17 next to each other (each needs only stage 01); 18 last.
+> **Status 2026-11-20 — planned.** Plan base: a5399ff1. Eighteen stages: 01; then 02–17 in parallel; 18 last.
 
 Source: `spec/features/active/F125-…/audit/report.md` § 4 and `audit/review-core-web-tools.md` § GAP (122 functions, 1,257 mutants; audit run at `4ce3f351`).
 
