@@ -9,7 +9,7 @@ import { noticePath } from "./push";
 import type { NoticeView } from "./views";
 
 // The `minimal` Telegram render (ADR 0032 point 5). The text holds fixed phrases, numbers, the clock and one panel link:
-// no string of the view and no button. A change here is a privacy change: `registry.test.ts` plants a canary in every string of
+// no string of the view and no button. A change here is a privacy change: `registry-channels.test.ts` plants a canary in every string of
 // every view and checks that none reaches the text.
 
 /** The link of the panel to a path: the base without a trailing slash and the path. */

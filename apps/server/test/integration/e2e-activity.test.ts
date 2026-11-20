@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
-import { textsFor } from "@ea/core";
+import { textsFor, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import type { ActionsScope } from "../../src/modules/actions";
@@ -59,7 +59,7 @@ describe("e2e activity rows", () => {
       const ctx = { orgId: s.orgId };
       const result = await seedActivityRows(trx, ctx, s.mailboxId, NOW);
       const undone = await undoWithFeedback(trx, ctx, result.emailIds.moved, {
-        now: new Date(NOW.getTime() + 60_000),
+        now: new Date(NOW.getTime() + MINUTE_MS),
         userId: s.userId,
         scope: SYNTHETIC,
       });

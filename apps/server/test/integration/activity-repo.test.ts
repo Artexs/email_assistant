@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type KyselyPlugin, type Transaction } from "kysely";
 
@@ -27,10 +28,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-11T12:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-const SINCE = new Date(NOW.getTime() - 7 * DAY);
+const SINCE = new Date(NOW.getTime() - 7 * DAY_MS);
 
 const query = { notRated: false, since: SINCE, limit: 50 };
 
@@ -74,17 +72,17 @@ describe("listActivityRows", () => {
       const m1 = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
         createdAt: NOW,
-        receivedAt: new Date(NOW.getTime() - 3 * HOUR),
+        receivedAt: new Date(NOW.getTime() - 3 * HOUR_MS),
       });
       const m2 = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
         createdAt: NOW,
-        receivedAt: new Date(NOW.getTime() - 1 * HOUR),
+        receivedAt: new Date(NOW.getTime() - 1 * HOUR_MS),
       });
       const m3 = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "urgent",
         createdAt: NOW,
-        receivedAt: new Date(NOW.getTime() - 2 * HOUR),
+        receivedAt: new Date(NOW.getTime() - 2 * HOUR_MS),
       });
       const o1 = await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: NOW });
       const o2 = await insertTriaged(trx, ctxB, b.mailboxId, { category: "info", createdAt: NOW });
@@ -103,8 +101,8 @@ describe("listActivityRows", () => {
       const { a, ctxA } = await setup(trx);
       const emailId = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: new Date(NOW.getTime() - HOUR),
-        receivedAt: new Date(NOW.getTime() - 2 * HOUR),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
+        receivedAt: new Date(NOW.getTime() - 2 * HOUR_MS),
       });
       await trx
         .insertInto("triage_results")
@@ -118,14 +116,14 @@ describe("listActivityRows", () => {
           model: "m",
           prompt_version: "v",
           fields: JSON.stringify({}),
-          created_at: new Date(NOW.getTime() - HOUR + MINUTE),
+          created_at: new Date(NOW.getTime() - HOUR_MS + MINUTE_MS),
         })
         .execute();
 
       const all = await listActivityRows(trx, ctxA, query);
       expect(all).toHaveLength(1);
       expect(all[0]?.category).toBe("urgent");
-      expect(all[0]?.triaged_at.getTime()).toBe(NOW.getTime() - HOUR + MINUTE);
+      expect(all[0]?.triaged_at.getTime()).toBe(NOW.getTime() - HOUR_MS + MINUTE_MS);
       expect(await listActivityRows(trx, ctxA, { ...query, categories: ["info"] })).toEqual([]);
       expect(ids(await listActivityRows(trx, ctxA, { ...query, categories: ["urgent"] }))).toEqual([emailId]);
     });
@@ -137,19 +135,22 @@ describe("listActivityRows", () => {
       await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
         createdAt: NOW,
-        receivedAt: new Date(NOW.getTime() - 8 * DAY),
+        receivedAt: new Date(NOW.getTime() - 8 * DAY_MS),
       });
       const m6 = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
         createdAt: NOW,
-        receivedAt: new Date(NOW.getTime() - 6 * DAY),
+        receivedAt: new Date(NOW.getTime() - 6 * DAY_MS),
       });
       const m1 = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
         createdAt: NOW,
-        receivedAt: new Date(NOW.getTime() - HOUR),
+        receivedAt: new Date(NOW.getTime() - HOUR_MS),
       });
-      await insertTestEmail(trx, ctxA, a.mailboxId, { status: "pending", received_at: new Date(NOW.getTime() - HOUR) });
+      await insertTestEmail(trx, ctxA, a.mailboxId, {
+        status: "pending",
+        received_at: new Date(NOW.getTime() - HOUR_MS),
+      });
 
       expect(ids(await listActivityRows(trx, ctxA, query))).toEqual([m1, m6]);
     });
@@ -182,7 +183,7 @@ describe("listActivityRows", () => {
   test("pages with the cursor over equal timestamps: each mail once, id descending", async () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
-      const same = new Date(NOW.getTime() - HOUR);
+      const same = new Date(NOW.getTime() - HOUR_MS);
       const created: string[] = [];
       for (let i = 0; i < 5; i += 1) {
         created.push(
@@ -353,7 +354,7 @@ describe("listLatestDelegationsByEmailIds", () => {
   test("returns status, due date and delegate name; the newer of two rows; no other organization", async () => {
     await withRollback(db, async (trx) => {
       const { a, b, ctxA, ctxB } = await setup(trx);
-      const dueAt = new Date(NOW.getTime() + 2 * DAY);
+      const dueAt = new Date(NOW.getTime() + 2 * DAY_MS);
       const ola = await insertDelegate(trx, ctxA, { name: "Ola" });
       const first = await insertDraftAndSend(trx, ctxA, a.mailboxId, { delegateId: ola, delegateName: "Ola" });
       await insertDelegation(trx, ctxA, {
@@ -374,7 +375,7 @@ describe("listLatestDelegationsByEmailIds", () => {
         draftActionId: second.draftId,
         sendActionId: second.sendId,
         status: "drafted",
-        createdAt: new Date(NOW.getTime() - MINUTE),
+        createdAt: new Date(NOW.getTime() - MINUTE_MS),
       });
       const secondSend = await insertAction(trx, ctxA, second.emailId, { type: "send", status: "awaiting_approval" });
       await insertDelegation(trx, ctxA, {

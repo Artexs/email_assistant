@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { encodeCallback, textTables } from "@ea/core";
+import { encodeCallback, textTables, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -412,7 +412,7 @@ describe("card sync: the sender (T5, T6)", () => {
       ]);
       // The decision stays: Telegram never rolls it back.
       expect((await sendState(w)).status).toBe("approved");
-      await sender.run(new Date(NOW.getTime() + 60_000));
+      await sender.run(new Date(NOW.getTime() + MINUTE_MS));
       expect(sender.channel.edited).toHaveLength(1);
 
       // A soft error releases the row with a backoff, without a failure.
@@ -533,7 +533,7 @@ describe("card sync: decisions call the hook once, with the right input", () => 
       const w = await world(trx);
       await trx
         .updateTable("actions")
-        .set({ notified_at: new Date(NOW.getTime() - 49 * 3_600_000) })
+        .set({ notified_at: new Date(NOW.getTime() - 49 * HOUR_MS) })
         .where("id", "=", w.sendId)
         .execute();
       const calls: { decision: string; sendId: string; exceptUserId?: string; at: Date }[] = [];
@@ -818,7 +818,7 @@ describe("approval cards: version and panel link (T9, T10)", () => {
     await detectNotices({
       db: w.trx,
       now: () => CARD_AT,
-      startedAt: new Date(CARD_AT.getTime() - 3_600_000),
+      startedAt: new Date(CARD_AT.getTime() - HOUR_MS),
       testMail: NO_TEST_SENDERS,
       ...(webBaseUrl === undefined ? {} : { webBaseUrl }),
     });
@@ -1003,7 +1003,7 @@ describe("card sync: review probes", () => {
       await replaceChatLink(trx, w.ctx, {
         userId: w.u2,
         chatId: w.chat2,
-        linkedAt: new Date(CARD_AT.getTime() + 60_000),
+        linkedAt: new Date(CARD_AT.getTime() + MINUTE_MS),
       });
       await approve(depsOf(w), w.ctx, w.sendId, { userId: w.u1, via: "web", now: NOW });
       const sender = senderOf(w);

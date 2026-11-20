@@ -2,7 +2,7 @@
 // Drafts folder, the test edits that copy like a mail client does, and the committer runs again.
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { buildOutgoingMessage, draftPayloadSchema } from "@ea/core";
+import { buildOutgoingMessage, draftPayloadSchema, DAY_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 import MailComposer from "nodemailer/lib/mail-composer";
 
@@ -35,7 +35,7 @@ import {
 export const IMAP_HOST = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
 export const IMAP_PORT = Number(process.env.TEST_IMAP_PORT ?? "3143");
 
-export const MINUTE = 60_000;
+export { MINUTE_MS as MINUTE } from "@ea/core";
 export const NOW = new Date("2026-11-20T13:05:00Z");
 export const CREATED = new Date("2026-11-20T12:00:00Z");
 export const HEX64 = /^[0-9a-f]{64}$/;
@@ -194,7 +194,7 @@ export async function draftCopies(box: CopyBox): Promise<FolderMessageMeta[]> {
 }
 
 export async function copyOf(box: CopyBox, draftId: string): Promise<FolderMessageMeta | null> {
-  return locateByActionId(box.mailClient, "Drafts", { actionId: draftId, hintUid: null, since: new Date(86_400_000) });
+  return locateByActionId(box.mailClient, "Drafts", { actionId: draftId, hintUid: null, since: new Date(DAY_MS) });
 }
 
 export interface Edit {

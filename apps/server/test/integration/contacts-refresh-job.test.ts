@@ -1,4 +1,5 @@
 import type { FeatureKey } from "@ea/core";
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -177,7 +178,7 @@ describe("the job contacts.refresh: errors and logs", () => {
       await seedSenderActivity(trx, org.ctx, org.mailboxId, {
         address: "bob@secret-corp.example",
         mails: mailsAt([2, 3]),
-        sent: [{ at: new Date(NOW.getTime() - 86_400_000), to: ["carl@other.example"] }],
+        sent: [{ at: new Date(NOW.getTime() - DAY_MS), to: ["carl@other.example"] }],
       });
       await trx
         .updateTable("emails")

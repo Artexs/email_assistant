@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { textTables } from "@ea/core";
+import { textTables, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -35,8 +35,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-06T10:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const NOT_FOUND = "This mail is not in your account.";
 
 async function feedbackRows(trx: Transaction<DB>, emailId: string) {
@@ -229,7 +227,7 @@ describe("handleCallback", () => {
       type,
       status: "applied",
       payload,
-      appliedAt: new Date(T.getTime() - HOUR),
+      appliedAt: new Date(T.getTime() - HOUR_MS),
     });
 
     async function reverseRows(trx: Transaction<DB>, orgId: string) {
@@ -300,7 +298,7 @@ describe("handleCallback", () => {
         await insertAction(trx, s.ctxA, s.info, {
           type: "mark_read",
           status: "applied",
-          appliedAt: new Date(T.getTime() - 8 * DAY),
+          appliedAt: new Date(T.getTime() - 8 * DAY_MS),
         });
 
         const result = await handleCallback(s.deps, s.link, `fu:${s.info}`);
@@ -352,7 +350,7 @@ describe("handleCallback", () => {
           {
             type: "mark_read",
             status: "applied",
-            appliedAt: new Date(T.getTime() - HOUR),
+            appliedAt: new Date(T.getTime() - HOUR_MS),
           }
         );
 
@@ -680,7 +678,7 @@ describe("approval taps", () => {
     await withRollback(db, async (trx) => {
       const s = await approvalSetup(trx);
       const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
-        notifiedAt: new Date(T.getTime() - 49 * HOUR),
+        notifiedAt: new Date(T.getTime() - 49 * HOUR_MS),
         createdAt: T,
       });
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
@@ -1097,7 +1095,7 @@ describe("approval taps", () => {
       const s = await approvalSetup(trx);
       const { sendId, emailId } = await insertDraftAndSend(trx, s.ctx, s.a.mailboxId, {
         sendStatus: "expired",
-        notifiedAt: new Date(T.getTime() - 49 * HOUR),
+        notifiedAt: new Date(T.getTime() - 49 * HOUR_MS),
         createdAt: T,
       });
       await queueFor(trx, s.ctx, s.o1, "approval", sendId, emailId);
@@ -1338,7 +1336,7 @@ describe("approval taps", () => {
         await flagOn(trx, s.a.orgId);
         const { sendId } = await rejectedSend(trx, s);
         await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
-        const applied = await appliedSend(trx, s, DAY);
+        const applied = await appliedSend(trx, s, DAY_MS);
         for (const data of [`rw:p:${sendId}`, `mk:${applied.sendId}`]) {
           expect(await handleCallback(s.deps, s.assistantLink, data)).toEqual({
             answer: textTables.en.bot.taps.ownerOnly,
@@ -1353,7 +1351,7 @@ describe("approval taps", () => {
       await withRollback(db, async (trx) => {
         const s = await approvalSetup(trx);
         await flagOn(trx, s.a.orgId);
-        const { sendId } = await appliedSend(trx, s, DAY);
+        const { sendId } = await appliedSend(trx, s, DAY_MS);
         const first = await handleCallback(s.deps, s.owner1, `mk:${sendId}`);
         expect(first.answer).toBe("⚠️ Noted as a mistake.");
         expect(first.edit?.text.endsWith("⚠️ Marked as a mistake 11:00.")).toBe(true);
@@ -1368,7 +1366,7 @@ describe("approval taps", () => {
       await withRollback(db, async (trx) => {
         const s = await approvalSetup(trx);
         await flagOn(trx, s.a.orgId);
-        const old = await appliedSend(trx, s, 8 * DAY);
+        const old = await appliedSend(trx, s, 8 * DAY_MS);
         expect((await handleCallback(s.deps, s.owner1, `mk:${old.sendId}`)).answer).toBe(
           "Too late: a mistake can be marked within 7 days of the send."
         );
@@ -1386,7 +1384,7 @@ describe("approval taps", () => {
         const s = await approvalSetup(trx);
         const { sendId } = await rejectedSend(trx, s);
         await handleCallback(s.deps, s.owner1, `ar:${sendId}`);
-        const applied = await appliedSend(trx, s, DAY);
+        const applied = await appliedSend(trx, s, DAY_MS);
         const off = { answer: "This button is off now." };
         expect(await handleCallback(s.deps, s.owner1, `rw:p:${sendId}`)).toEqual(off);
         expect(await handleCallback(s.deps, s.owner1, `mk:${applied.sendId}`)).toEqual(off);
@@ -1462,7 +1460,12 @@ describe("taps of a suspended organization", () => {
         category: "info",
         createdAt: T,
         actions: [
-          { type: "move", status: "applied", payload: { folder: "ai_info" }, appliedAt: new Date(T.getTime() - HOUR) },
+          {
+            type: "move",
+            status: "applied",
+            payload: { folder: "ai_info" },
+            appliedAt: new Date(T.getTime() - HOUR_MS),
+          },
         ],
       });
       await suspendOrg(trx, a.orgId);

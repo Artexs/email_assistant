@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { TERMS_VERSION } from "@ea/core";
+import { TERMS_VERSION, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { createDb } from "../../src/platform/db";
@@ -96,83 +96,87 @@ const e2eAppUrl = process.env.E2E_DATABASE_URL ?? "";
 const e2eMigratorUrl = process.env.E2E_MIGRATOR_DATABASE_URL ?? "";
 
 describe.skipIf(e2eAppUrl === "" || e2eMigratorUrl === "")("e2e seed of the plan states", () => {
-  test("seeds a trial and a paused organization, and a second run works", async () => {
-    const env = { DATABASE_URL: e2eAppUrl, MIGRATOR_DATABASE_URL: e2eMigratorUrl };
-    const first = await runSeed(env);
-    expect(first.stderr).toBe("");
-    expect(first.code).toBe(0);
-    const second = await runSeed(env);
-    expect(second.code).toBe(0);
+  test(
+    "seeds a trial and a paused organization, and a second run works",
+    async () => {
+      const env = { DATABASE_URL: e2eAppUrl, MIGRATOR_DATABASE_URL: e2eMigratorUrl };
+      const first = await runSeed(env);
+      expect(first.stderr).toBe("");
+      expect(first.code).toBe(0);
+      const second = await runSeed(env);
+      expect(second.code).toBe(0);
 
-    const seed = JSON.parse(readFileSync(resolve(repoRoot, "apps/web/e2e/.seed.json"), "utf8")) as SeedFile;
-    const e2e = createDb(e2eAppUrl);
-    try {
-      const orgOf = (name: string) =>
-        e2e
-          .selectFrom("organizations")
-          .select(["id", "plan", "trial_ends_at"])
-          .where("name", "=", name)
-          .executeTakeFirstOrThrow();
+      const seed = JSON.parse(readFileSync(resolve(repoRoot, "apps/web/e2e/.seed.json"), "utf8")) as SeedFile;
+      const e2e = createDb(e2eAppUrl);
+      try {
+        const orgOf = (name: string) =>
+          e2e
+            .selectFrom("organizations")
+            .select(["id", "plan", "trial_ends_at"])
+            .where("name", "=", name)
+            .executeTakeFirstOrThrow();
 
-      const main = await orgOf(E2E_ORG_NAME);
-      expect(main.plan).toBe("active");
+        const main = await orgOf(E2E_ORG_NAME);
+        expect(main.plan).toBe("active");
 
-      const trial = await orgOf(E2E_TRIAL_ORG_NAME);
-      expect(trial.plan).toBe("trial");
-      const aheadMs = (trial.trial_ends_at as Date).getTime() - Date.now();
-      expect(Math.abs(aheadMs - 10 * 24 * 60 * 60 * 1000)).toBeLessThan(60_000);
-      expect(seed.trialOwner.orgId).toBe(trial.id);
-      expect(seed.trialOwner.trialEndsAt).toBe((trial.trial_ends_at as Date).toISOString());
+        const trial = await orgOf(E2E_TRIAL_ORG_NAME);
+        expect(trial.plan).toBe("trial");
+        const aheadMs = (trial.trial_ends_at as Date).getTime() - Date.now();
+        expect(Math.abs(aheadMs - 10 * DAY_MS)).toBeLessThan(MINUTE_MS);
+        expect(seed.trialOwner.orgId).toBe(trial.id);
+        expect(seed.trialOwner.trialEndsAt).toBe((trial.trial_ends_at as Date).toISOString());
 
-      const paused = await orgOf(E2E_PAUSED_ORG_NAME);
-      expect(paused.plan).toBe("suspended");
-      expect(seed.pausedOwner.orgId).toBe(paused.id);
-      const mailboxes = await e2e.selectFrom("mailboxes").select("id").where("org_id", "=", paused.id).execute();
-      expect(mailboxes.map((row) => row.id)).toEqual([seed.pausedOwner.mailboxId]);
-      const settings = await e2e
-        .selectFrom("mailbox_settings")
-        .select("mailbox_id")
-        .where("org_id", "=", paused.id)
-        .execute();
-      expect(settings).toHaveLength(1);
+        const paused = await orgOf(E2E_PAUSED_ORG_NAME);
+        expect(paused.plan).toBe("suspended");
+        expect(seed.pausedOwner.orgId).toBe(paused.id);
+        const mailboxes = await e2e.selectFrom("mailboxes").select("id").where("org_id", "=", paused.id).execute();
+        expect(mailboxes.map((row) => row.id)).toEqual([seed.pausedOwner.mailboxId]);
+        const settings = await e2e
+          .selectFrom("mailbox_settings")
+          .select("mailbox_id")
+          .where("org_id", "=", paused.id)
+          .execute();
+        expect(settings).toHaveLength(1);
 
-      const termsOf = async (userId: string) =>
-        (await e2e.selectFrom("users").select("terms_version").where("id", "=", userId).executeTakeFirstOrThrow())
-          .terms_version;
-      expect(await termsOf(seed.owner.userId)).toBe(TERMS_VERSION);
-      for (const project of E2E_PROJECTS) {
-        expect(await termsOf(seed.termsOwners[project].userId)).toBe("2000-01-01");
-        expect(await termsOf(seed.members[project].userId)).toBe(TERMS_VERSION);
+        const termsOf = async (userId: string) =>
+          (await e2e.selectFrom("users").select("terms_version").where("id", "=", userId).executeTakeFirstOrThrow())
+            .terms_version;
+        expect(await termsOf(seed.owner.userId)).toBe(TERMS_VERSION);
+        for (const project of E2E_PROJECTS) {
+          expect(await termsOf(seed.termsOwners[project].userId)).toBe("2000-01-01");
+          expect(await termsOf(seed.members[project].userId)).toBe(TERMS_VERSION);
+        }
+
+        for (const project of E2E_PROJECTS) {
+          const owner = seed.twoFactorOwners[project];
+          const org = await orgOf(e2eTwoFactorOrgName(project));
+          expect(owner.orgId).toBe(org.id);
+          const membership = await e2e
+            .selectFrom("memberships")
+            .select("role")
+            .where("org_id", "=", org.id)
+            .where("user_id", "=", owner.userId)
+            .executeTakeFirstOrThrow();
+          expect(membership.role).toBe("owner");
+          const user = await e2e
+            .selectFrom("users")
+            .select(["two_factor_enabled", "terms_version"])
+            .where("id", "=", owner.userId)
+            .executeTakeFirstOrThrow();
+          expect(user.two_factor_enabled).toBe(false);
+          expect(user.terms_version).toBe(TERMS_VERSION);
+        }
+
+        expect(seed.trialOwner.userId).not.toBe(seed.pausedOwner.userId);
+        for (const owner of [seed.trialOwner, seed.pausedOwner]) {
+          expect(owner.email).toMatch(/^e2e-(trial|paused)-owner@x\.test$/);
+        }
+      } finally {
+        await e2e.destroy();
       }
-
-      for (const project of E2E_PROJECTS) {
-        const owner = seed.twoFactorOwners[project];
-        const org = await orgOf(e2eTwoFactorOrgName(project));
-        expect(owner.orgId).toBe(org.id);
-        const membership = await e2e
-          .selectFrom("memberships")
-          .select("role")
-          .where("org_id", "=", org.id)
-          .where("user_id", "=", owner.userId)
-          .executeTakeFirstOrThrow();
-        expect(membership.role).toBe("owner");
-        const user = await e2e
-          .selectFrom("users")
-          .select(["two_factor_enabled", "terms_version"])
-          .where("id", "=", owner.userId)
-          .executeTakeFirstOrThrow();
-        expect(user.two_factor_enabled).toBe(false);
-        expect(user.terms_version).toBe(TERMS_VERSION);
-      }
-
-      expect(seed.trialOwner.userId).not.toBe(seed.pausedOwner.userId);
-      for (const owner of [seed.trialOwner, seed.pausedOwner]) {
-        expect(owner.email).toMatch(/^e2e-(trial|paused)-owner@x\.test$/);
-      }
-    } finally {
-      await e2e.destroy();
-    }
-  }, 60_000);
+    },
+    MINUTE_MS
+  );
 
   test("a second seed run gives new two-factor owners with the second factor off", async () => {
     const env = { DATABASE_URL: e2eAppUrl, MIGRATOR_DATABASE_URL: e2eMigratorUrl };

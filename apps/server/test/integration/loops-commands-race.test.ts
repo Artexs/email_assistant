@@ -3,6 +3,7 @@
 // hold) and on a mix of both. The rules under test: one follow-up waits at a time; a loop closes once (one audit row, one
 // expiry of its send); Later has three uses and no fourth; a reopen happens once and never on a loop with cleared texts;
 // a follow-up never waits on a closed loop.
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -381,25 +382,29 @@ describe.each(pairs)("Reopen against the Sent switch off (%s)", (_name, connA, c
     expect((await getSentSyncState(app, org.ctx, org.mailboxId))?.enabled).toBe(false);
   }, 20_000);
 
-  test(`${ROUNDS} loops, both at once: tracking off never leaves an open loop, and a loop is never open with texts cleared`, async () => {
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const org = await newOrg();
-      const loop = await loopIn(org, { status: "closed", close_reason: "done", closed_at: FRIDAY });
-      const [reopened] = await withTimeout(
-        Promise.all([
-          reopenLoop({ db: connA, ...at }, org.ctx, input(org, loop.id)),
-          jitter().then(() => switchOff(connB, org)),
-        ]),
-        8_000
-      );
-      expect(["ok", "not_allowed"]).toContain(reopened.kind);
-      const state = await getSentSyncState(app, org.ctx, org.mailboxId);
-      expect(state?.enabled).toBe(false);
-      const row = await loopOf(app, loop.id);
-      // Reopen first: the switch-off then closes the loop `sent_off` and clears it. Switch-off first: Reopen is refused.
-      if (reopened.kind === "ok") expect([row.status, row.close_reason]).toEqual(["closed", "sent_off"]);
-      else expect(row.status).toBe("closed");
-      expect(await openLoopsOf(org)).toEqual([]);
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} loops, both at once: tracking off never leaves an open loop, and a loop is never open with texts cleared`,
+    async () => {
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const org = await newOrg();
+        const loop = await loopIn(org, { status: "closed", close_reason: "done", closed_at: FRIDAY });
+        const [reopened] = await withTimeout(
+          Promise.all([
+            reopenLoop({ db: connA, ...at }, org.ctx, input(org, loop.id)),
+            jitter().then(() => switchOff(connB, org)),
+          ]),
+          8_000
+        );
+        expect(["ok", "not_allowed"]).toContain(reopened.kind);
+        const state = await getSentSyncState(app, org.ctx, org.mailboxId);
+        expect(state?.enabled).toBe(false);
+        const row = await loopOf(app, loop.id);
+        // Reopen first: the switch-off then closes the loop `sent_off` and clears it. Switch-off first: Reopen is refused.
+        if (reopened.kind === "ok") expect([row.status, row.close_reason]).toEqual(["closed", "sent_off"]);
+        else expect(row.status).toBe("closed");
+        expect(await openLoopsOf(org)).toEqual([]);
+      }
+    },
+    MINUTE_MS
+  );
 });
