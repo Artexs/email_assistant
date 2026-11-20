@@ -1,6 +1,7 @@
 import type { GenerateFn } from "../client";
 
 import { DEEPSEEK_BASE_URL } from "./deepseek-host";
+import { type CommonEnv, commonSettings, type LlmRowSettings } from "./env";
 import { classifyOpenAiError, createOpenAiGenerate, type OpenAiLike } from "./openai";
 import type { openAiClientOptions } from "./openai";
 
@@ -32,6 +33,16 @@ export const deepseekProvider = {
   // No sub-processor row (owner, 2026-11-19): real mail must not reach DeepSeek.
   realMail: false,
   removedEnvKeys: [] as const,
+  envShape: {},
+  ownModelKey: null,
+  check: () => undefined,
+  // The host is fixed and the key is its own: no OpenAI value reaches it.
+  settings: (config: CommonEnv<"DEEPSEEK">): LlmRowSettings => ({
+    ...commonSettings("DEEPSEEK", config),
+    baseUrl: DEEPSEEK_BASE_URL,
+    endpoint: "standard",
+    ownModel: null,
+  }),
   createGenerate: (opts) => createDeepseekGenerate(opts),
   classifyError: classifyOpenAiError,
 } satisfies LlmProvider;
