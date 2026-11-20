@@ -21,7 +21,7 @@ import {
   simMetaOf,
 } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
-import { type Config, ConfigError, llmRoleTable } from "../platform/config";
+import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides } from "../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -84,16 +84,19 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   const runs = deps.runsDir ?? runsDir;
   let table: LlmRoleTable;
   try {
-    table = llmRoleTable(config, {
-      classifier: {
+    table = llmRoleTable(
+      config,
+      runOverrides("classifier", {
         provider: options.provider,
         model: options.model,
         reasoningEffort: options["reasoning-effort"],
-      },
-      ...(options.judge ? { judge: { provider: options["judge-provider"], model: options["judge-model"] } } : {}),
-    });
+        judgeProvider: options["judge-provider"],
+        judgeModel: options["judge-model"],
+      })
+    );
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
+    cli.fail(runFlagError(error));
     cli.fail(evalUsage);
     return 1;
   }
@@ -180,7 +183,6 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
     rpm: options.rpm as number,
     judge: options.judge,
     judgeRpm: options["judge-rpm"],
-    judgeRoleRpm: options["judge-provider"] === undefined ? undefined : config.LLM_JUDGE_RPM,
   });
   const llm = (deps.createLlmClient ?? createLlmClient)({ table: limited });
 

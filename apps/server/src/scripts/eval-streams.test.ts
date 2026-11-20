@@ -181,6 +181,7 @@ describe("eval --sim streams", () => {
       extra: ["--provider", "gemini", "--reasoning-effort", "high"],
     });
     expect(code).toBe(1);
+    expectStream("--reasoning-effort is not accepted by this provider", "stderr");
     expectStream("usage: bun run eval", "stderr");
     expect(stdout).toEqual([]);
   });
@@ -293,6 +294,7 @@ describe("eval (case sets) streams", () => {
   test("a reasoning effort the provider does not take: the usage on stderr", async () => {
     const code = await classify(["--provider", "gemini", "--reasoning-effort", "high"]);
     expect(code).toBe(1);
+    expectStream("--reasoning-effort is not accepted by this provider", "stderr");
     expectStream("usage: bun run eval", "stderr");
     expect(stdout).toEqual([]);
   });

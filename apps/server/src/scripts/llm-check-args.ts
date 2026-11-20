@@ -5,15 +5,16 @@ import { z } from "zod";
 
 import { type LlmCall, type LlmProviderId, llmProviderIds } from "../platform/llm";
 
-export const usage = `usage: bun run llm:check [--role ${llmRoles.join("|")}] [--provider ${llmProviderIds.join("|")}] [--delegates]`;
+export const usage = `usage: bun run llm:check [--role ${llmRoles.join("|")}|all] [--provider ${llmProviderIds.join("|")}] [--delegates]`;
 
 export interface LlmCheckArgs {
-  role: LlmRole;
+  /** `all` checks the four roles in one run. */
+  role: LlmRole | "all";
   provider: LlmProviderId | undefined;
   delegates: boolean;
 }
 
-// null on any bad argument. --delegates belongs to the classifier's triage check only.
+// null on any bad argument. --delegates belongs to the classifier's triage check only (not to `--role all`).
 export function parseLlmCheckArgs(argv: string[]): LlmCheckArgs | null {
   let values;
   try {
@@ -28,7 +29,7 @@ export function parseLlmCheckArgs(argv: string[]): LlmCheckArgs | null {
   }
 
   const role = values.role ?? "classifier";
-  if (!isLlmRole(role)) return null;
+  if (role !== "all" && !isLlmRole(role)) return null;
 
   let provider: LlmProviderId | undefined;
   if (values.provider !== undefined) {

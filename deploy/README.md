@@ -29,6 +29,7 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - `CREDENTIALS_KEY_VERSION=1`
    - A new `CREDENTIALS_KEY` also drops every stored push device (phone notices): the stored secret of a device does not open, so the push sender removes the device on the next send (log `push_secret_unreadable`) and its open rows end `no_device`. Members turn notices on again in Settings. A changed `CREDENTIALS_KEY_VERSION` with the old key stored does not remove a device: the sender logs `push_key_version_mismatch` and waits (`docs/known-alerts.md`).
    - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (only for the `testmail` and probe tools), `LOG_LEVEL=info`. Leave `LOG_FORMAT` unset: Compose pins `json`.
+   - `LLM_PROVIDER` (`openai` by default, or `gemini`, `deepseek`) and the key of that provider (`OPENAI_API_KEY`, `GEMINI_API_KEY` or `DEEPSEEK_API_KEY`). No other key picks a model: every role uses the tiers of the provider (§ LLM provider tiers). With `TRIAGE_LLM_SCOPE` not `off` the start needs the key; with `off` the server starts and every LLM tool stops at once with `<KEY> is missing`. `deepseek` is for dev, tests and evals: config refuses it with `TRIAGE_LLM_SCOPE=all` outside the sim stack.
    - `OPENAI_BASE_URL` (optional): the endpoint of the `openai` provider. Empty = `https://api.openai.com/v1`. EU: `https://eu.api.openai.com/v1` with a key of the EU project. Own server: `OPENAI_ENDPOINT_KIND=own` is needed only for a remote https host; the server never gets `OPENAI_API_KEY` (set `OPENAI_OWN_API_KEY` if it needs a key). A bad value stops the start; the log names the key, not the value. See `docs/capabilities/triage.md` rule 16 and the guide `docs/own-model.md`.
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` stay `off` until you decide. `all` acts on every active mailbox of the server: read "Customers (S6a)" first.
@@ -641,6 +642,31 @@ A later change of a notice view schema (a stricter field, a renamed field) needs
 
 Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the code, not the migration. The code that comes with this migration already renders a row without text, so a rollback to any release that has this migration loses nothing. A release without this migration sends a row without text as an empty message: Telegram refuses it, and the row fails with `bad_request`, approval requests too (their sends expire after 48 h, and the owner gets the result notice). Before a rollback that far, wait until `select count(*) from outbox where text is null and status in ('pending', 'sending')` is 0 (outside the quiet hours the outbox empties within minutes). Do not run `db:rollback`: its down part fails every waiting row without text.
 
+## LLM provider tiers (F141)
+
+One variable picks the provider of every LLM call: `LLM_PROVIDER` (`openai`, `gemini` or `deepseek`) with the key of that provider. Each provider maps two tiers to models: `light` (classifier, drafter, extractor) and `strong` (judge). No env key picks a model. The effort follows the role and the provider (for example the drafter runs at `low` on a provider that takes an effort). `LLM_<ROLE>_TIMEOUT_MS` and `LLM_<ROLE>_RPM` stay.
+
+### Update
+
+Do this before `deploy/release.sh` (owner step O1 of the ticket). A removed key with a value stops the start, so an old `.env` cannot change a model without a notice.
+
+1. At the old release run `bun run llm:check --role <role>` for each of the four roles (`classifier`, `drafter`, `extractor`, `judge`) and keep the lines (model, effort).
+2. Delete these 12 keys from the `.env` of the host and from `deploy/sim.env` (`sed -i -E '/^(KEY1|KEY2)=/d' .env` with the names; never print the file):
+   - `LLM_JUDGE_PROVIDER`, `LLM_JUDGE_MODEL`, `LLM_JUDGE_REASONING`
+   - `LLM_DRAFTER_PROVIDER`, `LLM_DRAFTER_MODEL`, `LLM_DRAFTER_REASONING`
+   - `LLM_EXTRACTOR_PROVIDER`, `LLM_EXTRACTOR_MODEL`, `LLM_EXTRACTOR_REASONING`
+   - `OPENAI_MODEL_CLASSIFIER`, `GEMINI_MODEL_CLASSIFIER`, `OPENAI_REASONING_EFFORT`
+   An empty value is fine; a key with a value is refused.
+3. Deploy. Check: the server starts, and `bun run llm:check --role all` prints four lines. Compare model and effort with step 1. A changed model or effort is a production change: stop and ask the owner. Known: the drafter moves from `OPENAI_REASONING_EFFORT` to effort `low`; it is off until `reply_drafts` is on.
+
+### A removed key stops the start
+
+The start log then holds `config_key_bad config_key=<KEY> reason=key_removed` (the key name only, never its value). It means: delete this key from `.env`. Check the old and new names above, remove the line, restart. A `config_key_bad` line without `reason=key_removed` is another bad value: fix the key it names.
+
+### Roll back
+
+Run `deploy/rollback.sh` for the code (§ Roll back a release). The older release reads the model keys again: put back the old lines from your copy of `.env` (they were removed above) before you roll back, or the older release starts on its default models.
+
 ## Customers (S6a)
 
 Each customer is one organization with a plan. The operator manages the plan with the commands below. The output holds ids, codes, dates and counts only, never a name or an address.
@@ -887,7 +913,7 @@ Capability page: `docs/capabilities/reply-drafts.md` (rules, limits, tests). For
 
 ### Turn on (pilot organization first)
 
-1. The server needs `TRIAGE_LLM_SCOPE` on (the drafter job runs only then) and the role `drafter` set (`LLM_DRAFTER_PROVIDER`, `LLM_DRAFTER_MODEL`, `LLM_DRAFTER_REASONING`; an empty key falls back to the classifier). The quality gate G1 is not passed for `drafter-v1`: the reply injection set passed, the holdout missed two PD-083 bars (`docs/capabilities/reply-drafts.md` Limits, the reports in `evals/results/`). Turning the flag on for a pilot organization is therefore an owner decision, and the model of the drafter is a config value that the owner decides.
+1. The server needs `TRIAGE_LLM_SCOPE` on (the drafter job runs only then) and the key of `LLM_PROVIDER`. The drafter runs on the `light` tier of that provider at effort `low` (no model or effort key; § LLM provider tiers). The quality gate G1 is not passed for `drafter-v1`: the reply injection set passed, the holdout missed two PD-083 bars (`docs/capabilities/reply-drafts.md` Limits, the reports in `evals/results/`). Turning the flag on for a pilot organization is therefore an owner decision; a drafter on another model or effort needs a new gate run first.
 2. The flag: `$C run --rm cli bun run org:flag --org-id <uuid> --flag reply_drafts --on`. Check: `$C run --rm cli bun run org:flag --org-id <uuid>` shows `reply_drafts` `on`.
 3. The mailbox: the owner turns on the reply drafts switch in the style card of the settings page, or `$C run --rm cli bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name reply_drafts --value on`. The mailbox must be a password mailbox in `assist` mode; an OAuth mailbox refuses it (`refused: oauth_mailbox`).
 4. Wait for the job `replies.drafter` (every 15 s). Check: `bash deploy/logs.sh --since 1h --event reply_drafted` shows one line for each draft, and `bash deploy/logs.sh --since 1h --event reply_draft_error` and `--event reply_sweep_failed` show no line. A draft shows in the Drafts folder and in the panel at `/approvals`.
@@ -1137,10 +1163,10 @@ L="$S exec -T lab bun run lab"
    for key in POSTGRES_PASSWORD MIGRATOR_PASSWORD APP_PASSWORD; do sed -i "s|^$key=.*|$key=$(openssl rand -hex 24)|" deploy/sim.env; done
    sed -i "s|^EA_SERVER_IMAGE=.*|EA_SERVER_IMAGE=ea-sim-base:$T|" deploy/sim.env
    sed -i "s|<host>|email-assistant.<tailnet>.ts.net|" deploy/sim.env
-   sed -i -E '/^(OPENAI_|GEMINI_|LLM_PROVIDER=)/d' deploy/sim.env
-   grep -E '^(OPENAI_|GEMINI_|LLM_PROVIDER=)' .env >> deploy/sim.env
+   sed -i -E '/^(OPENAI_|GEMINI_|DEEPSEEK_|LLM_PROVIDER=)/d' deploy/sim.env
+   grep -E '^(OPENAI_|GEMINI_|DEEPSEEK_|LLM_PROVIDER=)' .env >> deploy/sim.env
    ```
-   Replace `<tailnet>` with the name of your tailnet. The last two lines copy the LLM provider, key and model lines of `.env` (the sim uses the same provider and models as production, ADR 0021 point 5). Do not print `.env` or `deploy/sim.env`. Keep a copy of `CREDENTIALS_KEY` in the password manager only if you keep the sim data. Do not change `LAB_STACK`, `TELEGRAM_*`, `SEND_*`, `*_SCOPE`, `HEARTBEAT_URL`, `OPERATOR_*` or `AUTH_SMTP_*`: the guard checks them.
+   Replace `<tailnet>` with the name of your tailnet. The last two lines copy the LLM provider and key lines of `.env` (the sim uses the same provider and tiers as production, ADR 0021 point 5; `DEEPSEEK_API_KEY` is there for a lab run on DeepSeek, which only the sim stack allows with `TRIAGE_LLM_SCOPE=all`). Do not print `.env` or `deploy/sim.env`. Keep a copy of `CREDENTIALS_KEY` in the password manager only if you keep the sim data. Do not change `LAB_STACK`, `TELEGRAM_*`, `SEND_*`, `*_SCOPE`, `HEARTBEAT_URL`, `OPERATOR_*` or `AUTH_SMTP_*`: the guard checks them.
 6. **Start and migrate.**
    ```sh
    $S build

@@ -239,6 +239,12 @@ describe("gateFileName", () => {
     );
   });
 
+  test("the model part is the resolved model id of the provider", () => {
+    expect(gateFileName({ ...base, model: "deepseek-flash", version: "1" })).toBe(
+      "classifier-classifier-v2-deepseek-flash-none-lab-01-v1.json"
+    );
+  });
+
   test("a path character becomes an underscore", () => {
     expect(gateFileName({ ...base, model: "a/b c" })).toContain("-a_b_c-");
   });

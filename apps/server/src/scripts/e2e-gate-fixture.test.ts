@@ -21,6 +21,10 @@ const config = loadConfig({
 describe("the e2e gate fixture", () => {
   test("the pin sets every removed key to empty text, and a removed key in the developer env cannot get through", () => {
     for (const key of removedEnvKeys) expect(E2E_LLM_PIN).toHaveProperty([key], "");
+    // The own-endpoint keys and every removed key are empty text; the provider is the only value.
+    expect(E2E_LLM_PIN).toHaveProperty(["OPENAI_OWN_MODEL"], "");
+    const values = Object.entries(E2E_LLM_PIN).filter(([, value]) => value !== "");
+    expect(values).toEqual([["LLM_PROVIDER", "openai"]]);
     const env = {
       DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant_e2e",
       CREDENTIALS_KEY: Buffer.alloc(32, 7).toString("base64"),

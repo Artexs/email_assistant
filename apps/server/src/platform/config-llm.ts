@@ -40,6 +40,11 @@ export const removedEnvKeys: readonly string[] = [
   ...keyedRoles.flatMap((role) => removedRoleFields.map((field) => `LLM_${role.toUpperCase()}_${field}`)),
 ];
 
+/** True for a key of `removedEnvKeys`: the start log marks it so the operator knows to delete the line. */
+export function isRemovedEnvKey(key: string): boolean {
+  return removedEnvKeys.includes(key);
+}
+
 // The removed keys stay in the schema as optional strings so Zod does not drop them: `checkRemovedKeys` refuses a
 // non-empty value. An empty value passes.
 const removedKeyShape = Object.fromEntries(removedEnvKeys.map((key) => [key, z.string().optional()])) as Record<
@@ -202,6 +207,39 @@ export interface LlmRoleOverride {
   provider?: LlmProviderId;
   model?: string;
   reasoningEffort?: string;
+}
+
+/** The provider, model and effort flags of one eval or check run. */
+export interface LlmRunFlags {
+  provider?: LlmProviderId;
+  model?: string;
+  reasoningEffort?: string;
+  judgeProvider?: LlmProviderId;
+  judgeModel?: string;
+}
+
+/**
+ * The role overrides of one run (the eval and `llm:check` flags). `--provider` moves every role, the judge too;
+ * `--judge-provider` then moves only the judge. `--model` and `--reasoning-effort` pin the judged role; `--judge-model`
+ * pins the judge. Without a flag a role keeps the tier of its provider.
+ */
+export function runOverrides(judged: LlmRole, flags: LlmRunFlags): Record<LlmRole, LlmRoleOverride> {
+  const roles = Object.fromEntries(llmRoles.map((role) => [role, { provider: flags.provider }])) as Record<
+    LlmRole,
+    LlmRoleOverride
+  >;
+  roles[judged] = { ...roles[judged], model: flags.model, reasoningEffort: flags.reasoningEffort };
+  if (judged !== "judge") {
+    roles.judge = { provider: flags.judgeProvider ?? flags.provider, model: flags.judgeModel };
+  }
+  return roles;
+}
+
+/** The operator text of a `ConfigError` that `llmRoleTable` throws for a run flag. Names a flag or a key, never a value. */
+export function runFlagError(error: ConfigError): string {
+  if (error.keys.includes("reasoningEffort")) return "--reasoning-effort is not accepted by this provider";
+  if (error.keys.includes("OPENAI_OWN_MODEL")) return "OPENAI_OWN_MODEL is missing: an own endpoint needs its model";
+  return `config error: ${error.keys.join(", ")}`;
 }
 
 /**

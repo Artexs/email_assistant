@@ -8,7 +8,14 @@ import { checkVapid, pushShape } from "./config-push";
 import { addressPattern, ConfigError, emptyAsUndefined, isIpOrCidr, isOrigin, parseList } from "./config-shared";
 
 // The parts of this file moved to the `config-*.ts` files; every name that this file exported is still exported here.
-export { type LlmRoleOverride, llmRoleTable } from "./config-llm";
+export {
+  isRemovedEnvKey,
+  type LlmRoleOverride,
+  llmRoleTable,
+  type LlmRunFlags,
+  runFlagError,
+  runOverrides,
+} from "./config-llm";
 export {
   type AuthMailSettings,
   authMailSettings,
