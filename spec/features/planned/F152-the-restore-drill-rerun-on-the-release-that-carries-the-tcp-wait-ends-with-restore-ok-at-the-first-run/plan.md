@@ -10,30 +10,29 @@ Coordinator task (2026-11-20): "release v0.4.3 is live on the VPS; v0.4.4 (two m
 
 ### Decisions
 
-- **D1 — The clone tag is the tag the live stack runs** (`current=` in the release state file at drill time), when that tag carries `wait_db_tcp` (`v0.4.2` or later). Reason: the drill restores a backup of the live database and then migrates at the clone's tag; with the same tag, the migrate step applies nothing, so the drill proves the restore path the operator would use for that live data. Rejected: a fixed `v0.4.3` (after the `v0.4.4` release the dump holds the `v0.4.4` schema, and an older tag would meet migrations it does not know); a clone of `master` (`EA_RELEASE=dev`, not a release). If `current` is older than `v0.4.2` (a rollback), stop and record "no release carries the wait", default, owner to confirm (Q1).
-- **D2 — No drill next to a release run.** Stage 01 starts only when the release state file shows `pending=` empty, no `deploy/release.sh` or `deploy/rollback.sh` process runs on the host, and the 30-minute watch of the last release has ended. Reason: both run `deploy/backup.sh` and Docker builds; the board allows one VPS deploy at a time, and a drill that measures restore time on a busy host gives a false number. The coordinator task says `v0.4.4` is being released now: stage 01 waits for that release job to end. Rejected: run in parallel (separate Compose project, but shared CPU, disk and the backup lock).
-- **D3 — Time window:** not between 03:00 and 04:00 host time (the `30 3 * * *` backup cron). Free disk on `/` at least 5 GB before the start (`df -h /`); else stop and record. Default, owner to confirm (Q2).
-- **D4 — Fresh volume is a precondition, not a step to skip.** `docker volume ls -q --filter name=ea-drill_` must print nothing before the drill run. With a leftover volume: `--init-env`, then `--down`, then check again, then `--init-env` again (the order of the ticket text; `--down` refuses with no `deploy/drill.env`). Never remove a volume or an image by hand.
-- **D5 — One run, no rerun.** Any `restore failed at <step>` or a missing `db ready probes=` line is the result. Keep the stack up for a look, save `$C logs db` (no secret: the drill passwords are only in `drill.env`, never printed), then `--down`, record the failure, and the coordinator files a new ticket with the failure line. `docs/known-alerts.md` then says `open: drill 2 failed at <step>, <date>`.
-- **D6 — Probe count meaning.** `probes=<p>` with `p` > 1 shows the init server was seen and the wait held. `p` = 1 means the final server was ready at the first probe: the drill still passes (the acceptance is `restore ok` at the first run); the record says the init phase was not seen, and test F139-1 still proves the wait.
-- **D7 — The record proves V4 of the production ticket.** The live tag holds `deploy/compose-lib.sh` and the `migrate` service (from `v0.4.3`), so the record states "migrate service path ran on a host". F108 stage 07 cites it (its § Restore, V4).
-- **D8 — Stage 02 is test-only hardening** (the F139 review note). F139-2 (new-host) gains the two asserts that F139-1 has for the drill target: 3 `sleep 1` calls and every probe after the `up -d --wait db` call. No change to `deploy/restore.sh`. Rejected: leaving it out (it costs one small job; the ticket text names it).
+- **D1 — The clone tag `T` is the live tag:** `current=` in `deploy/release-state/state` at drill time. `T` must carry `wait_db_tcp` (`v0.4.2` or later), and its newest `db/migrations` file must equal the newest `schema_migrations` version of the live database (a rollback after a migrate step keeps the newer schema, `deploy/rollback.sh`). Else stop and record (Q1). Reason: the drill restores the live dump, then migrates at `T`; with the same schema the migrate step applies nothing. Rejected: a fixed `v0.4.3` (after `v0.4.4` the dump has a newer schema); `master` (`EA_RELEASE=dev`).
+- **D2 — No drill next to a release run.** Start only when `pending=` is empty, no `release.sh` or `rollback.sh` process runs, and the last release's 30-minute watch has ended. Reason: one VPS deploy at a time; both run `backup.sh` and builds, and a busy host gives a false restore time. So stage 01 waits for the `v0.4.4` release job. Rejected: run in parallel. A running `ea-sim` stays up (CPU only); the record names its state.
+- **D3 — Window and disk:** not 03:00–04:00 host time (backup cron `30 3`); at least 5 GB free on `/`. Default, owner to confirm (Q2).
+- **D4 — Fresh volume is a precondition.** `docker volume ls -q --filter name=ea-drill_` prints nothing before the run. With a leftover volume: `--init-env`, `--down`, check again, `--init-env` (`--down` refuses with no `deploy/drill.env`). Never remove a volume or image by hand.
+- **D5 — One run, no rerun.** Any `restore failed at <step>` or a missing `db ready probes=` line is the result, except an operator error (D10). Keep the stack up, save `$C logs db` (no secret), `--down`, record, and file a new ticket with the failure line. `docs/known-alerts.md`: `open: drill 2 failed at <step>, <date>`.
+- **D6 — Probe meaning.** `p` > 1: the init server was seen and the wait held. `p` = 1: the drill passes, the record says the init phase was not seen; test F139-1 still proves the wait.
+- **D7 — The record proves V4 of the production ticket.** Every tag D1 allows has `deploy/compose-lib.sh` and the `migrate` service (both since `v0.4.2`), so the record says "the `migrate` service path ran on a host". F108 stage 07 cites it.
+- **D8 — Stage 02 is test-only hardening** (the F139 review note). F139-2 (new-host) gains the asserts F139-1 has: 3 `sleep 1` calls, every probe after the `up -d --wait db` call, plus the `up` index ≥ 0 (else the order check passes on a missing call). Break checks: delete the `sleep 1` line (F139-1 and F139-2 fail); move the `wait_db_tcp` call before `up` (F139-2 fails). No change to `deploy/restore.sh`. Rejected: leave it out (one small job; the ticket text names it).
+- **D9 — The pre-drill backup uses the cron `PATH`:** `PATH=$HOME/bin:$PATH deploy/backup.sh`. Reason: an `ssh` shell runs apt `rclone` 1.53.3, which fails at the B2 login, writes `result=failed` and fires the live backup alert. On a failure: fix, run once more; on a second failure stop and record.
+- **D10 — Operator errors are not the drill result.** The age key on this PC is `~/.config/ea-backup/age-key.txt` (the README example `~/ea-backup-key.txt` does not exist). A dry decrypt to `/dev/null` runs first. A failure of the backup, the dry check, `age` in the pipe or `ssh` is an operator error: fix, `--down`, fresh volume, `--init-env`, run again. Reason: an empty stdin passes `db-ready` and fails at `pg_restore`, a false drill failure.
 
 ### Edge cases (answers)
 
-- Leftover drill volume or `drill.env` from an old run: D4.
-- Release in flight or a rollback during the drill: D2; a rollback that starts during the drill does not touch `ea-drill`, but the record then names it.
-- Live data changes during the drill: counts must lie between before and after (README § Drill step 4).
-- Age key: decrypt only on the owner's machine (this PC); the key and the plain dump never touch the VPS disk.
-- Secrets: no password, key line or dump byte in a log, a record or a chat. `--init-env` prints only a summary line.
+- Leftover volume or `drill.env`: D4. Release or rollback in flight: D1, D2.
+- Live data changes during the drill: drill counts lie between before and after (README § Drill step 4).
+- Secrets: the key and the plain dump stay on this PC; the encrypted copy goes to a temp folder, deleted at the end. No password, key line or dump byte in a log, a record or a chat.
 
 ## Facts checked (2026-11-20, code at fb1df6d64)
 
-- `git tag --contains 38180f555` lists `v0.4.2` and `v0.4.3`; HEAD is the "Release v0.4.4" commit, not tagged yet (scout 1).
-- `git diff v0.4.3 HEAD` on `deploy/restore.sh`, `deploy/compose*.yaml` and `deploy/compose-lib.sh` is empty (scout 1).
-- `deploy/restore.sh`: `set_compose` refuses for the drill target when `deploy/drill.env` is missing, also for `--down`; `init_env` refuses when `drill.env` exists; `--init-env` reads only `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION` from the live `.env` (read here). After the env split these keys stay in `.env` (only the three database passwords move to `deploy/db.env`, `deploy/env-split.sh`).
-- `deploy/test/restore.test.ts`: F139-1 asserts `sleepCalls()` and probe order after `up`; F139-2 asserts neither (read here).
-- The queue note holds one drill record (2026-11-19, `v0.3.1`); `v0.4.3` released 2026-11-20 19:28Z, watch clean (read here).
+- `git tag --contains 38180f555` lists `v0.4.2`, `v0.4.3`; HEAD is the untagged "Release v0.4.4" commit. `git diff v0.4.3 HEAD` on `deploy/restore.sh`, `deploy/compose*.yaml`, `deploy/compose-lib.sh` is empty (scout 1, review 1).
+- `deploy/restore.sh`: the drill target refuses with no `drill.env`, also for `--down`; `--init-env` refuses when `drill.env` exists and reads only the `CREDENTIALS_KEY` lines, which stay in `.env` after the env split (`deploy/env-split.sh` moves only the three passwords).
+- `deploy/test/restore.test.ts`: F139-1 asserts pauses and probe order; F139-2 neither. The new-host `up` call holds ` up -d --wait db` (review 1).
+- `v0.4.2` has the `migrate` service (review 1 N7). Age key path: `notes/owner-later.md` § 4. Backup `PATH` fault: queue note, F108 stage 04 step 5.
 
 ## Not verified
 
@@ -71,7 +70,7 @@ None. Stage 01 is a pre-approved coordinator VPS run (`CLAUDE.md` § VPS, owner 
 
 ## How to run (coordinator)
 
-Stage 01: the coordinator runs it on the VPS when D2 holds (after the `v0.4.4` release job ends). Stage 02, at any time:
+Move the folder to `active/` and commit before the first spawn. Stage 01: the coordinator runs it on the VPS when D2 holds (after the `v0.4.4` release job ends). Stage 02, at any time:
 
 ```
 limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking medium \
@@ -86,12 +85,12 @@ Land stage 02 with `--keep-open` if stage 01 has no record yet. The last of the 
 
 - Scouts: 2 (`scouts.md`).
 - [written] ticket.md, plan.md, stages/stage-01-vps-drill-rerun.md, stages/stage-02-new-host-wait-asserts.md, questions.md.
-- Word counts (`wc -w`, before the review): plan.md 1392, stage-01 694, stage-02 287.
+- Word counts (`wc -w`, after the review fixes): plan.md 1498, stage-01 698, stage-02 314.
 
 ## Cold review
 
-See § Log.
+One round, `claude-opus-5-5` at `high`: no stage is `[risky]`, but the plan touches the deploy and VPS restore path, a risk area (`spec/build.md` standing models). Verdict FAIL, 1 blocking, 9 notes (`plan-review-1.md`). All fixed, none rejected: B1 → D10 and stage 01 step 4 (real key path, dry decrypt, operator error); N1 → D9; N2 → D1 schema check; N3, N4 → D8 and stage 02 (index ≥ 0, two break checks); N5, N8 → ticket wording; N6 → record heading names F139, plus an F108 stage 07 edit in the final message; N7 → D7; N9 → state file path, clone from origin, temp-folder cleanup, `ea-sim` note, move to `active/` before the spawn.
 
 ## Log
 
-- 2026-11-20: plan written at fb1df6d64.
+- 2026-11-20: plan written at fb1df6d64; cold review FAIL (1 blocking, 9 notes), all fixed.

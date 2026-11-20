@@ -6,13 +6,13 @@ opened: 2026-11-19
 
 ## Outcome
 
-The restore drill rerun on the release that carries the TCP wait ends with restore ok at the first run. The first drill (2026-11-19) needed a second start because the restore queried the database while the Postgres image still ran its init server. The fix that waits for the final server on TCP (F139, step `db-ready` in `deploy/restore.sh`) is in code and tests, but no real fresh volume has proven it. This rerun proves it on the VPS and gives the production ticket (F108 stage 07) its proof of the new restore path.
+The restore drill rerun on the release that carries the TCP wait ends with restore ok at the first run. The first drill (2026-11-19) needed a second start because the restore queried the database while the Postgres image still ran its init server. The fix that waits for the final server on TCP (F139, step `db-ready` in `deploy/restore.sh`) is in code and tests, but no real fresh volume has proven it. This rerun proves it on the VPS when the run sees the init server (`probes` above 1; else the record says the init phase was not seen), and gives the production ticket (F108 stage 07) its proof of the new restore path.
 
 ## Scope
 
 - One drill in project `ea-drill` on a fresh volume, at the tag that the live stack runs, as `deploy/README.md` § VPS lost / Drill says. Run once, no rerun on failure.
 - The drill record: `notes/2026-11-15-vps-deploy-queue.md`, `deploy/README.md` § VPS lost, `docs/known-alerts.md` § restore drill, `docs/capabilities/backups.md`.
-- Optional hardening from the F139 review: the new-host restore test asserts its 3 pauses and that its probes come after `up -d --wait db`.
+- Test hardening that the F139 review named as optional, taken in here: the new-host restore test asserts its 3 pauses and that its probes come after `up -d --wait db`.
 
 ## Out of scope
 
@@ -25,7 +25,7 @@ The restore drill rerun on the release that carries the TCP wait ends with resto
 - Each drill count lies between the live counts before and after the drill backup.
 - The live `db` and `server` container ids and start times are the same before and after the drill.
 - `docs/known-alerts.md` § restore drill says `fixed (drill 2, <date>, <tag>)`, and the queue note holds "Restore drill record 2".
-- Test F139-2 in `deploy/test/restore.test.ts` asserts 3 `sleep` calls and probes after `up -d --wait db`; it fails when the wait has no pause.
+- Test F139-2 in `deploy/test/restore.test.ts` asserts 3 `sleep` calls and probes after `up -d --wait db`; it fails when the pause line is deleted or the wait runs before `up`.
 
 ## Slices
 

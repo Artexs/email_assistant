@@ -13,11 +13,15 @@ Part of [`../plan.md`](../plan.md). Not `[risky]`. No migration, no `bun.lock` c
 **Test.** F139-2 (`init-probes` = 3, `--target new-host --stdin`) keeps its current asserts and gains:
 
 1. `sleepCalls()` equals `["sleep 1", "sleep 1", "sleep 1"]`.
-2. Each of the 4 probe indexes is greater than the index of the `up -d --wait db` call in `dockerCalls()` (the same check as F139-1). If the new-host target writes the `up` call in another form (it uses `ea_compose_init`, not the drill `-p ea-drill` command), match the form the stub records; do not loosen F139-1.
+2. The index of the `up -d --wait db` call in `dockerCalls()` is ≥ 0 (the call exists), and each of the 4 probe indexes is greater than it (the same order check as F139-1, plus the existence check, D8). If the new-host target writes the `up` call in another form (it uses `ea_compose_init`, not the drill `-p ea-drill` command), match the form the stub records; do not loosen F139-1.
 
 Keep the test name, or extend it to say "with 3 pauses, after up". Use the existing helpers; add no new helper unless two tests use it.
 
-**Break check.** Change `sleep 1` in `wait_db_tcp` of `deploy/restore.sh` to `sleep 2` in the work tree, run `bun test deploy/test/restore.test.ts`: F139-1 and F139-2 fail. Then restore the line (`git checkout deploy/restore.sh`). Commit nothing from that run. Write the command and the failing test names in the final message.
+**Break checks** (D8), each in the work tree, then `bun test deploy/test/restore.test.ts`, then `git checkout deploy/restore.sh`:
+
+- Delete the `sleep 1` line of `wait_db_tcp`: F139-1 and F139-2 fail.
+- Move the `wait_db_tcp` call of `restore()` before the `up -d --wait db` call: F139-2 fails.
+ Commit nothing from that run. Write the command and the failing test names in the final message.
 
 **Check.** `bun test deploy/test/restore.test.ts` passes.
 
