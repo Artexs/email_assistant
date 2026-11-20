@@ -6,8 +6,8 @@ import type { CliOutput } from "../platform/cli";
 import { type Config, loadConfig } from "../platform/config";
 import { type GenerateFn, type GenerateRequest, LlmSoftError, type ProviderRegistry } from "../platform/llm";
 
-import { parseLlmCheckArgs } from "./llm-check-args";
 import { runLlmCheck } from "./llm-check";
+import { parseLlmCheckArgs } from "./llm-check-args";
 
 // `runLlmCheck` with fake providers: no real call, no key leaves the test.
 const base = {
