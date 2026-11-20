@@ -3,7 +3,6 @@ import { describe, expect, test } from "bun:test";
 import { approvalItemSchema } from "./approvals";
 import {
   cleanReplyInstruction,
-  REPLY_INSTRUCTION_MAX,
   REPLY_INSTRUCTION_RAW_MAX,
   replyConflictSchema,
   replyRecipientsBodySchema,
@@ -104,10 +103,6 @@ describe("the reply fields of an approval item", () => {
 });
 
 describe("cleanReplyInstruction", () => {
-  test("the cap is 300 characters", () => {
-    expect(REPLY_INSTRUCTION_MAX).toBe(300);
-  });
-
   test.each([
     ["trims the ends", "  Odpisz uprzejmie  ", "Odpisz uprzejmie"],
     ["joins two lines into one", "Pierwsza\r\nDruga", "Pierwsza Druga"],

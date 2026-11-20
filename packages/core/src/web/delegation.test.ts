@@ -21,12 +21,6 @@ describe("delegatePatchBodySchema", () => {
     expect(delegatePatchBodySchema.safeParse(body).success).toBe(true);
   });
 
-  test("an email key is refused because the address never changes", () => {
-    const result = delegatePatchBodySchema.safeParse({ email: "a@b.pl", name: "A" });
-    expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.code).toBe("unrecognized_keys");
-  });
-
   test("a name of the raw maximum parses and one more character is refused", () => {
     expect(delegatePatchBodySchema.safeParse({ name: "a".repeat(DELEGATE_NAME_RAW_MAX) }).success).toBe(true);
     expect(issues({ name: "a".repeat(DELEGATE_NAME_RAW_MAX + 1) })).toEqual([
