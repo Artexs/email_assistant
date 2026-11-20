@@ -58,7 +58,7 @@ None. The change is one pure schema rule with owner approval.
 
 ## Owner steps
 
-- After the release that carries stage 01 (coordinator, production, read-only, a record, not a stop): count `actions` rows of type `create_draft` whose `payload->>'kind'` is `delegation` or `reminder` and whose `payload->>'due_date'` is not `''` and does not pass the calendar rule, grouped by `status`. Above zero: open a follow-up ticket (D5).
+- Before the release that carries stage 01 (review finding 1: the release itself breaks stored drafts with a bad date; coordinator, production, read-only, a record, not a stop): count `actions` rows of type `create_draft` whose `payload->>'kind'` is `delegation` or `reminder` and whose `payload->>'due_date'` is not `''` and does not pass the calendar rule, grouped by `status`. Above zero: open a follow-up ticket (D5).
 
 ## Review
 
