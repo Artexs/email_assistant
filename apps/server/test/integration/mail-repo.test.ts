@@ -97,13 +97,14 @@ async function emailRow(trx: Transaction<DB>, mailboxId: string, dedupKey: strin
 }
 
 describe("mail repository: mailboxes", () => {
-  test("insertMailbox stores the org_id of the context and getMailbox converts the cursor", async () => {
+  test("insertMailbox stores the org_id of the context and getMailbox returns the row", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
       const row = await getMailbox(trx, a.ctx, a.mailboxId);
       expect(row?.org_id).toBe(a.ctx.orgId);
-      expect(row?.uidvalidity).toBeNull();
-      expect(row?.last_uid).toBeNull();
+      // The old copy of the INBOX cursor stays out of the row: the cursor is read from `mailbox_folders`.
+      expect(row).not.toHaveProperty("uidvalidity");
+      expect(row).not.toHaveProperty("last_uid");
       expect(row?.capabilities).toEqual(testCapabilities);
       expect(row?.folder_map).toEqual({ drafts: "Drafts" });
       expect(row?.status).toBe("active");
@@ -140,11 +141,11 @@ describe("mail repository: mailboxes", () => {
       const first = { uidValidity: 4_000_000_000, lastUid: 10 };
 
       expect(await updateCursor(trx, b.ctx, a.mailboxId, empty, first)).toBe(false);
-      let row = await getMailbox(trx, a.ctx, a.mailboxId);
+      let row = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
       expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(empty);
 
       expect(await updateCursor(trx, a.ctx, a.mailboxId, empty, first)).toBe(true);
-      row = await getMailbox(trx, a.ctx, a.mailboxId);
+      row = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
       expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(first);
 
       expect(await updateCursor(trx, a.ctx, a.mailboxId, empty, { uidValidity: 1, lastUid: 1 })).toBe(false);
@@ -157,13 +158,13 @@ describe("mail repository: mailboxes", () => {
           { uidValidity: 1, lastUid: 1 }
         )
       ).toBe(false);
-      row = await getMailbox(trx, a.ctx, a.mailboxId);
+      row = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
       expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(first);
 
       expect(await updateCursor(trx, a.ctx, a.mailboxId, first, { uidValidity: 4_000_000_000, lastUid: 12 })).toBe(
         true
       );
-      row = await getMailbox(trx, a.ctx, a.mailboxId);
+      row = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
       expect(row?.last_uid).toBe(12);
     });
   });
@@ -246,7 +247,7 @@ describe("mail repository: sync folder cursor", () => {
     });
   });
 
-  test("updateFolderCursor on the INBOX row compares the cursor and writes mailboxes too", async () => {
+  test("updateFolderCursor on the INBOX row compares the cursor", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
       const folder = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
@@ -256,18 +257,15 @@ describe("mail repository: sync folder cursor", () => {
 
       expect(await updateFolderCursor(trx, b.ctx, folder.id, empty, first)).toBe(false);
       expect(await updateFolderCursor(trx, a.ctx, folder.id, { uidValidity: 1, lastUid: 1 }, first)).toBe(false);
-      expect((await getMailbox(trx, a.ctx, a.mailboxId))?.last_uid).toBeNull();
       expect((await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox"))?.last_uid).toBeNull();
 
       expect(await updateFolderCursor(trx, a.ctx, folder.id, empty, first)).toBe(true);
       const row = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
-      const mailbox = await getMailbox(trx, a.ctx, a.mailboxId);
       expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(first);
-      expect({ uidValidity: mailbox?.uidvalidity, lastUid: mailbox?.last_uid }).toEqual(first);
     });
   });
 
-  test("updateFolderCursor on a non-INBOX row leaves mailboxes unchanged", async () => {
+  test("updateFolderCursor on a non-INBOX row writes that row", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
       const inserted = await trx
@@ -280,11 +278,6 @@ describe("mail repository: sync folder cursor", () => {
       expect(await updateFolderCursor(trx, a.ctx, inserted.id, { uidValidity: null, lastUid: null }, next)).toBe(true);
       const row = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
       expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual(next);
-      const mailbox = await getMailbox(trx, a.ctx, a.mailboxId);
-      expect({ uidValidity: mailbox?.uidvalidity, lastUid: mailbox?.last_uid }).toEqual({
-        uidValidity: null,
-        lastUid: null,
-      });
     });
   });
 });
@@ -315,11 +308,9 @@ describe("mail repository: forceRescan", () => {
         .values({ org_id: a.ctx.orgId, mailbox_id: a.mailboxId, key: "bills", path: "Rachunki", role: "sort" })
         .execute();
       expect(await forceRescan(trx, b.ctx, a.mailboxId)).toBe(false);
-      expect((await getMailbox(trx, a.ctx, a.mailboxId))?.uidvalidity).toBe(7);
+      expect((await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox"))?.uidvalidity).toBe(7);
 
       expect(await forceRescan(trx, a.ctx, a.mailboxId)).toBe(true);
-      const row = await getMailbox(trx, a.ctx, a.mailboxId);
-      expect({ uidValidity: row?.uidvalidity, lastUid: row?.last_uid }).toEqual({ uidValidity: 0, lastUid: 5 });
       const folder = await getSyncFolder(trx, a.ctx, a.mailboxId, "inbox");
       expect({ uidValidity: folder?.uidvalidity, lastUid: folder?.last_uid }).toEqual({ uidValidity: 0, lastUid: 5 });
       const sortRow = await getSyncFolder(trx, a.ctx, a.mailboxId, "offers");
