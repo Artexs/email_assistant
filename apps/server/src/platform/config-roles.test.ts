@@ -27,7 +27,11 @@ function failure(env: Record<string, string | undefined>): ConfigError {
   throw new Error("did not throw");
 }
 
-const row = (provider: LlmRoleSettings["provider"], model: string, reasoningEffort: string | null): LlmRoleSettings => ({
+const row = (
+  provider: LlmRoleSettings["provider"],
+  model: string,
+  reasoningEffort: string | null
+): LlmRoleSettings => ({
   provider,
   model,
   timeoutMs: 30000,

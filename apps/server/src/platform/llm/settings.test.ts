@@ -36,8 +36,10 @@ describe("llmEndpointFields (the llm_settings start log)", () => {
       llmEndpointFields(llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "https://eu.api.openai.com/v1" })), "judge")
     ).toMatchObject({ endpoint: "eu", host: "eu.api.openai.com" });
     expect(
-      llmEndpointFields(llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "http://[::1]:11434/v1", OPENAI_OWN_MODEL: "m" })), "classifier")
-        .host
+      llmEndpointFields(
+        llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "http://[::1]:11434/v1", OPENAI_OWN_MODEL: "m" })),
+        "classifier"
+      ).host
     ).toBe("::1");
     expect(
       llmEndpointFields(llmRoleTable(loadConfig({ ...env, LLM_PROVIDER: "gemini", GEMINI_API_KEY: "g" })), "classifier")

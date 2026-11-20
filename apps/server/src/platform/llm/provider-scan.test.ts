@@ -20,7 +20,8 @@ export const ALLOWED_SITES: Record<string, string> = {
   "apps/server/src/platform/llm/endpoint.ts": "old site: stage 07",
   "apps/server/src/platform/llm/settings.ts": "old site: stage 07",
   "apps/server/src/platform/outside-services.ts": "stays: a hand list by design, each outside key is a decision",
-  "apps/server/src/scripts/e2e-seed-args.ts": "stays: the e2e pin sets every removed key and OPENAI_OWN_MODEL to empty text",
+  "apps/server/src/scripts/e2e-seed-args.ts":
+    "stays: the e2e pin sets every removed key and OPENAI_OWN_MODEL to empty text",
   "apps/server/src/scripts/eval-args.ts": "old site: stage 05",
   "apps/server/src/scripts/eval-config.ts": "old site: stage 07",
   "packages/core/src/legal/subprocessors.ts":

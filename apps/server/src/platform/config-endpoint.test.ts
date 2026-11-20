@@ -110,7 +110,12 @@ describe("OPENAI_BASE_URL and OPENAI_ENDPOINT_KIND", () => {
 
   test("11: a Gemini role keeps its effort-free row next to an own openai endpoint", () => {
     const table = llmRoleTable(
-      loadConfig({ ...openaiEnv, GEMINI_API_KEY: "g", OPENAI_BASE_URL: "http://localhost:11434/v1", OPENAI_OWN_MODEL: "m" }),
+      loadConfig({
+        ...openaiEnv,
+        GEMINI_API_KEY: "g",
+        OPENAI_BASE_URL: "http://localhost:11434/v1",
+        OPENAI_OWN_MODEL: "m",
+      }),
       { judge: { provider: "gemini" } }
     );
     expect(table.roles.judge.provider).toBe("gemini");

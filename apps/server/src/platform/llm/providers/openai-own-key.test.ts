@@ -55,7 +55,9 @@ function fakeServer() {
 async function callOwnServer(extraEnv: Record<string, string>) {
   const fake = fakeServer();
   try {
-    const table = llmRoleTable(loadConfig({ ...baseEnv, OPENAI_BASE_URL: fake.url, OPENAI_OWN_MODEL: "own-m", ...extraEnv }));
+    const table = llmRoleTable(
+      loadConfig({ ...baseEnv, OPENAI_BASE_URL: fake.url, OPENAI_OWN_MODEL: "own-m", ...extraEnv })
+    );
     expect(table.providers.openai.endpoint).toBe("own");
     await createLlmClient({ table }).generate(call);
     expect(fake.seen).toHaveLength(1);

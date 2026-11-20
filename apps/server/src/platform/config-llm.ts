@@ -37,9 +37,7 @@ const roleKeyShape = Object.fromEntries(
 const removedRoleFields = ["PROVIDER", "MODEL", "REASONING"] as const;
 export const removedEnvKeys: readonly string[] = [
   ...llmProviderIds.flatMap((id) => llmProviders[id].removedEnvKeys),
-  ...keyedRoles.flatMap((role) =>
-    removedRoleFields.map((field) => `LLM_${role.toUpperCase()}_${field}`)
-  ),
+  ...keyedRoles.flatMap((role) => removedRoleFields.map((field) => `LLM_${role.toUpperCase()}_${field}`)),
 ];
 
 // The removed keys stay in the schema as optional strings so Zod does not drop them: `checkRemovedKeys` refuses a
