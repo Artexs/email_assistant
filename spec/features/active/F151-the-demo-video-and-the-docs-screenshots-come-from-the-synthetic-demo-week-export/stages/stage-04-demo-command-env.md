@@ -1,5 +1,7 @@
 # F151 stage 04 — Demo command and server env `[risky]`
 
+Landed: `1377e28f9`.
+
 Needs stage 01: `buildReplayTable`, `startReplayServer`. Needs stage 02: `planDemoRun`, `demoGateCopy`. May run next to 03.
 
 Part of [`../plan.md`](../plan.md). Decisions P3, P4, D3, D4, D7, D11. Risk: a wrong env sends demo mail to a paid model.

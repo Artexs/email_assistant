@@ -1,6 +1,8 @@
 # F151 stage 02 — Demo run plan
 
-Needs stage 01: `replayKey`, `buildReplayTable`. May run next to 03.
+Landed: `d66055cd6`.
+
+Needs stage 01: `replayKey`, `buildReplayTable`.
 
 Part of [`../plan.md`](../plan.md). Decisions P4, D1, D4, D5, D8.
 

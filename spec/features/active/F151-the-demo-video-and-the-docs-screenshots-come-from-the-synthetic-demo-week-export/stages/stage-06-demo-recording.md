@@ -1,66 +1,63 @@
 # F151 stage 06 — Demo recording on the export `[risky]`
 
-Needs stage 03: `cutPlan`, `stepView`. Needs stage 05: the setup, `deliverToB`, `demoMessage`, the `@record` test tag. Needs coordinator step C1 (export and `*_demo` database).
+Needs stage 03 (landed): `cutPlan`, `stepView`. Needs stage 05: setup, `deliverToB`, `demoMessage`, `readDemoPlan`, `@record` tag. Needs stage 08: `uploadVerdict`, `modelCheck`, the output order of `record.ts`. Needs C1a: an export of an ended run day 1 or later (D12) and the `*_demo` database.
 
-Part of [`../plan.md`](../plan.md). Decisions P1, P2, P5, D1, D7, D8, D10. Risk: public video.
+Part of [`../plan.md`](../plan.md): P1, P2, P5, D1, D7, D8, D10, D12, D13, D14; [`../notes-for-stages-05-06.md`](../notes-for-stages-05-06.md). Risk: public video. Final-only (C3): the day-5 Proof run and its README result line.
 
-## Goal
+Goal: `demo:record --seed <export>` records eight live steps, cuts the waits, says if the video is an upload candidate.
 
-`demo:record --seed <export>` records the eight steps live, cuts the waits and says if the video is an upload candidate (the demo-source spike).
+## Step 1 — eight steps (`record.spec.ts`, `@record`)
 
-## Step 1 — the eight steps (`record.spec.ts`, `@record`, demo branch)
+Remove the `demo_source_recording_not_built` throw. The demo branch reads `DEMO_PLAN_FILE` (`readDemoPlan`), signs in as the demo owner off camera. Waits (`DEMO_WAIT_LIMITS_MS`) poll an API or the fake Telegram (time-out: `demo_wait_timeout <what>`). Live mail: `deliverToB`, time of delivery.
 
-Remove the `demo_source_recording_not_built` throw. The demo branch reads `DEMO_PLAN_FILE` and signs in as the demo owner off camera. Waits (`DEMO_WAIT_LIMITS_MS`) poll an API or the fake Telegram between cues; a time-out is `demo_wait_timeout <what>`. Live mail: `deliverToB` at the time of delivery.
-
-| Step | On camera | Before the next step (off camera) |
+| Step | On camera | Off camera, before the next |
 | --- | --- | --- |
-| 1 connect | Connect B with the GreenMail password; B shows shadow mode | wait `firstSync`; deliver the 4 shadow mails; wait `shadowTriaged` |
-| 2 shadow | Activity filtered to B: the 4 mails with what it would do | wait `historyDone` (check of B `done`) |
-| 3 report | `/report?mailbox=<B>` done, with counts | — |
-| 4 recommended | tap "Turn on recommended" (`plan.recommended`); B is in assist | `create_draft` on for B (settings route; off by default); deliver urgent, delegation and undo mail; wait `afterTap`: urgent notice in the chat, delegation send waiting with its Drafts copy, undo mail moved |
-| 5 urgent | fake Telegram view of chat `9_200_001` with the urgent notice | — |
-| 6 approval | `/approvals?id=<that send>`: Edit, Save, Approve | without `plan.overdueDelegation`: wait `delegationSent` |
-| 7 delegation | "Remind now" on `plan.overdueDelegation`, else on the step-6 delegation | — |
-| 8 undo | Activity: Undo on the undo mail | — |
+| 1 connect | Connect B (GreenMail password); B in shadow mode | wait `firstSync`; deliver 4 shadow mails; wait `shadowTriaged` |
+| 2 shadow | Activity of B: the 4 mails with what it would do | wait `historyDone` |
+| 3 report | `/report?mailbox=<B>` done, counts | — |
+| 4 recommended | tap "Turn on recommended"; B in assist | `create_draft` on for B (settings route); deliver urgent, delegation, undo mail; wait `afterTap`: urgent notice in chat, delegation send waiting with Drafts copy, undo mail moved |
+| 5 urgent | fake Telegram chat `9_200_001`, urgent notice | — |
+| 6 approval | `/approvals?id=<send>`: Edit, Save, Approve | wait `delegationSent` |
+| 7 delegation | "Remind now" on the step-6 delegation (D8) | — |
+| 8 undo | Activity: Undo on it | — |
 
-Text checks use `en` keys and plan values; `publicContentScan` runs on every step. Other product notices may show in the chat.
+Text checks use `en` keys and plan values; `publicContentScan` on every step.
 
-## Step 2 — the upload line and the model check (`record.ts`)
+## Step 2 — wire the stage 08 checks
 
-- `uploadVerdict({ source, gateProvisional, misses, notLive }): string` (pure, `apps/web/e2e/lib/demo/`): `demo_source demo: upload candidate` only for source `demo`, a final gate, 0 misses and no not-live step; else `not for upload: <first reason>` (`e2e_source`, `gate_provisional`, `replay_miss`, `not_live`). It prints after the hashes and before the stage-04 exits; it never sets the exit code.
-- Model check (ticket acceptance 2): every server `llm_settings` start line reads `endpoint=own`, host `127.0.0.1`, and `hits` ≥ `history.length + 7`; else exit 1 `demo_llm_unchecked`. Print `demo_llm_checked hits=<n>`.
+The demo branch passes the real `notLive`, `misses` and the captured server lines to the stage 08 code. Do not move or reorder the last lines (D14): the verdict stays the last line.
 
-## Step 3 — the run and the spike table
+## Step 3 — run and spike table
 
-Run both sources (Proof). Fill the "Demo source" column of `apps/web/e2e/demo/README.md` (live or not, and how) and a result line.
+Run both sources (Proof). Fill the "Demo source" column of `apps/web/e2e/demo/README.md` (live or not, how) and a result line with the seed day.
 
 ## Decisions
 
-- Stop and ask (commit what works; `stage-06-question.md`: step, cause, options, default) for: a step that cannot be live; a `publicContentScan` hit on demo-week text (no allow-list entry); a wait time-out in two takes.
-- No export, video or hash in git.
+- Stop and ask (commit what works; `stage-06-question.md`: step, cause, options, default, seed day) for: a step that cannot be live; a `publicContentScan` hit on demo-week text (no allow-list entry); a wait time-out in two takes.
+- No export, video, hash in git.
+- Step 7 never uses `plan.overdueDelegation` (D8): no seed of this run can fill it. Build no branch for it.
 
 ## Test
 
-1. `uploadVerdict` (`test.each`): demo, final, 0, [] → `demo_source demo: upload candidate`; demo, provisional, 0, [] → `not for upload: gate_provisional`; demo, final, 2, [] → `not for upload: replay_miss`; demo, final, 0, ["shadow"] → `not for upload: not_live`; e2e, final, 0, [] → `not for upload: e2e_source`.
-2. Export run log: `demo_source demo`, `demo_setup_done history=` 20–60, `misses=0`, `demo_llm_checked`, empty `not_live`, duration 100–130 s, three files in `tmp/demo`. With today's provisional gate the last line is `not for upload: gate_provisional`.
-3. The e2e run: `not_live shadow report urgent` and `not for upload: e2e_source`.
+1. A unit test for each new pure helper of the steps (the step-7 pick of the step-6 delegation, the wait targets), with fixed values.
+2. Export log: `demo_source demo`, `demo_seed_day <n>`, `demo_setup_done history=` 20–60, `misses=0`, `demo_llm_checked`, empty `not_live`, 100–130 s, three files in `tmp/demo`; `tail -n1` is `not for upload: trial_seed` on a trial seed with exit 0, and `not for upload: run_failed` after any exit 1.
+3. e2e log: `not_live shadow report urgent`; `tail -n1` is `not for upload: e2e_source`.
 
-Break check: ignore misses in `uploadVerdict`; test 1 fails.
+Break check: make step 7 pick no delegation; test 1 fails.
 
 ## Proof
 
 ```
-mkdir -p /tmp/f151-s06 && flock /tmp/email-assistant-shared-tests.lock bun run demo:record --seed "$HOME/.local/share/email-assistant/demo/demo-seed-day5.json" > /tmp/f151-s06/demo.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock bun run demo:record > /tmp/f151-s06/e2e.log 2>&1 && echo RECORD_OK
+SEED=$(ls -1 "$HOME"/.local/share/email-assistant/demo/demo-seed-day*.json | sort -V | tail -1)
+mkdir -p /tmp/f151-s06 && flock /tmp/email-assistant-shared-tests.lock bun run demo:record --seed "$SEED" > /tmp/f151-s06/demo.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock bun run demo:record > /tmp/f151-s06/e2e.log 2>&1 && echo RECORD_OK
 ```
 
-Then `bun run check:job`. Quote the duration, size, replay, model and verdict lines.
+Then `bun run check:job`. Quote seed day, duration, size, replay, model and verdict lines.
 
 ## Done when
 
-- Test 1 passes; tests 2 and 3 show in the saved logs.
-- README demo column filled for 8 steps.
-- `live-lab.md` rule 24.10 describes the demo source: replay, setup, cut, upload line.
+- Test 1 passes; tests 2 and 3 show in the saved logs (trial or final seed).
+- README demo column: 8 steps.
+- `live-lab.md` rule 24.10: replay, setup, cut, the eight live steps.
 
-## Out of scope
-
-- G2, G3, shots (stage 07).
+Out of scope: G2, G3, shots (stage 07).
