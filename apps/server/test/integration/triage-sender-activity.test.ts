@@ -1,6 +1,5 @@
-import { afterAll, describe, expect, test } from "bun:test";
-
 import type { Category } from "@ea/core";
+import { afterAll, describe, expect, test } from "bun:test";
 
 import type { SenderWindowOptions } from "../../src/modules/mail";
 import { newestFeedbackBySender, newestResultsBySender } from "../../src/modules/triage";
