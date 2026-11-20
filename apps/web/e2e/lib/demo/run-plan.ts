@@ -78,7 +78,7 @@ function answeredRows(seed: DemoSeed, table: ReturnType<typeof buildReplayTable>
 
 // Of the files for the model and prompt version: non-provisional first, then the newest date. The files come sorted by name,
 // and the sort keeps their order for a tie (`rank` in the triage evidence reads the same three keys).
-function bestGate(gates: readonly GateFile[], model: string, promptVersion: string): GateFile | undefined {
+export function bestGate(gates: readonly GateFile[], model: string, promptVersion: string): GateFile | undefined {
   return gates
     .filter((gate) => gate.role === "classifier" && gate.model === model && gate.promptVersion === promptVersion)
     .sort((a, b) => Number(a.provisional) - Number(b.provisional) || b.date.localeCompare(a.date))[0];
