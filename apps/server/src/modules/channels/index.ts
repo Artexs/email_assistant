@@ -56,13 +56,7 @@ export { directSender } from "./telegram/direct";
 export { createTelegramBot, type BotDeps } from "./telegram/bot";
 export { BOT_COMMANDS, startPolling, type Polling, type PollingDeps } from "./telegram/polling";
 export { createTelegramRuntime, type TelegramRuntime, type TelegramRuntimeDeps } from "./telegram/runtime";
-export { telegramErrorLabel } from "./telegram/errors";
-export {
-  createOperatorNotices,
-  type OperatorNoticeDeps,
-  type OperatorNoticeKind,
-  type OperatorNotices,
-} from "./operator";
+export { telegramErrorFields, telegramErrorLabel } from "./telegram/errors";
 export { createOutboxSender, SENDER_STALE_MS, type SenderDeps } from "./sender";
 export { createPushSender, PUSH_FLAG_WAIT_MS, PUSH_TTL_SECONDS, pushTopicOf, type PushSenderDeps } from "./push-sender";
 export { createReportMailSender, REPORT_MAIL_WAIT_MS, type ReportMailSenderDeps } from "./report-mail-sender";

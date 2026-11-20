@@ -21,4 +21,5 @@ export {
   type SloReading,
   type StatFs,
 } from "./slo-checks";
+export { createOperatorNotices, type OperatorNoticeDeps, type OperatorNoticeHooks } from "./notices";
 export { runSloTick, type SloCheckEntry, type SloCheckFn, type SloTickDeps } from "./slo-job";

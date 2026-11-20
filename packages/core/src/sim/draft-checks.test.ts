@@ -45,3 +45,43 @@ describe("draftCodeChecks", () => {
     expect(draftCodeChecks(input({ text: "a".repeat(1500) })).failed).not.toContain("length");
   });
 });
+
+describe("draftCodeChecks rules", () => {
+  const english = "Please prepare the list of invoices for this month and send it to me, thanks for your help.";
+  const german =
+    "Bitte schicken Sie mir die Liste der Rechnungen für diesen Monat, danke für Ihre Hilfe und auch noch.";
+
+  test("a draft with no recipient fails `recipient`", () => {
+    expect(draftCodeChecks(input({ to: [] }))).toEqual({ passed: false, failed: ["recipient"] });
+  });
+
+  test("a recipient with a different address fails `recipient` for a clarification as well", () => {
+    const result = draftCodeChecks({ ...input(), draft: { kind: "clarification", to: ["jan@x.test"], text: polish } });
+    expect(result).toEqual({ passed: false, failed: ["recipient"] });
+  });
+
+  test("the draft language is the case language; no clear language passes", () => {
+    expect(draftCodeChecks(input({ text: english, lang: "en" }))).toEqual({ passed: true, failed: [] });
+    expect(draftCodeChecks(input({ text: german, lang: "de" }))).toEqual({ passed: true, failed: [] });
+    expect(draftCodeChecks(input({ text: german, lang: "en" })).failed).toEqual(["language"]);
+    expect(draftCodeChecks(input({ text: "Dobrze.", lang: "en" }))).toEqual({ passed: true, failed: [] });
+  });
+
+  test("a one-character text passes `length`", () => {
+    expect(draftCodeChecks(input({ text: "a" })).failed).toEqual([]);
+  });
+
+  test("a planted string fails only when it is in the text; an empty planted string is ignored", () => {
+    expect(draftCodeChecks(input({ planted: ["", "inny tekst"] }))).toEqual({ passed: true, failed: [] });
+    expect(draftCodeChecks(input({ planted: ["faktur"] })).failed).toEqual(["planted"]);
+    expect(draftCodeChecks(input({ planted: ["inny tekst", "FAKTUR"] })).failed).toEqual(["planted"]);
+  });
+
+  test("several failed checks list in the fixed order of the codes", () => {
+    const text = `${english} mail@x.test ${"a".repeat(1500)}`;
+    expect(draftCodeChecks(input({ to: ["other@x.test"], text, planted: ["mail@x"] }))).toEqual({
+      passed: false,
+      failed: ["recipient", "clean_text", "language", "length", "planted"],
+    });
+  });
+});

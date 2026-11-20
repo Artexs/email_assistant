@@ -1,4 +1,13 @@
-import { DAY_MS, type SendLimitKind, sendLimitOfError, textsFor, type UserLocale } from "@ea/core";
+import {
+  DAY_MS,
+  type OperatorEvent,
+  type OperatorEventKind,
+  operatorEventKey,
+  renderOperatorEvent,
+  type SendLimitKind,
+  sendLimitOfError,
+  type UserLocale,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -6,27 +15,25 @@ import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { listSendLimitHolds } from "../actions";
 import { auditEvents, hasAuditKey, recordAudit } from "../audit";
+import { telegramErrorFields } from "../channels";
 import { listAuthErrorMailboxesBefore } from "../mail";
 import { listOrganizations } from "../tenancy";
 
-import { telegramErrorFields } from "./telegram/errors";
-
+// The module field stays `channels` until the log names of the operator path change (stage file `spec/features/active/F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist/stages/stage-04-one-delivery.md`).
 const log = createLog("channels");
 
 const TRIAL_WARNING_MS = 3 * DAY_MS;
-
-export type OperatorNoticeKind = "trial_ending" | "llm_cap" | "auth_error_24h" | "auth_mail_failed" | "send_limit";
 
 export interface OperatorNoticeDeps {
   db: Db | Transaction<DB>;
   now: () => Date;
   // The Telegram direct send to the operator chat; null = a `warn` log line instead.
   send: ((text: string) => Promise<void>) | null;
-  // The language of the texts (`OPERATOR_LOCALE`). Absent: English.
-  locale?: UserLocale;
+  // The language of the texts (`OPERATOR_LOCALE`).
+  locale: UserLocale;
 }
 
-export interface OperatorNotices {
+export interface OperatorNoticeHooks {
   // The hourly job: trial_ending and auth_error_24h, and one more try of every failed llm_cap and send_limit notice.
   run(): Promise<void>;
   // Called by the triage job. Never throws, never blocks.
@@ -47,22 +54,27 @@ export interface OperatorNotices {
 
 interface Retry {
   ctx: TenantContext;
-  kind: OperatorNoticeKind;
+  kind: OperatorEventKind;
   text: string;
 }
 
 // An event reaches the operator at least once. The text holds ids, dates and counts only.
 // The dedup is an audit row `operator.notice` with `data.key`, written after a successful send, in the organization of the event.
-export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices {
+export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeHooks {
   const { db, send } = deps;
-  const texts = textsFor(deps.locale ?? "en").operator;
+  const { locale } = deps;
+  // The key and the text of an event come from core. Throws on an invalid date: the caller guards it.
+  const noticeOf = (event: OperatorEvent): { key: string; text: string } => ({
+    key: operatorEventKey(event),
+    text: renderOperatorEvent(event, locale),
+  });
   const doneKeys = new Set<string>();
   const inFlight = new Set<string>();
   const failedLogged = new Set<string>();
   const retries = new Map<string, Retry>();
   const running = new Set<Promise<void>>();
 
-  async function sendOrLog(kind: OperatorNoticeKind, text: string): Promise<void> {
+  async function sendOrLog(kind: OperatorEventKind, text: string): Promise<void> {
     if (send === null) {
       log.warn("operator_notice_unsent", { kind });
       return;
@@ -71,7 +83,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
   }
 
   // Never throws.
-  async function notify(ctx: TenantContext, kind: OperatorNoticeKind, key: string, text: string): Promise<void> {
+  async function notify(ctx: TenantContext, kind: OperatorEventKind, key: string, text: string): Promise<void> {
     if (doneKeys.has(key) || inFlight.has(key)) return;
     inFlight.add(key);
     try {
@@ -115,7 +127,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
     }
   }
 
-  function start(ctx: TenantContext, kind: OperatorNoticeKind, key: string, text: string): Promise<void> {
+  function start(ctx: TenantContext, kind: OperatorEventKind, key: string, text: string): Promise<void> {
     const promise = notify(ctx, kind, key, text).finally(() => running.delete(promise));
     running.add(promise);
     return promise;
@@ -128,9 +140,13 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
         const { id: orgId, plan, trialEndsAt } = organization;
         if (plan !== "trial" || trialEndsAt === null) continue;
         if (trialEndsAt.getTime() > now.getTime() + TRIAL_WARNING_MS) continue;
-        const iso = trialEndsAt.toISOString();
-        const text = now.getTime() < trialEndsAt.getTime() ? texts.trialEnds(orgId, iso) : texts.trialEnded(orgId, iso);
-        await start({ orgId }, "trial_ending", `trial_ending:${orgId}:${trialEndsAt.getTime()}`, text);
+        const { key, text } = noticeOf({
+          kind: "trial_ending",
+          orgId,
+          endsAt: trialEndsAt,
+          ended: now.getTime() >= trialEndsAt.getTime(),
+        });
+        await start({ orgId }, "trial_ending", key, text);
       } catch (error) {
         log.error("operator_notice_failed", { kind: "trial_ending", ...errorFields(error) });
       }
@@ -141,12 +157,8 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
     const mailboxes = await listAuthErrorMailboxesBefore(db, new Date(now.getTime() - DAY_MS));
     for (const { orgId, mailboxId, statusChangedAt } of mailboxes) {
       try {
-        await start(
-          { orgId },
-          "auth_error_24h",
-          `auth_error_24h:${mailboxId}:${statusChangedAt.getTime()}`,
-          texts.authError24h(mailboxId, orgId, statusChangedAt.toISOString())
-        );
+        const { key, text } = noticeOf({ kind: "auth_error_24h", orgId, mailboxId, since: statusChangedAt });
+        await start({ orgId }, "auth_error_24h", key, text);
       } catch (error) {
         log.error("operator_notice_failed", { kind: "auth_error_24h", ...errorFields(error) });
       }
@@ -160,18 +172,20 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
     }
   }
 
-  type SendLimitHit = Parameters<OperatorNotices["sendLimitReached"]>[1];
+  type SendLimitHit = Parameters<OperatorNoticeHooks["sendLimitReached"]>[1];
 
   // Never throws. Resolves when the text is sent or has failed (a failed text goes to `retries`).
   function startSendLimit(ctx: TenantContext, hit: SendLimitHit): Promise<void> {
-    const key = `send_limit:${hit.mailboxId}:${hit.at.toISOString().slice(0, 10)}`;
+    const { key, text } = noticeOf({
+      kind: "send_limit",
+      orgId: ctx.orgId,
+      mailboxId: hit.mailboxId,
+      limit: hit.limit,
+      at: hit.at,
+      until: hit.until,
+    });
     if (retries.has(key)) return Promise.resolve();
-    return start(
-      ctx,
-      "send_limit",
-      key,
-      texts.sendLimit(hit.mailboxId, ctx.orgId, hit.limit, hit.at.toISOString(), hit.until.toISOString())
-    );
+    return start(ctx, "send_limit", key, text);
   }
 
   // The catch for a lost `sendLimitReached` call: a crash between the hold commit and the callback.
@@ -213,10 +227,9 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
 
     capReached(ctx, mailboxId, dayStart, cap) {
       try {
-        const dayIso = dayStart.toISOString();
-        const key = `llm_cap:${mailboxId}:${dayIso}`;
+        const { key, text } = noticeOf({ kind: "llm_cap", orgId: ctx.orgId, mailboxId, cap, dayStart });
         if (retries.has(key)) return;
-        void start(ctx, "llm_cap", key, texts.llmCap(mailboxId, ctx.orgId, cap, dayIso));
+        void start(ctx, "llm_cap", key, text);
       } catch (error) {
         log.error("operator_notice_failed", { kind: "llm_cap", ...errorFields(error) });
       }
@@ -224,8 +237,15 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNotices
 
     authMailFailed(ctx, userId, kind, code, now) {
       try {
-        const key = `auth_mail_failed:${userId}:${code}:${now.toISOString().slice(0, 10)}`;
-        void start(ctx, "auth_mail_failed", key, texts.authMailFailed(kind, userId, ctx.orgId, code));
+        const { key, text } = noticeOf({
+          kind: "auth_mail_failed",
+          orgId: ctx.orgId,
+          userId,
+          mail: kind,
+          code,
+          at: now,
+        });
+        void start(ctx, "auth_mail_failed", key, text);
       } catch (error) {
         log.error("operator_notice_failed", { kind: "auth_mail_failed", ...errorFields(error) });
       }
