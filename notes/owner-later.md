@@ -49,3 +49,14 @@ Plain list for the owner. Each item says what to do, why, and what waits for it.
 - **What to do:** if the old OpenAI key is revoked or not needed, tell the coordinator "delete the old env copies". If you want to keep an old value, move it to a place outside the VPS (your password manager) first, then say the same.
 - **Undo:** none after the delete. The live env does not change.
 - **Added:** 2026-11-20.
+
+## 6. Checks of the production checkpoint that need you (F108 stage 07, optional)
+
+- **Why:** the test organization on the VPS went through invite, password, pause, resume and delete, and the pilot kept working. Some checks need things only you can give, so they are "not verified".
+- **Not verified, and what each needs:**
+  - Connect a mailbox to a test organization and see triage run, and the rule that mail from more than 24 hours before a resume is not triaged: a test mailbox that is not your pilot mailbox (owner step O2).
+  - The Telegram answer "account paused" for a paused organization: a second Telegram account (owner step O2).
+  - The backup objects in the Backblaze bucket (names and sizes) and the bucket lifecycle rule: a read-only bucket key as an `rclone` remote on this PC (owner step O1). The VPS key can only write.
+- **What to do:** give the coordinator one of these, then say "run the F108 checks again". Each check uses a new test organization and deletes it at the end.
+- **What waits:** nothing. F108 does not wait for them.
+- **Added:** 2026-11-20.

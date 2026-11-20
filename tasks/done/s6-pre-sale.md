@@ -1,4 +1,4 @@
-> **Status 2026-11-12 — in progress — scope cut by the user: local production on the home VPS, no outside customers** (section "Scope change"). Left: the S6a build (plan approved: `tasks/active/s6a-customer-core.md`); then S6b, S6c, S6e, S6f, each with its own `plan-task` session and build. S6d is dropped (Limen ticket F076). No user step blocks S6a.
+> **Status — S6 done 2026-11-20.** The last segment, S6f, closed with the final checkpoint on the VPS (F108 stage 07, `notes/2026-11-15-vps-deploy-queue.md` § F108 checkpoint). The lines that were not verified are in `outcome.md` of the ticket folder `F108-e7-t5-production-on-the-vps` (`spec/features/`). Old status (2026-11-12): in progress, scope cut to local production on the home VPS.
 
 # S6 Pre-sale
 
@@ -19,8 +19,8 @@ Before the change: the first external customer can sign up (sign-up, billing, de
 - The login is hardened: lockout, leaked-password check, hashed reset tokens, session list, terms acceptance; invite and reset links come from the CLI; the SMTP auth-mail sender is built and tested against GreenMail, and stays off on the VPS (S6b).
 - A deletion test removes every row of an organization; `org:export` writes the export; the panel speaks Polish (S6c).
 - The privacy policy, terms and DPA are in-app pages in Polish and English, marked "DRAFT, not legal advice", and they describe the real setup; `docs/cost-model.md` gives the cost per mailbox from real data, with the price as a placeholder (S6e).
-- On the home VPS: the running server has no database admin password in its env; CI is green; a backup upload to Backblaze and a restore test are verified; ADR 0019 records "production stays on the home VPS behind Tailscale" (S6f).
-- Final checkpoint: a second test organization on the VPS goes through invite, set password, connect a test mailbox, triage, pause, resume, delete.
+- On the home VPS: the running server has no database admin password in its env; CI is green; a backup upload to Backblaze and a restore test are verified; ADR 0019 records "production stays on the home VPS behind Tailscale" (S6f). Evidence: `server env ok keys=38` at `v0.4.3` and `v0.4.4` (`notes/2026-11-15-vps-deploy-queue.md` § Stage 06 release, § Release v0.4.4); CI green (§ F108 checkpoint, close step 9); `backup ok` and `status.json` `ok` (§ Stage 04 runs 2 and 3, § Stage 06), bucket listing not done (owner step O1); restore drills on 2026-11-19 and 2026-11-20 (§ Restore drill record, § Restore drill record 2); ADR 0019 accepted (`docs/decisions/0019-production-on-the-home-vps.md`).
+- Final checkpoint: a second test organization on the VPS goes through invite, set password, connect a test mailbox, triage, pause, resume, delete. Evidence: `notes/2026-11-15-vps-deploy-queue.md` § F108 checkpoint (invite, set password, pause, resume, delete; the pilot kept syncing). Connect a test mailbox and triage: not verified (no test mailbox).
 
 ## Plan
 
