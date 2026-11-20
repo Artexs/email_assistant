@@ -1,4 +1,4 @@
-import { DAY_MS, normalizeSenderAddress, senderHistorySchema, type Category, type SenderHistory } from "@ea/core";
+import { DAY_MS, normalizeAddress, senderHistorySchema, type Category, type SenderHistory } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import { senderKeyHash } from "../../platform/crypto";
@@ -39,7 +39,7 @@ function daysAgo(then: Date | null, now: Date): number | null {
 }
 
 // The profiles of `(mailboxId, address)` pairs as `SenderHistory`, in one query for up to 1,000 pairs (more pairs go in chunks).
-// The address is normalised (`normalizeSenderAddress`) and hashed here; the key of the result is `${mailboxId}:${normalised address}`, and the map never leaves the process.
+// The address is normalised (`normalizeAddress`) and hashed here; the key of the result is `${mailboxId}:${normalised address}`, and the map never leaves the process.
 // A pair with no stored row is absent from the map.
 export async function readProfiles(
   deps: { db: DbOrTrx; credentialsKey: string },
@@ -50,7 +50,7 @@ export async function readProfiles(
   const result = new Map<string, SenderHistory>();
   for (let start = 0; start < pairs.length; start += PAIR_CHUNK) {
     const chunk = pairs.slice(start, start + PAIR_CHUNK).map((pair) => {
-      const address = normalizeSenderAddress(pair.address);
+      const address = normalizeAddress(pair.address);
       return {
         mailboxId: pair.mailboxId,
         address,
