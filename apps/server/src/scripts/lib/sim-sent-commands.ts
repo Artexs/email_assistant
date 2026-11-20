@@ -23,14 +23,8 @@ import {
 } from "@ea/core";
 import { z } from "zod";
 
-import {
-  batchName,
-  batchNumber,
-  corpusDir,
-  listBatches,
-  readScenario,
-  type BatchFolder,
-} from "../../platform/sim-files";
+import { batchName, batchNumber, corpusDir, listBatches, readScenario } from "../../platform/sim-files";
+import type { BatchFolder } from "../../platform/sim-files";
 import {
   readSentBlindBatch,
   readSentLabelBatch,
