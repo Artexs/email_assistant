@@ -1,59 +1,18 @@
-import { parseArgs } from "node:util";
-
 import { DAY_MS } from "@ea/core";
-import { z } from "zod";
 
 import { isOwnMailOf } from "../composition";
 import { backfillMailbox, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
-import { describeError } from "../platform/errors";
+import { runCli, type CliSpec } from "../platform/cli";
 
 import { backfillRefusal } from "./lib/mailbox-backfill-gate";
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
-
-const usage = [
-  "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
-  "  One-off, read-only on the mailbox. Stores INBOX mail of the last 1-180 days that the sync missed.",
-  "  Then re-queues stored real mail of that window that the worker skipped as too old.",
-  "  Exit 0: done. Exit 1: usage error, suspended organization (org_suspended) or failure.",
-].join("\n");
-
-function readOptions(argv: string[]) {
-  try {
-    const { values } = parseArgs({
-      args: argv,
-      options: {
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-        days: { type: "string" },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const mailboxId = values["mailbox-id"];
-    if (orgId === undefined || mailboxId === undefined) return undefined;
-    if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(mailboxId).success) return undefined;
-    const days = z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .pipe(z.number().int().min(1).max(180))
-      .safeParse(values.days ?? "30");
-    if (!days.success) return undefined;
-    return { orgId, mailboxId, days: days.data };
-  } catch {
-    return undefined;
-  }
-}
+import { type CliDeps, oauthReasonLine, withMailboxDeps } from "./lib/mailbox-cli";
+import { reportFailure } from "./lib/mailbox-failure";
+import { cliDescriptions, type MailboxBackfillArgs, parseMailboxBackfillArgs } from "./mailbox-backfill-args";
 
 // Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
-export async function run(argv: string[], deps: CliDeps): Promise<number> {
+export async function run(options: MailboxBackfillArgs, deps: CliDeps): Promise<number> {
   const { db, out } = deps;
-  const options = readOptions(argv);
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
   try {
     const refusal = await backfillRefusal(db, options.orgId);
     if (refusal !== undefined) {
@@ -82,13 +41,28 @@ export async function run(argv: string[], deps: CliDeps): Promise<number> {
       out.fail(
         "the regular sync moved the cursor during the backfill; run the same command again (the dedup key stops duplicates)"
       );
-    } else {
-      out.fail(oauthReasonLine(error) ?? `failed: ${describeError(error)}`);
+      return 1;
     }
-    return 1;
+    const reason = oauthReasonLine(error);
+    if (reason !== null) {
+      out.fail(reason);
+      return 1;
+    }
+    return reportFailure(out, error, "label");
   }
 }
 
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB. Any later error gets one line and its code.
+// Ctrl-C leaves the lock and the cursor as they are (no signal handler): the next run continues.
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseMailboxBackfillArgs(argv);
+  try {
+    return await withMailboxDeps(out, (deps) => run(options, deps));
+  } catch (error) {
+    return reportFailure(out, error, "message");
+  }
+};
+
 if (import.meta.main) {
-  process.exit(await runMailboxCli("mailbox-backfill", run));
+  await runCli({ prefix: "mailbox-backfill", descriptions: cliDescriptions, main });
 }
