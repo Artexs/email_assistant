@@ -23,13 +23,6 @@
     "apps/server/src/scripts/module-graph.ts",
     "tools/fake-telegram/src/cli.ts"
   ],
-  "telegram": [
-    "apps/server/src/scripts/push-keys.ts",
-    "apps/server/src/scripts/stats-week.ts",
-    "apps/server/src/scripts/telegram-check.ts",
-    "apps/server/src/scripts/telegram-link.ts",
-    "apps/server/src/scripts/telegram-unlink.ts"
-  ],
   "lab": [
     "apps/server/src/scripts/lab-env-check.ts",
     "apps/server/src/scripts/lab.ts",

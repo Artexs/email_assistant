@@ -211,7 +211,7 @@ The server uses long polling (no inbound port). The VPS uses the pilot bot `@Ema
 
 1. Put the pilot bot token in `TELEGRAM_BOT_TOKEN` in the VPS `.env`. Only the user edits this file. Never print the token, never paste it in a chat or a log. An empty value switches Telegram off (the log says `telegram is off`).
    Do not set `TELEGRAM_API_ROOT` on the VPS.
-2. Check the token: `$C run --rm cli bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`.
+2. Check the token: `$C run --rm cli bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`. Exit 3 and `unreachable:` mean that the Telegram Bot API did not answer; exit 1 means that the token is missing or refused.
 3. Restart the server so that it reads the new `.env`: `$C up -d server`. The log shows the event `telegram_polling_started` (field `bot_id`, the numeric id of the bot).
 4. Make a link for a member: `$C run --rm cli bun run telegram:link --org-id <uuid> [--user-id <uuid>]`.
    The output is a `https://t.me/<bot>?start=<token>` link. It is a one-time secret that is valid for 15 minutes. Open it on the phone of the member. Do not share it. A used or expired link needs a new `telegram:link` run.
