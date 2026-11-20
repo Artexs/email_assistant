@@ -1,3 +1,4 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { parseLabArgs, usage } from "./lab-args";
@@ -64,12 +65,31 @@ describe("parseLabArgs (stage 05 test 9)", () => {
     ["demo-import", "--file", "x", "--email", "nope"],
   ];
 
-  test.each(bad.map((argv) => [argv]))("%p fails", (argv) => {
-    expect(parseLabArgs(argv)).toBeUndefined();
+  // `runCli` maps both kinds to exit 2: a `UsageError` (bad value) and a `parseArgs` error (bad flag).
+  const isUsageFailure = (error: unknown): boolean =>
+    error instanceof UsageError || String((error as { code?: unknown }).code).startsWith("ERR_PARSE_ARGS_");
+
+  test.each(bad.map((argv) => [argv]))("%p is a usage failure", (argv) => {
+    let thrown: unknown;
+    try {
+      parseLabArgs(argv);
+    } catch (error) {
+      thrown = error;
+    }
+    expect({ argv, usageFailure: isUsageFailure(thrown) }).toEqual({ argv, usageFailure: true });
+  });
+
+  test("an unknown flag is refused by the parser, which `runCli` maps to exit 2", () => {
+    expect(() => parseLabArgs(["--no-such-flag"])).toThrow(
+      expect.objectContaining({ code: "ERR_PARSE_ARGS_UNKNOWN_OPTION" })
+    );
   });
 
   test("every usage line parses to a command", () => {
-    const lines = usage.split("\n").filter((line) => line.startsWith("  bun run lab "));
+    const lines = usage
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith("bun run lab "));
     expect(lines).toHaveLength(10);
     const kinds = lines.map((line) => line.trim().split(/\s+/)[3]);
     expect(new Set(kinds).size).toBe(10);
