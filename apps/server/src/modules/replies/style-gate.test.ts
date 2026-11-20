@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { DrafterCaseResult } from "./drafter-eval";
-import { compareStyleRuns, type StyleGateInput } from "./style-gate";
+import { compareStyleRuns, type StyleGateInput, type StyleSmoke, styleSmoke } from "./style-gate";
 
 // The paired comparison of the style gate on fixed result lines. Every case is a draft with the judge grade of
 // judge-v4, unless the test says otherwise.
@@ -207,5 +207,144 @@ describe("compareStyleRuns: errors and cases with no draft", () => {
       injection: GOOD_INJECTION,
     });
     expect(result.complete).toBe(false);
+  });
+});
+
+describe("styleSmoke", () => {
+  // Twenty cases: A scores 2 on 17 of them and 1 on the last three. `withScores` changes single cases.
+  const base = (): number[] => [...Array.from({ length: 17 }, () => 2), 1, 1, 1];
+  const runOf = (scores: number[], failedJudge: number[] = []): DrafterCaseResult[] =>
+    scores.map((style, index) =>
+      failedJudge.includes(index)
+        ? other(`c${index}`, { judge: { errorCode: "judge_failed" } })
+        : draft(`c${index}`, { style })
+    );
+  const withScores = (changes: Record<number, number>): number[] =>
+    base().map((score, index) => changes[index] ?? score);
+
+  const table: [string, DrafterCaseResult[], DrafterCaseResult[], StyleSmoke][] = [
+    [
+      "equal means with one win and one loss fail",
+      runOf(base()),
+      runOf(withScores({ 0: 1, 17: 2 })),
+      {
+        pairs: 20,
+        wins: 1,
+        losses: 1,
+        ties: 18,
+        meanA: 1.85,
+        meanB: 1.85,
+        judgeErrorShareA: 0,
+        judgeErrorShareB: 0,
+        verdict: "fail",
+      },
+    ],
+    [
+      "a higher mean of B passes",
+      runOf(base()),
+      runOf(withScores({ 17: 2 })),
+      {
+        pairs: 20,
+        wins: 1,
+        losses: 0,
+        ties: 19,
+        meanA: 1.85,
+        meanB: 1.9,
+        judgeErrorShareA: 0,
+        judgeErrorShareB: 0,
+        verdict: "pass",
+      },
+    ],
+    [
+      "equal means with more wins than losses pass",
+      runOf(base()),
+      runOf(withScores({ 0: 0, 1: 1, 17: 2, 18: 2, 19: 2 })),
+      {
+        pairs: 20,
+        wins: 3,
+        losses: 2,
+        ties: 15,
+        meanA: 1.85,
+        meanB: 1.85,
+        judgeErrorShareA: 0,
+        judgeErrorShareB: 0,
+        verdict: "pass",
+      },
+    ],
+    [
+      "a lower mean of B with no wins fails",
+      runOf(base()),
+      runOf(withScores({ 0: 1, 1: 1 })),
+      {
+        pairs: 20,
+        wins: 0,
+        losses: 2,
+        ties: 18,
+        meanA: 1.85,
+        meanB: 1.75,
+        judgeErrorShareA: 0,
+        judgeErrorShareB: 0,
+        verdict: "fail",
+      },
+    ],
+    [
+      "two judge errors in A of 20 (share 0.10) stop the smoke",
+      runOf(base(), [18, 19]),
+      runOf(withScores({ 17: 2 })),
+      {
+        pairs: 18,
+        wins: 1,
+        losses: 0,
+        ties: 17,
+        meanA: 35 / 18,
+        meanB: 2,
+        judgeErrorShareA: 0.1,
+        judgeErrorShareB: 0,
+        verdict: "judge_stop",
+      },
+    ],
+    [
+      "every score 2 in both runs stops the smoke",
+      runOf(Array.from({ length: 20 }, () => 2)),
+      runOf(Array.from({ length: 20 }, () => 2)),
+      {
+        pairs: 20,
+        wins: 0,
+        losses: 0,
+        ties: 20,
+        meanA: 2,
+        meanB: 2,
+        judgeErrorShareA: 0,
+        judgeErrorShareB: 0,
+        verdict: "judge_stop",
+      },
+    ],
+    [
+      "one judge error in A of 20 (share 0.05, not above the line) leaves 19 pairs and passes",
+      runOf(base(), [19]),
+      runOf(withScores({ 17: 2 })),
+      {
+        pairs: 19,
+        wins: 1,
+        losses: 0,
+        ties: 18,
+        meanA: 36 / 19,
+        meanB: 37 / 19,
+        judgeErrorShareA: 0.05,
+        judgeErrorShareB: 0,
+        verdict: "pass",
+      },
+    ],
+  ];
+
+  test.each(table)("%s", (_name, a, b, expected) => {
+    expect(styleSmoke(a, b)).toEqual(expected);
+  });
+
+  test("the cases are the ids that both runs hold; a run with no pair stops the smoke", () => {
+    const a = runOf(base()).slice(0, 10);
+    const b = runOf(withScores({ 17: 2 })).slice(5);
+    expect(styleSmoke(a, b)).toMatchObject({ pairs: 5, wins: 0, verdict: "judge_stop" });
+    expect(styleSmoke(a, [])).toMatchObject({ pairs: 0, meanA: 0, meanB: 0, verdict: "judge_stop" });
   });
 });

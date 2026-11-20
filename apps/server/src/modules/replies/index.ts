@@ -41,8 +41,8 @@ export {
   renderSimDrafterReport,
 } from "./drafter-eval-report";
 export type { DrafterGateFile, DrafterReportHeader } from "./drafter-eval-report";
-export { compareStyleRuns, STYLE_GATE_BARS } from "./style-gate";
-export type { StyleBarCode, StyleComparison, StyleGateInput } from "./style-gate";
+export { compareStyleRuns, STYLE_GATE_BARS, styleSmoke } from "./style-gate";
+export type { SmokeVerdict, StyleBarCode, StyleComparison, StyleGateInput, StyleSmoke } from "./style-gate";
 export { buildStyleGateFile, renderStyleGateReport, styleGateFileName, styleGateFileSchema } from "./style-gate-report";
 export type { StyleGateFile, StyleGateFileOutcome, StyleGateHeader } from "./style-gate-report";
 export {
