@@ -320,7 +320,7 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 ## Tests
 
 - `apps/server/test/integration/actions-drafts.test.ts`
-- `apps/server/test/integration/actions-send.test.ts`
+- `apps/server/test/integration/actions-send-outcomes.test.ts`, `actions-send-guards.test.ts`, `actions-send-recovery.test.ts`, `actions-send-chain.test.ts` (the send, its retries, its recovery and the whole chain; the shared setup is in `actions-send-helpers.ts`)
 - `apps/server/test/integration/actions-approvals.test.ts`
 - `apps/server/test/integration/actions-edit.test.ts`
 - `apps/server/test/integration/channels-card-sync-decisions.test.ts`
