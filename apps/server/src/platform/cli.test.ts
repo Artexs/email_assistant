@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { parseArgs } from "node:util";
 
 import { type CliDescription, renderHelp, UsageError } from "@ea/core";
+import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createCliOutput, exitCodeOf, runCliCode } from "./cli";
 import { SoftError } from "./errors";
@@ -118,7 +118,12 @@ describe("runCliCode", () => {
   });
 
   test("-h with a subcommand prints only that description", async () => {
-    const code = await runCliCode({ prefix: "rules", descriptions: [add, list], argv: ["add", "--help"], main: async () => 0 });
+    const code = await runCliCode({
+      prefix: "rules",
+      descriptions: [add, list],
+      argv: ["add", "--help"],
+      main: async () => 0,
+    });
     expect(code).toBe(0);
     expect(stdout.join("")).toBe(renderHelp(add));
     stdout = [];
