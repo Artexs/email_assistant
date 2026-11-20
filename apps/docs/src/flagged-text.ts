@@ -30,6 +30,10 @@ export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>>
   sender_context: ["sender_rel_bulk", "sender_wrote"],
   sender_suggestions: ["sg_help", "sg_member_note"],
   contact_wait: ["lp_usual_reply", "lp_usual_reply_one"],
+  delegate_button: ["dla_title", "dla_select_placeholder"],
+  trust_ladder: ["rep_intro", "rep_recommended"],
+  reply_drafts: ["switch_reply_drafts"],
+  web_push: ["push_title", "push_devices_title"],
 };
 
 // Telegram texts and lines of the digest: literal parts of `packages/core/src/texts` and `digest`, English and Polish.
@@ -85,6 +89,9 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
   ],
   sender_suggestions: ["suggestion waits", "suggestions wait", "Sugestie reguł do przejrzenia"],
   contact_wait: ["usual reply:", "zwykle odpowiada w"],
+  // `sendLineEditable` of `digest/approvals.ts` shows for a reply and when the view sets `copyCheck`: each flag lists it.
+  reply_drafts: ["edit and send in your mail client", "edytuj i wyślij w programie pocztowym"],
+  draft_copy_check: ["edit and send in your mail client", "edytuj i wyślij w programie pocztowym"],
   report_mail: [
     "[Email assistant]",
     "[Asystent poczty]",
@@ -95,18 +102,9 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
   ],
 };
 
-// A default-off flag with no text that a user can see yet. The reason names where the flag is read.
-export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
-  delegate_button:
-    "only the server function `delegateMail` (modules/loops/delegate.ts) reads it: no button text exists yet",
-  trust_ladder: "no text: it adds `blocks` codes to the `no_go` API answer and changes the evidence gate",
-  reply_drafts:
-    "F115 stage 03b adds the flag and the switch only (`tool_switches.reply_drafts`, hidden while the flag is off): the text of the drafts, notices and cards comes in the stages 12 to 15",
-  draft_copy_check:
-    "only the committer reads it (`actions/send.ts`, F115 stage 08): a stopped send tells the user with the fixed result text `draft_changed`, which a reply draft shows whatever the flag says",
-  web_push:
-    "F118 stage 02 adds the flag and the tables only: no route, sender or text exists yet (the device routes come in F118 stage 03, the sender in stage 08)",
-};
+// A default-off flag with no text that a user can see. The reason names the file that reads the flag and why no user sees text.
+// Every flag has text now; a new flag with none gets its reason here.
+export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {};
 
 export const FLAGGED_TEXT: FlaggedText[] = [
   ...Object.entries(FLAGGED_PANEL_KEYS).flatMap(([flag, keys]) =>
