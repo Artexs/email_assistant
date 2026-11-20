@@ -263,6 +263,7 @@ describe("loadClassifierExtras reads the profile for the part profile", () => {
             pause: createLlmPause(),
             testMail: NO_TEST_SENDERS,
             dailyCap: 1000,
+            junkDailyCap: 1000,
             now: () => NOW,
             prompt,
             ...(reader === undefined ? {} : { readProfile: reader }),

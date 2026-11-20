@@ -115,6 +115,7 @@ function triageJob(trx: Transaction<DB>, llm: LlmClient, scope: TriageScope) {
     batchSize: 10,
     testMail: NO_TEST_SENDERS,
     dailyCap: 1000,
+    junkDailyCap: 1000,
     now: () => NOW,
   });
 }

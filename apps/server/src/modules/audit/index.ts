@@ -6,6 +6,7 @@ export {
   countEventsBetween,
   countHistoryLlmCallsSince,
   countLlmCallOutcomesSince,
+  countLlmCallsOfFolderSince,
   countLlmCallsSince,
   countMaillessCallsSince,
   sumLlmCallsByModelSince,
