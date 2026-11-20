@@ -248,3 +248,57 @@ describe("the taps of the reply drafts (F115 stage 13)", () => {
     }
   });
 });
+
+describe("status lines", () => {
+  test.each([
+    { locale: "en", when: null, late: false, text: "Last sync: never" },
+    { locale: "en", when: null, late: true, text: "Last sync: never" },
+    { locale: "en", when: "07:20", late: false, text: "Last sync: 07:20" },
+    { locale: "en", when: "07:20", late: true, text: "Last sync: 07:20 (late)" },
+    { locale: "pl", when: null, late: false, text: "Ostatnia synchronizacja: nigdy" },
+    { locale: "pl", when: null, late: true, text: "Ostatnia synchronizacja: nigdy" },
+    { locale: "pl", when: "07:20", late: false, text: "Ostatnia synchronizacja: 07:20" },
+    { locale: "pl", when: "07:20", late: true, text: "Ostatnia synchronizacja: 07:20 (spóźniona)" },
+  ] as const)("lastSync in $locale with when $when and late $late", ({ locale, when, late, text }) => {
+    expect(textTables[locale].bot.status.lastSync(when, late)).toBe(text);
+  });
+
+  test.each([
+    { locale: "en", waiting: 0, oldest: null, held: null, text: "Approvals: 0 waiting for your tap" },
+    { locale: "en", waiting: 1, oldest: "12:00", held: null, text: "Approvals: 1 waiting for your tap (oldest 12:00)" },
+    {
+      locale: "en",
+      waiting: 2,
+      oldest: null,
+      held: "1 approved, sending",
+      text: "Approvals: 2 waiting for your tap · 1 approved, sending",
+    },
+    { locale: "pl", waiting: 0, oldest: null, held: null, text: "Zatwierdzenia: 0 do Twojego stuknięcia" },
+    {
+      locale: "pl",
+      waiting: 1,
+      oldest: "12:00",
+      held: null,
+      text: "Zatwierdzenia: 1 do Twojego stuknięcia (najstarsze z 12:00)",
+    },
+    {
+      locale: "pl",
+      waiting: 5,
+      oldest: null,
+      held: "zatwierdzono 1, trwa wysyłanie",
+      text: "Zatwierdzenia: 5 do Twojego stuknięcia · zatwierdzono 1, trwa wysyłanie",
+    },
+    {
+      locale: "pl",
+      waiting: 2,
+      oldest: "12:00",
+      held: "zatwierdzono 1, trwa wysyłanie",
+      text: "Zatwierdzenia: 2 do Twojego stuknięcia (najstarsze z 12:00) · zatwierdzono 1, trwa wysyłanie",
+    },
+  ] as const)("approvalsLine in $locale with $waiting waiting, oldest $oldest, held $held", (row) => {
+    const label = row.locale === "en" ? "Approvals" : "Zatwierdzenia";
+    expect(
+      textTables[row.locale].bot.status.approvalsLine(label, row.waiting, { oldest: row.oldest, held: row.held })
+    ).toBe(row.text);
+  });
+});
