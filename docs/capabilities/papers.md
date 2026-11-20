@@ -1,6 +1,6 @@
 # Papers
 
-> Checked against the code at `ea7b99f4`, 2026-11-20.
+> Checked against the code at `708070307`, 2026-11-21.
 
 ## What it does now
 
@@ -16,7 +16,7 @@ The system has draft legal papers and a cost model. Three in-app texts (privacy 
 6. **Pairs agree.** A pl and an en page have the same number of `##` headings. The placeholders, the claims list and the paper paths are checked by `apps/server/src/legal-papers.test.ts`.
 7. **Links.** `/login`, `/setup`, the Account card and the terms dialog link the three documents in the panel language (`LegalLinks`).
 8. **Cost model.** `costToRun(mailsPerDay, opts?)` returns `{ llmUsd, hostingUsd, backupUsd, totalUsd, basis }` per mailbox per month (30 days). The LLM cost per mail is the pilot measure `pilotCost.llmUsd / pilotCost.triagedMails` when the pilot has at least 100 triaged mails and at most 5% unpriced calls (`basis: "measured"`); otherwise it is the E3 classifier figure (`basis: "estimate"`). Hosting and backup come from the same helper as `unitCost` (M7). A volume or host size of 0 or less throws `RangeError`. `docs/cost-model.md` holds the table; a test checks every cell against `costToRun`.
-9. **Seams.** Tickets that change what the system sends or stores update the registries and texts in the same change, and then bump the version: F104 (Sent mail), F117 and F118 (OAuth, push, Telegram detail), F111 and F120 (EU endpoint, sender profiles) F112 (a GitHub row with `personalData: false`) and `F162-the-privacy-papers-name-what-the-open-loops-extractor-and-the-one-click-unsubscribe-send` (the extractor call, the one-click request and report mail; `apps/server/src/legal-outside-calls.test.ts` pins their limits).
+9. **Seams.** Tickets that change what the system sends or stores update the registries and texts in the same change, and then bump the version: F104 (Sent mail), F117 and F118 (OAuth, push, Telegram detail), F111 and F120 (EU endpoint, sender profiles) F112 (a GitHub row with `personalData: false`) and `F162-the-privacy-papers-name-what-the-open-loops-extractor-and-the-one-click-unsubscribe-send` (the extractor call, the one-click request and report mail; `apps/server/src/legal-outside-calls.test.ts` pins their limits) and `F163-the-privacy-papers-name-the-reply-style-call-that-sends-cut-sent-mail-to-the-ai` (the style call; the same test file pins its limits and ties the DPIA and the claims list to them).
 
 ## Entry points
 

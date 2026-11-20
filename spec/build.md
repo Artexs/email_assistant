@@ -16,6 +16,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F164-the-reply-drafter-writes-real-sentences-so-the-style-gate-can-pass` (🟠 ACTIVE): The reply drafter writes real sentences so the style gate can pass
 - `F151-the-demo-video-and-the-docs-screenshots-come-from-the-synthetic-demo-week-export` (🟠 ACTIVE): The demo video and the docs screenshots come from the synthetic demo-week export
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 
@@ -30,6 +31,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F125-…-test-…` (🟠 ACTIVE, stages 01–07 landed, G1 answered 2026-11-20): the cut stages 08–21 written, cold review running: a `--role planner` job writes them from `audit/report.md` § 2 (ten groups, all `ok`; G06 runs the file in the CI `e2e` job; G07 and G08 add `tools/mail-oauth-spike` to `test:unit`; the three `main.test.ts` rows are rejected) once F124 stage 01 has landed; each cut stage gets a review. Follow-up tickets opened: F154 (mutation gaps), F155 (source regexes to behaviour tests), F156 (draft date schema), F157 (time and size rules reach tests, low priority; runs after the cuts).
 - `F139-…-guard-empty-…` (🟢 landed; drill rerun F152 planned: 01 coordinator VPS run after the v0.4.4 release job ∥ 02 worker test asserts): a readiness wait in `deploy/restore.sh`; one worker stage, one VPS drill rerun; lands before F108 stage 05.
 - `F164-…-real-sentences-…` (🟠 ACTIVE, plan landed, 7 stages, no migration, no `bun.lock`): a reply draft holds full sentences where the manager facts are known so the style gate can pass; 01 ∥ 04, then 02, 03, then 05 (risky, Opus review, key in job env), 06, 07; `Verdict:` line of tuning-1.md decides stage 07; no v5 gate pass closes the ticket as failed.
+- `F163-…-style-call-…` (🟠 ACTIVE, plan landed, 2 stages, no migration, no `bun.lock`): the privacy papers name the reply-style call that sends cut Sent mail to the AI; 01 `[risky]` (Opus review) then 02; hold the next release until 01 lands; follow-up ticket for the public security claim and the DPIA flow before `style_from_sent` goes on.
 - `F162-…-privacy-papers-…` (🟠 ACTIVE, plan landed, 4 stages, no migration, no `bun.lock`): the privacy page, DPA, terms, DPIA, ledger and public claim name the open-loops extractor call, the one-click unsubscribe request, members in `unsubscribe-data` and report mail; 01 `[risky]` (Opus review) first, then 02 ∥ 04, then 03; the release that carries 01 makes every member accept the terms again.
 - `F151-…-demo-video-…` (🟠 ACTIVE, plan refreshed, 8 stages, no migration, [risky] 04–06, 08): the demo video and docs shots come from the demo-week export; sequenced after F121; 01–04 landed; 08 now (no export); 05 after a trial export of an ended run day 1 or later (C1a, from 2026-11-23T23:00Z), then 06 (needs 05 and 08), 07; the day-5 take is a follow-up ticket. C1 rule: the sim run for the export must use the production classifier setup (now `openai`, `gpt-6-luna`, `classifier-v2`), or the F151 seed check refuses it (`demo_prompt_mismatch`, `demo_gate_missing`). G2 and G3 are owner gates.
 - `F062-drop-mailbox-cursor-columns` (🟠 plan landed; 01 ∥ 02 → 03 → 04; 01 lands only after the v0.4.2 tag): the only migrations on the board: expand (new columns, dual write) rides v0.4.3, contract (drop) rides v0.4.4; `[risky]`.
@@ -51,6 +53,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F163-the-privacy-papers-name-the-reply-style-call-that-sends-cut-sent-mail-to-the-ai` (🟢 PROVEN): The privacy papers name the reply-style call that sends cut Sent mail to the AI; landed 2026-11-21
 - `F162-the-privacy-papers-name-what-the-open-loops-extractor-and-the-one-click-unsubscribe-send` (🟢 PROVEN): The privacy papers name what the open-loops extractor and the one-click unsubscribe send; landed 2026-11-20
 - `F161-a-command-description-with-a-trailing-newline-in-its-usage-text-is-refused` (🟢 PROVEN): A command description with a trailing newline in its usage text is refused; landed 2026-11-20
 - `F160-core-mutation-gaps-left-by-the-full-run-one-replies-schema-case-and-six-functions-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): Core mutation gaps left by the full run (one replies schema case and six functions) get tests that fail when the code breaks; landed 2026-11-20
@@ -60,8 +63,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F156-the-draft-schema-refuses-an-impossible-date-such-as-2026-13-01` (🟢 PROVEN): The draft schema refuses an impossible date such as 2026-13-01; landed 2026-11-20
 - `F155-the-source-text-regexes-in-main-test-ts-and-composition-test-ts-are-replaced-by-behaviour-tests` (🟢 PROVEN): The source-text regexes in main.test.ts and composition.test.ts are replaced by behaviour tests; landed 2026-11-20
 - `F154-the-core-functions-with-5-or-more-surviving-mutants-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): The core functions with 5 or more surviving mutants get tests that fail when the code breaks; landed 2026-11-20
-- `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
-- 2026-11: 135 landed. spec/features/done/2026-11/
+- 2026-11: 136 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
