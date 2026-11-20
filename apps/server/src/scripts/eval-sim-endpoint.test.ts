@@ -30,7 +30,7 @@ const env = {
 const standardConfig = loadConfig({ ...env, OPENAI_API_KEY: "o-key" });
 const euConfig = loadConfig({ ...env, OPENAI_API_KEY: "o-key", OPENAI_BASE_URL: "https://eu.api.openai.com/v1" });
 // The port and the path must never reach a report or a gate file.
-const ownConfig = loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11500/v1" });
+const ownConfig = loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11500/v1", OPENAI_OWN_MODEL: OWN_MODEL });
 
 let tmp = "";
 let corpus: MiniCorpus | undefined;
