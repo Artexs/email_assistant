@@ -53,6 +53,8 @@ export default defineConfig({
             { slug: "reference/telegram" },
             { slug: "reference/settings" },
             { slug: "reference/limits" },
+            { slug: "reference/api" },
+            { slug: "reference/autonomy-evidence" },
           ],
         },
         {
