@@ -1,9 +1,9 @@
+import { renderSloAlert } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { loadConfig, sloThresholds } from "../../platform/config";
 
 import { checkBackupAge, checkDisk, type SloReading, type StatFs } from "./slo-checks";
-import { sloAlertText } from "./slo-texts";
 
 // The disk and backup-age checks. Both read the host through an injected function, so no test touches the disk.
 const cfg = sloThresholds(
@@ -150,14 +150,10 @@ describe("checkBackupAge", () => {
 describe("the real readings fill the stage 03 texts", () => {
   const text = (reading: SloReading | null): string[] => {
     if (reading === null) throw new Error("the check is off");
-    return sloAlertText({
-      kind: reading.check.kind,
-      phase: "open",
-      facts: reading.check.facts,
-      ids: [],
-      openedAt: NOW,
-      now: NOW,
-    }).split("\n");
+    return renderSloAlert(
+      { kind: reading.check.kind, phase: "open", facts: reading.check.facts, ids: [], openedAt: NOW, now: NOW },
+      "en"
+    ).split("\n");
   };
 
   test("8. missing status file: line 2 says no status file", async () => {

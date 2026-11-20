@@ -1,7 +1,14 @@
-import { SLO_KINDS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { sloAlertText, TEST_FACTS, TEST_IDS, type AlertLocale } from "./slo-texts";
+import type { UserLocale } from "../tenancy";
+
+import {
+  renderSloAlert,
+  SLO_TEST_FACTS as TEST_FACTS,
+  SLO_TEST_IDS as TEST_IDS,
+  type SloTextInput,
+} from "./alert-text";
+import { SLO_KINDS } from "./kinds";
 
 // The alert text. Plain text, numbers and ids only.
 const OPENED = new Date("2026-11-20T10:00:00Z");
@@ -9,8 +16,11 @@ const NOW = new Date("2026-11-20T16:05:00Z");
 const id = (n: number): string => `00000000-0000-4000-8000-0000000000${String(n).padStart(2, "0")}`;
 
 const text = (
-  input: Partial<Parameters<typeof sloAlertText>[0]> & Pick<Parameters<typeof sloAlertText>[0], "kind" | "phase">
-): string => sloAlertText({ facts: {}, ids: [], openedAt: OPENED, now: NOW, ...input });
+  input: Partial<SloTextInput> & Pick<SloTextInput, "kind" | "phase"> & { locale?: UserLocale }
+): string => {
+  const { locale = "en", ...rest } = input;
+  return renderSloAlert({ facts: {}, ids: [], openedAt: OPENED, now: NOW, ...rest }, locale);
+};
 
 describe("English", () => {
   test("line 1 of each phase", () => {
@@ -150,7 +160,7 @@ describe("Polish", () => {
 
 describe("what never goes out", () => {
   test("no kind, phase or locale makes a text with an address, a URL or a chat id", () => {
-    for (const locale of ["en", "pl"] as AlertLocale[]) {
+    for (const locale of ["en", "pl"] as UserLocale[]) {
       for (const kind of SLO_KINDS) {
         for (const phase of ["open", "repeat", "resolved", "test"] as const) {
           const out = text({ kind, phase, facts: TEST_FACTS[kind], ids: TEST_IDS[kind], locale });
