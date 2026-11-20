@@ -81,7 +81,8 @@ export {
   type TrustNoticeInput,
 } from "./notices";
 export { isFirstDigestOfDay, queueDigest, scheduleDigests, type DigestJobDeps } from "./digest-job";
-export { handleCallback, pickerMessage, type CallbackDeps } from "./callbacks";
+export { handleCallback, type CallbackDeps } from "./callbacks";
+export { pickerMessage } from "./feedback-taps";
 export {
   createUpdateHandlers,
   digestNowMessage,

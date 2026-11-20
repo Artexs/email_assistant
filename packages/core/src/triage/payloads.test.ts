@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { draftPayloadSchema, draftVersion, sendPayloadFor, sendPayloadSchema, type DraftPayload } from "./payloads";
+import {
+  draftPayloadSchema,
+  draftVersion,
+  dueDateOrNone,
+  sendPayloadFor,
+  sendPayloadSchema,
+  type DraftPayload,
+} from "./payloads";
 
 const ID = "5b1f3c2e-0a4d-4e8b-9c6f-1d2e3f4a5b6c";
 const ID2 = "6c2a4d3f-1b5e-4f9c-8d7a-2e3f4a5b6c7d";
@@ -46,11 +53,35 @@ describe("draftPayloadSchema", () => {
     }
   });
 
-  test("due_date accepts a date and an empty string, refuses another shape", () => {
-    expect(draftPayloadSchema.safeParse({ ...delegation, due_date: "2026-11-10" }).success).toBe(true);
-    expect(draftPayloadSchema.safeParse({ ...delegation, due_date: "" }).success).toBe(true);
-    expect(draftPayloadSchema.safeParse({ ...delegation, due_date: "10.11.2026" }).success).toBe(false);
-    expect(draftPayloadSchema.safeParse({ ...delegation, due_date: "2026-13-01" }).success).toBe(true);
+  test("a due date that is not a real calendar date is refused with an invalid_format issue", () => {
+    const result = draftPayloadSchema.safeParse({ ...delegation, due_date: "2026-13-01" });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map(({ code, path }) => ({ code, path }))).toEqual([
+      { code: "invalid_format", path: ["due_date"] },
+    ]);
+  });
+
+  describe.each([
+    ["delegation", delegation],
+    ["reminder", reminder],
+  ])("due_date of a %s draft", (_kind, fixture) => {
+    test.each([
+      ["2026-11-10", true],
+      ["", true],
+      ["2028-02-29", true],
+      ["2000-02-29", true],
+      ["0001-01-01", true],
+      ["9999-12-31", true],
+      ["2026-13-01", false],
+      ["2026-02-30", false],
+      ["2026-02-29", false],
+      ["1900-02-29", false],
+      ["2026-04-31", false],
+      ["2026-00-10", false],
+      ["10.11.2026", false],
+    ])("%p gives success %p", (due_date, success) => {
+      expect(draftPayloadSchema.safeParse({ ...fixture, due_date }).success).toBe(success);
+    });
   });
 
   test("a bad address is refused in every draft kind", () => {
@@ -123,5 +154,18 @@ describe("edit fields of a draft payload", () => {
     expect("body_text" in parsed).toBe(false);
     expect("subject_text" in parsed).toBe(false);
     expect("version" in parsed).toBe(false);
+  });
+});
+
+describe("dueDateOrNone", () => {
+  test.each([
+    ["2026-11-10", "2026-11-10"],
+    ["", ""],
+    ["2026-13-01", ""],
+    [null, ""],
+    [undefined, ""],
+    [42, ""],
+  ])("%p gives %p", (value, expected) => {
+    expect(dueDateOrNone(value)).toBe(expected);
   });
 });

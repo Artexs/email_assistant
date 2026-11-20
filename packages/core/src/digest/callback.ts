@@ -1,8 +1,6 @@
 import type { RejectReason } from "../metrics/m3";
 import type { Category } from "../triage/categories";
 
-import { isCallbackOfFamily } from "./callback-kinds";
-
 export { encodeCallback, parseCallback } from "./callback-kinds";
 
 export const labelCategories = ["urgent", "needs_reply", "info", "notification", "spam"] as const;
@@ -83,31 +81,3 @@ export type Callback =
   | ApprovalCallback;
 
 // The wire format and the family of each kind are in `callbackKinds` (callback-kinds.ts).
-export function isAnsweredCallback(callback: Callback): callback is AnsweredCallback {
-  return isCallbackOfFamily(callback, "answered");
-}
-
-export function isReplyCallback(callback: Callback): callback is ReplyCallback {
-  return isCallbackOfFamily(callback, "reply");
-}
-
-export function isLoopCallback(callback: Callback): callback is LoopCallback {
-  return isCallbackOfFamily(callback, "loop");
-}
-
-export function isDelegateCallback(callback: Callback): callback is DelegateCallback {
-  return isCallbackOfFamily(callback, "delegate");
-}
-
-export function isFeedbackCallback(callback: Callback): callback is FeedbackCallback {
-  return isCallbackOfFamily(callback, "feedback");
-}
-
-export function isReviewCallback(callback: Callback): boolean {
-  return (
-    callback.kind === "review_right" ||
-    callback.kind === "review_pick" ||
-    callback.kind === "review_edit" ||
-    callback.kind === "review_cancel"
-  );
-}

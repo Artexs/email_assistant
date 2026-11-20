@@ -346,6 +346,16 @@ describe("the delegation part of the one chaser", () => {
     });
   });
 
+  test("(14b) an original draft with an impossible due date: the reminder due_date is empty", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      const d = await openDelegation(trx, s, { dueDate: "2026-02-30" });
+      await run(s, at0730);
+      const [draft] = await reminderRows(trx, s.ctx, d.emailId);
+      expect(draft?.payload).toMatchObject({ kind: "reminder", due_date: "" });
+    });
+  });
+
   test("(9) two due delegations share one set; 15 give 10 reminders and 15 overdue", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
