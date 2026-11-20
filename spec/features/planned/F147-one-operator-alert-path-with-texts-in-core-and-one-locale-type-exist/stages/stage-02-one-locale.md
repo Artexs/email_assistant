@@ -18,25 +18,26 @@ Every type, list or schema whose meaning is "the language of a text the product 
 
 - **File** `tools/eslint-rules/no-locale-union.js`, registered in the local plugin `ea` (`tools/eslint-rules/index.js`) as `ea/no-locale-union`. It reports:
   - a `TSUnionType` of exactly two `TSLiteralType` members with the values `"en"` and `"pl"` (any order);
-  - a call `z.enum([...])` (callee property `enum`) whose array has exactly the two string literals `"en"` and `"pl"` (any order).
+  - an array of exactly the two string literals `"en"` and `"pl"` (any order) under `as const`;
+  - a call `z.enum([...])` (callee property `enum`) whose array, with or without `as const`, has exactly those two strings.
   - Message: `Use UserLocale, userLocales or userLocaleSchema from @ea/core (packages/core/src/tenancy.ts).`
   - A union with a third member (`"pl" | "en" | "other"`) is not reported.
-- `eslint.config.js`: the rule at `error` for `apps/docs/src/**`, `apps/web/src/**`, `apps/server/src/**`, `packages/core/src/**` (`ts`, `tsx`, `astro`), with `ignores` for test code (`**/*.test.{ts,tsx}`, `**/*.test-helper.ts`) and for the mail-language folders of step 1. `packages/core/src/tenancy.ts` needs no ignore (it spells `["pl", "en"] as const`, not a union or `z.enum`).
+- `eslint.config.js`: the rule at `error` for `apps/docs/src/**`, `apps/web/src/**`, `apps/server/src/**`, `packages/core/src/**` (`ts`, `tsx`, `astro`), with `ignores` for test code (`**/*.test.{ts,tsx}`, `**/*.test-helper.ts`), for `packages/core/src/tenancy.ts` (the one list) and for the mail-language folders of step 1. The `.astro` block registers `plugins: { ea }` itself (the existing `ea` block covers no `.astro`). A mail-language site outside those folders uses a named mail-language type or `// eslint-disable-next-line ea/no-locale-union -- mail language` (D12).
 - `docs/code-patterns.md` § Texts carry a locale: one sentence: "The language of a product text is `UserLocale`; the lint rule `ea/no-locale-union` bans a copy. The language of a mail or a draft is another concept."
 
 ## Test
 
-1. Rule test `apps/server/src/platform/locale-lint.test.ts` (the harness of `time-lint.test.ts`, the test of `no-time-literals`): invalid `type L = "en" | "pl";`, `type L = "pl" | "en";`, `const s = z.enum(["pl", "en"]);`; valid `type L = "pl" | "en" | "other";`, `type L = UserLocale;`, `const s = z.enum(userLocales);`, `const order = ["en", "pl"];`.
+1. Rule test `apps/server/src/platform/locale-lint.test.ts` (the harness of `time-lint.test.ts`, the test of `no-time-literals`): invalid `type L = "en" | "pl";`, `type L = "pl" | "en";`, `const l = ["pl", "en"] as const;`, `const s = z.enum(["pl", "en"]);`, `const s = z.enum(["en", "pl"] as const);`; valid `type L = "pl" | "en" | "other";`, `type L = UserLocale;`, `const s = z.enum(userLocales);`, `const order: readonly UserLocale[] = ["en", "pl"];`, `const l = ["pl", "en", "de"] as const;`.
 2. Config: the `OPERATOR_LOCALE` cases of `config.test.ts` pass unchanged (`en` default, empty → `en`, `pl` accepted, `de` refused with the key named).
 3. Push payload (`notices/push.test.ts`): the existing cases pass unchanged; add one case if none exists: `lang: "de"` is refused by the payload schema.
 4. Mutation in a covered file: add `export type X = "en" | "pl";` to `apps/docs/src/shots.ts`; `bun run lint` fails with `ea/no-locale-union`. Revert.
-5. Mutation in an `.astro` file: give `Public.astro` a prop `lang?: "en" | "pl"`; `bun run lint` fails. Revert. If it passes, the astro parser does not expose the union: say so in the final message (plan § Not verified); do not work around it.
+5. Mutation in an `.astro` file: give `Public.astro` a prop `lang?: "en" | "pl"`; `bun run lint` fails. Revert.
 6. Mutation in an ignored folder: the same line in `packages/core/src/replies/` passes lint. Revert.
 7. `bun run typecheck` (it runs `astro check` for docs) passes.
 
 ## Done when
 
-- Search for the union `"en" | "pl"`, `"pl" | "en"` and `z.enum(["en", "pl"])` in the covered, non-ignored files finds nothing.
+- `bun run lint` passes with the rule at `error` on every covered file (so no copy is left).
 - Cases 1–7 hold; cases 4–6 are named in the final message.
 - Proof: `plan.md` § Proof with `NN=02`.
 

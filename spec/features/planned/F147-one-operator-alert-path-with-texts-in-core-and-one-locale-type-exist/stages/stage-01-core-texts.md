@@ -34,7 +34,7 @@ All operator words and both renderers live in `@ea/core`. The service-level aler
   - `export function renderSloAlert(input: SloTextInput, locale: UserLocale): string` — the `HEAD` `sloAlertText` logic (fact reader with the Polish decimal comma, at most five ids, `+N more`, no ids for `resolved`, the runbook line).
   - `export function renderOperatorEvent(event: OperatorEvent, locale: UserLocale): string` — picks the event text of `textsFor(locale).operator` (`trial_ending` with `ended` true gives `trialEnded`). Dates go in as ISO strings, as the `HEAD` callers pass them.
   - `SLO_TEST_FACTS` and `SLO_TEST_IDS` (the `HEAD` `TEST_FACTS`, `TEST_IDS`).
-- Export the new names from the core index (and `@ea/core/web` only if a web file needs them; none does now).
+- Export the new names from the core index (not from `@ea/core/web`).
 
 ## Step 3 — server switch
 
@@ -54,7 +54,7 @@ Fixed values: `ORG` `11111111-1111-4111-8111-111111111111`, `BOX` `22222222-2222
    - send_limit (BOX, at AT) → `send_limit:22222222-2222-4222-8222-222222222222:2026-11-18`.
 3. `renderOperatorEvent`, a `test.each` table, en: each case gives the string of `texts/operator.test.ts` for the same values (trial ends, trial ended, auth error, llm cap 300, auth mail `reset` `EAUTH`, send limit `mailbox_hour` AT UNTIL). pl: trial ended and llm cap 3 (`(3 wywołania)`).
 4. Registry: `ALERT_LIFECYCLE` has exactly the keys of `OPERATOR_ALERT_KINDS`; each `SLO_KINDS` value maps to `incident`, each `OPERATOR_EVENT_KINDS` value to `once`; the two lists share no value.
-5. Existing guards, unchanged: `texts/operator.test.ts`, `texts/index.test.ts` (same keys in both locales), `ops/alert-step.test.ts`, `ops-slo-job.test.ts`.
+5. Existing guards pass with no assert change: `texts/operator.test.ts`, `texts/index.test.ts` (same keys in both locales), `ops/alert-step.test.ts`, `ops-slo-job.test.ts` (it adds `locale: "en"` where D13 requires it).
 6. Mutation: change one Polish word in `slo` of `texts/operator.ts`; case 1 fails. Change the `llm_cap` key separator; case 2 fails. Revert both; write them in the final message.
 
 ## Docs
@@ -68,4 +68,4 @@ Fixed values: `ORG` `11111111-1111-4111-8111-111111111111`, `BOX` `22222222-2222
 
 ## Out of scope
 
-`channels/operator.ts` and its tests (stage 03); log names (stage 04); other locale copies (stage 02).
+The event notices (stage 03), log names (04), other locale copies (02).

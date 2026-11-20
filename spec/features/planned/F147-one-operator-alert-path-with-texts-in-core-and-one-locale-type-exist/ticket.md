@@ -27,9 +27,9 @@ Every message to the operator chat goes through one path in the operator module:
 
 - `apps/server/src/modules/operator/slo-texts.ts` and `channels/operator.ts` are gone; `packages/core/src/texts/operator.ts` holds every operator text.
 - The moved text tests pass with the same expected strings, and the moved notice integration tests pass with the same keys.
-- No log line named `operator_notice_*` or `slo_alert_*` remains in `apps/server/src` (search finds nothing).
+- No log line named `operator_notice*`, `slo_alert_*` or `slo_check_failed` remains in `apps/server/src` (search finds nothing).
 - `bun run ops:alert-test --all` prints ten `sent` or `unsent` lines.
-- `bun run lint` fails on a new `"en" | "pl"` union in a product-text file.
+- `bun run lint` fails on a new `"en" | "pl"` union, `as const` list or `z.enum` of those two in a product-text file.
 
 ## Slices
 
