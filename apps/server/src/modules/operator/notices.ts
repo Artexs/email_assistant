@@ -15,11 +15,11 @@ import { errorFields } from "../../platform/errors";
 import { createLog } from "../../platform/log";
 import { listSendLimitHolds } from "../actions";
 import { auditEvents, hasAuditKey, recordAudit } from "../audit";
-import { telegramErrorFields } from "../channels";
 import { listAuthErrorMailboxesBefore } from "../mail";
 import { listOrganizations } from "../tenancy";
 
-// The module field stays `channels` until the log names of the operator path change (stage file `spec/features/active/F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist/stages/stage-04-one-delivery.md`).
+import type { OperatorDelivery } from "./deliver";
+
 const log = createLog("channels");
 
 const TRIAL_WARNING_MS = 3 * DAY_MS;
@@ -27,8 +27,8 @@ const TRIAL_WARNING_MS = 3 * DAY_MS;
 export interface OperatorNoticeDeps {
   db: Db | Transaction<DB>;
   now: () => Date;
-  // The Telegram direct send to the operator chat; null = a `warn` log line instead.
-  send: ((text: string) => Promise<void>) | null;
+  // The one delivery of the operator texts; it logs the send and a failed send.
+  delivery: OperatorDelivery;
   // The language of the texts (`OPERATOR_LOCALE`).
   locale: UserLocale;
 }
@@ -61,7 +61,7 @@ interface Retry {
 // An event reaches the operator at least once. The text holds ids, dates and counts only.
 // The dedup is an audit row `operator.notice` with `data.key`, written after a successful send, in the organization of the event.
 export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeHooks {
-  const { db, send } = deps;
+  const { db, delivery } = deps;
   const { locale } = deps;
   // The key and the text of an event come from core. Throws on an invalid date: the caller guards it.
   const noticeOf = (event: OperatorEvent): { key: string; text: string } => ({
@@ -70,17 +70,8 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
   });
   const doneKeys = new Set<string>();
   const inFlight = new Set<string>();
-  const failedLogged = new Set<string>();
   const retries = new Map<string, Retry>();
   const running = new Set<Promise<void>>();
-
-  async function sendOrLog(kind: OperatorEventKind, text: string): Promise<void> {
-    if (send === null) {
-      log.warn("operator_notice_unsent", { kind });
-      return;
-    }
-    await send(text);
-  }
 
   // Never throws.
   async function notify(ctx: TenantContext, kind: OperatorEventKind, key: string, text: string): Promise<void> {
@@ -93,17 +84,11 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
           return;
         }
       } catch (error) {
-        log.error("operator_notice_failed", { kind, ...errorFields(error) });
+        log.error("operator_alert_failed", { kind, ...errorFields(error) });
         return;
       }
 
-      try {
-        await sendOrLog(kind, text);
-      } catch (error) {
-        if (!failedLogged.has(key)) {
-          failedLogged.add(key);
-          log.error("operator_notice_send_failed", { kind, ...telegramErrorFields(error) });
-        }
+      if (!(await delivery.deliver({ kind, status: "open", key }, text))) {
         // A capped mailbox calls `capReached` on every mail: the next hourly run retries, the triage loop does not.
         // A held mailbox calls `sendLimitReached` on every held send: same rule.
         if (kind === "llm_cap" || kind === "send_limit") retries.set(key, { ctx, kind, text });
@@ -117,7 +102,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
           data: { kind, key },
         });
       } catch (error) {
-        log.error("operator_notice_failed", { kind, ...errorFields(error) });
+        log.error("operator_alert_failed", { kind, ...errorFields(error) });
         return;
       }
       retries.delete(key);
@@ -148,7 +133,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
         });
         await start({ orgId }, "trial_ending", key, text);
       } catch (error) {
-        log.error("operator_notice_failed", { kind: "trial_ending", ...errorFields(error) });
+        log.error("operator_check_failed", { kind: "trial_ending", ...errorFields(error) });
       }
     }
   }
@@ -160,7 +145,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
         const { key, text } = noticeOf({ kind: "auth_error_24h", orgId, mailboxId, since: statusChangedAt });
         await start({ orgId }, "auth_error_24h", key, text);
       } catch (error) {
-        log.error("operator_notice_failed", { kind: "auth_error_24h", ...errorFields(error) });
+        log.error("operator_check_failed", { kind: "auth_error_24h", ...errorFields(error) });
       }
     }
   }
@@ -202,7 +187,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
           await startSendLimit(ctx, { mailboxId: hold.mailboxId, limit, until: hold.nextAt, at: now });
         }
       } catch (error) {
-        log.error("operator_notice_failed", { kind: "send_limit", ...errorFields(error) });
+        log.error("operator_check_failed", { kind: "send_limit", ...errorFields(error) });
       }
     }
   }
@@ -220,7 +205,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
         try {
           await part();
         } catch (error) {
-          log.error("operator_notices_failed", { ...errorFields(error) });
+          log.error("operator_check_failed", { ...errorFields(error) });
         }
       }
     },
@@ -231,7 +216,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
         if (retries.has(key)) return;
         void start(ctx, "llm_cap", key, text);
       } catch (error) {
-        log.error("operator_notice_failed", { kind: "llm_cap", ...errorFields(error) });
+        log.error("operator_alert_failed", { kind: "llm_cap", ...errorFields(error) });
       }
     },
 
@@ -247,7 +232,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
         });
         void start(ctx, "auth_mail_failed", key, text);
       } catch (error) {
-        log.error("operator_notice_failed", { kind: "auth_mail_failed", ...errorFields(error) });
+        log.error("operator_alert_failed", { kind: "auth_mail_failed", ...errorFields(error) });
       }
     },
 
@@ -255,7 +240,7 @@ export function createOperatorNotices(deps: OperatorNoticeDeps): OperatorNoticeH
       try {
         void startSendLimit(ctx, hit);
       } catch (error) {
-        log.error("operator_notice_failed", { kind: "send_limit", ...errorFields(error) });
+        log.error("operator_alert_failed", { kind: "send_limit", ...errorFields(error) });
       }
     },
 

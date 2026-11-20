@@ -85,7 +85,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `slo_sync_lag` (operator alert text `ALERT slo_sync_lag`; also `STILL OPEN`, `RESOLVED`, `TEST`)
 
 - **First seen:** 2026-11-15 (F114 stage 03; not seen live)
-- **Source:** job `ops.slo` (`apps/server/src/modules/operator/slo-job.ts`, check `checkSyncLag`). The text goes to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` (with no chat: the `info` line `slo_alert_sent`, `kind=slo_sync_lag`).
+- **Source:** job `ops.slo` (`apps/server/src/modules/operator/slo-job.ts`, check `checkSyncLag`). The text goes to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` (with no chat: the `warn` line `operator_alert_unsent`, `kind=slo_sync_lag`).
 - **Cause:** An active mailbox of an organization that is not suspended has shown no sign of life for more than `SLO_SYNC_LAG_MIN` minutes (default 15). A sign of life is the last sync, the last status change, the creation of the mailbox, or the resume of its organization. Line 2 shows the count of late mailboxes and the age of the oldest; line 3 shows up to five mailbox ids. The alert opens at once, repeats every `SLO_REPEAT_H` hours (default 6) while a mailbox is late, and resolves when no mailbox is late. For 10 minutes after a server start it gives no verdict (an open alert stays open).
 - **Fix:** `bun run org:status` lists the mailboxes with their organization ids; then `bun run mailbox:check --org-id <uuid> --mailbox-id <uuid>` for the id in line 3. The usual causes: the IMAP server is down or slow, the password changed (`auth_error` is a different status and does not count here), the sync job fails (grep the log for `sync_failed`), or the server was down. When the cause is gone, the next sync clears the alert within 5 minutes.
 - **Status:** won't fix (expected behaviour)
@@ -125,21 +125,37 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Read `~/ea-logs/backup.log` on the VPS and run `deploy/backup.sh` by hand; the last line must be `backup ok <name> <bytes>`. The alert resolves at the next tick after a good run.
 - **Status:** won't fix (expected behaviour)
 
-### `slo_check_failed` (field `kind`; fields `error`, `error_code`)
+### `operator_check_failed` (field `kind` when known; fields `error`, `error_code`)
 
-- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
-- **Source:** job `ops.slo` (`apps/server/src/modules/operator/slo-job.ts`, level `warn`).
-- **Cause:** The check of one kind threw, or the alert state of that kind could not be read or written (usually a database error). The job skips that kind for this tick and runs the other kinds. An open alert of the kind stays as it is.
+- **First seen:** 2026-11-15 (as `slo_check_failed`; renamed 2026-11-20; not seen live)
+- **Source:** job `ops.slo` (`slo-job.ts`) and the hourly job `channels.operator` (`operator/notices.ts`), level `error`.
+- **Cause:** The check of one kind threw, or one part of the hourly run threw (an organization or mailbox read, a row it could not use). The job skips that kind or part for this run and goes on. An open alert of the kind stays as it is. The hourly part without `kind` is the whole part (organizations, auth errors, retries or send limits).
 - **Fix:** Read `error` and `error_code`. A database error repeats for all kinds: check `/health` and the database. If one kind fails every 5 minutes, read the check code of that kind. No operator alert goes out for this line: it is only in the log.
 - **Status:** investigating
 
-### `slo_alert_send_failed` (fields `kind`, `status`; fields `error`, `error_code`)
+### `operator_alert_failed` (field `kind`; fields `error`, `error_code`)
 
-- **First seen:** 2026-11-15 (F114 stage 03; not seen live)
-- **Source:** job `ops.slo` (`slo-job.ts`, level `warn`). `status` is the phase: `open`, `repeat` or `resolved`.
-- **Cause:** The direct send to the operator chat failed (Telegram down, the bot was removed from the group, a wrong chat id, a timeout after 10 s). The job writes no mark, so the next tick (5 minutes later) sends the same notice again. Nothing is lost; the notice is late.
+- **First seen:** 2026-11-20 (it joins the old `slo_check_failed` state failures and `operator_notice_failed`)
+- **Source:** `slo-job.ts` (the `ops_alerts` state read or write) and `operator/notices.ts` (the audit dedup lookup or write, or an event that could not be built from its input, such as an invalid date), level `error`.
+- **Cause:** The state of the alert could not be read or written, or a hook got input it could not use. After a failed audit write the text already went out: the next run can send it again (at least once).
+- **Fix:** Read `error`. A database error: check `/health` and the database. An invalid date: find the caller of the hook of that `kind` in the composition roots.
+- **Status:** investigating
+
+### `operator_alert_send_failed` (fields `kind`, `status`; fields `error`, `error_code`, `method`)
+
+- **First seen:** 2026-11-15 (as `slo_alert_send_failed` and `operator_notice_send_failed`; renamed 2026-11-20; not seen live)
+- **Source:** `operator/deliver.ts`, level `error`, once per alert key and server process. `status` is `open`, `repeat` or `resolved` for an incident, and always `open` for an event.
+- **Cause:** The direct send to the operator chat failed (Telegram down, the bot was removed from the group, a wrong chat id, a timeout after 10 s). An incident writes no mark, so the next tick (5 minutes later) sends the same notice again. A `llm_cap` or `send_limit` event is tried again at the next hourly run; `trial_ending`, `auth_error_24h` the hourly run finds again; `auth_mail_failed` is not tried again. The line never holds the text, the chat id or the Telegram description.
 - **Fix:** If it repeats, check the bot and the group: `bun run telegram:check`, then `bun run ops:alert-test --kind slo_disk`. The open and resolved alert state stays in `ops_alerts` (`bun run ops:alerts`).
 - **Status:** investigating
+
+### `operator_alert_unsent` (fields `kind`, `status`)
+
+- **First seen:** 2026-11-20 (as `slo_alert_sent` with no chat, and `operator_notice_unsent`)
+- **Source:** `operator/deliver.ts`, level `warn`.
+- **Cause:** `OPERATOR_TELEGRAM_CHAT_ID` is empty. The text is not sent and counts as delivered: the `ops_alerts` mark or the audit row `operator.notice` is written, and the log line is the only trace.
+- **Fix:** Set `OPERATOR_TELEGRAM_CHAT_ID` to receive the texts. With the key empty, no action.
+- **Status:** won't fix (expected behaviour)
 
 ### `slo_urgent_zone_bad` (field `org_id`)
 
@@ -475,10 +491,10 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/lib/invite-delivery.ts`, `scripts/e2e-seed.ts`).
 - **Status:** investigating
 
-### `operator_notice_unsent`, `operator_notice_send_failed` and `operator_notice_failed` (field `kind=auth_mail_failed`)
+### `operator_alert_unsent`, `operator_alert_send_failed` and `operator_alert_failed` (field `kind=auth_mail_failed`)
 
 - **First seen:** 2026-11-13 (S6b code; not seen live)
-- **Source:** `apps/server/src/modules/operator/notices.ts` (`authMailFailed`; key and text from `packages/core/src/ops/events.ts`). The operator chat gets `Auth mail <kind> to user <id> of org <id> failed (<code>).` One notice per user, code and day. With no operator chat the notice is not sent: the log gets `operator_notice_unsent` (level `warn`, field `kind`; never the text) and the audit row `operator.notice` keeps the notice. A failed audit write or lookup gives `operator_notice_failed` (level `error`, fields `kind`, `error`). A failed send gives `operator_notice_send_failed` (level `error`, fields `kind`, `error`, `error_code`, `method`; never the Telegram description). The same failure is a `warn` line `auth mail <kind> to user <id> failed: <code>` from `platform/auth-mail.ts`.
+- **Source:** `apps/server/src/modules/operator/notices.ts` (`authMailFailed`; key and text from `packages/core/src/ops/events.ts`). The operator chat gets `Auth mail <kind> to user <id> of org <id> failed (<code>).` One notice per user, code and day. With no operator chat the notice is not sent: the log gets `operator_alert_unsent` (level `warn`, fields `kind`, `status`; never the text) and the audit row `operator.notice` keeps the notice. A failed audit write or lookup gives `operator_alert_failed` (level `error`, fields `kind`, `error`). A failed send gives `operator_alert_send_failed` (level `error`, fields `kind`, `status`, `error`, `error_code`, `method`; never the Telegram description). The same failure is a `warn` line `auth mail <kind> to user <id> failed: <code>` from `platform/auth-mail.ts`.
 - **Cause:** The auth-mail sender could not send an invite, reset or lock mail. `<code>` is the nodemailer code (for example `EAUTH`, `ECONNECTION`), `TIMEOUT` or `UNKNOWN`.
 - **Fix:** Check the `AUTH_SMTP_*` and `AUTH_MAIL_FROM` keys and the provider (login, port 465 or 587, `AUTH_SMTP_SECURITY`). Make a new link by hand: `bun run web:invite --org-id <uuid> --user-id <uuid> --print`.
 - **Status:** open while the sender is off (the home VPS prints the links; no notice fires there)
