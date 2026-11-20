@@ -11,7 +11,8 @@ const FIRST_SENTENCE = /^[^\n]*?(?=\. |\n|$)/;
  */
 export function parseFlags<T extends ParseArgsConfig>(config: T): ReturnType<typeof parseArgs<T>> {
   try {
-    return parseArgs({ ...config, strict: true });
+    // The cast only drops the `strict: true` that this wrapper adds; the result shape is the one of `config`.
+    return parseArgs({ ...config, strict: true }) as ReturnType<typeof parseArgs<T>>;
   } catch (error) {
     const code = (error as { code?: unknown }).code;
     if (typeof code !== "string" || !code.startsWith("ERR_PARSE_ARGS_")) {
