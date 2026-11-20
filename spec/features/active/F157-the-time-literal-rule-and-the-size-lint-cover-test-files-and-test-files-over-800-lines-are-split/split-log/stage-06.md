@@ -26,3 +26,14 @@ Base for all four files: `73801f3e`. Each file was split with the history merge 
 - Setup list of the old file (no hook, no mock, no `let`): `failuresOf`, `say` in the helpers file; `repeat`, `letterIban` in the pins part.
 - References repointed: `scripts/test-audit/README.md` (one line, a guess about which part hits a timeout; the guess names the two budget parts).
 
+## packages/core/src/notices/registry.test.ts
+
+- Old: 876 lines, 106 cases.
+- Parts: `registry-views` 164, `registry-render` 194, `registry-channels` 217 (all `.test.ts`); helpers file `registry.test-helper.ts` 349 (the shared case table and its fixtures).
+- Proof: `split-proof PASS cases=106`. No `assertions` line.
+- Setup list of the old file (no hook, no mock, no `let`): all of `id1`, `id2`, `now`, `receivedAt`, `nextAt`, `timeZone`, `opts`, `actions`, `names`, `urgentView`, `approvalView`, `setItems`, `sendResult`, `Case`, `cases`, `stored` in the helpers file (each is used by two parts, or by a helper that two parts use).
+- References repointed: `docs/capabilities/digest-and-notices.md` (all three parts), `docs/capabilities/trust.md` (render part), `docs/legal/claims.md` claim row for the push notice (channels part), a comment in `packages/core/src/notices/minimal.ts` (channels part). `docs/code-patterns.md` and the other hits name `apps/server/src/modules/channels/notices/registry.test.ts`, a different file; they stay.
+
+## Reference checks
+
+`bun test apps/server/src/capability-map.test.ts apps/server/src/legal-papers.test.ts apps/server/src/bare-codes.test.ts apps/docs/src/security/claims.test.ts apps/server/src/modules/actions/transitions.test.ts`: 106 pass, 0 fail (run after the last repoint).
