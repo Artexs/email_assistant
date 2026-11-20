@@ -24,7 +24,11 @@ describe("a reply closes a loop by the one address rule", () => {
   test("03-T2: a recipient in capitals finds a mail whose stored lower form keeps the final sigma", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
-      const loop = await waiting(trx, org, { to_addresses: [NIKOS_CAPITAL], cc_addresses: [], counterpart: NIKOS_FINAL });
+      const loop = await waiting(trx, org, {
+        to_addresses: [NIKOS_CAPITAL],
+        cc_addresses: [],
+        counterpart: NIKOS_FINAL,
+      });
       await reply(trx, org, { from: NIKOS_FINAL });
       expect((await run(trx, org)).repliedSubject).toBe(1);
       expect((await loopRow(trx, loop.id)).status).toBe("closed");

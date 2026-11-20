@@ -344,9 +344,13 @@ describe("addresses compare by the one address rule (03-T1, 03-T7)", () => {
 
   test("03-T1: an own address in another spelling never closes", () => {
     expect(
-      replyMatch(loop({ toAddresses: ["x@example.test"] }), mail({ fromAddress: "νίκος@example.gr" }), {
-        ownAddresses: ["νίκοσ@example.gr"],
-      })
+      replyMatch(
+        loop({ toAddresses: ["x@example.test"] }),
+        mail({ fromAddress: "νίκος@example.gr", threadKey: "<root@own.test>" }),
+        {
+          ownAddresses: ["νίκοσ@example.gr"],
+        }
+      )
     ).toBeNull();
   });
 

@@ -70,7 +70,8 @@ export async function replyCandidates(
           ORDER BY tr.created_at DESC, tr.id DESC LIMIT 1
         ) t WHERE t.category = 'spam'
       )`);
-    if (own.length > 0) query = query.where(sql<boolean>`${normalizedAddress("e.from_address")} not in (${sql.join(own)})`);
+    if (own.length > 0)
+      query = query.where(sql<boolean>`${normalizedAddress("e.from_address")} not in (${sql.join(own)})`);
     return query.orderBy("e.received_at").orderBy("e.id").limit(MAX_CANDIDATES);
   };
   const byThread = base().where((eb) =>
