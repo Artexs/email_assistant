@@ -40,7 +40,7 @@ export const GREENMAIL = {
 const e2eVapid = generateVapidKeyPair();
 
 const missingMessage =
-  "set E2E_DATABASE_URL and E2E_MIGRATOR_DATABASE_URL: run bun run db:worktree e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env";
+  "set E2E_DATABASE_URL and E2E_MIGRATOR_DATABASE_URL: run bun run db:worktree e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env; in a Limen job worktree, run bash scripts/limen-prepare.sh again";
 
 // Kept for the Playwright configs: the load already ran at import, and a second call changes nothing (set keys win).
 export function loadDotEnv(): void {
