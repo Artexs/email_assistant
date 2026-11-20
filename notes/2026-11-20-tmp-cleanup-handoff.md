@@ -28,3 +28,17 @@ Understand why `/tmp` is RAM, stop it from filling, and decide: (1) move the big
 - VPS: standing owner approval (CLAUDE.md). This ticket is about the local machine only.
 - Delete only regenerable caches and folders you created. Never delete `node_modules/.cache/`.
 - Chat replies to the owner: max 4 lines; write detail to files (`~/.pi/agent/AGENTS.md`).
+
+## Findings (2026-11-20, second session, commands run)
+- Who writes `/tmp/node-compile-cache`: `tsc` and `eslint` call `module.enableCompileCache()` (grep hits in `node_modules/typescript/lib/tsc.js` and `node_modules/eslint/bin/eslint.js`). Node puts the cache in `os.tmpdir()/node-compile-cache` when `NODE_COMPILE_CACHE` is not set. Folder `v26.13.1-x64-310b2ce3-1000` holds 250,960 entries.
+- Why it grows: the cache key includes the file path. Each Limen worktree has a new path, so each worktree adds a full new copy of the compiled `tsc`/`eslint`/dependency code. Old entries are never read again.
+- Playwright: cache dir is `process.env.PWTEST_CACHE_DIR || os.tmpdir()/playwright-transform-cache-<uid>` (`node_modules/playwright/lib`).
+- Now: `/tmp` 5.9 GB / 38 %, 473,259 files / 46 %. `node-compile-cache` 2.3 GB, Playwright 118 MB. `/tmp/.mount_lm-*` (2.3 GB in `du`) is an AppImage FUSE mount, not tmpfs data.
+- SSD `/home`: 335 GB free.
+- systemd has a user `systemd-tmpfiles-clean.timer` (disabled). A user `~/.config/user-tmpfiles.d/*.conf` with an age field cleans folders without a custom script.
+- `~/.config/environment.d/` exists (Omarchy uses it); a file there sets env for every user service and session, so also for Limen jobs started from Herdr after a re-login.
+
+## Proposed design (coordinator, for the owner to confirm)
+1. `~/.config/environment.d/60-caches.conf`: `NODE_COMPILE_CACHE=$HOME/.cache/node-compile-cache`, `PWTEST_CACHE_DIR=$HOME/.cache/playwright-transform-cache`. Machine config, not repo config, because tsc/eslint in every repo and in Limen do the same.
+2. `~/.config/user-tmpfiles.d/caches.conf`: age 2d for both SSD caches; age 24h for `/tmp/f[0-9]*` job folders; enable `systemd-tmpfiles-clean.timer --user` (daily; add a drop-in for hourly if needed).
+3. No custom cleanup script, no cron.
