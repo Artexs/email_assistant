@@ -9,10 +9,11 @@ const PL_PISZE_END = /\spisze:\s*$/i;
 const PL_NAPISAL_END = /\snapisał(?:\(a\)|a)?:\s*$/i;
 // `--- Original message ---`, `-----Original Message-----`, `--- Oryginalna wiadomość ---`.
 const ORIGINAL_LINE = /^\s*-{2,}\s*(?:Original Message|Oryginalna wiadomość)\s*-{2,}\s*$/i;
-// `---------- Forwarded message ---------`, `Wiadomość przekazana` with any run of dashes around it.
-const FORWARD_LINE = /^\s*-*\s*(?:Forwarded message|Wiadomość przekazana)\s*-*\s*$/i;
+// `---------- Forwarded message ---------`, `Wiadomość przekazana` (Thunderbird: `Przekazana wiadomość`) with any run of dashes around it.
+const FORWARD_LINE = /^\s*-*\s*(?:Forwarded message|Wiadomość przekazana|Przekazana wiadomość)\s*-*\s*$/i;
 const RULE_LINE = /^\s*[_-]{10,}\s*$/;
-const HEADER_FIELD = /^\s*(?:From|Od|Sent|Wysłano|Date|Data|To|Do|Cc|DW|Subject|Temat)\s*:/i;
+// Polish Outlook writes `Wysłane:`; older clients write `Wysłano:`.
+const HEADER_FIELD = /^\s*(?:From|Od|Sent|Wysłan[eo]|Date|Data|To|Do|Cc|DW|Subject|Temat)\s*:/i;
 const HEADER_START = /^\s*(?:From|Od)\s*:/i;
 // The first line of a block of mail headers that Outlook and OWA put above the older mail.
 const MIN_HEADER_LINES = 2;

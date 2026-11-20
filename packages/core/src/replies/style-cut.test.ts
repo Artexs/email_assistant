@@ -25,6 +25,17 @@ describe("cutQuotedReply", () => {
     ["header block after a blank line", "Ok.\n\nFrom: Anna\nSent: Tuesday\nTo: me\n\nold", "Ok."],
     ["header block after a rule", "Ok.\n________________________________\nFrom: Anna\nSent: Tue", "Ok."],
     ["Polish header block", "Ok.\n\nOd: Anna\nWysłano: wtorek\nDo: ja\n\nstare", "Ok."],
+    ["Polish Outlook header block", "Ok.\n\nOd: Anna\nWysłane: wtorek\nDo: Jan\nDW: Ewa\nTemat: x\n\nstare", "Ok."],
+    [
+      "Polish Outlook header block after a rule",
+      "Ok.\n________________________________\nOd: Anna\nWysłane: wtorek\nDo: Jan\nTemat: x\n\nstare",
+      "Ok.",
+    ],
+    [
+      "Thunderbird Polish forward line",
+      "FYI\n\n-------- Przekazana wiadomość --------\nTemat: x\nData: wtorek\nOd: Anna\n\nstare",
+      "FYI",
+    ],
   ])("cuts at %s", (_name, text, expected) => {
     expect(cutQuotedReply(text, NO_SIGNATURE)).toBe(expected);
   });
