@@ -76,6 +76,7 @@ grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL|POSTGRES_PASSWORD)=' "$root/.env" 
 echo "limen-prepare: .env copied from the main checkout"
 
 bun install --frozen-lockfile
+bash scripts/install-hooks.sh
 
 # `db:worktree <db-name>` with the base URLs: sets the global `db_urls` (two lines) and the `created_*` flag of the run.
 make_db() {
