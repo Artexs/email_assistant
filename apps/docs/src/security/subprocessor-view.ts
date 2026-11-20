@@ -1,10 +1,8 @@
 // What the security page shows of one row of the sub-processor registry (`subprocessors` in `@ea/core/web`).
 // The legal pages of the panel show raw placeholders and the name of a config key (`usedWhenText`); a public page does neither.
-import type { ActiveWhen, Subprocessor } from "@ea/core/web";
+import type { ActiveWhen, Subprocessor, UserLocale } from "@ea/core/web";
 
-export type Lang = "en" | "pl";
-
-export const NOT_CONFIRMED: Readonly<Record<Lang, string>> = {
+export const NOT_CONFIRMED: Readonly<Record<UserLocale, string>> = {
   en: "Not confirmed yet",
   pl: "Jeszcze niepotwierdzone",
 };
@@ -29,11 +27,11 @@ const PLACEHOLDER = /<[^>]*>/;
 
 // A field with a `<…>` placeholder is shown as "not confirmed yet", also when real text stands beside the placeholder:
 // the real text of such a field is a fact that no ledger row proves.
-function field(text: string, lang: Lang): string {
+function field(text: string, lang: UserLocale): string {
   return PLACEHOLDER.test(text) ? NOT_CONFIRMED[lang] : text;
 }
 
-const USED_WHEN: Readonly<Record<ActiveWhen["kind"] | "envUnless", Readonly<Record<Lang, string>>>> = {
+const USED_WHEN: Readonly<Record<ActiveWhen["kind"] | "envUnless", Readonly<Record<UserLocale, string>>>> = {
   always: { en: "Always", pl: "Zawsze" },
   env: { en: "When the operator sets up this service", pl: "Gdy operator konfiguruje tę usługę" },
   envUnless: { en: "Unless the operator turns this service off", pl: "Chyba że operator wyłączy tę usługę" },
@@ -42,12 +40,12 @@ const USED_WHEN: Readonly<Record<ActiveWhen["kind"] | "envUnless", Readonly<Reco
 };
 
 // The text of a condition in plain words. It never prints the name of a config key.
-export function usedWhenView(when: ActiveWhen, lang: Lang): string {
+export function usedWhenView(when: ActiveWhen, lang: UserLocale): string {
   if (when.kind === "env" && when.unless !== undefined) return USED_WHEN.envUnless[lang];
   return USED_WHEN[when.kind][lang];
 }
 
-export function subprocessorView(row: Subprocessor, lang: Lang): SubprocessorView {
+export function subprocessorView(row: Subprocessor, lang: UserLocale): SubprocessorView {
   return {
     id: row.id,
     name: field(row.name, lang),

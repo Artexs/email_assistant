@@ -303,9 +303,8 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["error", ...cliProcessSelectors] },
   },
   {
-    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Warn while the rewrites land;
-    // tests stay out until the test audit cuts them. The local plugin `ea` is registered here once: later local
-    // rules join tools/eslint-rules/index.js (a second `ea` plugin object makes flat config fail).
+    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module; tests stay out until the test audit cuts them.
+    // Later local rules join tools/eslint-rules/index.js; a block registers the one `ea` object (a second object fails).
     files: ["{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}"],
     ignores: [
       "packages/core/src/time.ts",
@@ -317,6 +316,17 @@ export default tseslint.config(
     ],
     plugins: { ea },
     rules: { "ea/no-time-literals": "error" },
+  },
+  {
+    // One locale type (docs/code-patterns.md § Texts carry a locale). `ea` is registered here too: the block above has no `.astro`.
+    files: ["{apps/docs,apps/web,apps/server,packages/core}/src/**/*.{ts,tsx,astro}"],
+    ignores: [
+      "**/*.{test,test-helper}.{ts,tsx}",
+      "packages/core/src/tenancy.ts", // the one list; then the mail-language folders
+      "{packages/core/src/{sim,testmail,outgoing,replies,triage},apps/server/src/modules/{loops,replies,actions,triage}}/**",
+    ],
+    plugins: { ea },
+    rules: { "ea/no-locale-union": "error" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],

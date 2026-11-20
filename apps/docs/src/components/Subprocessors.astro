@@ -1,11 +1,11 @@
 ---
 // The services that get data from this system: one row for each row of the registry that the page shows (`publicSubprocessors`),
 // through `subprocessorView` (no placeholder, no config key).
-import { subprocessors } from "@ea/core/web";
+import { subprocessors, type UserLocale } from "@ea/core/web";
 import { publicSubprocessors, subprocessorView } from "../security/subprocessor-view";
 
 interface Props {
-  lang: "en" | "pl";
+  lang: UserLocale;
 }
 
 const { lang } = Astro.props;
