@@ -447,7 +447,7 @@ async function insertMoved(
     folder: opts.folder,
     sourceFolder: opts.sourceFolder,
     uid: opts.uid,
-    inboxUid: opts.inboxUid,
+    sourceUid: opts.inboxUid,
     contentHash: contentHash(meta as NonNullable<typeof meta>),
     movedAt: RECEIVED,
     actions: [{ type: "move", status: "applied", payload: { folder: opts.key } }],

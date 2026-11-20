@@ -6,7 +6,7 @@ import { incomingCountsBySender, ownAddressesOf, type SenderWindowOptions } from
 import { insertMailbox } from "../../src/modules/mail/repo";
 
 import { ago, newOrg, NOW, secondMailbox, type Org, type Trx } from "./contacts-fixtures";
-import { seedSenderActivity, testCapabilities, type SeededMail, type SeededSent } from "./fixtures";
+import { insertTestEmail, seedSenderActivity, testCapabilities, type SeededMail, type SeededSent } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
 // The mail readers of the sender activity pass: the incoming mail window with its counts, and the own addresses. The values are
@@ -146,6 +146,22 @@ describe("incomingCountsBySender", () => {
       });
     });
   });
+
+  // `from_address_lower` is null or empty on a mail with no sender. The null filter is redundant (a null `<> ''` is not true), so
+  // only the empty-string filter can be proven alone: without it the empty address gets a row.
+  test("7b a mail with an empty or a missing sender gets no row", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx);
+      await seed(trx, org, "x@example.com", [{ at: ago(1) }]);
+      for (const from of ["", null])
+        await insertTestEmail(trx, org.ctx, org.mailboxId, {
+          status: "triaged",
+          received_at: ago(2),
+          from_address: from,
+        });
+      expect((await countsOf(trx, org)).map((row) => [row.address, row.received])).toEqual([["x@example.com", 1]]);
+    });
+  });
 });
 
 describe("ownAddressesOf", () => {
@@ -195,6 +211,24 @@ describe("ownAddressesOf", () => {
         new Set(["me@example.com", "alias@example.com"])
       );
       expect(await ownAddressesOf(trx, a.ctx, b.mailboxId, { maxAliases: 100 })).toEqual(new Set(["me@example.com"]));
+    });
+  });
+
+  // The null filter is redundant with the blank filter (a null `btrim(...) <> ''` is not true), so only the blank one is proven
+  // alone: without it the empty address joins the set.
+  test("11 a Sent mail with a blank From adds no address", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await newOrg(trx, { address: "me@example.com" });
+      await seedSenderActivity(trx, org.ctx, org.mailboxId, { sent: [sentFrom("alias@example.com", 1)] });
+      for (const from of ["   ", ""]) {
+        const { sentIds } = await seedSenderActivity(trx, org.ctx, org.mailboxId, {
+          sent: [sentFrom("tmp@example.com", 2)],
+        });
+        await trx.updateTable("sent_emails").set({ from_address: from }).where("id", "in", sentIds).execute();
+      }
+      expect(await ownAddressesOf(trx, org.ctx, org.mailboxId, { maxAliases: 100 })).toEqual(
+        new Set(["me@example.com", "alias@example.com"])
+      );
     });
   });
 });

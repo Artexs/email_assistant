@@ -59,7 +59,7 @@ function stillGone(rows: readonly MoveCandidateRow[], gone: readonly FlagTarget[
     if (!gone.some((target) => target.emailId === row.id && target.folder === row.folder && target.uid === row.uid)) {
       return false;
     }
-    return row.undo_pending_at === null || now.getTime() - row.undo_pending_at.getTime() >= MOVE_PENDING_MAX_AGE_MS;
+    return row.move_pending_at === null || now.getTime() - row.move_pending_at.getTime() >= MOVE_PENDING_MAX_AGE_MS;
   });
 }
 

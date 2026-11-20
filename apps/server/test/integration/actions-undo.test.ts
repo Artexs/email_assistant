@@ -436,7 +436,7 @@ describe("undo: a reverse move in flight (D22)", () => {
       messageId: MESSAGE_ID,
       folder: "AI/Info",
       uid: infoUid,
-      inboxUid,
+      sourceUid: inboxUid,
       contentHash: contentHash(meta as NonNullable<typeof meta>),
       movedAt: APPLIED,
       actions: [{ type: "move", status: "applied", payload: { folder: "ai_info" }, appliedAt: APPLIED }],
