@@ -781,3 +781,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Decision: (1) `mail-repo.test.ts` gets two `not.toHaveProperty` checks on `uidvalidity` and `last_uid` of the mapped row (they read no column, so they survive stage 05). (2) `deploy/README.md` loses rollback sub-bullet (b), the SQL that copied the cursor from `mailboxes` (stale value; stage rule "no SQL").
 - Undo: delete the two lines; restore the bullet from `git show 477f939b^`.
 - Source: `.limen/jobs/2026-11-19-f062-stage-02-54735125/note.md`.
+
+### 2026-11-20 · test scripts get `--timeout=30000` · rule-exception · new
+
+- Decision: `test:unit` and `test:int` carry `--timeout=30000`. The 5 s Bun default failed CPU-bound cases and hooks under load (comment-codes, quietEnd, sim-files, runSim, drafter eval, cli-streams) in at least six jobs and several land checks. Two cases also got their own 60 s timeout.
+- Undo: remove the flag from the two scripts (`package.json` lines 15–16) and the sentence in `docs/code-patterns.md` § Tests.
+- Source: commits `b6433d3c`, `8165f762`, `3e6c1c4b`.
