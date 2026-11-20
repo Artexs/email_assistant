@@ -1,7 +1,8 @@
-import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+
+import { describe, expect, test } from "bun:test";
 
 // Guard against the leak of `f097-sim-*` and `f116-sim-sent-*` folders in the temp dir. About 1,700 of them used the
 // inodes of /tmp (a tmpfs) and test jobs then failed with `EDQUOT`.

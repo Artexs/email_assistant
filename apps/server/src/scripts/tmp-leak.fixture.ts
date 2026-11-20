@@ -1,6 +1,7 @@
-import { afterAll, expect, test } from "bun:test";
 import { readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
+
+import { afterAll, expect, test } from "bun:test";
 
 import { completeCorpus, createMiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
 import { completeSentCorpus, createSentCorpus, removeAllSentCorpora } from "./sim-sent-fixtures.test-helper";
