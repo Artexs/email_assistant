@@ -18,15 +18,33 @@ import {
 const GITHUB = "https://github.com/Artexs/email_assistant/blob";
 
 describe("rewriteLinks", () => {
-  test("T1 a link to another repository file becomes a GitHub link at the ref", () => {
-    expect(rewriteLinks("[a](../docs/architecture.md)", "deploy/README.md", "v0.1.0")).toBe(
-      `[a](${GITHUB}/v0.1.0/docs/architecture.md)`
-    );
-  });
-  test("T2 a link in the same folder keeps its anchor", () => {
-    expect(rewriteLinks("[b](./backup.sh#L3)", "deploy/README.md", "master")).toBe(
-      `[b](${GITHUB}/master/deploy/backup.sh#L3)`
-    );
+  test.each([
+    [
+      "T1 a link to another repository file becomes a GitHub link at the ref",
+      "[a](../docs/architecture.md)",
+      "v0.1.0",
+      `[a](${GITHUB}/v0.1.0/docs/architecture.md)`,
+    ],
+    [
+      "T2 a link in the same folder keeps its anchor",
+      "[b](./backup.sh#L3)",
+      "master",
+      `[b](${GITHUB}/master/deploy/backup.sh#L3)`,
+    ],
+    [
+      "a root-relative path is relative to the repository root; a folder link is a tree link",
+      "[a](/docs/x.md) [b](../apps/server/)",
+      "master",
+      `[a](${GITHUB}/master/docs/x.md) [b](https://github.com/Artexs/email_assistant/tree/master/apps/server)`,
+    ],
+    [
+      "a link text with a code span is still a link",
+      "[the `x` file](../x.md)",
+      "master",
+      `[the \`x\` file](${GITHUB}/master/x.md)`,
+    ],
+  ])("%s", (_name, text, ref, out) => {
+    expect(rewriteLinks(text, "deploy/README.md", ref)).toBe(out);
   });
   test("T3 an anchor link and an absolute URL stay", () => {
     const text = "[c](#update) [d](https://example.com/) [e](mailto:a@x.test) [f](//cdn.example.org/x)";
@@ -50,11 +68,6 @@ describe("rewriteLinks", () => {
     );
     expect(rewriteLinks("[r](README.md?x=1#a)", "deploy/README.md", "master")).toBe(
       "[r](/email_assistant/operate/install-and-run/?x=1#a)"
-    );
-  });
-  test("a root-relative path is relative to the repository root; a folder link is a tree link", () => {
-    expect(rewriteLinks("[a](/docs/x.md) [b](../apps/server/)", "deploy/README.md", "master")).toBe(
-      `[a](${GITHUB}/master/docs/x.md) [b](https://github.com/Artexs/email_assistant/tree/master/apps/server)`
     );
   });
   test("an image, a title, an angle destination, a definition and a destination with parentheses are rewritten", () => {
@@ -95,11 +108,6 @@ describe("rewriteLinks", () => {
         "~~~",
         `[e](${GITHUB}/master/y.md)`,
       ].join("\n")
-    );
-  });
-  test("a link text with a code span is still a link", () => {
-    expect(rewriteLinks("[the `x` file](../x.md)", "deploy/README.md", "master")).toBe(
-      `[the \`x\` file](${GITHUB}/master/x.md)`
     );
   });
 });

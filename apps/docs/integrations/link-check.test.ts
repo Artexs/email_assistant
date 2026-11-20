@@ -30,14 +30,50 @@ describe("checkLinks", () => {
     writeFileSync(join(dir, path), text);
   };
 
-  test("T7 a link to a built page passes; the count is the number of pages", () => {
-    put("index.html", html(`<a href="/email_assistant/start/">s</a>`));
-    put("start/index.html", html(`<h1 id="_top">s</h1><a href="/email_assistant/">home</a>`));
-    expect(checkLinks(dir)).toEqual({ checked: 2 });
+  test.each<[string, Record<string, string>, number]>([
+    [
+      "T7 a link to a built page passes; the count is the number of pages",
+      {
+        "index.html": html(`<a href="/email_assistant/start/">s</a>`),
+        "start/index.html": html(`<h1 id="_top">s</h1><a href="/email_assistant/">home</a>`),
+      },
+      2,
+    ],
+    [
+      "attributes without a space between them are read",
+      {
+        "index.html": html(`<a href="/email_assistant/x/"id="a">x</a><a href="#a">y</a>`),
+        "x/index.html": html(""),
+      },
+      2,
+    ],
+    [
+      "an encoded path and an encoded anchor resolve",
+      {
+        "index.html": html(`<a href="/email_assistant/a%20b/#x%20y">1</a>`),
+        "a b/index.html": html(`<h2 id="x y">x</h2>`),
+      },
+      2,
+    ],
+  ])("%s", (_name, pages, checked) => {
+    for (const [path, text] of Object.entries(pages)) put(path, text);
+    expect(checkLinks(dir)).toEqual({ checked });
   });
-  test("T8 a link to a page that does not exist throws broken_link <href> in <page>", () => {
-    put("index.html", html(`<a href="/email_assistant/nope/">n</a>`));
-    expect(() => checkLinks(dir)).toThrow("broken_link /email_assistant/nope/ in index.html");
+  test.each([
+    [
+      "T8 a link to a page that does not exist throws broken_link <href> in <page>",
+      `<a href="/email_assistant/nope/">n</a>`,
+      "broken_link /email_assistant/nope/ in index.html",
+    ],
+    [
+      "a src is checked like an href",
+      `<img src="/email_assistant/img/missing.png">`,
+      "broken_link /email_assistant/img/missing.png in index.html",
+    ],
+    ["an absolute URL that does not parse is broken", `<a href="https://">x</a>`, "broken_link https:// in index.html"],
+  ])("%s", (_name, body, message) => {
+    put("index.html", html(body));
+    expect(() => checkLinks(dir)).toThrow(message);
   });
   test("T9 an anchor that the page does not have throws; the same anchor on a path is checked on the target", () => {
     put("index.html", html(`<a href="#missing">m</a>`));
@@ -73,10 +109,6 @@ describe("checkLinks", () => {
     put("guide/step/index.html", html(""));
     expect(() => checkLinks(dir)).toThrow("broken_link /email_assistant/guide/ in index.html");
   });
-  test("a src is checked like an href", () => {
-    put("index.html", html(`<img src="/email_assistant/img/missing.png">`));
-    expect(() => checkLinks(dir)).toThrow("broken_link /email_assistant/img/missing.png in index.html");
-  });
   test("a relative link resolves against the page's own path", () => {
     put("index.html", html(`<a href="guide/">g</a>`));
     put("guide/index.html", html(`<a href="../">up</a><a href="step/">s</a><a href="../nope/">n</a>`));
@@ -101,20 +133,6 @@ describe("checkLinks", () => {
       )
     );
     expect(checkLinks(dir)).toEqual({ checked: 1 });
-  });
-  test("an absolute URL that does not parse is broken", () => {
-    put("index.html", html(`<a href="https://">x</a>`));
-    expect(() => checkLinks(dir)).toThrow("broken_link https:// in index.html");
-  });
-  test("attributes without a space between them are read", () => {
-    put("index.html", html(`<a href="/email_assistant/x/"id="a">x</a><a href="#a">y</a>`));
-    put("x/index.html", html(""));
-    expect(checkLinks(dir)).toEqual({ checked: 2 });
-  });
-  test("an encoded path and an encoded anchor resolve", () => {
-    put("index.html", html(`<a href="/email_assistant/a%20b/#x%20y">1</a>`));
-    put("a b/index.html", html(`<h2 id="x y">x</h2>`));
-    expect(checkLinks(dir)).toEqual({ checked: 2 });
   });
   test("#top and a bare # are valid on every page; an anchor on a non-html file is not checked", () => {
     put("index.html", html(`<a href="#">1</a><a href="#top">2</a><a href="/email_assistant/f.js#x">3</a>`));
