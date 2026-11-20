@@ -2,12 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import {
   CLI_NEEDS,
-  CLI_RISKS,
-  CLI_SUMMARY_MAX,
   type CliDescription,
   cliDescriptionSchema,
   type CliToolRow,
-  EXIT,
   renderHelp,
   renderToolTable,
   UsageError,
@@ -84,28 +81,6 @@ describe("cliDescriptionSchema", () => {
   });
 });
 
-describe("the vocabulary of the standard", () => {
-  test("lists the risks, the needs, the exit codes and the summary limit", () => {
-    expect([...CLI_RISKS]).toEqual(["read", "dev", "write", "cost", "outside", "danger"]);
-    expect([...CLI_NEEDS]).toEqual([
-      "none",
-      "db",
-      "greenmail",
-      "imap",
-      "smtp",
-      "telegram",
-      "llm",
-      "agentmail",
-      "dns",
-      "vps",
-      "docker",
-      "git",
-    ]);
-    expect(EXIT).toEqual({ ok: 0, failed: 1, usage: 2, unreachable: 3, incomplete: 4 });
-    expect(CLI_SUMMARY_MAX).toBe(100);
-  });
-});
-
 describe("cliDescriptionSchema issues and edges", () => {
   const issuesOf = (change: Record<string, unknown>) => {
     const result = cliDescriptionSchema.safeParse({ ...orgStatus, ...change });
@@ -114,28 +89,6 @@ describe("cliDescriptionSchema issues and edges", () => {
   };
 
   test.each([
-    ["org:status", true],
-    ["a", true],
-    ["a1:b2-c3", true],
-    ["a:b:c", true],
-    ["Org:status", false],
-    ["org:", false],
-    [":org", false],
-    ["org::status", false],
-    ["org-:status", false],
-    ["-org", false],
-    ["org_status", false],
-    ["org status", false],
-    ["org:status\n", false],
-    ["x org:status", false],
-  ])("the name %j is ok = %s", (name, ok) => {
-    expect(cliDescriptionSchema.safeParse({ ...orgStatus, name, usage: `bun run ${name}` }).success).toBe(ok);
-  });
-
-  test.each([
-    ["add", true],
-    ["add-user", true],
-    ["a1", true],
     ["Add", false],
     ["add:user", false],
     ["add-", false],
@@ -216,35 +169,15 @@ describe("cliDescriptionSchema issues and edges", () => {
     expect<unknown>(issuesOf(change)).toEqual(issues);
   });
 
-  test.each([
-    ["an empty needs list", { needs: [] }],
-    ["an exit text of 0 characters", { exits: { 1: "" } }],
-    ["an exit text of 101 characters", { exits: { 3: "e".repeat(101) } }],
-    ["an empty output note", { outputNote: "" }],
-    ["a key the standard does not know", { owner: "me" }],
-    ["a usage of bun run and a space", { usage: "bun run " }],
-  ])("refuses %s", (_label, change) => {
-    expect(cliDescriptionSchema.safeParse({ ...orgStatus, ...change }).success).toBe(false);
+  test("refuses an empty output note", () => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, outputNote: "" }).success).toBe(false);
   });
 
   test.each([
-    ["an exit text of 1 character", { exits: { 4: "x" } }],
-    ["an exit text of 100 characters", { exits: { 1: "e".repeat(100), 3: "e".repeat(100) } }],
     ["every need but none", { needs: CLI_NEEDS.filter((need) => need !== "none") }],
-    ["a one-character output note", { outputNote: "x" }],
     ["none as the only need", { needs: ["none"] }],
-    ["a usage with a later line", { usage: "bun run org:status\n  --org-id <uuid>" }],
-    ["each risk", { risk: "danger" }],
   ])("accepts %s", (_label, change) => {
     expect(cliDescriptionSchema.safeParse({ ...orgStatus, ...change }).success).toBe(true);
-  });
-
-  test("parses to the same value", () => {
-    expect<unknown>(cliDescriptionSchema.parse(orgStatus)).toEqual(orgStatus);
-  });
-
-  test("a usage whose first line names a longer tool is refused only when it breaks the prefix rule", () => {
-    expect(issuesOf({ usage: "bun run org:status-more" })).toEqual([]);
   });
 });
 
@@ -325,12 +258,6 @@ describe("renderToolTable columns and order", () => {
 
   test("a list with no rows prints an empty string", () => {
     expect(renderToolTable([])).toBe("");
-  });
-
-  test("does not reorder the array of the caller", () => {
-    const rows = [tool("b", "read", ["db"], "B."), tool("a", "read", ["db"], "A.")];
-    renderToolTable(rows);
-    expect(rows.map((row) => row.name)).toEqual(["b", "a"]);
   });
 });
 

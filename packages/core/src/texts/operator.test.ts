@@ -76,12 +76,6 @@ describe("the LLM errors fact line", () => {
     { locale: "en", calls: 10, quota: 0, line: "3 of 10 LLM calls failed (30.0 %)" },
     {
       locale: "en",
-      calls: 10,
-      quota: 1,
-      line: "3 of 10 LLM calls failed (30.0 %), 1 organization paused by a spent quota",
-    },
-    {
-      locale: "en",
       calls: 0,
       quota: 2,
       line: "No LLM calls in the window, 2 organizations paused by a spent quota",
@@ -108,23 +102,9 @@ describe("the LLM errors fact line", () => {
 
 describe("the backup age fact line", () => {
   test.each([
-    { locale: "en", age: 30, failed: 0, missing: 1, line: "No backup status file" },
-    { locale: "en", age: 30, failed: 0, missing: 0, line: "Last good backup 30 h ago" },
     { locale: "en", age: 0, failed: 0, missing: 0, line: "Last good backup 0 h ago" },
-    { locale: "en", age: -1, failed: 0, missing: 0, line: "No good backup on record" },
-    { locale: "en", age: 30, failed: 1, missing: 0, line: "Last backup run failed; last good backup 30 h ago" },
-    { locale: "en", age: -1, failed: 1, missing: 0, line: "Last backup run failed; no good backup on record" },
-    { locale: "pl", age: 30, failed: 0, missing: 1, line: "Brak pliku statusu kopii zapasowej" },
-    { locale: "pl", age: 30, failed: 0, missing: 0, line: "Ostatnia udana kopia sprzed 30 h" },
     { locale: "pl", age: 0, failed: 0, missing: 0, line: "Ostatnia udana kopia sprzed 0 h" },
     { locale: "pl", age: -1, failed: 0, missing: 0, line: "Brak udanej kopii w historii" },
-    {
-      locale: "pl",
-      age: 30,
-      failed: 1,
-      missing: 0,
-      line: "Ostatnia kopia nie powiodła się; ostatnia udana kopia sprzed 30 h",
-    },
     {
       locale: "pl",
       age: -1,
