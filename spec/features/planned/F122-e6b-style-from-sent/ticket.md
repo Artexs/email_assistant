@@ -27,18 +27,18 @@ An owner taps "Suggest my style from my sent mail" on the style card of a mailbo
 - A member gets 403; either flag off gives 404; sent tracking off gives 409 `sent_off`.
 - The style card fills the writing-style field from "Use this text" and saves only on Save.
 - `organizations.style_text` is gone from the schema and the code; existing mailboxes keep the copied signature.
-- `evals/results/gate/stylist-*.json` exists with the verdict, and the spend of stage 08 is ≤ $1.00.
+- The gate run records a verdict in `tuning-1.md` (with `evals/results/gate/stylist-*.json` when the holdout runs ran), and its spend is ≤ $1.00.
 - Detail: `plan.md` § Done when.
 
 ## Slices
 
-Eight stages, one worker job each: `plan.md` § Stages and § How to run. Stages 04 and 05 hold the migrations; 05 waits for the release that carries 04.
+Ten stages, one worker job each: `plan.md` § Stages and § How to run. Stages 04 and 05 hold the migrations; 05 waits for the release that carries 04.
 
 ## Sequenced
 
 - Plan after: F115 (reply drafts; its `stages/` and `interfaces.md` exist).
 - Build after: F115 E6a and F104 E5a in `done/` (row 28 of `docs/product/stage-2/05-execution-plan.md` §2.1).
-- Gate: the judge-gain gate is stage 08; the flag `style_from_sent` turns on only after it passes (owner, 2026-11-20).
+- Gate: the judge-gain gate is stage 09; the flag `style_from_sent` turns on only after it passes (owner, 2026-11-20).
 
 ## Notes
 

@@ -1,6 +1,6 @@
 # F122 stage 03 — Style card button
 
-Part of [`../plan.md`](../plan.md). Needs stage 02: route `POST /api/mailboxes/:id/profile/style-suggestion` and `styleSuggestionAnswerSchema`.
+Part of [`../plan.md`](../plan.md). Needs stage 02b: route `POST /api/mailboxes/:id/profile/style-suggestion` and `styleSuggestionAnswerSchema`.
 
 The owner taps "Suggest my style from my sent mail" on the style card, reads the suggestion, and puts it into the writing-style field. Nothing is saved until Save.
 
@@ -10,7 +10,7 @@ The owner taps "Suggest my style from my sent mail" on the style card, reads the
 - **Decisions:** D12, D8. The button shows while `/api/me` `features` holds `reply_drafts` and `style_from_sent`. It is active for an owner while the settings answer of the mailbox says sent tracking is on; else it is off with the line "Turn on 'Track my sent mail' to use this." A member sees nothing of it. An OAuth mailbox shows the reason line of the card, as the switch does.
 - **Texts (en; pl with the same meaning, tested in a fixed Polish table):**
   - button: "Suggest my style from my sent mail"
-  - note under it: "Reads up to 100 of your sent mails of the last 14 days, once. Only the text you save is kept."
+  - note under it: "Sends up to 100 sent mails of this mailbox from the last 14 days to the AI provider, once. Only the text you save is kept."
   - result head: "Based on {count} sent mails" (plural forms in pl with `tp()`)
   - actions: "Use this text", "Discard"
   - `too_few`: "Not enough sent mail yet ({count} of 5). Try again after you send more mail."

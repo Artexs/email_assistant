@@ -14,11 +14,11 @@ The contract half of PD-079: the column goes, and every map that names it goes w
 
 ## Step 2 — Maps and docs
 
-- **Goal:** remove the column from the DSR address map, the export map, the legal data categories (if listed there), the `delete_organization` function body (if it names the column) and the capability pages (`tenancy-and-plans.md` table, `account-data.md`, `retention.md` if named). Regenerate `docs/api/openapi.json` if it still lists the field.
-- **Decisions:** the privacy completeness tests (every text column is classified) must pass with no exception for the dropped column.
+- **Goal:** remove the exclusion entry of stage 04 from the privacy maps, and the column from the legal data categories (if listed there), the `delete_organization` function body (if it names the column) and the capability pages (`tenancy-and-plans.md` table, `account-data.md`, `retention.md` if named). Regenerate `docs/api/openapi.json` if it still lists the field.
+- **Decisions:** the privacy completeness tests (every text column is classified) must pass with no entry for the dropped column. Tests of applied migrations that seed or read the column cannot run after the drop: delete the cases that do (the F115 round-trip cases of `reply-drafts-schema.test.ts` that re-run the Up part of `20261117130001_reply_drafts.sql`, and the copy test of stage 04), keep every other case of those files, and list each deleted case with its reason in the final message. Rejected: a test that runs migrations only up to a version (no such helper; the behaviour they proved is history).
 - **Test:**
   1. The privacy map tests pass with the column gone (they fail when an entry names a column that does not exist: check that one fails before the map edit, then passes).
-  2. A check that must find nothing: `rg -n "style_text|styleText" apps packages docs/capabilities` finds nothing outside migrations and the 400 test of stage 04.
+  2. A check that must find nothing: `rg -n "style_text|styleText" apps packages docs/capabilities` finds nothing outside `db/migrations/` and the 400 test of stage 04.
 - **Check:** `bun run db:migrate` and `bun run db:migrate:e2e` on the job DBs, the touched tests, then the Proof (the full suites run, because a migration changed).
 - **Done when:** the tests pass; the Proof line is PASS. Owner step after land: none; the coordinator runs the next release as usual.
 - **Out of scope:** any other column of `organizations`.
