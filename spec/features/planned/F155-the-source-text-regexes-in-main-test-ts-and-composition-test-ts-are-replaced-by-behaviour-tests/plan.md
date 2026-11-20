@@ -44,7 +44,7 @@ The six cases (names at HEAD; the audit line numbers drifted):
 
 ## Facts checked (2026-11-20, HEAD a5399ff1)
 
-- A spawned `main.ts` with only `PATH`, `DATABASE_URL=postgres://app:x@127.0.0.1:1/x`, `CREDENTIALS_KEY` (32 bytes of 1), `EA_RELEASE=f155-r1`, `LOG_FORMAT=json` exits 1. Stdout holds a `features_off` line and stderr a `db_role_check_failed` line, both with `"release":"f155-r1"` (local probe).
+- A spawned `main.ts` with only `PATH`, `DATABASE_URL=postgres://app:x@127.0.0.1:1/x`, `CREDENTIALS_KEY` (32 bytes of 1), `EA_RELEASE=f155-r1` (stage 01 uses `test-r1`), `LOG_FORMAT=json` exits 1. Stdout holds a `features_off` line and stderr a `db_role_check_failed` line, both with `"release":"f155-r1"` (local probe).
 - `scripts/job-run.ts` sets the release before the DB; it writes no log line before the DB answers (read).
 - `createOAuthTokens` touches the DB only on a token call, so a builder with `{} as never` as the DB works (read: `modules/mail/oauth/tokens.ts`).
 - `OpenDeps` is exported from `modules/mail`; `oauthTokens` is optional there and required in the input of `committerDeps` (read).
@@ -63,6 +63,7 @@ The six cases (names at HEAD; the audit line numbers drifted):
 
 - A gap or a deviation from a decision is a question in the final message, not a choice.
 - Format only the files of the stage. No `--no-verify`.
+- No ticket or plan code in code, comments, strings or test names (`F147`, `PD-12`, `stage 04`, `D6`, `C1`): `bun run check:job` runs the bare-code scan (`bare-codes.test.ts`). Name the rule or the behaviour instead.
 - Tests follow `docs/code-patterns.md` § Tests: exact values, one behaviour per case.
 - While working, run only the changed test files with `bun test <file>`.
 
