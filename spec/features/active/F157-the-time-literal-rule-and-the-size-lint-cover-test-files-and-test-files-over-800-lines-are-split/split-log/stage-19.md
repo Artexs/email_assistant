@@ -43,3 +43,15 @@ References repointed: `docs/capabilities/web-panel.md` (served headers name `web
 ## Reference checks
 
 `git grep -n -F -e "web-two-factor.test" -e "web-http.test"` outside `spec/`, `notes/`, `docs/owner-decisions.md`, `docs/decisions/` and `docs/product/` prints nothing. `bun test` of the five files of procedures § Split step 11: 106 pass, 0 fail.
+
+## Repair: the console check runs in each web-two-factor part
+
+The split left the case `secrets :: no console line holds a secret, a code or otpauth` only in `web-two-factor-sign-in.test.ts`, so the events and codes parts had no check of their own secrets and console lines. Now each part ends with a case that runs one function, `expectNoSecretInConsole` (a member of `makeWebTwoFactorKit` in `two-factor-helpers.ts`, with the loop and the `secrets.length > 20` check unchanged):
+
+- `web-two-factor-sign-in.test.ts`: `secrets :: no console line holds a secret, a code or otpauth` (same name; its body is now one call).
+- `web-two-factor-events.test.ts`: `secrets :: events: no console line holds a secret, a code or otpauth` (new).
+- `web-two-factor-codes.test.ts`: `secrets :: codes: no console line holds a secret, a code or otpauth` (new).
+
+The case count of the three parts is 52 (50 before the split, plus the two new cases). No other case changed. Each part alone, from the repo root with `EA_TEST_WORKER_DB=1 bun test --timeout=30000`: sign-in 19 pass, events 17 pass, codes 16 pass, 0 fail.
+
+Break test: in the events part only, the new case first called `console.log` with `secrets[0]`. The run failed that case (`Expected: false`, `Received: true`; 1 fail, the other 16 passed). I reverted the break; the committed file has no such line.

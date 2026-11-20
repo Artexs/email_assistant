@@ -5,7 +5,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "b
 import { sql } from "kysely";
 
 import { backupCodesLeft } from "../../src/platform/auth-two-factor";
-import { base32Decode, holdsToken, secretOfUri } from "../totp";
+import { base32Decode, secretOfUri } from "../totp";
 
 import { testDb } from "./helpers";
 import { BACKUP_CODE, NEW_PASSWORD, PASSWORD, SECRET, WRONG_PASSWORD, makeWebTwoFactorKit } from "./two-factor-helpers";
@@ -369,14 +369,5 @@ describe("two-factor enrolment edge cases", () => {
 
 // The last test of the file: it checks every console line of the run above.
 describe("secrets", () => {
-  test("no console line holds a secret, a code or otpauth", () => {
-    const lines = [...spies.log.mock.calls, ...spies.warn.mock.calls, ...spies.error.mock.calls].map((call) =>
-      call.map((part: unknown) => (part instanceof Error ? `${part.message}\n${part.stack}` : String(part))).join(" ")
-    );
-    expect(secrets.length).toBeGreaterThan(20);
-    for (const line of lines) {
-      expect(holdsToken(line, "otpauth")).toBe(false);
-      for (const secret of secrets) expect(holdsToken(line, secret)).toBe(false);
-    }
-  });
+  test("no console line holds a secret, a code or otpauth", kit.expectNoSecretInConsole);
 });
