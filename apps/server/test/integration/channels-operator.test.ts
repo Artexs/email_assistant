@@ -253,7 +253,8 @@ describe("operator notices: hourly run", () => {
       const org = await createOrgWithMailbox(trx);
       await setTrial(trx, org.orgId, new Date(NOW.getTime() + DAY));
       await createOperatorNotices({ db: trx, now: () => NOW, send: null }).run();
-      expectEvent("operator_notice_unsent", "warn", { kind: "trial_ending" });
+      // The run reads every organization of the DB: another file's committed organization may add a warn line of its own kind.
+      expect(eventsOf("operator_notice_unsent")).toContainEqual({ level: "warn", fields: { kind: "trial_ending" } });
       expect(await noticeRows(trx, org.orgId)).toHaveLength(1);
     });
   });

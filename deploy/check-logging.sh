@@ -7,7 +7,7 @@
 # then deploy/compose.sim.yaml on its own (the sim stack shares nothing with the production pair, so it is never merged with it).
 # The restore drill (deploy/restore.sh) runs compose.yaml with compose.drill.yaml, with no profile but `cli`. That set is checked on
 # its own and it follows other rules: `server` writes `local` too (the log store reads only json-file, so no drill line reaches it),
-# and every service but db, server and cli sits behind a profile (the log store is in `ops`; the drill never starts it).
+# and every service but db, server, cli and migrate sits behind a profile (the log store is in `ops`; the drill never starts it).
 # `--drill <compose file ...>` checks the files as the drill set.
 # A new Compose file in deploy/ must be added to one of the three lists below: without arguments the script fails until then.
 # It never prints the Compose config, because the config can hold secrets. CI runs it (job `image`).
@@ -49,11 +49,22 @@ check_set() {
   # (`config --no-interpolate` lists the services of every profile, so the profiles are read here.)
   if [ "$drill_mode" -eq 1 ]; then
     local drill_extra
-    drill_extra="$(printf '%s' "$config" | jq -r '.services | to_entries[] | select(.key != "db" and .key != "server" and .key != "cli") | select((.value.profiles // []) == [] or ((.value.profiles // []) | index("cli")) != null) | "check-logging: the drill must not run \(.key)"')"
+    drill_extra="$(printf '%s' "$config" | jq -r '.services | to_entries[] | select(.key != "db" and .key != "server" and .key != "cli" and .key != "migrate") | select((.value.profiles // []) == [] or ((.value.profiles // []) | index("cli")) != null) | "check-logging: the drill must not run \(.key)"')"
     if [ -n "$drill_extra" ]; then
       echo "$drill_extra" >&2
       exit 1
     fi
+  fi
+
+  # `migrate` is a one-off too: behind the profile `cli`, so a plain `up` never starts a second copy of the server image.
+  local migrate_bad
+  migrate_bad="$(printf '%s' "$config" | jq -r '
+    .services.migrate // empty
+    | select((.profiles // []) != ["cli"])
+    | "check-logging: migrate must have profiles [cli]"')"
+  if [ -n "$migrate_bad" ]; then
+    echo "$migrate_bad" >&2
+    exit 1
   fi
 
   # The one-off service must stay behind its profile (a plain `up` would start a second server) and must have no healthcheck.
