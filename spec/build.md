@@ -43,6 +43,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F122-e6b-style-from-sent` (🔴 PLANNED, needs plan after the F115 G1 numbers exist): the judge-gain gate is the last stage (ship gate behind a flag, owner 2026-11-20); build after F115 closes; about $1 of judge runs.
 - `F129-…-cli-…` (🔴 PLANNED, unparked 2026-11-20, needs plan after F136 lands): one CLI standard, inventory stage first; build when few other tickets build (widest file overlap).
 - `F141-…-deepseek-…` (🔴 PLANNED, needs plan): one `LLM_PROVIDER` for all roles (`openai`, `gemini`, `deepseek`), model tiers `light`/`strong` per provider, per-role provider and model env keys removed, an audit that puts all provider code in the registry; DeepSeek for dev, tests and evals only (no legal pages, no gate, no production switch: owner 2026-11-19).
+- `F158-tmp-never-fills-up-…` (🔴 PLANNED, no plan needed: owner decided the design 2026-11-20 in the ticket): spawn one worker job straight from the ticket; machine-local, no migration, no `bun.lock`.
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (history now; row 28 F122 is the last open row).
 
 ## PARKED
