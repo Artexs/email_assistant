@@ -70,7 +70,7 @@ An organization keeps a list of delegates: people who get tasks from the user. T
 | function | `saveTriage`                                                                                                                                             | `apps/server/src/modules/triage/service.ts`                                             |
 | function | `delegationAnsweredDetector`                                                                                                                             | `apps/server/src/modules/channels/notices/delegation-answered.ts`                       |
 | function | `delegationInputOf`, `planActions`                                                                                                                       | `packages/core/src/triage/planners.ts`                                                  |
-| function | `renderApprovalSetRequest`, `renderDelegationAnswered`                                                                                                   | `packages/core/src/digest/approvals.ts`                                                 |
+| function | `renderApprovalSetRequest`, `renderDelegationAnswered`                                                                                                   | `packages/core/src/digest/approvals.ts`, `packages/core/src/digest/approval-results.ts` |
 
 ## Data
 
