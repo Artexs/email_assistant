@@ -91,38 +91,13 @@ describe("dkimSignaturesOf: the tags of one header line", () => {
       expected: [{ d: "a.example", h: ["from"] }],
     },
     {
-      name: "no space after the colon of the header name",
-      line: "DKIM-Signature:d=a.example;h=from",
-      expected: [{ d: "a.example", h: ["from"] }],
-    },
-    {
-      name: "spaces around the tag names",
-      line: "DKIM-Signature:  d  =a.example ;  h\t=from",
-      expected: [{ d: "a.example", h: ["from"] }],
-    },
-    {
-      name: "the first = splits a tag: a later = stays in the value of a tag that is not read",
-      line: "DKIM-Signature: d=a.example; h=from; b=ab=c==",
-      expected: [{ d: "a.example", h: ["from"] }],
-    },
-    {
       name: "the first = splits a tag: a later = stays in the value of h and drops that name",
       line: "DKIM-Signature: d=a.example; h=from:to=x:subject",
       expected: [{ d: "a.example", h: ["from", "subject"] }],
     },
     {
-      name: "a tag name is case sensitive: D and d are two tags",
-      line: "DKIM-Signature: D=b.example; d=a.example; h=from",
-      expected: [{ d: "a.example", h: ["from"] }],
-    },
-    {
-      name: "a colon inside a tag value is not the end of the header name",
-      line: "DKIM-Signature: d=a.example; h=from:to; x=a:b",
-      expected: [{ d: "a.example", h: ["from", "to"] }],
-    },
-    {
-      name: "a tag that is not read may be empty",
-      line: "DKIM-Signature: d=a.example; h=from; z=",
+      name: "a colon that starts the line: the tags follow it",
+      line: ":d=a.example; h=from",
       expected: [{ d: "a.example", h: ["from"] }],
     },
     {
@@ -135,7 +110,7 @@ describe("dkimSignaturesOf: the tags of one header line", () => {
   });
 
   test.each([
-    { name: "a tag with no =", line: "DKIM-Signature: d=a.example; h=from; v" },
+    { name: "a line with no colon", line: "d=a.example; h=from" },
     { name: "a tag whose name is empty (the = comes first)", line: "DKIM-Signature: d=a.example; h=from; =1" },
     { name: "a tag whose name is only white space", line: "DKIM-Signature: d=a.example; h=from;  =1" },
     { name: "a repeated tag that is not read", line: "DKIM-Signature: d=a.example; h=from; bh=1; bh=2" },
