@@ -293,7 +293,7 @@ export default tseslint.config(
       "**/e2e/**",
     ],
     plugins: { ea },
-    rules: { "ea/no-time-literals": "warn" },
+    rules: { "ea/no-time-literals": "error" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
