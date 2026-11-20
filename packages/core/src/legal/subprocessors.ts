@@ -37,12 +37,12 @@ export const subprocessors: readonly Subprocessor[] = [
     id: "openai",
     name: "OpenAI",
     purpose: {
-      en: "AI model that sorts mail, writes drafts and finds open loops in own sent mail",
-      pl: "Model AI, który sortuje pocztę, pisze szkice odpowiedzi i znajduje otwarte sprawy we własnej wysłanej poczcie",
+      en: "AI model that sorts mail, writes drafts, finds open loops in own sent mail and suggests a writing style from own sent mail",
+      pl: "Model AI, który sortuje pocztę, pisze szkice odpowiedzi, znajduje otwarte sprawy we własnej wysłanej poczcie i proponuje styl pisania na podstawie własnej wysłanej poczty",
     },
     dataReceived: {
-      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender, and for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization; for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail",
-      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca, a do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji; do otwartych spraw: temat, lokalny czas wysłania, liczba adresatów i do 8000 znaków treści własnej wysłanej wiadomości",
+      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender, and for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization; for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail; for a style suggestion: the text of up to 100 own sent mails of the last 14 days, at most 1,500 characters of each and 60,000 characters in all, with no subject and no address from the headers; quoted mail and the signature are cut off where the code finds them",
+      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca, a do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji; do otwartych spraw: temat, lokalny czas wysłania, liczba adresatów i do 8000 znaków treści własnej wysłanej wiadomości; do sugestii stylu: treść do 100 własnych wysłanych wiadomości z ostatnich 14 dni, co najwyżej 1500 znaków każdej i 60000 znaków łącznie, bez tematu i bez adresów z nagłówków; cytowana poczta i podpis są odcinane tam, gdzie kod je znajdzie",
     },
     location: {
       en: "No EU region is used (standard endpoint, ADR 0015). <to confirm: country>",
@@ -56,12 +56,12 @@ export const subprocessors: readonly Subprocessor[] = [
     id: "gemini",
     name: "Google Gemini API",
     purpose: {
-      en: "AI model that sorts mail, writes drafts and finds open loops in own sent mail",
-      pl: "Model AI, który sortuje pocztę, pisze szkice odpowiedzi i znajduje otwarte sprawy we własnej wysłanej poczcie",
+      en: "AI model that sorts mail, writes drafts, finds open loops in own sent mail and suggests a writing style from own sent mail",
+      pl: "Model AI, który sortuje pocztę, pisze szkice odpowiedzi, znajduje otwarte sprawy we własnej wysłanej poczcie i proponuje styl pisania na podstawie własnej wysłanej poczty",
     },
     dataReceived: {
-      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender; for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail",
-      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca; do otwartych spraw: temat, lokalny czas wysłania, liczba adresatów i do 8000 znaków treści własnej wysłanej wiadomości",
+      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender, and for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization; for open loops: the subject, the local send time, the number of recipients and up to 8,000 characters of the text of own sent mail; for a style suggestion: the text of up to 100 own sent mails of the last 14 days, at most 1,500 characters of each and 60,000 characters in all, with no subject and no address from the headers; quoted mail and the signature are cut off where the code finds them",
+      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca, a do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji; do otwartych spraw: temat, lokalny czas wysłania, liczba adresatów i do 8000 znaków treści własnej wysłanej wiadomości; do sugestii stylu: treść do 100 własnych wysłanych wiadomości z ostatnich 14 dni, co najwyżej 1500 znaków każdej i 60000 znaków łącznie, bez tematu i bez adresów z nagłówków; cytowana poczta i podpis są odcinane tam, gdzie kod je znajdzie",
     },
     location: {
       en: "No EU location (docs/architecture.md §6). <to confirm: country>",
