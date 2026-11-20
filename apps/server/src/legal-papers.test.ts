@@ -392,4 +392,24 @@ describe("the 7-day limit", () => {
     expect(pl).toContain(`${HISTORY_WINDOW_DAYS} dni`);
     expect(pl).toContain(`${HISTORY_SAMPLE_SIZE} wiadomości`);
   });
+
+  test("6. no sentence of a paper in docs/legal names the 7-day limit without the classified mail and the thread context", () => {
+    const paperSentences = papers.flatMap((name) => text(name).split("\n").flatMap(sentencesOf));
+    expect(paperSentences.length).toBeGreaterThan(100);
+    expect(sevenDayLimitProblems(paperSentences)).toEqual([]);
+  });
+
+  test("7. rows C193 and C201 pass the check", () => {
+    expect(sevenDayLimitProblems([row("C193").claim, row("C201").claim])).toEqual([]);
+    for (const id of ["C193", "C201"]) expect(row(id).claim).toContain("context");
+    expect(row("C193").source).toContain("docs/capabilities/trust.md");
+  });
+
+  test("8. the DPIA draft names the history check, its window and its size, and the context mails", () => {
+    const dpia = text("dpia.md");
+    expect(dpia).toContain("history check");
+    expect(dpia).toContain(`${HISTORY_WINDOW_DAYS} days`);
+    expect(dpia).toContain(`${EXCERPT_CHARS} characters`);
+    expect(dpia).toContain("no age limit");
+  });
 });
