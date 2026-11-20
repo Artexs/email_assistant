@@ -23,7 +23,8 @@ function selectedFiles(): string[] {
     .filter((name) => name.endsWith(".ts") && !EXCLUDED_SUFFIXES.some((suffix) => name.endsWith(suffix)))
     .filter((name) => MAIL_IMPORT.test(readFileSync(join(import.meta.dir, name), "utf8")))
     .map((name) => join("scripts", name));
-  return ["main.ts", ...scripts];
+  // The mailbox runner is no entry point, but it builds the deps of the mailbox tools.
+  return ["main.ts", ...scripts, "scripts/lib/mailbox-cli.ts"];
 }
 
 // A process that opens mail connections must set the host policy itself: without a call, the guard refuses local hosts.
@@ -36,14 +37,14 @@ describe("entry points that reach mail", () => {
     }
   });
 
-  // `runMailboxCli` (scripts/mailbox-cli.ts) builds the production deps for the mailbox tools: it sets the policy before `run`.
+  // `runMailboxCli` (scripts/lib/mailbox-cli.ts) builds the production deps for the mailbox tools: it sets the policy before `run`.
   test("each one calls configureMailHosts, or runs through runMailboxCli, which does", () => {
     const missing = files.filter((name) => {
       const text = readFileSync(join(SERVER_SRC, name), "utf8");
-      const viaRunner = name !== "scripts/mailbox-cli.ts" && text.includes("runMailboxCli(");
+      const viaRunner = name !== "scripts/lib/mailbox-cli.ts" && text.includes("runMailboxCli(");
       return !text.includes("configureMailHosts(") && !viaRunner;
     });
     expect(missing).toEqual([]);
-    expect(files).toContain("scripts/mailbox-cli.ts");
+    expect(files).toContain("scripts/lib/mailbox-cli.ts");
   });
 });

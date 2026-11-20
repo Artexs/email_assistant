@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
-import { backfillRefusal } from "../../src/scripts/mailbox-backfill-gate";
+import { backfillRefusal } from "../../src/scripts/lib/mailbox-backfill-gate";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";

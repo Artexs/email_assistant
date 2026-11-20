@@ -7,7 +7,7 @@ import { sql, type Transaction } from "kysely";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { createDb, type DB } from "../../src/platform/db";
-import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
+import { checkMigrationSql } from "../../src/scripts/lib/check-migrations-rules";
 
 import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 import { testDb, withRollback } from "./helpers";

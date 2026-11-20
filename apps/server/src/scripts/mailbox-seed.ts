@@ -4,7 +4,7 @@ import { selectCases } from "@ea/core";
 
 import { seedMailbox, type SeedMessage } from "../modules/mail";
 
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
 import { loadCases, readSeedOptions, toSeedMessage, usage } from "./mailbox-seed-args";
 
 // Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
