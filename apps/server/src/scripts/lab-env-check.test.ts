@@ -24,8 +24,11 @@ function readEnvFile(path: string): Record<string, string> {
 const example = readEnvFile(resolve(REPO, "deploy/sim.env.example"));
 
 // The guard runs with exactly this env: no .env file (cwd outside the repo), no machine variable.
-async function run(env: Record<string, string>): Promise<{ code: number; stdout: string; stderr: string }> {
-  const proc = Bun.spawn([process.execPath, "--no-env-file", SCRIPT], {
+async function run(
+  env: Record<string, string>,
+  args: string[] = []
+): Promise<{ code: number; stdout: string; stderr: string }> {
+  const proc = Bun.spawn([process.execPath, "--no-env-file", SCRIPT, ...args], {
     cwd: tmpdir(),
     env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", ...env },
     stdout: "pipe",
@@ -76,6 +79,13 @@ describe("bun run lab:env-check", () => {
     expect(result.code).toBe(1);
     expect(result.stdout).toBe("[lab-env-check] telegram_token_not_fake\n");
     expect(`${result.stdout}${result.stderr}`).not.toContain(token);
+  });
+
+  test("an unknown flag exits 2 with the usage on stderr and nothing on stdout", async () => {
+    const result = await run(example, ["--no-such-flag"]);
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("usage: bun run lab:env-check");
   });
 
   test("an unset Telegram root, the real Telegram, is refused (review B6)", async () => {

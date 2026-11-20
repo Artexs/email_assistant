@@ -20,6 +20,16 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 ---
 
+### `Disk quota exceeded` or `Failed to start process` on the owner's machine (while `/tmp` has free space)
+
+- **First seen:** 2026-11-14 (again 2026-11-20)
+- **Source:** any command in a job (land check, `check:job`, backup, `limen ticket check`). `/tmp` is a 16 GB RAM tmpfs with a limit of 1,048,576 files.
+- **Cause:** the file limit, not the bytes. `tsc` and `eslint` write the Node compile cache to `/tmp/node-compile-cache`, and Playwright writes `/tmp/playwright-transform-cache-1000`. The key includes the file path, so each Limen worktree adds a full new copy. 962,115 files (92 %) on 2026-11-20. Nothing cleaned them. Check: `df -i /tmp`.
+- **Fix:** `scripts/machine/install-caches.sh` (run once per machine, then log in again) moves both caches to `~/.cache/` through `~/.config/environment.d/60-caches.conf`. It also enables the user timer `systemd-tmpfiles-clean.timer` with `~/.config/user-tmpfiles.d/caches.conf`: cache files and `/tmp/f[0-9]*` job folders unused for 1 day are deleted. Until the login: delete old files in the two `/tmp` cache folders by hand (`find /tmp/node-compile-cache -type f -mmin +180 -delete`). Design: `spec/features/planned/F158-tmp-never-fills-up-from-job-caches-because-a-periodic-cleanup-removes-stale-cache-files/ticket.md`.
+- **Status:** fixed (after the install and one login)
+
+---
+
 ### `reply_sweep_failed` (fields `action_id`, `error`, `error_code`)
 
 - **First seen:** 2026-11-18 (F115 stage 09; not seen live)
