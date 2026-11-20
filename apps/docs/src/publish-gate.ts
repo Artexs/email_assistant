@@ -14,3 +14,8 @@ export const OWNER_REVIEW_PENDING: readonly string[] = [
 export function publishHoldReason(pending: readonly string[]): string | null {
   return pending.length === 0 ? null : `owner_review_pending ${pending.join(" ")}`;
 }
+
+/** The ids of `pending` that no page file holds. `exists` answers for an English page id such as `security` or `reference/api`. */
+export function unknownPendingIds(pending: readonly string[], exists: (id: string) => boolean): string[] {
+  return pending.filter((id) => !exists(id));
+}

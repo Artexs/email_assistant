@@ -5,6 +5,8 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from "@ea/core";
 
+import { blocksWithText, geminiClaimProblems, geminiOutsideCondition } from "../src/gemini-text";
+import { OWNER_REVIEW_PENDING } from "../src/publish-gate";
 import { publicClaims } from "../src/security/claims";
 
 import { expectNoA11yViolations } from "./a11y";
@@ -70,6 +72,54 @@ test.describe("every built page", () => {
     test(`T4 ${path} has no accessibility violation`, async ({ page }) => {
       await open(page, path);
       await expectNoA11yViolations(page);
+    });
+  }
+});
+
+// The new public pages (ticket folder spec/features/active/F121-e10b-public-pages-and-demo): the pages of the publication hold (English ids) and their Polish twins. A Polish twin is a source file `pl/<id>.mdx`.
+const CONTENT_DIR = join(import.meta.dirname, "../src/content/docs");
+const pageFile = (id: string): boolean =>
+  existsSync(join(CONTENT_DIR, `${id}.mdx`)) || existsSync(join(CONTENT_DIR, id, "index.mdx"));
+const pagePath = (id: string, prefix: string): string => `${DOCS_BASE}/${prefix}${id === "index" ? "" : `${id}/`}`;
+const F121_PAGES = OWNER_REVIEW_PENDING.flatMap((id) => [
+  pagePath(id, ""),
+  ...(pageFile(`pl/${id}`) ? [pagePath(id, "pl/")] : []),
+]);
+const WIDTHS = [
+  { name: "desktop", width: 1280, height: 800 },
+  { name: "phone", width: 390, height: 844 },
+] as const;
+
+test("F121-12 the new pages are the home, security and pricing pages in both languages and the two reference pages", () => {
+  expect(F121_PAGES).toEqual([
+    `${DOCS_BASE}/`,
+    `${DOCS_BASE}/pl/`,
+    `${DOCS_BASE}/security/`,
+    `${DOCS_BASE}/pl/security/`,
+    `${DOCS_BASE}/pricing/`,
+    `${DOCS_BASE}/pl/pricing/`,
+    `${DOCS_BASE}/reference/api/`,
+    `${DOCS_BASE}/reference/autonomy-evidence/`,
+  ]);
+  for (const path of F121_PAGES) expect(PAGES, `${path} is built`).toContain(path);
+});
+
+test.describe("F121-12 every new page, at desktop and phone width", () => {
+  for (const path of F121_PAGES) {
+    for (const size of WIDTHS) {
+      test(`${path} has no accessibility violation at ${size.name} width`, async ({ page }) => {
+        await page.setViewportSize({ width: size.width, height: size.height });
+        await open(page, path);
+        await expectNoA11yViolations(page);
+      });
+    }
+
+    // Gemini stays an optional provider, off by default: a block may name it only with that condition, and no page says it is removed.
+    test(`${path} names Gemini only as optional and off by default`, async ({ page }) => {
+      await open(page, path);
+      const html = await page.locator("main").innerHTML();
+      expect(geminiOutsideCondition(blocksWithText(html))).toEqual([]);
+      expect(geminiClaimProblems(await page.locator("main").innerText())).toEqual([]);
     });
   }
 });
