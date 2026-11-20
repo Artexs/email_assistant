@@ -5,8 +5,7 @@ import { parseFlags } from "./lib/parse-flags";
 export const cliDescriptions = [
   {
     name: "eval:style-gate",
-    summary:
-      "Compares two judged drafter runs, with and without a suggested style: the gate file, or with --smoke a dev or week verdict.",
+    summary: "Compares two judged drafter runs, with and without a style: gate file, or with --smoke a verdict.",
     risk: "write",
     needs: ["none"],
     usage: [
@@ -21,7 +20,7 @@ export const cliDescriptions = [
       "  errors or every score is the same. Exit 0 for pass, 1 for fail and judge stop, 2 for a refused pair.",
     ].join("\n"),
     exits: {
-      1: "a bar failed, a run is not eligible for the gate file, a file did not load, or the smoke verdict is fail or judge stop",
+      1: "a bar failed, a run is not eligible, a file did not load, or the smoke verdict is fail or judge stop",
     },
     outputNote:
       "counts, rates and codes only; no mail text or style text (a smoke report adds the case ids with two scores each)",
