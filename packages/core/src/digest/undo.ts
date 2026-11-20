@@ -1,8 +1,9 @@
+import { DAY_MS } from "../time";
 import { MAILBOX_ACTION_TYPES } from "../triage/planners";
 
 import type { ActionView } from "./would-do";
 
-export const UNDO_WINDOW_MS = 7 * 24 * 3_600_000;
+export const UNDO_WINDOW_MS = 7 * DAY_MS;
 
 // The line gets the ↩️ button while an original mailbox action is `applied`, inside the window, with no reverse row.
 export function isUndoable(actions: readonly ActionView[], now: Date): boolean {
