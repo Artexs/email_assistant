@@ -17,8 +17,14 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-11-20
+
 ### Changed
 
+- Production env: the server and `cli` get no database password and no migrator URL from Compose. Only the one-off `migrate` service gets the migrator key. `deploy/release.sh` runs `deploy/check-server-env.sh` in its verify step. `deploy/release.sh`, `deploy/rollback.sh` and `deploy/restore.sh --target new-host` refuse a host whose env is not split.
+- Legal pages: terms version `2026-11-20` (the AI provider section names the thread context and the history check). Every member accepts the terms again at the next sign-in.
+- Reply drafter: the prompt `drafter-v4` passed its holdout gate and is now the production prompt. `reply_drafts` stays off.
+- Command-line tools follow one exit code rule: 0 done, 1 failed, 2 bad arguments, 3 an outside system (the database, Telegram) does not answer, 4 incomplete. `org:break-glass` and `web:two-factor-reset` need `--confirm` with the organization name.
 - The data export names the two mail columns `source_uid` and `move_pending_at`; the old names `inbox_uid` and `undo_pending_at` stay in the database as copies for one release.
 
 ## [0.4.2] - 2026-11-20
