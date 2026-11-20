@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). Decisions D1–D8, D14.
   - `encodeCallback` and `parseCallback` keep their names and signatures.
 - **Decisions:** D2 (same bytes), D3 (split at the first `:`, `Map` lookup, anchored check of the rest, `null` on anything else), D4, D8 (error texts). Keep the base64url helpers and their canonical check for `dp`.
 - **Done when:** no `switch` on a prefix or a kind is left in the codec; each prefix string appears once in core product code (in its `callbackKinds` entry). Lab and simulator strings stay (D12).
-- **Out of scope:** callers of the codec; the handlers.
+- **Out of scope:** callers of the codec; the handlers; docs (stage 02).
 
 ## Step 2 — family predicates through the record
 
@@ -49,4 +49,4 @@ The existing files `callback.test.ts`, `callback-loop.test.ts`, `digest.test.ts`
 
 ## Done when
 
-Tests 1–8 pass; the five existing test files above have no diff; `docs/capabilities/digest-and-notices.md` rule 10 names `callbackKinds` as the place of the prefixes (one sentence; stage 02 writes the rest). Final line of `bun run check:job`: `check:job PASS`.
+Tests 1–8 pass; the five existing test files above have no diff. Final line of `bun run check:job`: `check:job PASS`.
