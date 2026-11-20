@@ -24,8 +24,8 @@ packages/core/src/changelog.ts	108	26	MethodExpression	[...releases]
 packages/core/src/changelog.ts	112	15	EqualityOperator	order >= 0
 packages/core/src/changelog.ts	120	9	ConditionalExpression	false
 packages/core/src/changelog.ts	123	7	CallExpression	;
-packages/core/src/changelog.ts	129	11	ConditionalExpression	true
 packages/core/src/changelog.ts	129	11	ConditionalExpression	false
+packages/core/src/changelog.ts	129	11	ConditionalExpression	true
 packages/core/src/changelog.ts	129	11	EqualityOperator	pending === null
 packages/core/src/changelog.ts	129	29	CallExpression	;
 packages/core/src/changelog.ts	136	51	MethodExpression	pl[1] ?? ""
@@ -114,10 +114,10 @@ packages/core/src/digest/approvals.ts	186	26	StringLiteral	"Stryker was here!"
 packages/core/src/digest/approvals.ts	186	36	ConditionalExpression	false
 packages/core/src/digest/approvals.ts	186	78	StringLiteral	"Stryker was here!"
 packages/core/src/digest/approvals.ts	187	27	ArithmeticOperator	MESSAGE_MAX_CHARS + 200
-packages/core/src/digest/approvals.ts	191	9	ConditionalExpression	true
 packages/core/src/digest/approvals.ts	191	9	ConditionalExpression	false
-packages/core/src/digest/approvals.ts	191	9	EqualityOperator	text.length >= MESSAGE_MAX_CHARS
+packages/core/src/digest/approvals.ts	191	9	ConditionalExpression	true
 packages/core/src/digest/approvals.ts	191	9	EqualityOperator	text.length <= MESSAGE_MAX_CHARS
+packages/core/src/digest/approvals.ts	191	9	EqualityOperator	text.length >= MESSAGE_MAX_CHARS
 packages/core/src/digest/approvals.ts	191	71	ConditionalExpression	true
 packages/core/src/digest/approvals.ts	191	71	ConditionalExpression	false
 packages/core/src/digest/approvals.ts	191	71	EqualityOperator	quote !== null
@@ -188,8 +188,8 @@ packages/core/src/digest/digest.ts	255	11	EqualityOperator	now.getTime() - lastS
 packages/core/src/digest/digest.ts	271	7	ConditionalExpression	true
 packages/core/src/digest/digest.ts	283	54	ArrayDeclaration	["Stryker was here"]
 packages/core/src/digest/digest.ts	286	58	LogicalOperator	removed[item.category] && 0
-packages/core/src/digest/digest.ts	295	9	ConditionalExpression	true
 packages/core/src/digest/digest.ts	295	9	ConditionalExpression	false
+packages/core/src/digest/digest.ts	295	9	ConditionalExpression	true
 packages/core/src/digest/digest.ts	295	9	EqualityOperator	input.brief?.links !== undefined
 packages/core/src/digest/digest.ts	295	9	OptionalChaining	input.brief.links
 packages/core/src/digest/digest.ts	295	49	ObjectLiteral	{}
@@ -298,8 +298,8 @@ packages/core/src/digest/weekly.ts	64	69	ConditionalExpression	true
 packages/core/src/digest/weekly.ts	65	9	OptionalChaining	paused?.trip.reason
 packages/core/src/digest/weekly.ts	73	26	ConditionalExpression	true
 packages/core/src/digest/weekly.ts	73	48	ConditionalExpression	false
-packages/core/src/digest/weekly.ts	73	48	EqualityOperator	next.kept >= best.kept
 packages/core/src/digest/weekly.ts	73	48	EqualityOperator	next.kept <= best.kept
+packages/core/src/digest/weekly.ts	73	48	EqualityOperator	next.kept >= best.kept
 packages/core/src/digest/weekly.ts	76	50	ConditionalExpression	false
 packages/core/src/digest/weekly.ts	76	73	StringLiteral	""
 packages/core/src/digest/weekly.ts	83	13	ConditionalExpression	false
@@ -327,8 +327,8 @@ packages/core/src/legal/data-categories.ts	385	10	MethodExpression	entry
 packages/core/src/loops/brief.ts	100	73	ConditionalExpression	false
 packages/core/src/loops/brief.ts	100	73	EqualityOperator	id(a) <= id(b)
 packages/core/src/loops/brief.ts	100	89	UnaryOperator	+1
-packages/core/src/loops/brief.ts	100	94	ConditionalExpression	false
 packages/core/src/loops/brief.ts	100	94	ConditionalExpression	true
+packages/core/src/loops/brief.ts	100	94	ConditionalExpression	false
 packages/core/src/loops/brief.ts	100	94	EqualityOperator	id(a) >= id(b)
 packages/core/src/loops/brief.ts	100	94	EqualityOperator	id(a) <= id(b)
 packages/core/src/loops/brief.ts	152	19	MethodExpression	Math.min(input.waitingLoops.total, input.waitingLoops.rows.length)
@@ -356,8 +356,8 @@ packages/core/src/loops/extractor.ts	134	10	ConditionalExpression	true
 packages/core/src/loops/extractor.ts	134	45	EqualityOperator	last > 0xd800
 packages/core/src/loops/extractor.ts	134	63	ConditionalExpression	true
 packages/core/src/loops/extractor.ts	134	63	EqualityOperator	last < 0xdbff
-packages/core/src/loops/replies.ts	21	10	MethodExpression	text
 packages/core/src/loops/replies.ts	21	10	MethodExpression	text.slice(0, MAX_SUBJECT * 4).normalize("NFKC").replace(/[\p{Cf}]/gu, "").replace(/[\p{Cc}\p{Z}]+/gu, " ")
+packages/core/src/loops/replies.ts	21	10	MethodExpression	text
 packages/core/src/loops/replies.ts	22	15	ArithmeticOperator	MAX_SUBJECT / 4
 packages/core/src/loops/replies.ts	25	14	Regex	/[\p{Cc}\p{Z}]/gu
 packages/core/src/loops/replies.ts	32	14	Regex	/ /g
@@ -490,8 +490,8 @@ packages/core/src/notices/views.ts	360	13	BlockStatement	{}
 packages/core/src/notices/views.ts	361	14	BooleanLiteral	true
 packages/core/src/notices/views.ts	363	32	ConditionalExpression	false
 packages/core/src/notices/views.ts	365	12	LogicalOperator	/^\?mailbox=[0-9a-f-]{36}$/.test(url.search) || uuidPattern.test(url.search.slice(9))
-packages/core/src/notices/views.ts	365	12	Regex	/^\?mailbox=[0-9a-f-]{36}/
 packages/core/src/notices/views.ts	365	12	Regex	/\?mailbox=[0-9a-f-]{36}$/
+packages/core/src/notices/views.ts	365	12	Regex	/^\?mailbox=[0-9a-f-]{36}/
 packages/core/src/outgoing/message.ts	91	22	MethodExpression	ids
 packages/core/src/outgoing/message.ts	91	55	ConditionalExpression	true
 packages/core/src/outgoing/message.ts	91	55	ConditionalExpression	true
@@ -576,15 +576,11 @@ packages/core/src/replies/digits.ts	271	14	Regex	/\d{2}$/
 packages/core/src/replies/digits.ts	271	14	Regex	/^\d{2}/
 packages/core/src/replies/digits.ts	289	51	ArrayDeclaration	["Stryker was here"]
 packages/core/src/replies/digits.ts	297	10	MethodExpression	found
-packages/core/src/replies/digits.ts	297	21	ArrowFunction	() => undefined
 packages/core/src/replies/digits.ts	297	31	ArithmeticOperator	x.start + y.start
 packages/core/src/replies/digits.ts	313	10	MethodExpression	found
 packages/core/src/replies/digits.ts	313	21	ArrowFunction	() => undefined
 packages/core/src/replies/digits.ts	313	31	ArithmeticOperator	x.start + y.start
 packages/core/src/replies/digits.ts	343	11	StringLiteral	"Stryker was here!"
-packages/core/src/replies/digits.ts	368	17	StringLiteral	"Stryker was here!"
-packages/core/src/replies/digits.ts	372	23	Regex	/(19|20|21)\d{2}$/
-packages/core/src/replies/digits.ts	372	23	Regex	/^(19|20|21)\d{2}/
 packages/core/src/replies/digits.ts	380	9	EqualityOperator	current.length >= longest.length
 packages/core/src/replies/digits.ts	394	42	ArrayDeclaration	["Stryker was here"]
 packages/core/src/replies/digits.ts	417	18	ArithmeticOperator	runs.length + 1
@@ -711,8 +707,8 @@ packages/core/src/sim/briefs.ts	42	34	StringLiteral	""
 packages/core/src/sim/briefs.ts	43	34	StringLiteral	""
 packages/core/src/sim/briefs.ts	60	38	MethodExpression	text
 packages/core/src/sim/briefs.ts	65	78	StringLiteral	""
-packages/core/src/sim/checks.ts	70	23	Regex	/<[^>]>/g
 packages/core/src/sim/checks.ts	70	23	Regex	/<[>]+>/g
+packages/core/src/sim/checks.ts	70	23	Regex	/<[^>]>/g
 packages/core/src/sim/checks.ts	70	35	StringLiteral	""
 packages/core/src/sim/checks.ts	74	10	MethodExpression	text.split(/\s+/)
 packages/core/src/sim/checks.ts	74	21	Regex	/\s/
@@ -892,8 +888,8 @@ packages/core/src/sim/live/date-shift.ts	184	11	ConditionalExpression	false
 packages/core/src/sim/live/date-shift.ts	187	11	ConditionalExpression	false
 packages/core/src/sim/live/date-shift.ts	195	64	BooleanLiteral	true
 packages/core/src/sim/live/env-guard.ts	32	61	MethodExpression	address
-packages/core/src/sim/live/env-guard.ts	33	10	MethodExpression	(raw ?? "").split(",").map(entry => entry.trim().toLowerCase()).filter(entry => entry !== "").some(entry => allowed.has(entry) && entry.endsWith(".test"))
 packages/core/src/sim/live/env-guard.ts	33	10	MethodExpression	(raw ?? "").split(",").map(entry => entry.trim().toLowerCase())
+packages/core/src/sim/live/env-guard.ts	33	10	MethodExpression	(raw ?? "").split(",").map(entry => entry.trim().toLowerCase()).filter(entry => entry !== "").some(entry => allowed.has(entry) && entry.endsWith(".test"))
 packages/core/src/sim/live/env-guard.ts	33	18	StringLiteral	"Stryker was here!"
 packages/core/src/sim/live/env-guard.ts	36	24	ConditionalExpression	true
 packages/core/src/sim/live/env-guard.ts	36	34	StringLiteral	"Stryker was here!"
@@ -921,8 +917,8 @@ packages/core/src/sim/live/executive.ts	158	10	StringLiteral	""
 packages/core/src/sim/live/executive.ts	168	9	ConditionalExpression	false
 packages/core/src/sim/live/executive.ts	168	9	LogicalOperator	callback === null && id === undefined
 packages/core/src/sim/live/executive.ts	168	30	ConditionalExpression	false
-packages/core/src/sim/live/executive.ts	176	9	ConditionalExpression	false
 packages/core/src/sim/live/executive.ts	176	9	ConditionalExpression	true
+packages/core/src/sim/live/executive.ts	176	9	ConditionalExpression	false
 packages/core/src/sim/live/executive.ts	176	9	EqualityOperator	KIND_ORDER.indexOf(kind) <= KIND_ORDER.indexOf(group.kind)
 packages/core/src/sim/live/executive.ts	176	9	EqualityOperator	KIND_ORDER.indexOf(kind) >= KIND_ORDER.indexOf(group.kind)
 packages/core/src/sim/live/executive.ts	176	68	BlockStatement	{}
@@ -1039,10 +1035,10 @@ packages/core/src/sim/sent-eval-case.ts	30	30	ArrayDeclaration	["Stryker was her
 packages/core/src/sim/sent-hard-cases.ts	119	44	StringLiteral	``
 packages/core/src/sim/sent-manifest.ts	54	57	EqualityOperator	a.id <= b.id
 packages/core/src/sim/sent-manifest.ts	54	57	EqualityOperator	a.id >= b.id
-packages/core/src/sim/sent-manifest.ts	54	76	ConditionalExpression	false
 packages/core/src/sim/sent-manifest.ts	54	76	ConditionalExpression	true
-packages/core/src/sim/sent-manifest.ts	54	76	EqualityOperator	a.id <= b.id
+packages/core/src/sim/sent-manifest.ts	54	76	ConditionalExpression	false
 packages/core/src/sim/sent-manifest.ts	54	76	EqualityOperator	a.id >= b.id
+packages/core/src/sim/sent-manifest.ts	54	76	EqualityOperator	a.id <= b.id
 packages/core/src/sim/sent-manifest.ts	58	17	MethodExpression	slots
 packages/core/src/sim/sent-manifest.ts	71	21	MethodExpression	input.slots[part]
 packages/core/src/sim/sent-manifest.ts	100	87	StringLiteral	""
@@ -1236,8 +1232,8 @@ packages/core/src/texts/approvals.ts	423	88	EqualityOperator	code !== ""
 packages/core/src/texts/approvals.ts	423	97	StringLiteral	"Stryker was here!"
 packages/core/src/texts/approvals.ts	423	102	StringLiteral	"Stryker was here!"
 packages/core/src/texts/approvals.ts	423	107	StringLiteral	``
-packages/core/src/texts/approvals.ts	425	56	ConditionalExpression	true
 packages/core/src/texts/approvals.ts	425	56	ConditionalExpression	false
+packages/core/src/texts/approvals.ts	425	56	ConditionalExpression	true
 packages/core/src/texts/approvals.ts	425	56	EqualityOperator	code !== ""
 packages/core/src/texts/approvals.ts	425	65	StringLiteral	"Stryker was here!"
 packages/core/src/texts/approvals.ts	425	70	StringLiteral	""
@@ -1331,14 +1327,14 @@ packages/core/src/texts/notices.ts	353	124	EqualityOperator	withoutNotice >= 0
 packages/core/src/texts/notices.ts	353	184	StringLiteral	"Stryker was here!"
 packages/core/src/texts/notices.ts	356	118	ConditionalExpression	true
 packages/core/src/texts/notices.ts	356	149	StringLiteral	""
-packages/core/src/texts/notices.ts	452	9	ConditionalExpression	true
 packages/core/src/texts/notices.ts	452	9	ConditionalExpression	false
+packages/core/src/texts/notices.ts	452	9	ConditionalExpression	true
 packages/core/src/texts/notices.ts	452	9	EqualityOperator	folder !== null
 packages/core/src/texts/notices.ts	453	13	StringLiteral	""
 packages/core/src/texts/notices.ts	540	55	ConditionalExpression	true
 packages/core/src/texts/notices.ts	540	55	ConditionalExpression	false
-packages/core/src/texts/notices.ts	540	55	EqualityOperator	pending >= 0
 packages/core/src/texts/notices.ts	540	55	EqualityOperator	pending <= 0
+packages/core/src/texts/notices.ts	540	55	EqualityOperator	pending >= 0
 packages/core/src/texts/notices.ts	540	69	StringLiteral	``
 packages/core/src/texts/notices.ts	540	134	StringLiteral	"Stryker was here!"
 packages/core/src/texts/notices.ts	543	56	ConditionalExpression	true
@@ -1367,23 +1363,23 @@ packages/core/src/triage/address.ts	8	29	StringLiteral	"Stryker was here!"
 packages/core/src/triage/address.ts	10	14	Regex	/"(.*)"$/
 packages/core/src/triage/address.ts	10	14	Regex	/^"(.*)"/
 packages/core/src/triage/address.ts	12	66	StringLiteral	"Stryker was here!"
-packages/core/src/triage/cost.ts	64	10	ConditionalExpression	true
-packages/core/src/triage/cost.ts	71	82	StringLiteral	""
-packages/core/src/triage/cost.ts	72	7	ConditionalExpression	false
-packages/core/src/triage/cost.ts	72	20	StringLiteral	""
-packages/core/src/triage/cost.ts	80	7	ConditionalExpression	true
-packages/core/src/triage/cost.ts	82	22	StringLiteral	``
-packages/core/src/triage/cost.ts	83	35	ConditionalExpression	true
-packages/core/src/triage/cost.ts	83	35	ConditionalExpression	false
-packages/core/src/triage/cost.ts	83	35	EqualityOperator	current !== null
-packages/core/src/triage/cost.ts	83	55	EqualityOperator	start > currentStart
+packages/core/src/triage/cost.ts	40	10	ConditionalExpression	true
+packages/core/src/triage/cost.ts	47	82	StringLiteral	""
+packages/core/src/triage/cost.ts	48	7	ConditionalExpression	false
+packages/core/src/triage/cost.ts	48	20	StringLiteral	""
+packages/core/src/triage/cost.ts	56	7	ConditionalExpression	true
+packages/core/src/triage/cost.ts	58	22	StringLiteral	``
+packages/core/src/triage/cost.ts	59	35	ConditionalExpression	true
+packages/core/src/triage/cost.ts	59	35	ConditionalExpression	false
+packages/core/src/triage/cost.ts	59	35	EqualityOperator	current !== null
+packages/core/src/triage/cost.ts	59	55	EqualityOperator	start > currentStart
 packages/core/src/triage/dkim-pass.ts	8	18	MethodExpression	fromDomain
 packages/core/src/triage/dkim-pass.ts	8	58	Regex	/\.$/
 packages/core/src/triage/dkim-pass.ts	8	66	StringLiteral	"Stryker was here!"
 packages/core/src/triage/dkim-pass.ts	10	27	ArrayDeclaration	["Stryker was here"]
 packages/core/src/triage/dkim-pass.ts	23	19	EqualityOperator	i <= text.length
-packages/core/src/triage/dkim-pass.ts	30	13	ConditionalExpression	true
 packages/core/src/triage/dkim-pass.ts	30	13	ConditionalExpression	false
+packages/core/src/triage/dkim-pass.ts	30	13	ConditionalExpression	true
 packages/core/src/triage/dkim-pass.ts	30	13	EqualityOperator	depth !== 0
 packages/core/src/triage/dkim-pass.ts	30	33	StringLiteral	""
 packages/core/src/triage/dkim-pass.ts	35	14	ConditionalExpression	false
@@ -1416,10 +1412,10 @@ packages/core/src/triage/dkim-signature.ts	75	9	ConditionalExpression	false
 packages/core/src/triage/dkim-signature.ts	75	19	StringLiteral	"Stryker was here!"
 packages/core/src/triage/dkim-signature.ts	75	25	EqualityOperator	entry.length >= DKIM_LIMITS.nameLength
 packages/core/src/triage/eval-case.ts	73	10	EqualityOperator	a.id <= b.id
-packages/core/src/triage/eval-case.ts	73	29	ConditionalExpression	false
 packages/core/src/triage/eval-case.ts	73	29	ConditionalExpression	true
-packages/core/src/triage/eval-case.ts	73	29	EqualityOperator	a.id <= b.id
+packages/core/src/triage/eval-case.ts	73	29	ConditionalExpression	false
 packages/core/src/triage/eval-case.ts	73	29	EqualityOperator	a.id >= b.id
+packages/core/src/triage/eval-case.ts	73	29	EqualityOperator	a.id <= b.id
 packages/core/src/triage/eval-case.ts	84	78	ArrayDeclaration	[]
 packages/core/src/triage/eval-case.ts	84	79	StringLiteral	""
 packages/core/src/triage/eval-case.ts	84	92	StringLiteral	""
@@ -1528,8 +1524,8 @@ packages/core/src/triage/suspicious.ts	146	5	AssignmentOperator	k -= BASE
 packages/core/src/triage/suspicious.ts	148	10	ArithmeticOperator	k - Math.floor((BASE - T_MIN + 1) * d / (d + SKEW))
 packages/core/src/triage/suspicious.ts	148	25	ArithmeticOperator	(BASE - T_MIN + 1) * d * (d + SKEW)
 packages/core/src/triage/suspicious.ts	148	26	ArithmeticOperator	(BASE - T_MIN + 1) / d
-packages/core/src/triage/suspicious.ts	148	27	ArithmeticOperator	BASE + T_MIN
 packages/core/src/triage/suspicious.ts	148	27	ArithmeticOperator	BASE - T_MIN - 1
+packages/core/src/triage/suspicious.ts	148	27	ArithmeticOperator	BASE + T_MIN
 packages/core/src/triage/suspicious.ts	148	53	ArithmeticOperator	d - SKEW
 packages/core/src/triage/suspicious.ts	152	7	ConditionalExpression	true
 packages/core/src/triage/suspicious.ts	152	7	EqualityOperator	code > 48
@@ -1650,8 +1646,8 @@ packages/core/src/triage/suspicious.ts	384	16	MethodExpression	attachment.name
 packages/core/src/triage/suspicious.ts	384	16	OptionalChaining	attachment.name.trim
 packages/core/src/triage/suspicious.ts	384	57	StringLiteral	"Stryker was here!"
 packages/core/src/triage/suspicious.ts	386	10	EqualityOperator	dot > 0
-packages/core/src/triage/suspicious.ts	393	10	MethodExpression	name.normalize("NFKD").replace(/\p{M}+/gu, "").toUpperCase()
 packages/core/src/triage/suspicious.ts	393	10	MethodExpression	name.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().replaceAll("ł", "l").replaceAll("đ", "d").replaceAll("ø", "o").replace(/\s+/g, " ")
+packages/core/src/triage/suspicious.ts	393	10	MethodExpression	name.normalize("NFKD").replace(/\p{M}+/gu, "").toUpperCase()
 packages/core/src/triage/suspicious.ts	395	14	Regex	/\p{M}/gu
 packages/core/src/triage/suspicious.ts	397	22	StringLiteral	""
 packages/core/src/triage/suspicious.ts	398	22	StringLiteral	""
@@ -1702,8 +1698,8 @@ packages/core/src/web/mailboxes.ts	100	37	MethodExpression	b
 packages/core/src/web/next-path.ts	3	44	ConditionalExpression	false
 packages/core/src/web/next-path.ts	3	52	StringLiteral	"Stryker was here!"
 packages/core/src/web/next-path.ts	4	19	ConditionalExpression	false
-packages/core/src/web/next-path.ts	4	19	EqualityOperator	i <= raw.length
 packages/core/src/web/next-path.ts	4	19	EqualityOperator	i >= raw.length
+packages/core/src/web/next-path.ts	4	19	EqualityOperator	i <= raw.length
 packages/core/src/web/next-path.ts	4	40	BlockStatement	{}
 packages/core/src/web/next-path.ts	6	9	ConditionalExpression	false
 packages/core/src/web/next-path.ts	6	9	ConditionalExpression	false
@@ -1750,8 +1746,8 @@ packages/core/src/web/public-content.ts	41	7	LogicalOperator	a === 192 || b === 
 packages/core/src/web/public-content.ts	41	20	ConditionalExpression	true
 packages/core/src/web/public-content.ts	44	6	ConditionalExpression	true
 packages/core/src/web/public-content.ts	44	6	ConditionalExpression	true
-packages/core/src/web/public-content.ts	44	6	LogicalOperator	a === 192 || b === 0
 packages/core/src/web/public-content.ts	44	6	LogicalOperator	a === 192 && b === 0 || c === 2
+packages/core/src/web/public-content.ts	44	6	LogicalOperator	a === 192 || b === 0
 packages/core/src/web/public-content.ts	44	19	ConditionalExpression	true
 packages/core/src/web/public-content.ts	44	30	ConditionalExpression	true
 packages/core/src/web/public-content.ts	44	43	ConditionalExpression	true
@@ -1785,8 +1781,8 @@ packages/core/src/web/public-content.ts	79	50	StringLiteral	"Stryker was here!"
 packages/core/src/web/public-content.ts	79	74	Regex	/\s/
 packages/core/src/web/public-content.ts	81	35	StringLiteral	"Stryker was here!"
 packages/core/src/web/public-content.ts	81	50	StringLiteral	"Stryker was here!"
-packages/core/src/web/public-content.ts	84	33	Regex	/url\(\s*(?:"([^"]*)"|'([']*)'|([^)\s"']*))\s*\)/gi
 packages/core/src/web/public-content.ts	84	33	Regex	/url\(\s*(?:"([^"]*)"|'([^'])'|([^)\s"']*))\s*\)/gi
+packages/core/src/web/public-content.ts	84	33	Regex	/url\(\s*(?:"([^"]*)"|'([']*)'|([^)\s"']*))\s*\)/gi
 packages/core/src/web/public-content.ts	84	33	Regex	/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s"']*))\S*\)/gi
 packages/core/src/web/public-content.ts	85	39	StringLiteral	"Stryker was here!"
 packages/core/src/web/public-content.ts	136	18	MethodExpression	raw

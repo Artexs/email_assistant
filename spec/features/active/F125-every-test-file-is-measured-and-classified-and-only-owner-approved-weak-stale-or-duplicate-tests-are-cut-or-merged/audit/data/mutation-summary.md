@@ -1,10 +1,10 @@
 # Mutation summary: `packages/core`
 
-Score **86.41 %**: 21195 mutants, 11525 killed, 76 timeout, 1487 survived, 337 no coverage, 7770 error or ignored (outside the score).
+Score **86.45 %**: 21250 mutants, 11535 killed, 76 timeout, 1483 survived, 337 no coverage, 7819 error or ignored (outside the score).
 
-Stryker tests: 2763; kill nothing (`S11`): 438; kill only mutants that another test also kills (`S10`): 1561; greedy cover: 985; unjoined to a JUnit case: 3.
+Stryker tests: 2769; kill nothing (`S11`): 439; kill only mutants that another test also kills (`S10`): 1567; greedy cover: 986; unjoined to a JUnit case: 9.
 
-## Cases that kill no mutant (438)
+## Cases that kill no mutant (439)
 
 - `packages/core/src/contacts/address.test.ts:42` src/contacts/address.test.ts > ADDRESS_TRIM_CHARS > a code point is in the set exactly when trim() strips it, over every code point
 - `packages/core/src/contacts/address.test.ts:53` src/contacts/address.test.ts > ADDRESS_TRIM_CHARS > 25 code points in ascending order, no duplicate
@@ -137,6 +137,7 @@ Stryker tests: 2763; kill nothing (`S11`): 438; kill only mutants that another t
 - `packages/core/src/legal/subprocessors.test.ts:12` src/legal/subprocessors.test.ts > subprocessors > every text has a non-empty en and pl
 - `packages/core/src/legal/subprocessors.test.ts:26` src/legal/subprocessors.test.ts > subprocessors > a placeholder is the same in both languages
 - `packages/core/src/legal/subprocessors.test.ts:35` src/legal/subprocessors.test.ts > subprocessors > termsUrl is an https URL or a to-confirm placeholder
+- `packages/core/src/llm-providers.test.ts:27` src/llm-providers.test.ts > llm provider catalog > no model id is in two rows: the flat map holds every row key
 - `packages/core/src/llm-roles.test.ts:7` src/llm-roles.test.ts > llm roles > the role list is fixed
 - `packages/core/src/llm-roles.test.ts:18` src/llm-roles.test.ts > llm roles > a prompt version starts with its role
 - `packages/core/src/loops/brief.test.ts:94` src/loops/brief.test.ts > loopSections and renderBrief (T1) > a section holds at most 5 lines and counts the rest from the total the reader gave
@@ -458,9 +459,9 @@ Stryker tests: 2763; kill nothing (`S11`): 438; kill only mutants that another t
 | `packages/core/src/sim/sent-slot.ts` | 42 | 0 | 71.03 % |
 | `packages/core/src/testmail/batch.ts` | 39 | 3 | 79.61 % |
 | `packages/core/src/texts/approvals.ts` | 34 | 4 | 79.89 % |
-| `packages/core/src/replies/digits.ts` | 35 | 1 | 91.24 % |
 | `packages/core/src/changelog.ts` | 28 | 6 | 83.50 % |
 | `packages/core/src/texts/notices.ts` | 31 | 3 | 86.77 % |
 | `packages/core/src/loops/replies.ts` | 31 | 2 | 82.07 % |
 | `packages/core/src/replies/views.ts` | 33 | 0 | 79.11 % |
+| `packages/core/src/replies/digits.ts` | 31 | 1 | 92.21 % |
 | `packages/core/src/sim/live/executive.ts` | 28 | 2 | 84.92 % |

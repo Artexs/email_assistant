@@ -29,6 +29,7 @@ packages/core/src/digest/would-do.ts	136	105	0	5	2	24	93.75
 packages/core/src/features.ts	37	22	0	0	0	15	100.00
 packages/core/src/legal/data-categories.ts	394	9	0	1	0	384	90.00
 packages/core/src/legal/subprocessors.ts	170	0	0	0	0	170	100.00
+packages/core/src/llm-providers.ts	78	6	0	0	0	72	100.00
 packages/core/src/llm-roles.ts	1	1	0	0	0	0	100.00
 packages/core/src/loopback.ts	23	23	0	0	0	0	100.00
 packages/core/src/loops/brief.ts	300	229	4	14	1	52	93.95
@@ -68,7 +69,7 @@ packages/core/src/outgoing/user-text.ts	15	13	0	0	0	2	100.00
 packages/core/src/outgoing/view-schema.ts	24	0	0	0	0	24	100.00
 packages/core/src/replies/checks.ts	109	75	0	1	0	33	98.68
 packages/core/src/replies/copy-key.ts	24	24	0	0	0	0	100.00
-packages/core/src/replies/digits.ts	504	370	5	35	1	93	91.24
+packages/core/src/replies/digits.ts	504	374	5	31	1	93	92.21
 packages/core/src/replies/eligibility.ts	147	132	0	8	1	6	93.62
 packages/core/src/replies/entities.ts	39	15	0	2	0	22	88.24
 packages/core/src/replies/gaps.ts	35	27	0	5	1	2	81.82
@@ -152,7 +153,7 @@ packages/core/src/time.ts	9	0	0	0	0	9	100.00
 packages/core/src/triage/address.ts	33	14	0	5	2	12	66.67
 packages/core/src/triage/analysis.ts	26	0	0	0	0	26	100.00
 packages/core/src/triage/categories.ts	8	0	0	0	0	8	100.00
-packages/core/src/triage/cost.ts	91	54	0	8	2	27	84.38
+packages/core/src/triage/cost.ts	68	54	0	8	2	4	84.38
 packages/core/src/triage/dkim-pass.ts	172	141	5	26	0	0	84.88
 packages/core/src/triage/dkim-signature.ts	121	84	0	12	0	25	87.50
 packages/core/src/triage/eval-case.ts	136	66	0	23	0	47	74.16
