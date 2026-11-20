@@ -120,6 +120,12 @@ jobs:
       # The PNG files go to apps/docs/public/shots (not in git), then into the site. The run signs in as the owner of the seed's main organization.
       - name: Make the screenshots
         run: bun run docs:shots
+      # The demo video of the home page: a pinned asset of the release `demo-video` (a tag that is not `v*`, so it starts no deploy).
+      # With no pin in apps/docs/src/demo-video.ts the script downloads nothing. The token is the run's own, read-only (the job has `contents: read`).
+      - name: Download the pinned demo video
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun apps/docs/scripts/demo-fetch.ts
       # In-place pages link to GitHub at this ref: the tag of a tag push, the commit of a manual run.
       - name: Build the site with the screenshots
         env:
