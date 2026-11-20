@@ -232,6 +232,10 @@ describe("the public claims of the security page", () => {
     const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
     expect(receives?.ledger).toContain("C261");
     expect(receives?.ledger).toContain("C262");
+    expect(receives?.ledger).toContain("C263");
+    expect(receives?.ledger).toContain("C264");
+    expect(receives?.text.en).toMatch(/8,000 characters/);
+    expect(receives?.text.pl).toMatch(/8000 znaków/);
     expect(receives?.text.en).toMatch(/500 characters/);
     expect(receives?.text.en).toMatch(/can be older than 7 days/);
     expect(receives?.text.pl).toMatch(/500 znaków/);
