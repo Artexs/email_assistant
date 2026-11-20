@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F146 · One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed
