@@ -37,3 +37,25 @@ Setup list (old file, top level):
 | `extrasOf`, `appOf`, `ctxA`, `addressOf`, `enable`, `signIn`, `callback`, `mailboxRows`, `stateRows`, `auditOf`, `credentialsOf`, `secretOf`, `seedMailbox`, `mailboxOf`, `grantOf`, `depsOf` | `makeOAuthConnectKit` in the helpers file; each part destructures what it uses |
 
 References repointed: a comment in `mail-history-connect.test.ts` (to `mail-oauth-connect-flow.test.ts`, which holds the history check at an OAuth connect).
+
+## `apps/server/test/integration/mail-oauth-refresh.test.ts` (923 lines)
+
+Parts: `mail-oauth-refresh-tokens.test.ts` 280 (describes "the access token cache", "the refresh", "a refused grant", "faults of the operator and the network"), `mail-oauth-refresh-status.test.ts` 230 (describes "the sync job sets the status with its reason", "every status writer clears the reason in its own statement"), `mail-oauth-refresh-lock.test.ts` 354 (describes "the lock order of a refresh and a Reconnect", "openMailboxProvider", "no token in a log line, an error or an audit row"), helpers `mail-oauth-refresh-helpers.ts` 249.
+
+Proof: `split-proof PASS cases=47`.
+
+Assertion line: `no token in a log line, an error or an audit row :: 37. canary: ...` went from 93 to 29. Cause: the case loops over `fake.issuedRefreshTokens`, a list the fake token server fills for the whole file and no hook clears. The part holds fewer earlier cases, so the list is shorter. No lost hook.
+
+Setup list (old file, top level):
+
+| Statement | Now |
+| --- | --- |
+| `const db = testDb()` | each part |
+| `let fake, clients, org, logLines, logSpies` | each part (the helpers read them through getters) |
+| `let clock`, `now`, `advance` | inside `makeOAuthRefreshKit`; the `beforeEach` of each part calls the kit's `resetClock()` |
+| `beforeAll`, `afterAll`, `beforeEach`, `afterEach` | repeated in each part |
+| `secrets`, `VERIFIER`, `HOSTS`, `Box`, `SeedOpts`, `Script`, `grantCases` | `mail-oauth-refresh-helpers.ts` (exported; `grantCases` feeds the tokens and status parts) |
+| `configOf`, `makeClients`, `tokensOf`, `ctxA`, `ctxB`, `addressOf`, `refreshCalls`, `linesOf`, `seedMailbox`, `mailboxOf`, `storedToken`, `syncWith`, `script` | `makeOAuthRefreshKit` in the helpers file |
+| `waitForLockWaiter`, `grantOf`, `reconnectDeps` | `mail-oauth-refresh-lock.test.ts` (only that part uses them) |
+
+References repointed: none (no file outside the history folders names the old file).
