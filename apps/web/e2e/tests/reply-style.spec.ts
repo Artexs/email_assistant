@@ -580,6 +580,6 @@ test("T15: a discarded suggestion closes the box and leaves the field; the refus
   }
   // The real route on this server: the model is off, so the answer is a refusal with its own text, never a suggestion.
   await suggestButton(page).click();
-  await expect(card(page).locator("[data-suggest=shown]")).toBeVisible();
+  await expect(card(page).locator("[data-suggest=shown]")).toHaveText(en.rs_preview_llm_off);
   await expect(card(page).locator("[data-suggest-text]")).toHaveCount(0);
 });
