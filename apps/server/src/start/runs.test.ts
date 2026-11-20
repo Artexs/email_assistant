@@ -39,7 +39,8 @@ describe("the run tracker", () => {
     void callback();
     void callback();
     second.resolve();
-    await runs.settled();
+    const state = await Promise.race([runs.settled().then(() => "settled"), macrotask().then(() => "waiting")]);
+    expect(state).toBe("settled");
   });
 
   test("a rejected run reaches the caller, and settled() still resolves", async () => {
@@ -50,6 +51,12 @@ describe("the run tracker", () => {
   });
 
   test("with no tracked name, settled() resolves at once", async () => {
-    await createRunTracker().settled();
+    const state = await Promise.race([
+      createRunTracker()
+        .settled()
+        .then(() => "settled"),
+      macrotask().then(() => "waiting"),
+    ]);
+    expect(state).toBe("settled");
   });
 });

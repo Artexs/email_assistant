@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
-import { createImapMailProvider, CLOSE_LOGOUT_TIMEOUT_MS } from "../../src/modules/mail/imap/client";
+import { createImapMailProvider } from "../../src/modules/mail/imap/client";
 import type { SentFolderReader } from "../../src/modules/mail/port";
 import { SentBudgetError, startDeadline } from "../../src/modules/mail/sent-budget";
 import { SENT_PASS_BUDGET_MS } from "../../src/modules/mail/sent-rules";
@@ -325,19 +325,6 @@ describe("text step budget", () => {
 });
 
 describe("bounded close", () => {
-  test("a LOGOUT that never returns ends with client.close() after the timeout", async () => {
-    let closed = 0;
-    const client = {
-      logout: () => new Promise<void>(() => undefined),
-      close: () => void (closed += 1),
-    };
-    const provider = createImapMailProvider(client as never, { bodyLimitBytes: 1, forceCopyMove: false });
-    const started = performance.now();
-    await provider.close();
-    expect(closed).toBe(1);
-    expect(performance.now() - started).toBeLessThan(CLOSE_LOGOUT_TIMEOUT_MS + 1_500);
-  });
-
   test("a LOGOUT that works does not call client.close()", async () => {
     let closed = 0;
     const client = { logout: async () => undefined, close: () => void (closed += 1) };

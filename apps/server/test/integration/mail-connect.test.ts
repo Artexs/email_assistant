@@ -329,7 +329,8 @@ describe("connectMailbox: duplicates, audit, timeouts", () => {
       await seedMailbox(trx, a.orgId, address);
       const { deps } = depsFor(trx);
       const { mailboxId } = await connectMailbox(deps, { orgId: b.orgId }, { ...input("pw"), address });
-      expect(await getMailbox(trx, { orgId: b.orgId }, mailboxId)).toBeDefined();
+      expect(await getMailbox(trx, { orgId: b.orgId }, mailboxId)).toMatchObject({ id: mailboxId, address });
+      expect(await getMailbox(trx, { orgId: a.orgId }, mailboxId)).toBeUndefined();
     });
   });
 

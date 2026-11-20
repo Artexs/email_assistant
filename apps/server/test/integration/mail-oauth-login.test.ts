@@ -26,14 +26,57 @@ test("an IMAP login with an oauth access token passes (GreenMail with auth off a
   }
 });
 
-test("an SMTP verifySmtpLogin with an oauth access token passes (GreenMail with auth off accepts any token)", async () => {
-  await verifySmtpLogin({
-    host,
-    port: smtpPort,
-    user: `u-${randomUUID()}@localhost`,
-    auth: { kind: "oauth", accessToken: "any-token" },
-    secure: false,
+// A one-connection SMTP server that offers XOAUTH2 and records each AUTH line: GreenMail with auth off cannot show
+// which login a client sent.
+function startAuthRecordingSmtp(): { port: number; authLines: string[]; stop: () => void } {
+  const authLines: string[] = [];
+  const server = Bun.listen<{ buffer: string }>({
+    hostname: "127.0.0.1",
+    port: 0,
+    socket: {
+      open(socket) {
+        socket.data = { buffer: "" };
+        socket.write("220 fake ESMTP\r\n");
+      },
+      data(socket, chunk) {
+        socket.data.buffer += chunk.toString("utf8");
+        const lines = socket.data.buffer.split("\r\n");
+        socket.data.buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (line.startsWith("EHLO")) socket.write("250-fake\r\n250 AUTH XOAUTH2\r\n");
+          else if (line.startsWith("AUTH ")) {
+            authLines.push(line);
+            socket.write("235 2.7.0 accepted\r\n");
+          } else if (line === "QUIT") socket.end("221 bye\r\n");
+          else socket.write("250 ok\r\n");
+        }
+      },
+    },
   });
+  return { port: server.port, authLines, stop: () => server.stop(true) };
+}
+
+test("an SMTP verifySmtpLogin with an oauth access token passes (GreenMail with auth off accepts any token)", async () => {
+  const token = "any-token";
+  await expect(
+    verifySmtpLogin({
+      host,
+      port: smtpPort,
+      user: `u-${randomUUID()}@localhost`,
+      auth: { kind: "oauth", accessToken: token },
+      secure: false,
+    })
+  ).resolves.toBeUndefined();
+  // GreenMail cannot show the login it got: a recording server shows that the XOAUTH2 login of the user and token went out.
+  const smtp = startAuthRecordingSmtp();
+  try {
+    const user = `u-${randomUUID()}@localhost`;
+    await verifySmtpLogin({ host, port: smtp.port, user, auth: { kind: "oauth", accessToken: token }, secure: false });
+    const sent = Buffer.from(`user=${user}\u0001auth=Bearer ${token}\u0001\u0001`).toString("base64");
+    expect(smtp.authLines).toEqual([`AUTH XOAUTH2 ${sent}`]);
+  } finally {
+    smtp.stop();
+  }
 });
 
 test("a send with an oauth access token reaches the recipient (GreenMail with auth off accepts any token)", async () => {

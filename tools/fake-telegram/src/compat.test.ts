@@ -42,10 +42,11 @@ describe("fake telegram with the app channel", () => {
   });
 
   test("edit with the same content resolves", async () => {
-    const { apiRoot } = start();
-    const channel = createTelegramChannel(createTelegramApi(FAKE_TOKEN, { apiRoot }));
+    const instance = start();
+    const channel = createTelegramChannel(createTelegramApi(FAKE_TOKEN, { apiRoot: instance.apiRoot }));
     const { messageId } = await channel.send(DEFAULT_CHAT_ID, { text: "text", buttons: [] });
-    await channel.edit(DEFAULT_CHAT_ID, messageId, { text: "text", buttons: [] });
+    await expect(channel.edit(DEFAULT_CHAT_ID, messageId, { text: "text", buttons: [] })).resolves.toBeUndefined();
+    expect(instance.state.messages(DEFAULT_CHAT_ID)[messageId - 1]?.edits).toEqual([]);
   });
 
   test("send under an injected 429 is rate_limited", async () => {

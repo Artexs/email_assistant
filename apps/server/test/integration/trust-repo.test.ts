@@ -87,8 +87,13 @@ describe("queueHistoryCheck", () => {
     await withRollback(db, async (trx) => {
       const o = await createOrgWithMailbox(trx);
       const other = await addMailbox(trx, o);
-      expect(await queueHistoryCheck(trx, o, o.mailboxId, "connect")).not.toBeNull();
-      expect(await queueHistoryCheck(trx, o, other, "connect")).not.toBeNull();
+      const first = await queueHistoryCheck(trx, o, o.mailboxId, "connect");
+      const second = await queueHistoryCheck(trx, o, other, "connect");
+      expect(first).toEqual(expect.any(String));
+      expect(second).toEqual(expect.any(String));
+      expect(second).not.toBe(first);
+      expect(await checkRows(trx, o.mailboxId)).toEqual([{ id: first as string, status: "queued" }]);
+      expect(await checkRows(trx, other)).toEqual([{ id: second as string, status: "queued" }]);
     });
   });
 

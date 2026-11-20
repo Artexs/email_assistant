@@ -53,23 +53,13 @@ async function run(args: string[], env: Record<string, string> = {}) {
 }
 
 describe("stats:week CLI", () => {
-  test("a week that is not a Monday, a bad id or a stray argument print the usage and exit 2", async () => {
-    const orgId = crypto.randomUUID();
-    const argLists = [
-      ["--org-id", orgId, "--week", "2026-11-17"],
-      ["--org-id", orgId, "--week", "2026-02-30"],
-      ["--org-id", "not-a-uuid"],
-      ["--org-id", orgId, "--mailbox-id", "x"],
-      ["--org-id", orgId, "stray"],
-      [],
-    ];
-    // One bun start costs about a second; six in a row used 3 s of the 5 s test limit and failed in a loaded CI run.
-    const results = await Promise.all(argLists.map((args) => run(args)));
-    for (const result of results) {
-      expect(result.code).toBe(2);
-      expect(result.stderr).toContain(`[stats-week] usage: ${statsWeekUsage}`);
-      expect(result.stdout).toBe("");
-    }
+  // The argument lists that fail the parse are rows of `parseStatsWeekArgs` in stats-week-args.test.ts. This case proves
+  // the wiring: the script turns a usage error into the usage line on stderr and exit 2.
+  test("an empty argument list prints the usage and exits 2", async () => {
+    const result = await run([]);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(`[stats-week] usage: ${statsWeekUsage}`);
+    expect(result.stdout).toBe("");
   });
 
   test("an unknown organization or a foreign mailbox exits 1", async () => {

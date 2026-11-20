@@ -98,15 +98,33 @@ describe("encodeNoticeView", () => {
     });
 
     test("T5 a view without version and panelUrl encodes (rows of the last 24 h)", () => {
-      expect(() => encodeNoticeView("approval", approval({}) as never)).not.toThrow();
+      expect(encodeNoticeView("approval", approval({}) as never)).toEqual({
+        actionId: emailId,
+        view: {
+          kind: "delegation",
+          recipient: { name: null, address: "anna@example.test" },
+          sender: null,
+          recipientInactive: false,
+          subject: "S",
+          dueDate: null,
+          body: "B",
+          quote: null,
+          synthetic: false,
+        },
+        now: "2026-11-13T10:07:33.123Z",
+        timeZone,
+      });
     });
 
     test("T5 version and an https or http panelUrl encode", () => {
       const url = "https://ea.example.ts.net/approvals?id=7f1c0d1e-0000-4000-8000-000000000001";
-      expect(() => encodeNoticeView("approval", approval({ version: 2, panelUrl: url }) as never)).not.toThrow();
-      expect(() =>
-        encodeNoticeView("approval", approval({ panelUrl: "http://localhost:8081/approvals" }) as never)
-      ).not.toThrow();
+      expect(encodeNoticeView("approval", approval({ version: 2, panelUrl: url }) as never)).toMatchObject({
+        view: { version: 2, panelUrl: url },
+      });
+      const local = "http://localhost:8081/approvals";
+      expect(encodeNoticeView("approval", approval({ panelUrl: local }) as never)).toMatchObject({
+        view: { panelUrl: local },
+      });
     });
 
     test.each([

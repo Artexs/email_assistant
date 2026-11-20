@@ -10,9 +10,15 @@ export interface MutantRow {
   column: number;
   mutator: string;
   replacement: string;
+  /** `line:column` of the end of the mutated code: two mutants can start at one place (`a && b` and `a`). */
+  end?: string;
   status: string;
   killedBy: string[];
 }
+
+/** The name of a mutant that two runs share: it does not change with the Stryker id or the order of the mutants. */
+export const mutantPlace = (m: MutantRow): string =>
+  `${m.file}:${m.line}:${m.column} ${m.mutator} ${m.replacement}${m.end === undefined ? "" : ` @${m.end}`}`;
 
 export interface CaseKills {
   testId: string;
@@ -55,12 +61,14 @@ export function readReport(json: unknown): MutationReport {
       const killedBy = Array.isArray(raw.killedBy)
         ? raw.killedBy.filter((id): id is string => typeof id === "string")
         : [];
+      const end = isRecord(raw.location) && isRecord(raw.location.end) ? raw.location.end : undefined;
       mutants.push({
         file: repoPath(path),
         line: asNumber(start.line),
         column: asNumber(start.column),
         mutator: asString(raw.mutatorName),
         replacement: asString(raw.replacement),
+        ...(end === undefined ? {} : { end: `${asNumber(end.line)}:${asNumber(end.column)}` }),
         status: asString(raw.status),
         killedBy: [...new Set(killedBy)],
       });
@@ -329,17 +337,16 @@ export interface Difference {
   second: string;
 }
 
-// Two runs on one commit: mutants compare by (file, line, column, mutator, replacement); a mutant that is in
+// Two runs on one commit: mutants compare by (file, line, column, mutator, replacement, end); a mutant that is in
 // one run only is a difference too.
 export function compareRuns(
   first: MutantRow[],
   second: MutantRow[]
 ): { first: number; second: number; differences: Difference[] } {
-  const place = (m: MutantRow): string => `${m.file}:${m.line}:${m.column} ${m.mutator} ${m.replacement}`;
   const left = new Map<string, string>();
   const right = new Map<string, string>();
-  for (const m of first) left.set(place(m), m.status);
-  for (const m of second) right.set(place(m), m.status);
+  for (const m of first) left.set(mutantPlace(m), m.status);
+  for (const m of second) right.set(mutantPlace(m), m.status);
   const differences: Difference[] = [];
   for (const mutant of [...new Set([...left.keys(), ...right.keys()])].sort()) {
     const a = left.get(mutant) ?? "absent";
