@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -50,12 +49,36 @@ describe("main", () => {
     expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
   });
 
-  // main.ts and the job runner stamp the release on every JSON line.
-  test("main.ts and the job-run script call setLogRelease with the config value", () => {
-    expect(readFileSync(mainPath, "utf8")).toContain("setLogRelease(config.EA_RELEASE);");
-    expect(readFileSync(join(import.meta.dir, "scripts", "job-run.ts"), "utf8")).toContain(
-      "setLogRelease(config.EA_RELEASE);"
-    );
+  // The release stamp: the entry point reads EA_RELEASE before it logs, so every JSON line carries it. The job-run
+  // half is in `test/integration/job-run-cli.test.ts`.
+  test("every JSON line of main.ts carries EA_RELEASE", async () => {
+    const proc = Bun.spawn(["bun", mainPath], {
+      cwd: tmpdir(),
+      env: {
+        PATH: process.env.PATH ?? "",
+        DATABASE_URL: "postgres://app:x@127.0.0.1:1/x",
+        CREDENTIALS_KEY: Buffer.alloc(32, 1).toString("base64"),
+        EA_RELEASE: "test-r1",
+        LOG_FORMAT: "json",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [exitCode, stdout, stderr] = await Promise.all([
+      proc.exited,
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    const lineOf = (text: string, event: string) =>
+      text
+        .split("\n")
+        .filter((line) => line.startsWith("{"))
+        .map((line) => JSON.parse(line) as { event?: string; release?: string })
+        .find((entry) => entry.event === event);
+
+    expect(exitCode).toBe(1);
+    expect(lineOf(stdout, "features_off")?.release).toBe("test-r1");
+    expect(lineOf(stderr, "db_role_check_failed")?.release).toBe("test-r1");
   });
 
   // The disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
