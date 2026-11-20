@@ -221,10 +221,6 @@ const sizeIgnores = [
   "tools/*/test/**",
 ];
 const sizeOptions = (max) => ({ max, skipBlankLines: false, skipComments: false });
-// Temporary exceptions (the plan of spec/features/active/F143-*, decision "Temporary exceptions"): `size-exceptions.json` lists the
-// files over 800 lines that a later stage splits. The stage that splits a file deletes its entry; the stage that deletes the last
-// entry deletes the JSON file, this read and the exceptions block below.
-const sizeExceptions = JSON.parse(readFileSync(path.resolve(__dirname, "size-exceptions.json"), "utf8"));
 
 // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
 // server files: flat config replaces the options of a rule, so a second block with this rule would drop these selectors.
@@ -385,10 +381,6 @@ export default tseslint.config(
     ignores: sizeIgnores,
     plugins: { size: sizePlugin },
     rules: { "max-lines": ["warn", sizeOptions(400)], "size/max-lines-hard": ["error", sizeOptions(800)] },
-  },
-  {
-    files: sizeExceptions.map(({ file }) => file),
-    rules: { "size/max-lines-hard": "off" },
   },
   {
     files: ["apps/web/src/env.d.ts"],
