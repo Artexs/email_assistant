@@ -11,7 +11,8 @@ export const OUTSIDE_SERVICE_KEYS: Readonly<Record<string, string | { exempt: st
   TELEGRAM_BOT_TOKEN: "telegram",
   OPENAI_API_KEY: "openai",
   DEEPSEEK_API_KEY: {
-    exempt: "dev, tests and evals only; config refuses LLM_PROVIDER=deepseek with TRIAGE_LLM_SCOPE=all (F141 P4)",
+    exempt:
+      "dev, tests and evals only; config refuses LLM_PROVIDER=deepseek with TRIAGE_LLM_SCOPE=all (the config refusal)",
   },
   OPENAI_OWN_API_KEY: { exempt: "the key of an LLM server that the operator runs; it never reaches OpenAI" },
   OPENAI_BASE_URL: "openai",
@@ -22,7 +23,7 @@ export const OUTSIDE_SERVICE_KEYS: Readonly<Record<string, string | { exempt: st
   MAIL_OAUTH_GOOGLE_CLIENT_ID: "google-oauth",
   MAIL_OAUTH_GOOGLE_CLIENT_SECRET: "google-oauth",
   VAPID_PUBLIC_KEY: {
-    exempt: "the public half of the own Web Push identity of this install; it names no outside service (F118)",
+    exempt: "the public half of the own Web Push identity of this install; it names no outside service",
   },
   // The secret half signs each push request; the row `web-push` is active when it is set.
   VAPID_PRIVATE_KEY: "web-push",

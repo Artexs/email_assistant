@@ -172,7 +172,7 @@ const g5: Row = {
       from: login,
       to,
       subject: "EA spike G5",
-      text: "Test mail of the F117 spike. Delete it.",
+      text: "Test mail of the mail OAuth spike. Delete it.",
       messageId,
       actionId: randomToken(9),
     });

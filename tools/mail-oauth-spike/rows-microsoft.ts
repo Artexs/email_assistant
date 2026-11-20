@@ -233,7 +233,7 @@ async function graphSend(
     to: plusAddress(ctx.env.ownerAddress, "ea-spike"),
     ...(spec.bcc === undefined ? {} : { bcc: spec.bcc }),
     subject: spec.subject,
-    text: "Test mail of the F117 spike. Delete it.",
+    text: "Test mail of the mail OAuth spike. Delete it.",
     messageId: spec.messageId,
     actionId: spec.actionId,
   });

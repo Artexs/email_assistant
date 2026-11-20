@@ -119,7 +119,7 @@ function rowSettings(config: LlmConfig, id: LlmProviderId): LlmRowSettings | nul
   }
 }
 
-const REMOVED_KEY_MESSAGE = "removed: every role uses the tiers of LLM_PROVIDER (F141); delete this line";
+const REMOVED_KEY_MESSAGE = "removed: every role uses the tiers of LLM_PROVIDER; delete this line";
 
 // An old `.env` must not change a model by accident: a removed key with a value stops config, also when the value
 // equals the new one. The message names the key and never holds the value.

@@ -51,7 +51,7 @@
     {
       "from": "replies",
       "to": "actions",
-      "why": "The drafter job writes a reply draft as an action pair and closes it (F115 stages 05 to 09)."
+      "why": "The drafter job writes a reply draft as an action pair and closes it."
     },
     { "from": "replies", "to": "triage", "why": "Replies read the prompt registry and the suspicion of a mail." },
     { "from": "channels", "to": "reports", "why": "The digest job and /status build the digest text from reports." }
