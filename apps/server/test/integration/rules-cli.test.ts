@@ -68,9 +68,9 @@ describe("rules:add", () => {
     expect(await auditRows()).toHaveLength(1);
   });
 
-  test("a pattern without a local part and a domain is refused with the usage", async () => {
+  test("a pattern without a local part and a domain is a usage error: exit 2 and the usage", async () => {
     const result = await runRules(["add", "--org-id", orgId, "--pattern", "@firma.test", "--kind", "vip"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stderr).toContain("usage:");
   });
 
