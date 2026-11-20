@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { WCAG_TAGS } from "../e2e/a11y";
+import { docsTestPort } from "../../server/src/scripts/e2e-job-env-args";
 import { builtPagePaths, distIsBuilt, DOCS_LOCAL_ORIGIN, DOCS_TEST_PORT, docsTestOrigin } from "../e2e/site";
 import { fileForPath, handle } from "../e2e/serve";
 
@@ -136,14 +137,19 @@ describe("the page list", () => {
 });
 
 describe("the wiring of the browser check", () => {
-  test("the port is 8093, fixed", () => {
-    expect(DOCS_TEST_PORT).toBe(8093);
+  test("the port is 8093 unless DOCS_TEST_PORT sets it", () => {
+    expect(docsTestPort({})).toBe(8093);
   });
 
   test("the config: one desktop Chromium 1280x800, the local server, no reuse, no server for DOCS_TEST_URL", async () => {
     const before = process.env.DOCS_TEST_URL;
+    const beforePort = process.env.DOCS_TEST_PORT;
     try {
       delete process.env.DOCS_TEST_URL;
+      process.env.DOCS_TEST_PORT = "28562";
+      const custom = (await import(`../e2e/playwright.config?custom=${Math.random()}`)).default;
+      expect(custom.webServer.url).toBe("http://127.0.0.1:28562/email_assistant/");
+      delete process.env.DOCS_TEST_PORT;
       const local = (await import(`../e2e/playwright.config?local=${Math.random()}`)).default;
       expect(local.testMatch).toBe("site.spec.ts");
       expect(local.projects).toHaveLength(1);
@@ -161,6 +167,8 @@ describe("the wiring of the browser check", () => {
     } finally {
       if (before === undefined) delete process.env.DOCS_TEST_URL;
       else process.env.DOCS_TEST_URL = before;
+      if (beforePort === undefined) delete process.env.DOCS_TEST_PORT;
+      else process.env.DOCS_TEST_PORT = beforePort;
     }
   });
 
