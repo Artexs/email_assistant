@@ -3,10 +3,10 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { join, resolve } from "node:path";
 
 import { loadRepoDotEnv } from "../../../server/src/scripts/e2e-job-env-args";
-import { ffmpegArgs } from "../lib/demo/encode";
+import { cutPlan, ffmpegArgs } from "../lib/demo/encode";
 import { parseRecordArgs, preflightProblem, videoProblem } from "../lib/demo/record-args";
 import { shotSource, type ShotSource } from "../lib/shot-source";
-import { DEMO_STEPS, toVtt, type DemoCue } from "../lib/demo/steps";
+import { DEMO_STEPS, stepView, toVtt, type DemoCue } from "../lib/demo/steps";
 import { resetDemoDb } from "./db-reset";
 
 // `bun run demo:record [--seed <file>] [--out <dir>]`: records the demo video on the e2e servers and the demo database, then encodes it.
@@ -14,8 +14,8 @@ import { resetDemoDb } from "./db-reset";
 // 1. Checks, before any server starts or any database changes: ffmpeg, a named seed file, the demo database keys and name.
 // 2. Rebuilds the demo database (drop every object, `db:migrate`), so a second run starts from the same state.
 // 3. Runs `demo.config.ts` (Playwright): servers, seed, the eight steps in one recorded page; it writes the raw video and the cue times.
-// 4. Encodes `demo.mp4` (the first step is the start of the video), writes `demo.en.vtt` and `demo.pl.vtt` with the cue times shifted by
-//    that trim, and prints the duration, the size and the sha256 of `demo.mp4` and of both caption files (the owner pins the three hashes when the video goes public).
+// 4. Encodes `demo.mp4` (`cutPlan`: only the steps stay; the lead-in and every gap of 1 s or more between two steps are cut), writes
+//    `demo.en.vtt` and `demo.pl.vtt` with the cue times on the cut timeline, and prints the duration, the size and the sha256 of `demo.mp4` and of both caption files (the owner pins the three hashes when the video goes public).
 // Exit 1 on a refusal, a failed run, an MP4 over 15 MB, or a length outside 100 to 130 seconds. Run it under
 // `flock /tmp/email-assistant-shared-tests.lock` (fixed ports, one shared mail server, one shared demo database).
 const repoRoot = resolve(import.meta.dirname, "../../../..");
@@ -84,19 +84,18 @@ async function main(): Promise<number> {
   if (cues.map((cue) => cue.stepId).join(",") !== DEMO_STEPS.map((step) => step.id).join(",")) {
     return fail("demo_cues_mismatch");
   }
-  // The video starts at the first step: later cue times count from there.
-  const trimStartMs = cues[0]?.startMs ?? 0;
-  const shifted = cues.map((cue) => ({ ...cue, startMs: cue.startMs - trimStartMs, endMs: cue.endMs - trimStartMs }));
+  // Only the steps stay in the video: the lead-in and the long gaps are cut, and the cues move onto the cut timeline.
+  const cut = cutPlan(cues);
   const mp4 = join(args.out, "demo.mp4");
-  writeFileSync(join(args.out, "demo.en.vtt"), toVtt(shifted, "en"));
-  writeFileSync(join(args.out, "demo.pl.vtt"), toVtt(shifted, "pl"));
+  writeFileSync(join(args.out, "demo.en.vtt"), toVtt(cut.cues, "en", source.kind));
+  writeFileSync(join(args.out, "demo.pl.vtt"), toVtt(cut.cues, "pl", source.kind));
   const encoded = await run(
     [
       "ffmpeg",
       "-hide_banner",
       "-loglevel",
       "error",
-      ...ffmpegArgs({ input: join(work, "raw.webm"), output: mp4, trimStartMs }),
+      ...ffmpegArgs({ input: join(work, "raw.webm"), output: mp4, segments: cut.segments }),
     ],
     process.env
   );
@@ -123,8 +122,9 @@ async function main(): Promise<number> {
   print(`caption_sha256 en ${captionSha256("en")}`);
   print(`caption_sha256 pl ${captionSha256("pl")}`);
   print(
-    `not_live ${DEMO_STEPS.filter((step) => !step.live)
-      .map((step) => step.id)
+    `not_live ${DEMO_STEPS.map((step) => stepView(step, source.kind))
+      .filter((view) => !view.live)
+      .map((view) => view.id)
       .join(",")}`
   );
   print(`files ${mp4} ${join(args.out, "demo.en.vtt")} ${join(args.out, "demo.pl.vtt")}`);
