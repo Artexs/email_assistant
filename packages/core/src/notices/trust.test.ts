@@ -286,6 +286,31 @@ describe("the links of a trust notice (TG1)", () => {
     expect(goodSettings(value)).toBe(false);
   });
 
+  test.each([
+    ["a query", `${settingsUrl}?x=1`],
+    ["a trailing slash", `${settingsUrl}/`],
+    ["a longer path", `${settingsUrl}/page`],
+    ["a control character", `${settingsUrl}\u0001`],
+    ["no URL at all", "not a url"],
+  ])("the settings link schema refuses %s", (_name, value) => {
+    expect(trustSettingsUrlSchema.safeParse(value).success).toBe(false);
+  });
+
+  test.each([
+    ["36 characters that are not a uuid", `${host}/report?mailbox=${"0".repeat(36)}`],
+    ["a uuid with an upper-case letter", `${host}/report?mailbox=${mailboxId.replace("2222", "222A")}`],
+    ["a uuid and more text", `${host}/report?mailbox=${mailboxId}0`],
+    ["a trailing slash", `${host}/report/?mailbox=${mailboxId}`],
+    ["a name before the mailbox", `${host}/report?x=1&mailbox=${mailboxId}`],
+  ])("the report link schema refuses %s", (_name, value) => {
+    expect(trustReportUrlSchema.safeParse(value).success).toBe(false);
+  });
+
+  test("the two link schemas accept exactly the plain forms", () => {
+    expect(trustSettingsUrlSchema.safeParse("https://app.test/settings").success).toBe(true);
+    expect(trustReportUrlSchema.safeParse(`https://app.test/report?mailbox=${mailboxId}`).success).toBe(true);
+  });
+
   test("a report link of another mailbox than the view is refused", () => {
     expect(good(`${host}/report?mailbox=99999999-9999-4999-8999-999999999999`)).toBe(false);
   });

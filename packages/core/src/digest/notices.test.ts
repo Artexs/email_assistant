@@ -71,6 +71,26 @@ describe("renderUrgentNotice", () => {
     expect(renderUrgentNotice({ ...urgent, aiText: null }, textTables.en).text).not.toContain("💬");
   });
 
+  test("with no AI text the notice has no empty line", () => {
+    expect(renderUrgentNotice({ ...urgent, aiText: null }, textTables.en).text.split("\n")).toEqual([
+      "🔴 Urgent mail",
+      "From: Ann <ann@firma.test>",
+      "Subject: Server down",
+      "Received 07:42",
+      "→ would flag",
+    ]);
+  });
+
+  test("a delegable mail has the Delegate button in the first row", () => {
+    expect(renderUrgentNotice({ ...urgent, delegable: true }, textTables.en).buttons).toEqual([
+      [
+        { text: "✅ Right", data: `fr:u:${ID}` },
+        { text: "✏️ Change", data: `fe:${ID}` },
+        { text: "👥 Delegate", data: `dg:${ID}` },
+      ],
+    ]);
+  });
+
   test("marks a test mail", () => {
     const first = renderUrgentNotice({ ...urgent, synthetic: true }, textTables.en).text.split("\n")[0];
     expect(first?.endsWith("· 🧪 test")).toBe(true);
@@ -369,6 +389,17 @@ describe("other notices", () => {
     expect(message.buttons).toEqual([]);
   });
 
+  test("sync late with a last good sync prints its clock, in three lines", () => {
+    expect(
+      renderSyncStaleNotice(
+        { address: "me@firma.test", lastSyncedAt: new Date("2026-11-05T06:00:00Z"), now, timeZone },
+        textTables.en
+      ).text
+    ).toBe(
+      "⚠️ Mail sync is late for me@firma.test.\nLast good sync: 5 Nov 07:00. The system keeps trying.\n/status shows the state."
+    );
+  });
+
   test("sync works again", () => {
     const message = renderSyncOkNotice(
       {
@@ -467,6 +498,57 @@ describe("renderActionFailedNotice", () => {
     expect(lines({ ...base, folderName: null })[0]).toBe("⚠️ Could not move a mail");
   });
 
+  test.each([
+    ["move", false, "Tried 3 times. The mail stays in INBOX. /status shows the mailbox state."],
+    ["flag", false, "Tried 3 times. /status shows the mailbox state."],
+    ["mark_read", false, "Tried 3 times. /status shows the mailbox state."],
+    ["create_draft", false, "Tried 3 times. /status shows the mailbox state."],
+    ["move", true, "Tried 3 times. The mail stays in AI/Info: move it by hand. /status shows the mailbox state."],
+    ["flag", true, "Tried 3 times. /status shows the mailbox state."],
+    ["mark_read", true, "Tried 3 times. /status shows the mailbox state."],
+    [
+      "create_draft",
+      true,
+      "Tried 3 times. The draft stays in Drafts: delete it by hand. /status shows the mailbox state.",
+    ],
+  ] as const)("the last line of a %s with reverse %s", (actionType, reverse, last) => {
+    expect(lines({ ...base, actionType, reverse }).at(-1)).toBe(last);
+  });
+
+  test("a follow-up that failed or may have gone out is one fixed line, with the panel link when set", () => {
+    const render = (cause: "failed" | "unknown", panelUrl?: string) =>
+      renderActionFailedNotice({ followUp: { cause, panelUrl } }, textTables.en);
+    expect(render("failed")).toEqual({ text: "⚠️ A follow-up could not be sent. Nothing went out.", buttons: [] });
+    expect(render("unknown", "https://app.test/approvals")).toEqual({
+      text: [
+        "⚠️ A follow-up may have been sent: the connection broke after the text went out. Check your Sent folder before you write another.",
+        "Open in panel: https://app.test/approvals",
+      ].join("\n"),
+      buttons: [],
+    });
+  });
+
+  test.each([
+    ["an original move with a folder names the folder", { reason: "other" }, "⚠️ Could not move a mail to AI/Info"],
+    [
+      "an original move after bad_payload does not name the folder",
+      { reason: "bad_payload" },
+      "⚠️ Could not move a mail",
+    ],
+    [
+      "a reverse move names the source folder",
+      { reverse: true },
+      "⚠️ Undo failed: could not move a mail back to INBOX",
+    ],
+    [
+      "a reverse move that finds no mail names the source folder",
+      { reverse: true, reason: "mail_not_found" },
+      "⚠️ Undo failed: could not move a mail back to INBOX",
+    ],
+  ] as const)("the first line: %s", (_name, patch, first) => {
+    expect(lines({ ...base, ...patch })[0]).toBe(first);
+  });
+
   test("marks a test mail after the first line only", () => {
     expect(lines({ ...base, synthetic: true })[1]).toBe("🧪 test");
     expect(renderActionFailedNotice(base, textTables.en).text).not.toContain("🧪");
@@ -489,6 +571,18 @@ describe("renderSendHeldNotice", () => {
       text: "⏸ Sends from boss@x.test wait: the hourly send limit of this mailbox is reached.\n3 waiting; the next one goes out at about 11:10.",
       buttons: [],
     });
+  });
+
+  test("a follow-up hold is two lines, with the panel link as a third line only when set", () => {
+    const held = { ...base, followUps: true };
+    const first = "⏸ A follow-up waits: the hourly send limit of this mailbox is reached.";
+    expect(renderSendHeldNotice(held, textTables.en)).toEqual({
+      text: `${first}\n3 waiting; the next one goes out at about 11:10.`,
+      buttons: [],
+    });
+    expect(renderSendHeldNotice({ ...held, panelUrl: "https://app.test/approvals" }, textTables.en).text).toBe(
+      `${first}\n3 waiting; the next one goes out at about 11:10.\nOpen in panel: https://app.test/approvals`
+    );
   });
 
   test("the two other limits have their own text", () => {

@@ -334,3 +334,48 @@ describe("quietEnd on a daylight-saving day", () => {
     // The loop is CPU bound; on a loaded machine it needs more than the default 5 s.
   }, 60_000);
 });
+
+describe("localToInstant and startOfLocalDay on the change days of Warsaw", () => {
+  test.each([
+    ["a winter day", "2026-03-02", "09:00", "2026-03-02T08:00:00.000Z"],
+    ["a time in the spring gap: the wall clock reads 03:30", "2026-03-29", "02:30", "2026-03-29T01:30:00.000Z"],
+    ["a time in the autumn hour that repeats: the later instant", "2026-10-25", "02:30", "2026-10-25T01:30:00.000Z"],
+  ])("%s", (_name, date, time, instant) => {
+    expect(iso(localToInstant(date, time, TZ))).toBe(instant);
+  });
+
+  test("the first instant of the autumn change day is local midnight", () => {
+    expect(iso(startOfLocalDay("2026-10-25", TZ))).toBe("2026-10-24T22:00:00.000Z");
+  });
+});
+
+describe("lateMin at the edge of the range", () => {
+  const from = new Date("2026-03-02T12:00:00Z");
+
+  test.each([
+    ["to equal to from", "2026-03-02T12:00:00Z", 0],
+    ["to one minute before from", "2026-03-02T11:59:00Z", 0],
+    ["to one minute after from", "2026-03-02T12:01:00Z", 1],
+  ])("%s", (_name, to, minutes) => {
+    expect(lateMin(from, new Date(to), TZ)).toBe(minutes);
+  });
+});
+
+describe("a quiet window that does not wrap midnight", () => {
+  const window = { start: "12:00", end: "14:00" };
+  const at = (time: string) => new Date(`2026-11-20T${time}:00Z`); // Warsaw is one hour ahead of UTC
+
+  test.each([
+    ["one minute before the start", "10:59", false],
+    ["the start", "11:00", true],
+    ["inside", "12:00", true],
+    ["one minute before the end", "12:59", true],
+    ["the end", "13:00", false],
+  ])("isQuietTime %s", (_name, time, quiet) => {
+    expect(isQuietTime(at(time), TZ, window)).toBe(quiet);
+  });
+
+  test("lateMin takes the window off a range that spans it", () => {
+    expect(lateMin(at("09:00"), at("15:00"), TZ, window)).toBe(240);
+  });
+});
