@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { costPerMail, type CaseText, type LiveRunPlan, type Slot } from "@ea/core";
+import { costPerMail, type CaseText, type LiveRunPlan, type Slot, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, setDefaultTimeout, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -52,10 +52,10 @@ afterAll(async () => {
 });
 
 let dir = "";
-let clock = new Date(T0.getTime() + 60_000);
+let clock = new Date(T0.getTime() + MINUTE_MS);
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "f113-s11-int-"));
-  clock = new Date(T0.getTime() + 60_000);
+  clock = new Date(T0.getTime() + MINUTE_MS);
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -250,7 +250,7 @@ describe("lab serve wiring (stage 11)", () => {
   test("at the tail end the run finishes with done: one ledger line with the spend of the run org only", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const at = new Date(T0.getTime() + 10 * 60_000);
+      const at = new Date(T0.getTime() + 10 * MINUTE_MS);
       await llmCall(trx, w.orgA, at);
       await llmCall(trx, w.orgA, at);
       // Five calls of the other org: they never count.
@@ -275,7 +275,7 @@ describe("lab serve wiring (stage 11)", () => {
   test("the spend at the cap stops the run before any part runs", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, { capUsd: 0.0001 });
-      await llmCall(trx, w.orgA, new Date(T0.getTime() + 5 * 60_000));
+      await llmCall(trx, w.orgA, new Date(T0.getTime() + 5 * MINUTE_MS));
       await serveTick(w.serveDeps(), new Map());
       expect(w.state.events(RUN).filter((event) => event.t === "stopped")).toMatchObject([{ reason: "budget" }]);
       expect(w.state.events(RUN).some((event) => event.t === "inject_intent" || event.t === "seen")).toBe(false);

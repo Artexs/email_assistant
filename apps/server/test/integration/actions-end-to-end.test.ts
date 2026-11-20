@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { encodeCallback } from "@ea/core";
+import { encodeCallback, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -27,10 +27,9 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
 const NOW = new Date("2026-11-07T12:00:00Z");
-const RECEIVED = new Date(NOW.getTime() - 2 * HOUR);
-const SINCE = new Date(RECEIVED.getTime() - 24 * HOUR);
+const RECEIVED = new Date(NOW.getTime() - 2 * HOUR_MS);
+const SINCE = new Date(RECEIVED.getTime() - DAY_MS);
 const MESSAGE_ID = "<e2e-1@x.test>";
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -101,7 +100,7 @@ async function setup(trx: Transaction<DB>): Promise<Setup> {
       userId: box.userId,
       role: "owner",
       chatId: 1,
-      linkedAt: new Date(NOW.getTime() - HOUR),
+      linkedAt: new Date(NOW.getTime() - HOUR_MS),
       locale: "en",
     },
   };

@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertSenderRule } from "../../src/modules/config/repo";
@@ -58,7 +59,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
       await seed(trx, org, "anna@acme.pl", mails(8, 6));
       await refresh(trx, org);
       await refresh(trx, org);
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["open:vip:address:anna@acme.pl"]);
     });
   });
@@ -69,7 +70,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
       await seed(trx, org, "anna@acme.pl", mails(8, 6));
       await refresh(trx, org);
       await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "anna@acme.pl", kind: "vip" });
-      const later = new Date(NOW.getTime() + 3_600_000);
+      const later = new Date(NOW.getTime() + HOUR_MS);
       await refresh(trx, org, later);
       const rows = await rowsOf(trx, org);
       expect(rows).toHaveLength(1);
@@ -89,7 +90,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
       await insertSenderRule(trx, org.ctx, { mailboxId: null, pattern: "anna@acme.pl", kind: "vip" });
       await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "corp.pl", kind: "vip" });
       await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "third.pl", kind: "whitelist" });
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       // A whitelist rule does not cover a VIP suggestion: only the VIP rules do.
       expect(summary(await rowsOf(trx, org))).toEqual([
         "open:vip:address:cy@third.pl",
@@ -106,7 +107,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
       await seed(trx, org, "anna@acme.pl", mails(8, 6));
       await refresh(trx, org);
       await insertSenderRule(trx, org.ctx, { mailboxId: other.mailboxId, pattern: "anna@acme.pl", kind: "vip" });
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["open:vip:address:anna@acme.pl"]);
     });
   });
@@ -146,7 +147,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
         .set({ status: "dismissed", pattern: null, ended_at: NOW })
         .where("id", "=", first[0]?.id ?? "")
         .execute();
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(await openOf(trx, org)).toHaveLength(2);
       // The other mailbox had no row yet, so it gets its own three.
       await refresh(trx, { ...org, mailboxId: other.mailboxId });
@@ -249,7 +250,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
         "anna@acme.pl",
         [1, 2, 3, 4].map((day) => ({ at: ago(day, 1), answered: false }))
       );
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["open:vip:address:anna@acme.pl"]);
 
       // List headers on most of the mail make the sender bulk.
@@ -265,7 +266,7 @@ describe("the suggestion step: VIP and the life of a row", () => {
           })
           .execute();
       }
-      await refresh(trx, org, new Date(NOW.getTime() + 2 * 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + 2 * HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:vip:address:null"]);
     });
   });
@@ -279,11 +280,11 @@ describe("the suggestion step: never conditions", () => {
       await refresh(trx, org);
       expect(await openOf(trx, org)).toHaveLength(1);
       await seed(trx, org, "anna@acme.pl", [{ at: ago(1, 1), category: "info", suspicious: true }]);
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:vip:address:null"]);
 
       await seed(trx, org, "carl@corp.pl", [...rescuedMails(), { at: ago(3), category: "info", suspicious: true }]);
-      await refresh(trx, org, new Date(NOW.getTime() + 2 * 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + 2 * HOUR_MS));
       expect(summary(await openOf(trx, org))).toEqual([]);
     });
   });
@@ -300,7 +301,7 @@ describe("the suggestion step: never conditions", () => {
       expect(rows[0]?.reason).toEqual({ rescued: 2 });
       // The block rule for carl ends his open whitelist row.
       await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "corp.pl", kind: "blocklist" });
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:whitelist:address:null"]);
     });
   });
@@ -332,7 +333,7 @@ describe("the suggestion step: never conditions", () => {
         "mixed@acme.pl",
         spamMails().map((mail) => ({ ...mail, at: ago(5) }))
       );
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:whitelist:address:null"]);
     });
   });
@@ -359,7 +360,7 @@ describe("the suggestion step: blocklist and Sent coverage", () => {
       await refresh(trx, org);
       expect(await openOf(trx, org)).toHaveLength(1);
       await seedSenderActivity(trx, org.ctx, org.mailboxId, { sent: [{ at: ago(3), to: ["spam@bad.pl"] }] });
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:blocklist:address:null"]);
     });
   });
@@ -371,7 +372,7 @@ describe("the suggestion step: blocklist and Sent coverage", () => {
       await refresh(trx, org);
       expect(await rowsOf(trx, org)).toEqual([]);
       await insertSuggestion(trx, org, { value: "spam@bad.pl", kind: "blocklist", createdAt: ago(8) });
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:blocklist:address:null"]);
     });
   });
@@ -472,7 +473,7 @@ describe("the suggestion step: domain rows", () => {
       await refresh(trx, org);
       expect(summary(await openOf(trx, org))).toEqual(["open:whitelist:domain:@acme.pl"]);
       await seed(trx, org, "c@acme.pl", [{ at: ago(1, 3), category: "info", suspicious: true }]);
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual([
         "open:whitelist:address:a@acme.pl",
         "open:whitelist:address:b@acme.pl",
@@ -489,7 +490,7 @@ describe("the suggestion step: domain rows", () => {
       await refresh(trx, org);
       expect(summary(await openOf(trx, org))).toEqual(["open:blocklist:domain:@acme.pl"]);
       // The last Sent pass is now 25 hours old at the next pass.
-      await refresh(trx, org, new Date(NOW.getTime() + 25 * 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + 25 * HOUR_MS));
       expect(summary(await rowsOf(trx, org))).toEqual(["withdrawn:blocklist:domain:null"]);
     });
   });
@@ -554,7 +555,7 @@ describe("the suggestion step: eligibility and frozen mailboxes", () => {
         await trx.updateTable("mailboxes").set({ status }).where("id", "=", org.mailboxId).execute();
         await seed(trx, org, "bob@corp.pl", mails(8, 6));
         await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "anna@acme.pl", kind: "vip" });
-        await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+        await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
         // No new row for bob, and the covered row is not withdrawn: the step did not run.
         expect(summary(await rowsOf(trx, org))).toEqual(["open:vip:address:anna@acme.pl"]);
         // The profiles are still written (the job, not the pass, skips a mailbox that is not active).
@@ -577,7 +578,7 @@ describe("the suggestion step: stored data", () => {
       await refresh(trx, org);
       await insertSenderRule(trx, org.ctx, { mailboxId: org.mailboxId, pattern: "anna@acme.pl", kind: "vip" });
       await insertSuggestion(trx, org, { value: "old@acme.pl", kind: "vip", createdAt: ago(40) });
-      await refresh(trx, org, new Date(NOW.getTime() + 3_600_000));
+      await refresh(trx, org, new Date(NOW.getTime() + HOUR_MS));
       const rows = await rowsOf(trx, org);
       expect(rows.length).toBeGreaterThanOrEqual(4);
       for (const row of rows) {
