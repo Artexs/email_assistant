@@ -9,10 +9,10 @@ import { ago, newOrg, NOW, type Org, type Trx } from "./contacts-fixtures";
 import { insertDelegate, insertDelegation, insertDraftAndSend, seedSenderActivity, type SeededSent } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 
-// The characterization of `readSenderActivity` as it is before the sender activity read is split into readers owned by the
-// mail, triage and delegation modules (feature folder `spec/features/active/F144-*`, `plan.md`): the whole output of the full
-// pass and of both scopes, the number of executed statements of each, and the tenant border. The later stages of that plan
-// keep this file unchanged: a failure here means that a moved reader changed a value, a row or a statement.
+// The characterization of `readSenderActivity` as it is before its SQL is split into readers owned by the mail, triage and
+// delegation modules (the plan of that split is in `spec/features/active`): the whole output of the full pass and of both
+// scopes, the number of executed statements of each, and the tenant border. The later stages of the plan keep this file
+// unchanged: a failure here means that a moved reader changed a value, a row or a statement.
 const db = testDb();
 afterAll(async () => {
   await db.destroy();
