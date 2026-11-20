@@ -1,5 +1,4 @@
 import {
-  categorySchema,
   DAY_MS,
   isNoreplyAddress,
   matchSender,
@@ -18,12 +17,14 @@ import { listDelegateAddresses } from "../delegation";
 import {
   incomingCountsBySender,
   ownAddressesOf,
-  senderWindow,
+  repliedBySentBySender,
+  sentCountsByRecipient,
   theirReplyDelaysBySender,
   userReplyDelaysBySender,
   type SenderScope,
   type TestMailRule,
 } from "../mail";
+import { newestFeedbackBySender, newestResultsBySender } from "../triage";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -89,22 +90,7 @@ export interface ReadActivityOptions {
   only?: ActivityScope;
 }
 
-const escapeLike = (value: string): string => value.replace(/[\\%_]/g, "\\$&");
-
-// The SQL condition of a scope on an address expression; empty without a scope. A domain scope is a prefilter (host equals the
-// domain or ends with `.domain`); the exact registrable domain is checked on the rows afterwards.
-function scopeCondition(only: ActivityScope | undefined, address: ReturnType<typeof normalizedAddress>) {
-  if (only === undefined) return sql``;
-  if ("address" in only) return sql`AND ${address} = ${only.address}`;
-  const domain = escapeLike(only.domain);
-  return sql`AND (${address} LIKE ${`%@${domain}`} OR ${address} LIKE ${`%.${domain}`})`;
-}
-
 const hostOf = (address: string): string => address.slice(address.lastIndexOf("@") + 1);
-
-// `Auto-Submitted` other than `no` marks an automatic mail (RFC 3834). The column is a trusted literal.
-const notAutomatic = (column: string) =>
-  sql.raw(`(${column} IS NULL OR btrim(${column}) = '' OR lower(btrim(split_part(${column}, ';', 1))) = 'no')`);
 
 const emptyActivity = (address: string): SenderActivity => ({
   address,
@@ -136,32 +122,7 @@ const emptyActivity = (address: string): SenderActivity => ({
   relation: "new",
 });
 
-interface CategoryRow {
-  addr: string;
-  category: string;
-  n: number;
-  suspicious: number;
-}
-
-interface FeedbackRow {
-  addr: string;
-  kind: "correction" | "moved_back" | "rescued";
-  category: string | null;
-  n: number;
-}
-
 const skipped = <T>(): { rows: T[] } => ({ rows: [] });
-
-interface RepliedRow {
-  addr: string;
-  n: number;
-}
-
-interface SentRow {
-  addr: string;
-  n: number;
-  last_at: Date;
-}
 
 interface DelegationRow {
   addr: string;
@@ -183,79 +144,25 @@ export async function readSenderActivity(
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const before7 = new Date(now.getTime() - 7 * DAY_MS);
 
-  // The incoming mails of the window: the mail module owns the select; the statements below embed it as the CTE `win`.
+  // The incoming mails of the window: the mail module owns the select; each reader below embeds it in its one statement.
   const windowOptions = { mailboxId, since, until: now, testMail, ...(only === undefined ? {} : { only }) };
-  const win = senderWindow(db, ctx, windowOptions);
-  // The newest triage result and the newest feedback row of each mail of the window. One `DISTINCT ON` pass over the mailbox
-  // (a hash join with the window), not one index probe per mail: the plan does not depend on the table statistics.
-  const newestResult = sql`
-    SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.category, cardinality(tr.suspicious_reasons) > 0 AS suspicious
-    FROM triage_results tr
-    JOIN win ON win.id = tr.email_id
-    WHERE tr.org_id = ${ctx.orgId}
-    ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
-  `;
-  const newestFeedback = sql`
-    SELECT DISTINCT ON (tf.email_id) tf.email_id, tf.verdict, tf.true_category, tf.source
-    FROM triage_feedback tf
-    JOIN win ON win.id = tf.email_id
-    WHERE tf.org_id = ${ctx.orgId}
-    ORDER BY tf.email_id, tf.created_at DESC, tf.id DESC
-  `;
-
   const own = await ownAddressesOf(db, ctx, mailboxId, { maxAliases: MAX_ALIASES });
   const rules = await listSenderRules(db, ctx, mailboxId);
   const delegateEmails = new Set((await listDelegateAddresses(db, ctx, { activeOnly: true })).map(normalizeAddress));
 
   const mails = await incomingCountsBySender(db, ctx, { ...windowOptions, since30, unseenBefore: before7 });
 
-  const categories = await sql<CategoryRow>`
-    WITH win AS (${win}), nt AS (${newestResult})
-    SELECT w.address AS addr, nt.category, count(*)::int AS n, (count(*) FILTER (WHERE nt.suspicious))::int AS suspicious
-    FROM win w
-    JOIN nt ON nt.email_id = w.id
-    GROUP BY w.address, nt.category
-  `.execute(db);
-
+  const categories = await newestResultsBySender(db, ctx, windowOptions);
   // The newest feedback of each mail and the newest triage category: one correction per mail (a later mark replaces an earlier).
-  const feedback = await sql<FeedbackRow>`
-    WITH win AS (${win}), nt AS (${newestResult}), nf AS (${newestFeedback}), fb AS (
-      SELECT w.address AS addr, nf.verdict, nf.true_category, nf.source, nt.category AS category
-      FROM win w
-      JOIN nf ON nf.email_id = w.id
-      LEFT JOIN nt ON nt.email_id = w.id
-    )
-    SELECT addr, 'correction' AS kind, true_category AS category, count(*)::int AS n
-    FROM fb WHERE verdict = 'wrong' AND true_category IS NOT NULL
-    GROUP BY addr, true_category
-    UNION ALL
-    SELECT addr, 'moved_back' AS kind, NULL AS category, count(*)::int AS n
-    FROM fb WHERE source = 'imap_move'
-    GROUP BY addr
-    UNION ALL
-    SELECT addr, 'rescued' AS kind, NULL AS category, count(*)::int AS n
-    FROM fb
-    WHERE category IN ('spam', 'notification')
-      AND (source = 'imap_move'
-        OR (verdict = 'wrong' AND true_category IS NOT NULL AND true_category NOT IN ('spam', 'notification')))
-    GROUP BY addr
-  `.execute(db);
+  const feedback = await newestFeedbackBySender(db, ctx, windowOptions);
 
   // The user's own mail (not system sends, not automatic replies) to each address in To or Cc, once per mail.
-  const sent = await sql<SentRow>`
-    SELECT ${normalizedAddress("a.addr")} AS addr, count(DISTINCT s.id)::int AS n, max(s.internal_date) AS last_at
-    FROM sent_emails s
-    CROSS JOIN LATERAL unnest(s.to_addresses || s.cc_addresses) AS a(addr)
-    WHERE s.org_id = ${ctx.orgId}
-      AND s.mailbox_id = ${mailboxId}
-      AND s.origin = 'user'
-      AND s.internal_date >= ${since}
-      AND s.internal_date <= ${now}
-      AND ${notAutomatic("s.auto_submitted")}
-      AND a.addr LIKE '%@%'
-      ${scopeCondition(only, normalizedAddress("a.addr"))}
-    GROUP BY ${normalizedAddress("a.addr")}
-  `.execute(db);
+  const sent = await sentCountsByRecipient(db, ctx, {
+    mailboxId,
+    since,
+    until: now,
+    ...(only === undefined ? {} : { only }),
+  });
 
   // The delays of the user's replies and of the replies to the user (the mail module owns both reads). A scope skips them.
   const userDelays =
@@ -263,22 +170,7 @@ export async function readSenderActivity(
 
   // The mails that the user answered with a Sent reply, whoever the reply went to (a reply goes to the Reply-To address, not
   // always to the sender). The profile counts `answered` from the IMAP flag only; this count is for the suggestion rules.
-  const replied = await sql<RepliedRow>`
-    WITH win AS (${win})
-    SELECT w.address AS addr, count(*)::int AS n
-    FROM win w
-    WHERE w.message_id_header IS NOT NULL AND EXISTS (
-      SELECT 1 FROM sent_emails s
-      WHERE s.org_id = ${ctx.orgId}
-        AND s.mailbox_id = ${mailboxId}
-        AND s.origin = 'user'
-        AND s.parent_message_id = w.message_id_header
-        AND s.sent_at > w.received_at
-        AND s.sent_at >= ${since}
-        AND ${notAutomatic("s.auto_submitted")}
-    )
-    GROUP BY w.address
-  `.execute(db);
+  const replied = await repliedBySentBySender(db, ctx, windowOptions);
 
   const theirDelays =
     only !== undefined ? [] : await theirReplyDelaysBySender(db, ctx, windowOptions, { maxHours: MAX_DELAY_HOURS });
@@ -333,31 +225,30 @@ export async function readSenderActivity(
       ...(row.autoSubmitted ? (["auto_submitted"] as const) : []),
     ];
   }
-  for (const row of categories.rows) {
-    const item = byAddress.get(row.addr);
+  for (const row of categories) {
+    const item = byAddress.get(row.address);
     if (item === undefined) continue;
-    item.byCategory[categorySchema.parse(row.category)] = row.n;
+    item.byCategory[row.category] = row.mails;
     item.suspicious90 += row.suspicious;
   }
-  for (const row of feedback.rows) {
-    const item = byAddress.get(row.addr);
+  for (const row of feedback) {
+    const item = byAddress.get(row.address);
     if (item === undefined) continue;
     if (row.kind === "correction" && row.category !== null) {
-      const category = categorySchema.parse(row.category);
-      item.corrections[category] = row.n;
-      if (category === "spam") item.correctedToSpam90 = row.n;
-    } else if (row.kind === "moved_back") item.movedBack = row.n;
-    else if (row.kind === "rescued") item.rescued90 = row.n;
+      item.corrections[row.category] = row.mails;
+      if (row.category === "spam") item.correctedToSpam90 = row.mails;
+    } else if (row.kind === "moved_back") item.movedBack = row.mails;
+    else if (row.kind === "rescued") item.rescued90 = row.mails;
   }
-  for (const row of sent.rows) {
-    const item = entry(row.addr);
+  for (const row of sent) {
+    const item = entry(row.address);
     if (item === null) continue;
-    item.userMailsTo = row.n;
-    item.lastUserMailAt = row.last_at;
+    item.userMailsTo = row.mails;
+    item.lastUserMailAt = row.lastAt;
   }
-  for (const row of replied.rows) {
-    const item = byAddress.get(row.addr);
-    if (item !== undefined) item.repliedBySent90 = row.n;
+  for (const row of replied) {
+    const item = byAddress.get(row.address);
+    if (item !== undefined) item.repliedBySent90 = row.mails;
   }
   for (const row of userDelays) {
     const item = byAddress.get(row.address);

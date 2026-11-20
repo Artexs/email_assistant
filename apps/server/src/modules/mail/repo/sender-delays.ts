@@ -88,7 +88,7 @@ const namedIds = sql<string[]>`COALESCE(
 )`;
 
 // Their delay: the time from a user Sent mail to the incoming mail of the window that names its Message-ID in In-Reply-To. One
-// sample per incoming mail, of the newest user Sent mail (before the mail; the larger id wins a tie on time) that it names.
+// sample per incoming mail, of the newest user Sent mail (before the mail; the smaller id wins a tie on time) that it names.
 // Edge rule: the Sent set has no Auto-Submitted filter and no date bound. A delay above `maxHours` is no sample.
 // Both CTEs are MATERIALIZED: the planner then builds the Sent set and the named ids once, whatever the table statistics say.
 export async function theirReplyDelaysBySender(

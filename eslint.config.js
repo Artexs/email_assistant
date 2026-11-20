@@ -250,6 +250,22 @@ const logEventSelectors = [
   },
 ];
 
+// CLI standard (docs/cli.md): a tool returns its exit code to `runCli` and prints through `createCliOutput`. The two exit sites and the
+// files of `cli-pending.json` (tools not converted yet; the list shrinks per stage) are outside the rule.
+const cliPending = Object.values(
+  JSON.parse(readFileSync(path.resolve(__dirname, serverSrc, "scripts/cli-pending.json"), "utf8"))
+).flat();
+const cliExitMessage = "Exit and raw output: runCli and createCliOutput (docs/cli.md).";
+// `no-restricted-properties` matches only a bare identifier as the object, so it cannot see `process.stdout.write`: selectors do.
+const cliProcessSelectors = [
+  { selector: 'MemberExpression[object.name="process"][property.name="exit"]', message: cliExitMessage },
+  {
+    selector:
+      'MemberExpression[object.object.name="process"][object.property.name=/^(stdout|stderr)$/][property.name="write"]',
+    message: cliExitMessage,
+  },
+];
+
 export default tseslint.config(
   includeIgnoreFile(gitignorePath),
   {
@@ -280,6 +296,17 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors], "no-console": "error" },
   },
   {
+    files: [`${serverSrc}/scripts/**/*.ts`],
+    ignores: ["**/*.test.ts", ...cliPending],
+    // Flat config replaces the options of a rule: the server scripts keep the log-line selectors.
+    rules: { "no-restricted-syntax": ["error", ...logEventSelectors, ...cliProcessSelectors] },
+  },
+  {
+    files: ["tools/*/src/**/*.ts"],
+    ignores: ["**/*.test.ts", "tools/fake-telegram/src/cli-run.ts", ...cliPending],
+    rules: { "no-restricted-syntax": ["error", ...cliProcessSelectors] },
+  },
+  {
     // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Warn while the rewrites land;
     // tests stay out until the test audit cuts them. The local plugin `ea` is registered here once: later local
     // rules join tools/eslint-rules/index.js (a second `ea` plugin object makes flat config fail).
@@ -293,7 +320,7 @@ export default tseslint.config(
       "**/e2e/**",
     ],
     plugins: { ea },
-    rules: { "ea/no-time-literals": "warn" },
+    rules: { "ea/no-time-literals": "error" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],

@@ -205,6 +205,8 @@ export {
   senderWindow,
   theirReplyDelaysBySender,
   userReplyDelaysBySender,
+  repliedBySentBySender,
+  sentCountsByRecipient,
 } from "./repo";
 export type {
   IncomingCounts,
@@ -212,6 +214,8 @@ export type {
   SenderScope,
   SenderWindow,
   SenderWindowOptions,
+  SentCount,
+  SentCountsOptions,
   EmailFlagsRow,
   EmailHeadersRow,
   HistoryCandidate,
