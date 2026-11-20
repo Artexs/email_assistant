@@ -35,8 +35,8 @@ export interface ClaimedAction {
     mailbox_id: string;
     folder: string;
     uid: number;
-    inbox_uid: number | null;
-    /** emails.source_folder. `inbox_uid` keeps its name: the last known UID in this folder. */
+    source_uid: number | null;
+    /** emails.source_folder. `source_uid` is the last known UID in this folder. */
     source_folder: string;
     message_id_header: string | null;
     content_hash: string;
@@ -250,7 +250,7 @@ export async function claimActions(
       "emails.id as mail_id",
       "emails.folder",
       "emails.uid",
-      "emails.inbox_uid",
+      "emails.source_uid",
       "emails.source_folder",
       "emails.message_id_header",
       "emails.content_hash",
@@ -291,7 +291,7 @@ export async function claimActions(
               mailbox_id: row.mailbox_id,
               folder: row.folder as string,
               uid: Number(row.uid),
-              inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+              source_uid: row.source_uid === null ? null : Number(row.source_uid),
               source_folder: row.source_folder as string,
               message_id_header: row.message_id_header,
               content_hash: row.content_hash as string,
