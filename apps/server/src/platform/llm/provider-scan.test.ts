@@ -14,7 +14,7 @@ const SCAN_ROOTS = ["apps/server/src", "packages/core/src", "apps/web/src", "too
 /** Path prefixes that may name providers. `packages/core/src/llm-providers.ts` does not exist until the core catalog stage. */
 export const REGISTRY_PATHS = ["apps/server/src/platform/llm/providers/", "packages/core/src/llm-providers.ts"];
 
-/** File path -> reason. `old site: stage NN` leaves the list in that stage; `stays: <reason>` is a permanent exception. */
+/** File path -> reason. Every entry is a permanent exception: `stays: <reason>`. */
 export const ALLOWED_SITES: Record<string, string> = {
   "apps/server/src/platform/outside-services.ts": "stays: a hand list by design, each outside key is a decision",
   "apps/server/src/scripts/e2e-seed-args.ts":
@@ -24,7 +24,7 @@ export const ALLOWED_SITES: Record<string, string> = {
   "packages/core/src/metrics/cost-model.ts": "stays: measured record (pilot weeks), not catalog data",
 };
 
-const REASON_FORMAT = /^(old site: stage 0[1-7]|stays: \S.*)$/;
+const REASON_FORMAT = /^stays: \S.*$/;
 
 const PROVIDERS = "openai|gemini|deepseek";
 
@@ -80,8 +80,7 @@ export function findProblems(files: Record<string, string>, allowed: Record<stri
     for (const hit of providerMatches(text)) unlisted.push(`${path} ${hit}`);
   }
   for (const [path, reason] of Object.entries(allowed)) {
-    if (!REASON_FORMAT.test(reason))
-      stale.push(`${path}: reason must be "old site: stage NN" or "stays: <reason>", got "${reason}"`);
+    if (!REASON_FORMAT.test(reason)) stale.push(`${path}: reason must be "stays: <reason>", got "${reason}"`);
     const text = files[path];
     if (text === undefined || providerMatches(text).length === 0)
       stale.push(`${path}: no provider match left, remove the entry`);
@@ -120,14 +119,14 @@ describe("provider scan", () => {
   });
 
   test("a listed file with no match is stale", () => {
-    const allowed = { "apps/server/src/platform/old.ts": "old site: stage 04" };
+    const allowed = { "apps/server/src/platform/old.ts": "stays: a test reason" };
     expect(findProblems({ "apps/server/src/platform/old.ts": "" }, allowed).stale).toEqual([
       "apps/server/src/platform/old.ts: no provider match left, remove the entry",
     ]);
     expect(findProblems({}, allowed).stale).toHaveLength(1);
   });
 
-  test("a listed reason has the old-site or stays form", () => {
+  test("a listed reason has the stays form", () => {
     const allowed = { "apps/server/src/platform/x.ts": "legacy" };
     const { stale } = findProblems({ "apps/server/src/platform/x.ts": '"openai"' }, allowed);
     expect(stale).toHaveLength(1);
