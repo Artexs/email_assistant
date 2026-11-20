@@ -36,6 +36,8 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md`
 5. `mailbox:audit` on a mailbox with a missing INBOX mail → exit 1 (was 2); its lines unchanged (update the existing audit test).
 6. Integration: the existing `mailbox:backfill` lock test and the seed test pass unchanged, apart from exit 1 → 2 for bad arguments.
 
+**Guard check:** call the config load at module level in `lib/mailbox-cli.ts` again → the standard test fails for `mailbox:seed` (spawn with `--no-env-file`); restore. Name both runs in the final message.
+
 ## Out of scope
 
 The sync and backfill logic; other mailbox tools (stage 07).

@@ -31,6 +31,8 @@ Part of [`../plan.md`](../plan.md). Decisions: D10, D13.
   2. `["send", …same…, "--smtp-host", "smtp.example.test", "--smtp-port", "465", "--to", "probe@example.test"]` → the send shape.
   3. `["move", "--smtp-host", "x"]` → usage error (send-only flag).
   4. `["drop"]` → usage error. 5. `--port 0` and `--port 70000` → usage error.
+6. Integration: `mailbox-probe.ts move` with `--address other@example.test` while `TEST_MAILBOX_ADDRESS` differs → refused, exit as today, no connection opened.
+- **Guard check:** remove the `TEST_MAILBOX_ADDRESS` check from the merged file → test 6 fails; restore. Name both runs in the final message.
 - **Done when:** `imap-probe-move.test.ts` and `imap-probe-send.test.ts` pass; docs that name the old file paths name `mailbox-probe.ts`.
 
 ## Step 3 — Name the four path-only entries

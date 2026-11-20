@@ -23,6 +23,8 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D13 (`--json-out`). Recip
   1. The existing "stops at the cap" test of each runner now expects 4.
   2. A drafter eval with a fake client that fails from case 2 and an error limit of 1 case → 4, and the ledger row is written as before.
 
+- **Guard check:** set the stop code back to 2 in one runner → test 1 fails for it; restore. Name both runs in the final message.
+
 ## Step 2 — `--json` becomes `--json-out <file>`
 
 - **Files:** `eval-args.ts` and its test, `evals/README.md`, `docs/capabilities/triage.md`, any script or doc that passes `--json` to `eval` (grep `eval .*--json`). `--sim-json` and `--real-json` keep their names (they read files, not stdout).
