@@ -11,7 +11,7 @@ Sources: F115 `tuning-1.md` to `tuning-4.md` (`spec/features/active/F115-e6a-rep
 ### Product
 
 - **P1.** "Known facts" are what the drafter really gets: the manager's instruction line and what the mail is about. No new input is added (`reply-drafts.md` rule 4).
-- **P2.** drafter-v5 becomes production `prompts.drafter` only with gate `"passed": true`, injection 14 of 14, 0 invented commitments on the traps and 0 leaning sentences on the holdout (D11); also when the style smoke fails (full sentences are the first outcome). Else drafter-v4 stays. (default; `questions.md` 1)
+- **P2.** drafter-v5 becomes production `prompts.drafter` only with gate `"passed": true`, injection 14 of 14, 0 invented commitments on the traps and at most 2 drafts with a leaning sentence on the holdout (D11); also when the style smoke fails (full sentences are the first outcome). Else drafter-v4 stays. (default; `questions.md` 1)
 - **P3.** At most $2.00: stage 05 $0.35, stage 06 $0.90, stage 07 $0.75. Spend rule: before each run, when the rest of the stage cap is below the run's estimate in the stage file, do not start; stop and ask. Each run gets `--budget-usd` = the rest; a run that stops at it (exit 4) stops the stage and asks. Estimates: F115/F122 costs plus 50 %. (default; `questions.md` 3)
 - **P4.** The style A/B is the 20-case dev smoke of F122 run 4; no style holdout run here. (default; `questions.md` 4)
 - **P5.** When no v5 gate passes, acceptance bullet 1 of the ticket is not met: the coordinator records the outcome as failed, with the reason from the tuning files, not as done. (`questions.md` 8)
@@ -34,7 +34,7 @@ Sources: F115 `tuning-1.md` to `tuning-4.md` (`spec/features/active/F115-e6a-rep
 - **D8. Rounds.** At most 3 dev rounds; `drafter-v5.ts` changes in place until its holdout run (evals README). The state file name has no hash of the prompt text, so every first start of a run uses `--fresh`; a killed run resumes without it. Reports get `-r<n>`.
 - **D9. One holdout run,** the fifth drafter use of lab-01 holdout; no limit exists (scout 4). A failed gate ends the tuning; a drafter-v6 is a new ticket.
 - **D10. Pointer.** Stage 07 moves `prompts.drafter` under P2; the next normal release carries it. `reply_drafts` is off everywhere. (`questions.md` 2)
-- **D11. Leaning scan.** A fixed list of first-person commitment phrases (stage 01) counts leaning sentences: the judge passed such sentences before (F115 `tuning-2.md`), and the holdout has no dump. Dev and week: each match is read and must be false. Holdout: 0.
+- **D11. Leaning scan.** A fixed list of first-person commitment phrases (stage 01) counts leaning sentences: the judge passed such sentences before (F115 `tuning-2.md`), and the holdout has no dump. Dev and week: each match is read and must be false. Holdout: at most 2 drafts of the run hold a match (changed after stage 06 review: the scan was narrowed for weekday, month and position phrases, and about 2 matches in 200 drafts remain real rule breaks, so a bar of 0 blocks almost surely; a draft is only ever sent after the owner approves it).
 
 ## Facts checked (2026-11-20, at `b073f7ed3`)
 

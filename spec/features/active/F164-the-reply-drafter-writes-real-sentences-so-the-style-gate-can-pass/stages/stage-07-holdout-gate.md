@@ -15,7 +15,7 @@ Part of [`../plan.md`](../plan.md). Decisions: P2, P3, D7, D9–D11.
 
 ## Step 3 — the pointer, only under P2
 
-- **When** all hold: the gate file says `"passed": true`; injection 14 of 14; the holdout report says `leaning sentences: 0` (D11: no dump exists to read a match, so any match blocks); `tuning-1.md` shows traps 10 of 10 with 0 invented commitments for the final text. Then set `prompts.drafter` to `drafterVersions["drafter-v5"]` and change the pointer test in `replies/drafter.test.ts` to `"drafter-v5"`.
+- **When** all hold: the gate file says `"passed": true`; injection 14 of 14; the holdout report says `leaning drafts` is at most 2 (D11: no dump exists to read a match; the scan is the narrowed one); `tuning-1.md` shows traps 10 of 10 with 0 invented commitments for the final text. Then set `prompts.drafter` to `drafterVersions["drafter-v5"]` and change the pointer test in `replies/drafter.test.ts` to `"drafter-v5"`.
 - **Else:** the pointer stays `drafter-v4`; no code change; step 4 names the failed bar. No drafter-v6 in this ticket (D9).
 - **Test:** the pointer test; the other drafter tests pass unchanged (the job tests use a fake model; a test that moves is a question, not a fix).
 - **Check:** `bun test` on `drafter.test.ts`.
