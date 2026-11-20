@@ -111,9 +111,9 @@ export function rowsToTsv(rows: readonly KeyRow[]): string {
 }
 
 async function findAuditDir(root: string): Promise<string> {
-  const glob = new Bun.Glob("spec/features/active/F125-*/audit");
-  for await (const hit of glob.scan({ cwd: root, onlyFiles: false })) return path.join(root, hit);
-  throw new Error("cut-keys: no audit folder under spec/features/active/F125-*; pass --audit <dir>");
+  const glob = new Bun.Glob("spec/features/active/*/audit/approval-groups.tsv");
+  for await (const hit of glob.scan({ cwd: root })) return path.dirname(path.join(root, hit));
+  throw new Error("cut-keys: no audit folder with approval-groups.tsv under spec/features/active; pass --audit <dir>");
 }
 
 function arg(name: string): string | undefined {
