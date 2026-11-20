@@ -294,19 +294,19 @@ describe("testmail CLI streams", () => {
 
   test("no command: the usage on stderr", async () => {
     const result = await cli([]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "usage: ");
   });
 
   test("an unknown option: the usage on stderr", async () => {
     const result = await cli(["setup", "--no-such-option"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "usage: ");
   });
 
   test("a missing option: the issue line and the usage on stderr", async () => {
     const result = await cli(["send"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "");
     expect(result.stderr).toContain("--batch");
     expect(result.stderr).toContain("[testmail] usage: ");
@@ -335,9 +335,9 @@ describe("testmail CLI streams", () => {
     expectOnlyStderr(result, "inbox address differs from the persona file");
   });
 
-  test("a server that is down: `failed:` with the error label on stderr", async () => {
+  test("a server that is down: exit 3 and `unreachable:` with the error label on stderr", async () => {
     const result = await cli(["setup"], { AGENTMAIL_BASE_URL: "http://127.0.0.1:1/v0" });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "failed: SoftError");
+    expect(result.code).toBe(3);
+    expectOnlyStderr(result, "unreachable: SoftError");
   });
 });

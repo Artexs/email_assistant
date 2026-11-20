@@ -1,19 +1,13 @@
 import { directSender, telegramErrorLabel } from "../modules/channels";
 import { sendTestAlerts } from "../modules/operator";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliSpec } from "../platform/cli";
 import { ConfigError, loadConfig, operatorChatId } from "../platform/config";
 
-import { alertTestUsage, parseOpsAlertTestArgs } from "./ops-alerts-args";
-
-const out = createCliOutput("ops-alert-test");
+import { cliDescriptions, parseOpsAlertTestArgs } from "./ops-alert-test-args";
 
 // Sends the `test` text of one kind or of all kinds to the operator chat, through the same send as the job. It writes no alert row.
-async function main(): Promise<number> {
-  const args = parseOpsAlertTestArgs(process.argv.slice(2));
-  if (args === null) {
-    out.fail(alertTestUsage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseOpsAlertTestArgs(argv);
   let config;
   try {
     config = loadConfig();
@@ -44,11 +38,8 @@ async function main(): Promise<number> {
     out.fail(`failed: ${telegramErrorLabel(error)}`);
     return 1;
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${telegramErrorLabel(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "ops-alert-test", descriptions: cliDescriptions, main });
+}
