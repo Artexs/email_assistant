@@ -31,7 +31,7 @@ export class StyleFileError extends Error {}
 
 // The style key of a file is its prompt version and the start of the hash of its text, so two files of one prompt
 // version never share a state file.
-function keyOfFile(promptVersion: string, text: string): string {
+export function keyOfFile(promptVersion: string, text: string): string {
   const hash = createHash("sha256").update(text).digest("hex").slice(0, 8);
   return `${promptVersion.replace(/[^\w.-]/g, "_")}-${hash}`;
 }
