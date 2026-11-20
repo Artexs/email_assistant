@@ -7,7 +7,7 @@ The expand half of PD-079. The old organization signature moves into every mailb
 ## Step 1 — Copy migration
 
 - **Goal:** one dbmate file `db/migrations/YYYYMMDDHHMMSS_style_text_copy.sql`: for every mailbox whose organization has a non-empty `style_text` and whose profile has no signature, set the signature to the org text; insert a profile row (`org_id`, `mailbox_id`, signature, `updated_at` = now, `updated_by` null) where none exists. Down: empty (forward-only, PD-053; write the comment the other forward-only files use).
-- **Decisions:** D13. A profile signature that is set stays as it is. A text longer than the profile limit (1,000) cannot occur (`style_text` ≤ 500). The update runs as one statement per case, so a second run changes nothing.
+- **Decisions:** D13. A profile signature that is set stays as it is. The column has no DB length check (the route allowed ≤ 500), so the copy cuts to the profile limit (1,000 characters) to meet the profile CHECK. The update runs as one statement per case, so a second run changes nothing.
 - **Test (integration, migration test pattern of the repo):**
   1. Org with `style_text` "Pozdrawiam, Zespół" and three mailboxes: one with signature "Anna", one with a profile row and a null signature, one with no row → "Anna", "Pozdrawiam, Zespół", "Pozdrawiam, Zespół" (new row).
   2. Org with `style_text` null → no row is made or changed.
