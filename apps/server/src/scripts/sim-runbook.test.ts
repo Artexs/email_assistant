@@ -85,7 +85,7 @@ const snippets = codeSnippets(section);
 const usageByCommand = new Map(
   usage
     .split("\n")
-    .map((line) => /^ {2}bun run lab (.+)$/.exec(line)?.[1])
+    .map((line) => /^ *bun run lab (.+)$/.exec(line)?.[1])
     .filter((line): line is string => line !== undefined)
     .map((line) => [line.split(" ")[0] ?? "", line])
 );
