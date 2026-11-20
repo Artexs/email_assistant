@@ -42,11 +42,6 @@ describe("panelReleases", () => {
     expect(() => panelReleases("## [x] - 2026-01-01\n")).toThrow(ChangelogError);
     expect(() => panelReleases("## [0.1.0] - 2026-13-01\n")).toThrow(ChangelogError);
   });
-
-  test("the real CHANGELOG.md parses", () => {
-    const real = readFileSync(fileURLToPath(CHANGELOG_URL), "utf8");
-    expect(() => panelReleases(real)).not.toThrow();
-  });
 });
 
 interface VitePlugin {

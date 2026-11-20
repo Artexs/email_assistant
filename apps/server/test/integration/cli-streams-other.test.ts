@@ -265,13 +265,42 @@ describe("db-worktree streams", () => {
   });
 });
 
-describe("org-status streams", () => {
-  test("a bad --org-id: the usage on stderr, exit 2", async () => {
-    const result = await run("org-status", ["--org-id", "nope"]);
+// The same line of several scripts, one table per line. Each row spawns the script with its own arguments; the name
+// of a row is the name of the case it replaced, so the rows of one table can share a name.
+describe("the same stream line of several scripts", () => {
+  test.each([
+    { name: "a bad --org-id: the usage on stderr, exit 2", script: "org-status", usage: "usage: bun run org:status" },
+    { name: "a bad option: the usage on stderr, exit 2", script: "triage-cost", usage: "usage: bun run triage:cost" },
+    { name: "a bad option: the usage on stderr, exit 2", script: "triage-label", usage: "usage: bun run triage:label" },
+  ])("$name", async ({ script, usage }) => {
+    const result = await run(script, ["--org-id", "nope"]);
     expect(result.code).toBe(2);
-    expectOnlyStderr(result, "org-status", "usage: bun run org:status");
+    expectOnlyStderr(result, script, usage);
   });
 
+  const scriptArgs: { script: string; args: () => string[] }[] = [
+    { script: "telegram-unlink", args: () => ["--org-id", randomUUID(), "--user-id", randomUUID()] },
+    { script: "triage-cost", args: () => ["--org-id", randomUUID(), "--mailbox-id", randomUUID()] },
+    { script: "triage-label", args: () => ["--org-id", randomUUID(), "--mailbox-id", randomUUID()] },
+  ];
+
+  test.each(scriptArgs)("a database that is down: `unreachable:` on stderr, exit 3", async ({ script, args }) => {
+    const result = await run(script, args(), { env: { DATABASE_URL: deadDb } });
+    expect(result.code).toBe(3);
+    expectOnlyStderr(result, script, "unreachable: ");
+  });
+
+  test.each(scriptArgs)(
+    "a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1",
+    async ({ script, args }) => {
+      const result = await run(script, args(), { env: { DATABASE_URL: "" } });
+      expect(result.code).toBe(1);
+      expectOnlyStderr(result, script, "failed: ");
+    }
+  );
+});
+
+describe("org-status streams", () => {
   test("an unknown org: `organization not found` on stderr, exit 1", async () => {
     const result = await run("org-status", ["--org-id", randomUUID()]);
     expect(result.code).toBe(1);
@@ -316,22 +345,6 @@ describe("telegram-unlink streams", () => {
     const result = await run("telegram-unlink", ["--org-id", orgId, "--user-id", userId]);
     expect(result.code).toBe(0);
     expectOnlyStdout(result, "telegram-unlink", `unlinked 0 chat(s) of user ${userId}`);
-  });
-
-  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
-    const result = await run("telegram-unlink", ["--org-id", randomUUID(), "--user-id", randomUUID()], {
-      env: { DATABASE_URL: deadDb },
-    });
-    expect(result.code).toBe(3);
-    expectOnlyStderr(result, "telegram-unlink", "unreachable: ");
-  });
-
-  test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {
-    const result = await run("telegram-unlink", ["--org-id", randomUUID(), "--user-id", randomUUID()], {
-      env: { DATABASE_URL: "" },
-    });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "telegram-unlink", "failed: ");
   });
 });
 
@@ -388,30 +401,6 @@ describe("telegram-check streams", () => {
   });
 });
 
-describe("triage-cost streams", () => {
-  test("a bad option: the usage on stderr, exit 2", async () => {
-    const result = await run("triage-cost", ["--org-id", "nope"]);
-    expect(result.code).toBe(2);
-    expectOnlyStderr(result, "triage-cost", "usage: bun run triage:cost");
-  });
-
-  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
-    const result = await run("triage-cost", ["--org-id", randomUUID(), "--mailbox-id", randomUUID()], {
-      env: { DATABASE_URL: deadDb },
-    });
-    expect(result.code).toBe(3);
-    expectOnlyStderr(result, "triage-cost", "unreachable: ");
-  });
-
-  test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {
-    const result = await run("triage-cost", ["--org-id", randomUUID(), "--mailbox-id", randomUUID()], {
-      env: { DATABASE_URL: "" },
-    });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "triage-cost", "failed: ");
-  });
-});
-
 describe("triage-label streams", () => {
   async function seed(): Promise<{ orgId: string; mailboxId: string; emailId: string }> {
     return db.transaction().execute(async (trx) => {
@@ -425,12 +414,6 @@ describe("triage-label streams", () => {
       return { orgId, mailboxId, emailId };
     });
   }
-
-  test("a bad option: the usage on stderr, exit 2", async () => {
-    const result = await run("triage-label", ["--org-id", "nope"]);
-    expect(result.code).toBe(2);
-    expectOnlyStderr(result, "triage-label", "usage: bun run triage:label");
-  });
 
   test("one verdict: `feedback` on stdout, exit 0", async () => {
     const { orgId, emailId } = await seed();
@@ -459,22 +442,6 @@ describe("triage-label streams", () => {
     const result = await run("triage-label", ["--org-id", orgId, "--mailbox-id", mailboxId]);
     expect(result.code).toBe(0);
     expectOnlyStdout(result, "triage-label", "labeled 0, skipped 0");
-  });
-
-  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
-    const result = await run("triage-label", ["--org-id", randomUUID(), "--mailbox-id", randomUUID()], {
-      env: { DATABASE_URL: deadDb },
-    });
-    expect(result.code).toBe(3);
-    expectOnlyStderr(result, "triage-label", "unreachable: ");
-  });
-
-  test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {
-    const result = await run("triage-label", ["--org-id", randomUUID(), "--mailbox-id", randomUUID()], {
-      env: { DATABASE_URL: "" },
-    });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "triage-label", "failed: ");
   });
 });
 
