@@ -878,12 +878,12 @@ Non-core items of continuation 4: one `DELETE-DUP` (a `not.toThrow` case that th
 
 ## Note check
 
-Job base `5b66ee6f`; master `594869e9` merged last (earlier merges of `9a4febd2` and `e418c3e9` came first; they brought `scripts/e2e-parallel-check.sh`, a proof file, a temp-folder leak guard in `apps/server/src/scripts`, test cleanups and video docs (F121), and no `packages/core` file). Docs keys moved after continuation 2 (see Continuation 3 above): the next continuation rescans before it reads docs items. The 150 core items of this job are unaffected by the merge.
+Job base `82151821` (the head of master at the job start; the first merge of master was a fast-forward). The last `git merge --no-edit master` after the review commit printed `Already up to date.`: master stayed at `82151821`, so nothing new came in after the review.
 
-- Key rescan at the base (12,079 rows, core 2,132 keys; the 61 `S11` keys and 89 `S10` files of this job all resolve): `/tmp/f125-s04c3/rescan.log`.
-- File counts (600 read rows, 60 `not read` rows, 660 in all; no item is in both lists and no read item is duplicated; the Core section holds 450 read and 45 `not read`): `/tmp/f125-s04c3/file-check.log`.
-- Files this branch changes against master (only this review file; no test file, no `bun.lock`, no `.env`): `/tmp/f125-s04c3/own-changes.log`.
-- `bun run typecheck` after the last merge, exit 0: `/tmp/f125-s04c3/typecheck.log`.
-- `bun run lint` after the last merge, exit 0, 0 errors and 11 warnings: `/tmp/f125-s04c3/lint.log`.
-- `bun run test:unit:ci` after the last merge, exit 0, 7,464 pass, 0 fail: `/tmp/f125-s04c3/unit.log`.
-- Exit codes of the three runs: `/tmp/f125-s04c3/status.log`.
+- Key rescan at the base (12,097 rows; the 27 non-core keys and the core `S9` key resolve; the 44 `S10` files join `mutation-tests.tsv`): `/tmp/f125-s04c4/rescan.log`.
+- File counts (660 read rows, 0 `not read` rows, 660 in all; no item is in both lists and no read item is duplicated; the Core section holds 495 read and 0 `not read`): `/tmp/f125-s04c4/file-check.log`.
+- Files this branch changes against master (only this review file; no test file, no `bun.lock`, no `.env`): `/tmp/f125-s04c4/own-changes.log`.
+- `bun run typecheck` after the last merge, exit 0: `/tmp/f125-s04c4/typecheck.log`.
+- `bun run lint` after the last merge, exit 0, 0 errors and 11 warnings: `/tmp/f125-s04c4/lint.log`.
+- `bun run test:unit:ci` after the last merge, exit 0, 7,465 pass, 0 fail: `/tmp/f125-s04c4/unit.log`.
+- Exit codes of the three runs: `/tmp/f125-s04c4/status.log`.
