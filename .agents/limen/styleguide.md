@@ -19,6 +19,7 @@ Checks (owner, 2026-11-20): the pre-commit hook (`scripts/pre-commit.sh`) lints 
 ## Prefer
 
 - Texts carry a locale: `docs/code-patterns.md` § Texts carry a locale.
+- A command-line tool follows `docs/cli.md` (`runCli`, a description per command, a risk class); to add or change one, read § Convert a tool there.
 - Time in milliseconds is `MINUTE_MS`, `HOUR_MS`, `DAY_MS` from `@ea/core`, never a literal (`docs/code-patterns.md` § Size and shape; lint rule `ea/no-time-literals`).
 - TypeScript strict. `const` / `let`. Template literals for strings with variables.
 - Typed Kysely repositories: one function = one clear query; each takes a `TenantContext` and filters by `org_id` (exceptions listed in `docs/code-patterns.md`).

@@ -1,18 +1,18 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { describe, expect, test } from "bun:test";
+
+import { readToolCommands } from "./lib/cli-tools";
 
 // A folder listing of `scripts/` is the tool list: a top-level file is a tool entry or the `<entry>-args.ts` of one, and every helper sits in `lib/`
 // (`docs/cli.md`, the layout rule). A tool command is a root `package.json` script that runs `bun <file>.ts` under `apps/server/src/scripts/`.
 const root = resolve(import.meta.dir, "../../../..");
 const SCRIPTS = "apps/server/src/scripts/";
-const manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { scripts: Record<string, string> };
 const toolFiles = new Set(
-  Object.values(manifest.scripts)
-    .map((command) => command.split(/\s+/))
-    .filter(([bun, file]) => bun === "bun" && file?.startsWith(SCRIPTS) && file.endsWith(".ts"))
-    .map(([, file]) => (file as string).slice(SCRIPTS.length))
+  readToolCommands(root)
+    .filter((command) => command.file.startsWith(SCRIPTS))
+    .map((command) => command.file.slice(SCRIPTS.length))
 );
 const argsFileOf = (file: string) => file.replace(/\.ts$/, "-args.ts");
 const isTest = (file: string) => /\.test(-helper)?\.ts$/.test(file);
