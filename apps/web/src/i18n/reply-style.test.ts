@@ -99,7 +99,7 @@ describe("the texts of the style card (F115 stage 11)", () => {
     expect(en.rs_preview_note).toBe("This is a sample. Nothing was sent.");
   });
 
-  test("the old organization signature keys that the read-only card does not use are gone", () => {
+  test("the keys of the removed organization signature card are gone", () => {
     for (const key of ["sig_help", "sig_label", "sig_saved_toast"]) {
       expect(Object.hasOwn(en, key), key).toBe(false);
       expect(Object.hasOwn(pl, key), key).toBe(false);

@@ -7,7 +7,7 @@ import {
   type ProfileView,
   type SentTracking,
 } from "@ea/core/web";
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { getLocale, t } from "../../i18n";
@@ -39,9 +39,6 @@ import { Textarea } from "../ui/textarea";
 import { ReplySamples } from "./ReplySamples";
 import { StyleGuide } from "./StyleGuide";
 import { StyleSuggest } from "./StyleSuggest";
-
-// The anchor that the links of the organization signature card use.
-export const STYLE_CARD_ID = "style-card";
 
 type Preview = { state: "idle" } | { state: "running" } | { state: "done"; answer: PreviewAnswer };
 
@@ -291,15 +288,9 @@ export function ReplyStyleCard({
   sentTracking,
 }: ReplyStyleCardProps) {
   const { data, error, loading, reload, mutate } = useResource(() => loadProfile(mailbox.id));
-  const card = useRef<HTMLDivElement>(null);
-  // A link of the organization signature card ends in `#style-card`: the card loads after the page, so the browser cannot scroll to it.
-  const loaded = data !== null;
-  useEffect(() => {
-    if (loaded && location.hash === `#${STYLE_CARD_ID}`) card.current?.scrollIntoView({ block: "start" });
-  }, [loaded]);
 
   return (
-    <Card id={STYLE_CARD_ID} data-card="reply-style" ref={card} className="scroll-mt-4">
+    <Card data-card="reply-style">
       <CardHeader>
         <CardTitle>{t("rs_title")}</CardTitle>
       </CardHeader>

@@ -15,13 +15,15 @@ WHERE p.mailbox_id = m.id
   AND o.style_text !~ '^\s*$'
   AND (p.signature IS NULL OR p.signature ~ '^\s*$');
 
--- A mailbox with no profile row gets one. `updated_by` stays null: no user wrote it.
+-- A mailbox with no profile row gets one. `updated_by` stays null: no user wrote it. `ON CONFLICT` covers an owner who
+-- saves a first profile while this runs: that row stays as the owner wrote it.
 INSERT INTO mailbox_profiles (mailbox_id, org_id, signature, updated_at, updated_by)
 SELECT m.id, m.org_id, left(regexp_replace(o.style_text, '^\s+|\s+$', '', 'g'), 1000), now(), NULL
 FROM mailboxes m
 JOIN organizations o ON o.id = m.org_id
 WHERE o.style_text !~ '^\s*$'
-  AND NOT EXISTS (SELECT 1 FROM mailbox_profiles p WHERE p.mailbox_id = m.id);
+  AND NOT EXISTS (SELECT 1 FROM mailbox_profiles p WHERE p.mailbox_id = m.id)
+ON CONFLICT (mailbox_id) DO NOTHING;
 
 -- An organization with text and no mailbox loses the text: no mailbox signs with it.
 UPDATE organizations SET style_text = NULL WHERE style_text IS NOT NULL;
