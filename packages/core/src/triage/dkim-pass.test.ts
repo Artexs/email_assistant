@@ -165,6 +165,66 @@ describe("the Authentication-Results parser and the alignment of the trusted res
   });
 });
 
+describe("the lexing of the Authentication-Results value and the alignment, edge cases", () => {
+  test.each([
+    {
+      name: "a comment between pass and header.d counts as a space",
+      value: "interia.pl; dkim=pass(ok)header.d=c.example",
+      expected: true,
+    },
+    { name: "a ) after a closed comment", value: "interia.pl; dkim=pass header.d=c.example (a))", expected: false },
+    {
+      name: "spaces around = and tabs before the result",
+      value: "interia.pl;\t dkim = pass\theader.d = c.example",
+      expected: true,
+    },
+    {
+      name: "the signing domain with a trailing dot",
+      value: "interia.pl; dkim=pass header.d=c.example.",
+      expected: true,
+    },
+    {
+      name: "the signing domain with several trailing dots",
+      value: "interia.pl; dkim=pass header.d=c.example..",
+      expected: true,
+    },
+    { name: "header.d with spaces around =", value: "interia.pl; dkim=pass header.d = c.example", expected: true },
+  ])("$name", ({ value, expected }) => {
+    expect(alignedCovered(value, TRUSTED, "c.example")).toBe(expected);
+  });
+
+  test.each([
+    { name: "spaces, capitals and a trailing dot", fromDomain: " News.C.Example. ", expected: true },
+    { name: "several trailing dots", fromDomain: "news.c.example..", expected: true },
+    {
+      name: "a domain below the signing domain with a sibling label",
+      fromDomain: "news.other.example",
+      expected: false,
+    },
+  ])("a From domain with $name", ({ fromDomain, expected }) => {
+    expect(alignedCovered("interia.pl; dkim=pass header.d=news.c.example", TRUSTED, fromDomain)).toBe(expected);
+  });
+});
+
+describe("the empty signing domain and the first part, through hasCoveredDkimPass", () => {
+  const covering: DkimSignature[] = [{ d: "", h: ["from", "list-unsubscribe", "list-unsubscribe-post"] }];
+
+  test.each([
+    { name: "empty", fromDomain: "" },
+    { name: "white space", fromDomain: "  " },
+  ])("a $name From domain never aligns with the empty signing domain of header.d=.", ({ fromDomain }) => {
+    expect(hasCoveredDkimPass("interia.pl; dkim=pass header.d=.", TRUSTED, fromDomain, covering)).toBe(false);
+  });
+
+  test("an authserv-id that reads like a result is never a result", () => {
+    expect(alignedCovered("dkim=pass header.d=c.example; spf=pass", ["dkim=pass"], "c.example")).toBe(false);
+  });
+
+  test("a quoted string next to the domain is not removed: it does not join the domain", () => {
+    expect(alignedCovered('interia.pl; dkim=pass header.d="x" c.example', TRUSTED, "c.example")).toBe(false);
+  });
+});
+
 describe("hasCoveredDkimPass", () => {
   const PASS = "interia.pl; dkim=pass header.d=c.example";
   const full = ["from", "list-unsubscribe", "list-unsubscribe-post"];

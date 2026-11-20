@@ -27,26 +27,6 @@ describe("slotSchema", () => {
     expect(slot.thread).toEqual([]);
   });
 
-  test("an urgent slot needs an urgency source, and only an urgent slot may have one", () => {
-    expect(slotSchema.safeParse({ ...base, category: "urgent" }).success).toBe(false);
-    expect(slotSchema.safeParse({ ...base, category: "urgent", urgencySource: "text" }).success).toBe(true);
-    expect(slotSchema.safeParse({ ...base, urgencySource: "text" }).success).toBe(false);
-  });
-
-  test("contextRef goes with urgency source context", () => {
-    const urgent = { ...base, category: "urgent" };
-    const ref = { kind: "topic", index: 0 };
-    expect(slotSchema.safeParse({ ...urgent, urgencySource: "context" }).success).toBe(false);
-    expect(slotSchema.safeParse({ ...urgent, urgencySource: "context", contextRef: ref }).success).toBe(true);
-    expect(slotSchema.safeParse({ ...urgent, urgencySource: "vip", contextRef: ref }).success).toBe(false);
-  });
-
-  test("expectedDraft goes with category delegation", () => {
-    expect(slotSchema.safeParse({ ...base, category: "delegation" }).success).toBe(false);
-    expect(slotSchema.safeParse({ ...base, category: "delegation", expectedDraft: "delegation" }).success).toBe(true);
-    expect(slotSchema.safeParse({ ...base, expectedDraft: "none" }).success).toBe(false);
-  });
-
   test("refuses an unknown hard-case tag, an unknown key and a bad id", () => {
     expect(slotSchema.safeParse({ ...base, hardCases: ["no_such_tag"] }).success).toBe(false);
     expect(slotSchema.safeParse({ ...base, hardCases: ["german"], lang: "de" }).success).toBe(true);
@@ -59,5 +39,47 @@ describe("slotSchema", () => {
     expect(slotBatchFileSchema.safeParse({ ...file, slots: [] }).success).toBe(false);
     expect(slotBatchFileSchema.safeParse({ ...file, slots: [base] }).success).toBe(true);
     expect(slotBatchFileSchema.safeParse({ ...file, slots: Array(26).fill(base) }).success).toBe(false);
+  });
+});
+
+function issuesOf(value: unknown) {
+  const result = slotSchema.safeParse(value);
+  if (result.success) return [];
+  return result.error.issues.map((issue) => ({ code: String(issue.code), path: issue.path, message: issue.message }));
+}
+
+describe("slotSchema refusals", () => {
+  const urgent = { ...base, category: "urgent" };
+  const ref = { kind: "topic", index: 0 };
+  const urgencyIssue = {
+    code: "custom",
+    path: ["urgencySource"],
+    message: "urgencySource is set if and only if the category is urgent",
+  };
+  const contextIssue = {
+    code: "custom",
+    path: ["contextRef"],
+    message: "contextRef is set if and only if the urgency source is context",
+  };
+  const draftIssue = {
+    code: "custom",
+    path: ["expectedDraft"],
+    message: "expectedDraft is set if and only if the category is delegation",
+  };
+
+  test.each([
+    ["an urgent slot with no urgency source", urgent, [urgencyIssue]],
+    ["a non-urgent slot with an urgency source", { ...base, urgencySource: "text" }, [urgencyIssue]],
+    ["context urgency with no contextRef", { ...urgent, urgencySource: "context" }, [contextIssue]],
+    ["a contextRef with another urgency source", { ...urgent, urgencySource: "vip", contextRef: ref }, [contextIssue]],
+    ["a delegation with no expectedDraft", { ...base, category: "delegation" }, [draftIssue]],
+    ["an expectedDraft on another category", { ...base, expectedDraft: "none" }, [draftIssue]],
+    [
+      "a non-urgent slot with an urgency source of context and no contextRef",
+      { ...base, urgencySource: "context" },
+      [urgencyIssue, contextIssue],
+    ],
+  ])("refuses %s with one exact issue list", (_name, value, expected) => {
+    expect(issuesOf(value)).toEqual(expected);
   });
 });

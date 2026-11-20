@@ -1,4 +1,4 @@
-import { SLO_KINDS, UsageError } from "@ea/core";
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { parseOpsAlertTestArgs } from "./ops-alert-test-args";
@@ -14,9 +14,26 @@ function failure(argv: string[]): string {
 }
 
 describe("parseOpsAlertTestArgs", () => {
-  test("--kind takes one kind; --all takes every kind", () => {
+  test("--kind takes an incident kind or an event kind", () => {
     expect(parseOpsAlertTestArgs(["--kind", "slo_disk"])).toEqual({ kinds: ["slo_disk"] });
-    expect(parseOpsAlertTestArgs(["--all"])).toEqual({ kinds: [...SLO_KINDS] });
+    expect(parseOpsAlertTestArgs(["--kind", "llm_cap"])).toEqual({ kinds: ["llm_cap"] });
+  });
+
+  test("--all takes the ten kinds, the incident kinds first", () => {
+    expect(parseOpsAlertTestArgs(["--all"])).toEqual({
+      kinds: [
+        "slo_sync_lag",
+        "slo_urgent_latency",
+        "slo_llm_errors",
+        "slo_disk",
+        "slo_backup_age",
+        "trial_ending",
+        "llm_cap",
+        "auth_error_24h",
+        "auth_mail_failed",
+        "send_limit",
+      ],
+    });
   });
 
   test.each([
