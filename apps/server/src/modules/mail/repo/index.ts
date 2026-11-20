@@ -167,6 +167,8 @@ export {
   type SentSummary,
   type UserAnswer,
 } from "./sent-readers";
+export { sentTestMailFilter } from "./sent-test-mail";
+export { listStyleSources } from "./style-sources";
 export { mailboxProfileOf, upsertMailboxProfile, type MailboxProfile, type MailboxProfileFields } from "./profiles";
 export { replyFactsOf, type MailReplyFacts } from "./reply-facts";
 export { newerMailInThread } from "./thread";

@@ -37,6 +37,12 @@ describe("suggestStyle", () => {
     expect(requests[0]?.prompt).not.toContain("failed the checks");
   });
 
+  test("the suggestion is the cleaned text that the Save of the card takes", async () => {
+    const { llm } = fake([{ style: "Pisze krótko.  \r\nPo imieniu." }]);
+    const result = await suggestStyle(llm, input);
+    expect(result).toMatchObject({ kind: "suggestion", text: "Pisze krótko.\nPo imieniu." });
+  });
+
   test("a failed check gets one retry that names the code and never the failed text", async () => {
     const { llm, requests } = fake([{ style: "Dzwoni na 600 123 456." }, { style: "Pisze krótko." }]);
     const result = await suggestStyle(llm, input);

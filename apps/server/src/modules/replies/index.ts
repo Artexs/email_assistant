@@ -93,6 +93,15 @@ export {
   type PreviewResult,
   type StylePreview,
 } from "./preview";
+export {
+  createStyleSuggestion,
+  STYLE_SUGGEST_DAILY_LIMIT,
+  STYLE_SUGGEST_WINDOW_MS,
+  type StyleSuggest,
+  type StyleSuggestDeps,
+  type StyleSuggestFailure,
+  type StyleSuggestResult,
+} from "./style-suggest";
 export { getProfileView, updateMailboxProfile, type ProfileUpdate, type ProfileVia } from "./profile";
 export { replyRoutes, type ReplyRouteDeps } from "./routes";
 export {

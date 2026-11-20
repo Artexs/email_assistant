@@ -164,6 +164,7 @@ describe("GET /api/operator/flags (F087, D5, D15, D18)", () => {
       { orgId: org.orgId, flag: "bulk_unsubscribe", enabled: false },
       { orgId: org.orgId, flag: "reply_drafts", enabled: false },
       { orgId: org.orgId, flag: "draft_copy_check", enabled: false },
+      { orgId: org.orgId, flag: "style_from_sent", enabled: false },
       { orgId: org.orgId, flag: "sender_context", enabled: false },
       { orgId: org.orgId, flag: "contact_wait", enabled: false },
       { orgId: org.orgId, flag: "sender_suggestions", enabled: false },

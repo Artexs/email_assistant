@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { checkStyleSuggestion, type StyleCheckCode, stylistOutputSchema } from "@ea/core";
+import { checkProfileInput, checkStyleSuggestion, type StyleCheckCode, stylistOutputSchema } from "@ea/core";
 
 import { isLlmError, type LlmClient, llmErrorCode, LlmOutputError, type LlmUsage } from "../../platform/llm";
 import { prompts, type StylistPrompt } from "../triage";
@@ -46,7 +46,8 @@ export interface StylistInput {
 /**
  * One stylist call, with one retry after an unreadable answer or a failed check. LLM text is untrusted: Zod checks the
  * answer and `checkStyleSuggestion` checks the text, with no allowed list. The retry prompt names the failure codes,
- * never the failed text.
+ * never the failed text. The text that leaves is the cleaned text of `checkProfileInput`, the check of the Save of the
+ * card, so that Save takes it as typed.
  * `maxCalls` (1 or 2, default 2) is the spend that the caller still has: with 1 there is no retry.
  * `prompt` is the production prompt (`prompts.stylist`); only the stylist eval passes another version.
  */
@@ -82,9 +83,16 @@ export async function suggestStyle(
         samples: input.samples,
         language: input.language,
       });
-      if (checked.ok) return { kind: "suggestion", text: data.style, attempts };
-      failures = checked.failures;
-      retry = { reason: "checks", failures: checked.failures };
+      if (checked.ok) {
+        const profile = checkProfileInput({ writingStyle: data.style });
+        const text = profile.ok ? profile.fields.writingStyle : null;
+        if (text !== null && text !== undefined) return { kind: "suggestion", text, attempts };
+        failures = null;
+        retry = { reason: "output" };
+      } else {
+        failures = checked.failures;
+        retry = { reason: "checks", failures: checked.failures };
+      }
     } catch (error) {
       // Anything that is no LLM error is a bug and goes up.
       if (!isLlmError(error)) throw error;

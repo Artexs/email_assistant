@@ -24,7 +24,7 @@ The recording and the shots that F151 built and proved on a trial export run onc
 
 ## Acceptance
 
-- The stage 06 log on the day-5 export: `demo_seed_day 5`, `misses=0`, `demo_llm_checked`, empty `not_live`, and a last line of `demo_source demo: upload candidate` or `not for upload: gate_provisional` (the only reason allowed while the gate file is provisional).
+- The stage 06 log on the day-5 export: `demo_seed_day 5`, `misses=0`, `demo_llm_checked`, empty `not_live`, and a last `[demo-record]` line of `demo_source demo: upload candidate` or `not for upload: gate_provisional` (the only reason allowed while the gate file is provisional).
 - The stage 07 shots log has `shots_source demo` and 20 shots.
 - The close-out note has the day-5 size line and the verdict.
 

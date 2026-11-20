@@ -6,9 +6,11 @@ import { openImapProvider } from "../modules/mail";
 import {
   createReplyJobs,
   createStylePreview,
+  createStyleSuggestion,
   replySampleScope,
   type ReplySampleScope,
   type StylePreview,
+  type StyleSuggest,
 } from "../modules/replies";
 import { createLlmPause, createTriageJob, type LlmPause, type TriageScope } from "../modules/triage";
 import { createHistoryJob, regateAll, type RegateDeps } from "../modules/trust";
@@ -32,6 +34,8 @@ export interface TriageStart {
   degraded: { pause: LlmPause; scope: TriageScope } | undefined;
   // The style preview of the reply drafts: it needs the model client, so it exists only while the LLM scope is on.
   stylePreview: StylePreview | null;
+  // The writing-style suggestion from the sent mail: the same model client and scope; the provider of the stylist role decides `realMail`.
+  styleSuggestion: StyleSuggest | null;
   replySamples: ReplySampleScope | null;
 }
 
@@ -54,6 +58,7 @@ export async function startTriage(ctx: StartContext, { operator }: OperatorStart
   const { config, db, log, scheduler, runs, secrets, mailOAuth } = ctx;
   let degraded: TriageStart["degraded"];
   let stylePreview: StylePreview | null = null;
+  let styleSuggestion: StyleSuggest | null = null;
   let replySamples: ReplySampleScope | null = null;
   const scopeOfSends = sendScope(config);
   const hooks = delegationHooks({ db });
@@ -158,11 +163,19 @@ export async function startTriage(ctx: StartContext, { operator }: OperatorStart
       dailyCap: config.LLM_DAILY_CAP,
       now: () => new Date(),
     });
+    styleSuggestion = createStyleSuggestion({
+      db,
+      llm,
+      dailyCap: config.LLM_DAILY_CAP,
+      now: () => new Date(),
+      realMail: llmProviders[llmTable.roles.stylist.provider].realMail,
+      scope,
+    });
     // The sample drafts are queued for the drafter job above, so they follow its scope: with `synthetic` only test mail is a candidate.
     replySamples = replySampleScope(scope, () => new Date());
     // prettier-ignore
     scheduler.add("replies.drafter", "*/15 * * * * *", runs.track("replies.drafter", () => replyJobs.drafter.run().then(() => undefined)));
     log.info("job_scheduled", { job: "replies.drafter" });
   }
-  return { gate, hooks, uidplus, scopeOfSends, classifierRow, degraded, stylePreview, replySamples };
+  return { gate, hooks, uidplus, scopeOfSends, classifierRow, degraded, stylePreview, styleSuggestion, replySamples };
 }

@@ -18,6 +18,10 @@ export interface DemoPrepared {
   gateDir: string;
   /** True when the committed gate file behind the copy is provisional: the video is no upload candidate. */
   gateProvisional: boolean;
+  /** The `day` of the seed (the run day of the export), read from the file content. */
+  seedDay: number;
+  /** The `exportedAt` of the seed, read from the file content. */
+  exportedAt: string;
 }
 
 /**
@@ -49,5 +53,13 @@ export async function prepareDemoRun(seedFile: string, work: string): Promise<De
   const replay = await startReplayServer(buildReplayTable(seed), { port: 0 });
   const planFile = join(work, "demo-plan.json");
   writeFileSync(planFile, JSON.stringify(plan));
-  return { plan, replay, planFile, gateDir, gateProvisional: copy.sourceProvisional };
+  return {
+    plan,
+    replay,
+    planFile,
+    gateDir,
+    gateProvisional: copy.sourceProvisional,
+    seedDay: seed.day,
+    exportedAt: seed.exportedAt,
+  };
 }

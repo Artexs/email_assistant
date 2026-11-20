@@ -104,7 +104,10 @@ export const FLAGGED_BOT_TEXT: Partial<Record<FeatureKey, readonly string[]>> = 
 
 // A default-off flag with no text that a user can see. The reason names the file that reads the flag and why no user sees text.
 // Every flag has text now; a new flag with none gets its reason here.
-export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {};
+export const NO_VISIBLE_TEXT: Partial<Record<FeatureKey, string>> = {
+  style_from_sent:
+    "it gates the owner route of the style suggestion, which no user can reach yet; the style-card button adds its text key when it lands",
+};
 
 export const FLAGGED_TEXT: FlaggedText[] = [
   ...Object.entries(FLAGGED_PANEL_KEYS).flatMap(([flag, keys]) =>
