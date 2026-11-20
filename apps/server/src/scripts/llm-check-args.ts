@@ -23,7 +23,7 @@ export const cliDescriptions = [
 ] satisfies readonly CliDescription[];
 
 export interface LlmCheckArgs {
-  /** `all` checks the four roles in one run. */
+  /** `all` checks every role in one run. */
   role: LlmRole | "all";
   provider: LlmProviderId | undefined;
   delegates: boolean;

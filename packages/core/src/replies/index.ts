@@ -1,5 +1,12 @@
-export { checkReplyBody, DRAFT_MAX_CHARS, REPLY_CHECK_CODES, UNKNOWN_LANGUAGE_MAX_CHARS } from "./checks";
-export type { ReplyCheckCode, ReplyCheckResult } from "./checks";
+export {
+  checkReplyBody,
+  DRAFT_MAX_CHARS,
+  hasControlChars,
+  sensitiveFailures,
+  REPLY_CHECK_CODES,
+  UNKNOWN_LANGUAGE_MAX_CHARS,
+} from "./checks";
+export type { ReplyCheckCode, ReplyCheckResult, SensitiveCode } from "./checks";
 export { GAP_LABEL_MAX, gapsOf, hasBrokenGapSyntax, hasGaps } from "./gaps";
 export { detectLanguage } from "./language";
 export type { DetectedLanguage } from "./language";
@@ -40,3 +47,22 @@ export { SAMPLE_MAIL } from "./sample-mail";
 export type { SampleMail } from "./sample-mail";
 export { otherParticipants, otherReplyTo, replyRecipients, sameRecipients } from "./recipients";
 export type { ReplyRecipientFacts, ReplyRecipientMode, ReplyRecipients, ReplyRecipientsResult } from "./recipients";
+export { cutQuotedReply } from "./style-cut";
+export {
+  buildStyleSamples,
+  STYLE_MAX_SOURCES,
+  STYLE_MIN_SAMPLES,
+  STYLE_SAMPLE_MAX_CHARS,
+  STYLE_SAMPLES_MAX_CHARS,
+  styleNameTokens,
+} from "./style-samples";
+export type { StyleSource } from "./style-samples";
+export {
+  checkStyleSuggestion,
+  STYLE_CHECK_CODES,
+  STYLE_COPY_WORDS,
+  STYLE_OUTPUT_MAX_CHARS,
+  STYLE_SUGGESTION_MAX_CHARS,
+  stylistOutputSchema,
+} from "./style-check";
+export type { StyleCheckCode, StyleCheckResult, StylistOutput } from "./style-check";

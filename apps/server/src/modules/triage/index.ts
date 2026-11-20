@@ -128,6 +128,8 @@ export {
   prompts,
   promptLabel,
   rolesWithoutPrompt,
+  stylistVersionIds,
+  stylistVersions,
   versionHasParts,
 } from "./prompts";
 export type {
@@ -140,6 +142,8 @@ export type {
   JudgePrompt,
   JudgeVersion,
   PromptEntry,
+  StylistPrompt,
+  StylistVersion,
 } from "./prompts";
 export { EXCERPT_CHARS, THREAD_MAILS } from "./prompts/classifier-v2";
 export type { ClassifierDelegate } from "./prompts/classifier-v2";

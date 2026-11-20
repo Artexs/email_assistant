@@ -43,10 +43,13 @@ const roleKeyShape = Object.fromEntries(
 ) as { [K in RoleKey]: (typeof roleKeyFields)[K extends `LLM_${string}_${infer F extends RoleKeyField}` ? F : never] };
 
 // The keys that older releases read for a role's provider, model or effort. The tiers of LLM_PROVIDER decide now.
+// The stylist role is newer than these keys: it never had them.
 const removedRoleFields = ["PROVIDER", "MODEL", "REASONING"] as const;
 export const removedEnvKeys: readonly string[] = [
   ...llmProviderIds.flatMap((id) => llmProviders[id].removedEnvKeys),
-  ...keyedRoles.flatMap((role) => removedRoleFields.map((field) => `LLM_${role.toUpperCase()}_${field}`)),
+  ...keyedRoles
+    .filter((role) => role !== "stylist")
+    .flatMap((role) => removedRoleFields.map((field) => `LLM_${role.toUpperCase()}_${field}`)),
 ];
 
 /** True for a key of `removedEnvKeys`: the start log marks it so the operator knows to delete the line. */
@@ -262,6 +265,7 @@ export function llmRoleTable(
       judge: rowOf("judge"),
       drafter: rowOf("drafter"),
       extractor: rowOf("extractor"),
+      stylist: rowOf("stylist"),
     },
     providers,
   };

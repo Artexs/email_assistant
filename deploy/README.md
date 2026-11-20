@@ -667,7 +667,7 @@ One variable picks the provider of every LLM call: `LLM_PROVIDER` (`openai`, `ge
 
 Do this before `deploy/release.sh` (owner step O1 of the ticket). A removed key with a value stops the start, so an old `.env` cannot change a model without a notice.
 
-1. At the old release run `bun run llm:check --role <role>` for each of the four roles (`classifier`, `drafter`, `extractor`, `judge`) and keep the lines (model, effort).
+1. At the old release run `bun run llm:check --role <role>` for each of the roles that existed then (`classifier`, `drafter`, `extractor`, `judge`) and keep the lines (model, effort).
 2. Delete these 12 keys from the `.env` of the host and from `deploy/sim.env` (`sed -i -E '/^(KEY1|KEY2)=/d' .env` with the names; never print the file):
    - `LLM_JUDGE_PROVIDER`, `LLM_JUDGE_MODEL`, `LLM_JUDGE_REASONING`
    - `LLM_DRAFTER_PROVIDER`, `LLM_DRAFTER_MODEL`, `LLM_DRAFTER_REASONING`

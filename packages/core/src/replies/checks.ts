@@ -36,7 +36,7 @@ const LINE_BREAK = /\r\n?|\n|\u2028|\u2029|\u0085/;
 // line and paragraph separators, private use and lone surrogates. A CR or CRLF is a line break, not a control character.
 const CONTROL = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\u2028\u2029]/u;
 
-function hasControlChars(body: string): boolean {
+export function hasControlChars(body: string): boolean {
   return CONTROL.test(body.replace(/[\r\n\t]/g, ""));
 }
 
@@ -91,6 +91,22 @@ function languageFails(body: string, language: "pl" | "en"): boolean {
   return !(detected === "unknown" && collapse(text).length < UNKNOWN_LANGUAGE_MAX_CHARS);
 }
 
+/** The codes of the detectors of a text that another module may reuse: addresses, links, phone and account numbers. */
+export type SensitiveCode = "address" | "link" | "phone" | "account_number";
+
+/** Which of the four detectors find something in the body that `allowed` does not hold. The order is stable. */
+export function sensitiveFailures(
+  body: string,
+  allowed: readonly string[],
+  quoted?: readonly string[]
+): SensitiveCode[] {
+  const failed = new Set<string>(entityFailures(body, allowed));
+  const digits = digitVerdict(body, { allowed, quoted });
+  if (digits.account) failed.add("account_number");
+  if (digits.phone) failed.add("phone");
+  return (["address", "link", "phone", "account_number"] as const).filter((code) => failed.has(code));
+}
+
 /**
  * Runs every check on the body. `allowed` holds the texts that the user typed: the instruction, the signature and the
  * writing style; an address, link, phone number or account number that is in them passes. The failures come in the
@@ -100,10 +116,7 @@ export function checkReplyBody(
   body: string,
   opts: { language: "pl" | "en"; allowed: readonly string[]; quoted?: readonly string[] }
 ): ReplyCheckResult {
-  const failed = new Set<ReplyCheckCode>(entityFailures(body, opts.allowed));
-  const digits = digitVerdict(body, { allowed: opts.allowed, quoted: opts.quoted });
-  if (digits.account) failed.add("account_number");
-  if (digits.phone) failed.add("phone");
+  const failed = new Set<ReplyCheckCode>(sensitiveFailures(body, opts.allowed, opts.quoted));
   if (hasLongBlankRun(body)) failed.add("blank_lines");
   if (hasHeaderLine(body)) failed.add("header_line");
   if (hasControlChars(body)) failed.add("control_chars");

@@ -1,6 +1,6 @@
 // The LLM roles. Every LLM call names one; the role table in the server config decides its provider and model.
 // Rules: docs/code-patterns.md § Side effects ("An LLM call names a role").
-export const llmRoles = ["classifier", "judge", "drafter", "extractor"] as const;
+export const llmRoles = ["classifier", "judge", "drafter", "extractor", "stylist"] as const;
 
 export type LlmRole = (typeof llmRoles)[number];
 

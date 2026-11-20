@@ -15,6 +15,7 @@ import * as judgeV1 from "./judge-v1";
 import * as judgeV2 from "./judge-v2";
 import * as judgeV3 from "./judge-v3";
 import { type ClassifierPart, isV3Part, optionalParts } from "./parts";
+import * as stylistV1 from "./stylist-v1";
 
 /** The prompt of one role in one version; the builders differ per role. */
 export interface PromptEntry<R extends LlmRole> {
@@ -147,6 +148,27 @@ export const judgeVersions = {
 export type JudgeVersion = keyof typeof judgeVersions;
 export const judgeVersionIds = Object.keys(judgeVersions) as JudgeVersion[];
 
+/** One stylist prompt version: the builders of every version have the signatures of `stylist-v1`. */
+export interface StylistPrompt {
+  role: "stylist";
+  version: PromptVersion<"stylist">;
+  buildSystem: () => string;
+  buildUser: typeof stylistV1.buildUserPrompt;
+}
+
+// Every stylist version that can run: the stylist eval picks one with `--stylist-prompt`. Production uses the one that
+// `prompts.stylist` names.
+export const stylistVersions = {
+  "stylist-v1": {
+    role: "stylist",
+    version: stylistV1.PROMPT_VERSION,
+    buildSystem: stylistV1.buildSystemPrompt,
+    buildUser: stylistV1.buildUserPrompt,
+  },
+} as const satisfies Record<string, StylistPrompt>;
+export type StylistVersion = keyof typeof stylistVersions;
+export const stylistVersionIds = Object.keys(stylistVersions) as StylistVersion[];
+
 export const CLASSIFIER_V3_PARTS: readonly ClassifierV3Part[] = ["attachments"];
 
 // The prompt each role uses now. A new version is a new file `<role>-v<n>.ts`, a new entry here and a sim gate run with
@@ -166,6 +188,7 @@ export const prompts = {
     buildUser: extractorV1.buildUserPrompt,
   },
   judge: judgeVersions["judge-v3"],
+  stylist: stylistVersions["stylist-v1"],
 } as const satisfies { [R in LlmRole]?: PromptEntry<R> };
 
 export interface ClassifierPromptChoice {

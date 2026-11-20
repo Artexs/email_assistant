@@ -40,11 +40,12 @@ const row = (
 });
 
 describe("the role table from tiers", () => {
-  test("1: openai gives the light tier to three roles and the strong tier to the judge", () => {
+  test("1: openai gives the light tier to four roles and the strong tier to the judge", () => {
     expect(llmRoleTable(loadConfig(openaiEnv)).roles).toEqual({
       classifier: row("openai", "gpt-6-luna", "none"),
       drafter: row("openai", "gpt-6-luna", "low"),
       extractor: row("openai", "gpt-6-luna", "none"),
+      stylist: row("openai", "gpt-6-luna", "low"),
       judge: row("openai", "gpt-6.1-terra", "none"),
     });
   });
@@ -54,6 +55,7 @@ describe("the role table from tiers", () => {
       classifier: row("gemini", "gemini-3.5-flash-lite", null),
       drafter: row("gemini", "gemini-3.5-flash-lite", null),
       extractor: row("gemini", "gemini-3.5-flash-lite", null),
+      stylist: row("gemini", "gemini-3.5-flash-lite", null),
       judge: row("gemini", "gemini-3.8-flash", null),
     });
   });
@@ -63,6 +65,7 @@ describe("the role table from tiers", () => {
       classifier: row("deepseek", "deepseek-flash", "none"),
       drafter: row("deepseek", "deepseek-flash", "low"),
       extractor: row("deepseek", "deepseek-flash", "none"),
+      stylist: row("deepseek", "deepseek-flash", "low"),
       judge: row("deepseek", "deepseek-v4-pro", "none"),
     });
   });
@@ -150,6 +153,12 @@ describe("the role table from tiers", () => {
   test("11: the removed LLM_ESCALATION_* keys in an old .env still do not stop the start and build no role", () => {
     const config = loadConfig({ ...openaiEnv, LLM_ESCALATION_PROVIDER: "openai", LLM_ESCALATION_REASONING: "huge" });
     expect(Object.keys(config).filter((key) => key.startsWith("LLM_ESCALATION_"))).toEqual([]);
-    expect(Object.keys(llmRoleTable(config).roles).sort()).toEqual(["classifier", "drafter", "extractor", "judge"]);
+    expect(Object.keys(llmRoleTable(config).roles).sort()).toEqual([
+      "classifier",
+      "drafter",
+      "extractor",
+      "judge",
+      "stylist",
+    ]);
   });
 });

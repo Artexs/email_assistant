@@ -69,13 +69,13 @@ async function run(config: Config, argv: string[]) {
 }
 
 describe("llm:check", () => {
-  test("4: --role all --provider gemini checks four roles on gemini; the judge is the strong tier", async () => {
+  test("4: --role all --provider gemini checks five roles on gemini; the judge is the strong tier", async () => {
     const config = loadConfig({ ...base, LLM_PROVIDER: "openai", OPENAI_API_KEY: "o", GEMINI_API_KEY: "g" });
     const result = await run(config, ["--role", "all", "--provider", "gemini"]);
     expect(result.code).toBe(0);
     const greetings = result.printed.filter((line) => line.includes("check=greeting"));
-    expect(greetings).toHaveLength(4);
-    for (const role of ["classifier", "drafter", "extractor", "judge"]) {
+    expect(greetings).toHaveLength(5);
+    for (const role of ["classifier", "drafter", "extractor", "judge", "stylist"]) {
       expect(greetings.some((line) => line.startsWith(`role=${role} provider=gemini `))).toBe(true);
     }
     expect(greetings.find((line) => line.startsWith("role=judge"))).toContain("model=gemini-3.8-flash");

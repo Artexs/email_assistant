@@ -6,7 +6,7 @@ import type { LlmPrice } from "./triage/cost";
  * here, so a new provider is one row. The server registry (`platform/llm/providers/`) adds the adapter and the env keys.
  */
 
-/** `light`: the cheap model for classifier, drafter and extractor. `strong`: the model of the judge. */
+/** `light`: the cheap model for classifier, drafter, extractor and stylist. `strong`: the model of the judge. */
 export const llmTiers = ["light", "strong"] as const;
 export type LlmTier = (typeof llmTiers)[number];
 
@@ -116,6 +116,7 @@ export const llmRoleModels: Record<LlmRole, { tier: LlmTier; effort: LlmEffortLe
   drafter: { tier: "light", effort: "low" },
   extractor: { tier: "light", effort: "none" },
   judge: { tier: "strong", effort: "none" },
+  stylist: { tier: "light", effort: "low" },
 };
 
 export function tierModel(provider: LlmProviderId, tier: LlmTier): string {

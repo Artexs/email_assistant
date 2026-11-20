@@ -32,7 +32,7 @@ export interface LlmRoleTable {
 /** Tests and one-provider tools: every role gets the same row; every provider row is the same. */
 export function uniformRoleTable(row: LlmRoleSettings, provider: LlmProviderSettings): LlmRoleTable {
   return {
-    roles: { classifier: row, judge: row, drafter: row, extractor: row },
+    roles: { classifier: row, judge: row, drafter: row, extractor: row, stylist: row },
     providers: Object.fromEntries(llmProviderIds.map((id) => [id, provider])) as Record<
       LlmProviderId,
       LlmProviderSettings
