@@ -59,16 +59,12 @@ describe("startOfLocalDay", () => {
 describe("formatClock and formatDay", () => {
   const now = new Date("2026-11-06T07:00:00Z");
 
-  test("same local date: HH:MM", () => {
-    expect(formatClock(new Date("2026-11-06T06:55:00Z"), TZ, now, "en")).toBe("07:55");
-  });
-
-  test("same year: D Mon HH:MM", () => {
-    expect(formatClock(new Date("2026-11-04T22:55:00Z"), TZ, now, "en")).toBe("4 Nov 23:55");
-  });
-
-  test("other year: D Mon YYYY HH:MM", () => {
-    expect(formatClock(new Date("2025-12-31T10:00:00Z"), TZ, now, "en")).toBe("31 Dec 2025 11:00");
+  test.each([
+    ["same local date: HH:MM", "2026-11-06T06:55:00Z", "07:55"],
+    ["same year: D Mon HH:MM", "2026-11-04T22:55:00Z", "4 Nov 23:55"],
+    ["other year: D Mon YYYY HH:MM", "2025-12-31T10:00:00Z", "31 Dec 2025 11:00"],
+  ])("%s", (_name, at, text) => {
+    expect(formatClock(new Date(at), TZ, now, "en")).toBe(text);
   });
 
   test("formatDay", () => {
@@ -120,21 +116,17 @@ describe("isQuietTime", () => {
 });
 
 describe("quietEnd", () => {
-  test("before midnight: 07:00 on the next local date", () => {
-    expect(iso(quietEnd(new Date("2026-11-06T21:30:00Z"), TZ))).toBe("2026-11-07T06:00:00.000Z");
-  });
-
-  test("after midnight: 07:00 on the same local date", () => {
-    expect(iso(quietEnd(new Date("2026-11-07T05:59:00Z"), TZ))).toBe("2026-11-07T06:00:00.000Z");
+  test.each([
+    ["before midnight: 07:00 on the next local date", "2026-11-06T21:30:00Z", "2026-11-07T06:00:00.000Z"],
+    ["after midnight: 07:00 on the same local date", "2026-11-07T05:59:00Z", "2026-11-07T06:00:00.000Z"],
+    ["the spring night", "2027-03-27T22:00:00Z", "2027-03-28T05:00:00.000Z"],
+  ])("%s", (_name, at, end) => {
+    expect(iso(quietEnd(new Date(at), TZ))).toBe(end);
   });
 
   test("outside the quiet hours: the same instant", () => {
     const at = new Date("2026-11-06T11:00:00Z");
     expect(iso(quietEnd(at, TZ))).toBe(iso(at));
-  });
-
-  test("the spring night", () => {
-    expect(iso(quietEnd(new Date("2027-03-27T22:00:00Z"), TZ))).toBe("2027-03-28T05:00:00.000Z");
   });
 });
 

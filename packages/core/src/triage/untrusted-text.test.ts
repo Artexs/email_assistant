@@ -3,9 +3,37 @@ import { describe, expect, test } from "bun:test";
 import { markUntrustedText, removeLinks } from "./untrusted-text";
 
 describe("markUntrustedText", () => {
-  test("replaces email addresses", () => {
-    expect(markUntrustedText("Napisz do jan.kowalski@firma.test do jutra")).toBe("Napisz do [address] do jutra");
-    expect(markUntrustedText("Reply to x@evil.test now")).toBe("Reply to [address] now");
+  test.each([
+    [
+      "replaces email addresses",
+      [
+        ["Napisz do jan.kowalski@firma.test do jutra", "Napisz do [address] do jutra"],
+        ["Reply to x@evil.test now", "Reply to [address] now"],
+      ],
+    ],
+    [
+      "replaces phone numbers",
+      [
+        ["Zadzwoń: +48 600 123 456 jutro", "Zadzwoń: [phone] jutro"],
+        ["Call 600-123-456 now", "Call [phone] now"],
+      ],
+    ],
+    [
+      "keeps dates and short numbers",
+      [
+        ["Termin 2026-11-04, 5 plików, kwota 1200 zł", "Termin 2026-11-04, 5 plików, kwota 1200 zł"],
+        ["Od 2026-11-04 do 2026-11-05", "Od 2026-11-04 do 2026-11-05"],
+      ],
+    ],
+    [
+      "replaces a link glued to a word",
+      [
+        ["foohttps://evil.test/x", "foo[link]"],
+        ["xwww.evil.test", "x[link]"],
+      ],
+    ],
+  ] as [string, [string, string][]][])("%s", (_name, pairs) => {
+    for (const [input, output] of pairs) expect(markUntrustedText(input)).toBe(output);
   });
 
   test("replaces an address in angle brackets", () => {
@@ -42,26 +70,9 @@ describe("markUntrustedText", () => {
     expect(markUntrustedText("Nr 61109010140000071219812874.")).toBe("Nr [account number].");
   });
 
-  test("replaces phone numbers", () => {
-    expect(markUntrustedText("Zadzwoń: +48 600 123 456 jutro")).toBe("Zadzwoń: [phone] jutro");
-    expect(markUntrustedText("Call 600-123-456 now")).toBe("Call [phone] now");
-  });
-
-  test("keeps dates and short numbers", () => {
-    expect(markUntrustedText("Termin 2026-11-04, 5 plików, kwota 1200 zł")).toBe(
-      "Termin 2026-11-04, 5 plików, kwota 1200 zł"
-    );
-    expect(markUntrustedText("Od 2026-11-04 do 2026-11-05")).toBe("Od 2026-11-04 do 2026-11-05");
-  });
-
   test("output never contains @", () => {
     const inputs = ["a@b.test and @c and d@e", "https://x.test/?u=a@b.test", "<x@y.pl>, z@w.pl; @@"];
     for (const input of inputs) expect(markUntrustedText(input)).not.toContain("@");
-  });
-
-  test("replaces a link glued to a word", () => {
-    expect(markUntrustedText("foohttps://evil.test/x")).toBe("foo[link]");
-    expect(markUntrustedText("xwww.evil.test")).toBe("x[link]");
   });
 });
 
