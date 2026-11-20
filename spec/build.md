@@ -17,6 +17,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F148-one-legal-version-format-and-parser-exist` (🟠 ACTIVE): One legal version format and parser exist
+- `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟠 ACTIVE): One operator alert path with texts in core and one locale type exist
 - `F146-one-action-id-header-exists-and-the-unread-exports-and-the-weaker-dkim-check-are-removed` (🟠 ACTIVE): One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed
 - `F143-the-files-that-the-last-tickets-grew-past-400-lines-are-split-by-aggregate-and-a-lint-check-warns-over-400-and-fails-over-800` (🟠 ACTIVE): The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
 - `F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry` (🟠 ACTIVE): One variable picks the LLM provider for the whole application: OpenAI, Gemini or DeepSeek, with one API key
