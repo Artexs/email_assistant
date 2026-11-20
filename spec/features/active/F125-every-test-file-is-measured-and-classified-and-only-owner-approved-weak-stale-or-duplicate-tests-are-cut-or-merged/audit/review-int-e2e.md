@@ -294,3 +294,13 @@ K rules that kept rows: K3 (security, privacy, destructive guards, exactly-once,
 ## Not read
 
 0 items. The 73 items that the first job listed as `not read` (all `S9`, 2.0 s to 2.8 s) are rows 151-223 above. Items selected 223 = items in this file 223.
+
+## After the data base
+
+Master moved after the data base. A rescan at `7320a64f` (`bun scripts/test-audit/scan-cli.ts`, output outside the repo) gives 5,893 `int` and `e2e` call sites against 5,794 in `cases-static.tsv`: 105 sites added, 6 removed or renamed. None of them is in `cases.tsv`, so none is an item of this review; a cut stage re-resolves keys by name (Cut stage rule 2). Of the 105 added sites one carries a flag:
+
+| Key | Flags | Action | Rule | Evidence |
+| --- | --- | --- | --- | --- |
+| int/worker-db.test.ts "a worker process runs its files on its own database" | S7 | KEEP | K4 | `test.skipIf(process.env.EA_TEST_WORKER_DB !== "1")`. `package.json` `test:int` sets `EA_TEST_WORKER_DB=1`, so the case runs in `test:int` and `test:int:ci` and skips only in a serial run of one file (not FIX-NEVER-RUNS). It guards the worker-database switch of the parallel int run. |
+
+New files that carry the added sites include `contacts-activity-golden.test.ts`, `db-worktree-drop.test.ts`, `loops-match-address-rule.test.ts` and new cases of `actions-transitions.test.ts`; the e2e additions are in `apps/docs/e2e/site.spec.ts` (8 sites, browser paths of the new docs pages). The summary numbers above stay those of the data base: 223 items, 223 rows.
