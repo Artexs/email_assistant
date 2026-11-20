@@ -12,13 +12,16 @@ Part of [`../plan.md`](../plan.md). Review: Opus, before the land (security: the
 - **Files.** `packages/core/src/triage/dkim-pass.ts` and `dkim-pass.test.ts`.
 - **Decisions.** D6, D7.
 - **Order.**
-  1. Add a test helper `covered(authResults, fromDomain)` = `hasCoveredDkimPass(authResults, TRUSTED, fromDomain, SIGNED)`, where `SIGNED` holds one signature per `header.d` domain that any case of the file uses. Each signature's `h` names `From`, `List-Unsubscribe` and `List-Unsubscribe-Post`. Build `SIGNED` from a fixed list of domains in the test, not by parsing the case strings. A case that passes a non-default trusted list (for example `[]`) or a `null` value calls `hasCoveredDkimPass` directly with the same arguments.
+  1. Add a file-level test helper `alignedCovered(authResults, fromDomain)` = `hasCoveredDkimPass(authResults, TRUSTED, fromDomain, SIGNED)`. Do not name it `covered`: the `hasCoveredDkimPass` block already has a `covered` helper. `SIGNED` holds one signature per `header.d` domain that any case of the file uses. Each signature's `h` names `From`, `List-Unsubscribe` and `List-Unsubscribe-Post`. Build `SIGNED` from a fixed list of domains plus the domains made from the shared-suffix `suffixes` array; do not build it from the case strings. A case that passes a non-default trusted list (for example `[]`) or a `null` value calls `hasCoveredDkimPass` directly with the same arguments and the same `SIGNED`.
+  1b. The lasting guard (D6, review 1 finding 1): `alignedCovered` (and each direct call) first checks that every `header.d=<domain>` in the input, also inside comments and quoted strings, is a `d` of `SIGNED`; if one is not, the test fails with `unsigned header.d <domain>: add it to SIGNED`. Without this a false case stays false for a missing signature, whatever the parser does.
   2. Add one temporary assertion: for every case, `covered(...)` equals `hasTrustedAlignedDkimPass(...)`. Run it; it must pass. If one case differs, stop and report it (the domain list is short, or the functions differ).
   3. Change every call of the old describe block to `covered(...)`, keep each expected value, and rename the block to say what it covers (the parser and the alignment of the trusted result). Delete the temporary assertion and the function `hasTrustedAlignedDkimPass`. Fix its comment pointer in `hasCoveredDkimPass` if it names the old function.
 - **Test.**
-  1. Every case of the old block keeps its old expected boolean through `covered(...)`. Count: the same number of `expect` calls as at HEAD (name both counts in the final message).
+  1. Every case of the old block keeps its old expected boolean through `covered(...)`. Count: the same number of case inputs as at HEAD (name both counts in the final message).
   2. The cases that already called `hasCoveredDkimPass` stay unchanged.
-- **Break check (final message).** In `trustedAlignedPassDomains`, stop removing comments (or quoted strings) before the split: at least one moved case fails. Name it. Revert.
+- **Break checks (final message).** Each must make at least one moved case fail; name it, then revert.
+  - In `trustedAlignedPassDomains`, stop removing comments (or quoted strings) before the split.
+  - In `alignedDomains`, set the registrable-domain floor to 1 (the shared-suffix floor goes): the `co.uk` case and the shared-suffix cases must fail.
 
 ## Step 2 — the export guard
 

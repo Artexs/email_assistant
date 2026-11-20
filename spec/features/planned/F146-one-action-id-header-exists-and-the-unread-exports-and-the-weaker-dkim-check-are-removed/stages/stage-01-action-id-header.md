@@ -20,7 +20,7 @@ The header name `X-EA-Action-Id` has one production spelling, in `@ea/core`. A s
 ## Step 2 — the scan test
 
 - **Files.** New `apps/server/src/action-id-header-scan.test.ts`. Copy the shape of `apps/server/src/address-rule-scan.test.ts` (TypeScript AST, `findings(file, text)`, a `Glob` over the roots).
-- **Decisions.** D3: the roots, the excluded paths, the one allowed file, the pattern `/x-ea-action-id/i` on string literals and template parts only.
+- **Decisions.** D3: the roots, the excluded paths, the one allowed file, the pattern `/x-ea-action-id/i` on string literals, regex literals (`ts.isRegularExpressionLiteral`, match on the node text) and template parts only.
 - **Test.**
   3. Zero findings over the production files at HEAD. On failure the message lists `file:line` per finding.
   4. The scanned file list is not empty and holds `packages/core/src/outgoing/message.ts` and `apps/server/src/modules/mail/imap/mapper.ts` (a glob that matches nothing must fail).
@@ -31,6 +31,7 @@ The header name `X-EA-Action-Id` has one production spelling, in `@ea/core`. A s
      - `// the X-EA-Action-Id header` → 0
      - `/** X-EA-Action-Id */ const d = 1;` → 0
      - `const e = "X-EA-Probe";` → 0
+     - `const r = /x-ea-action-id/i;` → 1
   6. `packages/core/src/outgoing/headers.ts` is in the scanned list and gives zero findings only because it is the allowed file: `findings()` on its text without the allow gives 2.
 - **Break check (final message).** Put `"x-ea-action-id"` back into `mail/imap/mapper.ts`: case 3 fails and names the file and line. Revert.
 

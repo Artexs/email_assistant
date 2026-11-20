@@ -11,7 +11,7 @@ Five exports that no production code reads are gone; their test cases run throug
 
 - **Files.** `packages/core/src/digest/digest.ts` and `digest.test.ts`; `packages/core/src/loops/brief.test.ts`; `packages/core/src/notices/routes.ts` and `routes.test.ts`.
 - **Decisions.** D8.
-- **`renderDigest`.** Delete it. In `digest.test.ts`, the `render` helper and the inline calls use `renderDigestWithBrief(input, texts).message`; every expected value stays. In `brief.test.ts`, the "no brief" case loses only its line that compares the result with `renderDigest`; its other assertions stay.
+- **`renderDigest`.** Delete it. In `digest.test.ts`, the `render` helper and the inline calls use `renderDigestWithBrief(input, texts).message`; every expected value stays. The two describe titles that name `renderDigest` become `renderDigestWithBrief (no brief)` and `renderDigestWithBrief in Polish (no brief)`. In `brief.test.ts`, the "no brief" case loses only its line that compares the result with `renderDigest`; its other assertions stay.
 - **`routeOfKind`.** Delete it. Its test case in `routes.test.ts` keeps its table and expected routes and calls `effectiveRoute({ stored: group === null ? undefined : routes[group], hasChat, hasDevice, group })` with `group = noticeGroupOf(kind)`, through a small test-local helper. This is the same composition that `apps/server/src/modules/channels/notice-fan-out.ts` does.
 - **Test.**
   1. Every case of `digest.test.ts` passes with its HEAD expected value (same count of tests; name both counts).
@@ -28,7 +28,7 @@ Five exports that no production code reads are gone; their test cases run throug
 
 ## Step 3 — docs
 
-- `docs/capabilities/digest-and-notices.md` rule 4 and its function table, and `docs/modules.md` (the `renderDigest` row and the `buildDigestMessage` line): name `renderDigestWithBrief`.
+- `docs/capabilities/digest-and-notices.md` rule 4, the two prose mentions in rule 6, the function table, and `docs/modules.md` (the `renderDigest` row and the `buildDigestMessage` line): name `renderDigestWithBrief`.
 - `docs/capabilities/trust.md`: the `mailReportKinds` mention in rule 19 names `reportMailKinds` (`@ea/core`).
 
 ## Done when
