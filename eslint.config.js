@@ -319,6 +319,26 @@ export default tseslint.config(
     rules: { "ea/no-time-literals": "error" },
   },
   {
+    // One locale type (docs/code-patterns.md § Texts carry a locale): a copy of the "en" and "pl" pair is an error.
+    // Out: tests, the one list in tenancy.ts and the mail-language folders (the language of a mail is another concept).
+    // The `.astro` files need `plugins: { ea }` here: the block above covers no `.astro`.
+    files: [
+      "apps/docs/src/**/*.{ts,tsx,astro}",
+      "apps/web/src/**/*.{ts,tsx,astro}",
+      "apps/server/src/**/*.{ts,tsx,astro}",
+      "packages/core/src/**/*.{ts,tsx,astro}",
+    ],
+    ignores: [
+      "**/*.test.{ts,tsx}",
+      "**/*.test-helper.ts",
+      "packages/core/src/tenancy.ts",
+      "packages/core/src/{sim,testmail,outgoing,replies,triage}/**",
+      "apps/server/src/modules/{loops,replies,actions,triage}/**",
+    ],
+    plugins: { ea },
+    rules: { "ea/no-locale-union": "error" },
+  },
+  {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
     ignores: [
       "apps/server/src/modules/channels/telegram/**",
