@@ -76,6 +76,17 @@ describe("a reply closes a loop by the one address rule", () => {
     });
   });
 
+  test("03-T5b: the same, when the Sent row holds the typed final-sigma form (the alias read must give the rule form)", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      await sentMail(trx, org, { fromAddress: NIKOS_FINAL });
+      const loop = await waiting(trx, org, { to_addresses: [NIKOS_FINAL], cc_addresses: [], counterpart: NIKOS_FINAL });
+      await reply(trx, org, { from: NIKOS_FINAL });
+      expect((await run(trx, org)).repliedSubject).toBe(1);
+      expect((await loopRow(trx, loop.id)).status).toBe("closed");
+    });
+  });
+
   test("03-T6: a mail of another organization from the same address leaves the loop open", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
