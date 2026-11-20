@@ -272,7 +272,7 @@ async function applyMove(
   if (rescue) await setMovePending(deps.db, ctx, email.id, deps.now());
   // When the sync marked the mail returned, `from` is the source folder too and the ensure only locates (rule 1).
   const from = email.folder;
-  const hints = { fromUid: email.uid, toUid: reverseOf === null ? email.uid : email.inbox_uid };
+  const hints = { fromUid: email.uid, toUid: reverseOf === null ? email.uid : email.source_uid };
   const byAppend = (to === INBOX && email.source_folder !== INBOX) || deps.appendFolders.has(to);
   const keyOf = { exceptEmailId: email.id, messageId: email.message_id_header, contentHash: email.content_hash };
   const exclude = {

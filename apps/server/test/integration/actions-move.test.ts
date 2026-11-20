@@ -174,7 +174,7 @@ describe("original move: the ensure", () => {
       expect(targetUid).not.toBe(uid);
       const email = await emailState(trx, mail.emailId);
       expect(email.folder).toBe("AI/Info");
-      expect(Number(email.inbox_uid)).toBe(uid);
+      expect(Number(email.source_uid)).toBe(uid);
       expect(Number(email.uid)).toBe(targetUid);
       expect(email.moved_at?.getTime()).toBe(NOW.getTime());
       const state = await actionState(trx, mail.actionIds[0] as string);
@@ -435,7 +435,7 @@ const REVERSE_AT = new Date(RECEIVED.getTime() + 60_000);
 async function insertMoved(
   trx: Transaction<DB>,
   s: Setup,
-  opts: { folder: string; sourceFolder?: string; key: string; uid: number; inboxUid: number; messageId?: string }
+  opts: { folder: string; sourceFolder?: string; key: string; uid: number; uidInInbox: number; messageId?: string }
 ): Promise<{ emailId: string; originalId: string; reverseId: string }> {
   const meta = await s.fake.fetchMetaIn(opts.folder, opts.uid);
   const mail = await insertTriagedWithActions(trx, s.ctx, s.mailboxId, {
@@ -447,7 +447,7 @@ async function insertMoved(
     folder: opts.folder,
     sourceFolder: opts.sourceFolder,
     uid: opts.uid,
-    sourceUid: opts.inboxUid,
+    sourceUid: opts.uidInInbox,
     contentHash: contentHash(meta as NonNullable<typeof meta>),
     movedAt: RECEIVED,
     actions: [{ type: "move", status: "applied", payload: { folder: opts.key } }],
@@ -470,7 +470,7 @@ function insertTestEmailLike(trx: Transaction<DB>, s: Setup, uid: number, hash: 
     content_hash: hash,
     folder: INBOX,
     uid,
-    inbox_uid: uid,
+    source_uid: uid,
     received_at: RECEIVED,
   });
 }
@@ -511,9 +511,9 @@ describe("reverse move", () => {
   test("(8) the mail goes back to INBOX and the original is undone", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const inboxUid = deliver(s, INBOX);
-      const infoUid = s.fake.userMove(INBOX, inboxUid, "AI/Info");
-      const mail = await insertMoved(trx, s, { folder: "AI/Info", key: "ai_info", uid: infoUid, inboxUid });
+      const uidInInbox = deliver(s, INBOX);
+      const infoUid = s.fake.userMove(INBOX, uidInInbox, "AI/Info");
+      const mail = await insertMoved(trx, s, { folder: "AI/Info", key: "ai_info", uid: infoUid, uidInInbox });
       const [action] = await claim(trx, s);
       expect(action?.id).toBe(mail.reverseId);
 
@@ -524,7 +524,7 @@ describe("reverse move", () => {
       expect(await uidsIn(s, "AI/Info")).toEqual([]);
       const email = await emailState(trx, mail.emailId);
       expect(email).toMatchObject({ folder: INBOX, moved_at: null });
-      expect([Number(email.uid), Number(email.inbox_uid)]).toEqual([inbox[0] as number, inbox[0] as number]);
+      expect([Number(email.uid), Number(email.source_uid)]).toEqual([inbox[0] as number, inbox[0] as number]);
       expect(await actionState(trx, mail.reverseId)).toMatchObject({ status: "applied" });
       expect(await actionState(trx, mail.originalId)).toMatchObject({ status: "undone", status_reason: "undo" });
       const reverseApplied = (await auditEvents(trx, s)).filter(
@@ -542,7 +542,7 @@ describe("reverse move", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const uid = deliver(s, INBOX);
-      const mail = await insertMoved(trx, s, { folder: INBOX, key: "ai_info", uid, inboxUid: uid });
+      const mail = await insertMoved(trx, s, { folder: INBOX, key: "ai_info", uid, uidInInbox: uid });
       await trx.updateTable("emails").set({ returned_at: NOW }).where("id", "=", mail.emailId).execute();
       const [action] = await claim(trx, s);
       s.fake.calls.length = 0;
@@ -560,15 +560,15 @@ describe("reverse move", () => {
   test("(9b) a crash after the move, then the sync marks it returned: the retry never deletes", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx, { ...INTERIA, keepUidOnCopy: true, uidValidity: 7 });
-      const inboxUid = deliver(s, INBOX);
-      const infoUid = s.fake.userMove(INBOX, inboxUid, "AI/Info");
-      const mail = await insertMoved(trx, s, { folder: "AI/Info", key: "ai_info", uid: infoUid, inboxUid });
+      const uidInInbox = deliver(s, INBOX);
+      const infoUid = s.fake.userMove(INBOX, uidInInbox, "AI/Info");
+      const mail = await insertMoved(trx, s, { folder: "AI/Info", key: "ai_info", uid: infoUid, uidInInbox });
       const moved = await updateCursor(
         trx,
         s.ctx,
         s.mailboxId,
         { uidValidity: null, lastUid: null },
-        { uidValidity: 7, lastUid: inboxUid }
+        { uidValidity: 7, lastUid: uidInInbox }
       );
       expect(moved).toBe(true);
       const [action] = await claim(trx, s);
@@ -579,7 +579,7 @@ describe("reverse move", () => {
         },
       });
       await expect(applyAction(crashing, s.ctx, action as ClaimedAction, s.fake)).rejects.toBe(crash);
-      expect(await uidsIn(s, INBOX)).toEqual([inboxUid]);
+      expect(await uidsIn(s, INBOX)).toEqual([uidInInbox]);
       expect((await emailState(trx, mail.emailId)).folder).toBe("AI/Info");
 
       const result = await syncMailbox(
@@ -597,7 +597,7 @@ describe("reverse move", () => {
       expect((await applyAction(depsOf(s, trx), s.ctx, again as ClaimedAction, s.fake)).kind).toBe("applied");
 
       expect(callCount(s, "deleteMessage")).toBe(0);
-      expect(await uidsIn(s, INBOX)).toEqual([inboxUid]);
+      expect(await uidsIn(s, INBOX)).toEqual([uidInInbox]);
     });
   });
 
@@ -608,7 +608,7 @@ describe("reverse move", () => {
         folder: "AI/Spam",
         key: "ai_spam",
         uid: deliver(s, "AI/Spam"),
-        inboxUid: 1,
+        uidInInbox: 1,
       });
       const otherUid = deliver(s, INBOX);
       const meta = await s.fake.fetchMetaIn(INBOX, otherUid);
@@ -633,9 +633,9 @@ describe("reverse move", () => {
   test("(9d) a reverse on a mail that is nowhere: failed / mail_not_found, not notified", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const inboxUid = deliver(s, INBOX);
-      const infoUid = s.fake.userMove(INBOX, inboxUid, "AI/Info");
-      const mail = await insertMoved(trx, s, { folder: "AI/Info", key: "ai_info", uid: infoUid, inboxUid });
+      const uidInInbox = deliver(s, INBOX);
+      const infoUid = s.fake.userMove(INBOX, uidInInbox, "AI/Info");
+      const mail = await insertMoved(trx, s, { folder: "AI/Info", key: "ai_info", uid: infoUid, uidInInbox });
       s.fake.remove("AI/Info", infoUid);
       const [action] = await claim(trx, s);
 
@@ -660,7 +660,7 @@ describe("ensureMoved", () => {
     mailbox_id: "m1",
     folder: INBOX,
     uid,
-    inbox_uid: uid,
+    source_uid: uid,
     source_folder: INBOX,
     message_id_header: MESSAGE_ID,
     content_hash: hash,
@@ -707,7 +707,7 @@ const JUNK = "Wiadomości-śmieci";
 const LATER = new Date(NOW.getTime() + 11 * 60_000);
 
 describe("source folder and the rescue", () => {
-  test("(1) a forward move of an Oferty mail into AI/Info keeps source_folder and inbox_uid; it uses a MOVE", async () => {
+  test("(1) a forward move of an Oferty mail into AI/Info keeps source_folder and source_uid; it uses a MOVE", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       deliver(s, "AI/Info", "<filler@x.test>");
@@ -721,7 +721,7 @@ describe("source folder and the rescue", () => {
       const email = await emailState(trx, mail.emailId);
       expect(email.folder).toBe("AI/Info");
       expect(email.source_folder).toBe("Oferty");
-      expect(Number(email.inbox_uid)).toBe(uid);
+      expect(Number(email.source_uid)).toBe(uid);
       expect(Number(email.uid)).toBe(Math.max(...(await uidsIn(s, "AI/Info"))));
       expect(Number(email.uid)).not.toBe(uid);
       expect(email.moved_at?.getTime()).toBe(NOW.getTime());
@@ -760,7 +760,7 @@ describe("source folder and the rescue", () => {
       expect(callCount(s, "transferByAppend")).toBe(1);
       expect(callCount(s, "moveMessage")).toBe(0);
       const email = await emailState(trx, mail.emailId);
-      expect(email).toMatchObject({ folder: INBOX, source_folder: JUNK, undo_pending_at: null });
+      expect(email).toMatchObject({ folder: INBOX, source_folder: JUNK, move_pending_at: null });
       expect(email.moved_at?.getTime()).toBe(NOW.getTime());
       const inbox = await uidsIn(s, INBOX);
       expect(inbox).toHaveLength(2);
@@ -783,7 +783,7 @@ describe("source folder and the rescue", () => {
         sourceFolder: JUNK,
         key: "inbox",
         uid,
-        inboxUid: junkUid,
+        uidInInbox: junkUid,
       });
       const [action] = await claim(trx, s);
       expect(action?.id).toBe(mail.reverseId);
@@ -796,7 +796,7 @@ describe("source folder and the rescue", () => {
       const email = await emailState(trx, mail.emailId);
       expect(email).toMatchObject({ folder: JUNK, moved_at: null });
       expect(Number(email.uid)).toBe(Math.max(...(await uidsIn(s, JUNK))));
-      expect(Number(email.inbox_uid)).toBe(Number(email.uid));
+      expect(Number(email.source_uid)).toBe(Number(email.uid));
       expect(await uidsIn(s, INBOX)).toEqual([]);
       expect(await actionState(trx, mail.originalId)).toMatchObject({ status: "undone" });
     });
@@ -851,7 +851,7 @@ describe("source folder and the rescue", () => {
     });
   });
 
-  test("(7) during the rescue the row has undo_pending_at set", async () => {
+  test("(7) during the rescue the row has move_pending_at set", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const mail = await rescueMail(trx, s);
@@ -860,7 +860,7 @@ describe("source folder and the rescue", () => {
       const provider: MailProvider = {
         ...s.fake,
         async transferByAppend(from, uid, to) {
-          seen = (await emailState(trx, mail.emailId)).undo_pending_at;
+          seen = (await emailState(trx, mail.emailId)).move_pending_at;
           return s.fake.transferByAppend(from, uid, to);
         },
       };
@@ -868,7 +868,7 @@ describe("source folder and the rescue", () => {
       expect((await applyAction(depsOf(s, trx), s.ctx, action as ClaimedAction, provider)).kind).toBe("applied");
 
       expect(seen?.getTime()).toBe(NOW.getTime());
-      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+      expect((await emailState(trx, mail.emailId)).move_pending_at).toBeNull();
     });
   });
 
@@ -888,16 +888,16 @@ describe("source folder and the rescue", () => {
         status: "failed",
         status_reason: "mail_not_found",
       });
-      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+      expect((await emailState(trx, mail.emailId)).move_pending_at).toBeNull();
     });
   });
 
   test("(9) the reverse of an INBOX-source mail from AI/Spam into INBOX uses a MOVE", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const inboxUid = deliver(s, INBOX);
-      const spamUid = s.fake.userMove(INBOX, inboxUid, "AI/Spam");
-      const mail = await insertMoved(trx, s, { folder: "AI/Spam", key: "ai_spam", uid: spamUid, inboxUid });
+      const uidInInbox = deliver(s, INBOX);
+      const spamUid = s.fake.userMove(INBOX, uidInInbox, "AI/Spam");
+      const mail = await insertMoved(trx, s, { folder: "AI/Spam", key: "ai_spam", uid: spamUid, uidInInbox });
       const [action] = await claim(trx, s);
       s.fake.calls.length = 0;
 

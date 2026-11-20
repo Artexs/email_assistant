@@ -111,16 +111,16 @@ describe("S3 schema: actions", () => {
 });
 
 describe("S3 schema: emails", () => {
-  test("a new email has inbox_uid and moved_at NULL", async () => {
+  test("a new email has source_uid and moved_at NULL", async () => {
     await withRollback(db, async (trx) => {
       const { orgId, mailboxId } = await createOrgWithMailbox(trx);
       const emailId = await insertTestEmail(trx, { orgId }, mailboxId);
       const row = await trx
         .selectFrom("emails")
-        .select(["inbox_uid", "moved_at"])
+        .select(["source_uid", "moved_at"])
         .where("id", "=", emailId)
         .executeTakeFirstOrThrow();
-      expect(row.inbox_uid).toBeNull();
+      expect(row.source_uid).toBeNull();
       expect(row.moved_at).toBeNull();
     });
   });
