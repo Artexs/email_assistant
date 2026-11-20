@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -12,7 +12,13 @@ import { exportDemo, IMPORT_ORG_NAME, serializeDemoSeed, type DemoSeed, type Lab
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner, featureStates } from "../../src/modules/tenancy";
 import { createAuth } from "../../src/platform/auth";
-import { DEMO_OWNER_EMAIL, setupDemoOrg, type DemoWebSettings } from "../../src/scripts/demo-org-setup";
+import {
+  DEMO_OWNER_EMAIL,
+  setupDemoOrg,
+  writeDemoOwnerFile,
+  type DemoOwnerFile,
+  type DemoWebSettings,
+} from "../../src/scripts/demo-org-setup";
 import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
 
 import { insertTriaged, testCapabilities } from "./fixtures";
@@ -249,5 +255,37 @@ describe("setupDemoOrg", () => {
       setupDemoOrg(db, { seedFile: join(dir, "nope.json"), ownerPassword: PASSWORD, web: WEB })
     ).rejects.toThrow("demo_seed_unreadable");
     expect(await counts()).toEqual({ orgs: 0, users: 0 });
+  });
+});
+
+// The demo recording (`bun run demo:record`) with source `demo` sets up through `setupDemoOrg` (`apps/web/e2e/demo/global-setup.ts` runs
+// the command) and signs in with the file that the command writes. The recording of the demo-seed video is a follow-up ticket's.
+describe("record setup with source demo", () => {
+  test("T10 the owner file that the recording reads holds a sign-in that works for the organization that setupDemoOrg made", async () => {
+    const file = await writeSeed();
+    const result = await setupDemoOrg(db, { seedFile: file, ownerPassword: PASSWORD, web: WEB, sendScope: "off" });
+    const ownerFile = join(dir, "nested", "owner.json");
+    writeDemoOwnerFile(ownerFile, result, PASSWORD);
+
+    const read = JSON.parse(readFileSync(ownerFile, "utf8")) as DemoOwnerFile;
+    expect(read).toEqual({ orgId: result.orgId, owner: { email: DEMO_OWNER_EMAIL, password: PASSWORD } });
+    const handle = createAuth({
+      databaseUrl: WEB.databaseUrl,
+      baseUrl: WEB.baseUrl,
+      secret: WEB.secret,
+      trustedOrigins: [],
+      onEvent: auditWebEvent(db),
+      onTermsAccepted: termsAcceptedHandler(db, () => new Date()),
+      resetLinkTtlSeconds: 86_400,
+    });
+    try {
+      const { response } = await handle.auth.api.signInEmail({
+        body: { email: read.owner.email, password: read.owner.password },
+        returnHeaders: true,
+      });
+      expect(response.user.email).toBe(DEMO_OWNER_EMAIL);
+    } finally {
+      await handle.close();
+    }
   });
 });
