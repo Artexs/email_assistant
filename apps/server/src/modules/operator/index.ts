@@ -22,4 +22,3 @@ export {
   type StatFs,
 } from "./slo-checks";
 export { runSloTick, type SloCheckEntry, type SloCheckFn, type SloTickDeps } from "./slo-job";
-export { sloAlertText, type AlertLocale, type AlertTextPhase, type SloTextInput } from "./slo-texts";
