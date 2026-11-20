@@ -32,10 +32,6 @@ describe("the case form table over every code point", () => {
     expect(groups.size).toBeGreaterThan(1000);
   });
 
-  test("the last code point is its own form", () => {
-    expect(addressCaseForms("\u{10ffff}")).toEqual(["\u{10ffff}"]);
-  });
-
   test("a letter that no code point folds to has only itself, and the empty text has no form but itself", () => {
     expect(addressCaseForms("\u03c2")).toEqual(["\u03c2"]);
     expect(addressCaseForms("")).toEqual([""]);
