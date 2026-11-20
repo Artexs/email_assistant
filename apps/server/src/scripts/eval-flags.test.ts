@@ -8,7 +8,7 @@ import { llmProviderIds } from "../platform/llm";
 import { evalUsage, parseEvalArgs } from "./eval-args";
 import { JUDGE_SAME_MODEL, judgeSetupError } from "./eval-judge-setup";
 
-// The flags of an eval run pin one run (F141 stage 05). `runOverrides` is what `eval`, `eval --sim`, the drafter eval
+// The flags of an eval run pin one run. `runOverrides` is what `eval`, `eval --sim`, the drafter eval
 // and the extractor eval hand to `llmRoleTable`; `judgeSetupError` is the check that runs before the first call.
 const base = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
