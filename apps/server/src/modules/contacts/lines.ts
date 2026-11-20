@@ -1,4 +1,4 @@
-import { normalizeSenderAddress, type SenderHistory, type SenderLine } from "@ea/core";
+import { normalizeAddress, type SenderHistory, type SenderLine } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -50,7 +50,7 @@ export async function readSenderLines(
   const pairs = new Map<string, { mailboxId: string; address: string }>();
   for (const mail of mails) {
     if (mail.address === null) continue;
-    const address = normalizeSenderAddress(mail.address);
+    const address = normalizeAddress(mail.address);
     if (address === "") continue;
     pairs.set(`${mail.mailboxId}:${address}`, { mailboxId: mail.mailboxId, address });
   }
@@ -59,7 +59,7 @@ export async function readSenderLines(
   const profiles = await read({ db: deps.db, credentialsKey: deps.credentialsKey }, ctx, [...pairs.values()], now);
   return mails.map((mail) => {
     if (mail.address === null) return null;
-    const history = profiles.get(`${mail.mailboxId}:${normalizeSenderAddress(mail.address)}`);
+    const history = profiles.get(`${mail.mailboxId}:${normalizeAddress(mail.address)}`);
     return history === undefined ? null : senderLineOf(history);
   });
 }

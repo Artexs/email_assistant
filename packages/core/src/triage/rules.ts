@@ -1,4 +1,4 @@
-import { normalizeSenderAddress } from "../contacts/address";
+import { normalizeAddress } from "../contacts/address";
 
 import { classifierCategories, DELEGATION_CATEGORY, type Category } from "./categories";
 
@@ -10,10 +10,6 @@ export const SENDER_RULE_LIMIT = 1000;
 // An address `local@domain` or a domain with a dot. A leading "@" or a domain without a dot never matches.
 const domainPattern = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 const addressPattern = /^[^\s@]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
-
-export function normalizeSenderPattern(raw: string): string {
-  return raw.trim().toLowerCase();
-}
 
 export function isValidSenderPattern(pattern: string): boolean {
   return domainPattern.test(pattern) || addressPattern.test(pattern);
@@ -38,10 +34,6 @@ const NOREPLY_LOCAL_PARTS = new Set([
   "postmaster",
 ]);
 
-function normalize(value: string | null): string {
-  return (value ?? "").trim().toLowerCase();
-}
-
 function patternMatches(pattern: string, address: string): boolean {
   if (pattern === "") return false;
   if (pattern.includes("@")) return pattern === address;
@@ -49,13 +41,11 @@ function patternMatches(pattern: string, address: string): boolean {
   return domain === pattern || domain.endsWith(`.${pattern}`);
 }
 
-// The sender and every rule pattern go through the one address rule of the sender profiles (`normalizeSenderAddress`), so a
-// rule made from a profile address (a Greek final sigma, a Turkish dotted capital I) matches the real sender, and a rule that
-// the user types in another case matches too. Plain ASCII, the common case, skips the fold.
-const ASCII_PRINTABLE = /^[\u0020-\u007e]*$/;
+// The sender and every rule pattern go through the one address rule (`normalizeAddress`), so a rule made from a profile
+// address (a Greek final sigma, a Turkish dotted capital I) matches the real sender, and a rule that the user types in
+// another case matches too. The rule skips the fold for plain ASCII.
 function normalizeForMatch(value: string | null): string {
-  const text = value ?? "";
-  return ASCII_PRINTABLE.test(text) ? text.trim().toLowerCase() : normalizeSenderAddress(text);
+  return normalizeAddress(value ?? "");
 }
 
 export function matchSender(
@@ -79,7 +69,7 @@ export function matchSender(
 }
 
 export function isNoreplyAddress(fromAddress: string | null): boolean {
-  const address = normalize(fromAddress);
+  const address = normalizeForMatch(fromAddress);
   const at = address.lastIndexOf("@");
   if (at < 1) return false;
   return NOREPLY_LOCAL_PARTS.has(address.slice(0, at).replace(/\+.*$/, ""));
