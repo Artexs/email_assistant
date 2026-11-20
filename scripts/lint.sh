@@ -2,7 +2,8 @@
 # ESLint with a cache (owner, 2026-11-20, notes/2026-11-20-worker-time-and-cpu.md).
 #
 #   scripts/lint.sh [eslint args]          cached: lints only files whose content changed since the last run
-#   scripts/lint.sh --full [eslint args]   no cache: lints every file (CI and the land check)
+#   scripts/lint.sh --full [eslint args]   no cache: lints every file (CI)
+#   scripts/lint.sh --files FILE...        cached: lints only these files (the pre-commit hook and check:job)
 #
 # The cache lives in node_modules/.cache/eslint/ of this checkout (each worktree has its own).
 # Its name is a hash of every input of the lint config: eslint.config.js, the local rules,
@@ -30,4 +31,9 @@ key=$(
 )
 mkdir -p "$dir"
 find "$dir" -type f -not -name "$key" -delete
+if [ "${1:-}" = "--files" ]; then
+  shift
+  [ "$#" -eq 0 ] && exit 0
+  exec eslint --cache --cache-strategy content --cache-location "$dir/$key" --no-warn-ignored "$@"
+fi
 exec eslint --cache --cache-strategy content --cache-location "$dir/$key" "$@" .
