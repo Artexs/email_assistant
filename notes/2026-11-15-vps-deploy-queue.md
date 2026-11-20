@@ -103,3 +103,29 @@ Every deploy to the VPS is a release: `deploy/release.sh <tag>` from a tag. No b
 
 ## Limen land closed the wrong ticket (2026-11-19)
 `limen land` of job `…5dc00e68` (label "F138 stage 01 (judge on OpenAI, for F115 s02)") closed F115. Cause: the coordinator left out `--keep-open`; land closes the active ticket it finds for the job, and F138 is in `planned/`. Fix: `git revert` of the close commit (`47e80b72`). Rule: land with `--keep-open` while the ticket has open stages, and a job label names only its own ticket.
+
+## F108 rollout
+
+### Stage 04, 2026-11-20 (job `2026-11-20-f108-vps-key-cleanup-v0-4-2-depl-f8ed4592`): stopped at the O1 model check, rolled back to v0.4.1
+
+Result: **stopped at step 3 (O1 compare)**. The judge model changed with v0.4.2. The task rule says: a changed model or effort other than the drafter move to `low` is a production change: stop, roll back, report. Part B (env split) and Part C (cron) did not run. No `env split ok`.
+
+- Start state (16:14Z): `df -h /` 18 G free; `git status` clean; state file `current=v0.4.2 previous=v0.4.1 pending=` empty.
+- Unrecorded deploy found: another run deployed `v0.4.2` (`34374ba0`) before this job. Image `ea-server:v0.4.2` built 2026-11-20 04:30:12Z; server start 04:31:36Z. No queue-note record of that release exists (no `release ok` line, no backup name). Stage step 1 allows this case ("record that and go to step 3").
+- O1 key cleanup: the 12 removed keys (`deploy/README.md` § LLM provider tiers, Update) are absent. Count of `^(LLM_(JUDGE|DRAFTER|EXTRACTOR)_(PROVIDER|MODEL|REASONING)|OPENAI_MODEL_CLASSIFIER|GEMINI_MODEL_CLASSIFIER|OPENAI_REASONING_EFFORT)=`: `.env` 0, `deploy/sim.env` 0, every `.env.bak-*` (5 files, back to 2026-11-07) 0. So the host never held them; nothing was deleted. LLM key names in `.env`: `LLM_PROVIDER`, `LLM_DAILY_CAP`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`. `.env` mtime 2026-11-19 18:57:25Z, before the v0.4.1 start (19:31Z): v0.4.1 ran with this same `.env`.
+- O1 step 1 at the old release: the live stack was already at v0.4.2, so the check ran the kept image `ea-server:v0.4.1` as the `cli` service (Compose override `image: ea-server:v0.4.1`, `run --rm -T --no-deps`; the live `server` was not touched). Lines (model, effort):
+  - `role=classifier provider=openai model=gpt-6-luna effort=none` (greeting and triage `category=needs_reply`)
+  - `role=drafter provider=openai model=gpt-6-luna effort=none`
+  - `role=extractor provider=openai model=gpt-6-luna effort=none`
+  - `role=judge provider=openai model=gpt-6-luna effort=none`
+  - rc 0 for all four.
+- O1 step 3 at v0.4.2 (`llm:check --role all`, live image, rc 0):
+  - `role=classifier model=gpt-6-luna effort=none` — same
+  - `role=drafter model=gpt-6-luna effort=low` — known move, accepted
+  - `role=extractor model=gpt-6-luna effort=none` — same
+  - `role=judge model=gpt-6.1-terra effort=none` — **changed** (v0.4.1: `gpt-6-luna`). Not the known drafter move.
+- Production use of the judge: none seen. Server code calls the judge only in the eval paths (`triage/eval-judge.ts`, `replies/drafter-eval.ts`). `audit_log` `llm.call` rows of the last 3 days: only `classifier gpt-6-luna` (117 before 04:31:36Z, 3 after). So the change had no runtime effect on the pilot that this check could see. The rule still applies; the owner decides.
+- Rollback check: no migration in `v0.4.1..v0.4.2` (`git diff --stat v0.4.1 v0.4.2 -- db/migrations` empty). `reply_drafts` off. Pilot flags on: `approvals_page`, `contact_wait`, `delegate_button`, `delegation_pages`, `open_loops`, `review_command`, `security_log`, `sender_context`, `sent_sync`, `trust_ladder`; all were turned on at or before 2026-11-19 20:29Z, so at v0.4.1, and v0.4.1 knows each flag.
+- Rollback (checklist step 11), 16:20:01Z: `deploy/rollback.sh` → `rollback ok v0.4.1`, rc 0. State now `current=v0.4.1 previous=v0.4.2 pending=` empty; checkout detached at `v0.4.1`. Server start 16:20:11Z, healthy; health 200; `EA_RELEASE=v0.4.1`. Live judge line: `role=judge model=gpt-6-luna effort=none`. Start log: 0 `error`, 0 `config_key_bad`; first `sync_done` by 16:22:15Z (2-minute interval), with `sent_sync_done` and 5 `sync_folder_done`, still 0 `error`. `ops:alerts`: only resolved alerts (`slo_backup_age`, `slo_sync_lag`). `ea-sim` containers untouched (same uptime, 22 h). No backup ran in this job (the rollback needs none; no DB change).
+- Not changed: `.env`, `deploy/sim.env`, the crontab (0 lines hold `--env-file .env`; 1 line, `30 3 * * *`), the DB.
+- Next (owner decision): accept the judge on the strong tier (`gpt-6.1-terra`) or not. If accepted: `deploy/rollback.sh` again goes forward to v0.4.2 (a second run swaps `current` and `previous`), then F108 stage 04 from step 3 (checks), then Part B. If not: a code change of the tier map ships in a new patch release first.
