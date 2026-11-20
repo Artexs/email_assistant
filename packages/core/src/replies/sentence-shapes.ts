@@ -9,9 +9,14 @@ function words(alternatives: readonly string[]): string {
   return `${NOT_LETTER_BEFORE}(?:${alternatives.join("|")})${NOT_LETTER_AFTER}`;
 }
 
-// English names start with a capital letter (so "may" and "march" stay verbs); Polish names are lower case.
+// A weekday or a month names a term only when a term preposition stands directly before it ("by Friday", "do środy").
+// After "on", "in", "w" or as a modifier ("the March delivery", "sobotniej zmiany") it names the thing the email asks
+// about. English names start with a capital letter (so "may" and "march" stay verbs); Polish names are lower case.
+const EN_TERM_PREPOSITION = String.raw`(?:[Bb]y|[Uu]ntil|[Ff]rom|[Bb]efore|[Aa]fter|[Nn]o later than)`;
+const PL_TERM_PREPOSITION = String.raw`(?:do|od|przed|po|najpóźniej)`;
+
 const EN_NAMES = new RegExp(
-  words([
+  `${NOT_LETTER_BEFORE}${EN_TERM_PREPOSITION}\\s+${words([
     "Monday",
     "Tuesday",
     "Wednesday",
@@ -23,6 +28,7 @@ const EN_NAMES = new RegExp(
     "February",
     "March",
     "April",
+    "May",
     "June",
     "July",
     "August",
@@ -30,47 +36,46 @@ const EN_NAMES = new RegExp(
     "October",
     "November",
     "December",
-  ])
-);
-const EN_MAY = new RegExp(
-  String.raw`${NOT_LETTER_BEFORE}(?:in|by|until|from|before|since|of|end of) May${NOT_LETTER_AFTER}`
+  ])}`,
+  "u"
 );
 
+// Noun forms only: "sobotniej" and "sobotnich" are adjectives and name no term.
+const PL_NAMES = new RegExp(
+  `${NOT_LETTER_BEFORE}${PL_TERM_PREPOSITION}\\s+${words([
+    "poniedziałk(?:u|iem|a)?",
+    "wtor(?:ek|ku|kiem)",
+    "środ(?:a|ę|y|zie|ą)",
+    "czwart(?:ek|ku|kiem)",
+    "piąt(?:ek|ku|kiem)",
+    "sobot(?:a|ę|y|ą)",
+    "sobocie",
+    "niedziel(?:a|ę|i|ą)",
+    "styczeń",
+    "styczni(?:a|u)",
+    "lut(?:y|ego|ym)",
+    "marzec",
+    "marca",
+    "marcu",
+    "kwiecień",
+    "kwietni(?:a|u)",
+    "maj(?:a|u|em)?",
+    "czerw(?:iec|ca|cu)",
+    "lip(?:iec|ca|cu)",
+    "sierpień",
+    "sierpni(?:a|u)",
+    "wrze(?:sień|śnia|śniu)",
+    "październik(?:a|u)?",
+    "listopad(?:a|zie)?",
+    "grud(?:zień|nia|niu)",
+  ])}`,
+  "iu"
+);
+
+// Terms that count wherever they stand: relative days, spans, quarters, years and numeric dates.
 const PL_AND_EN_TERMS = new RegExp(
   [
-    words([
-      "poniedziałk\\p{L}*",
-      "wtor(?:ek|ku|kiem)",
-      "środ(?:a|ę|y|zie)",
-      "czwart(?:ek|ku|kiem)",
-      "piąt(?:ek|ku|kiem)",
-      "sobot\\p{L}*",
-      "niedziel\\p{L}*",
-      "styczeń",
-      "styczni\\p{L}*",
-      "lut(?:y|ego|ym)",
-      "marzec",
-      "marca",
-      "marcu",
-      "kwiet\\p{L}*",
-      "maj(?:a|u|em)?",
-      "czerw(?:iec|ca|cu)",
-      "lip(?:iec|ca|cu)",
-      "sierp\\p{L}*",
-      "wrze(?:sień|śnia|śniu)",
-      "październik\\p{L}*",
-      "listopad\\p{L}*",
-      "grud(?:zień|nia|niu)",
-      "jutro",
-      "pojutrze",
-      "dziś",
-      "dzisiaj",
-      "tomorrow",
-      "today",
-      "tonight",
-      "kwartał\\p{L}*",
-      "weekend\\p{L}*",
-    ]),
+    words(["jutro", "pojutrze", "dziś", "dzisiaj", "tomorrow", "today", "tonight", "kwartał\\p{L}*", "weekend\\p{L}*"]),
     // A relative span: "this year", "w przyszłym tygodniu", "do końca miesiąca", "first-quarter".
     String.raw`${NOT_LETTER_BEFORE}(?:this|next|last|current)\s+(?:year|week|month|quarter)${NOT_LETTER_AFTER}`,
     String.raw`${NOT_LETTER_BEFORE}(?:first|second|third|fourth)[\s-]quarter${NOT_LETTER_AFTER}`,
@@ -99,7 +104,10 @@ export function namesReplyDeadline(textOutsideGaps: string): boolean {
   return DEADLINE_OF_REPLY.test(textOutsideGaps);
 }
 
-/** True when the text holds a date or a term (a weekday, a month, a year, "tomorrow", "this week"). */
+/**
+ * True when the text holds a date or a term: a weekday or a month after a term preposition ("by Friday"), a year,
+ * "tomorrow", "this week".
+ */
 export function holdsDateOrTerm(textOutsideGaps: string): boolean {
-  return EN_NAMES.test(textOutsideGaps) || EN_MAY.test(textOutsideGaps) || PL_AND_EN_TERMS.test(textOutsideGaps);
+  return EN_NAMES.test(textOutsideGaps) || PL_NAMES.test(textOutsideGaps) || PL_AND_EN_TERMS.test(textOutsideGaps);
 }

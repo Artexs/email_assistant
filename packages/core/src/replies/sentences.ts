@@ -14,7 +14,8 @@ export interface ReplySentenceCounts {
   template: number;
   /**
    * Counted sentences that lean: the text outside the gaps holds a leaning phrase, or a sentence with a gap names the
-   * deadline of this reply or of a decision, or restates a date or term outside its gap.
+   * deadline of this reply or of a decision, or restates a date or term outside its gap. A weekday or a month is a
+   * term only after a term preposition; a position phrase directly before a gap that ends the sentence is no lean.
    */
   leaning: number;
 }
@@ -93,6 +94,14 @@ const LEANING = new RegExp(
   "iu"
 );
 
+// A position phrase leans only when words of its own follow it. "Moje stanowisko to [[gap]]" and "my preference is:
+// [[gap]]" only name the answer the gap holds; "my preference on the payment terms is: [[gap]]" still counts.
+const POSITION_PHRASES = ["moje stanowisko", "moja preferencja", "my position", "my preference"];
+const POSITION_BEFORE_GAP_END = new RegExp(
+  String.raw`(?<![\p{L}\p{N}])(?:${POSITION_PHRASES.join("|").replace(/ /g, String.raw`\s+`)})(?![\p{L}\p{N}])(?:\s+(?:to|is|brzmi))?\s*:?\s*${MARKER}\s*[.!?]?$`,
+  "iu"
+);
+
 function wordCount(text: string): number {
   return text.split(/\s+/).filter((word) => word !== "").length;
 }
@@ -128,6 +137,7 @@ export function classifyReplySentences(body: string): ReplySentenceCounts {
   const counts: ReplySentenceCounts = { prose: 0, gapSentences: 0, template: 0, leaning: 0 };
   for (const sentence of lines.flatMap(sentencesOfLine)) {
     const outside = sentence.replaceAll(MARKER, " ");
+    const leaningText = sentence.replace(POSITION_BEFORE_GAP_END, " ").replaceAll(MARKER, " ");
     let leansByShape = false;
     if (sentence.includes(MARKER)) {
       counts[TEMPLATE.test(sentence) ? "template" : "gapSentences"] += 1;
@@ -137,7 +147,7 @@ export function classifyReplySentences(body: string): ReplySentenceCounts {
     } else {
       continue;
     }
-    if (leansByShape || LEANING.test(outside)) counts.leaning += 1;
+    if (leansByShape || LEANING.test(leaningText)) counts.leaning += 1;
   }
   return counts;
 }

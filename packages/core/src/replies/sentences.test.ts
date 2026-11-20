@@ -113,8 +113,8 @@ describe("classifyReplySentences", () => {
       counts(0, 1, 0, 1),
     ],
     [
-      "a date restated outside the gap leans (a weekday)",
-      "Halina,\nOdpowiedź na propozycję rozmowy w czwartek rano brzmi: [[tak lub nie]].",
+      "a date restated outside the gap leans (a weekday after a preposition)",
+      "Halina,\nOdpowiedź na propozycję rozmowy do czwartku rano brzmi: [[tak lub nie]].",
       counts(0, 1, 0, 1),
     ],
     [
@@ -123,8 +123,23 @@ describe("classifyReplySentences", () => {
       counts(0, 1, 0, 1),
     ],
     [
-      "a date restated outside the gap leans (a month, English)",
-      "Dear Karin Lindqvist,\nThe answer on the March delivery is [[yes or no]].",
+      "a date restated outside the gap leans (a month after a preposition, English)",
+      "Dear Karin Lindqvist,\nThe answer on trailer capacity from April is [[yes or no]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a gap on a measure the manager would present leans",
+      "Dear Karin Lindqvist,\nThe measures I would present to the board are [[measures for the board]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a gap on a measure the manager would present leans, with the answer form",
+      "Dear Karin Lindqvist,\nOn the measures I would present to the board, my answer is [[measures to present]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a position phrase with words between it and the gap leans",
+      "Dear Karin Lindqvist,\nMy preference on the payment terms is: [[current or extended]].",
       counts(0, 1, 0, 1),
     ],
     [
@@ -155,6 +170,41 @@ describe("classifyReplySentences", () => {
     [
       "a delivery term with the word answer is no deadline of the reply",
       "Dzień dobry,\nW sprawie ewentualnego innego terminu dostawy moja odpowiedź to [[alternatywny termin lub brak]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a weekday as a modifier does not lean, Polish",
+      "Dzień dobry,\nCo do sobotniej zmiany, moja odpowiedź to [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a weekday after a noun does not lean, Polish",
+      "Dzień dobry,\nCo do obsługi dostaw sobotnich, moja odpowiedź to [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a month after in does not lean, Polish",
+      "Dzień dobry,\nCo do jej utrzymania w marcu, moja odpowiedź to [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a weekday as a modifier does not lean, English",
+      "Dear Karin Lindqvist,\nOn the Saturday surcharge, my answer is [[accept or decline]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a month as a modifier does not lean, English",
+      "Dear Karin Lindqvist,\nOn the March delivery, my answer is [[accept or decline]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a position phrase before a gap that ends the sentence does not lean, Polish",
+      "Dzień dobry,\nCo do pogłębionego raportowania nakładów na flotę, moje stanowisko to [[poparcie lub brak poparcia]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a position phrase before a colon and a gap does not lean, English",
+      "Dear Karin Lindqvist,\nOn the payment terms, my position: [[current or extended]].",
       counts(0, 1, 0, 0),
     ],
     [

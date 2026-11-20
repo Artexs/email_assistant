@@ -79,7 +79,7 @@ Change (commit `1a1dc27d2`), only inside "Sentences outside a gap":
 - New rule: a question with a second part (a split, a discount or a cost to accept, a condition, a second option, a reason the email asks for) gets a second kind 3 sentence with its own gap.
 - One line says the examples show the kind, not fixed words. The re-read rule names a date in a kind 3 subject.
 
-All examples are generic; none comes from the corpus.
+The examples are generic, with one exception: the round 2 example "Co do wyboru wariantu umowy, moja odpowiedź to [[wariant A lub B]]" mirrors dev case b-rep-0139 (two contract variants, "Wariant A"), and the round 3 draft of b-rep-0139 copies it word for word. Tuning on dev is allowed, but the dev score of that case is inflated. (The review of the round 3 candidate found this.)
 
 ## Round 3
 
@@ -173,5 +173,28 @@ From `~/.local/state/email-assistant/eval-spend.jsonl`:
 ```
 
 This stage: $0.6263 of the $0.90 cap. Ticket total so far: $0.7895 of $2.00 ($0.1632 in the first dev round, $0.6263 here). November ledger: $6.41 before this stage, $7.04 after, of $20.
+
+## Narrowed scan replay
+
+The review of the round 3 candidate found that the weekday and month part of the leaning scan matched only false matches. The scan now counts a weekday or a month name only when a term preposition stands directly before it (pl `do`, `od`, `przed`, `po`, `najpóźniej`; en `by`, `until`, `from`, `before`, `after`, `no later than`). A position phrase ("moje stanowisko", "moja preferencja", "my position", "my preference") does not count when only `to`, `is`, `brzmi` or a colon stands between it and a gap that ends the sentence. Relative terms, quarters, end of a period, years, numeric dates, the deadline shape and every verb phrase count as before. Code: `packages/core/src/replies/sentence-shapes.ts` and `sentences.ts`; the rows of the review are in `sentences.test.ts`.
+
+Replay of the dumps in `/tmp/f164/dumps/` with the committed scan (old) and the narrowed scan (new), by `/tmp/f164/replay.ts` (outside git). No eval ran and nothing was spent.
+
+| dump | old | new | ids with the new scan |
+|---|---|---|---|
+| dev round 1 | 14 | 10 | b-rep-0074, b-rep-0139, b-rep-0156, b-rep-0162, b-rep-0196, b-rep-0226, h-att-01, h-inj-10, h-rao-01, h-rhd-02 |
+| dev round 2 | 2 | 1 | b-rep-0074 |
+| dev round 3 | 1 | 0 | none |
+| traps round 1 | 2 | 2 | rcom-02, rcom-04 |
+| traps round 2 | 0 | 0 | none |
+| traps round 3 | 0 | 0 | none |
+| week (round 3 text) | 7 | 1 | w-2-097 |
+| smoke A (`--style none`) | 1 | 1 | b-rep-0074 |
+| smoke B (stylist style) | 0 | 0 | none |
+
+- Gone: the false matches b-rep-0126, b-rep-0178 and b-rep-0234 (dev round 1; b-rep-0126 also in round 2), h-rbl-04 (dev rounds 1 and 3), and w-1-112 (two sentences), w-2-024 (two), w-3-041 and w-4-038 (week).
+- Still counted: the five real leans of the tuning (h-att-01, b-rep-0156, b-rep-0196, rcom-04 in round 1; b-rep-0074 in round 2 and in smoke A). h-rhd-02 ("from April") still counts by design: a month after `from` is a term.
+- The close call w-2-097 ("moja odpowiedź to [[tak lub nie i termin]]" after "w tym tygodniu") still counts: it holds a restated term and the scan cannot tell it from rcom-04.
+- Estimate (a guess, not a measurement): about 2 shapes in 212 drafts (w-2-097, b-rep-0074) stay at the final text, so a holdout of 255 drafts has about 10 % chance of 0 leaning sentences.
 
 Verdict: go on
