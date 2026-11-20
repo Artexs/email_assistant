@@ -479,9 +479,9 @@ describe("triage-label streams", () => {
 });
 
 describe("eval streams", () => {
-  test("a bad option: the usage on stderr, exit 1", async () => {
+  test("a bad option: the usage on stderr, exit 2", async () => {
     const result = await run("eval", ["--no-such-flag"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "eval", "usage: ");
   });
 
@@ -531,7 +531,7 @@ describe("failed lines of the database scripts", () => {
     },
     { script: "org-flag", args: () => ["--org-id", randomUUID()], unreachable: true },
     { script: "org-plan", args: () => ["--org-id", randomUUID(), "--plan", "active"], unreachable: true },
-    { script: "rules", args: () => ["list", "--org-id", randomUUID()] },
+    { script: "rules", args: () => ["list", "--org-id", randomUUID()], unreachable: true },
   ];
 
   for (const { script, args, unreachable } of scripts) {
