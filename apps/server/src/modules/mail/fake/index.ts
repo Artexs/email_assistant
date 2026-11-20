@@ -1,4 +1,4 @@
-import { DAY_MS } from "@ea/core";
+import { ACTION_ID_HEADER, ACTION_ID_HEADER_KEY, DAY_MS } from "@ea/core";
 
 import { HardError } from "../../../platform/errors";
 import { contentFromHeaderBlock, contentFromSource } from "../imap/capture";
@@ -109,7 +109,7 @@ function toMeta(stored: StoredMessage): MessageMeta {
     to: [...msg.to],
     cc: [...(msg.cc ?? [])],
     subject: msg.subject,
-    actionId: findHeader(msg, "X-EA-Action-Id"),
+    actionId: findHeader(msg, ACTION_ID_HEADER),
   };
 }
 
@@ -445,7 +445,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
       if (!folders.has(folder)) throw new HardError("NO [TRYCREATE]");
       const headers = parseRawHeaders(raw);
       const date = new Date(headers.get("date") ?? "");
-      const actionId = headers.get("x-ea-action-id");
+      const actionId = headers.get(ACTION_ID_HEADER_KEY);
       const msg: SeedMessage = {
         messageId: headers.get("message-id") ?? "",
         from: bareAddress(headers.get("from") ?? ""),
@@ -457,7 +457,7 @@ export function createFakeMailProvider(opts: FakeMailProviderOptions = {}): Fake
         date: Number.isNaN(date.getTime()) ? internalDate : date,
         ...(headers.has("in-reply-to") ? { inReplyTo: headers.get("in-reply-to") as string } : {}),
         references: (headers.get("references") ?? "").split(/\s+/).filter((id) => id !== ""),
-        ...(actionId === undefined ? {} : { headers: { "X-EA-Action-Id": actionId } }),
+        ...(actionId === undefined ? {} : { headers: { [ACTION_ID_HEADER]: actionId } }),
       };
       const uid = store(folder, msg, internalDate, raw.byteLength, flags);
       (find(folder, uid) as StoredMessage).raw = Buffer.from(raw);

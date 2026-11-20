@@ -2,12 +2,11 @@ import type { ReportMailKind } from "../notices/kinds";
 import type { UserLocale } from "../tenancy";
 import { textsFor } from "../texts";
 
+import { ACTION_ID_HEADER } from "./headers";
 import type { OutgoingAddress } from "./message";
 
 // ADR 0022: the report mail that the system appends to the user's own INBOX. It is a message in the user's own
 // mailbox, not a sent mail: nothing here has a recipient other than the mailbox itself, and no SMTP code is near it.
-
-export const REPORT_MAIL_ID_HEADER = "X-EA-Action-Id";
 
 export interface ReportMailMessage {
   messageId: string;
@@ -19,7 +18,7 @@ export interface ReportMailMessage {
   text: string;
   html: string;
   // The outbox id: the own-mail check of every sync reads it (`isOwnReportMail`).
-  headers: { "X-EA-Action-Id": string };
+  headers: { [ACTION_ID_HEADER]: string };
 }
 
 export interface ReportMailInput {
@@ -90,6 +89,6 @@ export function buildReportMail(input: ReportMailInput): ReportMailMessage {
     subject: reportMailSubject(input.kind, input.locale),
     text: input.text,
     html: reportMailHtml(input.text, input.linkBase),
-    headers: { "X-EA-Action-Id": input.outboxId },
+    headers: { [ACTION_ID_HEADER]: input.outboxId },
   };
 }

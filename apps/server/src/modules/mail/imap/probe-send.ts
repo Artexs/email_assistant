@@ -1,5 +1,5 @@
 // Write probe for the send rules: one synthetic mail through the draft, SMTP, Sent and INBOX paths. Test address only.
-import { DAY_MS, MINUTE_MS } from "@ea/core";
+import { ACTION_ID_HEADER, ACTION_ID_HEADER_KEY, DAY_MS, MINUTE_MS } from "@ea/core";
 import type { FetchMessageObject, FetchQueryObject, ImapFlow } from "imapflow";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
 
@@ -17,7 +17,6 @@ import {
 } from "./smtp";
 
 const INBOX_PATH = "INBOX";
-const ACTION_HEADER = "x-ea-action-id";
 const DEFAULT_POLL_MS = 5000;
 const DEFAULT_INBOX_TIMEOUT_MS = 120_000;
 const DEFAULT_SENT_TIMEOUT_MS = MINUTE_MS;
@@ -28,7 +27,7 @@ const DRAFT_QUERY: FetchQueryObject = {
   internalDate: true,
   flags: true,
   envelope: true,
-  headers: [ACTION_HEADER],
+  headers: [ACTION_ID_HEADER_KEY],
 };
 
 export interface ProbeSendReport {
@@ -121,7 +120,7 @@ function leadingCode(value: unknown): number | null {
 /** The value of the action id header in a fetched header block, or null. */
 function actionHeaderOf(message: FetchMessageObject | false): string | null {
   if (message === false || !message.headers) return null;
-  const match = new RegExp(`^${ACTION_HEADER}:[ \\t]*(.*)$`, "im").exec(message.headers.toString());
+  const match = new RegExp(`^${ACTION_ID_HEADER_KEY}:[ \\t]*(.*)$`, "im").exec(message.headers.toString());
   return match ? (match[1] ?? "").trim() : null;
 }
 
@@ -374,7 +373,7 @@ async function runSentCopy(ctx: Ctx, sent: string): Promise<void> {
     const found = await searchSince(client, since);
     copy.searchSinceFound = uid !== null && found.includes(uid);
     if (uid === null) return;
-    const message = await client.fetchOne(String(uid), { uid: true, headers: [ACTION_HEADER] }, { uid: true });
+    const message = await client.fetchOne(String(uid), { uid: true, headers: [ACTION_ID_HEADER_KEY] }, { uid: true });
     copy.headerFetched = actionHeaderOf(message)?.toLowerCase() === probeId.toLowerCase();
   });
   ctx.step = "delete Sent copy";
@@ -408,7 +407,7 @@ async function pollForProbeMail(
         if (checked.has(uid)) continue;
         checked.add(uid);
         const value = actionHeaderOf(
-          await client.fetchOne(String(uid), { uid: true, headers: [ACTION_HEADER] }, { uid: true })
+          await client.fetchOne(String(uid), { uid: true, headers: [ACTION_ID_HEADER_KEY] }, { uid: true })
         );
         if (value !== null && value.toLowerCase() === probeId.toLowerCase()) {
           return { uid, headerIntact: value === probeId, seconds: Math.round((Date.now() - started) / 1000) };
@@ -486,7 +485,7 @@ export async function probeSend(
     subject,
     date: now,
     text: "Email assistant send probe. You can delete this mail.",
-    headers: { "X-EA-Action-Id": probeId, "X-EA-Probe": probeId },
+    headers: { [ACTION_ID_HEADER]: probeId, "X-EA-Probe": probeId },
   });
   const report = newReport();
   const cleanupNotes: string[] = [];

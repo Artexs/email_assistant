@@ -237,7 +237,7 @@ Every text that a user reads has an English and a Polish version, from the first
   The exceptions are the test tools that refuse every address except `TEST_MAILBOX_ADDRESS` (`mailbox:seed` with `--folder <path>` to APPEND into another folder, `testmail-target deliver`, `mailbox:probe-move`, `mailbox:probe-send`).
   The committer finds its mailboxes with `listSyncTargets`; it adds no new entry point without a `TenantContext`.
 - A mail is located by identity (`locateMessage`), never by `SEARCH HEADER`: Interia finds nothing by `Message-ID`.
-- Non-idempotent provider calls (`create_draft`, `send`): commit status `applying` first; add the header `X-EA-Action-Id`.
+- Non-idempotent provider calls (`create_draft`, `send`): commit status `applying` first; add the header `X-EA-Action-Id` through the constant `ACTION_ID_HEADER` (`@ea/core`; a scan test forbids a hand-spelled name).
 - `send` is at-most-once: never retry it by itself after SMTP DATA starts (`docs/capabilities/drafts-and-send.md` § Rules).
 - Every send passes the send limits (PD-044): `startSendWithinLimits` (`actions/send-limit.ts`) counts the sends of the mailbox under a per-mailbox advisory lock, in the transaction that marks the send `applying`. A held send stays `approved` with `next_attempt_at` at the end of the window and `last_error = send_limit:<kind>`. A new send path (E4 "send all", E5 follow-ups, E6 replies, E9 OAuth mailboxes) goes through the committer and so through this check; it never calls SMTP itself. The limits are env keys (`SEND_LIMIT_*`), not a flag.
 - SMTP errors are classified by stage (`SmtpSendError.stage`: `connect`, `login`, `envelope`, `content`, `unknown`). The committer never retries after `content` or `unknown`.

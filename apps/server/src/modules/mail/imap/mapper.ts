@@ -1,3 +1,4 @@
+import { ACTION_ID_HEADER_KEY } from "@ea/core";
 import type { FetchMessageObject, MessageAddressObject } from "imapflow";
 
 import { HardError } from "../../../platform/errors";
@@ -57,7 +58,7 @@ export function toMessageMeta(msg: FetchMessageObject): MessageMeta {
     to: addresses(envelope?.to),
     cc: addresses(envelope?.cc),
     subject: envelope?.subject === undefined ? null : stripNul(envelope.subject),
-    actionId: cleanOrNull(headers.get("x-ea-action-id")),
+    actionId: cleanOrNull(headers.get(ACTION_ID_HEADER_KEY)),
   };
 }
 

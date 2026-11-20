@@ -1,3 +1,4 @@
+import { ACTION_ID_HEADER_KEY } from "@ea/core";
 import {
   ImapFlow,
   type FetchMessageObject,
@@ -57,7 +58,7 @@ const META_QUERY: FetchQueryObject = {
   size: true,
   internalDate: true,
   envelope: true,
-  headers: ["references", "x-ea-action-id"],
+  headers: ["references", ACTION_ID_HEADER_KEY],
 };
 const FLAGS_CHUNK = 500;
 const FLAGS_QUERY: FetchQueryObject = { uid: true, flags: true, envelope: true, internalDate: true };

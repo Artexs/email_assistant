@@ -3,6 +3,7 @@ import { quoteReply } from "../replies/quote";
 import type { DraftPayload } from "../triage/payloads";
 import { markUntrustedText } from "../triage/untrusted-text";
 
+import { ACTION_ID_HEADER } from "./headers";
 import { cleanFromAddress, formatDateLabel, formatSentDate, quoteOriginal, quoteSent } from "./quote";
 import { renderTemplate } from "./templates";
 
@@ -21,7 +22,7 @@ export interface OutgoingMessage {
   text: string; // parts.body + "\n\n" + parts.quote (when a quote exists)
   inReplyTo: string | null;
   references: string[];
-  headers: { "X-EA-Action-Id": string };
+  headers: { [ACTION_ID_HEADER]: string };
   parts: { body: string; quote: string | null };
 }
 
@@ -148,7 +149,7 @@ export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
     text: quote === null ? body : `${body}\n\n${quote}`,
     inReplyTo,
     references,
-    headers: { "X-EA-Action-Id": draftActionId },
+    headers: { [ACTION_ID_HEADER]: draftActionId },
     parts: { body, quote },
   };
 }
