@@ -37,7 +37,7 @@ export const OUTSIDE_SERVICE_KEYS: Readonly<Record<string, string | { exempt: st
 // of outside call is a decision (a row in `subprocessors`, or an entry here with a reason), never a silent addition.
 export const OUTSIDE_CALL_CLASSES: Readonly<Record<string, { file: string; call: string; exempt: string }>> = {
   unsubscribe_target: {
-    file: "web.ts",
+    file: "web-routers.ts",
     call: "postOneClick(",
     exempt:
       "the one-click unsubscribe request (RFC 8058) goes to the server that the newsletter itself names, after an owner tap, and only to a public https host on port 443; it holds the fixed body `List-Unsubscribe=One-Click` and no data of the mailbox, so the other side processes nothing for this service and is no sub-processor; it receives the address of this server, as a mail sender does when a recipient opens a link",

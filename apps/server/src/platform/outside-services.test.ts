@@ -67,6 +67,6 @@ describe("sub-processor registry and config", () => {
       expect({ name, calls: text.includes(entry.call) }).toEqual({ name, calls: true });
     }
     // Production code that calls the guarded client is one listed file (the test of the client also scans for a seam).
-    expect(Object.values(OUTSIDE_CALL_CLASSES).map((entry) => entry.file)).toEqual(["web.ts"]);
+    expect(Object.values(OUTSIDE_CALL_CLASSES).map((entry) => entry.file)).toEqual(["web-routers.ts"]);
   });
 });
