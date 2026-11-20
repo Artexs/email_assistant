@@ -1,4 +1,5 @@
 export {
+  findDelegateIdByAddress,
   getDelegate,
   insertDelegate,
   listDelegateAddresses,

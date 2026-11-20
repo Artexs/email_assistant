@@ -1,5 +1,6 @@
 import { includeIgnoreFile } from "@eslint/compat";
 import eslint from "@eslint/js";
+import { builtinRules } from "eslint/use-at-your-own-risk";
 import eslintPluginAstro from "eslint-plugin-astro";
 import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
@@ -207,6 +208,24 @@ const mailSdkImports = {
 // Flat config: a later block replaces the rule options, so each file group lists all its patterns.
 const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
+// File size (docs/code-patterns.md § Size and shape). The core `max-lines` rule warns over 400 lines; the same rule under the
+// name `size/max-lines-hard` fails over 800. Both count every line, as `wc -l` does. Test code is outside the rule.
+const sizePlugin = { rules: { "max-lines-hard": builtinRules.get("max-lines") } };
+const sizeFiles = ["**/*.{ts,tsx,astro,js,mjs}"];
+const sizeIgnores = [
+  "**/*.test.{ts,tsx}",
+  "**/*.spec.ts",
+  "**/*.test-helper.ts",
+  "apps/server/test/**",
+  "apps/*/e2e/**",
+  "tools/*/test/**",
+];
+const sizeOptions = (max) => ({ max, skipBlankLines: false, skipComments: false });
+// Temporary exceptions (the plan of spec/features/active/F143-*, decision "Temporary exceptions"): `size-exceptions.json` lists the
+// files over 800 lines that a later stage splits. The stage that splits a file deletes its entry; the stage that deletes the last
+// entry deletes the JSON file, this read and the exceptions block below.
+const sizeExceptions = JSON.parse(readFileSync(path.resolve(__dirname, "size-exceptions.json"), "utf8"));
+
 // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
 // server files: flat config replaces the options of a rule, so a second block with this rule would drop these selectors.
 // A log call is `log.info(...)`, `mailboxLog.info(...)`, a member logger (`this.log.info(...)`, `deps.mailboxLog.info(...)`)
@@ -333,6 +352,16 @@ export default tseslint.config(
     rules: {
       "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true, allowedStrings: ["·", "—", "/"] }],
     },
+  },
+  {
+    files: sizeFiles,
+    ignores: sizeIgnores,
+    plugins: { size: sizePlugin },
+    rules: { "max-lines": ["warn", sizeOptions(400)], "size/max-lines-hard": ["error", sizeOptions(800)] },
+  },
+  {
+    files: sizeExceptions.map(({ file }) => file),
+    rules: { "size/max-lines-hard": "off" },
   },
   {
     files: ["apps/web/src/env.d.ts"],

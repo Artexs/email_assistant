@@ -1,6 +1,7 @@
+import { normalizeAddress } from "@ea/core";
 import { sql } from "kysely";
 
-import type { TenantContext } from "../../../platform/db";
+import { normalizedAddress, type TenantContext } from "../../../platform/db";
 
 import {
   MAX_REMINDER_SENDS,
@@ -97,7 +98,7 @@ export async function findOpenDelegationByMessageIds(
     .where("g.org_id", "=", ctx.orgId)
     .where("d.mailbox_id", "=", mailboxId)
     .where("d.status", "in", ["sent", "overdue"])
-    .where(sql<string>`lower(g.email)`, "=", fromAddress.toLowerCase())
+    .where(normalizedAddress("g.email"), "=", normalizeAddress(fromAddress))
     .where((eb) =>
       eb.or([
         eb(sql<string>`d.sent_message_id`, "=", sql<string>`ANY(${idList}::text[])`),
