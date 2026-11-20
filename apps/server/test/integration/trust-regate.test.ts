@@ -22,6 +22,7 @@ import { createLlmPause, createTriageJob } from "../../src/modules/triage";
 import { regateAll, type RegateDeps } from "../../src/modules/trust";
 import type { DB, Db } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
+import { startSource } from "../../src/start/source.test-helper";
 import { captureLogs, eventLines, logProblems } from "../log-capture";
 
 import {
@@ -860,27 +861,31 @@ describe("regateAll with two connections", () => {
 
 describe("the start run", () => {
   const main = readFileSync(path.resolve(import.meta.dir, "../../src/main.ts"), "utf8");
+  const triage = readFileSync(path.resolve(import.meta.dir, "../../src/start/triage.ts"), "utf8");
+  const all = startSource();
   const call = 'regateAll({ ...regateDeps, run: "start" }';
 
-  test("main.ts awaits the re-gate before the triage worker and the committer exist", () => {
-    const start = main.indexOf(call);
+  test("the start run is awaited before the triage worker and the committer exist", () => {
+    // The re-gate is in start/triage.ts, and main.ts awaits that start before the start that builds the committer.
+    const start = triage.indexOf(call);
     expect(start).toBeGreaterThan(0);
     // The call is awaited: a start run that is not awaited races the committer.
-    expect(main.slice(start - "await ".length, start)).toBe("await ");
-    expect(start).toBeLessThan(main.indexOf("createTriageJob("));
-    expect(start).toBeLessThan(main.indexOf("createCommitterJob("));
-    expect(start).toBeLessThan(main.indexOf('scheduler.add("triage.worker"'));
-    expect(start).toBeLessThan(main.indexOf('scheduler.add("actions.committer"'));
-    expect(main).toContain('scheduler.add("trust.regate", "20 */5 * * * *"');
+    expect(triage.slice(start - "await ".length, start)).toBe("await ");
+    expect(triage.indexOf("createTriageJob(")).toBeGreaterThan(start);
+    expect(triage.indexOf('scheduler.add("triage.worker"')).toBeGreaterThan(start);
+    expect(main).toContain("await startTriage(");
+    expect(main.indexOf("startTriage(")).toBeLessThan(main.indexOf("startJobs("));
+    expect(all.indexOf("createCommitterJob(")).toBeGreaterThan(all.indexOf(call));
+    expect(all).toContain('scheduler.add("trust.regate", "20 */5 * * * *"');
     // The tripwire job is registered with the other jobs, and shutdown waits for both trust jobs.
-    expect(main).toContain('scheduler.add("trust.tripwire"');
-    expect(main).toContain('runs.track("trust.regate"');
-    expect(main).toContain('runs.track("trust.tripwire"');
+    expect(all).toContain('scheduler.add("trust.tripwire"');
+    expect(all).toContain('runs.track("trust.regate"');
+    expect(all).toContain('runs.track("trust.tripwire"');
   });
 
   test("a failure of the whole start run stops the server before the workers start", () => {
-    const start = main.indexOf(call);
-    const rest = main.slice(start);
+    const start = triage.indexOf(call);
+    const rest = triage.slice(start);
     const handler = rest.slice(rest.indexOf("} catch (error) {"), rest.indexOf("} catch (error) {") + 220);
     expect(handler).toContain('log.error("trust_regate_failed"');
     expect(handler).toContain("process.exit(1);");

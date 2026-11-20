@@ -1,6 +1,18 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { parseOrgMemberArgs } from "./org-member-args";
+
+// A usage error: a `UsageError` of the parser, or a `parseArgs` error (unknown flag, missing value), which `runCli` maps to exit 2 as well.
+function isUsageError(run: () => unknown): boolean {
+  try {
+    run();
+  } catch (error) {
+    const code = typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
+    return error instanceof UsageError || (typeof code === "string" && code.startsWith("ERR_PARSE_ARGS_"));
+  }
+  return false;
+}
 
 const orgId = "0b0f3b3e-6f1c-4d57-9d0e-3f0a8f6f2a11";
 const userId = "6f1b1f0e-9d3a-4c55-8f02-7a9d1c2b3e44";
@@ -54,7 +66,7 @@ describe("parseOrgMemberArgs", () => {
     });
   });
 
-  test("bad input gives null (usage, exit 1)", () => {
+  test("bad input is a usage error", () => {
     const add = ["--org-id", orgId, "--add", "--display-name", "Eve"];
     const bad = [
       [],
@@ -87,6 +99,7 @@ describe("parseOrgMemberArgs", () => {
       ["--org-id", orgId, "--user-id", userId, "--end-sessions", "--all"],
       ["--org-id", orgId, "--user-id", userId, "--end-sessions", "now"],
     ];
-    for (const argv of bad) expect({ argv, parsed: parseOrgMemberArgs(argv) }).toEqual({ argv, parsed: null });
+    for (const argv of bad)
+      expect({ argv, usage: isUsageError(() => parseOrgMemberArgs(argv)) }).toEqual({ argv, usage: true });
   });
 });

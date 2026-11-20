@@ -1,15 +1,4 @@
 {
-  "org": [
-    "apps/server/src/scripts/lib/invite-delivery.ts",
-    "apps/server/src/scripts/org-create.ts",
-    "apps/server/src/scripts/org-flag.ts",
-    "apps/server/src/scripts/org-invite.ts",
-    "apps/server/src/scripts/org-member.ts",
-    "apps/server/src/scripts/org-plan.ts",
-    "apps/server/src/scripts/org-sso.ts",
-    "apps/server/src/scripts/org-status.ts",
-    "apps/server/src/scripts/web-invite.ts"
-  ],
   "mailbox-cli": [
     "apps/server/src/scripts/mailbox-audit.ts",
     "apps/server/src/scripts/mailbox-backfill.ts",
