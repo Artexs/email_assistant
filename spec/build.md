@@ -41,8 +41,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## PARKED
 
-- `F063-junk-llm-cap` (🔴 PLANNED, parked: trigger is a spam wave in the weekly report of F100; no plan).
-- `F140-…-own-model-…` (🔴 PLANNED, parked: the two open stages of the private model option; starts when the owner says "run the own model" or OpenAI answers the EU project request).
 
 ## DROPPED
 
