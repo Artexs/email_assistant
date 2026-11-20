@@ -149,7 +149,7 @@ describe("Polish pages", () => {
       expect({ id, problems: pairProblems(english, polish) }).toEqual({ id, problems: [] });
     }
   });
-  test("a Polish page names Gemini only with its condition (optional, off by default); the default pages name none", () => {
+  test("the Polish security and pricing pages hold no Gemini text at all (a mention would need its condition: optional, off by default)", () => {
     for (const id of ["security", "pricing"]) {
       const text = readFileSync(pageFile(join(CONTENT_DIR, "pl"), id) ?? "", "utf8");
       expect({ id, gemini: /gemini/i.test(text) }).toEqual({ id, gemini: false });

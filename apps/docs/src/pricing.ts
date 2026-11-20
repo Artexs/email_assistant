@@ -64,6 +64,10 @@ export const hostSizeNote = (lang: Lang = "en"): string =>
     ? `Hosting zakłada ${costModel.mailboxesPerHost} skrzynek na jednym serwerze.`
     : `Hosting assumes ${costModel.mailboxesPerHost} mailboxes per host.`;
 
-export const PLACEHOLDER_PRICE = formatUsd(PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH).replace(/\.00$/, "");
-export const placeholderPrice = (lang: Lang = "en"): string =>
-  lang === "pl" ? `${PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH} USD` : PLACEHOLDER_PRICE;
+/** The price for the plan card: whole dollars lose their cents (`$25`, `25 USD`), other prices keep two decimals. */
+export const placeholderPrice = (
+  lang: Lang = "en",
+  priceUsd: number = PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH
+): string => formatUsd(priceUsd, lang).replace(/[.,]00(?= USD$|$)/, "");
+
+export const PLACEHOLDER_PRICE = placeholderPrice("en");

@@ -18,8 +18,8 @@ import ClaimsTable from "../../../components/ClaimsTable.astro";
 import Subprocessors from "../../../components/Subprocessors.astro";
 
 Ta strona mówi, co asystent robi z Twoją pocztą i danymi.
-Każde twierdzenie ma link do pliku w repozytorium, który je dowodzi, oraz warunek, gdy twierdzenie zależy od instalacji.
-Twierdzenia, którego żaden plik nie dowodzi, na tej stronie nie ma. Sekcja „Czego ten produkt nie obiecuje” wymienia to, czego nie wolno Ci zakładać.
+Każde twierdzenie ma link do pliku w repozytorium, który je potwierdza, oraz warunek, gdy twierdzenie zależy od instalacji.
+Twierdzenia, którego żaden plik nie potwierdza, na tej stronie nie ma. Sekcja „Czego ten produkt nie obiecuje” wymienia to, czego nie wolno Ci zakładać.
 
 ## Krótka lista
 
@@ -39,11 +39,11 @@ Twierdzenia, którego żaden plik nie dowodzi, na tej stronie nie ma. Sekcja „
 Tabela wymienia zewnętrzne usługi, które mogą dostać dane od asystenta. Kolumna „Używana, gdy” podaje warunek dla każdej z nich: jedne działają zawsze, inne tylko wtedy, gdy operator je skonfiguruje.
 Gdy operator konfiguruje dostawcę SMTP, asystent wysyła przez niego własne wiadomości logowania (linki do resetu hasła i zaproszenia). To nie są wiadomości z Twojej skrzynki.
 Instalacja może używać innego dostawcy AI; dokumenty prawne instalacji wymieniają usługi, których ona używa.
-„Jeszcze nie potwierdzone” znaczy, że projekt nie zapisał jeszcze i nie sprawdził tego faktu.
+„Jeszcze niepotwierdzone” znaczy, że projekt nie zapisał jeszcze i nie sprawdził tego faktu.
 
 <Subprocessors lang="pl" />
 
-## Hosty tej strony
+## Hosting tej strony
 
 Ta strona działa na GitHub Pages. GitHub zapisuje adres IP każdego odwiedzającego.
 Strona nie ustawia plików cookie, nie ma analityki i nie przechowuje danych użytkowników.
@@ -55,8 +55,8 @@ GitHub hostuje wyłącznie tę publiczną stronę. Nie dostaje od asystenta żad
 - Brak przeglądu prawnego. Prawnik nie sprawdził tekstów prawnych produktu.
 - Brak przetwarzania AI wyłącznie w UE jako ustawienia domyślnego. Domyślna konfiguracja wysyła treść wiadomości do dostawcy AI bez ustawienia „tylko UE”.
 - Brak szyfrowania end-to-end powiadomień Telegrama. Telegram może przeczytać to, co wysyła do niego asystent.
-- Limit 7 dni obejmuje wiadomość, którą asystent klasyfikuje, a nie kontekst wątku. Do trzech wcześniejszych wiadomości z tego samego wątku trafia do AI jako kontekst. Mogą być starsze niż 7 dni. Każda niesie nadawcę, temat i do 500 znaków treści.
+- Limit 7 dni obejmuje wiadomość, którą asystent klasyfikuje, a nie kontekst wątku. Do trzech wcześniejszych wiadomości z tego samego wątku trafia do AI jako kontekst. Mogą być starsze niż 7 dni. Każda zawiera nadawcę, temat i do 500 znaków treści.
 - Szkice mogą być błędne. Zatwierdzasz każdy szkic, zanim asystent go wyśle.
 - Fakty, które pochodzą tylko od dostawcy AI:
-  - Dostawca twierdzi, że nie używa danych ze swojego płatnego API do trenowania modeli ([jego strona o kontroli danych](https://platform.openai.com/docs/guides/your-data), odczytana 2026-11-17). Ten projekt nie sprawdził umowy.
-  - Dostawca twierdzi, że oferuje region UE jako ustawienie projektu ([jego strona o lokalizacji danych](https://platform.openai.com/docs/guides/data-residency), odczytana 2026-11-17). Ten projekt nie sprawdził ustawienia regionu w projekcie, którego używa instalacja.
+  - Dostawca podaje, że nie używa danych ze swojego płatnego API do trenowania modeli ([jego strona o kontroli danych](https://platform.openai.com/docs/guides/your-data), stan na 2026-11-17). Ten projekt nie sprawdził umowy.
+  - Dostawca podaje, że oferuje region UE jako ustawienie projektu ([jego strona o lokalizacji danych](https://platform.openai.com/docs/guides/data-residency), stan na 2026-11-17). Ten projekt nie sprawdził ustawienia regionu w projekcie, którego używa instalacja.

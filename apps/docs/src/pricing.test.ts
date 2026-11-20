@@ -43,6 +43,16 @@ function docRows(title: string): string[][] {
   return rows.slice(1);
 }
 
+describe("placeholderPrice", () => {
+  test("goes through formatUsd: whole dollars lose the cents, other prices keep two decimals, in both languages", () => {
+    expect(placeholderPrice("en", 25)).toBe("$25");
+    expect(placeholderPrice("pl", 25)).toBe("25 USD");
+    expect(placeholderPrice("en", 24.5)).toBe("$24.50");
+    expect(placeholderPrice("pl", 24.5)).toBe("24,50 USD");
+    expect(placeholderPrice("pl")).toBe(placeholderPrice("pl", PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH));
+  });
+});
+
 describe("costRows", () => {
   test("1. three rows at 50, 100 and 200 mails a day, in this order", () => {
     expect(costRows().map((row) => row.mailsPerDay)).toEqual([50, 100, 200]);

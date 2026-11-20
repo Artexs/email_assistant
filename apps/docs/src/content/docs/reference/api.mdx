@@ -1,0 +1,19 @@
+---
+title: API
+description: Look up each operation of the web panel API, with its sign-in rule, its request and its answers.
+capabilities:
+  - web-panel
+  - tenancy-and-plans
+---
+
+import ApiReference from "../../../components/ApiReference.astro";
+
+The panel talks to the server through this API. The list below comes from the OpenAPI file of the project (`docs/api/openapi.json` in the repository). A test keeps the file equal to the code.
+
+Almost every operation needs the session cookie that the sign-in sets. An operation that needs no sign-in says so.
+[The security page](../../security/#claim-private-panel) says who can reach the panel.
+Some routes answer only while an operator turns a feature on.
+
+Each error answer lists its codes. Most error answers have one shape, with the fields `error`, `message` and `details`; the page shows the schema only for an answer that has another one.
+
+<ApiReference />

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH } from "@ea/core";
+import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from "@ea/core";
 
 import { publicClaims } from "../src/security/claims";
 
@@ -178,3 +178,20 @@ test("F121-05 the Polish pricing page shows the banner, the price and three cost
   expect((await main.innerText()).toLowerCase()).not.toContain("gemini");
   await expectNoA11yViolations(page);
 });
+
+for (const [lang, path] of [
+  ["en", `${DOCS_BASE}/`],
+  ["pl", `${DOCS_BASE}/pl/`],
+] as const) {
+  test(`F121-04 the ${lang} home page has the product name as h1, the tutorial as first link, and links to security and pricing`, async ({
+    page,
+  }) => {
+    await open(page, path);
+    await expect(page.locator("main h1")).toHaveText(PRODUCT_NAME);
+    const links = page.locator("main .sl-markdown-content a[href]");
+    await expect(links.first()).toHaveAttribute("href", "start/");
+    for (const target of ["start/", "security/", "pricing/"]) {
+      await expect(page.locator(`main .sl-markdown-content a[href="${target}"]`).first()).toBeVisible();
+    }
+  });
+}
