@@ -70,6 +70,7 @@ const WRITE_ROUTES = [
   "POST /api/mailboxes/:id/password",
   "POST /api/mailboxes/:id/pause",
   "POST /api/mailboxes/:id/profile/preview",
+  "POST /api/mailboxes/:id/profile/style-suggestion",
   "POST /api/mailboxes/:id/reply-samples",
   "POST /api/mailboxes/:id/resume",
   "POST /api/mailboxes/oauth/:provider/start",
