@@ -334,3 +334,16 @@ describe("quietEnd on a daylight-saving day", () => {
     // The loop is CPU bound; on a loaded machine it needs more than the default 5 s.
   }, 60_000);
 });
+
+describe("a quiet window that does not wrap midnight", () => {
+  const window = { start: "12:00", end: "14:00" };
+  const at = (time: string) => new Date(`2026-11-20T${time}:00Z`); // Warsaw is one hour ahead of UTC
+
+  test("the quiet time starts at the start time itself", () => {
+    expect(isQuietTime(at("11:00"), TZ, window)).toBe(true);
+  });
+
+  test("lateMin takes the window off a range that spans it", () => {
+    expect(lateMin(at("09:00"), at("15:00"), TZ, window)).toBe(240);
+  });
+});

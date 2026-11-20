@@ -64,7 +64,7 @@ Why a separate ticket: the probe below shows that deletion of tests cannot give 
 - No retry, no longer test timeout, no `test.skip`, no serial exception list as a fix (`docs/code-patterns.md` § Tests). A test you cannot make pass in parallel within the stage: stop, report the test name, the failure and your analysis in the final message.
 - A production default never changes. Only a new optional parameter with the old value as its default (D3).
 - An assertion never gets weaker. If you must change one, the new one is at least as strict; name each changed assertion in the final message.
-- No `.env` reads, no VPS, no push. `test:e2e` only under `flock /tmp/email-assistant-shared-tests.lock` (not needed here).
+- No `.env` reads, no VPS, no push.
 - A gap or a deviation is a question in the final message, not a choice.
 - While you work, run only the test files you change (stage 02: also the full parallel int runs of its Steps 1–2). The full Proof runs once, after the last commit.
 

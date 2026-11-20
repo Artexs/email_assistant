@@ -11,7 +11,7 @@ Stage 04 record in `notes/2026-11-15-vps-deploy-queue.md`; `docs/release-checkli
 ## Part A — The first release with the contract
 
 1. Before the release: `ea_env_split_state` → `split`. Else stop: run stage 04 Part B first.
-2. Find the release that first holds stage 05. If another ticket already deployed it, skip to step 3 and use that release. Else make release N+1 by the checklist and run `deploy/release.sh vN+1` (N's script runs it: it migrates through `migrate`, it has no guard and no env check yet, so step 3 is the check). Rollback target: N.
+2. Find the release that first holds stage 05. If another ticket already deployed it, skip to step 3 and use that release. Else make release N+1 by the checklist and run `deploy/release.sh vN+1` (N = `v0.4.2`; its script runs it: it migrates through `migrate`, it has no guard and no env check yet, so step 3 is the check). Rollback target: N.
 3. `deploy/check-server-env.sh` → `server env ok keys=<n>`. `$C run --rm -T cli env | cut -d= -f1` holds no D5 key (names only). `$C config --format json` is never printed; the stage 05 tests cover its content.
 4. 30-minute watch (checklist step 10). On trouble: `deploy/rollback.sh` (to N; it works on a split host).
 
