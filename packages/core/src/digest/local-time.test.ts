@@ -59,16 +59,12 @@ describe("startOfLocalDay", () => {
 describe("formatClock and formatDay", () => {
   const now = new Date("2026-11-06T07:00:00Z");
 
-  test("same local date: HH:MM", () => {
-    expect(formatClock(new Date("2026-11-06T06:55:00Z"), TZ, now, "en")).toBe("07:55");
-  });
-
-  test("same year: D Mon HH:MM", () => {
-    expect(formatClock(new Date("2026-11-04T22:55:00Z"), TZ, now, "en")).toBe("4 Nov 23:55");
-  });
-
-  test("other year: D Mon YYYY HH:MM", () => {
-    expect(formatClock(new Date("2025-12-31T10:00:00Z"), TZ, now, "en")).toBe("31 Dec 2025 11:00");
+  test.each([
+    ["same local date: HH:MM", "2026-11-06T06:55:00Z", "07:55"],
+    ["same year: D Mon HH:MM", "2026-11-04T22:55:00Z", "4 Nov 23:55"],
+    ["other year: D Mon YYYY HH:MM", "2025-12-31T10:00:00Z", "31 Dec 2025 11:00"],
+  ])("%s", (_name, at, text) => {
+    expect(formatClock(new Date(at), TZ, now, "en")).toBe(text);
   });
 
   test("formatDay", () => {
@@ -120,31 +116,39 @@ describe("isQuietTime", () => {
 });
 
 describe("quietEnd", () => {
-  test("before midnight: 07:00 on the next local date", () => {
-    expect(iso(quietEnd(new Date("2026-11-06T21:30:00Z"), TZ))).toBe("2026-11-07T06:00:00.000Z");
-  });
-
-  test("after midnight: 07:00 on the same local date", () => {
-    expect(iso(quietEnd(new Date("2026-11-07T05:59:00Z"), TZ))).toBe("2026-11-07T06:00:00.000Z");
+  test.each([
+    ["before midnight: 07:00 on the next local date", "2026-11-06T21:30:00Z", "2026-11-07T06:00:00.000Z"],
+    ["after midnight: 07:00 on the same local date", "2026-11-07T05:59:00Z", "2026-11-07T06:00:00.000Z"],
+    ["the spring night", "2027-03-27T22:00:00Z", "2027-03-28T05:00:00.000Z"],
+  ])("%s", (_name, at, end) => {
+    expect(iso(quietEnd(new Date(at), TZ))).toBe(end);
   });
 
   test("outside the quiet hours: the same instant", () => {
     const at = new Date("2026-11-06T11:00:00Z");
     expect(iso(quietEnd(at, TZ))).toBe(iso(at));
   });
-
-  test("the spring night", () => {
-    expect(iso(quietEnd(new Date("2027-03-27T22:00:00Z"), TZ))).toBe("2027-03-28T05:00:00.000Z");
-  });
 });
 
 describe("lateMin", () => {
-  test("12. minutes outside the quiet hours: 2 before 22:00 and 9 after 07:00 (Warsaw, November)", () => {
-    expect(lateMin(new Date("2026-11-19T20:58:00Z"), new Date("2026-11-20T06:09:00Z"), TZ)).toBe(11);
-  });
-
-  test("a range inside the day counts every minute", () => {
-    expect(lateMin(new Date("2026-11-20T09:45:00Z"), new Date("2026-11-20T10:00:00Z"), TZ)).toBe(15);
+  // The spring night starts 2027-03-27 21:00Z (22:00 CET) and ends 2027-03-28 05:00Z (07:00 CEST).
+  test.each([
+    [
+      "12. minutes outside the quiet hours: 2 before 22:00 and 9 after 07:00 (Warsaw, November)",
+      "2026-11-19T20:58:00Z",
+      "2026-11-20T06:09:00Z",
+      11,
+    ],
+    ["a range inside the day counts every minute", "2026-11-20T09:45:00Z", "2026-11-20T10:00:00Z", 15],
+    ["to before from is 0", "2026-11-20T10:00:00Z", "2026-11-20T09:00:00Z", 0],
+    [
+      "the spring night is 8 h long: 20:00Z to 06:00Z leaves 1 h before 21:00Z and 1 h after 05:00Z",
+      "2027-03-27T20:00:00Z",
+      "2027-03-28T06:00:00Z",
+      120,
+    ],
+  ])("%s", (_name, from, to, minutes) => {
+    expect(lateMin(new Date(from), new Date(to), TZ)).toBe(minutes);
   });
 
   test("a range inside the quiet hours counts nothing, also when it starts after midnight", () => {
@@ -155,15 +159,6 @@ describe("lateMin", () => {
   test("a range over two nights subtracts both", () => {
     // 2026-11-19 08:00Z (09:00) to 2026-11-21 08:00Z: 48 h minus two nights of 9 h.
     expect(lateMin(new Date("2026-11-19T08:00:00Z"), new Date("2026-11-21T08:00:00Z"), TZ)).toBe(30 * 60);
-  });
-
-  test("to before from is 0", () => {
-    expect(lateMin(new Date("2026-11-20T10:00:00Z"), new Date("2026-11-20T09:00:00Z"), TZ)).toBe(0);
-  });
-
-  test("the spring night is 8 h long: 20:00Z to 06:00Z leaves 1 h before 21:00Z and 1 h after 05:00Z", () => {
-    // The night starts 2027-03-27 21:00Z (22:00 CET) and ends 2027-03-28 05:00Z (07:00 CEST).
-    expect(lateMin(new Date("2027-03-27T20:00:00Z"), new Date("2027-03-28T06:00:00Z"), TZ)).toBe(120);
   });
 
   test("the autumn night is 10 h long: 18:00Z to 07:00Z leaves 2 h before 20:00Z and 1 h after 06:00Z", () => {

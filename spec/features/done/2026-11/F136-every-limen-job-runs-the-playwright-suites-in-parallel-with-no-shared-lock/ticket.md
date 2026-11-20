@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F136 · Every Limen job runs the Playwright suites in parallel with no shared lock

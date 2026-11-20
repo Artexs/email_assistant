@@ -3,9 +3,37 @@ import { describe, expect, test } from "bun:test";
 import { markUntrustedText, removeLinks } from "./untrusted-text";
 
 describe("markUntrustedText", () => {
-  test("replaces email addresses", () => {
-    expect(markUntrustedText("Napisz do jan.kowalski@firma.test do jutra")).toBe("Napisz do [address] do jutra");
-    expect(markUntrustedText("Reply to x@evil.test now")).toBe("Reply to [address] now");
+  test.each([
+    [
+      "replaces email addresses",
+      [
+        ["Napisz do jan.kowalski@firma.test do jutra", "Napisz do [address] do jutra"],
+        ["Reply to x@evil.test now", "Reply to [address] now"],
+      ],
+    ],
+    [
+      "replaces phone numbers",
+      [
+        ["Zadzwoń: +48 600 123 456 jutro", "Zadzwoń: [phone] jutro"],
+        ["Call 600-123-456 now", "Call [phone] now"],
+      ],
+    ],
+    [
+      "keeps dates and short numbers",
+      [
+        ["Termin 2026-11-04, 5 plików, kwota 1200 zł", "Termin 2026-11-04, 5 plików, kwota 1200 zł"],
+        ["Od 2026-11-04 do 2026-11-05", "Od 2026-11-04 do 2026-11-05"],
+      ],
+    ],
+    [
+      "replaces a link glued to a word",
+      [
+        ["foohttps://evil.test/x", "foo[link]"],
+        ["xwww.evil.test", "x[link]"],
+      ],
+    ],
+  ] as [string, [string, string][]][])("%s", (_name, pairs) => {
+    for (const [input, output] of pairs) expect(markUntrustedText(input)).toBe(output);
   });
 
   test("replaces an address in angle brackets", () => {
@@ -14,8 +42,17 @@ describe("markUntrustedText", () => {
     expect(out).not.toContain("@");
   });
 
-  test("replaces a leftover @", () => {
-    expect(markUntrustedText("ping @janek")).toBe("ping (at)janek");
+  test.each([
+    ["replaces a leftover @", "ping @janek", "ping (at)janek"],
+    [
+      "replaces a phone number next to a date, and keeps the date",
+      "Termin 2026-11-04 600 123 456",
+      "Termin 2026-11-04 [phone]",
+    ],
+    ["replaces a phone number with dashes", "Tel 0800-12-34-56", "Tel [phone]"],
+    ["replaces a phone number after letters", "Tel600123456", "Tel[phone]"],
+  ])("%s", (_name, input, output) => {
+    expect(markUntrustedText(input)).toBe(output);
   });
 
   test("replaces links, also mailto and links with user@host", () => {
@@ -33,38 +70,9 @@ describe("markUntrustedText", () => {
     expect(markUntrustedText("Nr 61109010140000071219812874.")).toBe("Nr [account number].");
   });
 
-  test("replaces phone numbers", () => {
-    expect(markUntrustedText("Zadzwoń: +48 600 123 456 jutro")).toBe("Zadzwoń: [phone] jutro");
-    expect(markUntrustedText("Call 600-123-456 now")).toBe("Call [phone] now");
-  });
-
-  test("keeps dates and short numbers", () => {
-    expect(markUntrustedText("Termin 2026-11-04, 5 plików, kwota 1200 zł")).toBe(
-      "Termin 2026-11-04, 5 plików, kwota 1200 zł"
-    );
-    expect(markUntrustedText("Od 2026-11-04 do 2026-11-05")).toBe("Od 2026-11-04 do 2026-11-05");
-  });
-
   test("output never contains @", () => {
     const inputs = ["a@b.test and @c and d@e", "https://x.test/?u=a@b.test", "<x@y.pl>, z@w.pl; @@"];
     for (const input of inputs) expect(markUntrustedText(input)).not.toContain("@");
-  });
-
-  test("replaces a phone number next to a date, and keeps the date", () => {
-    expect(markUntrustedText("Termin 2026-11-04 600 123 456")).toBe("Termin 2026-11-04 [phone]");
-  });
-
-  test("replaces a phone number with dashes", () => {
-    expect(markUntrustedText("Tel 0800-12-34-56")).toBe("Tel [phone]");
-  });
-
-  test("replaces a phone number after letters", () => {
-    expect(markUntrustedText("Tel600123456")).toBe("Tel[phone]");
-  });
-
-  test("replaces a link glued to a word", () => {
-    expect(markUntrustedText("foohttps://evil.test/x")).toBe("foo[link]");
-    expect(markUntrustedText("xwww.evil.test")).toBe("x[link]");
   });
 });
 

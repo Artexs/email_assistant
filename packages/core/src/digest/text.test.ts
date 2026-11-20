@@ -12,12 +12,12 @@ describe("cutText", () => {
     expect(cutText("a\u0000b", 10)).toBe("a b");
   });
 
-  test("removes the Arabic letter mark", () => {
-    expect(cutText("ab\u061ccd", 10)).toBe("abcd");
-  });
-
-  test("removes bidi override characters", () => {
-    expect(cutText("ab\u202ecd", 10)).toBe("abcd");
+  test.each([
+    ["removes the Arabic letter mark", "ab\u061ccd", "abcd"],
+    ["removes bidi override characters", "ab\u202ecd", "abcd"],
+    ["replaces a lone surrogate", "a\ud800b", "a\ufffdb"],
+  ])("%s", (_name, input, text) => {
+    expect(cutText(input, 10)).toBe(text);
   });
 
   test("cuts at max code points with an ellipsis", () => {
@@ -28,10 +28,6 @@ describe("cutText", () => {
     const out = cutText("😀".repeat(20), 5);
     expect(out).toBe(`${"😀".repeat(4)}…`);
     expect(LONE.test(out)).toBe(false);
-  });
-
-  test("replaces a lone surrogate", () => {
-    expect(cutText("a\ud800b", 10)).toBe("a\ufffdb");
   });
 });
 

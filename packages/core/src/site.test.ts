@@ -3,20 +3,19 @@ import { describe, expect, test } from "bun:test";
 import { docsUrl, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from "./site";
 
 describe("docsUrl", () => {
-  test("T1 English home", () => {
-    expect(docsUrl("/", "en")).toBe("https://artexs.github.io/email_assistant/");
-  });
-
-  test("T2 Polish home", () => {
-    expect(docsUrl("/", "pl")).toBe("https://artexs.github.io/email_assistant/pl/");
-  });
-
-  test("T3 English page", () => {
-    expect(docsUrl("/start/", "en")).toBe("https://artexs.github.io/email_assistant/start/");
-  });
-
-  test("Polish page", () => {
-    expect(docsUrl("/start/", "pl")).toBe("https://artexs.github.io/email_assistant/pl/start/");
+  test.each<[string, string, "en" | "pl", string]>([
+    ["T1 English home", "/", "en", "https://artexs.github.io/email_assistant/"],
+    ["T2 Polish home", "/", "pl", "https://artexs.github.io/email_assistant/pl/"],
+    ["T3 English page", "/start/", "en", "https://artexs.github.io/email_assistant/start/"],
+    ["Polish page", "/start/", "pl", "https://artexs.github.io/email_assistant/pl/start/"],
+    [
+      "a segment that only holds dots inside a name is not a .. segment",
+      "/a..b/",
+      "en",
+      "https://artexs.github.io/email_assistant/a..b/",
+    ],
+  ])("%s", (_name, path, locale, url) => {
+    expect(docsUrl(path, locale)).toBe(url);
   });
 
   test("T4 a path without a leading slash throws", () => {
@@ -47,10 +46,6 @@ describe("docsUrl", () => {
     expect(() => docsUrl("/../x/", "en")).toThrow("..");
     expect(() => docsUrl("/start/../x/", "pl")).toThrow("..");
     expect(() => docsUrl("/start/..", "en")).toThrow("..");
-  });
-
-  test("a segment that only holds dots inside a name is not a .. segment", () => {
-    expect(docsUrl("/a..b/", "en")).toBe("https://artexs.github.io/email_assistant/a..b/");
   });
 
   test("a pl path that holds the /pl prefix throws; an en path may name the Polish page", () => {

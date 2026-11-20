@@ -16,11 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟠 ACTIVE): One operator alert path with texts in core and one locale type exist
-- `F143-the-files-that-the-last-tickets-grew-past-400-lines-are-split-by-aggregate-and-a-lint-check-warns-over-400-and-fails-over-800` (🟠 ACTIVE): The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
-- `F136-every-limen-job-runs-the-playwright-suites-in-parallel-with-no-shared-lock` (🟠 ACTIVE): Every Limen job runs the Playwright suites in parallel with no shared lock
-- `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
-- `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
@@ -46,8 +41,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 ## PARKED
 
-- `F063-junk-llm-cap` (🔴 PLANNED, parked: trigger is a spam wave in the weekly report of F100; no plan).
-- `F140-…-own-model-…` (🔴 PLANNED, parked: the two open stages of the private model option; starts when the owner says "run the own model" or OpenAI answers the EU project request).
 
 ## DROPPED
 
@@ -59,15 +52,15 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F159-the-english-approval-text-says-1-time-an-empty-quote-shows-no-cut-note-and-the-dead-code-the-mutation-run-found-in-the-approval-card-is-removed` (🟢 PROVEN): The English approval text says "1 time", and an empty quote shows no false cut note; landed 2026-11-20
 - `F158-tmp-never-fills-up-from-job-caches-because-a-periodic-cleanup-removes-stale-cache-files` (🟢 PROVEN): /tmp never fills up from job caches because a periodic cleanup removes stale cache files; landed 2026-11-20
+- `F156-the-draft-schema-refuses-an-impossible-date-such-as-2026-13-01` (🟢 PROVEN): The draft schema refuses an impossible date such as 2026-13-01; landed 2026-11-20
+- `F155-the-source-text-regexes-in-main-test-ts-and-composition-test-ts-are-replaced-by-behaviour-tests` (🟢 PROVEN): The source-text regexes in main.test.ts and composition.test.ts are replaced by behaviour tests; landed 2026-11-20
 - `F154-the-core-functions-with-5-or-more-surviving-mutants-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): The core functions with 5 or more surviving mutants get tests that fail when the code breaks; landed 2026-11-20
 - `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
 - `F150-stale-state-statements-and-bare-codes-outside-comments-are-cleaned-and-the-lint-rule-covers-them` (🟢 PROVEN): Stale state statements and bare codes outside comments are cleaned and the lint rule covers them; landed 2026-11-20
 - `F149-telegram-callbacks-dispatch-through-a-family-registry` (🟢 PROVEN): Telegram callbacks dispatch through a family registry; landed 2026-11-20
 - `F148-one-legal-version-format-and-parser-exist` (🟢 PROVEN): One legal version format and parser exist; landed 2026-11-20
-- `F146-one-action-id-header-exists-and-the-unread-exports-and-the-weaker-dkim-check-are-removed` (🟢 PROVEN): One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed; landed 2026-11-20
-- `F145-one-time-ts-spelling-minute-ms-hour-ms-day-ms-is-used-everywhere-and-a-lint-rule-bans-the-literals` (🟢 PROVEN): One time.ts spelling MINUTE_MS HOUR_MS DAY_MS is used everywhere and a lint rule bans the literals; landed 2026-11-20
-- `F144-the-sender-activity-read-is-split-into-readers-owned-by-the-modules-that-own-the-tables` (🟢 PROVEN): The sender activity read is split into readers owned by the modules that own the tables; landed 2026-11-20
-- 2026-11: 119 landed. spec/features/done/2026-11/
+- `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟢 PROVEN): One operator alert path with texts in core and one locale type exist; landed 2026-11-20
+- 2026-11: 126 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 

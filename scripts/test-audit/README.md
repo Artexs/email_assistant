@@ -26,6 +26,19 @@ Checks of `cut-proof.ts`:
 3. Mutants (only with `mutation.json` on both sides): a `Killed` mutant before that is `Survived` or `NoCoverage` after fails (compare by file, line, column, mutator, replacement). `Timeout` is no change; the places of `mutation-unstable.tsv` are not checked; a mutant on one side only is listed, not failed.
 4. The serial time per lane (the `time` of the JUnit root element) before and after is printed.
 
+What the cut stages (09 to 20) learned:
+
+- **Keys drift.** A case that a stage already moved or renamed shows as `deferred-none` in a later scan. Resolve it by its new name with `--keys <file>::<name>`; that is a rename, not a deferral. A case that stays in its file under its old name is `ok`.
+- **Open branches.** Check each branch with `git diff --name-only <merge-base>...<branch>` and `git cherry <base> <branch>`. A file that a branch changes is deferred; its key stays `ok` in `cut-keys.ts` until the branch lands. At the end of phase B one branch (the removal of a model provider) still held `triage/cost.test.ts` and `platform/config.test.ts`.
+- **Tables.** Merging look-alike cases into a `test.each` table keeps the JUnit `name`; only the class name (the `describe`) can change. Compare the sorted `testcase` names of a before run and the after run (`grep -o '<testcase name="[^"]*"' unit.xml | sort`): the diff must be empty, and the case counts do not change (`--expect unit=+0`). One table may repeat a name. Break one expected value per table, run the file, and see exactly that row fail.
+- **Serial time is noise.** Two runs on one commit differed by 1.7× (41.28 s and 71.83 s, the same nine spawns) and 2.2× (5.78 s and 12.95 s) while other jobs ran in parallel. Use the case counts and the covered lines as proof. Use time only for a cut that moves a slow case out of a lane (`lab-bots.test.ts`: 83.90 s, 56.32 s, 34.23 s over two stages).
+- **Two `--before` runs.** When one mutation run serves both, copy its `mutation.json` into both `before` folders (`cut-proof.ts` needs the file in each).
+- **Mutation scope per stage.** Pass one `--mutate src/<file>` for each non-test file in the import closure of the changed test files (80 and 81 files in stages 16 and 20; 6,631 mutants in the stage 16 runs).
+- **Unstable mutants.** A mutant that only a 5 s load timeout kills flips between runs (`contacts/address.ts` 24:7 and 25:10, killed only by `no character that folds to a letter is missing, over every code point`). Confirm with a second run at the tip and a run at the base in a scratch worktree, then add its place to `audit/data/mutation-unstable.tsv`. A stage may pass a copy of that file with `--data` and let the coordinator add the rows.
+- **Mutants at one place.** Two mutants can start at one line and column and differ in their end. The compare key (`mutantPlace` in `mutation-summary.ts`) includes the end, so the order of the Stryker list does not matter.
+- **Copies of a test path list.** The `test:unit` paths live in `package.json` and in `scripts/check-job.sh`. A path added to one goes to the other.
+- **A never-run test in CI.** A `skipIf` file that needs the e2e URLs runs in the `e2e` job, in a step that fails on a skip line (`grep -Eq '^ *[0-9]+ skip'`). The step runs before the browser tests, so a failed browser run cannot hide the skip.
+
 ## Mutation notes
 
 - Two runs on 4ce3f351: 21,250 mutants each; 6 status differences (0.03 %), all between `Killed` and `Survived`: `replies/digits.ts` 297:21, 368:17, 372:23 (two regex mutants) killed in run 1, survived in run 2; `testmail/batch.ts` 107:5 survived then killed; `triage/suspicious.ts` 342:7 killed then survived. A guess, not verified: the digit-budget test of `replies/digits.test.ts` hits its 5 s timeout on a loaded machine (it did in the dry run of an earlier attempt). Phase B compares `Killed` against `Survived` and `NoCoverage` for every mutant outside these 6 places, and never `Timeout`.
