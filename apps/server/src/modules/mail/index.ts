@@ -195,7 +195,7 @@ export {
   requeueTooOld,
   setFolderMapEntry,
   setAnsweredCheck,
-  setUndoPending,
+  setMovePending,
   touchEmailFlags,
   updateEmailLocation,
   upsertMailboxProfile,

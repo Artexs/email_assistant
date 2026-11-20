@@ -3,7 +3,7 @@ import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
-import { getEmailMailbox, setUndoPending } from "../mail";
+import { getEmailMailbox, setMovePending } from "../mail";
 
 import { expireReady } from "./expire";
 import { insertReverse, lockActionsForUndo } from "./repo";
@@ -66,7 +66,7 @@ export async function undo(
       }
       if (created > 0) {
         // The sync stores no INBOX copy of this mail while the reverse move runs.
-        if (reverseMove) await setUndoPending(trx, ctx, emailId, opts.now);
+        if (reverseMove) await setMovePending(trx, ctx, emailId, opts.now);
         // m13: a `ready` original in a retry wait would move the mail again after the Undo.
         await expireReady(
           trx,

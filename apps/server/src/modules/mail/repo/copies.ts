@@ -20,7 +20,7 @@ export async function findCopies(
       "content_hash",
       "from_address",
       "received_at",
-      "undo_pending_at",
+      "move_pending_at",
     ])
     .where("org_id", "=", ctx.orgId)
     .where("mailbox_id", "=", mailboxId)
@@ -36,7 +36,7 @@ export async function findCopies(
     contentHash: row.content_hash,
     from: row.from_address,
     receivedAt: row.received_at,
-    movePendingAt: row.undo_pending_at,
+    movePendingAt: row.move_pending_at,
   }));
 }
 // The UIDs that the other rows of the same identity hold in `folder` (the `excludeUids` of locateMessage).
@@ -55,7 +55,7 @@ export interface MovedRow {
   /** The UID in `folder` (the hint of the folder check). */
   uid: number;
   /** The last known UID in `source_folder` (the name stays). */
-  inbox_uid: number | null;
+  source_uid: number | null;
   folder: string;
   source_folder: string;
   message_id_header: string | null;
@@ -76,7 +76,7 @@ export async function listRecentlyMoved(
     .select([
       "id",
       "uid",
-      "inbox_uid",
+      "source_uid",
       "folder",
       "source_folder",
       "message_id_header",
@@ -89,7 +89,7 @@ export async function listRecentlyMoved(
     .where("mailbox_id", "=", mailboxId)
     .where("source_folder", "=", opts.sourceFolder)
     .whereRef("folder", "<>", "source_folder")
-    .where("inbox_uid", "is not", null)
+    .where("source_uid", "is not", null)
     .where("moved_at", ">=", opts.movedAfter)
     .orderBy("moved_at", "desc")
     .orderBy("id")
@@ -102,7 +102,7 @@ export async function listRecentlyMoved(
           {
             ...row,
             uid: Number(row.uid),
-            inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+            source_uid: row.source_uid === null ? null : Number(row.source_uid),
             moved_at: row.moved_at,
           },
         ]
@@ -120,8 +120,8 @@ export interface MoveCandidateRow {
   content_hash: string;
   from_address: string | null;
   received_at: Date;
-  /** emails.undo_pending_at: a system move into a synced folder is in flight. */
-  undo_pending_at: Date | null;
+  /** emails.move_pending_at: a system move into a synced folder is in flight. */
+  move_pending_at: Date | null;
 }
 
 const MOVE_CANDIDATE_CHUNK = 500;
@@ -147,7 +147,7 @@ export async function listMoveCandidates(
         "content_hash",
         "from_address",
         "received_at",
-        "undo_pending_at",
+        "move_pending_at",
       ])
       .where("org_id", "=", ctx.orgId)
       .where("mailbox_id", "=", mailboxId)
