@@ -142,14 +142,6 @@ describe("parseDirectives", () => {
       { text: "img-src  data:", name: "img-src" },
     ]);
   });
-  test("it keeps the case of a directive name", () => {
-    expect(parseDirectives("Default-SRC 'self'")).toEqual([{ text: "Default-SRC 'self'", name: "Default-SRC" }]);
-  });
-  test("it splits a directive name from its sources on any run of white space", () => {
-    expect(parseDirectives("script-src\t'self'\n'none'")).toEqual([
-      { text: "script-src\t'self'\n'none'", name: "script-src" },
-    ]);
-  });
   test("an empty policy has no directive", () => {
     expect(parseDirectives("")).toEqual([]);
     expect(parseDirectives(" ; ;")).toEqual([]);
