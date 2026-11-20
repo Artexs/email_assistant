@@ -37,6 +37,9 @@ describe("isE2eDatabaseName", () => {
     expect(isE2eDatabaseName("email_assistant_s5b")).toBe(false);
     expect(isE2eDatabaseName(null)).toBe(false);
     expect(isE2eDatabaseName("_e2e")).toBe(false);
+    expect(isE2eDatabaseName("email_assistant_f121_demo")).toBe(true);
+    expect(isE2eDatabaseName("_demo")).toBe(false);
+    expect(isE2eDatabaseName("email_assistant_demo_old")).toBe(false);
     expect(isE2eDatabaseName("a-b_e2e")).toBe(false);
   });
 });

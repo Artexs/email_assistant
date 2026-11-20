@@ -50,6 +50,8 @@ apps/web/e2e/.seed.json
 apps/web/e2e/.demo-owner.json
 apps/web/e2e/test-results/
 apps/web/e2e/playwright-report/
+# the output of `bun run demo:record` (the default --out folder)
+tmp/demo/
 apps/docs/e2e/test-results/
 apps/docs/e2e/playwright-report/
 /.limen/
