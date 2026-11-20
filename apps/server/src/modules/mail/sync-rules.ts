@@ -59,7 +59,7 @@ export interface KnownCopy {
   contentHash: string;
   from: string | null;
   receivedAt: Date;
-  /** emails.undo_pending_at: a system move into a synced folder is in flight. */
+  /** emails.move_pending_at: a system move into a synced folder is in flight. */
   movePendingAt: Date | null;
 }
 
@@ -216,7 +216,7 @@ export function isDeleted(meta: FolderMessageMeta): boolean {
 }
 
 /**
- * The metas of the `source_folder` of moved rows, at the `inbox_uid` (the last known UID in the source
+ * The metas of the `source_folder` of moved rows, at the `source_uid` (the last known UID in the source
  * folder) and the `uid` of each row (a system move gives the mail a new folder UID; a webmail move back keeps it).
  * A meta that is not `\Deleted` and has the identity of the row at one of its UIDs is a mail that came back to its
  * source folder below the cursor.
@@ -232,7 +232,7 @@ export function matchReturned(
     const matches = rows.filter(
       (candidate) =>
         !hits.has(candidate.id) &&
-        (candidate.inbox_uid === meta.uid || candidate.uid === meta.uid) &&
+        (candidate.source_uid === meta.uid || candidate.uid === meta.uid) &&
         sameMailIdentity(
           meta,
           {
@@ -244,8 +244,8 @@ export function matchReturned(
           mode
         )
     );
-    // A row whose `inbox_uid` is the meta UID wins over a row whose folder `uid` is.
-    const row = matches.find((candidate) => candidate.inbox_uid === meta.uid) ?? matches[0];
+    // A row whose `source_uid` is the meta UID wins over a row whose folder `uid` is.
+    const row = matches.find((candidate) => candidate.source_uid === meta.uid) ?? matches[0];
     if (row !== undefined) hits.set(row.id, { emailId: row.id, uid: meta.uid });
   }
   return [...hits.values()];
