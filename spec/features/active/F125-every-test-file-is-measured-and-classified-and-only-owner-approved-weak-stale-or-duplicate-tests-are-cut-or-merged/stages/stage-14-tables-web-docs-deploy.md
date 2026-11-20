@@ -1,6 +1,6 @@
 # F125 stage 14 — G03 part 2: look-alike cases of the web, docs and deploy tests become tables
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`, `cut-run.sh`, `cut-proof.ts`. May run next to 09–13, 15–20. Gets a review job (plan § Review).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`; stage 08b: `cut-run.sh`, `cut-proof.ts`. May run next to 09–13, 15–20. Gets a review job (plan § Review).
 
 Group G03 (`MERGE-TABLE`, rule none, owner `ok`). Rows: `audit/review-core-web-tools.md` items T1, T2, T3 (docs), T16 and T17 (proposed table headers in their `Evidence`). Follow plan § Cut stage steps (S1–S7) and D19 (stage 13).
 

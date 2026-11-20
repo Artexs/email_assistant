@@ -1,6 +1,6 @@
 # F125 stage 17 — G06: the e2e seed cases run in the CI e2e job
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs: `.github/workflows/ci.yml` job `e2e` (on master). May run next to 08–16, 18–20. Gets a review job (plan § Review).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts` (step S2); `.github/workflows/ci.yml` job `e2e` (on master). May run next to 08b, 09–16, 18–20. Gets a review job (plan § Review).
 
 Group G06 (`FIX-NEVER-RUNS`, rule F6). Owner answer (G1, 2026-11-20): "run `int/e2e-seed.test.ts` in the CI `e2e` job (it sets the E2E database URLs). No case is deleted." Rows: `audit/review-int-e2e.md` row for `e2e-seed.test.ts:91`. Follow plan § Cut stage steps S1–S3 and S6–S7; S4/S5 (`cut-run`, `cut-proof`) do not apply: no test file changes.
 

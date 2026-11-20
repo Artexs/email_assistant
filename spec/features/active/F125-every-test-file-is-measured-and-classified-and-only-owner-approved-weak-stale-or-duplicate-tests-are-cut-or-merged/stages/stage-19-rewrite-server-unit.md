@@ -1,6 +1,6 @@
 # F125 stage 19 — G09: weak server unit cases get exact asserts
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts` (reads `audit/reject.tsv`), `cut-run.sh`, `cut-proof.ts`. May run next to 09–18, 20. Gets a review job on `claude-opus-5-5` (plan § Review: these cases test TLS, config secrets and deploy settings).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts` (reads `audit/reject.tsv`); stage 08b: `cut-run.sh`, `cut-proof.ts`. May run next to 09–18, 20. Gets a review job on `claude-opus-5-5` (plan § Review: these cases test TLS, config secrets and deploy settings).
 
 Group G09 (`REWRITE-WEAK`, owner `ok` except the reject list). Rows with the proposed assert: `audit/review-server-unit.md` (rows with action `REWRITE-WEAK`). Follow plan § Cut stage steps (S1–S7).
 

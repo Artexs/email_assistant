@@ -1,6 +1,6 @@
 # F125 stage 18 — G07 and G08: the mail OAuth spike tests run in the unit suite
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs: the `test:unit` script of the root `package.json` (on master). May run next to 08–17, 19, 20. Gets a review job (plan § Review).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts` (step S2); the `test:unit` script of the root `package.json` (on master). May run next to 08b, 09–17, 19, 20. Gets a review job (plan § Review).
 
 Groups G07 (`FIX-NEVER-RUNS`, rule K3) and G08 (`FIX-NEVER-RUNS`, rule none). Owner answer (G1, 2026-11-20): keep `tools/mail-oauth-spike/` and add it to `test:unit`, so CI runs its 23 tests; Microsoft and Google mailbox sign-in stays planned, and the kit is its first step. Rows: `audit/review-core-web-tools.md` (the `probe.test.ts` and `redact.test.ts` rows). Follow plan § Cut stage steps S1–S3 and S6–S7. S4/S5: only the JUnit count (below); no lcov or mutant check (D9, `FIX-NEVER-RUNS`).
 

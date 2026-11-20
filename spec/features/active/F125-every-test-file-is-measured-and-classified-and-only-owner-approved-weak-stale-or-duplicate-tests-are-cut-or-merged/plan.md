@@ -1,6 +1,6 @@
 # F125 · Test audit: measure, classify, cut only what the owner approves — plan
 
-> **Status 2026-11-20 — in progress.** Plan base: 1927d052, refreshed 2026-11-19 ([`plan-refresh-1.md`](plan-refresh-1.md); first base 54fe78f). Stages 01–07 landed; gate G1 answered 2026-11-20. Phase B plan base: 1685baff; cut stages 08–21 written 2026-11-20 (§ Phase B).
+> **Status 2026-11-20 — in progress.** Plan base: 1927d052, refreshed 2026-11-19 ([`plan-refresh-1.md`](plan-refresh-1.md); first base 54fe78f). Stages 01–07 landed; gate G1 answered 2026-11-20. Phase B plan base: 1685baff; cut stages 08–21 written 2026-11-20 (§ Phase B), fixed after plan review 3 (stage 08 split into 08 and 08b).
 
 ## Input
 
@@ -26,7 +26,7 @@ The approach check (the proposed method, the alternatives, why) is in `notes/202
 ### Design decisions
 
 - **D1** Two phases. Phase A (stages 01–07) is read-only on tests: it adds the audit tool, data, the report and the rule docs. Phase B (stages 08+) cuts. Gate G1 between them is a second-pass gate: the coordinator stops after stage 07 and asks the owner (execution plan § 2.4, "a ticket with a second-pass gate on a later stage builds up to that stage, then stops and asks the owner"). Reason: the cut list cannot exist before the data; a detached planner cannot ask the owner.
-- **D2** The phase B stages are written after G1 by a `--role planner` job from the approved groups (How to run step 7). Each cut stage follows § Cut stage rules below, so that planner only turns groups into stages.
+- **D2** The phase B stages are written after G1 by a `--role planner` job from the approved groups (done 2026-11-20). Each cut stage follows § Cut stage rules below, so that planner only turns groups into stages.
 - **D3** The audit tool lives in `scripts/test-audit/` (TypeScript, run with `bun`), with its own `tsconfig.json` and unit tests run explicitly (`bun test scripts/test-audit`). Not a workspace. Reason: a new workspace changes `bun.lock`, and `deploy/Dockerfile` copies only the listed workspace `package.json` files (line 9), so `bun install --frozen-lockfile` in the image build could break. The tool stays in the repo after F125, so a later audit and the cut stages reuse it. Its tests run in the F125 stage proofs only, not in CI: it is a maintenance tool, not product code (review 1, note).
 - **D4** Mutation testing runs in a work folder outside the repo and outside `/tmp` (`${XDG_CACHE_HOME:-$HOME/.cache}/ea-test-audit/mutation.XXXXXX`; `/tmp` is a shared tmpfs that ran out of inodes on 2026-11-14, `notes/2026-11-14-handoff-after-compaction.md`), removed by an `EXIT` trap: `scripts/test-audit/mutation.sh` copies `packages/core/src`, `packages/core/tsconfig.json` and `tsconfig.base.json` to the work folder, writes a `package.json` with pinned `@stryker-mutator/core@10.1.1`, `@hughescr/stryker-bun-runner@1.6.0`, `typescript@5.9.3` and `zod` (the version of `packages/core/package.json`), installs, and runs Stryker with `disableBail: true` (every killing test is recorded, F3). Reason: no new dependency and no `bun.lock` change in the repo; this is stricter than the owner default "a dev dependency in `packages/core`" (log as a default for the owner). Rejected: a dev dependency in the repo (lock conflicts with parallel jobs, an image risk).
 - **D5** Mutation only for `packages/core` (pure logic; 787 cases and 2 min in the F3 probe; 2,760 JUnit cases at 1927d052, so expect a longer run, stage 03 measures it). Not for `apps/server` (DB, IMAP, preload; too slow and not proven to work) and not for `apps/web`. Rejected: a full-repo mutation run.
@@ -89,7 +89,7 @@ Classes:
 ### Reader method (stages 04–06)
 
 1. Input: `audit/data/cases.tsv` (flags S1–S9, `not-run`, `unscanned`), `groups.tsv`, and for core `mutation-tests.tsv` (S10, S11, joined by `key`) and `mutation-survived.tsv`. Select the rows of the stage's area that have a flag.
-2. An **item** is one flagged case, or one B or T group (all its cases at once). A B group that spans areas belongs to the area of its first key (sorted by file, then line); only that stage reads it, and it reads all its keys. Order the items: (a) `S1`, `S7`, `S8`, `not-run`; (b) `S2`, `S3`, `S4`; (c) B groups; (d) T groups; (e) core `S11`, then core cases with `S10` and no other flag, grouped by test file (one item per file); (f) `S9`, slowest first. Read at most **150 items per stage** (all sections together). Commit the review file after every 50 items, so a stopped job loses little. List the rest as `not read` with their flags; the coordinator may spawn a continuation job for the next 150 (How to run step 4).
+2. An **item** is one flagged case, or one B or T group (all its cases at once). A B group that spans areas belongs to the area of its first key (sorted by file, then line); only that stage reads it, and it reads all its keys. Order the items: (a) `S1`, `S7`, `S8`, `not-run`; (b) `S2`, `S3`, `S4`; (c) B groups; (d) T groups; (e) core `S11`, then core cases with `S10` and no other flag, grouped by test file (one item per file); (f) `S9`, slowest first. Read at most **150 items per stage** (all sections together). Commit the review file after every 50 items, so a stopped job loses little. List the rest as `not read` with their flags; the coordinator may spawn a continuation job for the next 150 (at most two per stage).
 3. For each item: read the test, the code it calls, and the nearest other tests of that code (same file, the file next to the code, the int test of the same module). Apply the K rules first, then the class rules. One row per item.
 4. Evidence is concrete: the `file:line` of the kept case for `DELETE-DUP`; the proposed `test.each` table header for `MERGE-TABLE`; the proposed assertion for `REWRITE-WEAK`; the missing symbol, the dropped ticket or the capability page for `DELETE-STALE`; the unit file that would hold it for `MOVE-TO-UNIT`.
 5. Not sure: `KEEP` with rule `unsure` and one line why. A wrong `KEEP` costs nothing; a wrong cut costs a lost check.
@@ -113,12 +113,13 @@ Input: `audit/report.md` § 2 and § Owner answers: all ten groups `ok`; G06 run
 
 - **D12** Stage-local proof. `cut-run` runs only the stage's test files: the files it changes, the files of its kept keys and its new files; "before" twice before the first edit, "after" once. Reason: the owner rule "tests run once per job" (2026-11-20, `notes/2026-11-20-test-cpu-load.md`) forbids full suites in a job, and the subset check is never weaker: the rest of the suite does not change, so a line the subset still hits is still hit by the suite. It can only raise a false drop: then widen the "after" run with the test files that import that source file; still unhit → revert the rows that cause it and defer them. Rejected: full `coverage.sh` before and after (about 40 min of serial int per stage). D9's per-action table stays; `--expect` states its count rule per stage.
 - **D13** The stage log is `audit/cut-sNN.md` in this folder (committed; the ticket acceptance "stage log"). Raw JUnit, lcov and `mutation.json` stay in `/tmp/f125-sNN/`.
-- **D14** Mutation scope (core stages 16, 20): `mutation.sh --mutate` with the non-test files in the import closure of the changed test files. A test kills mutants only in code it runs. Rejected: a full core run twice per stage (about 1 h).
-- **D15–D23** Stage decisions: the fake lab mail client (09), one spawn stays for the stats:week exit-2 wiring (11, Q7), Bun fake timers for the bounded close (11, Q8), the duplicate pair check (12), the table rules (13, for 13–16), the CI step place and its no-skip check (17), the spike README line (18), the rewrite rules (19, for 19–20).
+- **D14** Mutation scope (core stages 16, 20): `mutation.sh --mutate` with the non-test files in the import closure of the changed test files. A test kills mutants only in code it runs. Rejected: a full core run twice per stage (about 1 h). Each Stryker run starts with a dry run of the whole core suite (about 2.8 k cases, with per-test coverage); in stages 16 and 20 it runs twice. It is the audit tool, not `test:unit`, and it is the only full-suite run in phase B (plan review 3, note 2).
+- **D15–D23** Stage decisions: the fake lab mail client (09), the stats:week int case cut to one spawn for the exit-2 wiring, with no new unit row (11, Q7), Bun fake timers for the bounded close (11, Q8), the duplicate pair check (12), the table rules (13, for 13–16), the CI step place and its no-skip check (17), the spike README line (18), the rewrite rules (19, for 19–20).
 - **D24** Phase B proof: the stage's `cut-proof` PASS section in its log, then `bun run check:job` as the last step (its last line in the final message). This replaces the Phase A § Proof chain (full `test:unit:ci` and `test:int:ci`) for phase B, by the same owner rule. GitHub CI runs every suite on master.
-- **D25** Stage cut: G01 is three stages (a move counts twice in the about-300-lines limit: 09 builds the fake and moves six cases, 10 moves five, 11 the two other files); G03 three by area so they run in parallel; G04 and G05 one stage (two of their files hold both groups; one mutation pair); G07 and G08 one stage (one path change). Stage 08 builds the shared tools first.
+- **D25** Stage cut: G01 is three stages (a move counts twice in the about-300-lines limit: 09 builds the fake and moves six cases, 10 moves five, 11 the two other files); G03 three by area so they run in parallel; G04 and G05 one stage (two of their files hold both groups; one mutation pair); G07 and G08 one stage (one path change). Stages 08 (`cut-keys`, the old key names) and 08b (`cut-run`, `cut-proof`) build the shared tools first, in parallel; one stage was over the size cap.
 - **D26** The core gap ticket (F154) writes some of the same core test files. Stage 16 waits for F154 stages 11, 12 and 14, stage 20 for F154 stage 12. Reason: Cut stage rule 3 would defer every row in a file of an open F154 branch, and the mutant "before" must include the new F154 cases. Rejected: run now and defer.
-- **D27** No new questions block a stage. Defaults: `questions.md` Q7–Q9.
+- **D27** No new questions block a stage. Defaults: `questions.md` Q7–Q10.
+- **D28** The old name of an approved key comes from `audit/data/approved-keys.tsv` (scans at the bases of the core/web/tools and server-unit reviews), then `cases.tsv`; a kept case is named `<file>::<name>` at the stage base (stage 08). Reason: those reviews keyed on fresh scans; 11 approved keys have no `cases.tsv` row (plan review 3, finding 1).
 
 ### Cut stage steps (every stage 09–20; 17 and 18 skip S4–S5 as their files say)
 
@@ -132,22 +133,19 @@ Input: `audit/report.md` § 2 and § Owner answers: all ten groups `ok`; G06 run
 
 ## Facts checked
 
-- **F1** Counts move fast (about 325 test files at 54fe78f, 977 at 1927d052). Each stage prints its own counts; the numbers here are only for scale. Recount at 1927d052, per path, with the commands: `plan-refresh-1.md` § Recount. Unit JUnit: 7,030 cases in 492 files, 0 skipped, 17 cases ≥ 1 s (`packages/core` 2,760, `apps/server/src` 2,807). Int (not run): 434 files, 5,533 call sites; JUnit is higher (`each`, loops, shared contract modules). Playwright: 39 files, 232 calls. In no suite: `tools/mail-oauth-spike/*.test.ts`. Total at least 12,800 cases. At 54fe78f: unit 2,262, int 1,683, about 41 e2e.
-- **F2** `bun test --reporter=junit --reporter-outfile=<f>` (Bun 1.4.4) writes per case `name`, `classname`, `time`, `file`, `line`, `assertions`, and `<skipped />` (probe /tmp/ta, 2026-11-14).
-- **F3** Mutation probe, 2026-11-14, temp copy of `packages/core` (HEAD 54fe78f), Node 26.13.1, Bun 1.4.4, `@stryker-mutator/core` 10.1.1, `@hughescr/stryker-bun-runner` 1.6.0 (peer `typescript <7`, `@stryker-mutator/core ^9 || ^10`; npm 2026-11-14), TypeScript 5.9.3: config `{ appendPlugins: ['@hughescr/stryker-bun-runner'], testRunner: 'bun', mutate: ['src/**/*.ts', '!src/**/*.test.ts'], reporters: ['json', 'clear-text'], concurrency: 8, disableBail: true }`. Result: 5,230 mutants, score 85.53 % (killed 4,455, timeout 18, survived 672, no coverage 85), 2 m 2 s wall on 16 cores. Of 787 cases: 23 kill no mutant (mostly registry and schema checks, K2), 397 kill mutants but none uniquely; a greedy set of 449 cases kills every mutant that the 787 kill. A few mutants log "no killing test identifiable — emitting empty killedBy" (static mutants). The `digest/` folder alone: 12 s, score 87.15 %.
-- **F4** The JSON report (`reports/mutation/mutation.json`) has `files.<path>.mutants[]` with `id`, `mutatorName`, `replacement`, `location` (`start`/`end` line and column), `static`, `status`, `coveredBy`, and `killedBy` (on killed mutants), and `testFiles.<path>.tests[]` with `id`, `name` (`<file> > <describe> > <test>`) and `location.start.line` (probe F3). Paths are relative to the temp folder (`src/…`); prefix `packages/core/` to join. Join to `cases.tsv` by file, the last ` > ` part of the Stryker name equal to the JUnit `name`, and the nearest line: in the probe the Stryker line was the JUnit line + 1 (`ai-text.test.ts` "below the threshold": JUnit 31, Stryker 32, the `test(` call on line 31). A case that does not join gets the key `unjoined` and a row in the stage's final message.
-- **F5** `bunfig.toml` `[test] preload = ["./apps/server/test/preload.ts"]`. The core copy in F3 had no bunfig and passed 787/787 (core needs no preload).
+Phase A facts F1–F5 (counts, the JUnit attributes of Bun 1.4.4, the mutation probe and its JSON shape, the preload) were checked on 2026-11-14 and 2026-11-19; the full text is in Git history of this file before plan review 3 and in `scripts/test-audit/README.md`. Counts move fast; each stage prints its own.
+
 - **F6** `.github/workflows/ci.yml` (checked at 1927d052): the `ci` job env has no `E2E_DATABASE_URL`/`E2E_MIGRATOR_DATABASE_URL`; `e2e-seed.test.ts:90` skips there (and in the local int run). The `e2e` job sets both URLs but runs only `test:e2e`. The parallel-Playwright ticket (F136, not planned yet) may set per-job E2E URLs in `scripts/limen-prepare.sh`: then the case runs in Limen jobs, still not in CI. Stage 06 reads `ci.yml` and `limen-prepare.sh` at its own base for the evidence.
-- **F7** `docs/known-alerts.md` holds only its template (2026-11-14). `backend/` no longer exists (`CLAUDE.md` still names it).
-- **F8** `deploy/Dockerfile` line 9 copies `tools/fake-telegram/package.json` by name; root `package.json` workspaces are `apps/*`, `packages/*`, `tools/*` (D3).
+- **F7** `docs/known-alerts.md` held only its template (2026-11-14).
+- **F8** `deploy/Dockerfile` copies workspace `package.json` files by name (D3).
 
 ## Not verified
 
-- **N1** Mutant ids stay stable between two runs on unchanged source (D9 compares by file, line, column, mutator instead). Checked by: stage 03 Step 3 runs `mutation.sh` twice on the same commit and compares; the result goes to `scripts/test-audit/README.md`.
-- **N2** `bun test --coverage` with the int suite and its preload on Bun 1.4.4. Checked by: stage 02 Step 2. If it fails, the cut proof uses unit lcov and mutation only; the stage writes that in the README.
-- **N3** The share of reader decisions that are right. The owner's marks at G1 are the check; the report shows evidence per row so the owner can sample.
-- **N5** Lcov stability between two runs on one commit (int tests with time-driven code). Checked by: stage 02 Step 2 runs coverage twice and writes `coverage-noise.tsv`.
-- **N4** How many cases the scan flags (it decides the reader workload). Stage 01 prints the counts; if a stage has more than 150 flagged items, the reader stage reads the 150 with the highest priority (§ Reader method, step 2) and lists the rest as `not read`. Rough estimate at 1927d052 (`plan-refresh-1.md` § Cap check; AST probe of S1, S2, S5–S7, a regex S8 count from plan review 2, the unit S9 count, core S10/S11 scaled from F3): stage 04 about 380 items, stage 05 about 120, stage 06 about 210 plus int S9 (unknown before stage 02). The cap stays 150 per job with at most two continuations (450 per stage): stage 04 needs one or two continuations, stage 05 zero or one, stage 06 one or two; above 450 only the fastest S9 cases of stage 06 stay `not read` (S9 is read last, slowest first). Default, owner to confirm: `questions.md` Q5.
+- **N1** Mutant stability between two runs: checked in stage 03 (6 status differences; `scripts/test-audit/README.md` § Mutation notes, `audit/data/mutation-unstable.tsv`).
+- **N2** Int coverage with the preload on Bun 1.4.4: holds (README § Coverage notes).
+- **N3** The share of reader decisions that are right. The owner's marks at G1 are the check.
+- **N4** Flagged items per reader stage: 150 per job, at most two continuations (`questions.md` Q5).
+- **N5** Lcov noise between two runs: `audit/data/coverage-noise.tsv` (stage 02).
 
 ## Done when
 
@@ -196,7 +194,7 @@ Phase B: D24 (the stage's `cut-proof` section, then `bun run check:job`; stage 2
 
 - Stages 01–06: no review job (new tool files and review files only); the tool tests and the proof decide.
 - Stage 07: a review job (board reviewer model) checks that every group row has evidence, that no K rule is broken, and that no kept key is cut by any group, before the coordinator asks the owner.
-- Phase B: stages 08–20 each get a review job (deletion of tests is hard to judge later; stage 08 builds the proof tool that every cut trusts). Model `claude-sonnet-5-5`, except stages 19 and 20 on `claude-opus-5-5`: their rewrites change asserts of TLS, config secret, SSO, mailbox OAuth and trust tests (board TRACK: security). No stage is `[risky]`: no product code, data, migration or send. Stage 21 gets none. Review text: "Review F125 stage NN at the candidate commit. Check: every changed case maps to an approved key of the stage file; no key of `audit/reject.tsv` and no other case changed; tables keep each old name and input (D19); rewrites assert exact values and each has a break-once line (D23); the `cut-proof` section shows PASS for the stage's `--expect`; each deferred row has a reason. The plan follows `.agents/limen/planner.md` § Plan size." plus the board's BLOCKING / TEST GAP / NOTE line.
+- Phase B: stages 08, 08b and 09–20 each get a review job (deletion of tests is hard to judge later; stages 08 and 08b build the tools that every cut trusts). Model `claude-sonnet-5-5`, except stages 19 and 20 on `claude-opus-5-5`: their rewrites change asserts of TLS, config secret, SSO, mailbox OAuth and trust tests (board TRACK: security). No stage is `[risky]`: no product code, data, migration or send. Stage 21 gets none. Review text: "Review F125 stage NN at the candidate commit. Check: every changed case maps to an approved key of the stage file; no key of `audit/reject.tsv` and no other case changed; tables keep each old name and input (D19); rewrites assert exact values and each has a break-once line (D23); the `cut-proof` section shows PASS for the stage's `--expect`; each deferred row has a reason. The plan follows `.agents/limen/planner.md` § Plan size." plus the board's BLOCKING / TEST GAP / NOTE line.
 
 ## Stages
 
@@ -212,10 +210,11 @@ Phase A:
 Gate G1 (owner).
 
 Phase B (§ Phase B; Needs lines in each file):
-- [ ] [Stage 08 — Cut tools: key resolve, stage run, before/after proof](stages/stage-08-cut-tools.md)
+- [ ] [Stage 08 — Cut tools part 1: approved keys and key resolve](stages/stage-08-cut-tools.md)
+- [ ] [Stage 08b — Cut tools part 2: stage run and before/after proof](stages/stage-08b-cut-run-and-proof.md)
 - [ ] [Stage 09 — G01 part 1: fake lab mail client, six lab bot cases to unit](stages/stage-09-lab-bots-unit-1.md)
 - [ ] [Stage 10 — G01 part 2: five lab bot cases to unit](stages/stage-10-lab-bots-unit-2.md)
-- [ ] [Stage 11 — G01 part 3: stats:week arguments and the bounded close to unit](stages/stage-11-stats-week-and-bounded-close.md)
+- [ ] [Stage 11 — G01 part 3: stats:week argument case to one spawn, the bounded close to unit](stages/stage-11-stats-week-and-bounded-close.md)
 - [ ] [Stage 12 — G02: five duplicate cases go](stages/stage-12-delete-dups.md)
 - [ ] [Stage 13 — G03 part 1: server unit tables](stages/stage-13-tables-server-unit.md)
 - [ ] [Stage 14 — G03 part 2: web, docs and deploy tables](stages/stage-14-tables-web-docs-deploy.md)
@@ -227,60 +226,33 @@ Phase B (§ Phase B; Needs lines in each file):
 - [ ] [Stage 20 — G10: exact asserts in core, fake Telegram and int cases](stages/stage-20-rewrite-core-tools-int.md)
 - [ ] [Stage 21 — Phase B result in the report](stages/stage-21-phase-b-result.md)
 
-Order: 08, 17 and 18 at once; 09, 11–15 and 19 after 08; 10 after 09; 16 after 08 and F154 stages 11, 12, 14; 20 after 08 and F154 stage 12; 21 last.
+Order: 08 and 08b at once; 17 and 18 after 08; 09, 11–15 and 19 after 08 and 08b; 10 after 09; 16 after 08, 08b and F154 stages 11, 12, 14; 20 after 08, 08b and F154 stage 12; 21 last.
 
 ## How to run (coordinator)
 
-1. Move the ticket to `spec/features/active/` and commit before the first spawn. Run `scripts/plan-drift.sh <ticket folder> 1927d052` first (plan-refresh rule until 21 Nov).
-2. Spawn stage 01 (standing models of `spec/build.md` TRACK):
-   ```
-   limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high \
-     --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge \
-     --prepare 'bash scripts/limen-prepare.sh' --label "test audit scan · F125" \
-     'Implement F125 stage 01. Read spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/ticket.md, plan.md and stages/stage-01-static-scan.md; build every step of that stage. Final proof: the Phase A command of plan.md § Proof with NN=01. In the final message, list as proven only what a saved log shows.'
-   ```
-   Order: 01 → 02 → (03, 05 and 06 at the same time) → 04 (needs 03) → 07 (needs 04–06). The `Needs` line of each stage names the data file it reads. Each later stage needs those files in `master`.
-3. Land each stage with `limen land --yes --keep-open` before you spawn the stages that need it. Use `--timeout 2h` for 02, 03, 04, 05 and 06 (02 runs the int suite serially three times, about 3.5 times the cases of 54fe78f; 03 mutates 2,760 core cases).
-4. A reader stage that ends with `not read` items: spawn a continuation job with the same stage file and the instruction "continue: read the next 150 `not read` items and append to the review file". At most two continuations per stage; the rest stays `not read` in the report. Then spawn stage 07, its review job, and land it.
-5. **Stop (G1).** Tell the owner: "The test audit report is ready: `spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/audit/report.md`. Mark each group ok / no / ask." Do not build further until the owner has marked it. Add an entry to `docs/owner-decisions.md` only for defaults taken in phase A (D4 is one: mutation outside the repo instead of a dev dependency).
-6. If the parallel-runs ticket (F124) has not landed yet, wait for it before phase B.
-7. After G1: spawn a planner job: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan cuts · F125" "Plan F125 phase B: write stages/stage-08+ for spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/ from the groups the owner marked ok in audit/report.md, by plan.md § Cut stage rules and D9. Keep stages 01–07 as they are."` Then build the cut stages one by one; each gets a review job (§ Review).
-8. Drop each job DB after its land.
-9. Phase B spawns: the step 2 command with the stage number, its stage file and the label `<what it cuts> · F125`; final proof: "plan.md § Phase B D24". Add the board line for reviewed stages. `--timeout 3h` for 16 and 20 (two mutation runs and the mutation lock wait of up to 2 h), default for the rest. Review each of 08–20 (§ Review), then land with `--keep-open`; stage 21 lands last and closes the ticket.
+Phase A, G1 and the phase B planner are done; their steps are in Git history of this file before plan review 3. Drop each job DB after its land.
+
+Phase B spawn, per stage (`NN` is the stage number, `08b` included):
+```
+limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high \
+  --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge \
+  --prepare 'bash scripts/limen-prepare.sh' --label "<what it cuts> · F125" \
+  'Implement F125 stage NN. Read spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/ticket.md, plan.md and its stage file; build every step of that stage. Final proof: plan.md § Phase B D24. In the final message, list as proven only what a saved log shows.'
+```
+Spawn a stage when its Needs line holds. Add the board line for reviewed stages. `--timeout 3h` for 16 and 20 (two mutation runs and the mutation lock wait of up to 2 h), default for the rest. Review each of 08, 08b and 09–20 (§ Review), then land with `--keep-open`; stage 21 lands last and closes the ticket.
 
 ## Planning progress
 
-- [x] ticket.md
-- [x] plan.md
-- [x] stages/stage-01-static-scan.md [written]
-- [x] stages/stage-02-timings-and-coverage.md [written]
-- [x] stages/stage-03-mutation-core.md [written]
-- [x] stages/stage-04-review-core-web-tools.md [written]
-- [x] stages/stage-05-review-server-unit.md [written]
-- [x] stages/stage-06-review-int-e2e.md [written]
-- [x] stages/stage-07-report-and-rule.md [written]
-- [x] cold review (`plan-review-1.md`)
-- [x] refresh 1 to 1927d052 (`plan-refresh-1.md`), no scouts (refresh job). Words after the refresh and review 2: plan.md 5,194, stage 01 1,266, 02 1,038, 03 754, 04 621, 05 326, 06 626, 07 754. The plan predates the 2026-11-14 size rule in practice (plan.md and stages 01–03, 07 are over it); the refresh does not restructure it.
-- [x] cold review of refresh 1 (`plan-review-2.md`): Sonnet 5.5, no `[risky]` stage; FAIL with 1 blocking finding, all fixed (`plan-refresh-1.md` § Changes after plan review 2).
-- [x] Phase B, 2026-11-20 at 1685baff: stages 08–21 [written]. Words: stage 08 698, 09 531, 10 351, 11 554, 12 442, 13 412, 14 268, 15 301, 16 449, 17 516, 18 440, 19 469, 20 411, 21 358. Scouts: 0, cold review: none run (the planning job's instruction forbids `limen wait` and every tool that waits for another job; § Cold review). The facts the decisions need were read at 1685baff: the `LabMailClient` port, `parseStatsWeekArgs` (renamed from the row's `readStatsWeekOptions`), `CLOSE_LOGOUT_TIMEOUT_MS` in `mail/imap/client.ts`, the `e2e` job env and steps of `ci.yml`, the `e2e-seed.test.ts` skip condition, the `test:unit` paths, the spike imports, the F154 stage files, Bun 1.4.4 fake timers (probe).
+- [x] ticket.md, plan.md, stages 01–07 [written], refresh 1 (`plan-refresh-1.md`), reviews 1 and 2. Stages 01–03 and 07 are over the 700-word cap; they landed, so they are not restructured.
+- [x] Phase B, 2026-11-20 at 1685baff: stages 08–21 [written], scouts 0. Facts read at 1685baff: the `LabMailClient` port, `parseStatsWeekArgs`, `CLOSE_LOGOUT_TIMEOUT_MS`, the `e2e` job of `ci.yml`, the `e2e-seed.test.ts` skip, the `test:unit` paths, the spike imports, the F154 stage files, Bun 1.4.4 fake timers (probe).
+- [x] Fixes after plan review 3, 2026-11-20 at 20bf2f52: stage 08 split into 08 and 08b; stages 11, 12, 16, 17, 18, 20, 21 changed. Words: plan.md 5,561; stage 08 579, 08b 571, 09 533, 10 351, 11 618, 12 536, 13 414, 14 270, 15 303, 16 480, 17 522, 18 446, 19 471, 20 440, 21 389.
 
 ## Cold review
 
-One round, 2026-11-14, Opus 5.5 high, scout job `2026-11-14-f125-plan-review-3dcd7e6e` on a614e3c: FAIL; major 7, minor 2, notes 1. Filed whole in [`plan-review-1.md`](plan-review-1.md). All fixed:
+- Round 1, 2026-11-14, Opus 5.5 high, on a614e3c: FAIL; major 7, minor 2, notes 1; all fixed ([`plan-review-1.md`](plan-review-1.md)).
+- Refresh 1 review: [`plan-review-2.md`](plan-review-2.md), all fixed (`plan-refresh-1.md`).
 
-- 1 (stage 01 count check contradicts `each` rows): fixed; stage 01 no longer compares to JUnit; stage 02 Step 3 checks the join (`unscanned`, `not-run`).
-- 2 (stage 03 joins to a file that does not exist yet; template names): fixed; order 01 → 02 → 03; stage 02 commits `junit-cases.tsv` (evaluated names); stage 03 joins Stryker tests to it; Reader method reads S10/S11 from `mutation-tests.tsv`.
-- 3 (D9 rules conflict with MERGE-TABLE, REWRITE-WEAK, MOVE-TO-UNIT; lcov noise): fixed; D9 is a table per action, union lcov, noise file (N5).
-- 4 (a kept case cut by another row; cross-area B groups): fixed; `Kept key` column, B group owned by one area, stage 07 check and review.
-- 5 (key drift before phase B; stale "before" numbers): fixed; Cut stage rule 2 re-resolves keys by name; D9 measures "before" at the cut base.
-- 6 (reader stage size): fixed; 150 items per stage, commit every 50, continuation jobs (How to run step 4).
-- 7 (S8 undefined for `bun:test`, e2e support files): fixed; S8 definition, never e2e.
-- 8 (stage 07 merge rule vs one rule per group): fixed; merge only same action and rule.
-- 9 (temp folders stay after a failure): fixed; `EXIT` trap, work folder outside `/tmp`.
-- 10 (facts): fixed; F1 note on fast counts, 13 e2e files, K4 names the contract module, stage 06 CLI rule by spawn, not by file name.
-- Note (quarantined cases, tool tests not in CI): fixed; K5 covers quarantined cases; D3 states it.
-
-Phase B: no cold review ran. The planning job could not start and wait for a review job (instruction of 2026-11-20). Proposal for the coordinator: one plan review of stages 08–21 (`claude-sonnet-5-5`, no `[risky]` stage) before stage 08 spawns, filed as `plan-review-3.md`; the per-stage reviews of § Review stay.
+- Phase B, 2026-11-20, on 96ebacd8: FAIL; 3 blocking findings, 7 notes ([`plan-review-3.md`](plan-review-3.md)). All blocking findings are fixed: 1 by D28 and the stage 08 split (08: `approved-keys.tsv`, reject check first, `<file>::<name>` keys, a no-`missing` Done-when check; 08b: run and proof); 2 in stage 11 (no unit row, one spawn, `--expect unit=+1,int=-1`; Q7 text); 3 in stage 21 (189 keys). Notes: 1 in stage 12 (expected D18 deferrals, kept keys by name); 2 in D14, stages 16 and 20, Q9; 3 in stage 08b (a missing lane counts as 0); 4 in stage 08b ("the places listed there"); 5 and 6 need no change; 7: this file was trimmed (phase A history moved to pointers). Stages 17 and 18 now need stage 08 (they run step S2, `cut-keys`).
 
 ## Log
 

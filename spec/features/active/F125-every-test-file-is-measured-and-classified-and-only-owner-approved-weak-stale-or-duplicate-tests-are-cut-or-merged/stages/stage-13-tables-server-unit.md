@@ -1,6 +1,6 @@
 # F125 stage 13 — G03 part 1: look-alike cases in the log lint and job-run argument tests become tables
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`, `cut-run.sh`, `cut-proof.ts`. May run next to 09–12, 14–20. Gets a review job (plan § Review).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`; stage 08b: `cut-run.sh`, `cut-proof.ts`. May run next to 09–12, 14–20. Gets a review job (plan § Review).
 
 Group G03 (`MERGE-TABLE`, rule none, owner `ok`). Rows: `audit/review-server-unit.md` items T8, T9, T10 and T13 (proposed table headers in their `Evidence`). Follow plan § Cut stage steps (S1–S7).
 

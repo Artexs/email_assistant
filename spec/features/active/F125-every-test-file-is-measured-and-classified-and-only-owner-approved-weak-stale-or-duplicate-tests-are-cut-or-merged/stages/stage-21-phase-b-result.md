@@ -18,7 +18,7 @@ Goal: the owner and the next audit see in one place what phase B changed, and pl
 
 ## Done when
 
-- Report § 6 has 10 rows and every key of `audit/approval-groups.tsv` is done, deferred with a reason, or rejected (`audit/reject.tsv`); the count check is in `/tmp/f125-s21/count.log` (done + deferred + rejected = 101 rows).
+- Report § 6 has 10 rows and every key of `audit/approval-groups.tsv` is done, deferred with a reason, or rejected (`audit/reject.tsv`); the count check is in `/tmp/f125-s21/count.log` (counted in keys, as `cut-keys` prints them: done + deferred + rejected = 189 keys, that is 185 approved keys and the 4 rejected keys; the `rows` column of `approval-groups.tsv` sums to 101 items and is not this count).
 - One commit with explicit paths.
 - No `check:job` (no code change); the final message says so.
 

@@ -1,6 +1,6 @@
 # F125 stage 09 — G01 part 1: a fake lab mail client and the first six lab bot cases as unit tests
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`, `cut-run.sh`, `cut-proof.ts`. May run next to 11–20. Gets a review job (plan § Review).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`; stage 08b: `cut-run.sh`, `cut-proof.ts`. May run next to 11–20. Gets a review job (plan § Review).
 
 Group G01 (`MOVE-TO-UNIT`, owner `ok`). Rows and evidence: `audit/review-int-e2e.md` (rows with `lab-bots.test.ts`), keys in `audit/approval-groups.tsv`. Follow plan § Cut stage steps (S1–S7).
 

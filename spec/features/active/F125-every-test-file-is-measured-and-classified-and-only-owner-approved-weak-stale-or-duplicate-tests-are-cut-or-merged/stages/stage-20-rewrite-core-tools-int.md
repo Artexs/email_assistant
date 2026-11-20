@@ -1,6 +1,6 @@
 # F125 stage 20 — G10: weak core, fake Telegram and integration cases get exact asserts
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`, `cut-run.sh`, `cut-proof.ts` (mutant compare); F154 stage 12 landed or closed: it writes `packages/core/src/notices/encode.test.ts`. May run next to 09–19. Gets a review job on `claude-opus-5-5` (plan § Review: the int rows test SSO, mailbox OAuth login and sender trust).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`; stage 08b: `cut-run.sh`, `cut-proof.ts` (mutant compare); F154 stage 12 landed or closed: it writes `packages/core/src/notices/encode.test.ts`. May run next to 09–19. Gets a review job on `claude-opus-5-5` (plan § Review: the int rows test SSO, mailbox OAuth login and sender trust).
 
 Group G10 (`REWRITE-WEAK`, owner `ok`). Rows with the proposed assert: `audit/review-core-web-tools.md` (`notices/encode.test.ts:100`, `:104`, `tools/fake-telegram/src/compat.test.ts:44`) and `audit/review-int-e2e.md` rows 21, 31, 89, 90 (`mail-oauth-login.test.ts:29`, `sso-schema.test.ts:152`, `mail-connect.test.ts:324`, `trust-repo.test.ts:86`). Follow plan § Cut stage steps (S1–S7) and D23 (stage 19).
 
@@ -22,7 +22,7 @@ Group G10 (`REWRITE-WEAK`, owner `ok`). Rows with the proposed assert: `audit/re
 
 ## Proof (S5)
 
-- **D14** (stage 16) for the core part: `mutation.sh --mutate` with the import closure of `notices/encode.test.ts` before the first edit and after the last commit.
+- **D14** (stage 16) for the core part: `mutation.sh --mutate` with the import closure of `notices/encode.test.ts` before the first edit and after the last commit. Each Stryker run starts with a dry run of the whole core suite: that is the audit tool, the one allowed full-suite run (plan D14), not `test:unit`.
 - `cut-run` before twice and after once on the 6 files; `cut-proof --expect unit=+0,int=+0` with both `mutation.json` files. A rewrite may add kills; it must not lose one.
 - An empty `diff` of the sorted JUnit `name` lists before and after.
 - D23 rule 4: break once per row; for the int rows, break the code under test (for example skip the issuer insert), never the schema.

@@ -1,6 +1,6 @@
 # F125 stage 16 — G04 and G05: look-alike core cases become tables, with every mutant still killed
 
-Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-proof.ts` (mutant compare), `audit/data/mutation-unstable.tsv`; F154 stages 11, 12 and 14 landed or closed: they write `digest/schedule.test.ts`, `digest/local-time.test.ts` and `triage/cost.test.ts`. May run next to 09–15, 17–20. Gets a review job (plan § Review).
+Part of [`../plan.md`](../plan.md) § Phase B. Needs stage 08: `cut-keys.ts`; stage 08b: `cut-run.sh`, `cut-proof.ts` (mutant compare), `audit/data/mutation-unstable.tsv`; F154 stages 11, 12 and 14 landed or closed: they write `digest/schedule.test.ts`, `digest/local-time.test.ts` and `triage/cost.test.ts`. May run next to 09–15, 17–20. Gets a review job (plan § Review).
 
 Groups G04 (`MERGE-TABLE`, rule K1) and G05 (`MERGE-TABLE`, rule none), both owner `ok`. Rows: `audit/review-core-web-tools.md` (the T items of `packages/core`). Follow plan § Cut stage steps (S1–S7) and D19 (stage 13).
 
@@ -22,7 +22,7 @@ Groups G04 (`MERGE-TABLE`, rule K1) and G05 (`MERGE-TABLE`, rule none), both own
 ## Proof (S5)
 
 - **D14** Mutation scope: `--mutate` globs for the non-test source files in the import closure of the changed test files inside `packages/core/src` (follow relative imports and `@ea/core` subpaths that point into `packages/core/src`; stop at `node_modules`). Reason: a test can kill a mutant only in code it runs, and that code is in its import closure, so a full-core run adds no check and costs about 28 minutes twice. Rejected: the full core run; only the direct imports (misses a helper two files away). Write the glob list into the log.
-- Run `bash scripts/test-audit/mutation.sh /tmp/f125-s16/before --mutate …` before the first edit and `…/after` after the last commit. The mutation lock may make the run wait (README); that is expected.
+- Run `bash scripts/test-audit/mutation.sh /tmp/f125-s16/before --mutate …` before the first edit and `…/after` after the last commit. The mutation lock may make the run wait (README); that is expected. Each Stryker run starts with a dry run of the whole core suite: that is the audit tool, the one allowed full-suite run (plan D14), not `test:unit`.
 - `cut-run` before twice and after once on the 12 test files.
 - `cut-proof --before /tmp/f125-s16/before-1 --before /tmp/f125-s16/before-2 --after /tmp/f125-s16/after --expect unit=+0`, with `mutation.json` copied into `before-1` and `after`. No `Killed` → `Survived` or `NoCoverage` outside `mutation-unstable.tsv`.
 - An empty `diff` of the sorted JUnit `name` lists before and after.
