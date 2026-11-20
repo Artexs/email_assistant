@@ -1,5 +1,8 @@
 ---
-touches: [packages/core/src/legal, apps/web/src/legal, docs/legal]
+touches:
+  - packages/core/src/legal
+  - apps/web/src/legal
+  - docs/legal
 opened: 2026-11-20
 ---
 # F163 · The privacy papers name the reply-style call that sends cut Sent mail to the AI
@@ -24,3 +27,8 @@ The privacy page, the sub-processor rows, the DPIA and the ledger say what the r
 
 ## Notes
 Best built before the next release that carries a legal version, so members accept the terms once.
+
+## Sequenced
+
+Plan after: none.
+Build after: none (the papers fix for the open-loops extractor, the one-click request and report mail is in `done/`, F162). Gate: none; stage 01 appends a legal version, which the coordinator names in the notes of the release after v0.4.4 (with `2026-11-20.2`, one re-acceptance).
