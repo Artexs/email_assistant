@@ -1,7 +1,7 @@
 // Time zone helpers for the digest schedule, the quiet hours and the "HH:MM" texts. Pure: no I/O.
 import type { UserLocale } from "../tenancy";
 import { clockTexts } from "../texts/clock";
-import { DAY_MS } from "../time";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../time";
 
 // `localParts` parses the `en-US` short weekday with this list. The display uses `clockTexts`.
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -129,8 +129,8 @@ function localInstants(date: string, time: string, timeZone: string): LocalInsta
   const [old, current] = before < after ? [before, after] : [after, before];
   let low = naive - current;
   let high = naive - old;
-  while (high - low > 60_000) {
-    const mid = low + Math.floor((high - low) / 2 / 60_000) * 60_000;
+  while (high - low > MINUTE_MS) {
+    const mid = low + Math.floor((high - low) / 2 / MINUTE_MS) * MINUTE_MS;
     if (mid <= low) break;
     if (offsetMs(mid, timeZone) === old) low = mid;
     else high = mid;
@@ -191,7 +191,7 @@ export function quietEnd(at: Date, timeZone: string, quiet: QuietHours = QUIET_H
   const { instants, change } = localInstants(endDate, quiet.end, timeZone);
   const next = (change === null ? instants : [change]).find((instant) => instant > at.getTime());
   // No instant is left on that date (a zone that changed its rules twice in 2 days): wait one minute and ask again.
-  return new Date(next ?? at.getTime() + 60_000);
+  return new Date(next ?? at.getTime() + MINUTE_MS);
 }
 
 // Minutes from `from` to `to` that lie outside the quiet hours of the time zone. The sender holds
@@ -204,7 +204,7 @@ export function lateMin(from: Date, to: Date, timeZone: string, quiet: QuietHour
   if (quiet.start !== quiet.end) {
     const wraps = quiet.start > quiet.end;
     // One quiet window starts on each local date; the window of the day before `from` can still cover it.
-    let date = localDateTime(new Date(fromMs - 36 * 3_600_000), timeZone).date;
+    let date = localDateTime(new Date(fromMs - 36 * HOUR_MS), timeZone).date;
     const lastDate = localDateTime(to, timeZone).date;
     let more = true;
     while (more) {
@@ -215,5 +215,5 @@ export function lateMin(from: Date, to: Date, timeZone: string, quiet: QuietHour
       if (more) date = nextLocalDate(date);
     }
   }
-  return (toMs - fromMs - quietMs) / 60_000;
+  return (toMs - fromMs - quietMs) / MINUTE_MS;
 }
