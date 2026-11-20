@@ -133,3 +133,140 @@ describe("planSends", () => {
     ]);
   });
 });
+
+describe("planSends, exact plans", () => {
+  test("an open intent with a changed or missing hash is skipped, one with the stored hash is sent", () => {
+    const three: Batch = { batch: batchId, writer: "w", delegatesActive: false, cases: [mk("a"), mk("b"), mk("c")] };
+    const plan = run(
+      {
+        a: open("2026-11-08T11:00:00Z", "h1"),
+        b: open("2026-11-08T11:00:00Z", "h1"),
+        c: open("2026-11-08T11:00:00Z", "h1"),
+      },
+      { hashes: { a: "h1", b: "other" } },
+      three
+    );
+    expect(plan).toEqual({
+      actions: [{ kind: "send", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1`, reuse: true }],
+      skipped: [
+        { caseId: "b", reason: "changed" },
+        { caseId: "c", reason: "changed" },
+      ],
+    });
+  });
+
+  test("an open intent keeps the attempt and the key of the log, a recovery too", () => {
+    const state = (at: string): CaseState => ({
+      kind: "open",
+      attempt: 3,
+      key: "stored-key",
+      hash: "h1",
+      at: new Date(at),
+    });
+    const two: Batch = { batch: batchId, writer: "w", delegatesActive: false, cases: [mk("a"), mk("c")] };
+    const plan = run(
+      { a: state("2026-11-08T11:00:00Z"), c: state("2026-11-07T00:00:00Z") },
+      { hashes: { a: "h1", c: "h1" } },
+      two
+    );
+    expect(plan).toEqual({
+      actions: [
+        { kind: "send", caseId: "a", attempt: 3, key: "stored-key", reuse: true },
+        { kind: "recover", caseId: "c", attempt: 3, key: "stored-key" },
+      ],
+      skipped: [],
+    });
+  });
+
+  test("the daily cap counts the actions of this plan and stops at exactly the cap", () => {
+    const three: Batch = { batch: batchId, writer: "w", delegatesActive: false, cases: [mk("a"), mk("b"), mk("c")] };
+    const plan = run({}, { sentInLast24h: 8, dailyCap: 10 }, three);
+    expect(plan).toEqual({
+      actions: [
+        { kind: "send", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1`, reuse: false },
+        { kind: "send", caseId: "b", attempt: 1, key: `ea-${batchId}-b-a1`, reuse: false },
+      ],
+      skipped: [{ caseId: "c", reason: "cap" }],
+    });
+  });
+
+  test("the limit stops at exactly the limit and counts recoveries", () => {
+    const three: Batch = { batch: batchId, writer: "w", delegatesActive: false, cases: [mk("a"), mk("b"), mk("c")] };
+    const plan = run({ a: open("2026-11-07T00:00:00Z") }, { hashes: { a: "h1" }, limit: 2 }, three);
+    expect(plan).toEqual({
+      actions: [
+        { kind: "recover", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1` },
+        { kind: "send", caseId: "b", attempt: 1, key: `ea-${batchId}-b-a1`, reuse: false },
+      ],
+      skipped: [{ caseId: "c", reason: "limit" }],
+    });
+  });
+
+  test("a case with no state in the map is due", () => {
+    const plan = planSends({
+      batch,
+      states: new Map(),
+      hashes: new Map(),
+      now,
+      sentInLast24h: 0,
+      dailyCap: 50,
+      limit: null,
+    });
+    expect(plan).toEqual({
+      actions: [
+        { kind: "send", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1`, reuse: false },
+        { kind: "send", caseId: "c", attempt: 1, key: `ea-${batchId}-c-a1`, reuse: false },
+      ],
+      skipped: [{ caseId: "b", reason: "waiting_parent" }],
+    });
+  });
+
+  test("a child waits for a parent that is open, capped, limited or itself waiting", () => {
+    const chain: Batch = {
+      batch: batchId,
+      writer: "w",
+      delegatesActive: false,
+      cases: [mk("a"), mk("b", "a"), mk("c", "b"), mk("d"), mk("e", "d")],
+    };
+    const plan = run({ a: open("2026-11-08T11:00:00Z") }, { hashes: { a: "h1" }, limit: 2 }, chain);
+    expect(plan).toEqual({
+      actions: [
+        { kind: "send", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1`, reuse: true },
+        { kind: "send", caseId: "d", attempt: 1, key: `ea-${batchId}-d-a1`, reuse: false },
+      ],
+      skipped: [
+        { caseId: "b", reason: "waiting_parent" },
+        { caseId: "c", reason: "waiting_parent" },
+        { caseId: "e", reason: "waiting_parent" },
+      ],
+    });
+  });
+
+  test("a child of a parent whose resend was capped waits instead of being blocked", () => {
+    const two: Batch = { batch: batchId, writer: "w", delegatesActive: false, cases: [mk("a"), mk("b", "a")] };
+    expect(run({}, { sentInLast24h: 50 }, two)).toEqual({
+      actions: [],
+      skipped: [
+        { caseId: "a", reason: "cap" },
+        { caseId: "b", reason: "waiting_parent" },
+      ],
+    });
+  });
+
+  test("a child of a parent that is blocked by a failed grandparent is blocked", () => {
+    const chain: Batch = {
+      batch: batchId,
+      writer: "w",
+      delegatesActive: false,
+      cases: [mk("a"), mk("b", "a"), mk("c", "b")],
+    };
+    const plan = run({ b: { kind: "failed", attempt: 1, code: "x" } }, {}, chain);
+    expect(plan).toEqual({
+      actions: [{ kind: "send", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1`, reuse: false }],
+      skipped: [
+        { caseId: "b", reason: "failed" },
+        { caseId: "c", reason: "blocked" },
+      ],
+    });
+  });
+});
