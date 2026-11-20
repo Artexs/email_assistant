@@ -1,17 +1,11 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { costToRun } from "@ea/core";
+import { costToRun, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, roundedCostRow } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 const ROOT = path.resolve(import.meta.dir, "../../..");
 const doc = readFileSync(path.join(ROOT, "docs/cost-model.md"), "utf8");
-const PLACEHOLDER_PRICE_USD = 25;
-
-/** Half up at 2 decimals. The small shift keeps a value like 0.355 (stored a hair low) on the side the doc shows. */
-function round2(value: number): number {
-  return Math.round((value + 1e-9) * 100) / 100;
-}
 
 /** The data rows of the table that follows the first heading `## <title>`: each row as its cells. */
 function tableRows(markdown: string, title: string): string[][] {
@@ -33,12 +27,6 @@ function tableRows(markdown: string, title: string): string[][] {
 }
 
 describe("helpers", () => {
-  test("round2 rounds half up", () => {
-    expect(round2(0.355)).toBe(0.36);
-    expect(round2(0.2145)).toBe(0.21);
-    expect(round2(1.263)).toBe(1.26);
-  });
-
   test("tableRows skips the header and the separator", () => {
     expect(tableRows("## T\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\n## U\n| 9 | 9 |", "T")).toEqual([["1", "2"]]);
   });
@@ -52,8 +40,9 @@ describe("docs/cost-model.md", () => {
       const mails = Number(cells[0]);
       const perHost = Number(cells[1]);
       const cost = costToRun(mails, { mailboxesPerHost: perHost });
+      const row = roundedCostRow(cost, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH);
       expect(cells.slice(2)).toEqual(
-        [cost.llmUsd, cost.hostingUsd, cost.backupUsd, cost.totalUsd].map((value) => round2(value).toFixed(2))
+        [row.llmUsd, row.hostingUsd, row.backupUsd, row.totalUsd].map((v) => v.toFixed(2))
       );
     }
   });
@@ -63,11 +52,15 @@ describe("docs/cost-model.md", () => {
     expect(rows.length).toBeGreaterThanOrEqual(5);
     for (const cells of rows) {
       const cost = costToRun(Number(cells[0]), { mailboxesPerHost: Number(cells[1]) });
-      expect(cells.slice(2)).toEqual([
-        round2(cost.totalUsd).toFixed(2),
-        round2(PLACEHOLDER_PRICE_USD - cost.totalUsd).toFixed(2),
-      ]);
+      const row = roundedCostRow(cost, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH);
+      expect(cells.slice(2)).toEqual([row.totalUsd.toFixed(2), row.marginUsd.toFixed(2)]);
     }
+  });
+
+  test("the Price section states the placeholder price constant", () => {
+    const start = doc.indexOf("## Price");
+    expect(start).toBeGreaterThan(-1);
+    expect(doc.slice(start)).toContain(`$${PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH}`);
   });
 
   test("the doc states the basis that costToRun gives", () => {

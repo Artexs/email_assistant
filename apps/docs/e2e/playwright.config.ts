@@ -4,7 +4,7 @@ import { defineConfig } from "@playwright/test";
 
 import { DOCS_BASE } from "@ea/core";
 
-import { DOCS_LOCAL_ORIGIN } from "./site";
+import { docsLocalOrigin } from "./site";
 
 // The browser check of the built docs site: Chromium only (Firefox and Safari stay open).
 // The build must exist first: `bun run docs:build`.
@@ -32,7 +32,7 @@ export default defineConfig({
     : {
         command: "bun apps/docs/e2e/serve.ts",
         cwd: join(import.meta.dirname, "../../.."),
-        url: `${DOCS_LOCAL_ORIGIN}${DOCS_BASE}/`,
+        url: `${docsLocalOrigin(process.env)}${DOCS_BASE}/`,
         // A server that already holds the port could serve another build: fail instead of reuse.
         reuseExistingServer: false,
         timeout: 30_000,

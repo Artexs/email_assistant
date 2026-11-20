@@ -5,7 +5,6 @@ import {
   ACTION_EDGES,
   ACTION_ENTRIES,
   ACTION_STATUSES,
-  LATENT_EDGES,
   PAIR_RULES,
   TERMINAL_STATUSES,
   WRITER_GUARDS,
@@ -37,7 +36,7 @@ function guardKeys(): Set<string> {
 
 function mapKeys(): Set<string> {
   const keys = new Set<string>();
-  for (const edge of [...ACTION_EDGES, ...LATENT_EDGES]) {
+  for (const edge of ACTION_EDGES) {
     for (const type of edge.types) {
       keys.add(key(edge.writer, type, edge.from, edge.to));
     }
@@ -95,10 +94,9 @@ const PINNED_EDGE_KEYS: readonly string[] = [
 ];
 
 describe("transitions map", () => {
-  test("(a) every status in an edge, entry, latent edge or guard is a known status", () => {
+  test("(a) every status in an edge, entry or guard is a known status", () => {
     const used: string[] = [];
     for (const edge of ACTION_EDGES) used.push(edge.from, edge.to);
-    for (const edge of LATENT_EDGES) used.push(edge.from, edge.to);
     for (const entry of ACTION_ENTRIES) used.push(entry.status);
     for (const guard of WRITER_GUARDS) {
       used.push(...guard.to);
@@ -109,13 +107,13 @@ describe("transitions map", () => {
   });
 
   test("(b) no edge leaves a terminal status, and `logged` has no edge", () => {
-    const leaving = [...ACTION_EDGES, ...LATENT_EDGES].filter((edge) => terminal.has(edge.from));
+    const leaving = ACTION_EDGES.filter((edge) => terminal.has(edge.from));
     expect(leaving).toEqual([]);
     const guardLeaving = WRITER_GUARDS.filter((guard) =>
       Object.values(guard.from).some((froms) => (froms ?? []).some((from) => terminal.has(from)))
     );
     expect(guardLeaving).toEqual([]);
-    const logged = [...ACTION_EDGES, ...LATENT_EDGES].filter((edge) => edge.from === "logged" || edge.to === "logged");
+    const logged = ACTION_EDGES.filter((edge) => edge.from === "logged" || edge.to === "logged");
     expect(logged).toEqual([]);
   });
 
@@ -151,7 +149,7 @@ describe("transitions map", () => {
     }
   });
 
-  test("(f) the edges that the guards admit equal the edges plus the latent edges, per writer and type", () => {
+  test("(f) the edges that the guards admit equal ACTION_EDGES, per writer and type", () => {
     const guards = guardKeys();
     const map = mapKeys();
     expect([...guards].filter((k) => !map.has(k)).sort()).toEqual([]);
@@ -166,23 +164,8 @@ describe("transitions map", () => {
     expect(keys.sort()).toEqual([...PINNED_EDGE_KEYS]);
   });
 
-  test("(f) no latent edge repeats an edge that callers use", () => {
-    const used = new Set<string>();
-    for (const edge of ACTION_EDGES) {
-      for (const type of edge.types) used.add(key(edge.writer, type, edge.from, edge.to));
-    }
-    const repeated: string[] = [];
-    for (const edge of LATENT_EDGES) {
-      for (const type of edge.types) {
-        const k = key(edge.writer, type, edge.from, edge.to);
-        if (used.has(k)) repeated.push(k);
-      }
-    }
-    expect(repeated).toEqual([]);
-  });
-
   test("(g) no send edge goes to `ready` (mirror of actions_send_never_ready_check)", () => {
-    const bad = [...ACTION_EDGES, ...LATENT_EDGES].filter((edge) => edge.to === "ready" && edge.types.includes("send"));
+    const bad = ACTION_EDGES.filter((edge) => edge.to === "ready" && edge.types.includes("send"));
     expect(bad).toEqual([]);
     expect(nextStatuses("approved", "send")).not.toContain("ready");
     for (const guard of WRITER_GUARDS) {
@@ -192,9 +175,9 @@ describe("transitions map", () => {
     expect(entries).toEqual([]);
   });
 
-  test("(h) every type in an edge, entry, latent edge or guard is an action type", () => {
+  test("(h) every type in an edge, entry or guard is an action type", () => {
     const used: string[] = [];
-    for (const edge of [...ACTION_EDGES, ...LATENT_EDGES, ...ACTION_ENTRIES]) used.push(...edge.types);
+    for (const edge of [...ACTION_EDGES, ...ACTION_ENTRIES]) used.push(...edge.types);
     for (const guard of WRITER_GUARDS) used.push(...Object.keys(guard.from));
     expect(used.filter((type) => !typeSet.has(type))).toEqual([]);
   });
