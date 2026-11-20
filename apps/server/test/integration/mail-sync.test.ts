@@ -1029,10 +1029,10 @@ function spyFolderReads(fake: FakeMailProvider): { provider: MailProvider; folde
 async function movedRowOf(trx: Db | Transaction<DB>, mailboxId: string) {
   const row = await trx
     .selectFrom("emails")
-    .select(["id", "uid", "inbox_uid", "folder", "returned_at", "moved_at"])
+    .select(["id", "uid", "source_uid", "folder", "returned_at", "moved_at"])
     .where("mailbox_id", "=", mailboxId)
     .executeTakeFirstOrThrow();
-  return { ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) };
+  return { ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) };
 }
 
 // Every row of the mailbox with its capture row, in UID order.
@@ -1046,18 +1046,18 @@ async function copyRowsOf(trx: Db | Transaction<DB>, mailboxId: string) {
       "emails.folder",
       "emails.source_folder",
       "emails.uid",
-      "emails.inbox_uid",
+      "emails.source_uid",
       "emails.status",
       "emails.body_text",
       "emails.received_at",
       "emails.returned_at",
-      "emails.undo_pending_at",
+      "emails.move_pending_at",
       "email_headers.email_id as header_id",
     ])
     .where("emails.mailbox_id", "=", mailboxId)
     .orderBy("emails.dedup_key")
     .execute();
-  return rows.map((row) => ({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }));
+  return rows.map((row) => ({ ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) }));
 }
 
 // Runs `fn` with the debug level on and returns the lines that the logger wrote. Resets the level.
@@ -1107,7 +1107,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
       expect(result.stored).toBe(0);
       const row = await movedRowOf(trx, s.mailboxId);
       expect(row.returned_at).toBeInstanceOf(Date);
-      expect(row).toMatchObject({ folder: "INBOX", uid, inbox_uid: uid });
+      expect(row).toMatchObject({ folder: "INBOX", uid, source_uid: uid });
       expect(await cursorOf(trx, s.mailboxId)).toEqual(before);
       expect(await emails(trx, s.mailboxId)).toHaveLength(1);
       expect(spy.folderCalls.filter((call) => call.folder === "AI/Info").map((call) => call.method)).toEqual([
@@ -1149,7 +1149,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
         folder: "INBOX",
         source_folder: "INBOX",
         uid,
-        inbox_uid: uid,
+        source_uid: uid,
         status: "pending",
         body_text: "Body 1",
         returned_at: null,
@@ -1216,7 +1216,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
           content_hash: full.content_hash,
           folder: "INBOX",
           uid,
-          inbox_uid: uid,
+          source_uid: uid,
         });
       });
 
@@ -1249,7 +1249,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
       const provider = onBodyCall(s.fake, async () => {
         await trx
           .updateTable("emails")
-          .set({ undo_pending_at: NOW })
+          .set({ move_pending_at: NOW })
           .where("id", "=", moved?.id ?? "")
           .execute();
       });
@@ -1282,7 +1282,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
         content_hash: moved.content_hash,
         folder: "INBOX",
         uid,
-        inbox_uid: uid,
+        source_uid: uid,
       });
 
       const result = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
@@ -1352,7 +1352,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
           message_id_header: `<moved${n}@x.test>`,
           folder: "AI/Info",
           uid: n,
-          inbox_uid: n,
+          source_uid: n,
           moved_at: new Date(NOW.getTime() - n * 60_000),
         });
       }
@@ -1377,7 +1377,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
         message_id_header: "<m1@x.test>",
         folder: "AI/Info",
         uid: 1,
-        inbox_uid: uid,
+        source_uid: uid,
         moved_at: hoursAgo(1),
       });
 
@@ -1407,20 +1407,20 @@ describe("syncMailbox: returned mail below the cursor", () => {
       expect(result.returnedBelowCursor).toBe(0);
       const row = await movedRowOf(trx, s.mailboxId);
       expect(row.returned_at).toBeInstanceOf(Date);
-      expect(row).toMatchObject({ folder: "INBOX", uid: back, inbox_uid: back });
+      expect(row).toMatchObject({ folder: "INBOX", uid: back, source_uid: back });
     });
   });
 
   test("the system COPY shape: the folder uid differs, the cursor passed it, the user move back is found", async () => {
     await withRollback(db, async (trx) => {
       const s = { ...(await setup(trx)), fake: interia() };
-      const inboxUid = s.fake.deliver("INBOX", seed(1));
+      const sourceUid = s.fake.deliver("INBOX", seed(1));
       await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
       // Three mails in AI/Info already: the system COPY gives the moved mail the folder uid 4.
       for (const n of [11, 12, 13]) s.fake.deliver("AI/Info", seed(n));
-      const folderUid = s.fake.userMove("INBOX", inboxUid, "AI/Info");
+      const folderUid = s.fake.userMove("INBOX", sourceUid, "AI/Info");
       expect(folderUid).toBe(4);
-      expect(folderUid).not.toBe(inboxUid);
+      expect(folderUid).not.toBe(sourceUid);
       await trx
         .updateTable("emails")
         .set({ folder: "AI/Info", uid: folderUid, moved_at: hoursAgo(1) })
@@ -1438,14 +1438,14 @@ describe("syncMailbox: returned mail below the cursor", () => {
       expect(result.copiesBelowCursor).toBe(0);
       const row = await trx
         .selectFrom("emails")
-        .select(["uid", "inbox_uid", "folder", "returned_at"])
+        .select(["uid", "source_uid", "folder", "returned_at"])
         .where("mailbox_id", "=", s.mailboxId)
         .where("folder", "=", "INBOX")
         .where("returned_at", "is not", null)
         .executeTakeFirstOrThrow();
-      expect({ uid: Number(row.uid), inbox_uid: Number(row.inbox_uid), folder: row.folder }).toEqual({
+      expect({ uid: Number(row.uid), source_uid: Number(row.source_uid), folder: row.folder }).toEqual({
         uid: folderUid,
-        inbox_uid: folderUid,
+        source_uid: folderUid,
         folder: "INBOX",
       });
       expect(row.returned_at).toBeInstanceOf(Date);
@@ -1478,7 +1478,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
       const inFolder = s.fake.deliver("AI/Info", seed(1));
       await trx
         .updateTable("emails")
-        .set({ uid: inFolder, undo_pending_at: hoursAgo(1) })
+        .set({ uid: inFolder, move_pending_at: hoursAgo(1) })
         .where("mailbox_id", "=", s.mailboxId)
         .execute();
       const [moved] = await copyRowsOf(trx, s.mailboxId);
@@ -1499,7 +1499,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
 
       await trx
         .updateTable("emails")
-        .set({ undo_pending_at: hoursAgo(25) })
+        .set({ move_pending_at: hoursAgo(25) })
         .where("id", "=", moved.id)
         .execute();
       const later = await syncMailbox(deps(trx, s.fake), s.ctx, s.mailboxId);
@@ -1526,7 +1526,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
         folder: "AI/Spam",
         source_folder: "AI/Spam",
         uid: 9000,
-        inbox_uid: 9000,
+        source_uid: 9000,
       });
 
       let result: MailboxSyncResult | undefined;
@@ -1600,7 +1600,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
           message_id_header: `<other${n}@x.test>`,
           folder: "AI/Info",
           uid: 10000 + n,
-          inbox_uid: 10000 + n,
+          source_uid: 10000 + n,
           moved_at: new Date(NOW.getTime() - (1 + n) * 60_000),
         });
       }
@@ -1670,7 +1670,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
         folder: "AI/Spam",
         source_folder: "AI/Spam",
         uid,
-        inbox_uid: uid,
+        source_uid: uid,
       });
       const before = await copyRowsOf(trx, s.mailboxId);
 
@@ -1730,7 +1730,7 @@ describe("syncMailbox: returned mail below the cursor", () => {
           message_id_header: `<moved${n}@x.test>`,
           folder: "AI/Info",
           uid: n,
-          inbox_uid: n,
+          source_uid: n,
           moved_at: new Date(NOW.getTime() - n * 1000),
         });
       }
@@ -1854,7 +1854,7 @@ describe("syncMailbox: sync folders", () => {
   async function storedRows(trx: Db | Transaction<DB>, mailboxId: string) {
     return trx
       .selectFrom("emails")
-      .select(["uid", "inbox_uid", "folder", "source_folder", "status", "subject"])
+      .select(["uid", "source_uid", "folder", "source_folder", "status", "subject"])
       .where("mailbox_id", "=", mailboxId)
       .orderBy("uid")
       .execute();
@@ -1903,7 +1903,7 @@ describe("syncMailbox: sync folders", () => {
       const rows = await storedRows(trx, s.mailboxId);
       expect(rows.map((row) => row.subject)).toEqual(["Mail 1", "Mail 2"]);
       expect(rows.every((row) => row.folder === OFFERS && row.source_folder === OFFERS)).toBe(true);
-      expect(rows.map((row) => Number(row.inbox_uid))).toEqual(rows.map((row) => Number(row.uid)));
+      expect(rows.map((row) => Number(row.source_uid))).toEqual(rows.map((row) => Number(row.uid)));
       expect((await folderRow(trx, s.mailboxId, "offers"))?.lastUid).toBe(old);
     });
   });
@@ -1914,7 +1914,7 @@ describe("syncMailbox: sync folders", () => {
       await s.fake.ensureFolder("AI/Spam");
       // One UID counter: the UIDs interleave across the folders.
       s.fake.deliver(SOCIAL, seed(1), ago(100));
-      const inboxUid = s.fake.deliver("INBOX", seed(2), ago(50));
+      const sourceUid = s.fake.deliver("INBOX", seed(2), ago(50));
       s.fake.deliver(OFFERS, seed(3), ago(60));
       s.fake.deliver(BILLS, seed(4), ago(90));
       s.fake.deliver(OFFERS, seed(5), ago(2));
@@ -1932,8 +1932,8 @@ describe("syncMailbox: sync folders", () => {
         .execute();
       await insertTestEmail(trx, s.ctx, s.mailboxId, {
         folder: "INBOX",
-        uid: inboxUid,
-        inbox_uid: inboxUid,
+        uid: sourceUid,
+        source_uid: sourceUid,
         subject: "Migrated",
       });
 
@@ -2102,7 +2102,7 @@ describe("syncMailbox: sync folders", () => {
       expect(rows).toHaveLength(2);
       const uids = (await s.fake.fetchAbove(OFFERS, 0)).map((meta) => meta.uid);
       expect(rows.map((row) => Number(row.uid))).toEqual(uids);
-      expect(rows.map((row) => Number(row.inbox_uid))).toEqual(uids);
+      expect(rows.map((row) => Number(row.source_uid))).toEqual(uids);
       expect((await folderRow(trx, s.mailboxId, "offers"))?.uidValidity).toBe(9);
     });
   });
@@ -2184,14 +2184,14 @@ describe("syncMailbox: sync folders", () => {
   async function crossRows(trx: Db | Transaction<DB>, mailboxId: string) {
     const rows = await trx
       .selectFrom("emails")
-      .select(["dedup_key", "uid", "inbox_uid", "folder", "source_folder", "returned_at", "moved_at"])
+      .select(["dedup_key", "uid", "source_uid", "folder", "source_folder", "returned_at", "moved_at"])
       .where("mailbox_id", "=", mailboxId)
       .orderBy("uid")
       .execute();
     return rows.map((row) => ({
       ...row,
       uid: Number(row.uid),
-      inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+      source_uid: row.source_uid === null ? null : Number(row.source_uid),
     }));
   }
 
@@ -2288,7 +2288,7 @@ describe("syncMailbox: sync folders", () => {
         folder: OFFERS,
         source_folder: OFFERS,
         uid: moved,
-        inbox_uid: moved,
+        source_uid: moved,
         returned_at: null,
       });
       const feedback = await trx.selectFrom("triage_feedback").select("id").where("org_id", "=", s.ctx.orgId).execute();
@@ -2313,7 +2313,7 @@ describe("syncMailbox: sync folders", () => {
         folder: OFFERS,
         source_folder: OFFERS,
         uid: back,
-        inbox_uid: back,
+        source_uid: back,
         returned_at: FOLDER_NOW,
       });
     });
@@ -2357,7 +2357,7 @@ describe("syncMailbox: sync folders", () => {
         folder: OFFERS,
         source_folder: OFFERS,
         uid: filed,
-        inbox_uid: filed,
+        source_uid: filed,
         returned_at: FOLDER_NOW,
       });
     });
@@ -2372,7 +2372,7 @@ describe("syncMailbox: sync folders", () => {
       await markSystemMoved(trx, s, "INBOX", uid);
       await trx
         .updateTable("emails")
-        .set({ undo_pending_at: new Date(FOLDER_NOW.getTime() - 60_000) })
+        .set({ move_pending_at: new Date(FOLDER_NOW.getTime() - 60_000) })
         .where("mailbox_id", "=", s.mailboxId)
         .execute();
       s.fake.deliver("INBOX", seed(1), ago(1));
@@ -2412,7 +2412,7 @@ describe("syncMailbox: sync folders", () => {
       const rows = await crossRows(trx, s.mailboxId);
       const [offersUid] = (await s.fake.fetchAbove(OFFERS, 0)).map((meta) => meta.uid);
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: offersUid, inbox_uid: offersUid });
+      expect(rows[0]).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: offersUid, source_uid: offersUid });
     });
   });
 
@@ -2547,10 +2547,10 @@ describe("syncMailbox: sync folders", () => {
   async function rowById(trx: Transaction<DB>, rowId: string) {
     const row = await trx
       .selectFrom("emails")
-      .select(["uid", "inbox_uid", "folder", "source_folder", "returned_at"])
+      .select(["uid", "source_uid", "folder", "source_folder", "returned_at"])
       .where("id", "=", rowId)
       .executeTakeFirstOrThrow();
-    return { ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) };
+    return { ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) };
   }
 
   test("8.1 a mail that the user puts back into Oferty with the same UID below the cursor is returned", async () => {
@@ -2580,7 +2580,7 @@ describe("syncMailbox: sync folders", () => {
         );
       });
       const row = await rowById(trx, rowId);
-      expect(row).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: inFolder, inbox_uid: inFolder });
+      expect(row).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid: inFolder, source_uid: inFolder });
       expect(row.returned_at).toEqual(FOLDER_NOW);
       expect(await storedRows(trx, s.mailboxId)).toHaveLength(2);
     });
@@ -2640,7 +2640,7 @@ describe("syncMailbox: sync folders", () => {
       expect(of(result, "offers")?.copiesStored).toBe(1);
       expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
       const row = await rowById(trx, rowId);
-      expect(row).toMatchObject({ folder: "AI/Info", uid: inFolder, inbox_uid: uid, returned_at: null });
+      expect(row).toMatchObject({ folder: "AI/Info", uid: inFolder, source_uid: uid, returned_at: null });
       const moved = await trx
         .selectFrom("emails")
         .select("dedup_key")
@@ -2648,7 +2648,7 @@ describe("syncMailbox: sync folders", () => {
         .executeTakeFirstOrThrow();
       const copies = await trx
         .selectFrom("emails")
-        .select(["dedup_key", "status", "folder", "source_folder", "uid", "inbox_uid"])
+        .select(["dedup_key", "status", "folder", "source_folder", "uid", "source_uid"])
         .where("mailbox_id", "=", s.mailboxId)
         .where("folder", "=", OFFERS)
         .where("subject", "=", "Mail 1")
@@ -2660,7 +2660,7 @@ describe("syncMailbox: sync folders", () => {
         folder: OFFERS,
         source_folder: OFFERS,
       });
-      expect([Number(copies[0]?.uid), Number(copies[0]?.inbox_uid)]).toEqual([uid, uid]);
+      expect([Number(copies[0]?.uid), Number(copies[0]?.source_uid)]).toEqual([uid, uid]);
     });
   });
 
@@ -2684,7 +2684,7 @@ describe("syncMailbox: sync folders", () => {
       expect(first.stored).toBe(2);
       const before = await copyRowsOf(trx, s.mailboxId);
       const copy = before.find((row) => row.dedup_key.endsWith("#2"));
-      expect(copy).toMatchObject({ folder: "INBOX", uid, inbox_uid: uid });
+      expect(copy).toMatchObject({ folder: "INBOX", uid, source_uid: uid });
       const moved = before.find((row) => row.folder === "AI/Info");
 
       expect(s.fake.userMove("AI/Info", inFolder, "INBOX")).toBe(inFolder);
@@ -2714,7 +2714,7 @@ describe("syncMailbox: sync folders", () => {
       expect(of(result, "inbox")?.returnedBelowCursor).toBe(1);
       expect(of(result, "offers")?.returnedBelowCursor).toBe(0);
       const row = await rowById(trx, rowId);
-      expect(row).toMatchObject({ folder: "INBOX", source_folder: "INBOX", uid, inbox_uid: uid });
+      expect(row).toMatchObject({ folder: "INBOX", source_folder: "INBOX", uid, source_uid: uid });
       expect(row.returned_at).toEqual(FOLDER_NOW);
     });
   });
@@ -2750,7 +2750,7 @@ describe("syncMailbox: sync folders", () => {
       );
       expect(moves).toEqual({ checked: 1, returned: 1, relocated: 0, retry: 0 });
       const found = await rowById(trx, rowId);
-      expect(found).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid, inbox_uid: uid });
+      expect(found).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid, source_uid: uid });
       expect(found.returned_at).toEqual(FOLDER_NOW);
     });
   });
@@ -2767,7 +2767,7 @@ describe("syncMailbox: sync folders", () => {
       expect(of(result, "junk")?.returnedBelowCursor).toBe(1);
       expect(of(result, "inbox")?.returnedBelowCursor).toBe(0);
       const row = await rowById(trx, rowId);
-      expect(row).toMatchObject({ folder: JUNK, source_folder: JUNK, uid, inbox_uid: uid });
+      expect(row).toMatchObject({ folder: JUNK, source_folder: JUNK, uid, source_uid: uid });
       expect(row.returned_at).toEqual(FOLDER_NOW);
     });
   });
@@ -2815,7 +2815,7 @@ describe("syncMailbox: sync folders", () => {
         folder: "AI/Spam",
         source_folder: "AI/Spam",
         uid,
-        inbox_uid: uid,
+        source_uid: uid,
       });
       const before = await trx.selectFrom("emails").selectAll().where("mailbox_id", "=", s.mailboxId).execute();
 

@@ -307,13 +307,13 @@ export async function insertTriagedWithActions(
     folder?: string;
     sourceFolder?: string;
     uid?: number;
-    inboxUid?: number | null;
+    sourceUid?: number | null;
     contentHash?: string;
     movedAt?: Date | null;
     actions: Omit<Parameters<typeof insertAction>[3], "createdAt">[];
   }
 ): Promise<{ emailId: string; actionIds: string[] }> {
-  const { folder, sourceFolder, uid, inboxUid, contentHash, movedAt, actions, ...triaged } = opts;
+  const { folder, sourceFolder, uid, sourceUid, contentHash, movedAt, actions, ...triaged } = opts;
   const emailId = await insertTriaged(trx, ctx, mailboxId, triaged);
   const mailUid = uid ?? 1;
   await trx
@@ -322,7 +322,7 @@ export async function insertTriagedWithActions(
       folder: folder ?? "INBOX",
       source_folder: sourceFolder ?? "INBOX",
       uid: mailUid,
-      inbox_uid: inboxUid === undefined ? mailUid : inboxUid,
+      source_uid: sourceUid === undefined ? mailUid : sourceUid,
       content_hash: contentHash ?? "h",
       moved_at: movedAt ?? null,
     })

@@ -38,7 +38,11 @@ export const tablesEM: Record<string, ExportTable> = {
     "texts_cleared_at"
   ),
   emails: byOrgExcluding(
-    { from_address_lower: "derived: lower(from_address), the database recomputes it" },
+    {
+      from_address_lower: "derived: lower(from_address), the database recomputes it",
+      inbox_uid: "copy of source_uid for the rollback window; dropped by the contract migration",
+      undo_pending_at: "copy of move_pending_at for the rollback window; dropped by the contract migration",
+    },
     "id",
     "org_id",
     "mailbox_id",
@@ -64,9 +68,9 @@ export const tablesEM: Record<string, ExportTable> = {
     "locked_at",
     "created_at",
     "backfilled_at",
-    "inbox_uid",
+    "source_uid",
     "moved_at",
-    "undo_pending_at",
+    "move_pending_at",
     "source_folder"
   ),
   // The history check of a mailbox and its decision per mail: codes, counts and money only. No mail text.
