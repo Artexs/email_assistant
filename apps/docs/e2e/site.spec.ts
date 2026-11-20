@@ -76,7 +76,7 @@ test.describe("every built page", () => {
   }
 });
 
-// The new pages of F121: the pages of the publication hold (English ids) and their Polish twins. A Polish twin is a source file `pl/<id>.mdx`.
+// The new public pages (ticket folder spec/features/active/F121-e10b-public-pages-and-demo): the pages of the publication hold (English ids) and their Polish twins. A Polish twin is a source file `pl/<id>.mdx`.
 const CONTENT_DIR = join(import.meta.dirname, "../src/content/docs");
 const pageFile = (id: string): boolean =>
   existsSync(join(CONTENT_DIR, `${id}.mdx`)) || existsSync(join(CONTENT_DIR, id, "index.mdx"));
