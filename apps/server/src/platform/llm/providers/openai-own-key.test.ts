@@ -55,7 +55,9 @@ function fakeServer() {
 async function callOwnServer(extraEnv: Record<string, string>) {
   const fake = fakeServer();
   try {
-    const table = llmRoleTable(loadConfig({ ...baseEnv, OPENAI_BASE_URL: fake.url, ...extraEnv }));
+    const table = llmRoleTable(
+      loadConfig({ ...baseEnv, OPENAI_BASE_URL: fake.url, OPENAI_OWN_MODEL: "own-m", ...extraEnv })
+    );
     expect(table.providers.openai.endpoint).toBe("own");
     await createLlmClient({ table }).generate(call);
     expect(fake.seen).toHaveLength(1);
@@ -85,6 +87,7 @@ describe("an own endpoint never gets OpenAI credentials", () => {
       ...baseEnv,
       OPENAI_API_KEY: undefined,
       OPENAI_BASE_URL: "http://127.0.0.1:11434/v1",
+      OPENAI_OWN_MODEL: "own-m",
       TRIAGE_LLM_SCOPE: "synthetic",
     };
     const table = llmRoleTable(loadConfig(withoutKey));

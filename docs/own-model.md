@@ -8,11 +8,11 @@ This guide is for an operator who wants the LLM calls to stay on a server that t
 
 ## 1. What an own endpoint changes
 
-- **LLM calls send mail text only to your server.** `OPENAI_BASE_URL` picks one endpoint for the whole deployment. Every LLM role that uses the provider `openai` calls that endpoint. A role that you set to `gemini` still calls Google, so leave no role on `gemini` (rules: `docs/architecture.md` §6.3).
+- **LLM calls send mail text only to your server.** `OPENAI_BASE_URL` picks one endpoint for the whole deployment. Every LLM role that uses the provider `openai` calls that endpoint. With `LLM_PROVIDER=openai` every role uses that endpoint and the one model `OPENAI_OWN_MODEL`. A tool flag that moves a role to `gemini` or `deepseek` still calls Google or DeepSeek (rules: `docs/architecture.md` §6.3).
 - **The key of OpenAI never reaches your server.** An own endpoint gets `OPENAI_OWN_API_KEY` or the fixed text `own`. It gets no `OPENAI_API_KEY`, `OPENAI_ORG_ID` or `OPENAI_PROJECT_ID` (`triage.md` rule 16).
 - **The cost is 0 in the reports of the product.** `triage:cost`, the weekly cost line (M7) and the lab spend price an `own` call at 0, also for a model with no price row (`measurement.md` rule 8). The cost model adds only the fixed share of the VPS (`packages/core/src/metrics/cost-model.ts`). It does not count your GPU, your power or your disk. The USD cap of an eval run does not apply to an `own` run (`evals/README.md` § Endpoint). The cap in calls (`LLM_DAILY_CAP`) counts every call except the history-check calls (`trust.md` rule 8).
 - **No outside LLM service gets mail text.** The sub-processor registry does not show this yet. It lists OpenAI when `LLM_PROVIDER` is `openai`, and it has no condition for the endpoint (`packages/core/src/legal/subprocessors.ts`). The static legal pages say "this install uses OpenAI". They hold for the home VPS install only (`docs/legal/claims.md`). A change of the registry or the texts needs the owner and a `TERMS_VERSION` bump. This guide does not make that change.
-- **The other roles use the same server.** With no `LLM_<ROLE>_MODEL`, the judge, the drafter and the extractor use the model of the classifier (`config-llm.ts`, `llmRoleTable`). Nobody measured an own model for these roles. Set `LLM_<ROLE>_PROVIDER` and `LLM_<ROLE>_MODEL` for each role that you want on another model.
+- **The other roles use the same server.** With `LLM_PROVIDER=openai`, the judge, the drafter and the extractor use `OPENAI_OWN_MODEL` like the classifier (`config-llm.ts`, `llmRoleTable`). Nobody measured an own model for these roles. The judge is the same model as the model under test, so a judged eval run is refused.
 
 ## 2. What is not supported
 
@@ -39,16 +39,17 @@ The spike of F111 stage 01 sent the real request of the adapter to Ollama 0.40.7
 
    ```
    LLM_PROVIDER=openai
-   OPENAI_MODEL_CLASSIFIER=<the model tag in Ollama>
+   OPENAI_OWN_MODEL=<the model tag in Ollama>
    OPENAI_BASE_URL=http://127.0.0.1:11434/v1
    OPENAI_TIMEOUT_MS=<milliseconds>
    ```
 
+   - `OPENAI_OWN_MODEL` is needed for an own endpoint and read only there. Every role uses it (the light and the strong tier are the same model), so a judged eval run is refused. The old per-role model keys are removed: a value stops the start (`deploy/README.md` § LLM provider tiers).
    - `OPENAI_API_KEY` is not needed for an own server. Set `OPENAI_OWN_API_KEY` only if your server wants a key. It is a secret.
    - If the server runs in a container, `127.0.0.1` is the container itself. Use the name of the Ollama container, for example `http://ollama:11434/v1`.
    - For a server on another host, use `https://<host>/v1` and add `OPENAI_ENDPOINT_KIND=own`.
    - `OPENAI_TIMEOUT_MS` is 30000 in `.env.example`. A large model on slow hardware can need more. Stage 05 gives measured seconds per mail later.
-   - An own server gets no `reasoning` field. `OPENAI_REASONING_EFFORT` has no effect there.
+   - An own server gets no `reasoning` field. The role efforts have no effect there.
 
 3. Restart the server. Run `bun run llm:check`. It prints `endpoint=own host=<host>` and an answer from the model.
 4. **Why `OLLAMA_CONTEXT_LENGTH=8192`.** The plan of F111 treats a cut prompt as a main risk (decision D10): a prompt that is longer than the context window is cut, and the model then answers about a part of the mail. The spike prompt used 868 of 8192 tokens. A real prompt with a long mail is longer. Do not use a smaller value.

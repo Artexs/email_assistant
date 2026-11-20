@@ -2,9 +2,9 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail, type SentPart } from "@ea/core";
+import { costPerMail, type LlmEffortLevel, type SentPart } from "@ea/core";
 
-import { type Config, ConfigError, llmRoleTable, type openAiReasoningEfforts } from "../../platform/config";
+import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides } from "../../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -53,7 +53,7 @@ export interface ExtractorEvalOptions {
   sentPart?: SentPart;
   provider?: LlmProviderId;
   model?: string;
-  "reasoning-effort"?: (typeof openAiReasoningEfforts)[number];
+  "reasoning-effort"?: LlmEffortLevel;
   limit?: number;
   "spend-ledger"?: string;
   budgetUsd: number;
@@ -93,15 +93,17 @@ export async function runExtractorEvalRun(
 
   let table: LlmRoleTable;
   try {
-    table = llmRoleTable(config, {
-      extractor: {
+    table = llmRoleTable(
+      config,
+      runOverrides("extractor", {
         provider: options.provider,
         model: options.model,
         reasoningEffort: options["reasoning-effort"],
-      },
-    });
+      })
+    );
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
+    cli.fail(runFlagError(error));
     cli.fail(deps.usage);
     return 1;
   }

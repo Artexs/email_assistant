@@ -46,6 +46,11 @@ describe("deploy/sim.env.example", () => {
     expect(example.SEND_TEST_ADDRESSES?.split(",").sort()).toEqual(addresses);
   });
 
+  test("the example names the key of each provider, empty", () => {
+    for (const key of ["OPENAI_API_KEY", "GEMINI_API_KEY", "DEEPSEEK_API_KEY"])
+      expect(example).toHaveProperty([key], "");
+  });
+
   test("no AUTH_SMTP key, the sim-only base tag, and the day cap of review N10", () => {
     expect(Object.keys(example).filter((key) => key.startsWith("AUTH_SMTP_"))).toEqual([]);
     expect(example.EA_SERVER_IMAGE).not.toBe("ea-server");

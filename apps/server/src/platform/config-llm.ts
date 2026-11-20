@@ -1,4 +1,4 @@
-import { type LlmRole, llmRoles, SIM_STACK_NAME, tierModel } from "@ea/core";
+import { type LlmRole, llmRoleModels, llmRoles, providerEffort, SIM_STACK_NAME, tierModel } from "@ea/core";
 import { z } from "zod";
 
 import { ConfigError, emptyAsUndefined } from "./config-shared";
@@ -9,38 +9,48 @@ import { DEEPSEEK_BASE_URL } from "./llm/providers/deepseek";
 // The RPD of the Gemini free tier is not known, so the cap stays 300.
 const defaultLlmDailyCap = 300;
 
-// The judge model when neither `LLM_JUDGE_MODEL` nor `--judge-model` is set: larger than the default drafter
-// model, which the judge must never equal. Its effort is `none` unless `LLM_JUDGE_REASONING` says otherwise.
-export const DEFAULT_JUDGE_MODEL = "gpt-6.1-terra";
-
-// Accepted values of `reasoning.effort`.
-export const openAiReasoningEfforts = ["none", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
-
-// The roles with their own env keys. The classifier keeps the provider keys (LLM_PROVIDER, *_MODEL_CLASSIFIER).
+// The roles with their own env keys. The classifier keeps the provider keys (LLM_PROVIDER, <P>_TIMEOUT_MS).
 type KeyedRole = Exclude<LlmRole, "classifier">;
 const keyedRoles = llmRoles.filter((role): role is KeyedRole => role !== "classifier");
 
+// The per-role keys that stay: they pick no model. Empty = not set.
 const roleKeyFields = {
-  PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).optional()),
-  MODEL: z.preprocess(emptyAsUndefined, z.string().min(1).optional()),
   TIMEOUT_MS: z.preprocess(emptyAsUndefined, z.coerce.number().int().positive().optional()),
   RPM: z.preprocess(emptyAsUndefined, z.coerce.number().int().positive().optional()),
-  REASONING: z.preprocess(emptyAsUndefined, z.enum(openAiReasoningEfforts).optional()),
 };
 type RoleKeyField = keyof typeof roleKeyFields;
 type RoleKey<R extends KeyedRole = KeyedRole, F extends RoleKeyField = RoleKeyField> = `LLM_${Uppercase<R>}_${F}`;
 
-/** `LLM_JUDGE_MODEL` for ("judge", "MODEL"). */
+/** `LLM_JUDGE_RPM` for ("judge", "RPM"). */
 function roleKey<R extends KeyedRole, F extends RoleKeyField>(role: R, field: F): RoleKey<R, F> {
   return `LLM_${role.toUpperCase()}_${field}` as RoleKey<R, F>;
 }
 
-// Optional per-role keys: LLM_<ROLE>_PROVIDER, _MODEL, _TIMEOUT_MS, _RPM, _REASONING. Empty = not set.
+// Optional per-role keys: LLM_<ROLE>_TIMEOUT_MS and LLM_<ROLE>_RPM.
 const roleKeyShape = Object.fromEntries(
   keyedRoles.flatMap((role) =>
     (Object.keys(roleKeyFields) as RoleKeyField[]).map((field) => [roleKey(role, field), roleKeyFields[field]])
   )
 ) as { [K in RoleKey]: (typeof roleKeyFields)[K extends `LLM_${string}_${infer F extends RoleKeyField}` ? F : never] };
+
+// The keys that older releases read for a role's provider, model or effort. The tiers of LLM_PROVIDER decide now.
+const removedRoleFields = ["PROVIDER", "MODEL", "REASONING"] as const;
+export const removedEnvKeys: readonly string[] = [
+  ...llmProviderIds.flatMap((id) => llmProviders[id].removedEnvKeys),
+  ...keyedRoles.flatMap((role) => removedRoleFields.map((field) => `LLM_${role.toUpperCase()}_${field}`)),
+];
+
+/** True for a key of `removedEnvKeys`: the start log marks it so the operator knows to delete the line. */
+export function isRemovedEnvKey(key: string): boolean {
+  return removedEnvKeys.includes(key);
+}
+
+// The removed keys stay in the schema as optional strings so Zod does not drop them: `checkRemovedKeys` refuses a
+// non-empty value. An empty value passes.
+const removedKeyShape = Object.fromEntries(removedEnvKeys.map((key) => [key, z.string().optional()])) as Record<
+  string,
+  z.ZodOptional<z.ZodString>
+>;
 
 const apiKeyField = () => z.preprocess(emptyAsUndefined, z.string().optional());
 const positiveIntField = (fallback: number) => z.coerce.number().int().positive().default(fallback);
@@ -66,16 +76,15 @@ const providerEnvShape = Object.fromEntries(
 
 // The env keys of the LLM providers and roles, and the triage scope. `config.ts` spreads them into the schema.
 export const llmShape = {
-  // The classifier's provider, and the provider of every role without LLM_<ROLE>_PROVIDER. A restart applies it.
+  // The provider of every role: its tiers pick the models. A restart applies it.
   LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("openai")),
   // `<P>_API_KEY`, `<P>_TIMEOUT_MS` and `<P>_RPM` of every registry row (secret: never print or log a key).
   ...providerEnvShape,
   // The key an own server gets, when it needs one. Secret: never print or log it. Empty = the fixed dummy key.
   // An own endpoint never gets OPENAI_API_KEY: that key belongs to OpenAI.
   OPENAI_OWN_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
-  OPENAI_MODEL_CLASSIFIER: z.preprocess(emptyAsUndefined, z.string().default("gpt-6-luna")),
-  GEMINI_MODEL_CLASSIFIER: z.preprocess(emptyAsUndefined, z.string().default("gemini-3.5-flash-lite")),
-  OPENAI_REASONING_EFFORT: z.preprocess(emptyAsUndefined, z.enum(openAiReasoningEfforts).default("none")),
+  // The one model of an own endpoint: every role on openai uses it. Read only when the endpoint is own. Empty = not set.
+  OPENAI_OWN_MODEL: z.preprocess(emptyAsUndefined, z.string().optional()),
   // The endpoint of the openai provider; platform/llm/endpoint checks it. Empty = the default.
   OPENAI_BASE_URL: z.preprocess(emptyAsUndefined, z.string().default(DEFAULT_OPENAI_BASE_URL)),
   // "own" = the URL is a server the operator runs (any host over https). The only value.
@@ -88,6 +97,8 @@ export const llmShape = {
   // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended.
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
   ...roleKeyShape,
+  // Removed keys (`removedEnvKeys`): optional strings, refused when not empty.
+  ...removedKeyShape,
 };
 
 type LlmConfig = z.infer<z.ZodObject<typeof llmShape>>;
@@ -96,11 +107,8 @@ interface ProviderBlock {
   /** Env key name, for messages: "GEMINI_API_KEY". */
   apiKeyName: string;
   apiKey: string | undefined;
-  classifierModel: string;
   timeoutMs: number;
   rpm: number;
-  /** null: the provider has no effort setting. */
-  reasoningEffort: string | null;
   /** null: the provider has one fixed endpoint (Gemini). A function: it throws for an unchecked bad value. */
   endpoint: () => LlmEndpoint | null;
 }
@@ -134,87 +142,63 @@ function rowEnv(c: LlmConfig, id: LlmProviderId) {
 
 // One block per registry row: the type forces a block for each provider.
 const providerBlocks: Record<LlmProviderId, (config: LlmConfig) => ProviderBlock> = {
-  gemini: (c) => ({
-    ...rowEnv(c, "gemini"),
-    classifierModel: c.GEMINI_MODEL_CLASSIFIER,
-    reasoningEffort: null,
-    endpoint: () => null,
-  }),
+  gemini: (c) => ({ ...rowEnv(c, "gemini"), endpoint: () => null }),
   // An own endpoint never gets the OpenAI key: the row holds the own key or the dummy, so the start needs no
   // OPENAI_API_KEY and the key can reach no other host.
   openai: (c) => ({
     ...rowEnv(c, "openai"),
     apiKeyName: openAiIsOwn(c) ? "OPENAI_OWN_API_KEY" : "OPENAI_API_KEY",
     apiKey: openAiIsOwn(c) ? (c.OPENAI_OWN_API_KEY ?? OWN_DUMMY_API_KEY) : c.OPENAI_API_KEY,
-    classifierModel: c.OPENAI_MODEL_CLASSIFIER,
-    reasoningEffort: c.OPENAI_REASONING_EFFORT,
     endpoint: () => openAiEndpoint(c),
   }),
-  // The host is fixed and the key is its own: no OpenAI value reaches it. Tiers replace the model and the effort in
-  // the role-table stage.
+  // The host is fixed and the key is its own: no OpenAI value reaches it.
   deepseek: (c) => ({
     ...rowEnv(c, "deepseek"),
-    classifierModel: tierModel("deepseek", "light"),
-    reasoningEffort: "none",
     endpoint: () => ({ url: DEEPSEEK_BASE_URL, host: new URL(DEEPSEEK_BASE_URL).hostname, endpoint: "standard" }),
   }),
 };
+
+const REMOVED_KEY_MESSAGE = "removed: every role uses the tiers of LLM_PROVIDER (F141); delete this line";
+
+// An old `.env` must not change a model by accident: a removed key with a value stops config, also when the value
+// equals the new one. The message names the key and never holds the value.
+function checkRemovedKeys(config: LlmConfig, ctx: z.RefinementCtx): void {
+  const values: Record<string, unknown> = config;
+  for (const key of removedEnvKeys) {
+    const value = values[key];
+    if (typeof value === "string" && value !== "") {
+      ctx.addIssue({ code: "custom", path: [key], message: REMOVED_KEY_MESSAGE });
+    }
+  }
+}
 
 // Real mail goes only to a provider with a sub-processor row. A provider without one (`realMail: false`) may get
 // `TRIAGE_LLM_SCOPE=all` only on the live lab stack, which holds generated mail. The message names the key, never a value.
 function checkRealMail(config: LlmConfig, ctx: z.RefinementCtx): void {
   if (config.TRIAGE_LLM_SCOPE !== "all" || config.LAB_STACK === SIM_STACK_NAME) return;
-  const paths = [
-    { path: "LLM_PROVIDER", provider: config.LLM_PROVIDER },
-    ...keyedRoles.map((role) => ({ path: roleKey(role, "PROVIDER"), provider: config[roleKey(role, "PROVIDER")] })),
-  ];
-  for (const { path, provider } of paths) {
-    if (provider === undefined || llmProviders[provider].realMail) continue;
-    ctx.addIssue({
-      code: "custom",
-      path: [path],
-      message: `${provider} is for dev, tests and evals: no sub-processor row, so TRIAGE_LLM_SCOPE=all is refused outside the sim stack`,
-    });
-  }
+  if (llmProviders[config.LLM_PROVIDER].realMail) return;
+  ctx.addIssue({
+    code: "custom",
+    path: ["LLM_PROVIDER"],
+    message: `${config.LLM_PROVIDER} is for dev, tests and evals: no sub-processor row, so TRIAGE_LLM_SCOPE=all is refused outside the sim stack`,
+  });
 }
 
 // The LLM checks of `configSchema`.
 export function checkLlm(config: LlmConfig, ctx: z.RefinementCtx): void {
+  checkRemovedKeys(config, ctx);
   // Always checked, also with TRIAGE_LLM_SCOPE=off: the message names the key and never holds the value.
   const endpoint = parseLlmBaseUrl(config.OPENAI_BASE_URL, config.OPENAI_ENDPOINT_KIND === "own");
   if ("error" in endpoint) {
     ctx.addIssue({ code: "custom", path: ["OPENAI_BASE_URL"], message: endpoint.error });
   }
+  if (config.LLM_PROVIDER === "openai" && openAiIsOwn(config) && config.OPENAI_OWN_MODEL === undefined) {
+    ctx.addIssue({ code: "custom", path: ["OPENAI_OWN_MODEL"], message: "needed for an own endpoint" });
+  }
   checkRealMail(config, ctx);
   const block = providerBlocks[config.LLM_PROVIDER](config);
   if (config.TRIAGE_LLM_SCOPE !== "off" && block.apiKey === undefined) {
     ctx.addIssue({ code: "custom", path: [block.apiKeyName], message: "needed when TRIAGE_LLM_SCOPE is not off" });
-  }
-  for (const role of keyedRoles) {
-    const provider = config[roleKey(role, "PROVIDER")];
-    if (provider !== undefined && providerBlocks[provider](config).apiKey === undefined) {
-      const keyName = providerBlocks[provider](config).apiKeyName;
-      ctx.addIssue({ code: "custom", path: [keyName], message: `needed by ${roleKey(role, "PROVIDER")}` });
-    }
-    // A model id belongs to one provider: without its provider it would follow a later LLM_PROVIDER switch.
-    if (config[roleKey(role, "MODEL")] !== undefined && provider === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: [roleKey(role, "PROVIDER")],
-        message: `needed by ${roleKey(role, "MODEL")}`,
-      });
-    }
-    const effective = provider ?? config.LLM_PROVIDER;
-    if (
-      config[roleKey(role, "REASONING")] !== undefined &&
-      providerBlocks[effective](config).reasoningEffort === null
-    ) {
-      ctx.addIssue({
-        code: "custom",
-        path: [roleKey(role, "REASONING")],
-        message: `${effective} takes no reasoning effort`,
-      });
-    }
   }
 }
 
@@ -225,65 +209,76 @@ export interface LlmRoleOverride {
   reasoningEffort?: string;
 }
 
+/** The provider, model and effort flags of one eval or check run. */
+export interface LlmRunFlags {
+  provider?: LlmProviderId;
+  model?: string;
+  reasoningEffort?: string;
+  judgeProvider?: LlmProviderId;
+  judgeModel?: string;
+}
+
 /**
- * The role table. The classifier row comes from LLM_PROVIDER and that provider's keys. Another role reads its
- * LLM_<ROLE>_* keys; a missing key takes the classifier row's value when the role uses the classifier's provider,
- * else the value of the role's provider keys. An override that changes a role's provider drops that role's env keys.
+ * The role overrides of one run (the eval and `llm:check` flags). `--provider` moves every role, the judge too;
+ * `--judge-provider` then moves only the judge. `--model` and `--reasoning-effort` pin the judged role; `--judge-model`
+ * pins the judge. Without a flag a role keeps the tier of its provider.
+ */
+export function runOverrides(judged: LlmRole, flags: LlmRunFlags): Record<LlmRole, LlmRoleOverride> {
+  const roles = Object.fromEntries(llmRoles.map((role) => [role, { provider: flags.provider }])) as Record<
+    LlmRole,
+    LlmRoleOverride
+  >;
+  roles[judged] = { ...roles[judged], model: flags.model, reasoningEffort: flags.reasoningEffort };
+  if (judged !== "judge") {
+    roles.judge = { provider: flags.judgeProvider ?? flags.provider, model: flags.judgeModel };
+  }
+  return roles;
+}
+
+/** The operator text of a `ConfigError` that `llmRoleTable` throws for a run flag. Names a flag or a key, never a value. */
+export function runFlagError(error: ConfigError): string {
+  if (error.keys.includes("reasoningEffort")) return "--reasoning-effort is not accepted by this provider";
+  if (error.keys.includes("OPENAI_OWN_MODEL")) return "OPENAI_OWN_MODEL is missing: an own endpoint needs its model";
+  return `config error: ${error.keys.join(", ")}`;
+}
+
+/**
+ * The role table. Every role runs on LLM_PROVIDER, or on the provider a tool override names. The model is the override
+ * model, else the one model of an own endpoint (`OPENAI_OWN_MODEL`), else the provider's model for the role's tier. The
+ * effort is the override effort, else the role's level as the provider takes it (an own endpoint gets none).
+ * `LLM_<ROLE>_TIMEOUT_MS` and `LLM_<ROLE>_RPM` apply to the role wherever it runs.
  */
 export function llmRoleTable(
   config: LlmConfig,
   overrides: Partial<Record<LlmRole, LlmRoleOverride>> = {}
 ): LlmRoleTable {
   const providerRow = (provider: LlmProviderId) => providerBlocks[provider](config);
-  // An own server gets no `reasoning` field, whatever an env key or an override says.
-  const noEffort = (provider: LlmProviderId) => providerRow(provider).endpoint()?.endpoint === "own";
-  const finish = (row: LlmRoleSettings): LlmRoleSettings =>
-    noEffort(row.provider) ? { ...row, reasoningEffort: null } : row;
-  const defaults = (provider: LlmProviderId): LlmRoleSettings => {
-    const block = providerRow(provider);
-    return {
-      provider,
-      model: block.classifierModel,
-      timeoutMs: block.timeoutMs,
-      rpm: null,
-      reasoningEffort: block.reasoningEffort,
-    };
+  const isOwn = (provider: LlmProviderId) => providerRow(provider).endpoint()?.endpoint === "own";
+  // The one model of an own endpoint. A missing key is a config error, also for a tool override that moves a role there.
+  const ownModel = (): string => {
+    if (config.OPENAI_OWN_MODEL === undefined) throw new ConfigError(["OPENAI_OWN_MODEL"]);
+    return config.OPENAI_OWN_MODEL;
   };
-  const apply = (row: LlmRoleSettings, override: LlmRoleOverride | undefined): LlmRoleSettings => {
-    if (override === undefined) return row;
-    if (override.reasoningEffort !== undefined && providerRow(row.provider).reasoningEffort === null) {
+  const rowOf = (role: LlmRole): LlmRoleSettings => {
+    const override = overrides[role];
+    const provider = override?.provider ?? config.LLM_PROVIDER;
+    const { tier, effort } = llmRoleModels[role];
+    if (override?.reasoningEffort !== undefined && providerEffort(provider, "none") === null) {
       throw new ConfigError(["reasoningEffort"]);
     }
+    const own = isOwn(provider);
+    // An own server gets no `reasoning` field, whatever an override says.
+    const reasoningEffort = own ? null : (override?.reasoningEffort ?? providerEffort(provider, effort));
+    const keyed = role === "classifier" ? undefined : role;
+    const roleTimeout = keyed === undefined ? undefined : config[roleKey(keyed, "TIMEOUT_MS")];
+    const roleRpm = keyed === undefined ? undefined : config[roleKey(keyed, "RPM")];
     return {
-      ...row,
-      ...(override.model === undefined ? {} : { model: override.model }),
-      ...(override.reasoningEffort === undefined ? {} : { reasoningEffort: override.reasoningEffort }),
-    };
-  };
-
-  const classifierProvider = overrides.classifier?.provider ?? config.LLM_PROVIDER;
-  const classifier = finish(apply(defaults(classifierProvider), overrides.classifier));
-
-  const rowOf = (role: KeyedRole): LlmRoleSettings => {
-    const override = overrides[role];
-    const envKeys = override?.provider === undefined;
-    const provider = override?.provider ?? config[roleKey(role, "PROVIDER")] ?? classifier.provider;
-    const base = provider === classifier.provider ? classifier : defaults(provider);
-    // The model decides alone whether the role default applies: any other judge key or flag leaves it in force.
-    const roleDefault = role === "judge" ? DEFAULT_JUDGE_MODEL : undefined;
-    const envModel = envKeys ? config[roleKey(role, "MODEL")] : undefined;
-    const defaulted = roleDefault !== undefined && envModel === undefined && override?.model === undefined;
-    const envEffort = envKeys ? config[roleKey(role, "REASONING")] : undefined;
-    // The default model brings effort `none`, not the classifier's effort (a setting of another model).
-    const baseEffort = defaulted && base.reasoningEffort !== null ? "none" : base.reasoningEffort;
-    const row: LlmRoleSettings = {
       provider,
-      model: envModel ?? roleDefault ?? base.model,
-      timeoutMs: envKeys ? (config[roleKey(role, "TIMEOUT_MS")] ?? base.timeoutMs) : base.timeoutMs,
-      rpm: envKeys ? (config[roleKey(role, "RPM")] ?? null) : null,
-      reasoningEffort: envEffort ?? baseEffort,
+      model: override?.model ?? (own ? ownModel() : tierModel(provider, tier)),
+      timeoutMs: roleTimeout ?? providerRow(provider).timeoutMs,
+      rpm: roleRpm ?? null,
+      reasoningEffort,
     };
-    return finish(apply(row, override));
   };
 
   const providers = Object.fromEntries(
@@ -305,7 +300,7 @@ export function llmRoleTable(
 
   return {
     roles: {
-      classifier,
+      classifier: rowOf("classifier"),
       judge: rowOf("judge"),
       drafter: rowOf("drafter"),
       extractor: rowOf("extractor"),

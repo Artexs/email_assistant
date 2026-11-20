@@ -48,6 +48,7 @@ import { createHistoryJob, createTripwireJob, regateAll, type RegateDeps } from 
 import {
   ConfigError,
   featuresOff,
+  isRemovedEnvKey,
   llmRoleTable,
   loadConfig,
   mailAllowLocal,
@@ -80,7 +81,10 @@ function loadConfigOrExit() {
     return loadConfig();
   } catch (error) {
     if (error instanceof ConfigError) {
-      for (const key of error.keys) log.error("config_key_bad", { config_key: key });
+      // A removed key carries `reason=key_removed`: the operator deletes that line from `.env`.
+      for (const key of error.keys) {
+        log.error("config_key_bad", { config_key: key, ...(isRemovedEnvKey(key) ? { reason: "key_removed" } : {}) });
+      }
     } else {
       log.error("config_load_failed", { ...errorFields(error) });
     }

@@ -1,14 +1,12 @@
-import { classifierCategories } from "@ea/core";
+import { classifierCategories, llmRoles } from "@ea/core";
 
 import { type ClassifierDelegate, type ClassifierEmail, classifyEmail } from "../modules/triage";
-import { createCliOutput } from "../platform/cli";
-import { llmRoleTable, loadConfig } from "../platform/config";
+import { type CliOutput, createCliOutput } from "../platform/cli";
+import { type Config, ConfigError, llmRoleTable, loadConfig, runFlagError, runOverrides } from "../platform/config";
 import { describeError } from "../platform/errors";
-import { createLlmClient, llmEndpointFields, type LlmUsage } from "../platform/llm";
+import { createLlmClient, llmEndpointFields, type LlmUsage, type ProviderRegistry } from "../platform/llm";
 
-import { greetingCall, parseLlmCheckArgs, usage } from "./llm-check-args";
-
-const out = createCliOutput("llm-check");
+import { greetingCall, type LlmCheckArgs, parseLlmCheckArgs, usage } from "./llm-check-args";
 
 // Made-up mail: example.com addresses, no real data.
 const SAMPLE_EMAIL: ClassifierEmail = {
@@ -32,59 +30,100 @@ const SAMPLE_DELEGATES: ClassifierDelegate[] = [
   { id: "00000000-0000-4000-8000-000000000002", name: "Tom Sales", tags: ["offers"] },
 ];
 
-async function main() {
-  const config = loadConfig();
-  const args = parseLlmCheckArgs(process.argv.slice(2));
-  if (args === null) {
-    out.fail(usage);
-    process.exit(1);
-  }
-  const table = llmRoleTable(config, { [args.role]: { provider: args.provider } });
-  const row = table.roles[args.role];
-  const keys = table.providers[row.provider];
+export interface LlmCheckDeps {
+  config: Config;
+  args: LlmCheckArgs;
+  /** Tests: fake providers, passed to `createLlmClient`. */
+  providers?: Partial<ProviderRegistry>;
+  out: CliOutput;
+}
 
-  if (keys.apiKey === undefined) {
-    out.fail(`${keys.apiKeyName} is missing`);
-    process.exit(1);
-  }
+// The checks of one run. Returns the exit code: 0 all calls answered, 1 a bad flag, a missing key or a failed call.
+// Every key is checked before the first call. A line holds no key and no model text.
+export async function runLlmCheck(deps: LlmCheckDeps): Promise<number> {
+  const { config, args, out } = deps;
+  try {
+    const roles = args.role === "all" ? llmRoles : [args.role];
+    let table;
+    try {
+      table = llmRoleTable(config, runOverrides("classifier", { provider: args.provider }));
+    } catch (error) {
+      if (!(error instanceof ConfigError)) throw error;
+      out.fail(runFlagError(error));
+      out.fail(usage);
+      return 1;
+    }
 
-  const llm = createLlmClient({ table });
-
-  const where = llmEndpointFields(table, args.role);
-  const line = (check: string, used: LlmUsage, extra = "") =>
-    out.print(
-      `role=${used.role} provider=${row.provider} model=${used.model} endpoint=${used.endpoint} host=${where.host ?? "-"} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
+    const missing = [...new Set(roles.map((role) => table.providers[table.roles[role].provider]))].filter(
+      (keys) => keys.apiKey === undefined
     );
+    if (missing.length > 0) {
+      for (const keys of missing) out.fail(`${keys.apiKeyName} is missing`);
+      return 1;
+    }
 
-  const greeting = await llm.generate(greetingCall(args.role));
-  line("greeting", greeting.usage);
+    const llm = createLlmClient({ table, providers: deps.providers });
+    const line = (check: string, used: LlmUsage, extra = "") => {
+      const row = table.roles[used.role];
+      const where = llmEndpointFields(table, used.role);
+      out.print(
+        `role=${used.role} provider=${row.provider} model=${used.model} endpoint=${used.endpoint} host=${where.host ?? "-"} effort=${row.reasoningEffort ?? "-"} check=${check} latencyMs=${used.latencyMs} tokensIn=${used.tokensIn} tokensOut=${used.tokensOut}${extra}`
+      );
+    };
 
-  if (args.role !== "classifier") return;
+    for (const role of roles) {
+      const greeting = await llm.generate(greetingCall(role));
+      line("greeting", greeting.usage);
+      if (role !== "classifier") continue;
 
-  const triage = await classifyEmail(llm, {
-    email: SAMPLE_EMAIL,
-    sender: { whitelisted: false, vip: false, noreply: false },
-    allowed: classifierCategories,
-    delegates: [],
-  });
-  line("triage", triage.usage, ` category=${triage.analysis.category}`);
+      const triage = await classifyEmail(llm, {
+        email: SAMPLE_EMAIL,
+        sender: { whitelisted: false, vip: false, noreply: false },
+        allowed: classifierCategories,
+        delegates: [],
+      });
+      line("triage", triage.usage, ` category=${triage.analysis.category}`);
 
-  if (args.delegates) {
-    const delegation = await classifyEmail(llm, {
-      email: DELEGATE_EMAIL,
-      sender: { whitelisted: false, vip: false, noreply: false },
-      allowed: [...classifierCategories, "delegation"],
-      delegates: SAMPLE_DELEGATES,
-    });
-    line(
-      "delegates",
-      delegation.usage,
-      ` category=${delegation.analysis.category} delegatePicked=${delegation.analysis.fields.delegate_id !== null}`
-    );
+      if (args.delegates) {
+        const delegation = await classifyEmail(llm, {
+          email: DELEGATE_EMAIL,
+          sender: { whitelisted: false, vip: false, noreply: false },
+          allowed: [...classifierCategories, "delegation"],
+          delegates: SAMPLE_DELEGATES,
+        });
+        line(
+          "delegates",
+          delegation.usage,
+          ` category=${delegation.analysis.category} delegatePicked=${delegation.analysis.fields.delegate_id !== null}`
+        );
+      }
+    }
+    return 0;
+  } catch (error) {
+    out.fail(`check failed: ${describeError(error)}`);
+    return 1;
   }
 }
 
-main().catch((error) => {
-  out.fail(`check failed: ${describeError(error)}`);
-  process.exit(1);
-});
+async function main(): Promise<number> {
+  const out = createCliOutput("llm-check");
+  const args = parseLlmCheckArgs(process.argv.slice(2));
+  if (args === null) {
+    out.fail(usage);
+    return 1;
+  }
+  let config: Config;
+  try {
+    config = loadConfig();
+  } catch (error) {
+    if (!(error instanceof ConfigError)) throw error;
+    out.fail(`config error: ${error.keys.join(", ")}`);
+    return 1;
+  }
+  return runLlmCheck({ config, args, out });
+}
+
+// `import.meta.main`: a test imports `runLlmCheck` without running the script.
+if (import.meta.main) {
+  process.exit(await main());
+}

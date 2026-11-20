@@ -20,6 +20,8 @@ export interface LlmProvider {
    * the sim stack.
    */
   readonly realMail: boolean;
+  /** Env keys that older releases read (a model or an effort). A non-empty value stops config: the tiers decide now. */
+  readonly removedEnvKeys: readonly string[];
   createGenerate(opts: {
     apiKey: string;
     reasoningEffort: string | null;

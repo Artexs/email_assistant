@@ -32,7 +32,7 @@ import {
   runPool,
 } from "../modules/triage";
 import { createCliOutput } from "../platform/cli";
-import { type Config, ConfigError, llmRoleTable } from "../platform/config";
+import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides } from "../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -152,12 +152,19 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
   if (config === null) return 1;
   let table: LlmRoleTable;
   try {
-    table = llmRoleTable(config, {
-      drafter: { provider: options.provider, model: options.model, reasoningEffort: options["reasoning-effort"] },
-      ...(options.judge ? { judge: { provider: options["judge-provider"], model: options["judge-model"] } } : {}),
-    });
+    table = llmRoleTable(
+      config,
+      runOverrides("drafter", {
+        provider: options.provider,
+        model: options.model,
+        reasoningEffort: options["reasoning-effort"],
+        judgeProvider: options["judge-provider"],
+        judgeModel: options["judge-model"],
+      })
+    );
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
+    cli.fail(runFlagError(error));
     cli.fail(evalUsage);
     return 1;
   }
@@ -240,7 +247,6 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     rpm: options.rpm as number,
     judge: options.judge,
     judgeRpm: options["judge-rpm"],
-    judgeRoleRpm: options["judge-provider"] === undefined ? undefined : config.LLM_JUDGE_RPM,
     role: "drafter",
   });
   const limited: LlmRoleTable = { ...rated, roles: { ...rated.roles, drafter: { ...rated.roles.drafter, rpm: null } } };

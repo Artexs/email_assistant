@@ -3,7 +3,7 @@ import type { Texts } from "./texts";
 // When a row is in use. The static legal pages do not follow a switch of the install, so each row shows this condition
 // ("used when") instead of a claim that it is always used.
 //   always       every install
-//   llmProvider  any LLM role uses the provider (`LLM_PROVIDER` or `LLM_<ROLE>_PROVIDER`)
+//   llmProvider  any LLM role uses the provider (`LLM_PROVIDER`)
 //   env          the key has a value that is not `unless`; a key with a default in the config schema counts as set
 //   host         the home VPS runs the part (`backup`: `deploy/backup.sh`, no config key)
 export type ActiveWhen =

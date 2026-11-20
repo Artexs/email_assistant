@@ -100,6 +100,7 @@ export const geminiProvider = {
   // Measured on AI Studio (free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12.
   defaults: { timeoutMs: 30000, rpm: 12 },
   realMail: true,
+  removedEnvKeys: ["GEMINI_MODEL_CLASSIFIER"] as const,
   createGenerate,
   classifyError: classifyGeminiError,
 } satisfies LlmProvider;

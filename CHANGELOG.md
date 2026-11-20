@@ -17,6 +17,14 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+### Added
+
+- LLM provider: one variable `LLM_PROVIDER` (`openai`, `gemini` or `deepseek`) and the key of that provider decide the model of every role (light tier: classifier, drafter, extractor; strong tier: judge). DeepSeek is for dev, tests and evals only. `bun run llm:check --role all [--provider <id>]` checks the four roles; the eval flags `--provider` and `--judge-provider` pin one run.
+
+### Removed
+
+- The per-role model, provider and effort keys of the LLM roles. An old `.env` with one of them stops the start and the log names the key (`reason=key_removed`). Delete these keys before the deploy: `deploy/README.md` § LLM provider tiers.
+
 ## [0.4.1] - 2026-11-19
 
 ### Fixed

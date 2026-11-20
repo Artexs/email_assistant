@@ -63,6 +63,15 @@ describe("parseLlmCheckArgs", () => {
     });
   });
 
+  test("--role all is read; --delegates does not go with it", () => {
+    expect(parseLlmCheckArgs(["--role", "all", "--provider", "deepseek"])).toEqual({
+      role: "all",
+      provider: "deepseek",
+      delegates: false,
+    });
+    expect(parseLlmCheckArgs(["--role", "all", "--delegates"])).toBeNull();
+  });
+
   test("--delegates is read for the classifier", () => {
     expect(parseLlmCheckArgs(["--delegates"])).toEqual({ role: "classifier", provider: undefined, delegates: true });
   });
