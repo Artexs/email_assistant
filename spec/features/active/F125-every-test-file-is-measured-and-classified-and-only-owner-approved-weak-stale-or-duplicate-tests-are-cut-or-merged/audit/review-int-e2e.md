@@ -304,3 +304,13 @@ Master moved after the data base. A rescan at `7320a64f` (`bun scripts/test-audi
 | int/worker-db.test.ts "a worker process runs its files on its own database" | S7 | KEEP | K4 | `test.skipIf(process.env.EA_TEST_WORKER_DB !== "1")`. `package.json` `test:int` sets `EA_TEST_WORKER_DB=1`, so the case runs in `test:int` and `test:int:ci` and skips only in a serial run of one file (not FIX-NEVER-RUNS). It guards the worker-database switch of the parallel int run. |
 
 New files that carry the added sites include `contacts-activity-golden.test.ts`, `db-worktree-drop.test.ts`, `loops-match-address-rule.test.ts` and new cases of `actions-transitions.test.ts`; the e2e-folder additions are 9 Playwright sites in `apps/docs/e2e/site.spec.ts` (browser paths of the new docs pages) and 28 `bun:test` sites in `apps/web/e2e/lib/` (demo recorder helpers, unit-style). The summary numbers above stay those of the data base: 223 items, 223 rows.
+
+## Note check
+
+Job base: the head of master at the job start was `7320a64f`; the review (223 rows) was already in master. This job rescanned, added the section above, and merged master three times; the last `git merge --no-edit master` brought master `58ea6f2e`. Nothing came in after the proof below.
+
+- Row count (223 rows: KEEP 197, MOVE-TO-UNIT 13, DELETE-DUP 4, MERGE-TABLE 3, REWRITE-WEAK 4, FIX-NEVER-RUNS 2; 0 `not read`): `/tmp/f125s06/rows.log`.
+- Rescan of int and e2e sites at `7320a64f` (105 added, 6 removed; 1 flagged added site): `/tmp/f125s06/rescan.log`, `/tmp/f125s06/added.keys`, `/tmp/f125s06/removed.keys`.
+- Files this branch changes against master (only this review file; no test file, no product file, no `bun.lock`, no `.env`): `/tmp/f125s06/own-changes.log`.
+- The Phase A Proof of `plan.md` § Proof with `NN=06` after the last merge printed `PROOF_OK`: `/tmp/f125s06/p2.out`. Its logs: `/tmp/f125s06/p2/tool-tests.log`, `/tmp/f125s06/p2/tool-tsc.log`, `/tmp/f125s06/p2/lint.log` (0 errors), `/tmp/f125s06/p2/typecheck.log`, `/tmp/f125s06/p2/unit.log` (0 fail), `/tmp/f125s06/p2/int.log` (5,986 pass, 1 skip, 0 fail).
+- An earlier proof run on `7320a64f` failed one int case, `channels-loop-taps-answers.test.ts` "Done on an overdue delegation" (`/tmp/f125s06/int.log`, `/tmp/f125s06/rerun-1.log`). It failed the same way in master without this job's change; master fixed it later in `821e4ce2` (the test used the real clock). After the merge it passes: `/tmp/f125s06/post-taps.log`.
