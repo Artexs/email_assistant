@@ -2,7 +2,15 @@
 // A screenshot of a panel page in the page language, desktop and phone. Put it on its own line:
 // `<Shot page="settings" />` (`bodyHash` ignores such lines). `DOCS_SHOTS=on`: a missing file fails the build (`shot_missing <name>`);
 // unset: a box with the alt text. An unknown page fails the build in both cases.
-import { SHOT_DESKTOP_SIZE, SHOT_PHONE_MEDIA, shotFileExists, shotsOn, shotUrl, shotView } from "../shots";
+import {
+  SHOT_DESKTOP_SIZE,
+  SHOT_PHONE_MEDIA,
+  shotFileExists,
+  shotSourceKind,
+  shotsOn,
+  shotUrl,
+  shotView,
+} from "../shots";
 
 interface Props {
   page: string;
@@ -10,7 +18,11 @@ interface Props {
 
 const { page } = Astro.props;
 const on = shotsOn();
-const view = shotView(page, Astro.currentLocale, { on, exists: (name) => shotFileExists(name) });
+const view = shotView(page, Astro.currentLocale, {
+  on,
+  exists: (name) => shotFileExists(name),
+  source: shotSourceKind(),
+});
 ---
 
 {

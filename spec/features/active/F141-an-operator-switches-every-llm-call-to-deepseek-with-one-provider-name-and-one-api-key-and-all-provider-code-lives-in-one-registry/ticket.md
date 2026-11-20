@@ -25,13 +25,18 @@ An operator sets `LLM_PROVIDER` (`openai`, `gemini` or `deepseek`) and that prov
 ## Acceptance
 
 - With only `LLM_PROVIDER` and that provider's key set, `bun run llm:check` passes for every role, for `openai`, `gemini` and `deepseek`.
-- With the key missing, config fails with a message that names the key, never a value.
+- With the key missing and a triage scope on, config fails with a message that names the key, never a value; with the triage scope `off` the server starts, and every LLM tool fails at once with the same message.
 - A removed per-role key in `.env` fails config with a message that names it, so an old `.env` cannot silently change models.
-- Each call writes one `llm.call` row with the provider, the resolved model, the tokens and a priced cost; `triage:cost` and `stats:week` show it.
-- The audit report lists every provider-specific code site before, and a test or lint rule proves zero outside the registry after.
+- Each call writes one `llm.call` row with the provider, the resolved model, the tokens and a priced cost; `triage:cost` shows the provider, the model and the cost; `stats:week` shows the priced cost, which follows the model and the endpoint.
+- The audit report lists every provider-specific code site before, and a test proves zero sites outside the registry and a named exception list after (each exception with its reason).
 - The gate file names the resolved model id, not the tier.
 
 ## Notes
 
 - Production `.env` on the VPS changes in the release that carries this: the plan lists the keys to remove there and on the dev machine (the DeepSeek stopgap lines of `notes.md`).
 - Facts and seams: `notes.md`.
+
+## Sequenced
+
+- Plan after: none.
+- Build after: none. F115 (reply drafts, active) is a neighbour, not a gate: its drafter gate may pick another drafter model or effort (`questions.md` Q8). Gate: none (this ticket is not in `docs/product/stage-2/07-foundation-plan.md` or `05-execution-plan.md` § 2). The deploy of the release that carries stage 04 waits for owner step O1 (`plan.md`).
