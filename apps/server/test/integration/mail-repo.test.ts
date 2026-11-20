@@ -422,41 +422,33 @@ describe("mail repository: emails", () => {
     });
   });
 
-  test("insertEmail sets source_uid to uid, and the trigger copies it to inbox_uid", async () => {
+  test("insertEmail sets source_uid to uid", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
       await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { uid: 7 }));
       const row = await trx
         .selectFrom("emails")
-        .select(["uid", "source_uid", "inbox_uid"])
+        .select(["uid", "source_uid"])
         .where("mailbox_id", "=", a.mailboxId)
         .executeTakeFirstOrThrow();
-      expect({ uid: Number(row.uid), sourceUid: Number(row.source_uid), inboxUid: Number(row.inbox_uid) }).toEqual({
-        uid: 7,
-        sourceUid: 7,
-        inboxUid: 7,
-      });
+      expect({ uid: Number(row.uid), sourceUid: Number(row.source_uid) }).toEqual({ uid: 7, sourceUid: 7 });
     });
   });
 
-  test("setMovePending writes move_pending_at, the trigger copies it to undo_pending_at, and null clears both", async () => {
+  test("setMovePending writes move_pending_at, and null clears it", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
       await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
       const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
       const stamp = new Date("2026-11-20T10:00:00Z");
       const read = () =>
-        trx
-          .selectFrom("emails")
-          .select(["move_pending_at", "undo_pending_at"])
-          .where("id", "=", id)
-          .executeTakeFirstOrThrow();
+        trx.selectFrom("emails").select("move_pending_at").where("id", "=", id).executeTakeFirstOrThrow();
 
       await setMovePending(trx, a.ctx, id, stamp);
-      expect(await read()).toEqual({ move_pending_at: stamp, undo_pending_at: stamp });
+      expect(await read()).toEqual({ move_pending_at: stamp });
 
       await setMovePending(trx, a.ctx, id, null);
-      expect(await read()).toEqual({ move_pending_at: null, undo_pending_at: null });
+      expect(await read()).toEqual({ move_pending_at: null });
     });
   });
 
