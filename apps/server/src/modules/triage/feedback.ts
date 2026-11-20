@@ -5,6 +5,7 @@ import {
   type FeedbackSource,
   type FeedbackVerdict,
   type LabelCategory,
+  DAY_MS,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -147,7 +148,7 @@ export async function listForReview(
 ): Promise<LabelItem[]> {
   const rows = await listReviewSample(db, ctx, {
     mailboxIds: input.mailboxIds,
-    since: new Date(input.now.getTime() - REVIEW_WINDOW_DAYS * 24 * 60 * 60 * 1000),
+    since: new Date(input.now.getTime() - REVIEW_WINDOW_DAYS * DAY_MS),
     seed: input.seed,
     limit: REVIEW_PAGE_SIZE,
     testMail: input.testMail,

@@ -13,7 +13,7 @@ import { NO_TEST_SENDERS } from "../../src/modules/mail";
 import { llmToday } from "../../src/modules/operator/service";
 import { insertTriageResult, listUsageSince } from "../../src/modules/triage";
 import type { DB, TenantContext } from "../../src/platform/db";
-import { groupUsage, modelReportLines } from "../../src/scripts/triage-cost-report";
+import { groupUsage, modelReportLines } from "../../src/scripts/lib/triage-cost-report";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";

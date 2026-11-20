@@ -7,7 +7,7 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { auditEvents, recordAudit } from "../../src/modules/audit";
 import { insertMailbox } from "../../src/modules/mail/repo";
 import { createOrganizationWithOwner } from "../../src/modules/tenancy";
-import { orgStatusLines } from "../../src/scripts/org-status-lines";
+import { orgStatusLines } from "../../src/scripts/lib/org-status-lines";
 
 import { createOrgWithMailbox, linkChat, randomChatId, testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";

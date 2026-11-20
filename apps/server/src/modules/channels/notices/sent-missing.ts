@@ -1,3 +1,5 @@
+import { DAY_MS, HOUR_MS } from "@ea/core";
+
 import { listSentHealth } from "../../mail";
 import { isFeatureOn } from "../../tenancy";
 import { cancelPendingOutbox } from "../repo";
@@ -5,10 +7,10 @@ import { cancelPendingOutbox } from "../repo";
 import { queue, warnSkipped, type Detector } from "./run";
 
 // No mail of the user in the Sent folder for 7 days: one notice per owner for each quiet period.
-export const SENT_MISSING_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+export const SENT_MISSING_AFTER_MS = 7 * DAY_MS;
 // The last Sent pass is not older than this. After a period with the flag off or the mailbox paused, a quiet period
 // that nobody observed gives no notice.
-export const SENT_PASS_FRESH_MS = 60 * 60 * 1000;
+export const SENT_PASS_FRESH_MS = HOUR_MS;
 
 // The key holds the start of the quiet period: the later of the newest user mail and the first pass. A new user mail
 // that goes quiet again starts a new period and a new notice. The view holds the mailbox address only.
