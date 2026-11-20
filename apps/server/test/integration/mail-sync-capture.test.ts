@@ -123,6 +123,7 @@ describe("sync stores the capture", () => {
       const count = await trx
         .selectFrom("email_headers")
         .select((eb) => eb.fn.countAll<string>().as("n"))
+        .where("org_id", "=", s.ctx.orgId)
         .executeTakeFirstOrThrow();
       expect(Number(count.n)).toBe(2);
     });

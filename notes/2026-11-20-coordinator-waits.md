@@ -63,3 +63,11 @@ Simpler variant: steps 1, 2, 4, 6 only. When master moved, land anyway and let C
 - `spec/build.md` TRACK "Land and review": replace the land check sentence and the CI sentence (owner choice, so the owner approves).
 - New `scripts/land-check.sh`; `scripts/coord-scan.sh` reads `.limen/land-checks/` and prints CI status.
 - New `.agents/limen/worker.md` (copy of `../limen/templates/worker.md` plus the merge-and-test step).
+
+## 7. Red CI on master, 2026-11-19 23:19Z–23:52Z
+
+- Cause: the F108 stage 01 land check failed (`deploy-logs.test.ts` needed its own `.env`). The coordinator did not continue the job. It edited the test and `deploy/compose.yaml` by hand in its own worktree (`email_assistant-wt/f108s01`), ran typecheck and unit tests, committed `22a5e64d` and landed it. The edit broke Prettier. Lint was in no check: not in the land check, not in the coordinator's inline run.
+- Effect: CI red for about 33 min; at least 6 more commits landed on the red master. Fixed by `a110ce6c` (formatting only).
+- Why late: nothing wakes the coordinator on a red CI run. It saw the red only when it next ran `gh run list` by hand.
+- Fixed now: the land check and the worker reminder run `bun run lint` too (about 95 s under load; in the background, so it blocks nobody).
+- Proposed (owner): (a) a failed land check is always `limen continue <job>`; the coordinator never edits product code; (b) `coord-scan.sh` prints `MASTER RED` first when the newest finished CI run failed; the coordinator then starts one detached fix job at priority 1 with the failed log, and other lands go on (their land check runs the same fast checks).

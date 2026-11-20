@@ -7,7 +7,7 @@
 #   scripts/land-check.sh --status                 one line per check of a branch that is not landed yet
 #
 # The background check merges master into the job branch in its worktree, then runs
-# `bun run typecheck && bun run test:unit:ci`. The result goes to .limen/land-checks/<job>.out:
+# `bun run typecheck && bun run lint && bun run test:unit:ci` (the checks CI runs first). The result goes to .limen/land-checks/<job>.out:
 #   PASS <job> master=<sha> tip=<sha> <time>      land it while master is still <sha>
 #   FAIL <job> master=<sha> <reason> log=<path>   continue the job with the log tail
 set -u
@@ -75,6 +75,9 @@ run_check() {
   fi
   if [ -z "$reason" ]; then
     (cd "$wt" && bun run typecheck >>"$log" 2>&1) || reason="typecheck failed"
+  fi
+  if [ -z "$reason" ]; then
+    (cd "$wt" && bun run lint >>"$log" 2>&1) || reason="lint failed"
   fi
   if [ -z "$reason" ]; then
     (cd "$wt" && bun run test:unit:ci >>"$log" 2>&1) || reason="unit tests failed"

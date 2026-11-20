@@ -346,6 +346,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 ## Tests
 
 - `bun run test:unit` and `bun run test:int` run on the local Bun. `bun run test:unit:ci` and `bun run test:int:ci` run on the Bun in `.bun-version`, the version of CI and the server image (`scripts/ci-bun.sh`). A stage proof uses the `:ci` scripts. A test that passes only on the local Bun is a failing test.
+- `test:unit` and `test:int` run their files in 4 worker processes (`--parallel=4`, each file isolated). `test:int` gives each worker its own database (`<database>_w<n>`, made and migrated by `apps/server/test/worker-db.ts`, kept for the next run), so a file sees the same data as in a serial run. A test must still not depend on rows another file of its worker left: filter by the ids of the test. A test that spawns a script passes `env: process.env`, or the child uses the database of `.env`, not the worker database.
 - Unit tests stay next to the code. Pure logic in `packages/core`: unit tests without mocks.
 - Integration tests live in `apps/server/test/integration/`. Repositories: tests against Postgres in a container (each test in a transaction that rolls back).
 - Adapters: contract tests; the fake and the real adapter pass the same suite.
