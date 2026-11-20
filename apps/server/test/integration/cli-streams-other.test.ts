@@ -389,18 +389,18 @@ describe("telegram-check streams", () => {
 });
 
 describe("triage-cost streams", () => {
-  test("a bad option: the usage on stderr, exit 1", async () => {
+  test("a bad option: the usage on stderr, exit 2", async () => {
     const result = await run("triage-cost", ["--org-id", "nope"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "triage-cost", "usage: bun run triage:cost");
   });
 
-  test("a database that is down: `failed:` on stderr, exit 1", async () => {
+  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
     const result = await run("triage-cost", ["--org-id", randomUUID(), "--mailbox-id", randomUUID()], {
       env: { DATABASE_URL: deadDb },
     });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "triage-cost", "failed: ");
+    expect(result.code).toBe(3);
+    expectOnlyStderr(result, "triage-cost", "unreachable: ");
   });
 
   test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {
@@ -426,9 +426,9 @@ describe("triage-label streams", () => {
     });
   }
 
-  test("a bad option: the usage on stderr, exit 1", async () => {
+  test("a bad option: the usage on stderr, exit 2", async () => {
     const result = await run("triage-label", ["--org-id", "nope"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "triage-label", "usage: bun run triage:label");
   });
 
@@ -461,12 +461,12 @@ describe("triage-label streams", () => {
     expectOnlyStdout(result, "triage-label", "labeled 0, skipped 0");
   });
 
-  test("a database that is down: `failed:` on stderr, exit 1", async () => {
+  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
     const result = await run("triage-label", ["--org-id", randomUUID(), "--mailbox-id", randomUUID()], {
       env: { DATABASE_URL: deadDb },
     });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "triage-label", "failed: ");
+    expect(result.code).toBe(3);
+    expectOnlyStderr(result, "triage-label", "unreachable: ");
   });
 
   test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {

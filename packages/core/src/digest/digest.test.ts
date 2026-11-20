@@ -3,7 +3,8 @@ import { describe, expect, test } from "bun:test";
 import { textTables, type CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 
-import { isFeedbackCallback, parseCallback } from "./callback";
+import { parseCallback } from "./callback";
+import { isCallbackOfFamily } from "./callback-kinds";
 import {
   DIGEST_MAX_LINES,
   renderDigestWithBrief,
@@ -371,7 +372,7 @@ const blockStarts = (text: string): string[] => text.split("\n").filter((line) =
 
 function emailIdOf(data: string): string | undefined {
   const parsed = parseCallback(data);
-  return parsed !== null && isFeedbackCallback(parsed) ? parsed.emailId : undefined;
+  return parsed !== null && isCallbackOfFamily(parsed, "feedback") ? parsed.emailId : undefined;
 }
 
 describe("handled share line", () => {

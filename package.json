@@ -12,7 +12,7 @@
     "typecheck": "bun run --filter '*' typecheck",
     "dev": "bun --watch apps/server/src/main.ts",
     "start": "bun apps/server/src/main.ts",
-    "test:unit": "bun test --parallel=4 --timeout=30000 deploy/test apps/web/e2e/lib packages/core apps/server/src tools/fake-telegram/src apps/web/src/lib apps/web/src/i18n apps/web/integrations apps/docs/src apps/docs/integrations apps/docs/scripts",
+    "test:unit": "bun test --parallel=4 --timeout=30000 deploy/test apps/web/e2e/lib packages/core apps/server/src tools/fake-telegram/src tools/llm-replay/src apps/web/src/lib apps/web/src/i18n apps/web/integrations apps/docs/src apps/docs/integrations apps/docs/scripts",
     "test:int": "EA_TEST_WORKER_DB=1 bun test --parallel=4 --timeout=30000 apps/server/test tools/fake-telegram/test",
     "test:unit:ci": "bash scripts/ci-bun.sh run test:unit",
     "test:unit:changed": "bash scripts/test-unit-changed.sh",
