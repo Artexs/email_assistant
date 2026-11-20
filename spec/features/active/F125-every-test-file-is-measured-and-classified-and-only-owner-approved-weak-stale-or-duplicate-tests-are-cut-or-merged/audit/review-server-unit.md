@@ -1,6 +1,6 @@
 # Review: `apps/server/src` unit tests (F125 stage 05)
 
-Reader review by `plan.md` § Reader method, § Rules for the classes. Read-only on tests. Base of this review: `765d6690` (HEAD of the job after the merge of master).
+Reader review by `plan.md` § Reader method, § Rules for the classes. Read-only on tests. Base of this review: `a9c41b06` (HEAD of the job after the merge of master).
 
 Notes for the reader:
 
@@ -112,17 +112,29 @@ Notes for the reader:
 | B2 | `platform/db/tenant-scope.test.ts:9`, `apps/server/test/integration/web-tenant-scope.test.ts:260` | B | KEEP | K3 | – | Same one-line body, two intents: unit "outside any scope the scope is null" and int "no scope is left in the test process" (a leak guard after the suite of `web-tenant-scope.test.ts`). Tenant isolation. Not a unit/int pair of one behaviour. | 0 | 0.000 |
 | B3 | `sender-context-docs.test.ts:51`, `trust-docs.test.ts:49` | B | KEEP | K2 | – | Same loop text over different arrays (contacts jobs vs trust jobs); each guards that the docs name its own jobs. Completeness check of docs against jobs. | 0 | 0.000 |
 | T4 | `composition.test.ts:226`, `composition.test.ts:243`, `composition.test.ts:457` | T | KEEP | unsure | – | Three source-pin tests of different wirings (job-run committer deps get a token store, reply-check-copy opener gets a token store, the web passes the gate to the settings deps builder) in different describes; one `test.each` would save about 6 lines and hide the wiring each one names. | 0 | 0.000 |
+| T5 | `modules/borders.test.ts:21`, `modules/borders.test.ts:34`, `modules/borders.test.ts:47` … (6) | T | KEEP | K2 | – | borders.test.ts is a named K2 file (the module border lint). A `test.each` over (fixture, code, message) would keep every input and save about 30 lines; K2 wins, so it is a note for the owner, not a proposal. | 0 | 0.949 |
+| T6 | `modules/borders.test.ts:73`, `modules/borders.test.ts:85`, `modules/borders.test.ts:123` … (4) | T | KEEP | K2 | – | Same as T5: border lint cases. A table would save about 15 lines; K2 wins. | 0 | 0.056 |
+| T7 | `modules/borders.test.ts:146`, `modules/borders.test.ts:159`, `modules/borders.test.ts:172` … (4) | T | KEEP | K2 | – | Same as T5: border lint "passes" cases. A table would save about 20 lines; K2 wins. | 0 | 0.047 |
+| T8 | `platform/log-lint.test.ts:28`, `platform/log-lint.test.ts:36`, `platform/log-lint.test.ts:44` … (6) | T | MERGE-TABLE | none | – | Table header `["name","fixture file","code line","expected severities"]`, 6 rows (template literal, free text, `${` string, three arguments, child logger with a template literal, call with no argument). Each row keeps the old name. These check the shape rule of the lint, not that a secret stays out of a log line, so K3 does not apply. | 16 | 0.135 |
+| T9 | `platform/log-lint.test.ts:98`, `platform/log-lint.test.ts:121`, `platform/log-lint.test.ts:129` … (5) | T | MERGE-TABLE | none | – | Table header `["name","fixture file","code line","expected severities"]`, 5 rows of lines that must pass (member logger with an event code, event code with fields, event code alone, child logger with an event code, console call). Each row keeps the old name. | 17 | 0.081 |
+| T10 | `platform/log-lint.test.ts:165`, `platform/log-lint.test.ts:175`, `platform/log-lint.test.ts:195` … (10) | T | MERGE-TABLE | none | – | Table header `["name","fixture file","import path","code line","expected severities"]`, 10 rows (platform, scripts, channels/sender.ts, channels/telegram/, another channels file, channels/notices/, delegation, triage, root file web.ts, testmail). Each row keeps the old name; the folder list stays one input per row. | 78 | 0.182 |
+| T11 | `scripts/job-run-args.test.ts:12`, `scripts/job-run-args.test.ts:17`, `scripts/job-run-args.test.ts:22` … (6) | T | MERGE-TABLE | none | – | Table `test.each(["platform.retention","loops.analyze","loops.match","contacts.refresh","replies.drafter","replies.sweep"])("parses %s and refuses --force for it", ...)`; the body is the same two expects with the name filled in. | 22 | 0.000 |
+| T12 | `scripts/sim-compose-rules.test.ts:35`, `scripts/sim-compose-rules.test.ts:115`, `scripts/sim-compose-rules.test.ts:144` … (4) | T | KEEP | K3 | – | The refused-form cases of the sim Compose guard (guard not first, entrypoint set, `extends`, ports as a string): they keep the sim stack away from the production env file, Docker socket and volumes. A table would save about 12 lines; K3 wins. | 0 | 0.000 |
+| `comment-codes.test.ts:90` | `comment-codes.test.ts:90` | S9 | KEEP | K2 | – | Repo-wide scan for bare ticket codes in comments (a code-pattern rule). Slow because it reads every source file (3 s, a 60 s timeout is set). No twin. | 0 | 3.018 |
+| `platform/scheduler.test.ts:16` | `platform/scheduler.test.ts:16` | S9 | KEEP | unsure | – | Time-driven: the cron granularity is one second, so the test waits for real ticks. Speed is the parallel-runs ticket, not this one. Asserts exact run counts and no overlap. | 0 | 2.151 |
+| `platform/scheduler.test.ts:85` | `platform/scheduler.test.ts:85` | S9 | KEEP | unsure | – | Time-driven: it waits for a witness tick to show that the stopped jobs did not run. Exact asserts. | 0 | 1.010 |
+| `platform/sim-files.test.ts:160` | `platform/sim-files.test.ts:160` | S9 | KEEP | none | – | Slow because it starts CLI processes (the 60 s timeout says so). Asserts exact exit codes, manifest content and the status line. | 0 | 1.232 |
+| `platform/sim-files.test.ts:442` | `platform/sim-files.test.ts:442` | S9 | KEEP | none | – | Slow because it starts CLI processes (the 60 s timeout says so). Asserts exact exit codes, manifest content and the status line. | 0 | 2.328 |
 
 ## Summary
 
-- Items selected: 113. Items in this file: 100. Read: 100. Not read: 13.
-- This is a checkpoint; the next rows follow.
+- Items selected: 113. Items in this file: 113. Read: 113. Not read: 0.
 
 | Action | Rows | Cases in rows | Lines | Time of cases (s) |
 | --- | --- | --- | --- | --- |
-| KEEP | 84 | 89 | 0 | 4.768 |
+| KEEP | 93 | 112 | 0 | 15.559 |
 | DELETE-DUP | 0 | 0 | 0 | 0.000 |
-| MERGE-TABLE | 0 | 0 | 0 | 0.000 |
+| MERGE-TABLE | 4 | 27 | 133 | 0.398 |
 | REWRITE-WEAK | 16 | 16 | 0 | 0.032 |
 | DELETE-STALE | 0 | 0 | 0 | 0.000 |
 | MOVE-TO-UNIT | 0 | 0 | 0 | 0.000 |
