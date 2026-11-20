@@ -26,6 +26,7 @@ const ROOT = path.resolve(import.meta.dir, "../../..");
 const read = (file: string): string => readFileSync(path.join(ROOT, file), "utf8");
 const privacy = { en: read("apps/web/src/legal/en/privacy.md"), pl: read("apps/web/src/legal/pl/privacy.md") };
 const claims = read("docs/legal/claims.md");
+const dpia = read("docs/legal/dpia.md");
 
 /** The table line of a claim: the line whose first cell is the id. */
 function claimLine(id: string): string {
@@ -126,5 +127,19 @@ describe("the outside calls of the privacy papers", () => {
 
   test("the deploy guide no longer says that the privacy page lacks the one-click request", () => {
     expect(read("deploy/README.md")).not.toContain("does not yet name the one-click request");
+  });
+});
+
+describe("dpia", () => {
+  test("the DPIA holds the body cap, the age limit and the body of the one-click request", () => {
+    expect(dpia).toContain(bodyCap.en);
+    expect(dpia).toContain(ageLimit.en);
+    expect(dpia).toContain(ONE_CLICK_BODY);
+  });
+
+  test("the DPIA has the risk R10 with the levels medium and low, and a row of measures for it", () => {
+    const rows = dpia.split("\n").filter((line) => line.split("|")[1]?.trim() === "R10");
+    expect(rows.length).toBe(3);
+    expect(/\|\s*medium\s*\|\s*low\s*\|$/.test(rows[0] ?? "")).toBe(true);
   });
 });
