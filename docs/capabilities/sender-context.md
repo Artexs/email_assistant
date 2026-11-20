@@ -26,26 +26,31 @@ The assistant keeps a count-only profile of each sender of a mailbox: mails, ans
 
 ## Entry points
 
-| Kind     | Name                                                  | Where                                                      |
-| -------- | ----------------------------------------------------- | ---------------------------------------------------------- |
-| job      | `contacts.refresh` (hourly, minute 7)                 | `apps/server/src/modules/contacts/jobs.ts`                 |
-| CLI      | `bun run job:run contacts.refresh`                    | `apps/server/src/scripts/job-run.ts`                       |
-| CLI      | `bun run org:flag --org-id <uuid> --flag <key> --on`  | `apps/server/src/scripts/org-flag.ts`                      |
-| function | `refreshMailboxProfiles`, `readProfiles`              | `apps/server/src/modules/contacts/refresh.ts`              |
-| function | `readSenderActivity` (the 90-day read)                | `apps/server/src/modules/contacts/activity.ts`             |
-| function | `acceptSuggestion`, `dismissSuggestion`               | `apps/server/src/modules/contacts/suggestion-commands.ts`  |
-| function | `refreshSuggestions`, `suggestionBlockedNow`          | `apps/server/src/modules/contacts/suggest.ts`              |
-| function | `readSenderLines`, `senderLineOf`                     | `apps/server/src/modules/contacts/lines.ts`                |
-| function | `contactWaitFor`                                      | `apps/server/src/modules/contacts/wait.ts`                 |
-| function | `deleteOldProfiles`, `deleteEndedSuggestions`         | `apps/server/src/modules/contacts/privacy.ts`              |
-| function | `senderContextRowsOf`, `deleteSenderContextRowsOf`    | `apps/server/src/modules/contacts/privacy.ts`              |
-| function | `senderProfileReader` (the classifier reader)         | `apps/server/src/composition.ts`                           |
-| function | `senderKeyHash`                                       | `apps/server/src/platform/crypto.ts`                       |
-| route    | `GET /api/suggestions/:mailboxId`, `POST …/accept`, `POST …/dismiss` | `apps/server/src/modules/contacts/routes.ts` |
-| page     | the Suggestions card of the Rules page                | `apps/web/src/components/rules/SuggestionsCard.tsx`        |
-| page     | the sender line of Activity and Approvals             | `apps/web/src/lib/activity-text.ts`                        |
-| function | `suggestionsFor` and the wait rules (pure)            | `packages/core/src/contacts/suggestions.ts`                |
-| function | `contactWaitDays`, `usualReplyDays` (pure)            | `packages/core/src/contacts/wait.ts`                       |
+| Kind     | Name                                                                 | Where                                                        |
+| -------- | -------------------------------------------------------------------- | ------------------------------------------------------------ |
+| job      | `contacts.refresh` (hourly, minute 7)                                | `apps/server/src/modules/contacts/jobs.ts`                   |
+| CLI      | `bun run job:run contacts.refresh`                                   | `apps/server/src/scripts/job-run.ts`                         |
+| CLI      | `bun run org:flag --org-id <uuid> --flag <key> --on`                 | `apps/server/src/scripts/org-flag.ts`                        |
+| function | `refreshMailboxProfiles`, `readProfiles`                             | `apps/server/src/modules/contacts/refresh.ts`                |
+| function | `readSenderActivity` (composes the readers below)                    | `apps/server/src/modules/contacts/activity.ts`               |
+| function | `senderWindow`, `incomingCountsBySender`, `ownAddressesOf`           | `apps/server/src/modules/mail/repo/sender-activity.ts`       |
+| function | `sentCountsByRecipient`, `repliedBySentBySender`                     | `apps/server/src/modules/mail/repo/sender-replies.ts`        |
+| function | `userReplyDelaysBySender`, `theirReplyDelaysBySender`                | `apps/server/src/modules/mail/repo/sender-delays.ts`         |
+| function | `newestResultsBySender`, `newestFeedbackBySender`                    | `apps/server/src/modules/triage/repo/sender-activity.ts`     |
+| function | `delegationCountsByDelegateAddress`                                  | `apps/server/src/modules/delegation/repo/sender-activity.ts` |
+| function | `acceptSuggestion`, `dismissSuggestion`                              | `apps/server/src/modules/contacts/suggestion-commands.ts`    |
+| function | `refreshSuggestions`, `suggestionBlockedNow`                         | `apps/server/src/modules/contacts/suggest.ts`                |
+| function | `readSenderLines`, `senderLineOf`                                    | `apps/server/src/modules/contacts/lines.ts`                  |
+| function | `contactWaitFor`                                                     | `apps/server/src/modules/contacts/wait.ts`                   |
+| function | `deleteOldProfiles`, `deleteEndedSuggestions`                        | `apps/server/src/modules/contacts/privacy.ts`                |
+| function | `senderContextRowsOf`, `deleteSenderContextRowsOf`                   | `apps/server/src/modules/contacts/privacy.ts`                |
+| function | `senderProfileReader` (the classifier reader)                        | `apps/server/src/composition.ts`                             |
+| function | `senderKeyHash`                                                      | `apps/server/src/platform/crypto.ts`                         |
+| route    | `GET /api/suggestions/:mailboxId`, `POST …/accept`, `POST …/dismiss` | `apps/server/src/modules/contacts/routes.ts`                 |
+| page     | the Suggestions card of the Rules page                               | `apps/web/src/components/rules/SuggestionsCard.tsx`          |
+| page     | the sender line of Activity and Approvals                            | `apps/web/src/lib/activity-text.ts`                          |
+| function | `suggestionsFor` and the wait rules (pure)                           | `packages/core/src/contacts/suggestions.ts`                  |
+| function | `contactWaitDays`, `usualReplyDays` (pure)                           | `packages/core/src/contacts/wait.ts`                         |
 
 ## Data
 

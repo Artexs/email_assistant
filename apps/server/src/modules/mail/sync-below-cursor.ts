@@ -79,7 +79,9 @@ export async function checkReturnedBelowCursor(
 
   for (let offset = 0; offset < rows.length; offset += RETURN_CHECK_CHUNK) {
     const chunk = rows.slice(offset, offset + RETURN_CHECK_CHUNK);
-    const uids = [...new Set(chunk.flatMap((row) => (row.inbox_uid === null ? [row.uid] : [row.inbox_uid, row.uid])))];
+    const uids = [
+      ...new Set(chunk.flatMap((row) => (row.source_uid === null ? [row.uid] : [row.source_uid, row.uid]))),
+    ];
     const metas = await deps.provider.fetchByUidsIn(folder.path, uids);
     // A meta at a UID that a row of its identity holds in the folder is that row's mail (a stored copy), not a return.
     const held = await listFolderRowsAtUids(
