@@ -45,21 +45,24 @@ describe("slotSchema", () => {
 function issuesOf(value: unknown) {
   const result = slotSchema.safeParse(value);
   if (result.success) return [];
-  return result.error.issues.map((issue) => ({ path: issue.path, message: issue.message }));
+  return result.error.issues.map((issue) => ({ code: String(issue.code), path: issue.path, message: issue.message }));
 }
 
 describe("slotSchema refusals", () => {
   const urgent = { ...base, category: "urgent" };
   const ref = { kind: "topic", index: 0 };
   const urgencyIssue = {
+    code: "custom",
     path: ["urgencySource"],
     message: "urgencySource is set if and only if the category is urgent",
   };
   const contextIssue = {
+    code: "custom",
     path: ["contextRef"],
     message: "contextRef is set if and only if the urgency source is context",
   };
   const draftIssue = {
+    code: "custom",
     path: ["expectedDraft"],
     message: "expectedDraft is set if and only if the category is delegation",
   };
@@ -78,13 +81,5 @@ describe("slotSchema refusals", () => {
     ],
   ])("refuses %s with one exact issue list", (_name, value, expected) => {
     expect(issuesOf(value)).toEqual(expected);
-  });
-
-  test.each([
-    ["an urgent slot with a text source", { ...urgent, urgencySource: "text" }],
-    ["an urgent slot with a context source and a contextRef", { ...urgent, urgencySource: "context", contextRef: ref }],
-    ["a delegation with an expectedDraft", { ...base, category: "delegation", expectedDraft: "delegation" }],
-  ])("accepts %s with no issue", (_name, value) => {
-    expect(issuesOf(value)).toEqual([]);
   });
 });

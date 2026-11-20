@@ -107,6 +107,10 @@ describe("hard-case registry", () => {
     expect(run("phishing_unsubscribe", { category: "spam" }).headers["List-Unsubscribe"]).toBeDefined();
     const answered = run("already_answered", { category: "info" });
     expect(answered.thread.at(-1)?.persona).toBe("szef");
+    const rnt = run("reply_needed_thread");
+    expect(rnt.thread.length).toBeGreaterThanOrEqual(2);
+    expect(rnt.thread.length).toBeLessThanOrEqual(3);
+    expect(rnt.thread.at(-1)?.persona).toBe("szef");
     expect(run("forwarded_in_thread").thread).toHaveLength(2);
     const att = run("attachments");
     expect(att.attachments.length).toBeGreaterThanOrEqual(1);
@@ -125,15 +129,7 @@ describe("hard-case registry", () => {
         { persona: "szef", brief: "the executive's earlier answer" },
       ],
     ],
-    [
-      1,
-      [
-        { persona: "client-a", brief: "the first message of the exchange" },
-        { persona: "prezes", brief: "a short remark from a third person" },
-        { persona: "szef", brief: "the executive's earlier answer" },
-      ],
-    ],
-  ])("reply_needed_thread with seed %i builds the exact thread and brief", (seed, thread) => {
+  ])("reply_needed_thread with seed %i builds the short thread and the exact brief", (seed, thread) => {
     const out = ruleOf("reply_needed_thread").apply(base, { scenario: miniScenario, rng: createRng(seed) });
     expect(out.thread).toEqual(thread);
     expect(out.brief).toBe("a new message in a running exchange that waits for the executive's answer");

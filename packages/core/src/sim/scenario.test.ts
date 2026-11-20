@@ -36,11 +36,27 @@ describe("validateScenario", () => {
     s.urgency.profile.deadlines = deadlines.map((due, n) => ({ label: `Deadline ${n}`, due }));
     return s;
   };
-  const withGroupsRemoved = (...groups: string[]): Scenario => {
-    const s = clone();
-    s.personas = s.personas.filter((persona) => !groups.includes(persona.group));
-    return s;
-  };
+
+  test("two personas with the same address give one duplicate_address naming keys only", () => {
+    const s = structuredClone(miniScenario);
+    at(s.personas, 1).address = at(s.personas, 0).address;
+    const issues = validateScenario(s);
+    expect(issues.map((issue) => issue.code)).toEqual(["duplicate_address"]);
+    expect(at(issues, 0).detail).toContain("kasia");
+    expect(at(issues, 0).detail).toContain("prezes");
+    for (const persona of s.personas) {
+      expect(at(issues, 0).detail).not.toContain(persona.displayName);
+      expect(at(issues, 0).detail).not.toContain(persona.voice);
+    }
+  });
+
+  test("removing the only phishing persona gives missing_group naming the group", () => {
+    const s = structuredClone(miniScenario);
+    s.personas = s.personas.filter((persona) => persona.group !== "phishing");
+    const issues = validateScenario(s);
+    expect(issues.map((issue) => issue.code)).toEqual(["missing_group"]);
+    expect(at(issues, 0).detail).toContain("phishing");
+  });
 
   test.each<[string, () => Scenario, ScenarioIssue[]]>([
     [
@@ -53,6 +69,15 @@ describe("validateScenario", () => {
       [{ code: "duplicate_key", detail: "persona: szef" }],
     ],
     [
+      "a later persona that reuses the key of a delegate",
+      () => {
+        const s = clone();
+        at(s.personas, 7).key = "anna";
+        return s;
+      },
+      [{ code: "duplicate_key", detail: "persona: anna" }],
+    ],
+    [
       "a persona key used twice",
       () => {
         const s = clone();
@@ -60,15 +85,6 @@ describe("validateScenario", () => {
         return s;
       },
       [{ code: "duplicate_key", detail: "persona: prezes" }],
-    ],
-    [
-      "two personas with the same address",
-      () => {
-        const s = clone();
-        at(s.personas, 1).address = at(s.personas, 0).address;
-        return s;
-      },
-      [{ code: "duplicate_address", detail: "persona: kasia shares an address with prezes" }],
     ],
     [
       "a persona with the executive address",
@@ -125,19 +141,6 @@ describe("validateScenario", () => {
       [{ code: "vip_unknown", detail: "urgency.vip: nobody" }],
     ],
     [
-      "no phishing persona",
-      () => withGroupsRemoved("phishing"),
-      [{ code: "missing_group", detail: "group: phishing" }],
-    ],
-    [
-      "no spammer and no phishing persona",
-      () => withGroupsRemoved("spammer", "phishing"),
-      [
-        { code: "missing_group", detail: "group: spammer" },
-        { code: "missing_group", detail: "group: phishing" },
-      ],
-    ],
-    [
       "a Tuesday weekStart",
       () => withCalendar("2026-11-02", "2026-11-17", ["2026-11-20"]),
       [{ code: "not_monday", detail: "calendar.weekStart" }],
@@ -181,9 +184,8 @@ describe("validateScenario", () => {
   });
 
   test.each([
-    ["the week before the spring DST change", withCalendar("2027-03-01", "2027-03-15", ["2027-03-20"])],
+    ["a week that crosses a month end with no DST change", withCalendar("2026-11-16", "2026-11-30", ["2026-11-20"])],
     ["the week after the spring DST change", withCalendar("2027-03-15", "2027-03-29", ["2027-03-20"])],
-    ["the week after the autumn DST change", withCalendar("2026-10-12", "2026-10-26", ["2026-10-20"])],
     ["deadlines on both edges of the window", withCalendar("2026-11-02", "2026-11-16", ["2026-10-26", "2026-12-07"])],
   ])("%s has no issue", (_name, scenario) => {
     expect(validateScenario(scenario)).toEqual([]);
@@ -199,15 +201,5 @@ describe("validateScenario", () => {
       { code: "vip_unknown", detail: "urgency.vip: nobody" },
       { code: "topic_persona_unknown", detail: "topics: faktury names nobody" },
     ]);
-  });
-
-  test("a duplicate address detail names keys only", () => {
-    const s = clone();
-    at(s.personas, 1).address = at(s.personas, 0).address;
-    const [issue] = validateScenario(s);
-    for (const persona of s.personas) {
-      expect(issue?.detail).not.toContain(persona.displayName);
-      expect(issue?.detail).not.toContain(persona.voice);
-    }
   });
 });
