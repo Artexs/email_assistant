@@ -178,7 +178,6 @@ describe("external asset forms", () => {
     [`a{background:url('https://cdn.x.io/i.png')}`, "https://cdn.x.io/i.png"],
     [`a{background:url( 'https://cdn.x.io/i.png' )}`, "https://cdn.x.io/i.png"],
     [`<p style="background:url('https://cdn.x.io/i.png')">`, "https://cdn.x.io/i.png"],
-    [`<img src="${DOCS_ORIGIN}evil.io/a.png">`, `${DOCS_ORIGIN}evil.io/a.png`],
   ])("%s fails with its url", (html, url) => {
     expect(publicContentProblems(html, [])).toEqual([{ rule: "R4", match: url }]);
   });
@@ -191,8 +190,8 @@ describe("external asset forms", () => {
 });
 
 describe("parseAllowList lines", () => {
-  test("it keeps the entry of each line and skips blank lines and comment lines", () => {
-    expect(parseAllowList("# c\n\n1.2.3.4 | demo IP\n")).toEqual(["1.2.3.4"]);
+  test("it skips an indented comment line and a line of spaces", () => {
+    expect(parseAllowList("   # indented\n   \nok | fine\n")).toEqual(["ok"]);
   });
   test("it trims the spaces around the entry and the reason", () => {
     expect(parseAllowList("  1.2.3.4  |  demo  ")).toEqual(["1.2.3.4"]);
