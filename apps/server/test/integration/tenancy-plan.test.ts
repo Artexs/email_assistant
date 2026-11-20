@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -22,7 +23,7 @@ afterAll(async () => {
 });
 
 const now = new Date("2026-11-12T10:00:00Z");
-const dayMs = 24 * 60 * 60 * 1000;
+const dayMs = DAY_MS;
 const input = { actor: "operator", now };
 
 // A statement that must fail aborts the transaction: run it in a savepoint and roll back to it.

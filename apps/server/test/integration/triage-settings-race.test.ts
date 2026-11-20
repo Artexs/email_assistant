@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { expireReady, listActionsForEmail } from "../../src/modules/actions";
@@ -56,7 +57,7 @@ async function committedSetup() {
     const [email] = await claimEmails(db, ctx, created.mailboxId, {
       now,
       limit: 10,
-      staleBefore: new Date(now.getTime() - 5 * 60_000),
+      staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
       syntheticOnly: false,
     });
     if (!email) throw new Error("claim failed");

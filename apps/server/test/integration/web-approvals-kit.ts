@@ -19,7 +19,6 @@ import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 // card of every send, a second organization, and the approval routes with the real card hook. A test file builds one kit with its
 // own `db`; a kit shares no state with another file.
 export const NOW = new Date("2026-11-20T12:00:00Z");
-export const HOUR = 3_600_000;
 export const ROUTES = ["approve", "reject", "edit"] as const;
 export const bodyOf = (route: (typeof ROUTES)[number]) => (route === "edit" ? { subject: "Budget", body: "Text" } : {});
 

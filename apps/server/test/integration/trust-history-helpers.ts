@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import type { EvidenceKey } from "@ea/core";
 
 import type { SeedMessage } from "../../src/modules/mail";
@@ -17,10 +18,8 @@ import { createOrgWithMailbox } from "./fixtures";
 // Committed mailboxes for the tests of the history job. The job claims with a transaction of its own, so
 // these tests cannot run inside a rolled-back transaction. Every test removes its organization and its user in `finally`.
 // The fixed clock of a box: two hours ahead of the real time of the test, so a check that the database queues with `now()` is due.
-const CLOCK_AHEAD_MS = 2 * 3_600_000;
+const CLOCK_AHEAD_MS = 2 * HOUR_MS;
 export const HISTORY_UID_VALIDITY = 7;
-export const MINUTE_MS = 60_000;
-const DAY_MS = 86_400_000;
 
 export const historySecrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 

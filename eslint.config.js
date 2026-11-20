@@ -310,8 +310,6 @@ export default tseslint.config(
     ignores: [
       "packages/core/src/time.ts",
       "packages/core/src/time.test.ts", // it pins the three values
-      "apps/server/test/**", // these two folders still hold time literals; their fixes remove both lines
-      "tools/*/test/**",
     ],
     plugins: { ea },
     rules: { "ea/no-time-literals": "error" },

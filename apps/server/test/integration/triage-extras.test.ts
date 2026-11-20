@@ -1,5 +1,6 @@
 import { format } from "node:util";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import type { Category, UrgencyProfile } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
@@ -37,7 +38,6 @@ afterAll(async () => {
 
 afterEach(() => setLogLevel("info"));
 
-const DAY = 24 * 3_600_000;
 const now = new Date("2026-11-15T12:00:00Z");
 const V3_ALL: ClassifierPromptChoice = { version: "classifier-v3", parts: ["urgency", "history", "list"] };
 const V3_PLAIN: ClassifierPromptChoice = { version: "classifier-v3", parts: [] };
@@ -68,7 +68,7 @@ async function earlier(
   return insertTestEmail(trx, s.ctx, s.mailboxId, {
     from_address: opts.from ?? SENDER,
     status: "triaged",
-    received_at: opts.at ?? new Date(now.getTime() - (opts.ageDays ?? 5) * DAY),
+    received_at: opts.at ?? new Date(now.getTime() - (opts.ageDays ?? 5) * DAY_MS),
     ...(opts.messageId === undefined ? {} : { message_id_header: opts.messageId }),
   });
 }
@@ -96,7 +96,7 @@ async function claimed(trx: Transaction<DB>, s: Scene, emailId: string) {
   const mails = await claimEmails(trx, s.ctx, s.mailboxId, {
     now,
     limit: 10,
-    staleBefore: new Date(now.getTime() - 5 * 60_000),
+    staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
     syntheticOnly: false,
   });
   const email = mails.find((mail) => mail.id === emailId);
@@ -112,7 +112,7 @@ async function pending(
 ) {
   const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId, {
     from_address: opts.from ?? SENDER,
-    received_at: opts.receivedAt ?? new Date(now.getTime() - 60_000),
+    received_at: opts.receivedAt ?? new Date(now.getTime() - MINUTE_MS),
     subject: "Offer",
     body_text: "Please look at the offer.",
     ...(opts.messageId === undefined ? {} : { message_id_header: opts.messageId }),
@@ -265,12 +265,12 @@ describe("loadClassifierExtras in triage", () => {
       await feedback(trx, s, ids[1] as string, {
         verdict: "wrong",
         trueCategory: "urgent",
-        at: new Date(now.getTime() - 2 * DAY),
+        at: new Date(now.getTime() - 2 * DAY_MS),
       });
       await feedback(trx, s, ids[1] as string, {
         verdict: "right",
         trueCategory: null,
-        at: new Date(now.getTime() - DAY),
+        at: new Date(now.getTime() - DAY_MS),
       });
       // A "right" verdict is no correction, also when it names a category.
       await feedback(trx, s, ids[2] as string, { verdict: "right", trueCategory: "info", at: now });
@@ -293,7 +293,7 @@ describe("loadClassifierExtras in triage", () => {
       await earlier(trx, s, { ageDays: 89 });
       expect(await history(trx, s, email)).toEqual({ days: 90, received: 1, corrections: {} });
       // A mail that arrived after this one is not earlier mail.
-      await earlier(trx, s, { at: new Date(now.getTime() + DAY) });
+      await earlier(trx, s, { at: new Date(now.getTime() + DAY_MS) });
       expect(await history(trx, s, email)).toEqual({ days: 90, received: 1, corrections: {} });
     });
   });

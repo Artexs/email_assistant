@@ -1,5 +1,6 @@
 import { format } from "node:util";
 
+import { DAY_MS, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, beforeAll, describe, expect, spyOn, test } from "bun:test";
 
 import { queueHistoryCheck } from "../../src/modules/trust";
@@ -251,7 +252,7 @@ describe("11. the report-ready notice", () => {
         .set({
           status: "classifying",
           key: JSON.stringify(RUNNING_KEY),
-          window_start: new Date(box.clock.now.getTime() - 30 * 86_400_000),
+          window_start: new Date(box.clock.now.getTime() - 30 * DAY_MS),
           backfill_done_at: box.clock.now,
         })
         .where("id", "=", next.id)
@@ -272,7 +273,7 @@ describe("11. the report-ready notice", () => {
       };
       for (let run = 0; run < 3; run += 1) {
         await jobOf(db, box, { llm, hooks: { afterCall: crash } }).run();
-        advance(box, 6 * 60_000);
+        advance(box, 6 * MINUTE_MS);
       }
       const check = await checkOf(db, checkId);
       expect(check).toMatchObject({ status: "no_result", no_result_reason: "stopped" });
@@ -328,7 +329,7 @@ describe("no done or no_result row keeps finished_at empty", () => {
       await linkOwners(box);
       await db
         .updateTable("history_checks")
-        .set({ attempts: 2, locked_at: new Date(box.clock.now.getTime() - 3_600_000) })
+        .set({ attempts: 2, locked_at: new Date(box.clock.now.getTime() - HOUR_MS) })
         .where("id", "=", checkId)
         .execute();
       await jobOf(db, box).run();

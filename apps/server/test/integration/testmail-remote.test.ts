@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, 
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { parseSendLog, targetInputSchema, type Batch, type PersonaFile, type SendLogLine } from "@ea/core";
+import { parseSendLog, targetInputSchema, type Batch, type PersonaFile, type SendLogLine, MINUTE_MS } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { buildBundleFrom, buildReviewedBundle } from "../../src/modules/testmail/bundle";
@@ -437,17 +437,21 @@ describe("buildReviewedBundle", () => {
 });
 
 describe("bundle check", () => {
-  test("8. the real bundle holds no env value", async () => {
-    const outDir = mkdtempSync(join(tmpdir(), "testmail-bundle-"));
-    try {
-      const { text } = await buildBundleFrom(repoRoot, outDir);
-      // Key names only: a value must never reach the test output.
-      expect(findEnvValuesInBundle(text, process.env)).toEqual([]);
-      // Guards against an empty or wrong bundle that would pass the check by accident.
-      expect(text.length).toBeGreaterThan(1_000_000);
-      expect(text).toContain("deliverTestMail");
-    } finally {
-      rmSync(outDir, { recursive: true, force: true });
-    }
-  }, 60_000);
+  test(
+    "8. the real bundle holds no env value",
+    async () => {
+      const outDir = mkdtempSync(join(tmpdir(), "testmail-bundle-"));
+      try {
+        const { text } = await buildBundleFrom(repoRoot, outDir);
+        // Key names only: a value must never reach the test output.
+        expect(findEnvValuesInBundle(text, process.env)).toEqual([]);
+        // Guards against an empty or wrong bundle that would pass the check by accident.
+        expect(text.length).toBeGreaterThan(1_000_000);
+        expect(text).toContain("deliverTestMail");
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+      }
+    },
+    MINUTE_MS
+  );
 });

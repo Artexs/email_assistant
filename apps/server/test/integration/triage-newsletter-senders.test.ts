@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import type { DkimSignature } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
@@ -21,8 +22,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-15T12:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
 const TRUSTED = { trustedAuthservIds: ["interia.pl"] };
 const LINK = "<https://u.c.example/unsub?id=1>, <mailto:unsub@c.example>";
@@ -51,7 +50,7 @@ const signaturesJson = (value: DkimSignature[] | null): string | null =>
 async function mail(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string, m: Mail): Promise<string> {
   const id = await insertTriaged(trx, ctx, mailboxId, {
     category: m.category ?? "notification",
-    createdAt: m.at ?? ago(HOUR),
+    createdAt: m.at ?? ago(HOUR_MS),
     from: m.from,
     suspiciousReasons: m.reasons ?? [],
   });
@@ -66,7 +65,7 @@ async function mail(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string,
       list_unsubscribe_post: m.post ?? null,
       dkim_signatures: signaturesJson(m.signatures === undefined ? (m.post === true ? COVERING : null) : m.signatures),
       parts_known: true,
-      captured_at: m.at ?? ago(HOUR),
+      captured_at: m.at ?? ago(HOUR_MS),
     })
     .execute();
   return id;
@@ -219,11 +218,11 @@ describe("listNewsletterSenders", () => {
       await mail(trx, ctx, a.mailboxId, { from: "mixed@c.example", category: "needs_reply" });
       await mail(trx, ctx, a.mailboxId, { from: "unsure@c.example", category: "unsure" });
       // A spam mail older than 30 days does not block the sender; a mail with no result does not count.
-      await mail(trx, ctx, a.mailboxId, { from: "later@c.example", category: "spam", at: ago(31 * DAY) });
-      await mail(trx, ctx, a.mailboxId, { from: "later@c.example", category: "info", at: ago(2 * DAY), ...c });
-      await insertTestEmail(trx, ctx, a.mailboxId, { from_address: "later@c.example", received_at: ago(HOUR) });
+      await mail(trx, ctx, a.mailboxId, { from: "later@c.example", category: "spam", at: ago(31 * DAY_MS) });
+      await mail(trx, ctx, a.mailboxId, { from: "later@c.example", category: "info", at: ago(2 * DAY_MS), ...c });
+      await insertTestEmail(trx, ctx, a.mailboxId, { from_address: "later@c.example", received_at: ago(HOUR_MS) });
       // Only an old mail: no sender in the window.
-      await mail(trx, ctx, a.mailboxId, { from: "gone@c.example", at: ago(31 * DAY) });
+      await mail(trx, ctx, a.mailboxId, { from: "gone@c.example", at: ago(31 * DAY_MS) });
 
       const senders = await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED);
       expect(senders.map((s) => [s.senderLower, s.count])).toEqual([["later@c.example", 1]]);
@@ -235,17 +234,17 @@ describe("listNewsletterSenders", () => {
       const { a, ctx } = await setup(trx);
       const c = { link: LINK, post: ONE_CLICK, authResults: PASS };
       // Older mails are one-click, the newest has no post header: not one-click.
-      await mail(trx, ctx, a.mailboxId, { from: "news@c.example", at: ago(5 * DAY), fromName: "Old name", ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "news@c.example", at: ago(5 * DAY_MS), fromName: "Old name", ...c });
       const newest = await mail(trx, ctx, a.mailboxId, {
         from: "news@c.example",
-        at: ago(DAY),
+        at: ago(DAY_MS),
         fromName: "New name",
         ...c,
         post: false,
       });
-      await mail(trx, ctx, a.mailboxId, { from: "busy@c.example", category: "info", at: ago(3 * DAY) });
-      await mail(trx, ctx, a.mailboxId, { from: "busy@c.example", category: "info", at: ago(2 * DAY) });
-      await mail(trx, ctx, a.mailboxId, { from: "busy@c.example", category: "info", at: ago(10 * DAY) });
+      await mail(trx, ctx, a.mailboxId, { from: "busy@c.example", category: "info", at: ago(3 * DAY_MS) });
+      await mail(trx, ctx, a.mailboxId, { from: "busy@c.example", category: "info", at: ago(2 * DAY_MS) });
+      await mail(trx, ctx, a.mailboxId, { from: "busy@c.example", category: "info", at: ago(10 * DAY_MS) });
       // Retention cleared the header texts: no link, no auth results, the flag stays.
       await mail(trx, ctx, a.mailboxId, { from: "cleared@c.example", post: true, link: null, authResults: null });
 
@@ -258,7 +257,7 @@ describe("listNewsletterSenders", () => {
       expect(senders[1]).toMatchObject({
         fromName: "New name",
         latestEmailId: newest,
-        latestAt: ago(DAY),
+        latestAt: ago(DAY_MS),
         oneClick: false,
         hasLink: true,
       });
@@ -305,13 +304,13 @@ describe("the 30-day edge", () => {
     await withRollback(db, async (trx) => {
       const { a, ctx } = await setup(trx);
       const c = { link: LINK, post: ONE_CLICK };
-      await mail(trx, ctx, a.mailboxId, { from: "edge@c.example", at: ago(30 * DAY), ...c });
-      await mail(trx, ctx, a.mailboxId, { from: "outside@c.example", at: ago(30 * DAY + 1), ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "edge@c.example", at: ago(30 * DAY_MS), ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "outside@c.example", at: ago(30 * DAY_MS + 1), ...c });
       // A spam mail one millisecond outside the window does not block its sender; one exactly on the edge does.
-      await mail(trx, ctx, a.mailboxId, { from: "old-spam@c.example", at: ago(30 * DAY + 1), category: "spam" });
-      await mail(trx, ctx, a.mailboxId, { from: "old-spam@c.example", at: ago(DAY), ...c });
-      await mail(trx, ctx, a.mailboxId, { from: "edge-spam@c.example", at: ago(30 * DAY), category: "spam" });
-      await mail(trx, ctx, a.mailboxId, { from: "edge-spam@c.example", at: ago(DAY), ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "old-spam@c.example", at: ago(30 * DAY_MS + 1), category: "spam" });
+      await mail(trx, ctx, a.mailboxId, { from: "old-spam@c.example", at: ago(DAY_MS), ...c });
+      await mail(trx, ctx, a.mailboxId, { from: "edge-spam@c.example", at: ago(30 * DAY_MS), category: "spam" });
+      await mail(trx, ctx, a.mailboxId, { from: "edge-spam@c.example", at: ago(DAY_MS), ...c });
 
       const senders = await listNewsletterSenders(trx, ctx, a.mailboxId, NOW, TRUSTED);
       expect(senders.map((s) => [s.senderLower, s.count]).sort()).toEqual([

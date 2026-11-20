@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -24,10 +25,8 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const T = new Date("2026-11-11T10:00:00Z");
-const NOW = new Date(T.getTime() + HOUR);
+const NOW = new Date(T.getTime() + HOUR_MS);
 const MESSAGE_ID = "<a@ea-seed.test>";
 const SYNTHETIC: ActionsScope = { kind: "synthetic", testMail: NO_TEST_SENDERS };
 
@@ -172,7 +171,7 @@ describe("undoWithFeedback", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const old = await mailOf(trx, s, "info", [
-        { type: "flag", status: "applied", appliedAt: new Date(NOW.getTime() - 8 * DAY) },
+        { type: "flag", status: "applied", appliedAt: new Date(NOW.getTime() - 8 * DAY_MS) },
       ]);
       const logged = await mailOf(trx, s, "info", [{ type: "flag", status: "logged" }], "<b@ea-seed.test>");
 

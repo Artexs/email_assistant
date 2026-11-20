@@ -1,5 +1,6 @@
 import { format } from "node:util";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import { settingsDeps } from "../../src/composition";
@@ -346,7 +347,7 @@ describe("exactly once", () => {
       await addCorrected(db, box, { category: "info" }, { at: "2026-11-04T10:00:00Z" });
       await run();
       expect(await tripsOf(db, box)).toHaveLength(1);
-      const later = new Date(NOW.getTime() + 60_000);
+      const later = new Date(NOW.getTime() + MINUTE_MS);
       const result = await setCategoryAutoWithEvidence(
         { settings: settingsDeps(db, () => later, GO_GATE), testMail: { senders: [] } },
         box,
@@ -392,7 +393,7 @@ describe("exactly once", () => {
     await withTripBox(db, { grants: [{ category: "info" }] }, async (box) => {
       await addCorrected(db, box, { category: "info" }, { at: "2026-11-03T10:00:00Z" });
       await addCorrected(db, box, { category: "info" }, { at: "2026-11-04T10:00:00Z" });
-      const later = new Date(NOW.getTime() - 60_000);
+      const later = new Date(NOW.getTime() - MINUTE_MS);
       await tripwireOf(db, {
         hooks: {
           beforeTrip: async () => {

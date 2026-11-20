@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { noDelegationHooks } from "../../src/modules/actions";
@@ -28,7 +29,6 @@ afterAll(async () => {
 
 // The Telegram runtime hands WEB_BASE_URL to its sender, so a message at the minimal level ends with a link to the panel.
 const T0 = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
 const TOKEN = "123456:DETAILRUNTIMETOKENaaaaaaaaaaaaaaaaaaaaaaaa";
 const CANARY = "CANARY-SUBJECT-5d2e";
 
@@ -61,8 +61,8 @@ async function sentTexts(webBaseUrl: string | undefined): Promise<string[]> {
       const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
       const ctx = { orgId };
       await insertDefaultSettings(trx, ctx, mailboxId);
-      await markSynced(trx, ctx, mailboxId, new Date(T0.getTime() - 5 * MINUTE));
-      await linkChat(trx, ctx, userId, randomChatId(), new Date(T0.getTime() - 60 * MINUTE));
+      await markSynced(trx, ctx, mailboxId, new Date(T0.getTime() - 5 * MINUTE_MS));
+      await linkChat(trx, ctx, userId, randomChatId(), new Date(T0.getTime() - HOUR_MS));
       await setOrgFeature(trx, ctx, { flag: "telegram_minimal", enabled: true, actor: "cli", now: T0 });
       // A new member is `minimal`.
       const emailId = await insertTestEmail(trx, ctx, mailboxId);
@@ -81,7 +81,7 @@ async function sentTexts(webBaseUrl: string | undefined): Promise<string[]> {
         db: trx,
         token: TOKEN,
         now: () => T0,
-        startedAt: new Date(T0.getTime() - 60 * MINUTE),
+        startedAt: new Date(T0.getTime() - HOUR_MS),
         llmDailyCap: 300,
         triageScope: "synthetic",
         actionsScope: { kind: "off" },

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import type { Category, SuspiciousReason } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -30,7 +31,6 @@ afterAll(async () => {
 });
 
 const now = new Date("2026-11-15T12:00:00Z");
-const DAY = 24 * 3_600_000;
 
 const reasonCodes: Record<Category, string> = {
   urgent: "newsletter",
@@ -148,7 +148,7 @@ async function earlierMail(
   const emailId = await insertTestEmail(trx, ctx, mailboxId, {
     from_address: from,
     status: "triaged",
-    received_at: new Date(now.getTime() - (result.ageDays ?? 5) * DAY),
+    received_at: new Date(now.getTime() - (result.ageDays ?? 5) * DAY_MS),
   });
   await insertTriageResult(trx, ctx, {
     emailId,
@@ -198,7 +198,7 @@ async function triaged(
 ) {
   const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId, {
     from_address: mail.from,
-    received_at: new Date(now.getTime() - 60_000),
+    received_at: new Date(now.getTime() - MINUTE_MS),
   });
   if (mail.headers !== null && mail.headers !== undefined) await insertHeaders(trx, s.ctx, emailId, mail.headers);
   await runJob(trx, llm, opts);
@@ -350,7 +350,7 @@ describe("a flagged delegation mail from the Junk folder (D6, review TG2)", () =
   async function junkMail(trx: Transaction<DB>, s: Scene, from: string): Promise<string> {
     return insertTestEmail(trx, s.ctx, s.mailboxId, {
       from_address: from,
-      received_at: new Date(now.getTime() - 60_000),
+      received_at: new Date(now.getTime() - MINUTE_MS),
       source_folder: "Junk",
     });
   }
@@ -580,7 +580,7 @@ describe("forged Authentication-Results through real capture (D2, review TG1)", 
     const emailId = await insertTestEmail(trx, s.ctx, s.mailboxId, {
       from_address: "boss@somewhere.test",
       dedup_key: dedupKey,
-      received_at: new Date(now.getTime() - 60_000),
+      received_at: new Date(now.getTime() - MINUTE_MS),
     });
     expect(await insertEmailHeaders(trx, s.ctx, { mailboxId: s.mailboxId, dedupKey }, content.capture, now)).toBe(true);
     await runJob(trx, fakeLlm("info"));
@@ -694,7 +694,7 @@ describe("tenant scope (test 9)", () => {
       const vipMail = await insertTestEmail(trx, a.ctx, a.mailboxId, {
         from_address: "ceo@a-vip.test",
         status: "triaged",
-        received_at: new Date(now.getTime() - 3 * DAY),
+        received_at: new Date(now.getTime() - 3 * DAY_MS),
       });
       await insertHeaders(trx, a.ctx, vipMail, { fromName: "Adam Prezes" });
       for (const fromName of ["Zofia Nowak", "Piotr Wisniewski", "Adam Prezes"]) {
@@ -726,13 +726,13 @@ describe("tenant scope (test 9)", () => {
       const otherOrgMail = await insertTestEmail(trx, bCtx, b.mailboxId, {
         from_address: "ceo@shared-vip.test",
         status: "triaged",
-        received_at: new Date(now.getTime() - DAY),
+        received_at: new Date(now.getTime() - DAY_MS),
       });
       await insertHeaders(trx, bCtx, otherOrgMail, { fromName: "Karol Obcy" });
       const otherMailboxMail = await insertTestEmail(trx, a.ctx, secondId, {
         from_address: "ceo@shared-vip.test",
         status: "triaged",
-        received_at: new Date(now.getTime() - DAY),
+        received_at: new Date(now.getTime() - DAY_MS),
       });
       await insertHeaders(trx, a.ctx, otherMailboxMail, { fromName: "Marek Inny" });
       for (const fromName of ["Karol Obcy", "Marek Inny"]) {

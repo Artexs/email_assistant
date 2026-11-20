@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { senderProfileReader } from "../../src/composition";
@@ -215,14 +216,14 @@ describe("loadClassifierExtras reads the profile for the part profile", () => {
       async function run(reader: Reader | undefined): Promise<{ system: string; user: string }> {
         const id = await insertTestEmail(trx, org.ctx, org.mailboxId, {
           from_address: ANNA,
-          received_at: new Date(NOW.getTime() - 60_000),
+          received_at: new Date(NOW.getTime() - MINUTE_MS),
           subject: "Offer",
           body_text: "Please look at the offer.",
         });
         const mails = await claimEmails(trx, org.ctx, org.mailboxId, {
           now: NOW,
           limit: 10,
-          staleBefore: new Date(NOW.getTime() - 5 * 60_000),
+          staleBefore: new Date(NOW.getTime() - 5 * MINUTE_MS),
           syntheticOnly: false,
         });
         const email = mails.find((mail) => mail.id === id);

@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -100,12 +101,12 @@ for (const [role, conn] of [
         if (other === null) throw new Error("second check not queued");
         await appDb
           .updateTable("history_checks")
-          .set({ next_attempt_at: later(box, -2 * 60_000) })
+          .set({ next_attempt_at: later(box, -2 * MINUTE_MS) })
           .where("id", "=", other)
           .execute();
         await appDb
           .updateTable("history_checks")
-          .set({ next_attempt_at: later(box, -60_000) })
+          .set({ next_attempt_at: later(box, -MINUTE_MS) })
           .where("id", "=", first)
           .execute();
         const one = await claimNextCheck(conn, box, box.clock.now);
@@ -146,7 +147,7 @@ for (const [role, conn] of [
         const id = await queue(box);
         await appDb
           .updateTable("history_checks")
-          .set({ locked_at: later(box, -(HISTORY_LOCK_STALE_MS + 60_000)), attempts: 1 })
+          .set({ locked_at: later(box, -(HISTORY_LOCK_STALE_MS + MINUTE_MS)), attempts: 1 })
           .where("id", "=", id)
           .execute();
         const results = await Promise.all(
@@ -162,7 +163,7 @@ for (const [role, conn] of [
         const id = await queue(box);
         await appDb
           .updateTable("history_checks")
-          .set({ locked_at: later(box, -(HISTORY_LOCK_STALE_MS + 60_000)), attempts: 2, status: "backfilling" })
+          .set({ locked_at: later(box, -(HISTORY_LOCK_STALE_MS + MINUTE_MS)), attempts: 2, status: "backfilling" })
           .where("id", "=", id)
           .execute();
         const results = await Promise.all(
@@ -183,7 +184,7 @@ for (const [role, conn] of [
         await queue(box);
         const first = await claimed(conn, box);
         // Eleven minutes later a second run takes the stale lock back.
-        box.clock.now = later(box, HISTORY_LOCK_STALE_MS + 60_000);
+        box.clock.now = later(box, HISTORY_LOCK_STALE_MS + MINUTE_MS);
         const second = await claimed(conn, box);
         expect(second.attempts).toBe(1);
         const before = await theCheck(appDb, box);
@@ -225,7 +226,7 @@ for (const [role, conn] of [
         const id = await queue(box);
         await appDb
           .updateTable("history_checks")
-          .set({ next_attempt_at: later(box, 60_000) })
+          .set({ next_attempt_at: later(box, MINUTE_MS) })
           .where("id", "=", id)
           .execute();
         expect(await claimNextCheck(conn, box, box.clock.now)).toEqual({ kind: "none" });
@@ -252,7 +253,7 @@ for (const [role, conn] of [
       await withHistoryBox(appDb, { mails: 0 }, async (box) => {
         await queue(box);
         const first = await claimed(conn, box);
-        box.clock.now = later(box, HISTORY_LOCK_STALE_MS + 60_000);
+        box.clock.now = later(box, HISTORY_LOCK_STALE_MS + MINUTE_MS);
         const [failed, taken] = await Promise.all([
           failStep(conn, box, first, box.clock.now),
           claimNextCheck(conn, box, box.clock.now),

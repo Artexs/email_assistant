@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { securityLogSchema } from "@ea/core";
+import { securityLogSchema, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { auditEvents, recordAudit } from "../../src/modules/audit";
@@ -13,7 +13,6 @@ import { as, noBackupCodes, webOrg, webTestApp, type WebOrg } from "./web-helper
 const db = testDb();
 const off = { kind: "off", reason: "env_off" } as const;
 const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
 const ago = (ms: number) => new Date(NOW.getTime() - ms);
 
 let org: WebOrg;
@@ -69,16 +68,16 @@ afterAll(async () => {
 });
 
 async function seedFixtureRows() {
-  await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago(HOUR), { via: "web" });
-  await audit(org.orgId, auditEvents.webLoginLocked, org.assistantId, ago(2 * HOUR), {
+  await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago(HOUR_MS), { via: "web" });
+  await audit(org.orgId, auditEvents.webLoginLocked, org.assistantId, ago(2 * HOUR_MS), {
     via: "web",
     locked_until: "2026-11-20T08:15:00.000Z",
   });
-  await audit(org.orgId, auditEvents.webPasswordChanged, nobodyUserId, ago(3 * HOUR), { via: "web" });
-  await audit(org.orgId, auditEvents.webOtherSessionsRevoked, "cli", ago(4 * HOUR), { via: "web" });
-  await audit(org.orgId, auditEvents.webTermsAccepted, org.ownerId, ago(HOUR / 2), { via: "web" });
-  await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago(91 * 24 * HOUR), { via: "web" });
-  await audit(org.otherOrgId, auditEvents.webLogin, org.otherOwnerId, ago(HOUR), { via: "web" });
+  await audit(org.orgId, auditEvents.webPasswordChanged, nobodyUserId, ago(3 * HOUR_MS), { via: "web" });
+  await audit(org.orgId, auditEvents.webOtherSessionsRevoked, "cli", ago(4 * HOUR_MS), { via: "web" });
+  await audit(org.orgId, auditEvents.webTermsAccepted, org.ownerId, ago(HOUR_MS / 2), { via: "web" });
+  await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago(91 * DAY_MS), { via: "web" });
+  await audit(org.otherOrgId, auditEvents.webLogin, org.otherOwnerId, ago(HOUR_MS), { via: "web" });
 }
 
 describe("GET /api/security-log", () => {
@@ -106,25 +105,25 @@ describe("GET /api/security-log", () => {
     const log = securityLogSchema.parse(await res.json());
     expect(log.entries).toEqual([
       {
-        at: ago(HOUR).toISOString(),
+        at: ago(HOUR_MS).toISOString(),
         kind: "sign_in",
         actor: { kind: "member", name: "Owner" },
         lockedUntil: null,
       },
       {
-        at: ago(2 * HOUR).toISOString(),
+        at: ago(2 * HOUR_MS).toISOString(),
         kind: "locked",
         actor: { kind: "member", name: "Assistant" },
         lockedUntil: "2026-11-20T08:15:00.000Z",
       },
       {
-        at: ago(3 * HOUR).toISOString(),
+        at: ago(3 * HOUR_MS).toISOString(),
         kind: "password_changed",
         actor: { kind: "former_member" },
         lockedUntil: null,
       },
       {
-        at: ago(4 * HOUR).toISOString(),
+        at: ago(4 * HOUR_MS).toISOString(),
         kind: "other_sessions_ended",
         actor: { kind: "operator" },
         lockedUntil: null,
@@ -133,10 +132,10 @@ describe("GET /api/security-log", () => {
   });
 
   test("6b. the export, refused delete and two data request events show with their kinds; a cli actor is the operator", async () => {
-    await audit(org.orgId, auditEvents.orgExported, "cli", ago(HOUR), { tables: "3", rows: "10" });
-    await audit(org.orgId, auditEvents.orgDeleteRefused, org.ownerId, ago(2 * HOUR), { reason: "wrong_password" });
-    await audit(org.orgId, auditEvents.dsrFind, "cli", ago(3 * HOUR), { mails: "1" });
-    await audit(org.orgId, auditEvents.dsrErase, "cli", ago(4 * HOUR), { mails: "1" });
+    await audit(org.orgId, auditEvents.orgExported, "cli", ago(HOUR_MS), { tables: "3", rows: "10" });
+    await audit(org.orgId, auditEvents.orgDeleteRefused, org.ownerId, ago(2 * HOUR_MS), { reason: "wrong_password" });
+    await audit(org.orgId, auditEvents.dsrFind, "cli", ago(3 * HOUR_MS), { mails: "1" });
+    await audit(org.orgId, auditEvents.dsrErase, "cli", ago(4 * HOUR_MS), { mails: "1" });
     const res = await app().request("/api/security-log", as("owner"));
     const { entries } = securityLogSchema.parse(await res.json());
     expect(entries.map((entry) => [entry.kind, entry.actor])).toEqual([
@@ -148,17 +147,17 @@ describe("GET /api/security-log", () => {
   });
 
   test("6c. F119: one SSO sign-in and one refusal show as sso_sign_in and sso_refused; the other company sign-in events show with their kinds", async () => {
-    await audit(org.orgId, auditEvents.ssoLogin, org.ownerId, ago(HOUR), { provider_id: org.orgId });
-    await audit(org.orgId, auditEvents.ssoRefused, "system", ago(2 * HOUR), { provider_id: org.orgId });
-    await audit(org.orgId, auditEvents.ssoProviderSet, "cli", ago(3 * HOUR), { provider_id: org.orgId });
-    await audit(org.orgId, auditEvents.ssoProviderRemoved, "cli", ago(4 * HOUR), { provider_id: org.orgId });
-    await audit(org.orgId, auditEvents.ssoDomainVerified, "cli", ago(5 * HOUR), { provider_id: org.orgId });
-    await audit(org.orgId, auditEvents.ssoDomainAttested, "cli", ago(6 * HOUR), { provider_id: org.orgId });
-    await audit(org.orgId, auditEvents.ssoRequiredChanged, "cli", ago(7 * HOUR), { from: "false", to: "true" });
-    await audit(org.orgId, auditEvents.ssoUnlinked, "cli", ago(8 * HOUR), { user_id: org.assistantId });
-    await audit(org.orgId, auditEvents.orgMemberAdded, "cli", ago(9 * HOUR), { user_id: org.assistantId });
-    await audit(org.orgId, auditEvents.webMemberSessionsEnded, "cli", ago(10 * HOUR), { user_id: org.assistantId });
-    await audit(org.otherOrgId, auditEvents.ssoLogin, org.otherOwnerId, ago(HOUR), { provider_id: org.otherOrgId });
+    await audit(org.orgId, auditEvents.ssoLogin, org.ownerId, ago(HOUR_MS), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoRefused, "system", ago(2 * HOUR_MS), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoProviderSet, "cli", ago(3 * HOUR_MS), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoProviderRemoved, "cli", ago(4 * HOUR_MS), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoDomainVerified, "cli", ago(5 * HOUR_MS), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoDomainAttested, "cli", ago(6 * HOUR_MS), { provider_id: org.orgId });
+    await audit(org.orgId, auditEvents.ssoRequiredChanged, "cli", ago(7 * HOUR_MS), { from: "false", to: "true" });
+    await audit(org.orgId, auditEvents.ssoUnlinked, "cli", ago(8 * HOUR_MS), { user_id: org.assistantId });
+    await audit(org.orgId, auditEvents.orgMemberAdded, "cli", ago(9 * HOUR_MS), { user_id: org.assistantId });
+    await audit(org.orgId, auditEvents.webMemberSessionsEnded, "cli", ago(10 * HOUR_MS), { user_id: org.assistantId });
+    await audit(org.otherOrgId, auditEvents.ssoLogin, org.otherOwnerId, ago(HOUR_MS), { provider_id: org.otherOrgId });
     const res = await app().request("/api/security-log", as("owner"));
     const { entries } = securityLogSchema.parse(await res.json());
     expect(entries.map((entry) => [entry.kind, entry.actor])).toEqual([
@@ -178,12 +177,12 @@ describe("GET /api/security-log", () => {
   });
 
   test("7. 55 sign-ins in the last day → 50 entries, newest first", async () => {
-    for (let i = 0; i < 55; i++) await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago((i + 1) * 60_000));
+    for (let i = 0; i < 55; i++) await audit(org.orgId, auditEvents.webLogin, org.ownerId, ago((i + 1) * MINUTE_MS));
     const res = await app().request("/api/security-log", as("owner"));
     const { entries } = securityLogSchema.parse(await res.json());
     expect(entries).toHaveLength(50);
-    expect(entries[0]?.at).toBe(ago(60_000).toISOString());
-    expect(entries[49]?.at).toBe(ago(50 * 60_000).toISOString());
+    expect(entries[0]?.at).toBe(ago(MINUTE_MS).toISOString());
+    expect(entries[49]?.at).toBe(ago(50 * MINUTE_MS).toISOString());
     const times = entries.map((entry) => entry.at);
     expect(times).toEqual([...times].sort().reverse());
   });
@@ -212,7 +211,7 @@ describe("GET /api/security-log", () => {
     const { entries } = securityLogSchema.parse(await res.json());
     expect(entries).toEqual([
       {
-        at: ago(HOUR).toISOString(),
+        at: ago(HOUR_MS).toISOString(),
         kind: "sign_in",
         actor: { kind: "member", name: "Other owner" },
         lockedUntil: null,
@@ -221,24 +220,24 @@ describe("GET /api/security-log", () => {
   });
 
   test("11. second-factor and break-glass rows: kinds, actors, no user id", async () => {
-    await audit(org.orgId, auditEvents.webTwoFactorLocked, org.ownerId, ago(HOUR), {
+    await audit(org.orgId, auditEvents.webTwoFactorLocked, org.ownerId, ago(HOUR_MS), {
       via: "web",
       locked_until: "2026-11-20T08:15:00.000Z",
     });
-    await audit(org.orgId, auditEvents.orgBreakGlassSet, "cli", ago(2 * HOUR), { user_id: org.ownerId });
-    await audit(org.orgId, auditEvents.webTwoFactorReset, "cli", ago(3 * HOUR), { via: "cli" });
+    await audit(org.orgId, auditEvents.orgBreakGlassSet, "cli", ago(2 * HOUR_MS), { user_id: org.ownerId });
+    await audit(org.orgId, auditEvents.webTwoFactorReset, "cli", ago(3 * HOUR_MS), { via: "cli" });
     const res = await app().request("/api/security-log", as("owner"));
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(securityLogSchema.parse(JSON.parse(text)).entries).toEqual([
       {
-        at: ago(HOUR).toISOString(),
+        at: ago(HOUR_MS).toISOString(),
         kind: "two_factor_locked",
         actor: { kind: "member", name: "Owner" },
         lockedUntil: "2026-11-20T08:15:00.000Z",
       },
-      { at: ago(2 * HOUR).toISOString(), kind: "break_glass_set", actor: { kind: "operator" }, lockedUntil: null },
-      { at: ago(3 * HOUR).toISOString(), kind: "two_factor_reset", actor: { kind: "operator" }, lockedUntil: null },
+      { at: ago(2 * HOUR_MS).toISOString(), kind: "break_glass_set", actor: { kind: "operator" }, lockedUntil: null },
+      { at: ago(3 * HOUR_MS).toISOString(), kind: "two_factor_reset", actor: { kind: "operator" }, lockedUntil: null },
     ]);
     expect(text).not.toContain(org.ownerId);
   });

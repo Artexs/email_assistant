@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { countLlmCallsSince, recordLlmCall } from "../../src/modules/audit";
@@ -25,7 +26,7 @@ import {
   seedMails,
   withClassifyBox,
 } from "./trust-history-classify-helpers";
-import { advance, jobOf, MINUTE_MS, RUNNING_KEY, theCheck, type HistoryBox } from "./trust-history-helpers";
+import { advance, jobOf, RUNNING_KEY, theCheck, type HistoryBox } from "./trust-history-helpers";
 
 // The classify step. The box holds a check in `classifying` and mail rows that the test places; the model is
 // a fake with a fixed price (one cent per 10,000 tokens). The backfill and the flags steps are tested in trust-history-job.test.ts.
@@ -101,7 +102,7 @@ describe("1. the sample: acted-on mail first, and a stored result under the chec
         { from: address.toUpperCase() },
         { body: null },
         { folder: "Archive" },
-        { receivedAt: new Date(box.clock.now.getTime() - 31 * 86_400_000) },
+        { receivedAt: new Date(box.clock.now.getTime() - 31 * DAY_MS) },
       ]);
       await jobOf(db, box, { llm: fakeLlm(box) }).run();
       expect((await itemsOf(db, checkId)).map((item) => item.email_id)).toEqual([ids[0] as string]);
@@ -310,7 +311,7 @@ describe("6. the daily cap leaves the history calls out", () => {
       };
       for (let n = 0; n < 300; n += 1) await recordLlmCall(db, box, base);
       for (let n = 0; n < 50; n += 1) await recordLlmCall(db, box, { ...base, historyCheckId: checkId });
-      const since = new Date(at.getTime() - 3_600_000);
+      const since = new Date(at.getTime() - HOUR_MS);
       expect(await countLlmCallsSince(db, box, box.mailboxId, since)).toBe(300);
       expect(await countLlmCallsSince(db, box, box.mailboxId, since, { role: "classifier" })).toBe(300);
       // The rows are there for the cost reports (M7 counts the real spend).
@@ -398,7 +399,7 @@ describe("8. timing", () => {
       expect(await itemsOf(db, checkId)).toHaveLength(500);
       expect(llm.calls).toHaveLength(500);
       expect(runs).toBe(25);
-      expect(box.clock.now.getTime() - connect).toBeLessThan(60 * MINUTE_MS);
+      expect(box.clock.now.getTime() - connect).toBeLessThan(HOUR_MS);
     });
   });
 });
@@ -552,7 +553,7 @@ describe("the sample order and the lock", () => {
           afterCall: async () => {
             await db
               .updateTable("history_checks")
-              .set({ locked_at: new Date(box.clock.now.getTime() + 3_600_000) })
+              .set({ locked_at: new Date(box.clock.now.getTime() + HOUR_MS) })
               .where("id", "=", checkId)
               .execute();
           },
@@ -750,9 +751,9 @@ describe("the review gaps of stage 07", () => {
       await db
         .insertInto("triage_results")
         .values([
-          row("urgent", new Date(box.clock.now.getTime() - 2 * 3_600_000)),
-          row("notification", new Date(box.clock.now.getTime() - 3_600_000)),
-          row("spam", new Date(box.clock.now.getTime() - 3 * 3_600_000)),
+          row("urgent", new Date(box.clock.now.getTime() - 2 * HOUR_MS)),
+          row("notification", new Date(box.clock.now.getTime() - HOUR_MS)),
+          row("spam", new Date(box.clock.now.getTime() - 3 * HOUR_MS)),
         ])
         .execute();
       const llm = fakeLlm(box);

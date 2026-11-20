@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { configureFeatures } from "../../src/modules/tenancy";
@@ -47,7 +48,7 @@ describe("the newsletters route as the table owner", () => {
   });
 
   test("an unsubscribe tap counts the own requests only: three recent requests of another organization for the same domain do not block it", async () => {
-    const recent = new Date(NOW.getTime() - 5 * 60_000);
+    const recent = new Date(NOW.getTime() - 5 * MINUTE_MS);
     for (const sender of ["x1@c.example", "x2@c.example", "x3@c.example"])
       await addRequest(db, box.org.otherOrgId, box.otherMailboxId, sender, { status: "done", createdAt: recent });
     await addSenderMail(db, box.org.orgId, box.mailboxId, {

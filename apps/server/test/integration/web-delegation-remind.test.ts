@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { delegationRemindAnswerSchema } from "@ea/core";
+import { delegationRemindAnswerSchema, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -57,7 +57,7 @@ async function overdue(
       draftActionId: draftId,
       sendActionId: sendId,
       status: opts.status ?? "overdue",
-      dueAt: new Date(NOW.getTime() - 24 * 3_600_000),
+      dueAt: new Date(NOW.getTime() - DAY_MS),
       sentMessageId: `<sent-${randomUUID()}@x.test>`,
       ...(opts.remindersSent === undefined ? {} : { remindersSent: opts.remindersSent }),
     })
