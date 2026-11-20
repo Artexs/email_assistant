@@ -242,6 +242,7 @@ describe("docs-deploy.yml", () => {
       "bun run web:build",
       "bunx playwright install --with-deps chromium",
       "bun run docs:shots",
+      "bun apps/docs/scripts/demo-fetch.ts",
       "bun run docs:build",
       "bun run docs:test",
     ];
@@ -266,6 +267,17 @@ describe("docs-deploy.yml", () => {
     expect(buildIndex("bun run web:build")).toBeLessThan(buildIndex("bun run docs:shots"));
     expect(buildIndex("bunx playwright install --with-deps chromium")).toBeLessThan(buildIndex("bun run docs:shots"));
     expect(buildIndex("bun run docs:stale --strict")).toBeLessThan(buildIndex("bun run docs:shots"));
+  });
+
+  test("T5 the demo video is downloaded before the build, with the token of the run and no other permission", () => {
+    const fetch = steps(build).find((step) => step.run === "bun apps/docs/scripts/demo-fetch.ts");
+    expect(fetch?.env).toEqual({ GH_TOKEN: "${{ github.token }}" });
+    expect(buildIndex("bun apps/docs/scripts/demo-fetch.ts")).toBeLessThan(buildIndex("bun run docs:build"));
+    // The build job sets no permission of its own: it keeps the `contents: read` of the file. Only the download step has a token.
+    expect(build?.permissions).toBeUndefined();
+    expect(deploy.permissions).toEqual({ contents: "read" });
+    for (const step of steps(build)) if (step !== fetch) expect(step.env?.GH_TOKEN).toBeUndefined();
+    expect(DEPLOY_TEXT.match(/GH_TOKEN/g)).toHaveLength(1);
   });
 
   test("T4 no step of the build job is skipped or may fail, except the artifact of a failure", () => {

@@ -1,0 +1,25 @@
+---
+// The demo video of the home page: `<DemoVideo lang="en" />` on its own line. It renders nothing unless `demo.mp4` and both caption files stand in
+// `apps/docs/public/demo/` at build (`demo-video.ts`). No autoplay. The captions of the page language are the default track.
+import { demoFilesExist, demoVideoView } from "../demo-video";
+
+interface Props {
+  lang: "en" | "pl";
+}
+
+const { lang } = Astro.props;
+const view = demoVideoView(lang, demoFilesExist());
+---
+
+{
+  view ? (
+    <figure class="demo-video">
+      <video controls preload="metadata" playsinline aria-label={view.label} src={view.src}>
+        {view.tracks.map((track) => (
+          <track kind="captions" src={track.src} srclang={track.srclang} label={track.label} default={track.default} />
+        ))}
+      </video>
+      <figcaption>{view.note}</figcaption>
+    </figure>
+  ) : null
+}
