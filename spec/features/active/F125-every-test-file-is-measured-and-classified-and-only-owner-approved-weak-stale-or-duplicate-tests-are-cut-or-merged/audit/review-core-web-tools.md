@@ -1,12 +1,12 @@
 # Review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools` (F125 stage 04)
 
-Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `2f48d396` (branch head after the merge of master at the job start).
+Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `535e6f76` (branch head after the merge of master at the job start).
 
 Notes for the reader:
 
 - **Keys.** Keys are `file:line` at the base above, from a fresh `bun scripts/test-audit/scan-cli.ts` run (`/tmp/f125-s04/rescan/`), not from the committed `cases-static.tsv`. Reason: master changed 9 files of this area after the stage 03 data (`deploy/test/backup`, `compose-drill`, `release-identity`; new `check-server-env`, `compose-lib`, `docs-env-split`, `env-split`; `apps/docs/scripts/workflows`, `shots-build`, new `apps/docs/src/extra-pages`): the committed keys of these files are stale and the committed `groups.tsv` ids (`B`/`T` numbers) differ from the fresh ones. Group ids in this file are the fresh ones; each group row lists all its keys. Times come from `cases.tsv` joined by file and name; a case that is new since stage 02 has no time (0.000). Core keys, `mutation-tests.tsv` and `mutation-survived.tsv` stay valid: no core test file changed after the mutation run (`git diff 4ce3f351 HEAD -- packages/core` shows only `legal/subprocessors.ts`).
 - **Items.** An item is one flagged case, or one B or T group whose first key is in this area, or one core test file with `S10` cases and no other flag. Order: (a) `S1`, `S7`, `not-run`, then `S8` by file and line; (b) `S2`/`S3`/`S4`; (c) B groups; (d) T groups; (e) core `S11` (one item per distinct call-site key), then core `S10` files; (f) `S9`. The area is `packages/core`, `apps/web/src`, `apps/web/integrations`, `apps/docs/src`, `apps/docs/integrations`, `apps/docs/scripts`, `deploy/test`, `tools/fake-telegram/src`, `tools/mail-oauth-spike` (unit only; `apps/web/e2e`, `apps/docs/e2e` and `tools/fake-telegram/test` belong to stage 06). A case that is in a group and has no other flag is read inside its group row only. A case with `S8` and a group flag (`deploy/test/compose-lib.test.ts` 4a, 4c, 4d) is read as its own item and its group stays in the `not read` list.
-- **Cap.** The job reads 150 items of 664 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
+- **Cap.** The job reads 150 items of 660 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
 - **S8 is mostly a false positive in this area.** The flagged cases run a real script, parse a real Compose or workflow file, or test a fake of a test tool, so `S8` is expected (stage 04 rules). Every `S8` row is `KEEP` unless another flag applies. The K rule is named where one applies: K3 for deploy and secret rules, K2 for completeness checks.
 - **Columns.** `Lines` = test lines the action removes (0 for KEEP, REWRITE-WEAK and FIX-NEVER-RUNS). `Time (s)` = JUnit time of the case at the stage 02 run (not time saved).
 - **Unstable mutants.** Stage 03 found 6 status differences between two runs (`replies/digits.ts` 297:21, 368:17, 372:23; `testmail/batch.ts` 107:5; `triage/suspicious.ts` 342:7). GAP counts leave out those mutants (4 of them are in `mutation-survived.tsv`).
@@ -145,7 +145,7 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | GAP121 | `packages/core/src/triage/suspicious.ts` | `domainOfAddress` | 5 | 254:7 ConditionalExpression → `false` ; 254:7 EqualityOperator → `at <= 0` |
 | GAP122 | `packages/core/src/web/csp.ts` | `parseDirectives` | 5 | 41:10 MethodExpression → `content.split(";").map(part => part.trim())` ; 44:23 ConditionalExpression → `true` |
 
-### Not read (497)
+### Not read (495)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
@@ -252,8 +252,6 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | `packages/core/src/notices/digest-view.test.ts:42` | `packages/core/src/notices/digest-view.test.ts:42` | S11 |
 | `packages/core/src/notices/encode.test.ts:32` | `packages/core/src/notices/encode.test.ts:32` | S11 |
 | `packages/core/src/notices/encode.test.ts:42` | `packages/core/src/notices/encode.test.ts:42` | S11 |
-| `packages/core/src/notices/encode.test.ts:100` | `packages/core/src/notices/encode.test.ts:100` | S11 |
-| `packages/core/src/notices/encode.test.ts:104` | `packages/core/src/notices/encode.test.ts:104` | S11 |
 | `packages/core/src/notices/encode.test.ts:130` | `packages/core/src/notices/encode.test.ts:130` | S11 |
 | `packages/core/src/notices/push.test.ts:41` | `packages/core/src/notices/push.test.ts:41` | S11 |
 | `packages/core/src/notices/push.test.ts:55` | `packages/core/src/notices/push.test.ts:55` | S11 |
@@ -800,13 +798,11 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | `deploy/test/release-identity.test.ts:43` | `deploy/test/release-identity.test.ts:43` | S8 | KEEP | none | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). The release state file is git-ignored and its folder is kept. | 0 | 0.000 |
 | `deploy/test/release-identity.test.ts:50` | `deploy/test/release-identity.test.ts:50` | S8 | KEEP | none | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). `bash -n` on four scripts: a syntax check. Weak next to the behaviour tests of `release.test.ts` and `rollback.test.ts`, which run these scripts; a candidate for owner review, but unsure, so KEEP. | 0 | 0.005 |
 
-### Not read (3)
+### Not read (1)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
 | T17 | `deploy/test/compose-lib.test.ts:54`, `deploy/test/compose-lib.test.ts:67`, `deploy/test/compose-lib.test.ts:73` | S6 |
-| `deploy/test/backup.test.ts:226` | `deploy/test/backup.test.ts:226` | S9 |
-| `deploy/test/backup.test.ts:207` | `deploy/test/backup.test.ts:207` | S9 |
 
 ## Tools
 
@@ -864,15 +860,15 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Summary
 
-- Items selected by § Reader method step 2: 664. Items in this file: 664 (150 read rows + 514 `not read` rows). Read: 150. Not read: 514.
+- Items selected by § Reader method step 2: 660. Items in this file: 660 (150 read rows + 510 `not read` rows). Read: 150. Not read: 510.
 - GAP rows: 122 (information, not items).
 
 | Section | Read | Not read |
 | --- | --- | --- |
-| Core | 0 | 497 |
+| Core | 0 | 495 |
 | Web | 8 | 3 |
 | Docs | 30 | 9 |
-| Deploy | 72 | 3 |
+| Deploy | 72 | 1 |
 | Tools | 40 | 2 |
 
 | Action | Rows | Lines | Time of cases (s) |
