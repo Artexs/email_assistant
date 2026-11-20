@@ -64,4 +64,10 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
     few: "Wysłano powiadomienie testowe na {count} urządzenia.",
     many: "Wysłano powiadomienie testowe na {count} urządzeń.",
   },
+  // The result of a style suggestion
+  rs_suggest_result: {
+    one: "Podstawa: 1 wysłana wiadomość",
+    few: "Podstawa: {count} wysłane wiadomości",
+    many: "Podstawa: {count} wysłanych wiadomości",
+  },
 };

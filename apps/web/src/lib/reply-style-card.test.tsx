@@ -34,6 +34,7 @@ function form(
       isOwner={over.isOwner ?? true}
       replyDraftsOn={over.replyDraftsOn ?? true}
       samplesBlocked={over.samplesBlocked ?? false}
+      suggest={{ kind: "hidden" }}
       onSaved={() => undefined}
     />
   );
