@@ -25,7 +25,7 @@ The terms version and the Telegram consent version use one format: a UTC date, a
 ## Acceptance
 
 - `parseLegalVersion("2026-11-18-2")` and `parseLegalVersion("2026-11-18.2")` give the same version; `"20261115"`, `"2026-02-30"` and `"2026-11-15.1"` give null (plan.md T1–T6).
-- `consentCovers` gives the same answer as at the plan base for every case in plan.md T7.
+- `consentCovers` gives the base answer for every existing case of `telegram.test.ts` and for each stored consent value; only the two pairs that plan.md T7 names as changes (D2, D5) differ.
 - A `TERMS_HISTORY` entry with a hyphen counter that is not in the frozen legacy list fails `packages/core/src/web/terms.test.ts`.
 - No version string changes: `git diff <merge base> -- packages/core/src/web/terms.ts packages/core/src/web/telegram.ts` shows no changed `version:` entry and no changed `*_VERSION` or `*_SINCE` value.
 - A server file other than the consent gate that calls `legalVersionCovers` fails `consent-gate.test.ts`.

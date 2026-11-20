@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). `[risky]`: `consentCovers` decides which mem
 
 - **Goal:** `consentCovers` (in `packages/core/src/web/telegram.ts`) delegates to `legalVersionCovers`; the private consent regex and its parser go away (D6).
 - **Decisions:** D5, D6. The name, the signature and the exports of `telegram.ts` stay. The constants `TELEGRAM_CONSENT_VERSION`, `OPEN_LOOPS_CONSENT_SINCE` and `REPLY_CONSENT_SINCE` keep their values. The comment above `TELEGRAM_CONSENT_VERSION` points to the module for the format rule instead of restating it.
-- **Test:** keep the existing `consentCovers` cases in `packages/core/src/web/telegram.test.ts` unchanged; add T7 of plan.md as one table (the four stored consent values × the two `*_SINCE` constants, with the answers at the base: `2026-11-14` false/false, `2026-11-15` false/false, `2026-11-15.2` true/false, `2026-11-19` true/true).
+- **Test:** keep the existing `consentCovers` cases in `packages/core/src/web/telegram.test.ts` unchanged; add T8 of plan.md (the three constants are canonical; break check: set one to a hyphen form locally); add T7 of plan.md as one table (the four stored consent values × the two `*_SINCE` constants, with the answers at the base: `2026-11-14` false/false, `2026-11-15` false/false, `2026-11-15.2` true/false, `2026-11-19` true/true).
 - **Done when:** the old and new cases pass, and the integration files that pass consent strings (`channels-consent.test.ts`, `follow-up-cards.test.ts`, `channels-reply-review.test.ts`) pass with no edit.
 
 ## Step 3 — the gate scan and the order tests

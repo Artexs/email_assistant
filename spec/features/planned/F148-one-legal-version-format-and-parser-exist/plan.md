@@ -20,11 +20,11 @@ Facts at the base (scouts in `scouts.md`, then read in the code):
 
 - **D1 Canonical form: `YYYY-MM-DD` or `YYYY-MM-DD.N`.** N is an integer from 2, with no leading zero. The date is a real calendar date (UTC day of the change). Reason: the consent rows, which are immutable audit rows and decide a privacy gate, already use the dot. Rejected: the hyphen form (it would need a new spelling of rows that gate data).
 - **D2 Accept both spellings on read; write only the dot.** `parseLegalVersion` reads `YYYY-MM-DD-N` as the same version as `YYYY-MM-DD.N`. No stored row and no `TERMS_HISTORY` string changes. Reason: rows stay byte-identical, so no member is asked again and the audit trail keeps its strings. Rejected: a data migration (audit rows are append-only; `users.terms_version` holds only old versions that are already not current).
-- **D3 The two hyphen entries stay as written and are frozen.** A comment in `TERMS_HISTORY` says they are the legacy spelling of `.2`. `terms.test.ts` holds the frozen list of hyphen entries; every other entry must be canonical. The list holds the hyphen entries of master when stage 02 merges master (`2026-11-18-2`, `2026-11-19-2` at the base). Reason: another active ticket can still append a hyphen entry before this lands. Rejected: rename to dot (breaks the link from stored rows to the history).
+- **D3 The two hyphen entries stay as written and are frozen.** A comment in `TERMS_HISTORY` says they are the legacy spelling of `.2`. `terms.test.ts` holds the frozen list of hyphen entries; every other entry must be canonical. The list holds the hyphen entries of master when stage 02 merges master (`2026-11-18-2`, `2026-11-19-2` at the base). Reason: another active ticket can still append a hyphen entry before this lands. When that entry is the last one, `TERMS_VERSION` is a legacy spelling: the check "`TERMS_VERSION` is canonical" accepts a value in the frozen list, and the worker never renames it (a rename changes `TERMS_VERSION`, and every member gets the terms dialog again). Rejected: rename to dot (breaks the link from stored rows to the history).
 - **D4 A bare date is counter 1.** `2026-11-15` < `2026-11-15.2` < `2026-11-15.10` < `2026-11-16`. Reason: same order as `consentCovers` at the base, and correct past 9.
 - **D5 Invalid is not covered (fail closed).** `legalVersionCovers(have, since)` is false when `have` is null or either side does not parse. The stricter grammar (D1) rejects `.0`, `.1`, `.02`, impossible dates and whitespace. No stored value is in that set, so no stored consent loses cover. Rejected: keep `\d+` (it allows two spellings of one version).
 - **D6 `consentCovers` keeps its name and signature** and delegates to `legalVersionCovers`. The consent-gate scan test keeps working; it also asserts that no server source file names `legalVersionCovers`, so the gate stays the one place that compares a consent version.
-- **D7 `nextLegalVersion(current, todayUtc)`** returns `todayUtc` when it is after the date of `current`, else the date of `current` with counter + 1 (never backwards, also for a clock behind the last version). It throws on an input that does not parse. Core stays pure: the caller passes today. Its user: the failure message of the legal-text guard test (stage 02).
+- **D7 `nextLegalVersion(current, todayUtc)`** returns `todayUtc` when it is after the date of `current`, else the date of `current` with counter + 1 (never backwards, also for a clock behind the last version). It throws when `current` does not parse or `todayUtc` is not a bare canonical date (a counter or a hyphen in `todayUtc` throws). Core stays pure: the caller passes today. Its user: the failure message of the legal-text guard test (stage 02).
 - **D8 Exact-string equality stays** in the accept routes, the auth hook and the `accepted` flag. Reason: they compare with the one current constant; a normalized compare would accept spellings that nobody writes. Out of scope.
 - **D9 The ordering tests use `compareLegalVersions`**, not string order: `terms.test.ts` test 3, `i18n.test.ts` T7, T7b and T8. The skip of T8 while `REPLY_CONSENT_SINCE` is ahead of `TELEGRAM_CONSENT_VERSION` (a placeholder pattern) stays.
 
@@ -55,8 +55,9 @@ export function nextLegalVersion(current: string, todayUtc: string): string;
 - T3 null for each of: `null`, `""`, `"zzzz"`, `"20261115"`, `"2099-1-1"`, `"2026-02-30"`, `"2026-13-01"`, `"2026-11-15."`, `"2026-11-15.x"`, `"2026-11-15.0"`, `"2026-11-15.1"`, `"2026-11-15.02"`, `"2026-11-15-1"`, `" 2026-11-16"`, `"2026-11-16\n"`, `"2026-11-15.2.3"`.
 - T4 `formatLegalVersion` of T2 → `"2026-11-18.2"`; of counter 1 → `"2026-11-18"`. `isCanonicalLegalVersion("2026-11-18-2")` false, `("2026-11-18.2")` true.
 - T5 order: `2026-11-15` < `2026-11-15.2` < `2026-11-15.9` < `2026-11-15.10` < `2026-11-16`; `2026-11-18-2` equals `2026-11-18.2`.
-- T6 `nextLegalVersion`: (`"2026-11-19"`, `"2026-11-20"`) → `"2026-11-20"`; (`"2026-11-20"`, `"2026-11-20"`) → `"2026-11-20.2"`; (`"2026-11-19-2"`, `"2026-11-19"`) → `"2026-11-19.3"`; (`"2026-11-20.9"`, `"2026-11-19"`) → `"2026-11-20.10"`; (`"bad"`, `"2026-11-20"`) throws; (`"2026-11-20"`, `"bad"`) throws.
-- T7 `consentCovers` keeps every result of `telegram.test.ts` T5 and N1 at the base, plus: (`"2026-11-15-2"`, `"2026-11-15.2"`) true; (`"2026-11-15.1"`, `"2026-11-15"`) false; (`"2026-11-15.10"`, `"2026-11-15.9"`) true; each stored consent value of § Input against `OPEN_LOOPS_CONSENT_SINCE` and `REPLY_CONSENT_SINCE` gives the same answer as at the base.
+- T6 `nextLegalVersion`: (`"2026-11-19"`, `"2026-11-20"`) → `"2026-11-20"`; (`"2026-11-20"`, `"2026-11-20"`) → `"2026-11-20.2"`; (`"2026-11-19-2"`, `"2026-11-19"`) → `"2026-11-19.3"`; (`"2026-11-20.9"`, `"2026-11-19"`) → `"2026-11-20.10"`; (`"bad"`, `"2026-11-20"`) throws; (`"2026-11-20"`, `"bad"`) throws; (`"2026-11-20"`, `"2026-11-21.2"`) throws.
+- T7 `consentCovers` keeps every result of `telegram.test.ts` T5 and N1 at the base, and each stored consent value of § Input against `OPEN_LOOPS_CONSENT_SINCE` and `REPLY_CONSENT_SINCE` gives the base answer. New case: (`"2026-11-15.10"`, `"2026-11-15.9"`) true. Two intended changes from the base (no stored row holds either value): (`"2026-11-15-2"`, `"2026-11-15.2"`) false → true (D2); (`"2026-11-15.1"`, `"2026-11-15"`) true → false (D5).
+- T8 `TELEGRAM_CONSENT_VERSION`, `OPEN_LOOPS_CONSENT_SINCE` and `REPLY_CONSENT_SINCE` are canonical (a placeholder such as `2099-12-31` still passes).
 
 ## Rules for every stage
 
@@ -94,11 +95,15 @@ Move the ticket to `active/` and commit. Spawn stage 01 with the board flags (wo
 
 - Scouts: 2 (`scouts.md`).
 - stage-01 [written], stage-02 [written].
-- Word counts (`wc -w`, before the review): plan.md 1270, stage-01 516, stage-02 560, ticket.md 354.
+- Word counts (`wc -w`, after the review fixes): plan.md about 1480, stage-01 534, stage-02 560, ticket.md 368.
 - Questions: 3 minor defaults (`questions.md`); none blocking.
 
 ## Cold review
 
-Pending.
+Model `claude-opus-5-5`, because stage 01 is `[risky]` (privacy gate of Telegram data). Result in `plan-review-1.md`: 1 blocking, 5 notes. All taken:
 
-## Log
+- B1 (ticket acceptance contradicted T7): T7 and the ticket bullet now name the two intended changes apart from the kept base answers.
+- N1 (a hyphen last entry fails "`TERMS_VERSION` is canonical"): D3 and stage 02 test 5 accept a frozen legacy value; the worker never renames.
+- N2 (consent constants not held to the format): new T8 in stage 01.
+- N3 (`todayUtc` with a counter): D7 throws; T6 case added.
+- N4 confirms the values. N5: the stage 02 message also names `TELEGRAM_CONSENT_VERSION`.
