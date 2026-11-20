@@ -198,6 +198,7 @@ describe("org_features", () => {
         { flag: "bulk_unsubscribe", enabled: false, source: "default" },
         { flag: "reply_drafts", enabled: false, source: "default" },
         { flag: "draft_copy_check", enabled: false, source: "default" },
+        { flag: "style_from_sent", enabled: false, source: "default" },
         { flag: "sender_context", enabled: false, source: "default" },
         { flag: "contact_wait", enabled: false, source: "default" },
         { flag: "sender_suggestions", enabled: false, source: "default" },

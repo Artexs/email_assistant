@@ -189,19 +189,19 @@ export const featureFlags = {
     epic: "E6a",
     removeBy: "2027-06-01",
   },
-  style_from_sent: {
-    default: false,
-    description:
-      "An owner can ask the assistant to suggest a writing style from the sent mail of the last 14 days (needs reply_drafts and sent_sync).",
-    epic: "E6b",
-    removeBy: "2027-03-01",
-  },
   draft_copy_check: {
     default: false,
     description:
       "Before a send, the system compares the Drafts copy with the one it made and stops when you changed it (reply drafts always check).",
     epic: "E6a",
     removeBy: "2027-06-01",
+  },
+  style_from_sent: {
+    default: false,
+    description:
+      "An owner can ask the assistant to suggest a writing style from the sent mail of the last 14 days (needs reply_drafts and sent_sync).",
+    epic: "E6b",
+    removeBy: "2027-03-01",
   },
   sender_context: {
     default: false,
