@@ -153,6 +153,11 @@ describe("sso_providers constraints", () => {
     await withRollback(db, async (trx) => {
       const A = await seedOrg(trx);
       await insertProvider(trx, A.orgId, { issuer: "https://login.microsoftonline.com/t/v2.0" });
+      const rows = await sql<{
+        issuer: string;
+        domain_verified: boolean;
+      }>`select issuer, domain_verified from sso_providers where org_id = ${A.orgId}::uuid`.execute(trx);
+      expect(rows.rows).toEqual([{ issuer: "https://login.microsoftonline.com/t/v2.0", domain_verified: false }]);
     });
   });
 
