@@ -23,8 +23,16 @@ import {
   APPROVAL_QUOTE_CHARS,
   barCategories,
   categories,
+  evidenceKeySchema,
   type FeatureKey,
 } from "@ea/core";
+
+import { apiGroups, apiOperations, loadApiSpec, successAnswers } from "./api-reference";
+import { autonomyEvidenceFacts } from "./autonomy-evidence";
+import { flaggedTextProblems } from "./flagged-text";
+import { geminiClaimProblems, geminiOutsideCondition } from "./gemini-text";
+import { OWNER_REVIEW_PENDING } from "./publish-gate";
+import { publicClaims } from "./security/claims";
 
 import { APPROVAL_TTL_MS } from "../../server/src/modules/actions/constants";
 import { CLAIM_MAX_AGE_MS } from "../../server/src/modules/actions/repo/claims";
@@ -323,5 +331,132 @@ describe("explanation pages", () => {
     const mode = readPage("explanation/shadow-and-assist");
     expect(mode).toContain(`at least ${Math.round(GATE_BAR * 100)} % on at least ${GATE_MIN_KEPT} mails`);
     expect(mode).toContain(`The Undo works for ${days(UNDO_WINDOW_MS)} after the change`);
+  });
+});
+
+describe("reference/api", () => {
+  const spec = loadApiSpec();
+  const operations = apiOperations(spec);
+  const fileOperations = Object.entries(spec.paths).flatMap(([path, item]) =>
+    Object.entries(item ?? {}).map(([method, operation]) => ({
+      path,
+      method: method.toUpperCase(),
+      id: operation.operationId,
+    }))
+  );
+
+  test("T5 the page data holds every operation of the file once, under its operationId", () => {
+    expect(operations.map((operation) => operation.operationId).sort()).toEqual(fileOperations.map((o) => o.id).sort());
+    expect(new Set(operations.map((operation) => operation.operationId)).size).toBe(fileOperations.length);
+    expect(fileOperations.length).toBeGreaterThan(50);
+    const groups = apiGroups(operations);
+    expect(groups.flatMap((group) => group.operations).length).toBe(fileOperations.length);
+  });
+  test("T5 the groups are sorted by tag, and each by path", () => {
+    const groups = apiGroups(operations);
+    expect(groups.map((group) => group.tag)).toEqual(groups.map((group) => group.tag).sort());
+    for (const group of groups) {
+      const paths = group.operations.map((operation) => operation.path);
+      expect(paths).toEqual([...paths].sort((a, b) => a.localeCompare(b)));
+    }
+  });
+  test("T5 an operation with two success answers (alsoOk) shows both statuses", () => {
+    const doubles = operations.filter((operation) => successAnswers(operation).length > 1);
+    expect(doubles.map((operation) => operation.operationId)).toContain("requestReply");
+    for (const operation of doubles) {
+      const fromFile = Object.keys(
+        spec.paths[operation.path]?.[operation.method.toLowerCase()]?.responses ?? {}
+      ).filter((s) => s.startsWith("2"));
+      expect(successAnswers(operation).map((answer) => answer.status)).toEqual(fromFile);
+      for (const answer of successAnswers(operation)) expect(answer.schemaName).not.toBeNull();
+    }
+  });
+  test("every answer of the file shows its status, and a public route says so", () => {
+    for (const operation of operations) {
+      const fromFile = Object.keys(spec.paths[operation.path]?.[operation.method.toLowerCase()]?.responses ?? {});
+      expect(operation.answers.map((answer) => answer.status)).toEqual(fromFile);
+    }
+    expect(operations.filter((operation) => operation.auth === "public").length).toBeGreaterThan(0);
+  });
+  test("the page names the session cookie, the feature sentence and the claim about the private network; no number is typed", () => {
+    const page = readPage("reference/api");
+    expect(page).toContain("session cookie");
+    expect(page).toContain("Some routes answer only while an operator turns a feature on.");
+    expect(page).toContain("](../../security/#claim-private-panel)");
+    expect(publicClaims.map((claim) => claim.id)).toContain("private-panel");
+    // Claims of reachability live only in `publicClaims`: the page makes none of its own.
+    expect(page).not.toMatch(/tailscale|public address|reachable/i);
+    expect(front(page).capabilities.length).toBeGreaterThan(0);
+  });
+  test("no sentence of the page names Gemini outside the condition: optional, off by default", () => {
+    const text = JSON.stringify(spec) + readPage("reference/api");
+    expect(geminiOutsideCondition([text])).toEqual([]);
+    expect(geminiClaimProblems(text)).toEqual([]);
+  });
+});
+
+describe("reference/autonomy-evidence", () => {
+  const facts = autonomyEvidenceFacts();
+  const text = (id: string): string => facts.find((fact) => fact.id === id)?.text ?? "";
+
+  test("P6 the page has at least three facts, each with an id and a title", () => {
+    expect(facts.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(facts.map((fact) => fact.id)).size).toBe(facts.length);
+    for (const fact of facts) expect([fact.title, fact.text].every((part) => part.trim() !== "")).toBe(true);
+  });
+  test("T6 each number of the facts is the number of its constant", () => {
+    expect(text("go-no-go-bar")).toContain(
+      `at least ${Math.round(GATE_BAR * 100)} % on at least ${GATE_MIN_KEPT} mails`
+    );
+    expect(text("start-state")).toContain(`${barCategories.length} categories`);
+    expect(text("start-state")).toContain(`limit of confidence is ${DEFAULT_THRESHOLD}`);
+    expect(text("start-state")).toContain("starts in shadow mode");
+    expect(text("ai-setup")).toContain(`has ${Object.keys(evidenceKeySchema.shape).length} parts`);
+    expect(text("undo")).toContain(`undone for ${days(UNDO_WINDOW_MS)}`);
+    expect(Object.keys(evidenceKeySchema.shape)).toEqual([
+      "provider",
+      "model",
+      "reasoningEffort",
+      "promptVersion",
+      "promptParts",
+      "endpoint",
+      "host",
+    ]);
+  });
+  test("T6 every number that a fact states is one of the checked numbers", () => {
+    const allowed = new Set([
+      `${Math.round(GATE_BAR * 100)}`,
+      `${GATE_MIN_KEPT}`,
+      `${barCategories.length}`,
+      `${DEFAULT_THRESHOLD}`,
+      `${Object.keys(evidenceKeySchema.shape).length}`,
+      `${UNDO_WINDOW_MS / 86_400_000}`,
+    ]);
+    const stated = facts.flatMap((fact) => fact.text.match(/\d+(?:\.\d+)?/g) ?? []);
+    expect(stated.filter((number) => !allowed.has(number))).toEqual([]);
+  });
+  test("the page file holds no typed number: its numbers come from the component", () => {
+    const body = readPage("reference/autonomy-evidence").replace(/^---\n[\s\S]*?\n---/, "");
+    expect(body.replace(/\]\([^)]*\)/g, "")).not.toMatch(/\d/);
+  });
+  test("each fact holds with every flag off: no flagged text, no Gemini", () => {
+    const all = facts.map((fact) => fact.text).join("\n");
+    expect(flaggedTextProblems(all)).toEqual([]);
+    expect(geminiOutsideCondition([all])).toEqual([]);
+  });
+  test("the page lists existing capabilities and the shared category names match the code", () => {
+    const listed = front(readPage("reference/autonomy-evidence")).capabilities;
+    expect(listed).toEqual(expect.arrayContaining(["triage", "actions-and-undo"]));
+    for (const name of listed) expect(() => readRepo(`docs/capabilities/${name}.md`)).not.toThrow();
+    expect(GATE_BAR).toBe(0.98);
+  });
+});
+
+describe("the two new pages stay held", () => {
+  test("both are in OWNER_REVIEW_PENDING and have a page file", () => {
+    for (const id of ["reference/api", "reference/autonomy-evidence"]) {
+      expect(OWNER_REVIEW_PENDING).toContain(id);
+      expect(() => readPage(id)).not.toThrow();
+    }
   });
 });
