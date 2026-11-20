@@ -18,6 +18,7 @@ The source files that the last ten tickets grew past 400 lines are split by aggr
 - The two e2e seed scripts, which are over 800 lines.
 
 ## Out of scope
+- `contacts/activity.ts` — F144 splits it into module readers.
 
 - `contacts/activity.ts`: the sender-activity split ticket (F144) owns it.
 - The other files between 400 and 800 lines: they stay as warnings.
