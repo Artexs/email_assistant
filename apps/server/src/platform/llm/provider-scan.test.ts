@@ -25,8 +25,7 @@ export const ALLOWED_SITES: Record<string, string> = {
   "apps/server/src/scripts/eval-config.ts": "old site: stage 07",
   "packages/core/src/legal/subprocessors.ts":
     "stays: the legal rows name the sub-processors, the owner wants no legal change",
-  "packages/core/src/metrics/cost-model.ts": "stays: pilotCost.models is the measured record of the pilot weeks",
-  "packages/core/src/triage/cost.ts": "old site: stage 02",
+  "packages/core/src/metrics/cost-model.ts": "stays: measured record (pilot weeks), not catalog data",
 };
 
 const REASON_FORMAT = /^(old site: stage 0[1-7]|stays: \S.*)$/;
