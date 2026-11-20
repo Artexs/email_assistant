@@ -311,7 +311,7 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 - Folder keys in logs and audit rows, never paths from mail data or user input.
 - Telegram errors: `...telegramErrorFields(error)` (`error`, `error_code`, `method`). Never log `error.message` of an inner error, `payload` or `description` (they can hold the bot token or message text). Other errors: `...errorFields(error)`. `describeError(error)` only in CLI output and in DB error texts (a label in a row), never in a log line.
 - Errors: throw typed errors (`SoftError` for timeout / 429 / 503 / lost connection, `HardError` for the rest); the job runner decides the retry.
-- A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit.
+- A comment states the rule in one sentence. If it needs a source, it names an ADR (`ADR 0014`) or a ticket folder path (`spec/features/done/2026-11/F083-…/`). No bare stage or decision codes (`S3`, `D29`, `U11`, `A23`, `F079`): their plan files move, and no reader can resolve them. Fix the codes of a comment when you change its code; no mass edit. The same ban covers strings outside tests, JSON files, the docs site pages and `docs/modules.md`; letter codes inside a string are data and pass. `apps/server/src/bare-codes.test.ts` scans them, and `bun run check:job` runs it.
 
 ## Web app (`apps/web`)
 

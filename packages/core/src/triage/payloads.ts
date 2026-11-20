@@ -24,8 +24,14 @@ export const FOLLOW_UP_RECIPIENTS_MAX = 10;
 // A reply goes to the sender (To, one address) and, after "Reply all", to at most 10 more recipients (Cc).
 export const REPLY_CC_MAX = 10;
 export const replyRecipientModes = ["from", "reply_to", "all"] as const;
-// `YYYY-MM-DD` or "" for none. The regex checks the shape only.
-const dueDateSchema = z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/);
+// A real calendar date `YYYY-MM-DD`, or "" for none: `2026-02-30` and `2026-13-01` are refused.
+export const dueDateSchema = z.union([z.literal(""), z.iso.date()]);
+
+// The due date of a draft, or "" when the value is no valid due date (a model value or a stored payload that the schema refuses).
+export function dueDateOrNone(value: unknown): string {
+  const parsed = dueDateSchema.safeParse(value);
+  return parsed.success ? parsed.data : "";
+}
 
 // LLM text in a draft holds no address, no link and no long number (the marking removes them; this proves it).
 export function textIsClean(text: string): boolean {

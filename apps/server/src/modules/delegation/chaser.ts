@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import {
   DAY_MS,
   draftLanguageSchema,
+  dueDateOrNone,
   type DraftPayload,
   localDateTime,
   localKey,
@@ -97,14 +98,13 @@ export async function buildReminderDraft(
   const email = await getEmailMeta(trx, ctx, row.email_id);
   const original = await getDraft(trx, ctx, row.draft_action_id);
   const language = draftLanguageSchema.safeParse(original?.payload.language);
-  const dueDate = original?.payload.due_date;
   return {
     kind: "reminder",
     delegate_id: row.delegate_id,
     delegate_name: row.delegate_name,
     to: [row.delegate_email],
     task: row.task_summary,
-    due_date: typeof dueDate === "string" ? dueDate : "",
+    due_date: dueDateOrNone(original?.payload.due_date),
     language: language.success ? language.data : "en",
     delegation_id: row.id,
     reminder: count === 1 ? 1 : 2,

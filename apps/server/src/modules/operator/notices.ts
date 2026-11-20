@@ -19,7 +19,7 @@ import { telegramErrorFields } from "../channels";
 import { listAuthErrorMailboxesBefore } from "../mail";
 import { listOrganizations } from "../tenancy";
 
-// The module field stays `channels` until the log names of the operator path change (F147 stage 04).
+// The module field stays `channels` until the log names of the operator path change (stage file `spec/features/active/F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist/stages/stage-04-one-delivery.md`).
 const log = createLog("channels");
 
 const TRIAL_WARNING_MS = 3 * DAY_MS;

@@ -1,54 +1,63 @@
 import {
-  categoryTag,
-  pickAnswer,
-  pickedText,
-  rightAnswer,
-  cleanSubject,
-  encodeCallback,
-  isAnsweredCallback,
-  isDelegateCallback,
-  isFeedbackCallback,
-  isLoopCallback,
-  isReplyCallback,
-  labelCategories,
   parseCallback,
+  callbackFamilyOf,
   textsFor,
-  type Category,
+  type Callback,
+  type CallbackFamily,
+  type CallbackOfFamily,
   type CoreTexts,
-  type OutMessage,
 } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
-import { getLabelTarget, recordFeedback, undoWithFeedback } from "../triage";
 
 import { handleAnsweredTap } from "./answered-taps";
 import { handleApprovalCallback, type CallbackDeps } from "./approval-taps";
 import { handleDelegateCallback } from "./delegate-taps";
+import { handleFeedbackCallback } from "./feedback-taps";
 import { handleLoopCallback } from "./loop-taps";
 import type { CallbackResult, LinkedChat, TapSource } from "./port";
 import { handleReplyCallback } from "./reply-taps";
-import { feedbackTap, reviewPickerMessage } from "./review-taps";
 
 export type { CallbackDeps } from "./approval-taps";
 
-export function pickerMessage(
-  emailId: string,
-  subject: string | null,
-  current: Category,
-  texts: CoreTexts
-): OutMessage {
-  const pick = (category: (typeof labelCategories)[number]) => ({
-    text: categoryTag(category, texts),
-    data: encodeCallback({ kind: "pick", category, emailId }),
-  });
-  return {
-    text: texts.bot.taps.picker.title(cleanSubject(subject, texts), categoryTag(current, texts)),
-    buttons: [
-      [pick("urgent"), pick("needs_reply")],
-      [pick("info"), pick("notification")],
-      [pick("spam"), { text: texts.bot.taps.picker.cancelButton, data: encodeCallback({ kind: "cancel", emailId }) }],
-    ],
-  };
+export interface TapInput {
+  deps: CallbackDeps;
+  link: LinkedChat;
+  ctx: TenantContext;
+  texts: CoreTexts;
+  tapSource: TapSource;
+}
+
+export type CallbackHandler<F extends CallbackFamily> = (
+  input: TapInput,
+  callback: CallbackOfFamily<F>
+) => Promise<CallbackResult>;
+
+export type CallbackHandlers = { [F in CallbackFamily]: CallbackHandler<F> };
+
+// One handler per family; a family in `callbackFamilies` without an entry here fails the typecheck.
+// The role, flag and consent checks stay in the handlers.
+export const callbackHandlers: CallbackHandlers = {
+  feedback: ({ deps, link, ctx, texts }, callback) => handleFeedbackCallback(deps, link, ctx, callback, texts),
+  answered: ({ deps, link, ctx, texts }, callback) =>
+    handleAnsweredTap({ db: deps.db, ctx, link, now: deps.now(), texts }, callback),
+  reply: ({ deps, link, ctx, texts, tapSource }, callback) =>
+    handleReplyCallback(deps, link, ctx, callback, texts, tapSource),
+  loop: ({ deps, link, ctx, texts, tapSource }, callback) =>
+    handleLoopCallback(deps, link, ctx, callback, texts, tapSource),
+  delegate: ({ deps, link, ctx, texts }, callback) => handleDelegateCallback(deps, link, ctx, callback, texts),
+  approval: ({ deps, link, ctx, texts, tapSource }, callback) =>
+    handleApprovalCallback(deps, link, ctx, callback, texts, tapSource),
+};
+
+export function dispatchCallback(
+  handlers: CallbackHandlers,
+  input: TapInput,
+  callback: Callback
+): Promise<CallbackResult> {
+  // Safe: `callbackFamilyOf` returns the family whose union holds this callback, and `handlers[family]` takes that union.
+  const handler = handlers[callbackFamilyOf(callback)] as CallbackHandler<CallbackFamily>;
+  return handler(input, callback);
 }
 
 // The tenant comes from the link. An unknown mail id and a mail of another organization give the same answer.
@@ -60,43 +69,7 @@ export async function handleCallback(
 ): Promise<CallbackResult> {
   const callback = parseCallback(data);
   const texts = textsFor(link.locale);
-  const taps = texts.bot.taps;
-  if (callback === null) return { answer: taps.invalid };
+  if (callback === null) return { answer: texts.bot.taps.invalid };
   const ctx = { orgId: link.orgId, userId: link.userId };
-  if (isAnsweredCallback(callback))
-    return handleAnsweredTap({ db: deps.db, ctx, link, now: deps.now(), texts }, callback);
-  if (isReplyCallback(callback)) return handleReplyCallback(deps, link, ctx, callback, texts, tapSource);
-  if (isLoopCallback(callback)) return handleLoopCallback(deps, link, ctx, callback, texts, tapSource);
-  if (isDelegateCallback(callback)) return handleDelegateCallback(deps, link, ctx, callback, texts);
-  if (!isFeedbackCallback(callback)) return handleApprovalCallback(deps, link, ctx, callback, texts, tapSource);
-  const { tap, source } = feedbackTap(callback);
-  if (tap.kind === "cancel") return { answer: "", edit: { text: taps.cancelled, buttons: [] } };
-  if (tap.kind === "undo") {
-    const result = await undoWithFeedback(deps.db, ctx, tap.emailId, {
-      now: deps.now(),
-      userId: link.userId,
-      scope: deps.actionsScope,
-    });
-    return { answer: result.kind === "not_found" ? taps.notFound : texts.answers.undo[result.kind] };
-  }
-  const target = await getLabelTarget(deps.db, ctx, tap.emailId);
-  if (!target) return { answer: taps.notFound };
-  if (tap.kind === "edit") {
-    const picker = source === "review" ? reviewPickerMessage : pickerMessage;
-    return { answer: "", send: picker(tap.emailId, target.subject, target.category, texts) };
-  }
-  const saved = await recordFeedback(deps.db, ctx, {
-    emailId: tap.emailId,
-    trueCategory: tap.category,
-    source,
-    userId: link.userId,
-    skipIfSame: true,
-  });
-  if (tap.kind === "right") {
-    return { answer: rightAnswer(saved.saved, tap.category, texts) };
-  }
-  return {
-    answer: pickAnswer(saved.saved, texts),
-    edit: { text: pickedText(tap.category, target.category, saved.saved, texts), buttons: [] },
-  };
+  return dispatchCallback(callbackHandlers, { deps, link, ctx, texts, tapSource }, callback);
 }

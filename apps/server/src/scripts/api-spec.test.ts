@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
-import { buildSpecText, parseApiSpecArgs, REPO_ROOT, SPEC_FILE } from "./lib/api-spec-build";
+import { parseApiSpecArgs } from "./api-spec-args";
+import { buildSpecText, REPO_ROOT, SPEC_FILE } from "./lib/api-spec-build";
 
 const committed = (): string => readFileSync(join(REPO_ROOT, SPEC_FILE), "utf8");
 
@@ -35,8 +36,8 @@ describe("the api:spec arguments", () => {
   test("no argument writes, --check checks, anything else is a usage error", () => {
     expect(parseApiSpecArgs([])).toEqual({ check: false });
     expect(parseApiSpecArgs(["--check"])).toEqual({ check: true });
-    expect(parseApiSpecArgs(["--out", "x"])).toBeNull();
-    expect(parseApiSpecArgs(["--check", "x"])).toBeNull();
+    expect(() => parseApiSpecArgs(["--out", "x"])).toThrow();
+    expect(() => parseApiSpecArgs(["--check", "x"])).toThrow("api:spec takes no operand");
   });
 });
 
