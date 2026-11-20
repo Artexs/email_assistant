@@ -1,10 +1,12 @@
+import { EXIT } from "@ea/core";
+
 import { addMember, endMemberSessions, unlinkSso } from "../modules/tenancy";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, exitCodeOf, runCli } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { parseOrgMemberArgs, usage } from "./org-member-args";
+import { cliDescriptions, parseOrgMemberArgs } from "./org-member-args";
 
 const ACTOR = "cli";
 
@@ -16,13 +18,9 @@ export interface OrgMemberDeps {
 }
 
 // Prints ids, counts and result kinds only: never an e-mail address or a name (docs/capabilities/account-data.md rule 17).
-// Returns the exit code.
+// Returns the exit code. A bad argument throws a `UsageError` (`runCli` maps it to exit 2).
 export async function runOrgMember(argv: string[], deps: OrgMemberDeps): Promise<number> {
   const command = parseOrgMemberArgs(argv);
-  if (!command) {
-    deps.err(usage);
-    return 1;
-  }
   const ctx = { orgId: command.orgId };
 
   try {
@@ -70,30 +68,34 @@ export async function runOrgMember(argv: string[], deps: OrgMemberDeps): Promise
   } catch (error) {
     // The name and the code only: a Postgres error message can hold the address.
     deps.err(`error failed ${describeError(error)}`);
-    return 1;
+    return exitCodeOf(error);
   }
 }
 
-async function main(): Promise<number> {
-  const cli = createCliOutput("org-member");
+const main: CliSpec["main"] = async (argv, cli) => {
+  // The parse comes first: `--help` and a bad flag need no config. `runOrgMember` parses again.
+  parseOrgMemberArgs(argv);
   const config = loadConfig();
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    return await runOrgMember(process.argv.slice(2), {
+    return await runOrgMember(argv, {
       db,
       out: (line) => cli.print(line),
       err: (line) => cli.fail(line),
       now: () => new Date(),
     });
   } catch (error) {
-    cli.fail(`error failed ${describeError(error)}`);
-    return 1;
+    const code = exitCodeOf(error);
+    cli.fail(
+      code === EXIT.unreachable ? `unreachable: ${describeError(error)}` : `error failed ${describeError(error)}`
+    );
+    return code;
   } finally {
     await db.destroy();
   }
-}
+};
 
 if (import.meta.main) {
-  process.exit(await main());
+  await runCli({ prefix: "org-member", descriptions: cliDescriptions, main });
 }

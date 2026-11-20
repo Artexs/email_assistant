@@ -1,5 +1,7 @@
 import { resolveTxt } from "node:dns/promises";
 
+import { EXIT } from "@ea/core";
+
 import {
   attestSsoDomain,
   configureFeatures,
@@ -15,14 +17,14 @@ import {
   verifySsoDomain,
 } from "../modules/tenancy";
 import { buildOidcConfig, discoverProviderConfig } from "../platform/auth-sso";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, exitCodeOf, runCli } from "../platform/cli";
 import { featuresOff, loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 import type { LookupAll } from "../platform/net-address";
 import { dnsLookupAll } from "../platform/net-address";
 
-import { parseOrgSsoArgs, usage } from "./org-sso-args";
+import { cliDescriptions, parseOrgSsoArgs } from "./org-sso-args";
 
 const ACTOR = "cli";
 const DISCOVERY_TIMEOUT_MS = 10_000;
@@ -63,13 +65,9 @@ function issuerHost(issuer: string): string {
 }
 
 // Prints ids, hosts, domains, counts and codes only: never the client secret, the provider config or an error message.
-// Returns the exit code.
+// Returns the exit code. A bad argument throws a `UsageError` (`runCli` maps it to exit 2).
 export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<number> {
   const command = parseOrgSsoArgs(argv, { allowOrigins: deps.allowOrigins });
-  if (!command) {
-    deps.err(usage);
-    return 1;
-  }
   const ctx = { orgId: command.orgId };
 
   try {
@@ -234,7 +232,7 @@ export async function runOrgSso(argv: string[], deps: OrgSsoDeps): Promise<numbe
     // The name and the code only. The message and the Postgres `detail` of a failed CHECK hold `oidc_config`, which holds the
     // client secret.
     deps.err(`error failed ${describeError(error)}`);
-    return 1;
+    return exitCodeOf(error);
   }
 }
 
@@ -243,14 +241,15 @@ async function readStdinLine(): Promise<string> {
   return text.split("\n")[0] ?? "";
 }
 
-async function main(): Promise<number> {
-  const cli = createCliOutput("org-sso");
+const main: CliSpec["main"] = async (argv, cli) => {
+  // The parse comes first: `--help` and a bad flag need no config. `runOrgSso` parses again. Production allows no `http:` origin.
+  parseOrgSsoArgs(argv, { allowOrigins: [] });
   const config = loadConfig();
   configureFeatures({ off: featuresOff(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    return await runOrgSso(process.argv.slice(2), {
+    return await runOrgSso(argv, {
       db,
       readStdinLine,
       out: (line) => cli.print(line),
@@ -263,13 +262,16 @@ async function main(): Promise<number> {
       webBaseUrl: config.WEB_BASE_URL,
     });
   } catch (error) {
-    cli.fail(`error failed ${describeError(error)}`);
-    return 1;
+    const code = exitCodeOf(error);
+    cli.fail(
+      code === EXIT.unreachable ? `unreachable: ${describeError(error)}` : `error failed ${describeError(error)}`
+    );
+    return code;
   } finally {
     await db.destroy();
   }
-}
+};
 
 if (import.meta.main) {
-  process.exit(await main());
+  await runCli({ prefix: "org-sso", descriptions: cliDescriptions, main });
 }
