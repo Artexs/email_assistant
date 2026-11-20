@@ -34,3 +34,33 @@ export interface SloThresholds {
   backupMaxAgeH: number;
   backupStatusFile: string | null;
 }
+
+// The five events that send one operator text each. The state of an event is its dedup key (`operatorEventKey`).
+export const OPERATOR_EVENT_KINDS = [
+  "trial_ending",
+  "llm_cap",
+  "auth_error_24h",
+  "auth_mail_failed",
+  "send_limit",
+] as const;
+
+export type OperatorEventKind = (typeof OPERATOR_EVENT_KINDS)[number];
+
+// Every kind of text that reaches the operator chat.
+export const OPERATOR_ALERT_KINDS = [...SLO_KINDS, ...OPERATOR_EVENT_KINDS] as const;
+
+export type OperatorAlertKind = (typeof OPERATOR_ALERT_KINDS)[number];
+
+// `incident`: opens, repeats and resolves (state in `ops_alerts`). `once`: one text per event key.
+export const ALERT_LIFECYCLE: Record<OperatorAlertKind, "incident" | "once"> = {
+  slo_sync_lag: "incident",
+  slo_urgent_latency: "incident",
+  slo_llm_errors: "incident",
+  slo_disk: "incident",
+  slo_backup_age: "incident",
+  trial_ending: "once",
+  llm_cap: "once",
+  auth_error_24h: "once",
+  auth_mail_failed: "once",
+  send_limit: "once",
+};

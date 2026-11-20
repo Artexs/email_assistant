@@ -74,6 +74,7 @@ function harness(trx: Trx) {
     send: withSend ? send : null,
     cfg,
     log: log as SloTickDeps["log"],
+    locale: "en",
   });
   return { sent, lines, state, deps };
 }
@@ -321,7 +322,10 @@ describe("the ops.slo tick", () => {
     };
     await withTenantScope("11111111-1111-4111-8111-111111111111", () =>
       runJobTick("ops.slo", () =>
-        runSloTick({ db, checks: [check], send: null, cfg, log: { info: () => undefined, warn: () => undefined } }, T0)
+        runSloTick(
+          { db, checks: [check], send: null, cfg, log: { info: () => undefined, warn: () => undefined }, locale: "en" },
+          T0
+        )
       )
     );
     expect(seen).toEqual([null]);
@@ -373,6 +377,7 @@ describe("ops:alert-test", () => {
         kinds: ["slo_sync_lag", "slo_urgent_latency", "slo_llm_errors", "slo_disk", "slo_backup_age"],
         send: async (text) => void sent.push(text),
         now: T0,
+        locale: "en",
         report: (result) => void reported.push(`${result.outcome} ${result.kind}`),
       });
       expect(sent.map((text) => text.split("\n")[0])).toEqual([
@@ -390,7 +395,7 @@ describe("ops:alert-test", () => {
   });
 
   test("11b. no chat: `no_chat` for the kind, no send; a send error stops the run and reaches the caller", async () => {
-    const none = await sendTestAlerts({ kinds: ["slo_disk"], send: null, now: T0 });
+    const none = await sendTestAlerts({ kinds: ["slo_disk"], send: null, now: T0, locale: "en" });
     expect(none).toEqual([{ kind: "slo_disk", outcome: "no_chat" }]);
     const reported: string[] = [];
     await expect(
@@ -400,6 +405,7 @@ describe("ops:alert-test", () => {
           if (text.startsWith("TEST slo_backup_age")) throw new Error("down");
         },
         now: T0,
+        locale: "en",
         report: (result) => void reported.push(result.kind),
       })
     ).rejects.toThrow("down");
