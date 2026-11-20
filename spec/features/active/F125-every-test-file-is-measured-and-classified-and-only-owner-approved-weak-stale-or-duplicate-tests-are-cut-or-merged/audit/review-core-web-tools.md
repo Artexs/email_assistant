@@ -1,12 +1,12 @@
 # Review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools` (F125 stage 04)
 
-Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `6e6c7faf` (branch head after the merge of master at the job start).
+Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `2f48d396` (branch head after the merge of master at the job start).
 
 Notes for the reader:
 
 - **Keys.** Keys are `file:line` at the base above, from a fresh `bun scripts/test-audit/scan-cli.ts` run (`/tmp/f125-s04/rescan/`), not from the committed `cases-static.tsv`. Reason: master changed 9 files of this area after the stage 03 data (`deploy/test/backup`, `compose-drill`, `release-identity`; new `check-server-env`, `compose-lib`, `docs-env-split`, `env-split`; `apps/docs/scripts/workflows`, `shots-build`, new `apps/docs/src/extra-pages`): the committed keys of these files are stale and the committed `groups.tsv` ids (`B`/`T` numbers) differ from the fresh ones. Group ids in this file are the fresh ones; each group row lists all its keys. Times come from `cases.tsv` joined by file and name; a case that is new since stage 02 has no time (0.000). Core keys, `mutation-tests.tsv` and `mutation-survived.tsv` stay valid: no core test file changed after the mutation run (`git diff 4ce3f351 HEAD -- packages/core` shows only `legal/subprocessors.ts`).
 - **Items.** An item is one flagged case, or one B or T group whose first key is in this area, or one core test file with `S10` cases and no other flag. Order: (a) `S1`, `S7`, `not-run`, then `S8` by file and line; (b) `S2`/`S3`/`S4`; (c) B groups; (d) T groups; (e) core `S11` (one item per distinct call-site key), then core `S10` files; (f) `S9`. The area is `packages/core`, `apps/web/src`, `apps/web/integrations`, `apps/docs/src`, `apps/docs/integrations`, `apps/docs/scripts`, `deploy/test`, `tools/fake-telegram/src`, `tools/mail-oauth-spike` (unit only; `apps/web/e2e`, `apps/docs/e2e` and `tools/fake-telegram/test` belong to stage 06). A case that is in a group and has no other flag is read inside its group row only. A case with `S8` and a group flag (`deploy/test/compose-lib.test.ts` 4a, 4c, 4d) is read as its own item and its group stays in the `not read` list.
-- **Cap.** The job reads 100 items of 664 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
+- **Cap.** The job reads 150 items of 664 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
 - **S8 is mostly a false positive in this area.** The flagged cases run a real script, parse a real Compose or workflow file, or test a fake of a test tool, so `S8` is expected (stage 04 rules). Every `S8` row is `KEEP` unless another flag applies. The K rule is named where one applies: K3 for deploy and secret rules, K2 for completeness checks.
 - **Columns.** `Lines` = test lines the action removes (0 for KEEP, REWRITE-WEAK and FIX-NEVER-RUNS). `Time (s)` = JUnit time of the case at the stage 02 run (not time saved).
 - **Unstable mutants.** Stage 03 found 6 status differences between two runs (`replies/digits.ts` 297:21, 368:17, 372:23; `testmail/batch.ts` 107:5; `triage/suspicious.ts` 342:7). GAP counts leave out those mutants (4 of them are in `mutation-survived.tsv`).
@@ -723,7 +723,7 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Deploy
 
-### Read (38)
+### Read (72)
 
 | Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -765,52 +765,52 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | `deploy/test/compose-drill.test.ts:194` | `deploy/test/compose-drill.test.ts:194` | S8 | KEEP | none | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. No published port on `db`; image `postgres:17`. | 0 | 0.000 |
 | `deploy/test/compose-lib.test.ts:30` | `deploy/test/compose-lib.test.ts:30` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. The command ends with `--env-file .env`. | 0 | 0 |
 | `deploy/test/compose-lib.test.ts:36` | `deploy/test/compose-lib.test.ts:36` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. The command ends with `--env-file deploy/db.env`. | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:46` | `deploy/test/compose-lib.test.ts:46` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. Return 2 and the message on stderr. | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:54` | `deploy/test/compose-lib.test.ts:54` | S6,S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. State `split`. Also a member of group T17 (4a, 4c, 4d: three one-assert state cases that a `test.each` over (files, expected) could hold); group T17 is not read in this job (listed as `not read`). | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:60` | `deploy/test/compose-lib.test.ts:60` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. State `old`, with and without the migrator URL. | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:67` | `deploy/test/compose-lib.test.ts:67` | S6,S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. State `mixed`. Member of group T17 (see 4a). | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:73` | `deploy/test/compose-lib.test.ts:73` | S6,S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. State `mixed`. Member of group T17 (see 4a). | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:79` | `deploy/test/compose-lib.test.ts:79` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. Two of three passwords: `mixed`. | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:84` | `deploy/test/compose-lib.test.ts:84` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. A comment and a longer key name do not count as D5 keys. | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:93` | `deploy/test/compose-lib.test.ts:93` | S8 | KEEP | K2 | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. Pins the list of the four D5 keys. A list pin: it guards the next key added. | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:46` | `deploy/test/docs-env-split.test.ts:46` | S8 | KEEP | K2 | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). The old `--env-file .env` form appears on one README line only. | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:52` | `deploy/test/docs-env-split.test.ts:52` | S8 | KEEP | none | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). The README `C=` line uses `deploy/db.env`. | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:57` | `deploy/test/docs-env-split.test.ts:57` | S8 | KEEP | none | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). Every cron line that runs Compose reads `deploy/db.env`. | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:63` | `deploy/test/docs-env-split.test.ts:63` | S8 | KEEP | K3 | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). No document makes or restores a `.env.bak` copy (a secret copy). | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:68` | `deploy/test/docs-env-split.test.ts:68` | S8 | KEEP | none | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). No document migrates through the `cli` service. | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:73` | `deploy/test/docs-env-split.test.ts:73` | S8 | KEEP | K2 | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). The README has the `Env split` section and names the tools. | 0 | 0 |
+| `deploy/test/docs-env-split.test.ts:88` | `deploy/test/docs-env-split.test.ts:88` | S8 | KEEP | none | – | S8 expected: reads tracked runbook and doc files (`git ls-files`). ADR 0019 status `accepted` in its file and in the list. Low value (a status word), but it is one cheap exact check of a doc row; unsure, so KEEP. | 0 | 0 |
+| `deploy/test/env-split.test.ts:84` | `deploy/test/env-split.test.ts:84` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Moves 4 D5 lines to `db.env` (mode 600), keeps the other lines in order. | 0 | 0 |
+| `deploy/test/env-split.test.ts:96` | `deploy/test/env-split.test.ts:96` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Moves 3 lines (a different input class from case 1). | 0 | 0 |
+| `deploy/test/env-split.test.ts:107` | `deploy/test/env-split.test.ts:107` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Idempotent: writes nothing. | 0 | 0 |
+| `deploy/test/env-split.test.ts:117` | `deploy/test/env-split.test.ts:117` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. A half-done split is finished. | 0 | 0 |
+| `deploy/test/env-split.test.ts:128` | `deploy/test/env-split.test.ts:128` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Refuses a mixed state with a different value, changes no file. | 0 | 0 |
+| `deploy/test/env-split.test.ts:139` | `deploy/test/env-split.test.ts:139` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Refuses, writes nothing. | 0 | 0 |
+| `deploy/test/env-split.test.ts:152` | `deploy/test/env-split.test.ts:152` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Refuses a duplicate key, writes nothing. | 0 | 0 |
+| `deploy/test/env-split.test.ts:163` | `deploy/test/env-split.test.ts:163` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Undo restores the lines; a second undo is refused. | 0 | 0 |
+| `deploy/test/env-split.test.ts:176` | `deploy/test/env-split.test.ts:176` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. A failure between the two moves leaves `.env` as it was; rerun finishes. | 0 | 0 |
+| `deploy/test/env-split.test.ts:197` | `deploy/test/env-split.test.ts:197` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Export-prefixed, indented or spaced D5 lines are refused with names only. | 0 | 0 |
+| `deploy/test/env-split.test.ts:216` | `deploy/test/env-split.test.ts:216` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. An indented twin counts as a duplicate; a split state does not hide an export line. | 0 | 0 |
+| `deploy/test/env-split.test.ts:230` | `deploy/test/env-split.test.ts:230` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. File modes and owner are kept; `db.env` stays 600. | 0 | 0 |
+| `deploy/test/env-split.test.ts:248` | `deploy/test/env-split.test.ts:248` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. No password in any grep argument (it would show in `ps`). | 0 | 0 |
+| `deploy/test/env-split.test.ts:267` | `deploy/test/env-split.test.ts:267` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/env-split.sh` in a temp repo; an `afterEach` asserts that no sentinel secret appears in any output. Refuses when `db.env` lacks a password, names the keys. | 0 | 0 |
+| `deploy/test/release-identity.test.ts:19` | `deploy/test/release-identity.test.ts:19` | S8 | KEEP | none | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). `ARG EA_RELEASE=dev` and `ENV EA_RELEASE` in the Dockerfile. | 0 | 0.000 |
+| `deploy/test/release-identity.test.ts:25` | `deploy/test/release-identity.test.ts:25` | S8 | KEEP | none | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). The server build arg has the default `dev`. | 0 | 0.000 |
+| `deploy/test/release-identity.test.ts:32` | `deploy/test/release-identity.test.ts:32` | S8 | KEEP | K3 | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). `release.sh` migrates through the `migrate` service (profile `cli`) and never uses `db:rollback`; `rollback.sh` has no `db:` call (rollback never migrates). | 0 | 0.000 |
+| `deploy/test/release-identity.test.ts:43` | `deploy/test/release-identity.test.ts:43` | S8 | KEEP | none | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). The release state file is git-ignored and its folder is kept. | 0 | 0.000 |
+| `deploy/test/release-identity.test.ts:50` | `deploy/test/release-identity.test.ts:50` | S8 | KEEP | none | – | S8 expected: reads deploy files (Dockerfile, compose, scripts). `bash -n` on four scripts: a syntax check. Weak next to the behaviour tests of `release.test.ts` and `rollback.test.ts`, which run these scripts; a candidate for owner review, but unsure, so KEEP. | 0 | 0.005 |
 
-### Not read (37)
+### Not read (3)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `deploy/test/compose-lib.test.ts:46` | `deploy/test/compose-lib.test.ts:46` | S8 |
-| `deploy/test/compose-lib.test.ts:54` | `deploy/test/compose-lib.test.ts:54` | S6,S8 |
-| `deploy/test/compose-lib.test.ts:60` | `deploy/test/compose-lib.test.ts:60` | S8 |
-| `deploy/test/compose-lib.test.ts:67` | `deploy/test/compose-lib.test.ts:67` | S6,S8 |
-| `deploy/test/compose-lib.test.ts:73` | `deploy/test/compose-lib.test.ts:73` | S6,S8 |
-| `deploy/test/compose-lib.test.ts:79` | `deploy/test/compose-lib.test.ts:79` | S8 |
-| `deploy/test/compose-lib.test.ts:84` | `deploy/test/compose-lib.test.ts:84` | S8 |
-| `deploy/test/compose-lib.test.ts:93` | `deploy/test/compose-lib.test.ts:93` | S8 |
-| `deploy/test/docs-env-split.test.ts:46` | `deploy/test/docs-env-split.test.ts:46` | S8 |
-| `deploy/test/docs-env-split.test.ts:52` | `deploy/test/docs-env-split.test.ts:52` | S8 |
-| `deploy/test/docs-env-split.test.ts:57` | `deploy/test/docs-env-split.test.ts:57` | S8 |
-| `deploy/test/docs-env-split.test.ts:63` | `deploy/test/docs-env-split.test.ts:63` | S8 |
-| `deploy/test/docs-env-split.test.ts:68` | `deploy/test/docs-env-split.test.ts:68` | S8 |
-| `deploy/test/docs-env-split.test.ts:73` | `deploy/test/docs-env-split.test.ts:73` | S8 |
-| `deploy/test/docs-env-split.test.ts:88` | `deploy/test/docs-env-split.test.ts:88` | S8 |
-| `deploy/test/env-split.test.ts:84` | `deploy/test/env-split.test.ts:84` | S8 |
-| `deploy/test/env-split.test.ts:96` | `deploy/test/env-split.test.ts:96` | S8 |
-| `deploy/test/env-split.test.ts:107` | `deploy/test/env-split.test.ts:107` | S8 |
-| `deploy/test/env-split.test.ts:117` | `deploy/test/env-split.test.ts:117` | S8 |
-| `deploy/test/env-split.test.ts:128` | `deploy/test/env-split.test.ts:128` | S8 |
-| `deploy/test/env-split.test.ts:139` | `deploy/test/env-split.test.ts:139` | S8 |
-| `deploy/test/env-split.test.ts:152` | `deploy/test/env-split.test.ts:152` | S8 |
-| `deploy/test/env-split.test.ts:163` | `deploy/test/env-split.test.ts:163` | S8 |
-| `deploy/test/env-split.test.ts:176` | `deploy/test/env-split.test.ts:176` | S8 |
-| `deploy/test/env-split.test.ts:197` | `deploy/test/env-split.test.ts:197` | S8 |
-| `deploy/test/env-split.test.ts:216` | `deploy/test/env-split.test.ts:216` | S8 |
-| `deploy/test/env-split.test.ts:230` | `deploy/test/env-split.test.ts:230` | S8 |
-| `deploy/test/env-split.test.ts:248` | `deploy/test/env-split.test.ts:248` | S8 |
-| `deploy/test/env-split.test.ts:267` | `deploy/test/env-split.test.ts:267` | S8 |
-| `deploy/test/release-identity.test.ts:19` | `deploy/test/release-identity.test.ts:19` | S8 |
-| `deploy/test/release-identity.test.ts:25` | `deploy/test/release-identity.test.ts:25` | S8 |
-| `deploy/test/release-identity.test.ts:32` | `deploy/test/release-identity.test.ts:32` | S8 |
-| `deploy/test/release-identity.test.ts:43` | `deploy/test/release-identity.test.ts:43` | S8 |
-| `deploy/test/release-identity.test.ts:50` | `deploy/test/release-identity.test.ts:50` | S8 |
 | T17 | `deploy/test/compose-lib.test.ts:54`, `deploy/test/compose-lib.test.ts:67`, `deploy/test/compose-lib.test.ts:73` | S6 |
 | `deploy/test/backup.test.ts:226` | `deploy/test/backup.test.ts:226` | S9 |
 | `deploy/test/backup.test.ts:207` | `deploy/test/backup.test.ts:207` | S9 |
 
 ## Tools
 
-### Read (24)
+### Read (40)
 
 | Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -838,33 +838,33 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | `tools/mail-oauth-spike/redact.test.ts:48` | `tools/mail-oauth-spike/redact.test.ts:48` | S8,not-run | FIX-NEVER-RUNS | K3 | – | The guard accepts what a row legitimately writes (no over-blocking). `not-run`: `bun test tools/mail-oauth-spike` passes 23 of 23 in 0.45 s now, but the path is in no suite of `package.json` (`test:unit` lists no `tools/mail-oauth-spike`), so CI never runs it. Proposal: add `tools/mail-oauth-spike` to the `test:unit` paths, or delete the kit with its tests together. The kit is temporary by its README (the dropped F117 stage 19 would have deleted it) and `spec/quality/2026-11-20-pass-2.md` asks the owner to keep or drop it, so the choice is the owner's.  | 0 | 0.000 |
 | `tools/mail-oauth-spike/redact.test.ts:66` | `tools/mail-oauth-spike/redact.test.ts:66` | S8,not-run | FIX-NEVER-RUNS | K3 | – | `maskAddresses` hides an address and its plus forms. `not-run`: `bun test tools/mail-oauth-spike` passes 23 of 23 in 0.45 s now, but the path is in no suite of `package.json` (`test:unit` lists no `tools/mail-oauth-spike`), so CI never runs it. Proposal: add `tools/mail-oauth-spike` to the `test:unit` paths, or delete the kit with its tests together. The kit is temporary by its README (the dropped F117 stage 19 would have deleted it) and `spec/quality/2026-11-20-pass-2.md` asks the owner to keep or drop it, so the choice is the owner's.  | 0 | 0.000 |
 | `tools/mail-oauth-spike/redact.test.ts:73` | `tools/mail-oauth-spike/redact.test.ts:73` | S8,not-run | FIX-NEVER-RUNS | K3 | – | `word` quotes a short plain word, hides everything else. `not-run`: `bun test tools/mail-oauth-spike` passes 23 of 23 in 0.45 s now, but the path is in no suite of `package.json` (`test:unit` lists no `tools/mail-oauth-spike`), so CI never runs it. Proposal: add `tools/mail-oauth-spike` to the `test:unit` paths, or delete the kit with its tests together. The kit is temporary by its README (the dropped F117 stage 19 would have deleted it) and `spec/quality/2026-11-20-pass-2.md` asks the owner to keep or drop it, so the choice is the owner's.  | 0 | 0.000 |
+| `tools/fake-telegram/src/compose-health.test.ts:31` | `tools/fake-telegram/src/compose-health.test.ts:31` | S8 | KEEP | none | – | S8 expected for a tool test: it reads `deploy/compose.sim.yaml` and checks the healthcheck URL host and port against `serve --port`. A wrong port keeps the sim stack unhealthy. No twin. | 0 | 0.001 |
+| `tools/fake-telegram/src/compose-health.test.ts:39` | `tools/fake-telegram/src/compose-health.test.ts:39` | S8 | KEEP | none | – | S8 expected: starts the fake and fetches the path from the Compose healthcheck: status 200. Guards the sim stack start. No twin. | 0 | 0.002 |
+| `tools/fake-telegram/src/state.test.ts:8` | `tools/fake-telegram/src/state.test.ts:8` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.000 |
+| `tools/fake-telegram/src/state.test.ts:16` | `tools/fake-telegram/src/state.test.ts:16` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.000 |
+| `tools/fake-telegram/src/state.test.ts:24` | `tools/fake-telegram/src/state.test.ts:24` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.000 |
+| `tools/fake-telegram/src/state.test.ts:33` | `tools/fake-telegram/src/state.test.ts:33` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.000 |
+| `tools/fake-telegram/src/state.test.ts:41` | `tools/fake-telegram/src/state.test.ts:41` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.000 |
+| `tools/fake-telegram/src/state.test.ts:55` | `tools/fake-telegram/src/state.test.ts:55` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.000 |
+| `tools/fake-telegram/src/state.test.ts:63` | `tools/fake-telegram/src/state.test.ts:63` | S8 | KEEP | none | – | S8 expected: unit test of the fake's own state (message and update numbering, offsets, callbacks); the e2e and int suites use this fake. Exact assertions on ids and entities. No twin in `compat.test.ts` or `server.test.ts` (they test HTTP and the app channel). | 0 | 0.050 |
+| `tools/fake-telegram/src/view.test.ts:26` | `tools/fake-telegram/src/view.test.ts:26` | S8 | KEEP | K3 | – | S8 expected. HTML escaping of bot text in the read-only view (`<script` never emitted): an XSS guard of a local tool; exact `toContain` and `not.toContain` checks. | 0 | 0.003 |
+| `tools/fake-telegram/src/view.test.ts:34` | `tools/fake-telegram/src/view.test.ts:34` | S8 | KEEP | K3 | – | S8 expected. Allow-list of tags in the view; every other tag stays escaped (`<a href` too). Exact string checks. | 0 | 0.002 |
+| `tools/fake-telegram/src/view.test.ts:49` | `tools/fake-telegram/src/view.test.ts:49` | S8 | KEEP | none | – | S8 expected: the fake's chat view (inline buttons as labels, message order, edited messages once, refresh meta tag, bot messages only). Each case asserts exact HTML fragments. No twin. | 0 | 0.002 |
+| `tools/fake-telegram/src/view.test.ts:68` | `tools/fake-telegram/src/view.test.ts:68` | S8 | KEEP | none | – | S8 expected: the fake's chat view (inline buttons as labels, message order, edited messages once, refresh meta tag, bot messages only). Each case asserts exact HTML fragments. No twin. | 0 | 0.001 |
+| `tools/fake-telegram/src/view.test.ts:80` | `tools/fake-telegram/src/view.test.ts:80` | S8 | KEEP | K3 | – | S8 expected. An unknown chat id gives 404 and the id is escaped in the answer (reflected input). | 0 | 0.003 |
+| `tools/fake-telegram/src/view.test.ts:90` | `tools/fake-telegram/src/view.test.ts:90` | S8 | KEEP | none | – | S8 expected: the fake's chat view (inline buttons as labels, message order, edited messages once, refresh meta tag, bot messages only). Each case asserts exact HTML fragments. No twin. | 0 | 0.002 |
+| `tools/fake-telegram/src/view.test.ts:98` | `tools/fake-telegram/src/view.test.ts:98` | S8 | KEEP | none | – | S8 expected: the fake's chat view (inline buttons as labels, message order, edited messages once, refresh meta tag, bot messages only). Each case asserts exact HTML fragments. No twin. | 0 | 0.001 |
 
-### Not read (18)
+### Not read (2)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `tools/fake-telegram/src/compose-health.test.ts:31` | `tools/fake-telegram/src/compose-health.test.ts:31` | S8 |
-| `tools/fake-telegram/src/compose-health.test.ts:39` | `tools/fake-telegram/src/compose-health.test.ts:39` | S8 |
-| `tools/fake-telegram/src/state.test.ts:8` | `tools/fake-telegram/src/state.test.ts:8` | S8 |
-| `tools/fake-telegram/src/state.test.ts:16` | `tools/fake-telegram/src/state.test.ts:16` | S8 |
-| `tools/fake-telegram/src/state.test.ts:24` | `tools/fake-telegram/src/state.test.ts:24` | S8 |
-| `tools/fake-telegram/src/state.test.ts:33` | `tools/fake-telegram/src/state.test.ts:33` | S8 |
-| `tools/fake-telegram/src/state.test.ts:41` | `tools/fake-telegram/src/state.test.ts:41` | S8 |
-| `tools/fake-telegram/src/state.test.ts:55` | `tools/fake-telegram/src/state.test.ts:55` | S8 |
-| `tools/fake-telegram/src/state.test.ts:63` | `tools/fake-telegram/src/state.test.ts:63` | S8 |
-| `tools/fake-telegram/src/view.test.ts:26` | `tools/fake-telegram/src/view.test.ts:26` | S8 |
-| `tools/fake-telegram/src/view.test.ts:34` | `tools/fake-telegram/src/view.test.ts:34` | S8 |
-| `tools/fake-telegram/src/view.test.ts:49` | `tools/fake-telegram/src/view.test.ts:49` | S8 |
-| `tools/fake-telegram/src/view.test.ts:68` | `tools/fake-telegram/src/view.test.ts:68` | S8 |
-| `tools/fake-telegram/src/view.test.ts:80` | `tools/fake-telegram/src/view.test.ts:80` | S8 |
-| `tools/fake-telegram/src/view.test.ts:90` | `tools/fake-telegram/src/view.test.ts:90` | S8 |
-| `tools/fake-telegram/src/view.test.ts:98` | `tools/fake-telegram/src/view.test.ts:98` | S8 |
 | `tools/fake-telegram/src/view.test.ts:107` | `tools/fake-telegram/src/view.test.ts:107` | S8 |
 | `tools/fake-telegram/src/server.test.ts:73` | `tools/fake-telegram/src/server.test.ts:73` | S9 |
 
 ## Summary
 
-- Items selected by § Reader method step 2: 664. Items in this file: 664 (100 read rows + 564 `not read` rows). Read: 100. Not read: 564.
+- Items selected by § Reader method step 2: 664. Items in this file: 664 (150 read rows + 514 `not read` rows). Read: 150. Not read: 514.
 - GAP rows: 122 (information, not items).
 
 | Section | Read | Not read |
@@ -872,12 +872,12 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | Core | 0 | 497 |
 | Web | 8 | 3 |
 | Docs | 30 | 9 |
-| Deploy | 38 | 37 |
-| Tools | 24 | 18 |
+| Deploy | 72 | 3 |
+| Tools | 40 | 2 |
 
 | Action | Rows | Lines | Time of cases (s) |
 | --- | --- | --- | --- |
-| KEEP | 76 | 0 | 6.595 |
+| KEEP | 126 | 0 | 6.667 |
 | DELETE-DUP | 0 | 0 | 0.000 |
 | MERGE-TABLE | 0 | 0 | 0.000 |
 | REWRITE-WEAK | 1 | 0 | 0.003 |
@@ -885,4 +885,4 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | MOVE-TO-UNIT | 0 | 0 | 0.000 |
 | FIX-NEVER-RUNS | 23 | 0 | 0.000 |
 
-KEEP and FIX-NEVER-RUNS by rule: K2 5, K3 48, none 47.
+KEEP and FIX-NEVER-RUNS by rule: K2 8, K3 73, none 69.
