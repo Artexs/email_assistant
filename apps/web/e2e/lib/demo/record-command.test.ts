@@ -42,7 +42,7 @@ describe("demo:record refusals", () => {
   test("--seed with a file that does not exist: exit 1 with seed_missing, no database or server touched", async () => {
     const result = await record(["--seed", "/no/such.json"], withFfmpeg);
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain("seed_missing");
+    expect(result.stderr).toMatch(/\bseed_missing\b/);
     expect(result.stdout).not.toContain("rebuilding the demo database");
   });
   test("a PATH without ffmpeg: exit 1 with ffmpeg_missing", async () => {

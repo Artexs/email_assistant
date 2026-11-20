@@ -30,7 +30,7 @@ describe("databaseNameOf", () => {
 });
 
 describe("isE2eDatabaseName", () => {
-  test("accepts only names that end in _e2e", () => {
+  test("accepts only names that end in _e2e or _demo", () => {
     expect(isE2eDatabaseName("email_assistant_e2e")).toBe(true);
     expect(isE2eDatabaseName("other_e2e")).toBe(true);
     expect(isE2eDatabaseName("email_assistant")).toBe(false);
