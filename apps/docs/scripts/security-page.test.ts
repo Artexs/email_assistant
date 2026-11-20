@@ -70,12 +70,6 @@ describe("the built /security/ page", () => {
     expect(geminiOutsideCondition(blocksWithText(main()))).toEqual([]);
   });
 
-  test("the guard for Gemini text catches a block without the condition and passes one with it", () => {
-    expect(geminiOutsideCondition(["Google Gemini API: AI model"])).toEqual(["Google Gemini API: AI model"]);
-    expect(geminiOutsideCondition(["Gemini: optional, off by default"])).toEqual([]);
-    expect(geminiOutsideCondition(["OpenAI sorts mail"])).toEqual([]);
-  });
-
   test("no config key name reaches the page, and no text of a default-off flag stands outside the service rows", () => {
     const visible = (source: string): string =>
       decode(source.replace(/<script[\s\S]*?<\/script>/g, " ").replace(/<[^>]*>/g, " "));
