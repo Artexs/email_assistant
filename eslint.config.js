@@ -14,6 +14,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
 
+import ea from "./tools/eslint-rules/index.js";
+
 // File path setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -276,6 +278,22 @@ export default tseslint.config(
     files: ["apps/server/src/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors], "no-console": "error" },
+  },
+  {
+    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Warn while the rewrites land;
+    // tests stay out until the test audit cuts them. The local plugin `ea` is registered here once: later local
+    // rules join tools/eslint-rules/index.js (a second `ea` plugin object makes flat config fail).
+    files: ["{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}"],
+    ignores: [
+      "packages/core/src/time.ts",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.ts",
+      "**/*.test-helper.ts",
+      "**/test/**",
+      "**/e2e/**",
+    ],
+    plugins: { ea },
+    rules: { "ea/no-time-literals": "warn" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
