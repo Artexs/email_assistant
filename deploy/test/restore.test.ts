@@ -197,7 +197,7 @@ describe("restore.sh --init-env", () => {
       [
         "TELEGRAM_BOT_TOKEN=t1",
         "POSTGRES_PASSWORD=live-pg",
-        "CREDENTIALS_KEY=k1",
+        "CREDENTIALS_KEY=key-marker-q7z",
         "CREDENTIALS_KEY_VERSION=2",
         "GEMINI_API_KEY=g1",
         "HEARTBEAT_URL=https://hc.invalid/live-ping",
@@ -212,7 +212,7 @@ describe("restore.sh --init-env", () => {
     expect(result.code).toBe(0);
     const file = join(root, "deploy", "drill.env");
     const text = readFileSync(file, "utf8");
-    expect(text).toContain("CREDENTIALS_KEY=k1\n");
+    expect(text).toContain("CREDENTIALS_KEY=key-marker-q7z\n");
     expect(text).toContain("CREDENTIALS_KEY_VERSION=2\n");
     expect(text).toContain("LOG_LEVEL=info\n");
     for (const forbidden of ["t1", "live-pg", "g1", "TELEGRAM", "HEARTBEAT", "GEMINI", "live-ping"]) {
@@ -225,7 +225,7 @@ describe("restore.sh --init-env", () => {
     });
     expect(new Set(passwords).size).toBe(3);
     expect(statSync(file).mode & 0o777).toBe(0o600);
-    expect(result.output).not.toContain("k1");
+    expect(result.output).not.toContain("key-marker-q7z");
     expect(result.output).not.toContain("generated-secret");
     expect(calls().filter((line) => line.startsWith("openssl rand -hex 24"))).toHaveLength(3);
     expect(dockerCalls()).toEqual([]);
