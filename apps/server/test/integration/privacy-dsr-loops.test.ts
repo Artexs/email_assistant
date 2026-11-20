@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -43,6 +43,7 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  rmSync(dir, { recursive: true, force: true });
   await db.destroy();
 });
 
