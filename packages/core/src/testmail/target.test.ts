@@ -80,6 +80,22 @@ describe("buildTargetInput", () => {
   });
 });
 
+describe("buildTargetInput, markers", () => {
+  test("a note that is neither attack nor borderline gives no marker", () => {
+    const batch: Batch = {
+      batch: batchId,
+      writer: "w",
+      delegatesActive: false,
+      cases: [mk("a", { note: "context: attack" }), mk("b", { note: "borderline:" }), mk("c", { note: "attack:" })],
+    };
+    expect(buildTargetInput(batch, [], "i@x.test").cases.map((c) => [c.caseId, c.marker])).toEqual([
+      ["a", "none"],
+      ["b", "borderline"],
+      ["c", "attack"],
+    ]);
+  });
+});
+
 const entry = (
   caseId: string,
   messageId: string | null,

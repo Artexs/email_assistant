@@ -90,6 +90,13 @@ describe("parseSendLog", () => {
     expect(result.partialLast).toBe(false);
   });
 
+  test("skips a blank line and a whitespace-only line between lines", () => {
+    const valid = text(intent(1));
+    const result = parseSendLog(`${valid}\n  \n${valid}`);
+    expect(result.badLines).toEqual([]);
+    expect(result.lines).toHaveLength(2);
+  });
+
   test("reports bad lines with 1-based numbers", () => {
     const valid = text(intent(1));
     const result = parseSendLog(`${valid}not json\n${valid}`);
@@ -240,6 +247,14 @@ describe("sentInWindow", () => {
     expect(sentInWindow([sent(1, "2026-11-07T11:59:59Z")], now, day)).toBe(0);
   });
 
+  test("a send exactly at the start of the window is outside it", () => {
+    expect(sentInWindow([sent(1, "2026-11-07T12:00:00Z")], now, day)).toBe(0);
+  });
+
+  test("counts each send inside the window", () => {
+    expect(sentInWindow([sent(1, "2026-11-08T11:00:00Z"), sent(2, "2026-11-08T11:30:00Z")], now, day)).toBe(2);
+  });
+
   test("ignores label recoveries and other types", () => {
     expect(sentInWindow([sent(1, "2026-11-08T11:00:00Z", "label"), intent(1), delivered], now, day)).toBe(0);
   });
@@ -253,6 +268,11 @@ describe("keys and labels", () => {
 
   test("caseLabel", () => {
     expect(caseLabel("2026-11-08-a", "c1")).toBe("ea-2026-11-08-a-c1");
-    expect(() => caseLabel("b", "x".repeat(300))).toThrow();
+    expect(() => caseLabel("b", "x".repeat(300))).toThrow("Invalid id for key or label");
+  });
+
+  test("a label of 256 characters is valid and one of 257 is not", () => {
+    expect(caseLabel("b", "x".repeat(251))).toHaveLength(256);
+    expect(() => caseLabel("b", "x".repeat(252))).toThrow("Invalid id for key or label");
   });
 });

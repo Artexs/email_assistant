@@ -249,6 +249,22 @@ describe("validateBatch rules", () => {
       cases: [makeCase("a", { subject: "600 123 456" })],
       issues: [issue("a", "phone_number", "subject: number with 9 or more digits")],
     },
+    {
+      name: "a link to a host with an unknown ending",
+      cases: [makeCase("a", { body: "https://intranet.local/x" })],
+      issues: [issue("a", "url_not_reserved", "body: host not reserved")],
+    },
+    {
+      name: "a www host with an unknown ending",
+      cases: [makeCase("a", { body: "www.firma.local" })],
+      issues: [issue("a", "url_not_reserved", "body: host not reserved")],
+    },
+    { name: "the bare host test", cases: [makeCase("a", { body: "http://test/x" })], issues: [] },
+    {
+      name: "a reserved host followed by two closing marks",
+      cases: [makeCase("a", { body: "(see http://portal.test)." })],
+      issues: [],
+    },
     { name: "a number with 8 digits", cases: [makeCase("a", { body: "12345678" })], issues: [] },
     { name: "a spaced number with 8 digits", cases: [makeCase("a", { body: "1234 5678" })], issues: [] },
     {
