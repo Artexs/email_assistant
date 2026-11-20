@@ -6,7 +6,7 @@
 
 ## What it does now
 
-The server runs one job, `ops.slo`, every 5 minutes. It checks service levels and sends the operator one Telegram text when an alert opens, one repeat every 6 hours while it stays open, and one text when it resolves. Five checks are live: sync lag, urgent mail not told in time and LLM failures (they read the database), free disk space, and the age of the last good backup (they read the host). The state of each incident is in the table `ops_alerts`, so a restart of the server does not lose it. The text goes only to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` (a direct send, no outbox row, no user chat). With no operator chat the job still runs and the `info` line `slo_alert_sent` counts as the send. The text holds the kind, numbers, up to five ids and a runbook path, never a subject, an address, a folder name, an error text or the chat id. It is English by default and Polish when `OPERATOR_LOCALE=pl`.
+The server runs one job, `ops.slo`, every 5 minutes. It checks service levels and sends the operator one Telegram text when an alert opens, one repeat every 6 hours while it stays open, and one text when it resolves. Five checks are live: sync lag, urgent mail not told in time and LLM failures (they read the database), free disk space, and the age of the last good backup (they read the host). The state of each incident is in the table `ops_alerts`, so a restart of the server does not lose it. The text goes only to the operator chat `OPERATOR_TELEGRAM_CHAT_ID` (a direct send, no outbox row, no user chat). With no operator chat the job still runs and the `warn` line `operator_alert_unsent` counts as the send. The text holds the kind, numbers, up to five ids and a runbook path, never a subject, an address, a folder name, an error text or the chat id. It is English by default and Polish when `OPERATOR_LOCALE=pl`.
 
 ## Rules
 
@@ -18,16 +18,16 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
    - `repeat`: the open notice went out and `SLO_REPEAT_H` hours (default 6) passed since the last notice, check firing or between.
    - `resolve`: the check is clear, or a resolved notice is still owed. The job sets `resolved_at`, sends, then marks the send.
    - `silent_close`: the open notice never went out and the check is clear. The job closes the row with no text.
-3. **Send first, then mark.** A failed send writes no mark and logs `slo_alert_send_failed`; the next tick sends the same notice again. A crash between the send and the mark repeats one notice (at least once). The job calls each mark once per step.
+3. **Send first, then mark.** A failed send writes no mark and logs `operator_alert_send_failed` (level `error`, once per alert key and process); the next tick sends the same notice again. A crash between the send and the mark repeats one notice (at least once). The job calls each mark once per step.
 4. **Hysteresis.** A check has three states: `firing`, `between` and `clear`. An open alert stays open while the check is `between`. It resolves only on `clear`.
-5. **A check that fails** logs `slo_check_failed` with its kind and is skipped for this tick; the other kinds run. A check that is off (it returns null) leaves an open row as it is.
+5. **A check that fails** logs `operator_check_failed` with its kind (a state read or write that fails logs `operator_alert_failed`) and is skipped for this tick; the other kinds run. A check that is off (it returns null) leaves an open row as it is.
 6. **The three database checks** read every organization that is not suspended, with no tenant scope (the scheduler runs each tick that way):
    - Sync lag: an active mailbox with no sign of life (last sync, status change, creation or organization resume) for more than `SLO_SYNC_LAG_MIN` minutes (default 15).
    - Urgent latency: an urgent mail that the urgent notice covers waited more than `SLO_URGENT_LATENCY_MIN` minutes (default 10) outside quiet hours for its notice (the default hours, or with the flag `user_quiet_hours` the own hours of the user of the notice: [digest-and-notices.md](digest-and-notices.md) rule 3a). The wait starts at the receive time, or at the later mailbox status change or organization resume. A notice that fails for good keeps the mail late for 24 h. The check reads at most 200 urgent mails per organization. A bad organization time zone skips that organization and logs `slo_urgent_zone_bad`.
    - LLM errors: at least `SLO_LLM_MIN_CALLS` calls in `SLO_LLM_WINDOW_MIN` minutes with `SLO_LLM_FAIL_PCT` percent failed, or an organization paused by a spent quota.
    - For 10 minutes after a start, sync lag and urgent give no verdict.
 7. **The two host checks** (F114 stage 04) read no database:
-   - Disk: `statfs` of `SLO_DISK_PATH` (default `/`; in the container this is the host root volume, to be confirmed on the VPS). It gives `free_pct` and `free_gb` (1024^3 bytes, one decimal). Firing: `free_pct < SLO_DISK_FREE_PCT` (default 15) or `free_gb < SLO_DISK_FREE_GB` (default 2). Clear: both at least 5 points and 0.5 GB above those values. Else `between`. A volume that cannot be read makes the check throw: `slo_check_failed`, kind skipped for this tick.
+   - Disk: `statfs` of `SLO_DISK_PATH` (default `/`; in the container this is the host root volume, to be confirmed on the VPS). It gives `free_pct` and `free_gb` (1024^3 bytes, one decimal). Firing: `free_pct < SLO_DISK_FREE_PCT` (default 15) or `free_gb < SLO_DISK_FREE_GB` (default 2). Clear: both at least 5 points and 0.5 GB above those values. Else `between`. A volume that cannot be read makes the check throw: `operator_check_failed`, kind skipped for this tick.
    - Backup age: reads `BACKUP_STATUS_FILE` (the file of `deploy/backup.sh`, mounted read-only; empty = the check is off and an open alert stays as it is). Firing: the file is missing, unreadable or has a bad shape (`missing` 1), the last run failed (`failed` 1), or the last good backup is older than `SLO_BACKUP_MAX_AGE_H` hours (default 26). Else clear (no `between`). Facts: `age_h` (whole hours since `last_ok_at`, -1 if none), `failed`, `missing`.
 8. **The text.** The words live in core (`packages/core/src/texts/operator.ts`, `slo`) and `renderSloAlert` in `packages/core/src/ops/alert-text.ts` joins them; the operator module only sends. Line 1: `ALERT <kind>`, `STILL OPEN <kind> (since <ISO time>)`, `RESOLVED <kind> (open <N> min)` or `TEST <kind>`. Line 2: the facts in words. Line 3 (not for resolved): up to five ids of mailboxes, mails or organizations, then `+N more`. Last line: `Runbook: docs/known-alerts.md#<kind>`. In Polish the words change (`ALARM`, `Instrukcja:`) and the decimal separator is a comma.
 9. **No real send outside the operator chat.** Dev and sim leave `OPERATOR_TELEGRAM_CHAT_ID` empty and send nothing real.
@@ -62,23 +62,23 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 
 ## Entry points
 
-| Kind     | Name                                                                                                                       | Where                                               |
-| -------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| job      | `ops.slo` (`30 */5 * * * *`)                                                                                               | `apps/server/src/start/operator.ts`                 |
-| function | `runSloTick`                                                                                                               | `apps/server/src/modules/operator/slo-job.ts`       |
-| function | `checkSyncLag`, `checkUrgentLatency`, `checkLlmErrors`, `checkDisk`, `checkBackupAge`                                      | `apps/server/src/modules/operator/slo-checks.ts`    |
-| function | `renderSloAlert`, `renderOperatorEvent`, `operatorEventKey`                                                                | `packages/core/src/ops/alert-text.ts`, `events.ts`  |
-| function | `nextAlertStep`                                                                                                            | `packages/core/src/ops/alert-step.ts`               |
-| CLI      | `bun run ops:alerts [--days 7]`: one line per incident of the last days (kind, opened, notices, resolved or `open`, facts) | `apps/server/src/scripts/ops-alerts.ts`             |
-| CLI      | `bun run ops:alert-test (--kind <kind> \| --all)`: sends the `TEST` text through the real path, writes no row              | `apps/server/src/scripts/ops-alert-test.ts`         |
-| CLI      | `bun run release:prepare <x.y.z>`: version and changelog for a release                                                     | `apps/server/src/scripts/release-prepare.ts`        |
-| CLI      | `bun run db:check-migrations`: contract statements in new migrations (CI)                                                  | `apps/server/src/scripts/check-migrations.ts`       |
-| script   | `deploy/release.sh <tag>`, `deploy/rollback.sh`                                                                            | `deploy/release.sh`, `deploy/rollback.sh`           |
-| script   | `deploy/restore.sh --target drill\|new-host`: the restore for a drill and for a new host                                   | `deploy/restore.sh`                                 |
-| compose  | `deploy/compose.drill.yaml`: the override of the drill stack (project `ea-drill`)                                          | `deploy/compose.drill.yaml`                         |
-| CLI      | `bun run credentials:check`: does `CREDENTIALS_KEY` open every stored mailbox secret? Prints counts only                   | `apps/server/src/scripts/credentials-check.ts`      |
-| function | `countDecryptableCredentials`                                                                                              | `apps/server/src/modules/mail/credentials-check.ts` |
-| config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                              | `apps/server/src/platform/config-ops.ts`            |
+| Kind     | Name                                                                                                                           | Where                                               |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
+| job      | `ops.slo` (`30 */5 * * * *`)                                                                                                   | `apps/server/src/start/operator.ts`                 |
+| function | `runSloTick`                                                                                                                   | `apps/server/src/modules/operator/slo-job.ts`       |
+| function | `checkSyncLag`, `checkUrgentLatency`, `checkLlmErrors`, `checkDisk`, `checkBackupAge`                                          | `apps/server/src/modules/operator/slo-checks.ts`    |
+| function | `renderSloAlert`, `renderOperatorEvent`, `operatorEventKey`                                                                    | `packages/core/src/ops/alert-text.ts`, `events.ts`  |
+| function | `nextAlertStep`                                                                                                                | `packages/core/src/ops/alert-step.ts`               |
+| CLI      | `bun run ops:alerts [--days 7]`: one line per incident of the last days (kind, opened, notices, resolved or `open`, facts)     | `apps/server/src/scripts/ops-alerts.ts`             |
+| CLI      | `bun run ops:alert-test (--kind <kind> \| --all)`: sends the `TEST` text of one of the ten kinds, or of all ten, writes no row | `apps/server/src/scripts/ops-alert-test.ts`         |
+| CLI      | `bun run release:prepare <x.y.z>`: version and changelog for a release                                                         | `apps/server/src/scripts/release-prepare.ts`        |
+| CLI      | `bun run db:check-migrations`: contract statements in new migrations (CI)                                                      | `apps/server/src/scripts/check-migrations.ts`       |
+| script   | `deploy/release.sh <tag>`, `deploy/rollback.sh`                                                                                | `deploy/release.sh`, `deploy/rollback.sh`           |
+| script   | `deploy/restore.sh --target drill\|new-host`: the restore for a drill and for a new host                                       | `deploy/restore.sh`                                 |
+| compose  | `deploy/compose.drill.yaml`: the override of the drill stack (project `ea-drill`)                                              | `deploy/compose.drill.yaml`                         |
+| CLI      | `bun run credentials:check`: does `CREDENTIALS_KEY` open every stored mailbox secret? Prints counts only                       | `apps/server/src/scripts/credentials-check.ts`      |
+| function | `countDecryptableCredentials`                                                                                                  | `apps/server/src/modules/mail/credentials-check.ts` |
+| config   | `SLO_*`, `BACKUP_STATUS_FILE`, `OPERATOR_TELEGRAM_CHAT_ID`, `OPERATOR_LOCALE`                                                  | `apps/server/src/platform/config-ops.ts`            |
 
 ## Data
 

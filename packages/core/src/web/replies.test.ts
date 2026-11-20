@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { approvalItemSchema } from "./approvals";
 import {
+  cleanReplyInstruction,
   REPLY_INSTRUCTION_RAW_MAX,
   replyConflictSchema,
   replyRecipientsBodySchema,
@@ -98,5 +99,33 @@ describe("the reply fields of an approval item", () => {
     ]) {
       expect(approvalItemSchema.safeParse({ ...base, ...bad }).success).toBe(false);
     }
+  });
+});
+
+describe("cleanReplyInstruction", () => {
+  test.each([
+    ["trims the ends", "  Odpisz uprzejmie  ", "Odpisz uprzejmie"],
+    ["joins two lines into one", "Pierwsza\r\nDruga", "Pierwsza Druga"],
+    ["drops a direction mark and a control character", "Od\u200episz\u0007 tak", "Odpisz tak"],
+  ])("%s", (_name, input, expected) => {
+    expect(cleanReplyInstruction(input)).toBe(expected);
+  });
+
+  test.each([
+    ["an empty line", ""],
+    ["only blanks", "   \n  "],
+    ["only a direction mark", "\u200e"],
+    ["301 characters", "a".repeat(301)],
+    ["301 emoji", "😀".repeat(301)],
+  ])("%s is null", (_name, input) => {
+    expect(cleanReplyInstruction(input)).toBeNull();
+  });
+
+  test.each([
+    ["one character", "a"],
+    ["300 characters", "a".repeat(300)],
+    ["300 emoji (the length counts code points)", "😀".repeat(300)],
+  ])("%s is kept", (_name, input) => {
+    expect(cleanReplyInstruction(input)).toBe(input);
   });
 });
