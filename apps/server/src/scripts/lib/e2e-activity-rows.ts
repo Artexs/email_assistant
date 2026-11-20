@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type Category, type DraftPayload } from "@ea/core";
+import { type Category, DAY_MS, type DraftPayload, HOUR_MS, MINUTE_MS, sendPayloadFor } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { insertInboxFolder } from "../../modules/mail/repo";
@@ -12,9 +12,6 @@ export interface ActivitySeedResult {
   total: number;
 }
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 const FIRST_UID = 900_001;
 
 // Runs `fn` in a transaction; inside a transaction it runs on that one.
@@ -77,7 +74,7 @@ export async function insertMails(
         reason_code: mail.reasonCode,
         reason: mail.reason,
         fields: JSON.stringify(mail.fields ?? {}),
-        created_at: new Date(mail.receivedAt.getTime() + MINUTE),
+        created_at: new Date(mail.receivedAt.getTime() + MINUTE_MS),
       }))
     )
     .execute();
@@ -150,8 +147,8 @@ export async function seedActivityProfiles(
           answered: profile.answered,
           user_mails_to: profile.userMailsTo,
           relation: profile.relation,
-          first_seen_at: new Date(now.getTime() - 30 * DAY),
-          last_seen_at: new Date(now.getTime() - profile.seenDaysAgo * DAY),
+          first_seen_at: new Date(now.getTime() - 30 * DAY_MS),
+          last_seen_at: new Date(now.getTime() - profile.seenDaysAgo * DAY_MS),
         }))
       )
       .execute();
@@ -171,7 +168,7 @@ export async function seedActivityRows(
     const [moved, reply, unsure, delegated] = (await insertMails(trx, ctx, mailboxId, [
       {
         uid: FIRST_UID,
-        receivedAt: ago(3 * HOUR),
+        receivedAt: ago(3 * HOUR_MS),
         subject: ACTIVITY_SUBJECTS.moved,
         from: "shop@e2e.test",
         category: "notification",
@@ -181,7 +178,7 @@ export async function seedActivityRows(
       },
       {
         uid: FIRST_UID + 1,
-        receivedAt: ago(4 * HOUR),
+        receivedAt: ago(4 * HOUR_MS),
         subject: ACTIVITY_SUBJECTS.reply,
         from: "anna@e2e.test",
         category: "needs_reply",
@@ -193,7 +190,7 @@ export async function seedActivityRows(
       },
       {
         uid: FIRST_UID + 2,
-        receivedAt: ago(5 * HOUR),
+        receivedAt: ago(5 * HOUR_MS),
         subject: ACTIVITY_SUBJECTS.unsure,
         from: "info@e2e.test",
         category: "unsure",
@@ -204,7 +201,7 @@ export async function seedActivityRows(
       },
       {
         uid: FIRST_UID + 3,
-        receivedAt: ago(6 * HOUR),
+        receivedAt: ago(6 * HOUR_MS),
         subject: ACTIVITY_SUBJECTS.delegated,
         from: "boss@e2e.test",
         category: "delegation",
@@ -219,15 +216,15 @@ export async function seedActivityRows(
       type: "move",
       status: "applied",
       payload: { folder: "ai_notifications" },
-      createdAt: ago(HOUR),
+      createdAt: ago(HOUR_MS),
     });
     await insertAction(trx, ctx, {
       emailId: moved,
       type: "mark_read",
       status: "applied",
-      createdAt: ago(HOUR - 1000),
+      createdAt: ago(HOUR_MS - 1000),
     });
-    await insertAction(trx, ctx, { emailId: reply, type: "flag", status: "applied", createdAt: ago(HOUR) });
+    await insertAction(trx, ctx, { emailId: reply, type: "flag", status: "applied", createdAt: ago(HOUR_MS) });
 
     const delegate = await trx
       .insertInto("delegates")
@@ -255,14 +252,14 @@ export async function seedActivityRows(
       type: "create_draft",
       status: "applied",
       payload: { ...draft },
-      createdAt: ago(HOUR),
+      createdAt: ago(HOUR_MS),
     });
     const sendId = await insertAction(trx, ctx, {
       emailId: delegated,
       type: "send",
       status: "awaiting_approval",
       payload: { ...sendPayloadFor(draft) },
-      createdAt: ago(HOUR - 1000),
+      createdAt: ago(HOUR_MS - 1000),
       dependsOnActionId: draftId,
       // The approval notice job leaves a notified action alone.
       notifiedAt: now,
@@ -278,7 +275,7 @@ export async function seedActivityRows(
         send_action_id: sendId,
         status: "drafted",
         task_summary: "Send the Q4 report",
-        due_at: new Date(now.getTime() + 2 * DAY),
+        due_at: new Date(now.getTime() + 2 * DAY_MS),
       })
       .execute();
 
@@ -286,7 +283,7 @@ export async function seedActivityRows(
     for (let n = 1; n <= ACTIVITY_FILLERS; n++) {
       fillers.push({
         uid: FIRST_UID + 3 + n,
-        receivedAt: ago(2 * DAY + n * MINUTE),
+        receivedAt: ago(2 * DAY_MS + n * MINUTE_MS),
         subject: activityFillerSubject(n),
         from: "news@e2e.test",
         category: "info",
@@ -328,7 +325,7 @@ export async function seedOtherOrgMail(
     const [emailId] = await insertMails(trx, ctx, mailboxId, [
       {
         uid: FIRST_UID,
-        receivedAt: new Date(now.getTime() - 3 * HOUR),
+        receivedAt: new Date(now.getTime() - 3 * HOUR_MS),
         subject: "E2E other organization mail",
         from: "shop@e2e.test",
         category: "notification",
@@ -343,7 +340,7 @@ export async function seedOtherOrgMail(
       type: "move",
       status: "applied",
       payload: { folder: "ai_notifications" },
-      createdAt: new Date(now.getTime() - HOUR),
+      createdAt: new Date(now.getTime() - HOUR_MS),
     });
     return { mailboxId, emailId };
   });

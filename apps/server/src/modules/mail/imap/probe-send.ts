@@ -1,5 +1,5 @@
 // Write probe for the send rules: one synthetic mail through the draft, SMTP, Sent and INBOX paths. Test address only.
-import { DAY_MS } from "@ea/core";
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import type { FetchMessageObject, FetchQueryObject, ImapFlow } from "imapflow";
 import SMTPConnection, { type SMTPConnectionOptions } from "nodemailer/lib/smtp-connection";
 
@@ -20,7 +20,7 @@ const INBOX_PATH = "INBOX";
 const ACTION_HEADER = "x-ea-action-id";
 const DEFAULT_POLL_MS = 5000;
 const DEFAULT_INBOX_TIMEOUT_MS = 120_000;
-const DEFAULT_SENT_TIMEOUT_MS = 60_000;
+const DEFAULT_SENT_TIMEOUT_MS = MINUTE_MS;
 const LOG_LEVELS = ["trace", "debug", "info", "warn", "error", "fatal"] as const;
 const DRAFT_QUERY: FetchQueryObject = {
   uid: true,
