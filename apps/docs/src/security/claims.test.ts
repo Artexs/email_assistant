@@ -8,6 +8,15 @@ import { sevenDayLimitProblems } from "@ea/core";
 import { REPO_URL, repoRoot } from "../in-place";
 import { claimProblems, parseLedger, type PublicClaim, proofUrl, publicClaims } from "./claims";
 
+// The two security pages and the heading of the section that says what the product does not promise.
+const PAGES = [
+  { file: "../content/docs/security.mdx", heading: "## What this product does not promise" },
+  { file: "../content/docs/pl/security.mdx", heading: "## Czego ten produkt nie obiecuje" },
+];
+function readPage({ file }: { file: string }): string {
+  return readFileSync(join(import.meta.dir, file), "utf8");
+}
+
 const LEDGER = `# Claims
 
 | #    | Claim | Source | Condition |
@@ -214,11 +223,30 @@ describe("the public claims of the security page", () => {
       claim.condition?.pl ?? "",
     ]);
     expect(sevenDayLimitProblems(claimTexts)).toEqual([]);
-    const page = readFileSync(join(import.meta.dir, "../content/docs/security.mdx"), "utf8");
-    expect(sevenDayLimitProblems(page.split("\n"))).toEqual([]);
+    for (const file of PAGES) {
+      expect(sevenDayLimitProblems(readPage(file).split("\n"))).toEqual([]);
+    }
+  });
+
+  test("the claim ai-provider-receives cites the context row and the history-check row, with the numbers", () => {
     const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
-    expect(receives?.text.en).toMatch(/older than 7 days/);
-    expect(receives?.text.en).toMatch(/thread as context/);
-    expect(receives?.text.pl).toMatch(/kontekst/);
+    expect(receives?.ledger).toContain("C261");
+    expect(receives?.ledger).toContain("C262");
+    expect(receives?.text.en).toMatch(/500 characters/);
+    expect(receives?.text.en).toMatch(/can be older than 7 days/);
+    expect(receives?.text.pl).toMatch(/500 znaków/);
+  });
+
+  test("the section of what the product does not promise holds no line about the 7-day limit, in either language", () => {
+    for (const { file, heading } of PAGES) {
+      const lines = readPage({ file, heading }).split("\n");
+      const start = lines.findIndex((line) => line.trim() === heading);
+      expect(start).toBeGreaterThanOrEqual(0);
+      const rest = lines.slice(start + 1);
+      const end = rest.findIndex((line) => line.startsWith("## "));
+      const section = end === -1 ? rest : rest.slice(0, end);
+      expect(section.length).toBeGreaterThan(0);
+      expect(section.filter((line) => /\b7\b|siedem|seven/i.test(line))).toEqual([]);
+    }
   });
 });
