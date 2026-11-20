@@ -162,4 +162,14 @@ describe("compareRuns", () => {
     ]);
     expect(compareRuns(one, one).differences).toEqual([]);
   });
+
+  test("8 two mutants that start at one place and end at two others are compared one by one", () => {
+    const at = (id: string, status: string, endColumn: number) => ({
+      ...mutant(id, status, status === "Killed" ? ["t1"] : undefined),
+      location: { start: { line: 4, column: 7 }, end: { line: 4, column: endColumn } },
+    });
+    const one = readReport({ files: { "src/a.ts": { mutants: [at("1", "Survived", 12), at("2", "Killed", 30)] } } });
+    const two = readReport({ files: { "src/a.ts": { mutants: [at("2", "Killed", 30), at("1", "Survived", 12)] } } });
+    expect(compareRuns(one.mutants, two.mutants).differences).toEqual([]);
+  });
 });

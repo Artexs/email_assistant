@@ -8,7 +8,7 @@
 import { appendFile } from "node:fs/promises";
 import { parseJunit } from "./junit";
 import { parseLcov, unionHits, type FileCoverage } from "./lcov";
-import { compareRuns, readReport, SURVIVED_STATUSES, type MutantRow } from "./mutation-summary";
+import { compareRuns, mutantPlace, readReport, SURVIVED_STATUSES, type MutantRow } from "./mutation-summary";
 
 export const LANES = ["unit", "int"] as const;
 export type Lane = (typeof LANES)[number];
@@ -86,7 +86,7 @@ const placeOf = (mutant: string): string => mutant.slice(0, mutant.indexOf(" "))
 export function checkMutants(before: MutantRow[][], after: MutantRow[], unstable: Set<string>): MutantCheck {
   const first = before[0];
   if (first === undefined) return { failures: [], oneSided: [] };
-  const key = (m: MutantRow): string => `${m.file}:${m.line}:${m.column} ${m.mutator} ${m.replacement}`;
+  const key = mutantPlace;
   const killedBefore = new Set(first.filter((m) => m.status === "Killed").map(key));
   for (const run of before.slice(1)) {
     const killed = new Set(run.filter((m) => m.status === "Killed").map(key));
