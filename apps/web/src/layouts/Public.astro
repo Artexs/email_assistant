@@ -1,4 +1,6 @@
 ---
+import type { UserLocale } from "@ea/core/web";
+
 import "../styles/global.css";
 import { en, type TextKey } from "../i18n/en";
 
@@ -7,7 +9,7 @@ interface Props {
   // A page whose title is not a key (the legal pages) passes the text; it wins over `titleKey`.
   title?: string;
   // The language of the page text, printed in `<html lang>`.
-  lang?: "en" | "pl";
+  lang?: UserLocale;
   // A reading page (the legal texts): wide, starts at the top, not a centred card.
   reading?: boolean;
 }

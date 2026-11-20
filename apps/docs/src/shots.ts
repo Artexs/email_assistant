@@ -4,12 +4,11 @@
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-import { DOCS_BASE } from "@ea/core";
+import { DOCS_BASE, type UserLocale } from "@ea/core";
 import { publicContentProblems } from "@ea/core/web";
 
 import { shotSource } from "../../web/e2e/lib/shot-source";
 
-export type ShotLocale = "en" | "pl";
 export type ShotViewport = "desktop" | "phone";
 
 export interface ShotEntry {
@@ -17,7 +16,7 @@ export interface ShotEntry {
   name: string;
   // A panel path.
   path: string;
-  locale: ShotLocale;
+  locale: UserLocale;
   viewport: ShotViewport;
   alt: string;
 }
@@ -25,7 +24,7 @@ export interface ShotEntry {
 export const SHOT_PAGES = ["onboarding", "mailboxes", "settings", "rules", "activity"] as const;
 export type ShotPage = (typeof SHOT_PAGES)[number];
 
-export const SHOT_LOCALES: readonly ShotLocale[] = ["en", "pl"];
+export const SHOT_LOCALES: readonly UserLocale[] = ["en", "pl"];
 export const SHOT_VIEWPORTS: readonly ShotViewport[] = ["desktop", "phone"];
 
 // The desktop size of the shot run, and the file size below which a PNG is no screenshot (an empty page is a few KB).
@@ -133,7 +132,7 @@ export function isShotPage(page: string): page is ShotPage {
 }
 
 // The language of a page: `pl` reads Polish, every other value (`root`, `en`, undefined) reads English (as `uiText`).
-export function shotLocale(currentLocale: string | undefined): ShotLocale {
+export function shotLocale(currentLocale: string | undefined): UserLocale {
   return currentLocale === "pl" ? "pl" : "en";
 }
 

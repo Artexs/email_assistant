@@ -1,5 +1,5 @@
 ---
-import { dataCategories } from "@ea/core/web";
+import { dataCategories, type UserLocale } from "@ea/core/web";
 
 import { en } from "../../i18n/en";
 import { pl } from "../../i18n/pl";
@@ -7,7 +7,7 @@ import { keptText } from "../../lib/legal-tables";
 import LegalTable from "./LegalTable.astro";
 
 interface Props {
-  lang: "pl" | "en";
+  lang: UserLocale;
 }
 
 const { lang } = Astro.props;

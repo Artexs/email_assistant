@@ -1,6 +1,9 @@
 import { createAuthMiddleware } from "better-auth/api";
 import { z } from "zod";
 
+import type { AuthDeps } from "./auth";
+import type { AuthHookPart, AuthPartContext } from "./auth-hooks";
+import { RESET_REQUEST_ANSWER, RESET_REQUEST_PATH } from "./auth-password";
 import { createLog } from "./log";
 
 const log = createLog("auth");
@@ -12,6 +15,8 @@ type PasswordApi = HookContext["context"]["password"];
 export interface SignInOverride {
   context: { context: { password: PasswordApi; ssoRequiredRefused?: true } };
 }
+
+export const SIGN_IN_PATH = "/sign-in/email";
 
 const emailSchema = z.email();
 const MAX_PASSWORD_LENGTH = 128;
@@ -91,4 +96,34 @@ export async function isSsoRequiredResetRequest(
   if (!found || !(await isRefused(found.user.id))) return false;
   log.info("reset_request_refused_sso", { user_id: found.user.id });
   return true;
+}
+
+// The reset request is refused for a member that "SSO required" refuses and for an SSO-only member.
+function resetRefusal(deps: AuthDeps): ((userId: string) => Promise<boolean>) | undefined {
+  const { passwordSignInRefused, ssoOnlyMember } = deps;
+  if (!passwordSignInRefused && !ssoOnlyMember) return undefined;
+  return async (userId) => (await passwordSignInRefused?.(userId)) === true || (await ssoOnlyMember?.(userId)) === true;
+}
+
+// The refusals of the reset request and of the password sign-in. Both run after the part that comes before them for the
+// same path: the address limit of the reset request, the lock of the sign-in (a locked user gets the lock answer first).
+export function hooksOf(part: AuthPartContext): AuthHookPart[] {
+  const { deps } = part;
+  const resetRefused = resetRefusal(deps);
+  return [
+    {
+      name: "sso-required",
+      async before(ctx) {
+        if (ctx.path === RESET_REQUEST_PATH) {
+          if (resetRefused && (await isSsoRequiredResetRequest(ctx, resetRefused)))
+            return ctx.json(RESET_REQUEST_ANSWER);
+          return undefined;
+        }
+        if (ctx.path === SIGN_IN_PATH && deps.passwordSignInRefused) {
+          return refuseSsoRequiredSignIn(ctx, deps.passwordSignInRefused);
+        }
+        return undefined;
+      },
+    },
+  ];
 }

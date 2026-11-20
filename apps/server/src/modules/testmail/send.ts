@@ -71,7 +71,8 @@ export interface SendRunResult {
   /** "open" = not done yet and no plan skip reason (an open intent, or a case that a stop left unsent). */
   remaining: { caseId: string; reason: SkipReason | "open" }[];
   stoppedBy: null | StoppedBy;
-  exitCode: 0 | 1 | 2;
+  /** 0 done, 1 a case needs a fix, 4 incomplete: a stop or a cap left cases to send (docs/cli.md). */
+  exitCode: 0 | 1 | 4;
 }
 
 /** Thrown inside the loop to end the run with a reason. */
@@ -350,6 +351,6 @@ export async function runSend(deps: SendDeps, input: SendRunInput): Promise<Send
     remaining.some((item) => item.reason === "changed" || item.reason === "blocked") ||
     (stoppedBy !== null && hardStops.includes(stoppedBy));
   const allDone = failed.length === 0 && remaining.length === 0;
-  const exitCode = needsFix ? 1 : allDone ? 0 : 2;
+  const exitCode = needsFix ? 1 : allDone ? 0 : 4;
   return { sent, recovered, failed, remaining, stoppedBy, exitCode };
 }

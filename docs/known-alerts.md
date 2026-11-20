@@ -168,7 +168,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `password_sign_in_refused_sso`, `reset_request_refused_sso` and `password_session_refused_sso` (field `user_id`)
 
 - **First seen:** 2026-11-15 (F119 stage 14 docs; not seen live)
-- **Source:** `apps/server/src/platform/auth-sso-required.ts` (the first two) and the session hook in `apps/server/src/platform/auth.ts` (the third). Level `info`. The line holds the user id only.
+- **Source:** `apps/server/src/platform/auth-sso-required.ts` (the first two) and the session hook in `apps/server/src/platform/auth-database-hooks.ts` (the third). Level `info`. The line holds the user id only.
 - **Cause:** The organization of the user has "SSO required", and the user is not its break-glass owner with TOTP on. (`reset_request_refused_sso` also fires for an SSO-only member: no password account and a membership in an organization with a provider; no "SSO required" is needed for it.) The password sign-in got the answer of a wrong password (`401 INVALID_EMAIL_OR_PASSWORD`), the reset request got the generic answer and no mail, or a password session was refused at its creation (a sign-in or a code step that passed the first check just before the operator's switch). No lockout count, no lock mail and no audit row follow.
 - **Fix:** No action for one line. A real member signs in with the company account. If the IdP is down, the operator runs `bun run org:sso --org-id <id> --require off`. The break-glass owner is never refused.
 - **Status:** won't fix (a refusal is the expected answer)
@@ -299,7 +299,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`; `terms_record_failed` before F103: `web: terms record failed for user <id>: <label>`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stages 5 and 7; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler `termsAcceptedHandler` in `web-audit.ts`): the password was set, but the terms row was not written. `web-audit.ts` writes the same event code and fields.
+- **Source:** `apps/server/src/platform/auth-lockout.ts` (`lockout_failed`) and `apps/server/src/platform/auth-password.ts` (`terms_record_failed`, `lockout_clear_failed`). Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler `termsAcceptedHandler` in `web-audit.ts`): the password was set, but the terms row was not written. `web-audit.ts` writes the same event code and fields.
 - **Cause:** a database error. The sign-in itself is not changed: the user gets the normal answer. A failed lock write means that failed sign-ins are not counted. A failed terms write means the user sees the terms dialog at the next sign-in.
 - **Fix:** read the `error` field (the old form: `<label>`) and check the database. No manual repair: the user accepts the terms in the dialog.
 - **Status:** investigating (per case)
@@ -960,7 +960,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** Check the token with `bun run telegram:check`. Fix `TELEGRAM_BOT_TOKEN` in `.env` (the user edits it) and restart the server. Never print the token.
 - **Status:** fix pending (user action when it fires)
 
-### `[mailbox-audit] inbox=<n> stored=<m> missing=0 duplicates=<k> cross=<c>` (exit 2)
+### `[mailbox-audit] inbox=<n> stored=<m> missing=0 duplicates=<k> cross=<c>` (exit 1; exit 2 before F129)
 
 - **First seen:** 2026-11-05 (S1a 48-hour test, `~/ea-logs/audit.log` on the VPS)
 - **Source:** `bun run mailbox:audit` (`apps/server/src/modules/mail/tools.ts`, `auditMailbox`).

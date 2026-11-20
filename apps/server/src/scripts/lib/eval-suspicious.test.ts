@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { evalCaseSchema, miniScenario, type EvalCase } from "@ea/core";
+import { evalCaseSchema, miniScenario, type EvalCase, UsageError } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { renderSuspiciousReport, suspiciousInputOfCase, suspiciousRows } from "../../modules/triage";
@@ -130,19 +130,19 @@ describe("suspicious sim measurement", () => {
     expect(input.knownDomains).not.toContain("gmail.com");
   });
 
-  test("2. --suspicious with --judge, a model, a provider or no --sim is a usage error with exit code 1", () => {
+  test("2. --suspicious with --judge, a model, a provider or no --sim is a usage error with exit code 2", () => {
     const base = ["--sim", "lab-01", "--part", "dev", "--suspicious"];
     expect(parseEvalArgs(base)).toMatchObject({ suspicious: true, sim: "lab-01", part: "dev" });
     expect(parseEvalArgs([...base, "--out", "x.md"])).toMatchObject({ out: "x.md" });
     for (const extra of [["--judge"], ["--model", "gpt-6-luna"], ["--provider", "openai"], ["--budget-usd", "1"]]) {
-      expect(parseEvalArgs([...base, ...extra])).toBeUndefined();
+      expect(() => parseEvalArgs([...base, ...extra])).toThrow(UsageError);
     }
-    expect(parseEvalArgs(["--suspicious"])).toBeUndefined();
-    expect(parseEvalArgs(["--part", "dev", "--suspicious"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--suspicious"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--part", "dev", "--suspicious"])).toThrow(UsageError);
 
     const script = resolve(import.meta.dir, "../eval.ts");
     const result = Bun.spawnSync(["bun", script, ...base, "--judge"]);
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(2);
     expect(result.stderr.toString()).toContain("usage: bun run eval");
   });
 });

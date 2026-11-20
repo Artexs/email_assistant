@@ -140,7 +140,7 @@ describe("testmail:remote main", () => {
       argv[0] === "scp"
         ? ok()
         : {
-            code: 2,
+            code: 4,
             stdout: [
               "[mail] deliver …",
               JSON.stringify({ case: "a", result: "moved", folder: "offers" }),
@@ -150,7 +150,7 @@ describe("testmail:remote main", () => {
           }
     );
     const code = await main(["deliver", "--batch", batchId], deps);
-    expect(code).toBe(2);
+    expect(code).toBe(4);
     expect(calls.map((call) => call.argv[0])).toEqual(["scp", "ssh"]);
     expect(calls[0]?.argv).toContain(`home_vm:/tmp/ea-testmail-${uuid}.js`);
     expect(targetInputSchema.safeParse(JSON.parse(calls[1]?.stdin ?? "null")).success).toBe(true);
@@ -205,8 +205,8 @@ describe("testmail:remote main", () => {
     expect(await main(["compare", "--batch", batchId, "--out", file], failing)).toBe(1);
     expect(readFileSync(file, "utf8")).toBe("old report");
 
-    const waiting = makeDeps((argv) => (argv[0] === "scp" ? ok() : { code: 2, stdout: "wait\n" }));
-    expect(await main(["compare", "--batch", batchId, "--out", file], waiting)).toBe(2);
+    const waiting = makeDeps((argv) => (argv[0] === "scp" ? ok() : { code: 4, stdout: "wait\n" }));
+    expect(await main(["compare", "--batch", batchId, "--out", file], waiting)).toBe(4);
     expect(readFileSync(file, "utf8")).toBe("wait\n");
   });
 
@@ -229,7 +229,7 @@ describe("testmail:remote main", () => {
     expect(stderr.join("")).toContain("ssh to home_vm failed");
   });
 
-  test("6. --print-input prints the JSON; nothing sent is exit 2 with no build", async () => {
+  test("6. --print-input prints the JSON; nothing sent is exit 1 with no build, for deliver and for compare", async () => {
     writeLog([sentA]);
     expect(await main(["compare", "--batch", batchId, "--print-input"], makeDeps(ok))).toBe(0);
     const parsed = targetInputSchema.parse(JSON.parse(stdout.join("")));
@@ -239,8 +239,9 @@ describe("testmail:remote main", () => {
 
     stdout = [];
     writeLog([]);
-    expect(await main(["deliver", "--batch", batchId], makeDeps(ok))).toBe(2);
+    expect(await main(["deliver", "--batch", batchId], makeDeps(ok))).toBe(1);
     expect(stdout.join("")).toContain("nothing sent yet");
+    expect(await main(["compare", "--batch", batchId], makeDeps(ok))).toBe(1);
     expect(builds).toBe(0);
     expect(calls).toEqual([]);
   });

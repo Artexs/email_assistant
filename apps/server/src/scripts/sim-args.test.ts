@@ -1,8 +1,14 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { parseSimArgs, usage } from "./sim-args";
 
 describe("parseSimArgs", () => {
+  test("an unknown flag is a usage error", () => {
+    expect(() => parseSimArgs(["--no-such-flag"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["plan", "lab-01", "--no-such-flag"])).toThrow(UsageError);
+  });
+
   test("plan and status", () => {
     expect(parseSimArgs(["plan", "lab-01"])).toEqual({ kind: "plan", scenario: "lab-01", force: false });
     expect(parseSimArgs(["plan", "lab-01", "--force", "--root", "/tmp/x"])).toEqual({
@@ -15,17 +21,17 @@ describe("parseSimArgs", () => {
   });
 
   test("4 an unknown command, a missing scenario or a missing --root value gives undefined", () => {
-    expect(parseSimArgs(["frobnicate", "lab-01"])).toBeUndefined();
-    expect(parseSimArgs([])).toBeUndefined();
-    expect(parseSimArgs(["plan"])).toBeUndefined();
-    expect(parseSimArgs(["plan", "lab-01", "--root"])).toBeUndefined();
-    expect(parseSimArgs(["plan", "lab-01", "--root", ""])).toBeUndefined();
+    expect(() => parseSimArgs(["frobnicate", "lab-01"])).toThrow(UsageError);
+    expect(() => parseSimArgs([])).toThrow(UsageError);
+    expect(() => parseSimArgs(["plan"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["plan", "lab-01", "--root"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["plan", "lab-01", "--root", ""])).toThrow(UsageError);
     expect(usage).toContain("bun run sim plan");
   });
 
   test("a scenario id is a plain folder name", () => {
-    expect(parseSimArgs(["status", "../etc"])).toBeUndefined();
-    expect(parseSimArgs(["status", "Lab_01"])).toBeUndefined();
+    expect(() => parseSimArgs(["status", "../etc"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["status", "Lab_01"])).toThrow(UsageError);
   });
 
   test("brief, label-import and the range commands", () => {
@@ -63,13 +69,15 @@ describe("parseSimArgs", () => {
   });
 
   test("a flag of another command, a bad part or a bad range gives undefined", () => {
-    expect(parseSimArgs(["plan", "lab-01", "--part", "dev"])).toBeUndefined();
-    expect(parseSimArgs(["brief", "lab-01", "--part", "nope", "--batch", "1"])).toBeUndefined();
-    expect(parseSimArgs(["brief", "lab-01", "--part", "dev"])).toBeUndefined();
-    expect(parseSimArgs(["reconcile", "lab-01", "--part", "dev", "--batches", "3-1"])).toBeUndefined();
-    expect(parseSimArgs(["reconcile", "lab-01", "--part", "dev"])).toBeUndefined();
-    expect(parseSimArgs(["blind-export", "lab-01", "--part", "dev", "--batches", "0-2"])).toBeUndefined();
-    expect(parseSimArgs(["label-import", "lab-01", "--part", "dev", "--batch", "1", "--checker", "m"])).toBeUndefined();
+    expect(() => parseSimArgs(["plan", "lab-01", "--part", "dev"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["brief", "lab-01", "--part", "nope", "--batch", "1"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["brief", "lab-01", "--part", "dev"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["reconcile", "lab-01", "--part", "dev", "--batches", "3-1"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["reconcile", "lab-01", "--part", "dev"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["blind-export", "lab-01", "--part", "dev", "--batches", "0-2"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["label-import", "lab-01", "--part", "dev", "--batch", "1", "--checker", "m"])).toThrow(
+      UsageError
+    );
   });
 
   test("freeze, audit-list and audit-apply need a version and (freeze, apply) a real date", () => {
@@ -104,11 +112,11 @@ describe("parseSimArgs", () => {
       kind: "audit-apply",
       date: "2026-11-14",
     });
-    expect(parseSimArgs(["freeze", "lab-01", "--version", "1"])).toBeUndefined();
-    expect(parseSimArgs(["freeze", "lab-01", "--version", "v1", "--date", "2026-11-14"])).toBeUndefined();
-    expect(parseSimArgs(["freeze", "lab-01", "--version", "1", "--date", "2026-13-40"])).toBeUndefined();
-    expect(parseSimArgs(["audit-list", "lab-01", "--version", "1", "--date", "2026-11-14"])).toBeUndefined();
-    expect(parseSimArgs(["audit-apply", "lab-01", "--date", "2026-11-14"])).toBeUndefined();
+    expect(() => parseSimArgs(["freeze", "lab-01", "--version", "1"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["freeze", "lab-01", "--version", "v1", "--date", "2026-11-14"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["freeze", "lab-01", "--version", "1", "--date", "2026-13-40"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["audit-list", "lab-01", "--version", "1", "--date", "2026-11-14"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["audit-apply", "lab-01", "--date", "2026-11-14"])).toThrow(UsageError);
   });
 
   test("--bank sent selects the sent plan and the sent freeze; incoming commands carry no bank field", () => {
@@ -149,14 +157,14 @@ describe("parseSimArgs", () => {
   });
 
   test("a bad bank value, or --bank on another command, gives undefined", () => {
-    expect(parseSimArgs(["plan", "lab-01", "--bank", "other"])).toBeUndefined();
-    expect(parseSimArgs(["check", "lab-01", "--bank", "sent"])).toBeUndefined();
-    expect(parseSimArgs(["status", "lab-01", "--bank", "sent"])).toBeUndefined();
+    expect(() => parseSimArgs(["plan", "lab-01", "--bank", "other"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["check", "lab-01", "--bank", "sent"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["status", "lab-01", "--bank", "sent"])).toThrow(UsageError);
     // The sent freeze has no version; the incoming flags do not mix in.
-    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--version", "1"])).toBeUndefined();
-    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--part", "sent-dev"])).toBeUndefined();
-    expect(parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--date", "2026-13-40"])).toBeUndefined();
-    expect(parseSimArgs(["freeze", "lab-01", "--bank", "incoming", "--date", "2026-11-14"])).toBeUndefined();
+    expect(() => parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--version", "1"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--part", "sent-dev"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["freeze", "lab-01", "--bank", "sent", "--date", "2026-13-40"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["freeze", "lab-01", "--bank", "incoming", "--date", "2026-11-14"])).toThrow(UsageError);
   });
 
   test("a sent part selects the sent form of the commands that take a part", () => {
@@ -203,14 +211,14 @@ describe("parseSimArgs", () => {
   });
 
   test("a sent part with a missing flag, or a part on a command that has none, gives undefined", () => {
-    expect(parseSimArgs(["brief", "lab-01", "--part", "sent-dev"])).toBeUndefined();
-    expect(parseSimArgs(["reconcile", "lab-01", "--part", "sent-dev"])).toBeUndefined();
-    expect(parseSimArgs(["audit-list", "lab-01", "--part", "sent-dev", "--version", "1"])).toBeUndefined();
-    expect(
+    expect(() => parseSimArgs(["brief", "lab-01", "--part", "sent-dev"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["reconcile", "lab-01", "--part", "sent-dev"])).toThrow(UsageError);
+    expect(() => parseSimArgs(["audit-list", "lab-01", "--part", "sent-dev", "--version", "1"])).toThrow(UsageError);
+    expect(() =>
       parseSimArgs(["freeze", "lab-01", "--part", "sent-dev", "--version", "1", "--date", "2026-11-15"])
-    ).toBeUndefined();
+    ).toThrow(UsageError);
     // A part status is for the sent parts only.
-    expect(parseSimArgs(["status", "lab-01", "--part", "dev"])).toBeUndefined();
+    expect(() => parseSimArgs(["status", "lab-01", "--part", "dev"])).toThrow(UsageError);
     expect(usage).toContain("--bank sent");
   });
 });

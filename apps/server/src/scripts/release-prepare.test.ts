@@ -5,7 +5,6 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { isGreaterVersion } from "./lib/release-prepare-lib";
-import { parseReleasePrepareArgs } from "./release-prepare-args";
 
 const script = join(import.meta.dir, "release-prepare.ts");
 let work = "";
@@ -123,27 +122,29 @@ describe("release:prepare", () => {
     expect(result.changelog).toContain(`## [0.1.0] - ${new Date().toISOString().slice(0, 10)}`);
   });
 
-  test("15. a version that is not greater is refused with exit 2 and no change", async () => {
+  test("15. a version that is not greater is refused with exit 1 and no change", async () => {
     for (const version of ["0.0.1", "0.0.0"]) {
       const result = await prepare([version, "--date", "2026-11-20"], "0.0.1", twoItems);
-      expect(result.code).toBe(2);
+      expect(result.code).toBe(1);
+      expect(result.stderr).toContain("refused, no file changed");
       expect(result.changelog).toBe(twoItems);
       expect(result.packageJson).toBe(packageText("0.0.1"));
     }
   });
 
-  test("15b. a version that is not x.y.z is refused", async () => {
+  test("15b. a version that is not x.y.z is a usage error: exit 2 and no change", async () => {
     for (const version of ["v0.1.0", "0.1", "0.1.0-rc1", "01.x.0"]) {
       const result = await prepare([version], "0.0.1", twoItems);
       expect(result.code).toBe(2);
+      expect(result.stderr).toContain("usage: bun run release:prepare <x.y.z>");
       expect(result.changelog).toBe(twoItems);
     }
   });
 
-  test("16. an empty Unreleased is refused with exit 2 and no change", async () => {
+  test("16. an empty Unreleased is refused with exit 1 and no change", async () => {
     const empty = "# Changelog\n\n## [Unreleased]\n\n### Added\n\n## [0.0.1] - 2026-11-01\n\n- Old item.\n";
     const result = await prepare(["0.1.0", "--date", "2026-11-20"], "0.0.1", empty);
-    expect(result.code).toBe(2);
+    expect(result.code).toBe(1);
     expect(result.stderr).toContain("Unreleased has no item");
     expect(result.changelog).toBe(empty);
     expect(result.packageJson).toBe(packageText("0.0.1"));
@@ -151,7 +152,7 @@ describe("release:prepare", () => {
 
   test("16b. no Unreleased heading is refused", async () => {
     const result = await prepare(["0.1.0"], "0.0.1", "# Changelog\n");
-    expect(result.code).toBe(2);
+    expect(result.code).toBe(1);
   });
 });
 
@@ -161,17 +162,5 @@ describe("release-prepare helpers", () => {
     expect(isGreaterVersion("1.0.0", "0.99.99")).toBe(true);
     expect(isGreaterVersion("0.1.0", "0.1.0")).toBe(false);
     expect(isGreaterVersion("0.1.1", "0.2.0")).toBe(false);
-  });
-
-  test("arguments", () => {
-    expect(parseReleasePrepareArgs(["0.1.0"])).toEqual({ version: "0.1.0", date: null, root: "." });
-    expect(parseReleasePrepareArgs(["0.1.0", "--date", "2026-11-20", "--root", "x"])).toEqual({
-      version: "0.1.0",
-      date: "2026-11-20",
-      root: "x",
-    });
-    expect(parseReleasePrepareArgs([])).toBeNull();
-    expect(parseReleasePrepareArgs(["0.1.0", "0.2.0"])).toBeNull();
-    expect(parseReleasePrepareArgs(["0.1.0", "--date", "today"])).toBeNull();
   });
 });

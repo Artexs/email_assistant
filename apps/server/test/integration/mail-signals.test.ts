@@ -9,7 +9,7 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials } from "../../src/modules/mail/repo";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { DB, TenantContext } from "../../src/platform/db";
-import { readSignalsOptions, signalsLines } from "../../src/scripts/mailbox-signals-args";
+import { signalsLines } from "../../src/scripts/mailbox-signals-args";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
@@ -151,7 +151,7 @@ describe("signalsOfMailbox", () => {
 });
 
 describe("mailbox:signals CLI", () => {
-  test("a missing --mailbox-id: exit 1, the usage line, an empty stdout", async () => {
+  test("a missing --mailbox-id: exit 2, the usage line, an empty stdout", async () => {
     const proc = Bun.spawn(["bun", "apps/server/src/scripts/mailbox-signals.ts", "--org-id", crypto.randomUUID()], {
       cwd: repoRoot,
       env: { ...process.env },
@@ -159,23 +159,8 @@ describe("mailbox:signals CLI", () => {
       stderr: "pipe",
     });
     const code = await proc.exited;
-    expect(code).toBe(1);
+    expect(code).toBe(2);
     expect(await new Response(proc.stderr).text()).toContain("usage: bun run mailbox:signals");
     expect(await new Response(proc.stdout).text()).toBe("");
-  });
-
-  test("arguments: --days is 1 to 90, ids are uuids", () => {
-    const org = crypto.randomUUID();
-    const box = crypto.randomUUID();
-    expect(readSignalsOptions(["--org-id", org, "--mailbox-id", box])).toEqual({
-      orgId: org,
-      mailboxId: box,
-      days: 30,
-    });
-    expect(readSignalsOptions(["--org-id", org, "--mailbox-id", box, "--days", "90"])?.days).toBe(90);
-    expect(readSignalsOptions(["--org-id", org, "--mailbox-id", box, "--days", "91"])).toBeUndefined();
-    expect(readSignalsOptions(["--org-id", org, "--mailbox-id", box, "--days", "0"])).toBeUndefined();
-    expect(readSignalsOptions(["--org-id", org, "--mailbox-id", "x"])).toBeUndefined();
-    expect(readSignalsOptions(["--org-id", org])).toBeUndefined();
   });
 });

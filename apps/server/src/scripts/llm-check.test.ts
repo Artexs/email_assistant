@@ -4,7 +4,13 @@ import { describe, expect, test } from "bun:test";
 
 import type { CliOutput } from "../platform/cli";
 import { type Config, loadConfig } from "../platform/config";
-import { type GenerateFn, type GenerateRequest, LlmSoftError, type ProviderRegistry } from "../platform/llm";
+import {
+  type GenerateFn,
+  type GenerateRequest,
+  LlmConfigError,
+  LlmSoftError,
+  type ProviderRegistry,
+} from "../platform/llm";
 
 import { runLlmCheck } from "./llm-check";
 import { parseLlmCheckArgs } from "./llm-check-args";
@@ -56,7 +62,6 @@ function capture() {
 
 async function run(config: Config, argv: string[]) {
   const args = parseLlmCheckArgs(argv);
-  if (args === null) throw new Error("bad args");
   const fake = fakeProviders();
   const output = capture();
   const code = await runLlmCheck({ config, args, providers: fake.providers, out: output.out });
@@ -114,19 +119,35 @@ describe("llm:check", () => {
   test("a failed call gives exit 1 with one failure line", async () => {
     const config = loadConfig({ ...base, LLM_PROVIDER: "openai", OPENAI_API_KEY: "o" });
     const args = parseLlmCheckArgs([]);
-    if (args === null) throw new Error("bad args");
     const output = capture();
     const failing: Partial<ProviderRegistry> = {
       openai: {
         createGenerate: (): GenerateFn => async () => {
           throw new Error("boom");
         },
-        classifyError: (_error: unknown, model: string) => new LlmSoftError("network", model),
+        classifyError: (_error: unknown, model: string) => new LlmConfigError("http_401", model),
       },
     };
     const code = await runLlmCheck({ config, args, providers: failing, out: output.out });
     expect(code).toBe(1);
-    expect(output.failed).toHaveLength(1);
-    expect(output.failed[0]).toStartWith("check failed:");
+    expect(output.failed).toEqual(["check failed: LlmConfigError http_401"]);
+  });
+
+  test("an unreachable provider (a SoftError) gives exit 3 with one unreachable line and no key", async () => {
+    const config = loadConfig({ ...base, LLM_PROVIDER: "openai", OPENAI_API_KEY: "o-secret-key" });
+    const args = parseLlmCheckArgs([]);
+    const output = capture();
+    const down: Partial<ProviderRegistry> = {
+      openai: {
+        createGenerate: (): GenerateFn => async () => {
+          throw new Error("503");
+        },
+        classifyError: (_error: unknown, model: string) => new LlmSoftError("http_503", model),
+      },
+    };
+    const code = await runLlmCheck({ config, args, providers: down, out: output.out });
+    expect(code).toBe(3);
+    expect(output.failed).toEqual(["unreachable: LlmSoftError http_503"]);
+    expect(output.printed).toEqual([]);
   });
 });

@@ -57,9 +57,9 @@ describe("auditExitCode", () => {
     expect(auditExitCode({ ...clean, cross: 3 })).toBe(0);
   });
 
-  test("2 for a missing or a duplicate INBOX mail", () => {
-    expect(auditExitCode({ ...clean, missing: 1 })).toBe(2);
-    expect(auditExitCode({ ...clean, duplicates: 1 })).toBe(2);
+  test("1 for a missing or a duplicate INBOX mail", () => {
+    expect(auditExitCode({ ...clean, missing: 1 })).toBe(1);
+    expect(auditExitCode({ ...clean, duplicates: 1 })).toBe(1);
   });
 
   test("1 when the INBOX counts are null or missing (the server does not list INBOX)", () => {

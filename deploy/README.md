@@ -211,7 +211,7 @@ The server uses long polling (no inbound port). The VPS uses the pilot bot `@Ema
 
 1. Put the pilot bot token in `TELEGRAM_BOT_TOKEN` in the VPS `.env`. Only the user edits this file. Never print the token, never paste it in a chat or a log. An empty value switches Telegram off (the log says `telegram is off`).
    Do not set `TELEGRAM_API_ROOT` on the VPS.
-2. Check the token: `$C run --rm cli bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`.
+2. Check the token: `$C run --rm cli bun run telegram:check`. The output is `bot @Email_assistant_vps_bot (id …)`. Exit 3 and `unreachable:` mean that the Telegram Bot API did not answer; exit 1 means that the token is missing or refused.
 3. Restart the server so that it reads the new `.env`: `$C up -d server`. The log shows the event `telegram_polling_started` (field `bot_id`, the numeric id of the bot).
 4. Make a link for a member: `$C run --rm cli bun run telegram:link --org-id <uuid> [--user-id <uuid>]`.
    The output is a `https://t.me/<bot>?start=<token>` link. It is a one-time secret that is valid for 15 minutes. Open it on the phone of the member. Do not share it. A used or expired link needs a new `telegram:link` run.
@@ -506,7 +506,7 @@ The go/no-go gate: on 2026-11-06 every category was no-go (`spec/features/done/2
 - An Undo tap under `ACTIONS_SCOPE=off`, or for a paused mailbox, answers "not possible now" and changes nothing.
 - A move that a committer run holds at the second of the tap still finishes. The line then shows ↩️ again. Tap it again.
 - A second move back of the same mail at Interia is not seen. A mail that the user moves back after 7 days gives no feedback.
-- `mailbox:audit` compares INBOX and each enabled synced folder with the rows whose `folder` is that folder (ADR 0014). It prints one line per folder. `cross=<n>` counts a mail that sits in INBOX and in a synced folder: it is no problem. Mail that the system moved is not counted. A user move out of a folder shows as a duplicate.
+- `mailbox:audit` exits 1 when INBOX has lost or duplicate mail (bad arguments exit 2). It compares INBOX and each enabled synced folder with the rows whose `folder` is that folder (ADR 0014). It prints one line per folder. `cross=<n>` counts a mail that sits in INBOX and in a synced folder: it is no problem. Mail that the system moved is not counted. A user move out of a folder shows as a duplicate.
 
 ### Synced folders (ADR 0014)
 
@@ -542,13 +542,13 @@ Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the co
 
 A delegate is a person who gets tasks by mail. Manage delegates and delegations from the terminal. Each command needs `--org-id <uuid>`.
 
-- `bun run delegates:add --org-id <uuid> --name <text> --email <address> [--tags a,b,c]`: add a delegate. Output: `added <id>`, `already there`, or `refused: …` (exit 2).
+- `bun run delegates:add --org-id <uuid> --name <text> --email <address> [--tags a,b,c]`: add a delegate. Output: `added <id>`, `already there`, or `refused: …` (exit 1).
 - `bun run delegates:list --org-id <uuid> [--all]`: list active delegates. `--all` also shows disabled ones.
 - `bun run delegates:disable --org-id <uuid> --id <uuid>` and `delegates:enable`: switch a delegate off or on.
 - `bun run delegations:list --org-id <uuid> [--status drafted|sent|answered|overdue|done|cancelled] [--limit 50]`: list delegations.
 - `bun run delegations:done --org-id <uuid> --id <uuid>`: close an answered or overdue delegation. Its pending reminders expire.
 
-Rule: a delegate address is never a mailbox address of the organization. `delegates:add` refuses it (exit 2).
+Rule: a delegate address is never a mailbox address of the organization. `delegates:add` refuses it (exit 1).
 The audit rows have the actor `cli`.
 
 On the VPS run each command as `$C run --rm cli bun run …`. A mail can be delegated only to an active delegate: with no active delegate the classifier does not use the category `delegation`.
@@ -703,7 +703,7 @@ $C run --rm cli bun run org:status [--org-id <org id>]
 - `org:flag` lists the feature flags of an organization (each `on` or `off`, with the source: `env`, `row` or `default`) or turns one flag on or off for it, with an audit row `org.flag_changed`. The keys and their defaults are in `packages/core/src/features.ts`. An `--off` is kept when the default later changes. `FEATURES_OFF=<key>,<key>` in the server `.env` turns flags off for every organization at the next restart, without a DB write (the kill switch); an unknown key stops the start.
 - `org:status` prints, for each organization: the plan, the trial end, `max_mailboxes`, `resumed_at`, the mailbox counts by status, the last sync, the LLM calls of today and the number of linked Telegram chats.
 - `suspended` pauses the customer: no sync, no triage, no action, no send, no reminder, no digest and no notice. Telegram taps and commands answer "account paused". Every write in the web panel answers `403 org_suspended`. The member can still read, sign out and change the password. The approval expiry and the retention job still run. The change to `suspended` cancels the queued messages, except approval requests.
-- `mailbox:backfill` refuses a `suspended` organization: exit 1, a message with the org id and `org_suspended`, before any IMAP call and with no row changed. Resume the organization first. `mailbox:rescan` and `mailbox:settings` do not check the plan: they make no IMAP call and store no mail.
+- `mailbox:backfill` refuses a `suspended` organization: exit 1 (bad arguments exit 2), a message with the org id and `org_suspended`, before any IMAP call and with no row changed. Resume the organization first. `mailbox:rescan` and `mailbox:settings` do not check the plan: they make no IMAP call and store no mail.
 - After a resume (`--plan active` or `--plan trial`), mail from more than 24 hours before the resume is not triaged (`suspended_backlog`). A send that an owner approved before the pause waits at most 48 hours after the tap.
 - The mailbox limit: an organization connects at most `max_mailboxes` mailboxes (default 2). The web and `mailbox:connect` refuse more with `mailbox_limit`. A lower limit does not remove a mailbox that exists.
 - `OPERATOR_CONTACT` (an address, set only in the server `.env`): the paused banner and the paused Telegram answer show it. Empty: "contact the operator", and the start log says so when the web is on.

@@ -1,10 +1,11 @@
 ---
 // The claims of the security page: the claim, the proof files on GitHub, the condition. Each row has the anchor `claim-<id>`
 // (the checklist at the top of the page links to it). The data is `publicClaims`; the build checks it (`claimCheck`).
+import type { UserLocale } from "@ea/core";
 import { proofUrl, publicClaims } from "../security/claims";
 
 interface Props {
-  lang: "en" | "pl";
+  lang: UserLocale;
 }
 
 const { lang } = Astro.props;
