@@ -22,14 +22,25 @@ the caption then names the day.
 
 ## Result
 
-3 of 8 steps are not live (2, 3, 5). Rule D7 allows 2. The stage stops here and asks: see
-`spec/features/active/F121-e10b-public-pages-and-demo/stage-09-question.md`. The `live` flags in `DEMO_STEPS` follow this table until
-the owner decides.
+3 of 8 steps are not live (2, 3, 5). Rule D7 allows 2; the coordinator raised the limit to 3 for the e2e-seed video
+(`spec/features/active/F121-e10b-public-pages-and-demo/stage-09-question.md`, option 1). The `live` flags in `DEMO_STEPS` follow this table.
+The e2e-seed video is never a G3 candidate (D10). Follow-up ticket F151 redoes the spike on the C1 demo seed, where the sim stack has real
+triage, and must make steps 2, 3 and 5 live or say why not.
 
 Side facts for stage 10:
 
-- The recording signs in to five e2e organizations (main, trust, approvals, delegations, activity). It needs one login per organization and
-  a client address for each (the login rate limit counts per address).
-- Steps 6 and 8 change seed rows (an approved send, an undone move). The demo database is dropped and migrated at each run, so a second run
-  starts clean (`demoDbProblem` guards that database).
+- The recording signs in to four e2e organizations (main, trust, approvals, delegations), each from its own client address (the login rate
+  limit counts per address). Step 8 (undo) uses the owner of the main organization, the same organization that step 1 connected the
+  mailbox for; the activity rows come from `e2e-activity.ts` (`seedActivity`), run inside step 1 so the wait is not in the video.
+- The sign-ins happen before the recording starts, in a context that records nothing: no sign-in form is in the video. The recording page
+  takes the session of each organization from the saved cookies.
+- Steps 6 and 8 change seed rows (an approved send, an undone move). `bun run demo:record` empties the demo database (`db-reset.ts`) and runs
+  `db:migrate` at each run, so a second run starts clean (`demoDbProblem` guards that database).
 - Step 1 leaves a connected mailbox that the server polls; the servers stop at the end of the run.
+- Step 5 shows a notice that the recording renders with the product renderer (`renderNotice("urgent", …)` from a made-up view,
+  `lib/demo/notice.ts`) and posts to the fake Telegram. The chat is linked to no organization: a real link would put the consent and
+  welcome texts of the bot in the chat before the notice.
+- The page is 1600 x 900 and the video 1280 x 720 (Playwright scales the frames): at 720 px height the connect dialog of the panel has its
+  Connect button outside the page.
+- Step 6 waits for the committer to make the mailbox copy of the edited version before Approve works (it runs every 15 seconds). That wait is
+  part of the step; the step is never shorter than its planned `seconds`.
