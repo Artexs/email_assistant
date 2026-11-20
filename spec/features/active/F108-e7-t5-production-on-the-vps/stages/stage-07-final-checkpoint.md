@@ -29,7 +29,7 @@ Part of [`../plan.md`](../plan.md). Risk: the pilot org shares the host and the 
 ## Close
 
 9. CI: the last three `ci` runs on `master` are green (`gh run list`). The two old timing tests are closed in `docs/known-alerts.md` (F093): confirm, do not edit.
-10. Restore: cite the first drill result (2026-11-19, tag `v0.3.1`, `restore.sh` 173 s, counts equal) in `docs/capabilities/backups.md`. `v0.3.1` has no `deploy/compose-lib.sh`, so it does not prove the `migrate` path (V4). Cite the F139 drill rerun when it ran at a tag that holds `deploy/compose-lib.sh` (the board puts it on v0.4.2): then V4 is proven. Else write V4 "new restore path not proven on a host" in `outcome.md` and in `notes/owner-later.md`.
+10. Restore: cite the first drill result (2026-11-19, tag `v0.3.1`, `restore.sh` 173 s, counts equal) in `docs/capabilities/backups.md`. `v0.3.1` has no `deploy/compose-lib.sh`, so it does not prove the `migrate` path (V4). Cite the F152 drill rerun (Restore drill record 2 in `notes/2026-11-15-vps-deploy-queue.md`) when it ran at a tag that holds `deploy/compose-lib.sh` (the board puts it on v0.4.2): then V4 is proven. Else write V4 "new restore path not proven on a host" in `outcome.md` and in `notes/owner-later.md`.
 11. `tasks/active/s6-pre-sale.md`: status line "S6 done 2026-MM-DD"; move it to `tasks/done/` with `git mv`; `tasks/planned/s6f-hosted-production.md` the same. Each S6 "Done when" line that F108 owned gets its evidence pointer.
 12. `outcome.md` in the ticket folder (3–6 sentences, the evidence pointers, the not-verified lines of steps 4 and 5).
 
