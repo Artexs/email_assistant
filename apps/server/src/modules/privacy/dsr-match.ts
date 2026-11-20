@@ -1,14 +1,14 @@
 import { sql, type RawBuilder, type Transaction } from "kysely";
 
-import type { DB, Db } from "../../platform/db";
-import { normalizedAddress, senderContextRowsOf, type SenderContextRows } from "../contacts";
+import { normalizedAddress, type DB, type Db } from "../../platform/db";
+import { senderContextRowsOf, type SenderContextRows } from "../contacts";
 
 import { addressRegex, DSR_ADDRESS_MAP, matchesAddress, normalizeDsrAddress, type AddressRule } from "./address-map";
 
 type DbOrTrx = Db | Transaction<DB>;
 
 // Every compare of a stored address with the asked address goes through `normalizedAddress`, the SQL form of the one address
-// rule (`normalizeSenderAddress` in `@ea/core`, the rule that `normalizeDsrAddress` applies to the asked address). A Greek
+// rule (`normalizeAddress` in `@ea/core`, the rule that `normalizeDsrAddress` applies to the asked address). A Greek
 // final sigma or a Turkish dotted capital I cannot make the database `lower()` and the JavaScript `toLowerCase()` disagree.
 
 export interface DsrMatch {

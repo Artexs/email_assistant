@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
+import { ruleBodySchema } from "../web/rules";
+
 import { classifierCategories } from "./categories";
 import {
   applyHardRules,
   isNoreplyAddress,
   isValidSenderPattern,
   matchSender,
-  normalizeSenderPattern,
   readSenderRule,
   senderRuleOf,
   type SenderRule,
@@ -160,8 +161,13 @@ describe("sender pattern rule", () => {
     }
   });
 
-  test("normalizes with trim and lower case", () => {
-    expect(normalizeSenderPattern("  Boss@Firma.TEST ")).toBe("boss@firma.test");
+  test("the web schema stores trim and lower case, and the match folds by the one address rule", () => {
+    const parse = (pattern: string) => ruleBodySchema.parse({ kind: "whitelist", pattern }).pattern;
+    expect(parse("  Boss@Firma.TEST ")).toBe("boss@firma.test");
+    // The stored form keeps the final sigma; the match still finds the folded sender.
+    const stored = parse("ΝΊΚΟΣ@example.gr");
+    expect(stored).toBe("νίκος@example.gr");
+    expect(matchSender("νίκοσ@example.gr", [{ pattern: stored, kind: "whitelist" }]).whitelisted).toBe(true);
   });
 });
 

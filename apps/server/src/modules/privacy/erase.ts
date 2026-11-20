@@ -1,9 +1,9 @@
 import { sql, type Transaction } from "kysely";
 
 import { dsrAddressHash, tombstoneKeyHash } from "../../platform/crypto";
-import { withTenantScope, type DB, type Db } from "../../platform/db";
+import { normalizedAddress, withTenantScope, type DB, type Db } from "../../platform/db";
 import { auditEvents, recordAudit } from "../audit";
-import { deleteSenderContextRowsOf, lockProfilesOfOrg, normalizedAddress } from "../contacts";
+import { deleteSenderContextRowsOf, lockProfilesOfOrg } from "../contacts";
 
 import { DSR_ADDRESS_MAP, normalizeDsrAddress, replaceAddress } from "./address-map";
 import { dsrAuditData, dsrCounts, type DsrCounts } from "./dsr";

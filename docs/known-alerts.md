@@ -1098,8 +1098,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.`
 
 - **First seen:** 2026-11-02
-- **Source:** Gemini API, `cd backend && bun run gemini:test` (model `gemini-3.8-flash`, free tier). HTTP 503, status `UNAVAILABLE`.
+- **Source:** Gemini API, `bun run llm:check --provider gemini` (model `gemini-3.8-flash`, free tier). HTTP 503, status `UNAVAILABLE`.
 - **Cause:** Google-side overload of the model. Not a key or config error (the key was accepted). One call hung for more than 90 s before the error.
 - **Fix:** retry later. In the app: `platform/llm.ts` treats 503 as a soft error (wait with backoff, no count toward the 3 tries) and uses a 30 s timeout (ADR 0012). Optional fallback model in config.
 - **Status:** workaround
-- **Update 2026-11-05:** the script is now `apps/server/src/scripts/gemini-check.ts`. Run `bun run gemini:test` from the repo root. It prints `Request failed: LlmSoftError http_503` (no raw body). In the worker, a 503 pauses the LLM client 5 → 60 min (`docs/capabilities/triage.md` § Rules).
+- **Update 2026-11-05:** the script is now `apps/server/src/scripts/llm-check.ts`. Run `bun run llm:check --provider gemini` from the repo root. It prints `Request failed: LlmSoftError http_503` (no raw body). In the worker, a 503 pauses the LLM client 5 → 60 min (`docs/capabilities/triage.md` § Rules).

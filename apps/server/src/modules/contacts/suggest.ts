@@ -8,7 +8,7 @@ import {
   isStorableSuggestionPattern,
   isValidSenderPattern,
   matchSender,
-  normalizeSenderAddress,
+  normalizeAddress,
   registrableDomain,
   suggestionsFor,
   type SenderRule,
@@ -185,7 +185,7 @@ function ruleAndDelegateMembers(
   };
   for (const email of delegates) add(email);
   for (const rule of rules) {
-    const pattern = normalizeSenderAddress(rule.pattern);
+    const pattern = normalizeAddress(rule.pattern);
     // A domain rule names no address: the entry stands for the domain.
     add(pattern.includes("@") ? pattern : `domain-rule@${pattern}`);
   }
@@ -284,7 +284,7 @@ async function standingOf(
   activity: readonly SenderActivity[]
 ): Promise<Standing> {
   const rules = await listSenderRules(trx, ctx, mailboxId);
-  const delegates = new Set((await listDelegateAddresses(trx, ctx, { activeOnly: true })).map(normalizeSenderAddress));
+  const delegates = new Set((await listDelegateAddresses(trx, ctx, { activeOnly: true })).map(normalizeAddress));
   const ownDomains = new Set(mailboxes.map((box) => registrableDomain(hostOf(box.address))));
   const senders = activity.map((item) => inputOf(item, rules, delegates, ownDomains));
   const byAddress = new Map(senders.map((item) => [item.address, item]));

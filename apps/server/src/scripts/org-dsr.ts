@@ -1,7 +1,6 @@
-import { divergentCodePoints } from "../modules/contacts";
 import { dsrIsEmpty, eraseSubjectData, findSubjectData, formatRuleCheck } from "../modules/privacy";
 import { loadConfig } from "../platform/config";
-import { assertAppRole, createDb, type Db } from "../platform/db";
+import { assertAppRole, createDb, divergentCodePoints, type Db } from "../platform/db";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
