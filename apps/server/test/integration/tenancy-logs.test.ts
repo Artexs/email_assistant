@@ -33,30 +33,16 @@ afterEach(() => {
 });
 
 describe("organization change lines", () => {
-  test("a changed time zone and signature log the organization and the actor, never the values", async () => {
+  test("a changed time zone logs the organization and the actor, never the values", async () => {
     await withRollback(db, async (trx) => {
       const { orgId } = await createOrgWithMailbox(trx);
       const actor = randomUUID();
 
-      await updateOrganizationSettings(
-        trx,
-        { orgId },
-        { timezone: "America/New_York", styleText: "123456:MARKER-SIGNATURE" },
-        { actor, now: NOW }
-      );
+      await updateOrganizationSettings(trx, { orgId }, { timezone: "America/New_York" }, { actor, now: NOW });
       // The same values again change nothing and log nothing.
-      await updateOrganizationSettings(
-        trx,
-        { orgId },
-        { timezone: "America/New_York", styleText: "123456:MARKER-SIGNATURE" },
-        { actor, now: NOW }
-      );
+      await updateOrganizationSettings(trx, { orgId }, { timezone: "America/New_York" }, { actor, now: NOW });
 
-      expect(lines).toEqual([
-        `[tenancy] org_timezone_changed org_id=${orgId} actor=${actor}`,
-        `[tenancy] org_signature_changed org_id=${orgId} actor=${actor}`,
-      ]);
-      expect(lines.join("\n")).not.toContain("MARKER");
+      expect(lines).toEqual([`[tenancy] org_timezone_changed org_id=${orgId} actor=${actor}`]);
       expect(lines.join("\n")).not.toContain("New_York");
     });
   });

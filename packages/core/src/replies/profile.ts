@@ -64,14 +64,14 @@ function nonBlank(text: string | null | undefined): string | null {
 
 /**
  * The texts that stand in for an empty field: the name falls back to the owner name, then the address; the signature falls
- * back to the organization style text, then the owner name, then the address. `ownerName` is null when the organization has no owner.
+ * back to the owner name too, then the address. `ownerName` is null when the organization has no owner.
  */
-export function profileFallbacks(input: { ownerName: string | null; address: string; orgStyleText: string | null }): {
+export function profileFallbacks(input: { ownerName: string | null; address: string }): {
   name: string;
   signature: string;
 } {
   const name = nonBlank(input.ownerName) ?? input.address;
-  return { name, signature: nonBlank(input.orgStyleText) ?? name };
+  return { name, signature: name };
 }
 
 /** The style that the prompt gets and the message builder uses at send time: the stored field, else the fallback. */

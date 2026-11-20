@@ -285,7 +285,7 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
   ),
   ...reasons(
     ["organizations.style_text"],
-    "the owner's text about their own writing style; an organization setting, not mail data (open: an address typed there stays)"
+    "emptied by a migration and no longer read or written; a later migration drops the column"
   ),
   ...reasons(["sender_rules.kind"], "closed list of codes"),
   ...reasons(

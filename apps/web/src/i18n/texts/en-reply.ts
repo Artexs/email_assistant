@@ -52,9 +52,6 @@ export const enReply = {
   rs_samples_failed: "The assistant could not write this sample.",
   rs_samples_no_draft: "The assistant wrote no sample for this mail.",
   rs_samples_slow: "The samples take longer than usual. Reload the page in a minute.",
-  rs_org_note: "Signatures are set per mailbox now.",
-  rs_org_old: "This old text of the organization still applies to a mailbox that has no signature of its own.",
-  rs_org_link: "Open the card of {address}",
   // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Report",
   rep_off: "This page is off for your organization.",

@@ -33,7 +33,6 @@ export function organizationView(row: OrganizationRow): OrganizationView {
     id: row.id,
     name: row.name,
     timezone: row.timezone,
-    styleText: row.style_text,
     retentionDays: row.data_retention_days,
   };
 }
@@ -86,11 +85,11 @@ export type UpdateOrganizationResult =
   | { kind: "bad_timezone" }
   | { kind: "not_found" };
 
-// One transaction: the lock, the changed fields, one audit row per changed field. The audit row of the signature holds no text.
+// One transaction: the lock, the changed fields, one audit row per changed field.
 export async function updateOrganizationSettings(
   db: Db | Transaction<DB>,
   ctx: TenantContext,
-  patch: { timezone?: string; styleText?: string | null },
+  patch: { timezone?: string },
   input: { actor: string; now: Date }
 ): Promise<UpdateOrganizationResult> {
   if (patch.timezone !== undefined && !isSupportedTimeZone(patch.timezone)) return { kind: "bad_timezone" };
@@ -99,7 +98,7 @@ export async function updateOrganizationSettings(
     const current = await lockOrganization(trx, ctx);
     if (!current) return { kind: "not_found" };
 
-    const changes: { timezone?: string; styleText?: string | null } = {};
+    const changes: { timezone?: string } = {};
     if (patch.timezone !== undefined && patch.timezone !== current.timezone) {
       changes.timezone = patch.timezone;
       await recordAudit(trx, ctx, {
@@ -109,16 +108,6 @@ export async function updateOrganizationSettings(
         at: input.now,
       });
       log.info("org_timezone_changed", { org_id: ctx.orgId, actor: input.actor });
-    }
-    if (patch.styleText !== undefined && patch.styleText !== current.style_text) {
-      changes.styleText = patch.styleText;
-      await recordAudit(trx, ctx, {
-        event: auditEvents.orgStyleChanged,
-        actor: input.actor,
-        data: { set: patch.styleText !== null },
-        at: input.now,
-      });
-      log.info("org_signature_changed", { org_id: ctx.orgId, actor: input.actor });
     }
     if (Object.keys(changes).length === 0) return { kind: "updated", organization: current };
 

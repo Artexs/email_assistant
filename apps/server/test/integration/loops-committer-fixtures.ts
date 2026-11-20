@@ -108,7 +108,7 @@ export function committerDeps(
     ),
     mailbox: { address: b.address, capabilities: { uidplus: true }, folderMap: { drafts: "Drafts", sent: "Sent" } },
     owner: { displayName: "Owner" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     compose: composeMessage,
     sender: slow,
     hooks: noDelegationHooks,

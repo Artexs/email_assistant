@@ -116,7 +116,7 @@ describe("route matrix", () => {
     const emptyBody = await json(empty);
     expect(emptyBody.error).toBe("validation");
     expect(emptyBody.details[0].message).toBe("empty_patch");
-    const wrongType = await app.request("/api/organization", as("owner", { method: "PATCH", body: { styleText: 5 } }));
+    const wrongType = await app.request("/api/organization", as("owner", { method: "PATCH", body: { timezone: 5 } }));
     expect(wrongType.status).toBe(400);
     const noOrigin = await app.request("/api/organization", {
       method: "PATCH",
@@ -144,7 +144,6 @@ describe("GET /api/organization", () => {
     expect(body.timezones).toContain("Europe/Warsaw");
     expect(body.timezones).toContain("Europe/London");
     expect(body.retentionDays).toBe(30);
-    expect(body.styleText).toBeNull();
   });
 });
 
@@ -170,23 +169,17 @@ describe("PATCH /api/organization", () => {
     expect(body.details[0]).toMatchObject({ path: "timezone", message: "timezone_invalid" });
   });
 
-  test("changes, clears and limits the signature", async () => {
+  test("the old style text key is refused: 400 validation, and the timezone alone is accepted", async () => {
     const { app } = await setup();
-    const set = await app.request(
+    const refused = await app.request("/api/organization", as("owner", { method: "PATCH", body: { styleText: "x" } }));
+    expect(refused.status).toBe(400);
+    expect((await json(refused)).error).toBe("validation");
+    const ok = await app.request(
       "/api/organization",
-      as("owner", { method: "PATCH", body: { styleText: "  Anna\r\nCEO  " } })
+      as("owner", { method: "PATCH", body: { timezone: "Europe/Warsaw" } })
     );
-    expect(set.status).toBe(200);
-    expect((await json(set)).styleText).toBe("Anna\nCEO");
-    const cleared = await app.request("/api/organization", as("owner", { method: "PATCH", body: { styleText: "" } }));
-    expect(cleared.status).toBe(200);
-    expect((await json(cleared)).styleText).toBeNull();
-    const long = await app.request(
-      "/api/organization",
-      as("owner", { method: "PATCH", body: { styleText: "a".repeat(501) } })
-    );
-    expect(long.status).toBe(400);
-    expect((await json(long)).details[0].message).toBe("style_too_long");
+    expect(ok.status).toBe(200);
+    expect(Object.keys(await json(ok)).sort()).toEqual(["id", "name", "retentionDays", "timezone"]);
   });
 
   test("tenant: another organization's owner changes only their own organization", async () => {

@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-import type { MailboxView, OrganizationSettings, ProfileView, SettingsWebView } from "@ea/core/web";
+import type { MailboxView, ProfileView, SettingsWebView } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -8,12 +8,10 @@ import { en } from "../i18n/en";
 
 import { ModeCard } from "../components/settings/ModeCard";
 import { ReplyStyleForm } from "../components/settings/ReplyStyleCard";
-import { SignatureCard } from "../components/settings/SignatureCard";
 
 afterEach(() => setLocaleForTest("en"));
 
 const ID = "0190f5a0-0000-7000-8000-000000000003";
-const OTHER = "0190f5a0-0000-7000-8000-000000000004";
 
 const profile = (over: Partial<ProfileView> = {}): ProfileView => ({
   displayName: "Anna Nowak",
@@ -119,35 +117,6 @@ describe("the style card (F115 stage 11)", () => {
     const html = form({ view: profile({ signature: "<img src=x onerror=alert(1)>" }) });
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
-  });
-});
-
-describe("the signature of the organization (read-only)", () => {
-  setLocaleForTest("en");
-  const organization = (styleText: string | null) => ({ styleText }) as unknown as OrganizationSettings;
-  const mailbox = (id: string, address: string) => ({ id, address }) as unknown as MailboxView;
-
-  test("it shows the old text and the note, with no field and no button", () => {
-    const html = renderToStaticMarkup(<SignatureCard organization={organization("Pozdrawiam,\nJan")} mailboxes={[]} />);
-    expect(html).toContain(t("rs_org_note"));
-    expect(html).toContain("Pozdrawiam,\nJan");
-    expect(html).not.toContain("<textarea");
-    expect(html).not.toContain("<input");
-    expect(html).not.toContain("<button");
-  });
-
-  test("it links to the style card of each mailbox; no old text, no old text block", () => {
-    const html = renderToStaticMarkup(
-      <SignatureCard
-        organization={organization(null)}
-        mailboxes={[mailbox(ID, "a@x.test"), mailbox(OTHER, "b@x.test")]}
-      />
-    );
-    expect(html).toContain(`href="/settings?mailbox=${ID}#style-card"`);
-    expect(html).toContain(`href="/settings?mailbox=${OTHER}#style-card"`);
-    expect(html).toContain(t("rs_org_link", { address: "b@x.test" }));
-    expect(html).not.toContain("data-old-text");
-    expect(html).not.toContain(t("rs_org_old"));
   });
 });
 

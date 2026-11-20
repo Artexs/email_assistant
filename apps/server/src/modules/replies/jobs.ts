@@ -79,7 +79,6 @@ async function mailboxEnv(deps: ReplyJobDeps, ctx: TenantContext, mailboxId: str
     // Reply drafts are for password IMAP mailboxes until the OAuth providers get them.
     oauth: mailbox.oauth_provider !== null,
     timezone: organization.timezone,
-    orgStyleText: organization.style_text,
     owner: owner === undefined ? undefined : { displayName: owner.displayName, locale: ownerLocaleOf(owner.locale) },
     profile,
     flagOn,

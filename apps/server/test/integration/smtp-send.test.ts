@@ -80,7 +80,7 @@ test("a composed message reaches the recipient with the action id and the messag
     createdAt: new Date(),
     mailbox: { address: sender },
     owner: { displayName: "Artek" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     original: {
       fromAddress: "klient@example.test",
       subject: "Oferta",

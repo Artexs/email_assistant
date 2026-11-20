@@ -303,6 +303,20 @@ describe("exportOrganization", () => {
       expect({ name, orgs: [...orgs] }).toEqual({ name, orgs: [a.orgId] });
     }
     expect((tables.organizations ?? []).map((row) => row.id)).toEqual([a.orgId]);
+    // The old signature column still exists but is left out of the file: the code that reads the table must not need it.
+    expect(Object.keys(tables.organizations?.[0] ?? {}).sort()).toEqual([
+      "created_at",
+      "data_retention_days",
+      "id",
+      "max_mailboxes",
+      "name",
+      "plan",
+      "resumed_at",
+      "sso_required",
+      "telegram_minimal_locked",
+      "timezone",
+      "trial_ends_at",
+    ]);
     expect((tables.mailbox_settings ?? []).map((row) => row.urgency_profile)).toEqual(
       (tables.mailbox_settings ?? []).map(() => profile)
     );

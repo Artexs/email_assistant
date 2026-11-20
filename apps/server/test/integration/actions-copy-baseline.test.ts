@@ -128,7 +128,7 @@ describe("the baseline after the APPEND", () => {
         ),
         mailbox: { address: box.address, capabilities: { uidplus: true }, folderMap },
         owner: { displayName: "Owner" },
-        organization: { styleText: null, timezone: "Europe/Warsaw" },
+        organization: { timezone: "Europe/Warsaw" },
         compose: composeMessage,
         sender: null,
         hooks: noDelegationHooks,

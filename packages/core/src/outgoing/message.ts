@@ -50,10 +50,9 @@ export interface BuildInput {
   createdAt: Date;
   mailbox: { address: string };
   owner: { displayName: string };
-  organization: { styleText: string | null; timezone: string };
+  organization: { timezone: string };
   original: OriginalMail;
-  // Absent or null: no profile row. Name: profile → owner name (the caller falls back to the address). Signature: profile →
-  // organization style text → owner name.
+  // Absent or null: no profile row. Name: profile → owner name (the caller falls back to the address). Signature: profile → owner name.
   profile?: SenderProfile | null;
 }
 
@@ -96,8 +95,7 @@ export function buildOutgoingMessage(input: BuildInput): OutgoingMessage {
   const { draft, draftActionId, createdAt, mailbox, owner, organization, original, profile = null } = input;
   const recipients = draft.to;
   if (recipients[0] === undefined) throw new Error("draft has no recipient");
-  const styleText = organization.styleText?.trim() ?? "";
-  const signature = nonBlank(profile?.signature)?.trim() ?? (styleText === "" ? owner.displayName : styleText);
+  const signature = nonBlank(profile?.signature)?.trim() ?? owner.displayName;
   const senderName = nonBlank(profile?.displayName)?.trim() ?? owner.displayName;
   const dueDate = "due_date" in draft && draft.due_date !== "" ? draft.due_date : null;
   const editedBody = "body_text" in draft ? draft.body_text : undefined;

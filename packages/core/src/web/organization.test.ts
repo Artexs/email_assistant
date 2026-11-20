@@ -1,38 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { digestTimesBodySchema, organizationPatchSchema, styleTextSchema } from "./organization";
+import { digestTimesBodySchema, organizationPatchSchema } from "./organization";
 
 function messageOf(result: { success: boolean; error?: { issues: { message: string }[] } }): string | undefined {
   return result.error?.issues[0]?.message;
 }
 
-describe("styleTextSchema", () => {
-  test("normalizes line breaks and trims", () => {
-    expect(styleTextSchema.parse("Anna\r\nCEO  ")).toBe("Anna\nCEO");
-  });
-
-  test("turns blank text into null", () => {
-    expect(styleTextSchema.parse("   ")).toBeNull();
-  });
-
-  test("refuses 501 and 2001 characters", () => {
-    expect(messageOf(styleTextSchema.safeParse("a".repeat(501)))).toBe("style_too_long");
-    expect(messageOf(styleTextSchema.safeParse("a".repeat(2001)))).toBe("style_too_long");
-  });
-
-  test("refuses a control character but allows a tab", () => {
-    expect(messageOf(styleTextSchema.safeParse("a\u0007b"))).toBe("style_bad_char");
-    expect(styleTextSchema.safeParse("a\tb").success).toBe(true);
-  });
-});
-
 describe("organizationPatchSchema", () => {
   test("refuses an empty patch", () => {
     expect(messageOf(organizationPatchSchema.safeParse({}))).toBe("empty_patch");
-  });
-
-  test("accepts a null style text", () => {
-    expect(organizationPatchSchema.parse({ styleText: null })).toEqual({ styleText: null });
   });
 
   test("refuses an empty timezone at its path", () => {

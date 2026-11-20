@@ -6,7 +6,6 @@ import {
   notifyPatchSchema,
   organizationPatchSchema,
   ruleBodySchema,
-  STYLE_TEXT_MAX,
 } from "@ea/core/web";
 
 import { en } from "./en";
@@ -25,8 +24,6 @@ describe("keys for the messages of the core schemas", () => {
       ...messages(organizationPatchSchema.safeParse({})),
       ...messages(organizationPatchSchema.safeParse({ timezone: "" })),
       ...messages(organizationPatchSchema.safeParse({ timezone: "x".repeat(65) })),
-      ...messages(organizationPatchSchema.safeParse({ styleText: "a".repeat(501) })),
-      ...messages(organizationPatchSchema.safeParse({ styleText: "a\u0001b" })),
       ...messages(digestTimesBodySchema.safeParse({ times: ["8:00"] })),
       ...messages(
         digestTimesBodySchema.safeParse({ times: ["01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00"] })
@@ -45,8 +42,6 @@ describe("keys for the messages of the core schemas", () => {
   test("the keys that the page stages name exist", () => {
     for (const key of [
       "empty_patch",
-      "style_too_long",
-      "style_bad_char",
       "pattern_invalid",
       "time_invalid",
       "times_too_many",
@@ -64,13 +59,12 @@ describe("keys for the messages of the core schemas", () => {
 
   test("t fills the variables", () => {
     expect(t("rules_delete", { pattern: "firma.pl" })).toBe("Delete the rule firma.pl");
-    expect(t("sig_counter", { count: 12, max: STYLE_TEXT_MAX })).toBe(`12 / ${STYLE_TEXT_MAX}`);
+    expect(t("sig_counter", { count: 12, max: 1000 })).toBe("12 / 1000");
     expect(t("digest_help", { timezone: "UTC", max: MAX_DIGEST_TIMES })).toContain(`Up to ${MAX_DIGEST_TIMES} times`);
   });
 
-  // The core schemas emit these two as keys without variables, so their texts name the limit directly.
-  test("the texts of the limit messages carry the core constants", () => {
+  // The core schema emits this one as a key without variables, so its text names the limit directly.
+  test("the text of the limit message carries the core constant", () => {
     expect(t("times_too_many")).toContain(String(MAX_DIGEST_TIMES));
-    expect(t("style_too_long")).toContain(String(STYLE_TEXT_MAX));
   });
 });

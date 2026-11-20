@@ -56,8 +56,6 @@ export interface MailboxEnv {
   address: string;
   oauth: boolean;
   timezone: string;
-  // `organizations.style_text`: the signature of a mailbox that has none of its own.
-  orgStyleText: string | null;
   owner: { displayName: string; locale: ReplyLanguage | null } | undefined;
   profile: MailboxProfile | null;
   // The gates at the start of the run. The write step reads them again under the lock.
@@ -69,14 +67,13 @@ export interface MailboxEnv {
 export type DraftOutcome = "done" | "no_draft" | "failed" | "cancelled" | "superseded" | "waiting" | "retry" | "lost";
 
 // The style that the prompt gets: the same name and signature that the message builder uses at send time (profile, then the
-// organization text, then the owner name), so the texts that the checks allow are the texts that go out.
+// owner name), so the texts that the checks allow are the texts that go out.
 function styleOf(env: MailboxEnv): DrafterInput["style"] {
   return resolveReplyStyle(
     env.profile,
     profileFallbacks({
       ownerName: env.owner?.displayName ?? null,
       address: env.address,
-      orgStyleText: env.orgStyleText,
     })
   );
 }

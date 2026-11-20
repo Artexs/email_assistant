@@ -80,7 +80,7 @@ function build(draft: DraftPayload) {
     createdAt: new Date("2026-11-07T08:00:00Z"),
     mailbox: { address: "user@interia.pl" },
     owner: { displayName: "Artek" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     original,
   });
 }

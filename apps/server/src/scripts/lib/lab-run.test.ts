@@ -672,7 +672,6 @@ function emptySeed(): DemoSeed {
       name: "Kordelan demo",
       timezone: "Europe/Warsaw",
       data_retention_days: 90,
-      style_text: null,
       created_at: "2026-11-20T08:00:00.000Z",
       plan: "active",
       trial_ends_at: null,

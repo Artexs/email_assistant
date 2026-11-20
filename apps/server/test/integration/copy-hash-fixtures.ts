@@ -247,7 +247,7 @@ export async function builtText(trx: Transaction<DB>, box: CopyBox, draftId: str
     createdAt: draft.created_at,
     mailbox: { address: box.address },
     owner: { displayName: "Owner" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     original: {
       fromAddress: email.from_address,
       subject: email.subject,

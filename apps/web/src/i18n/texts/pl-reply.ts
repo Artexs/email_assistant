@@ -56,9 +56,6 @@ export const plReply = {
   rs_samples_failed: "Asystent nie mógł napisać tego przykładu.",
   rs_samples_no_draft: "Asystent nie napisał przykładu dla tej wiadomości.",
   rs_samples_slow: "Przykłady powstają dłużej niż zwykle. Odśwież stronę za minutę.",
-  rs_org_note: "Podpisy ustawia się teraz osobno dla każdej skrzynki.",
-  rs_org_old: "Ten dawny tekst organizacji nadal obowiązuje w skrzynce, która nie ma własnego podpisu.",
-  rs_org_link: "Otwórz kartę skrzynki {address}",
   // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Raport",
   rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",

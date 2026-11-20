@@ -64,7 +64,7 @@ export interface ApplyDeps {
     sendVia?: "smtp" | "graph";
   };
   owner: { displayName: string };
-  organization: { styleText: string | null; timezone: string };
+  organization: { timezone: string };
   /** The profile row of the mailbox (reply drafts): name and signature. Null or absent: no row, so the fallbacks apply. */
   profile?: SenderProfile | null;
   compose(message: OutgoingMessage): Promise<Buffer>;

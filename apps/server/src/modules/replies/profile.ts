@@ -42,7 +42,6 @@ export async function getProfileView(
   const fallbacks = profileFallbacks({
     ownerName: owner?.displayName ?? null,
     address: mailbox.address,
-    orgStyleText: organization.style_text,
   });
   return {
     displayName: profile?.displayName ?? null,
