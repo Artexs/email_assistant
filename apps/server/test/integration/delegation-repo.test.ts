@@ -288,6 +288,28 @@ describe("delegations", () => {
     });
   });
 
+  test("findOpenDelegationByMessageIds: an applied send of another organization never matches (the org_id of the action join)", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await twoOrgs(trx);
+      const delegateId = await fixtureDelegate(trx, ctxA, { email: "iso@x.test" });
+      const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status: "sent", sentMessageId: "<own>" });
+      const emailB = await insertTestEmail(trx, ctxB, b.mailboxId);
+      await insertAction(trx, ctxB, emailB, {
+        type: "send",
+        status: "applied",
+        approvedAt: now,
+        payload: { kind: "reminder", delegation_id: d.id, reminder: 1 },
+        outgoingMessageId: "<foreign>",
+      });
+
+      expect(await findOpenDelegationByMessageIds(trx, ctxA, a.mailboxId, ["<foreign>"], "iso@x.test")).toBeUndefined();
+      expect(await findOpenDelegationByMessageIds(trx, ctxA, a.mailboxId, ["<own>"], "iso@x.test")).toEqual({
+        id: d.id,
+        delegateId,
+      });
+    });
+  });
+
   async function replyFixture(trx: Transaction<DB>, email: string, sentMessageId: string, viaAdd: boolean) {
     const { a, ctxA } = await twoOrgs(trx);
     let delegateId: string;

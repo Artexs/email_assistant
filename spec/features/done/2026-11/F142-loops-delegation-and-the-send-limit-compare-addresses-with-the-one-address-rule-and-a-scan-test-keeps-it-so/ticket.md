@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F142 · Loops, delegation and the send limit compare addresses with the one address rule, and a scan test keeps it so
