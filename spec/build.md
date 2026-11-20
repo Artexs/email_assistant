@@ -17,6 +17,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟠 ACTIVE): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201)
+- `F148-one-legal-version-format-and-parser-exist` (🟠 ACTIVE): One legal version format and parser exist
 - `F144-the-sender-activity-read-is-split-into-readers-owned-by-the-modules-that-own-the-tables` (🟠 ACTIVE): The sender activity read is split into readers owned by the modules that own the tables
 - `F143-the-files-that-the-last-tickets-grew-past-400-lines-are-split-by-aggregate-and-a-lint-check-warns-over-400-and-fails-over-800` (🟠 ACTIVE): The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
 - `F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry` (🟠 ACTIVE): One variable picks the LLM provider for the whole application: OpenAI, Gemini or DeepSeek, with one API key
