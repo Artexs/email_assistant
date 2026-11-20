@@ -1,8 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import { dataCategories, subprocessors } from "@ea/core";
+import { dataCategories, sevenDayLimitProblems, subprocessors } from "@ea/core";
 import { describe, expect, test } from "bun:test";
+
+import { EXCERPT_CHARS, prompts, THREAD_MAILS } from "./modules/triage";
+import { HISTORY_COST_CAP_USD, HISTORY_SAMPLE_SIZE, HISTORY_WINDOW_DAYS } from "./modules/trust";
 
 // The internal papers of `docs/legal/` must name every data category and every sub-processor with personal
 // data, hold the headings of the DPIA and the breach procedure, and cite only paths that exist. A new table or an outside
@@ -329,5 +332,64 @@ describe("docs/legal/claims.md", () => {
         named: true,
       });
     }
+  });
+});
+
+describe("the 7-day limit", () => {
+  const rows = claimRows(claims);
+  const row = (id: string): ClaimRow => {
+    const found = rows.find((entry) => entry.id === id);
+    if (found === undefined) throw new Error(`no row ${id}`);
+    return found;
+  };
+  const legalDir = path.join(ROOT, "apps/web/src/legal");
+  const page = (lang: string, name: string): string => readFileSync(path.join(legalDir, lang, name), "utf8");
+  // A bullet of the privacy policy holds many sentences: the check reads each sentence, so a sentence that names the 7-day limit
+  // cannot borrow the words "classify" and "context" from its neighbours.
+  const sentencesOf = (line: string): string[] => line.split(/(?<=[.!?])\s+(?=[\p{Lu}"„(*])/u);
+  const pageSentences = readdirSync(legalDir).flatMap((lang) =>
+    readdirSync(path.join(legalDir, lang))
+      .filter((name) => name.endsWith(".md"))
+      .flatMap((name) => page(lang, name).split("\n").flatMap(sentencesOf))
+  );
+
+  test("1. no sentence of an in-app legal text names the 7-day limit without the classified mail and the thread context", () => {
+    expect(pageSentences.length).toBeGreaterThan(100);
+    expect(sevenDayLimitProblems(pageSentences)).toEqual([]);
+  });
+
+  test("2. rows C031 and C032 pass the check", () => {
+    expect(sevenDayLimitProblems([row("C031").claim, row("C032").claim])).toEqual([]);
+    expect(row("C032").claim).toContain("context");
+  });
+
+  test("3. row C261 and the English privacy page state the context mails; the numbers are those of the production prompt", () => {
+    expect(prompts.classifier.version).toBe("classifier-v2");
+    expect(THREAD_MAILS).toBe(3);
+    expect(EXCERPT_CHARS).toBe(500);
+    for (const text of [row("C261").claim, page("en", "privacy.md")]) {
+      expect(text).toContain("three");
+      expect(text).toContain(`${EXCERPT_CHARS} characters`);
+    }
+    expect(row("C261").source).toContain("apps/server/src/modules/mail/repo/lookup.ts");
+    expect(page("pl", "privacy.md")).toContain(`${EXCERPT_CHARS} znaków`);
+  });
+
+  test("4. row C262 states the history check numbers of the code and the flag", () => {
+    const { claim, condition } = row("C262");
+    expect(claim).toContain(`${HISTORY_SAMPLE_SIZE} INBOX mails`);
+    expect(claim).toContain(`${HISTORY_WINDOW_DAYS} days`);
+    expect(claim).toContain(`$${HISTORY_COST_CAP_USD.toFixed(2)}`);
+    expect(condition).toContain("trust_ladder");
+  });
+
+  test("5. the privacy pages name the history check, its window and its size", () => {
+    const en = page("en", "privacy.md");
+    expect(en).toContain("history check");
+    expect(en).toContain(`${HISTORY_WINDOW_DAYS} days`);
+    expect(en).toContain(`${HISTORY_SAMPLE_SIZE} mails`);
+    const pl = page("pl", "privacy.md");
+    expect(pl).toContain(`${HISTORY_WINDOW_DAYS} dni`);
+    expect(pl).toContain(`${HISTORY_SAMPLE_SIZE} wiadomości`);
   });
 });
