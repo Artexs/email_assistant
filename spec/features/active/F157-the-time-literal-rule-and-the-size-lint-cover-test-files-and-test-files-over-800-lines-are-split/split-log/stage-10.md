@@ -5,7 +5,7 @@ Base commit before the history merges: `57d52e8ef844239cfff8330cf542105969e4fb8a
 ## apps/server/test/integration/channels-notices.test.ts
 
 - Old lines: 2730 (800+; split).
-- Parts: `channels-notices-urgent.test.ts` 378, `-mailbox` 509, `-action-failed` 426, `-approval` 302, `-send-result` 455, `-send-held` 286, `-sent-missing` 457; helpers `channels-notices-helpers.ts` 179.
+- Parts: `channels-notices-urgent.test.ts` 377, `-mailbox` 505, `-action-failed` 423, `-approval` 308, `-send-result` 463, `-send-held` 281, `-sent-missing` 451; helpers `channels-notices-helpers.ts` 173.
 - Proof: `split-proof PASS cases=98` (each part run in its own process; no `assertions` line).
 - Setup list (old file, top level) and where it went:
   - `db` and `afterAll` (destroy): repeated in every part.
