@@ -179,4 +179,5 @@ export {
   type SenderWindow,
   type SenderWindowOptions,
 } from "./sender-activity";
+export { theirReplyDelaysBySender, userReplyDelaysBySender, type ReplyDelays } from "./sender-delays";
 export { repliedBySentBySender, sentCountsByRecipient, type SentCount, type SentCountsOptions } from "./sender-replies";
