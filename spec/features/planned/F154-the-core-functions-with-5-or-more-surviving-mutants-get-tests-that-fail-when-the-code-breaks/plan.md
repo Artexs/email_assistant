@@ -16,10 +16,10 @@ Owner words (ticket): "The 122 functions with 5 or more surviving mutants get ca
 
 ### Design
 
-- **D1 Function attribution.** A mutant belongs to the innermost enclosing function that has a name: a function declaration, a method, or an arrow or function expression whose direct parent is a variable declaration or a property assignment. An anonymous callback (`.map(…)`, `.superRefine(…)`) passes up to the next named one. With none, the function is `(module level)`. Probe 2026-11-20 on the F125 run (`/tmp/f125-s03/run-4/mutation.json`): this rule gives 122 functions and 1,260 mutants (1,257 plus 3 of the 6 unstable mutants that the audit left out). Rejected: manual reading (the audit did it once; workers would not agree).
+- **D1 Function attribution.** A mutant belongs to the innermost enclosing named function: a function declaration, a method, or an arrow or function expression whose direct parent is a variable declaration or a property assignment. An anonymous callback (`.map(…)`, `.superRefine(…)`) passes up. With none: `(module level)`. Probe 2026-11-20 on the audit run (`/tmp/f125-s03/run-4/mutation.json`): 122 functions, 1,260 mutants (the audit's 1,257 plus 3 unstable ones). Rejected: manual reading (workers would not agree).
 - **D2 Counted statuses.** `Survived` and `NoCoverage` count. `Timeout`, `Killed`, `Ignored`, `CompileError`, `RuntimeError` do not.
 - **D3 Per-stage measure.** Each stage measures its own source files before and after, with `--mutate` globs, at its own commit (the audit data is stale for some files). The full run is stage 18 only.
-- **D4 One mutation run at a time.** `mutation.sh` takes `flock /tmp/email-assistant-mutation.lock` around Stryker (stage 01). Stryker runs at concurrency 8; parallel runs overload the seat (`notes/2026-11-20-test-cpu-load.md`). A waiting stage waits; it does not skip.
+- **D4 One mutation run at a time.** `mutation.sh` takes `flock /tmp/email-assistant-mutation.lock` around Stryker (stage 01): Stryker runs at concurrency 8, and parallel runs overload the seat (`notes/2026-11-20-test-cpu-load.md`).
 - **D5 Target per function.** After the stage, each listed function has fewer than 5 counted mutants, or each remaining one is listed in the results file with one class: `equivalent` (no input changes the output; one-line reason), `unreachable` (no input reaches it; one-line reason), `bug` (P3), `unstable` (status changes between runs). A function that falls but stays at 5 or more with an unlisted survivor fails the stage.
 - **D6 Every new case kills.** Each new case or `test.each` row kills at least one mutant in the after run (`mutation-gaps.ts --before/--after` exits 1 otherwise). This is the ticket's "fails when its function is broken once".
 - **D7 Test rules.** `docs/code-patterns.md` § Tests: one named behaviour, exact expected value (`toBe`, `toEqual`, exact issue list), `test.each` for repeated shapes. A string-literal mutant is killed by an exact text or an exact issue `{ path, message }`, never by `toContain` of a fragment the mutant keeps.
@@ -31,7 +31,7 @@ Owner words (ticket): "The 122 functions with 5 or more surviving mutants get ca
 ## Facts checked
 
 - `mutation.json` of the Bun Stryker runner holds `files[path].source`, `files[path].mutants[].location.start` (1-based line and column), `status`, `killedBy` and `testFiles[path].tests[]` with `id` and `name` (read 2026-11-20 from `/tmp/f125-s03/run-4/mutation.json`).
-- A full default run of `packages/core` took 19 min 42 s (same run's `mutation.log`). Static mutants are ignored by default.
+- A full default run of `packages/core` took 19 min 42 s (same run's `mutation.log`).
 - `disableBail: true` in `mutation.sh`, so `killedBy` lists every killing test (D6 relies on it).
 
 ## Not verified
@@ -50,6 +50,8 @@ Owner words (ticket): "The 122 functions with 5 or more surviving mutants get ca
 - Change no file under `packages/core/src` except `*.test.ts`. A changed source file fails the stage.
 - Run each mutation run in `/tmp/f154-sNN/`. Never run it outside `mutation.sh`.
 - Do not run `test:unit` or `test:int`; run one file with `bun test <file>` (`.agents/limen/reminders.md`).
+- A stage's expected values come from the planner's reading or probe at `a5399ff1`. When the code at `HEAD` gives another value: a code change since the plan base → use the `HEAD` value and note it in the results file; no such change → P3 (a bug or a plan error), a question in the final message.
+- "The code's result at `HEAD`" in a stage means: pin the current exact value, after a check that it is not a P3 bug.
 - A gap in a decision is a question in the final message, not a choice.
 - Format only the stage's files.
 
@@ -76,15 +78,15 @@ None.
 ## Stages
 
 - [ ] 01 [gap tool and run lock](stages/stage-01-gap-tool.md)
-- [ ] 02 [replies schema and views](stages/stage-02-replies.md) — top 10: `replies/schema.ts` module level, `deobfuscate`
-- [ ] 03 [sim checks](stages/stage-03-sim-checks.md) — top 10: `checkSpread`, `checkCase`
-- [ ] 04 [sim slot schemas](stages/stage-04-sim-slots.md) — top 10: `sim/sent-slot.ts` module level
-- [ ] 05 [approval cards](stages/stage-05-approvals.md) — top 10: `renderApprovalRequest`
-- [ ] 06 [look-alike domains](stages/stage-06-suspicious-lookalike.md) — top 10: `isOneEditApart`
+- [ ] 02 [replies schema and views](stages/stage-02-replies.md)
+- [ ] 03 [sim checks](stages/stage-03-sim-checks.md)
+- [ ] 04 [sim slot schemas](stages/stage-04-sim-slots.md)
+- [ ] 05 [approval cards](stages/stage-05-approvals.md)
+- [ ] 06 [look-alike domains](stages/stage-06-suspicious-lookalike.md)
 - [ ] 07 [auth results and DKIM](stages/stage-07-suspicious-auth.md)
-- [ ] 08 [testmail](stages/stage-08-testmail.md) — top 10: `validateBatch`
-- [ ] 09 [public content](stages/stage-09-public-content.md) — top 10: `ipv4Allowed`
-- [ ] 10 [changelog and web forms](stages/stage-10-changelog-web.md) — top 10: `parseChangelog`
+- [ ] 08 [testmail](stages/stage-08-testmail.md)
+- [ ] 09 [public content](stages/stage-09-public-content.md)
+- [ ] 10 [changelog and web forms](stages/stage-10-changelog-web.md)
 - [ ] 11 [digest render](stages/stage-11-digest.md)
 - [ ] 12 [notices and weekly](stages/stage-12-notices.md)
 - [ ] 13 [texts](stages/stage-13-texts.md)
@@ -96,7 +98,7 @@ None.
 
 ## How to run (coordinator)
 
-Move the ticket to `active/` and commit. Spawn stage 01; land it after its review. Then spawn 02–17 as seats allow: they share no source or test file (D8), and the run lock (D4) queues their mutation runs. Spawn 18 when 02–17 are in `done` state of this ticket.
+Move the ticket to `active/` and commit. Spawn 01; land it after its review. Then spawn 02–17 as seats allow: no shared source or test file (D8); the lock (D4) queues their runs. Spawn 18 after 02–17 land.
 
 ```
 limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high \
@@ -107,13 +109,13 @@ limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thi
 
 ## Planning progress
 
-- Scouts: 0. The job task said "Do not use limen wait or any tool that waits for another job", so no scout ran; the planner read the audit and the code at `a5399ff1` and ran the D1 probe itself.
-- Files and words: see the end of this file after the commit of all stages.
+- Scouts: 0. The job task said "Do not use limen wait or any tool that waits for another job"; the planner read the audit and the code at `a5399ff1` and ran the probes itself.
+- All 18 stage files written. Words: see § Log.
 
 ## Cold review
 
-See the end of this file.
+Model `claude-sonnet-5-5`: no `[risky]` stage, no risk area of the board's review line (tests and an audit tool only). The job was started without a wait (job task rule); the coordinator files its message as `plan-review-1.md`.
 
 ## Log
 
-- 2026-11-20 plan written at `a5399ff1`.
+- 2026-11-20 plan written at `a5399ff1`. `wc -w`: plan.md under 1,500; stage files 323–700.

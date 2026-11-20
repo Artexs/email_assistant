@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Decisions D1, D2, D4, D6, D10.
 
 **Goal.** One command turns a Stryker `mutation.json` into counted mutants per function (D1, D2), and two reports into a before/after table plus a kill count for each new test (D6).
 
-**Files.** New `scripts/test-audit/mutation-gaps.ts` and `mutation-gaps.test.ts`. Reuse `readReport`, `CORE_PREFIX` and the TSV helpers of `mutation-summary.ts` where they fit; `readReport` drops `source`, so read the source of each file from the JSON in the new module. TypeScript parser: the root dev dependency `typescript` (no new dependency).
+**Files.** New `scripts/test-audit/mutation-gaps.ts` and `mutation-gaps.test.ts`. Reuse the helpers of `mutation-summary.ts` where they fit (`readReport` drops `source`). Parser: the root dev dependency `typescript`.
 
 **Interfaces** (later stages call the CLI only):
 
@@ -44,13 +44,13 @@ CLI:
 
 **Goal.** Two stages never run Stryker at the same time (D4).
 
-**Decisions.** Lock file `/tmp/email-assistant-mutation.lock`, taken with `flock` (blocking) around the install and the Stryker run only. Print one line `mutation.sh: waiting for the mutation lock` when the lock is busy (try `flock -n` first). The EXIT trap still removes the work folder. Usage and outputs do not change.
+**Decisions.** Lock file `/tmp/email-assistant-mutation.lock`; blocking `flock` around the install and the Stryker run. When busy (`flock -n` fails first), print `mutation.sh: waiting for the mutation lock`. Usage, outputs and the EXIT trap do not change.
 
 **Check.** Hold the lock in one shell (`flock /tmp/email-assistant-mutation.lock sleep 30`) and start a one-file run in another: it prints the wait line and starts after the first shell ends. Then one run: `bash scripts/test-audit/mutation.sh /tmp/f154-s01/one --mutate 'src/web/csp.ts'`; record its wall time in `results/stage-01.md` (plan.md § Not verified).
 
 ## Step 3 — README
 
-Add `mutation-gaps.ts` and the lock to `scripts/test-audit/README.md` (one bullet each, same form as the others).
+One bullet each for `mutation-gaps.ts` and the lock in `scripts/test-audit/README.md`.
 
 ## Done when
 
@@ -59,4 +59,4 @@ Add `mutation-gaps.ts` and the lock to `scripts/test-audit/README.md` (one bulle
 
 ## Out of scope
 
-- New tests for `packages/core`. Changes to `mutation-summary.ts` behaviour.
+- New `packages/core` tests. `mutation-summary.ts` behaviour.
