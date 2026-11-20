@@ -1,6 +1,6 @@
 # F125 · Test audit: measure, classify, cut only what the owner approves — plan
 
-> **Status 2026-11-14 — planned.** Plan base: 1927d052, refreshed 2026-11-19 ([`plan-refresh-1.md`](plan-refresh-1.md); first base 54fe78f). Stages 01–07 written; the cut stages (08+) are written after gate G1 by a planner job.
+> **Status 2026-11-20 — in progress.** Plan base: 1927d052, refreshed 2026-11-19 ([`plan-refresh-1.md`](plan-refresh-1.md); first base 54fe78f). Stages 01–07 landed; gate G1 answered 2026-11-20. Phase B plan base: 1685baff; cut stages 08–21 written 2026-11-20 (§ Phase B).
 
 ## Input
 
@@ -105,6 +105,31 @@ Classes:
 6. One commit per approval group; the message names the group id and the action.
 7. A group that the owner marked `no`, or a row in the owner's reject list, is not touched.
 
+## Phase B (cut stages; written 2026-11-20 at 1685baff)
+
+Input: `audit/report.md` § 2 and § Owner answers: all ten groups `ok`; G06 runs `e2e-seed.test.ts` in the CI `e2e` job; G07 and G08 add `tools/mail-oauth-spike` to `test:unit`; the three `main.test.ts` rows of G09 and the stale `time-rewrite-check.test.ts:43` are on the reject list (§ 3). Follow-up tickets exist and are not stages here: F154 (core mutation gaps), F155 (source regexes), F156 (draft date), F157 (time and size rules for tests).
+
+### Decisions
+
+- **D12** Stage-local proof. `cut-run` runs only the stage's test files: the files it changes, the files of its kept keys and its new files; "before" twice before the first edit, "after" once. Reason: the owner rule "tests run once per job" (2026-11-20, `notes/2026-11-20-test-cpu-load.md`) forbids full suites in a job, and the subset check is never weaker: the rest of the suite does not change, so a line the subset still hits is still hit by the suite. It can only raise a false drop: then widen the "after" run with the test files that import that source file; still unhit → revert the rows that cause it and defer them. Rejected: full `coverage.sh` before and after (about 40 min of serial int per stage). D9's per-action table stays; `--expect` states its count rule per stage.
+- **D13** The stage log is `audit/cut-sNN.md` in this folder (committed; the ticket acceptance "stage log"). Raw JUnit, lcov and `mutation.json` stay in `/tmp/f125-sNN/`.
+- **D14** Mutation scope (core stages 16, 20): `mutation.sh --mutate` with the non-test files in the import closure of the changed test files. A test kills mutants only in code it runs. Rejected: a full core run twice per stage (about 1 h).
+- **D15–D23** Stage decisions: the fake lab mail client (09), one spawn stays for the stats:week exit-2 wiring (11, Q7), Bun fake timers for the bounded close (11, Q8), the duplicate pair check (12), the table rules (13, for 13–16), the CI step place and its no-skip check (17), the spike README line (18), the rewrite rules (19, for 19–20).
+- **D24** Phase B proof: the stage's `cut-proof` PASS section in its log, then `bun run check:job` as the last step (its last line in the final message). This replaces the Phase A § Proof chain (full `test:unit:ci` and `test:int:ci`) for phase B, by the same owner rule. GitHub CI runs every suite on master.
+- **D25** Stage cut: G01 is three stages (a move counts twice in the about-300-lines limit: 09 builds the fake and moves six cases, 10 moves five, 11 the two other files); G03 three by area so they run in parallel; G04 and G05 one stage (two of their files hold both groups; one mutation pair); G07 and G08 one stage (one path change). Stage 08 builds the shared tools first.
+- **D26** The core gap ticket (F154) writes some of the same core test files. Stage 16 waits for F154 stages 11, 12 and 14, stage 20 for F154 stage 12. Reason: Cut stage rule 3 would defer every row in a file of an open F154 branch, and the mutant "before" must include the new F154 cases. Rejected: run now and defer.
+- **D27** No new questions block a stage. Defaults: `questions.md` Q7–Q9.
+
+### Cut stage steps (every stage 09–20; 17 and 18 skip S4–S5 as their files say)
+
+- **S1** `bun scripts/test-audit/scan-cli.ts --out /tmp/f125-sNN/scan` at the stage base.
+- **S2** `cut-keys.ts` for the stage's rows. `rejected` keys are never touched. `deferred-*` rows go to the log.
+- **S3** Open branches (Cut stage rule 3): rows in a file that an unmerged `limen/*` branch changes are deferred.
+- **S4** `cut-run.sh /tmp/f125-sNN/before-1 …` and `before-2` on the stage's files, before the first edit.
+- **S5** Edits, one commit per group; then `cut-run.sh …/after` and `cut-proof.ts` with the stage's `--expect`; a FAIL is fixed or its rows reverted and deferred, never passed by a changed `--expect`.
+- **S6** Write and commit `audit/cut-sNN.md`: resolved keys, deferred and rejected rows with reasons, the `cut-proof` section, the break-once lines.
+- **S7** `bun run check:job` last.
+
 ## Facts checked
 
 - **F1** Counts move fast (about 325 test files at 54fe78f, 977 at 1927d052). Each stage prints its own counts; the numbers here are only for scale. Recount at 1927d052, per path, with the commands: `plan-refresh-1.md` § Recount. Unit JUnit: 7,030 cases in 492 files, 0 skipped, 17 cases ≥ 1 s (`packages/core` 2,760, `apps/server/src` 2,807). Int (not run): 434 files, 5,533 call sites; JUnit is higher (`each`, loops, shared contract modules). Playwright: 39 files, 232 calls. In no suite: `tools/mail-oauth-spike/*.test.ts`. Total at least 12,800 cases. At 54fe78f: unit 2,262, int 1,683, about 41 e2e.
@@ -161,6 +186,8 @@ mkdir -p /tmp/f125-sNN && bun test scripts/test-audit > /tmp/f125-sNN/tool-tests
 ```
 Stages 04–06 add no code; their proof is the same command (it shows that nothing else changed). Run it after the last commit, with nothing after it.
 
+Phase B: D24 (the stage's `cut-proof` section, then `bun run check:job`; stage 21 has no code and no `check:job`).
+
 ## Owner checkpoints and owner steps
 
 - **G1 (owner, after stage 07):** read `audit/report.md`, write `ok`/`no`/`ask` in the `Owner` column of each group, optionally add `file:line` keys to the reject list, commit or tell the coordinator. This is a real stop (second-pass gate, D1). Expected effort: the table, not the rows; one example per group is linked for a sample.
@@ -169,7 +196,7 @@ Stages 04–06 add no code; their proof is the same command (it shows that nothi
 
 - Stages 01–06: no review job (new tool files and review files only); the tool tests and the proof decide.
 - Stage 07: a review job (board reviewer model) checks that every group row has evidence, that no K rule is broken, and that no kept key is cut by any group, before the coordinator asks the owner.
-- Phase B: every cut stage gets a review job (deletion of tests is hard to judge later).
+- Phase B: stages 08–20 each get a review job (deletion of tests is hard to judge later; stage 08 builds the proof tool that every cut trusts). Model `claude-sonnet-5-5`, except stages 19 and 20 on `claude-opus-5-5`: their rewrites change asserts of TLS, config secret, SSO, mailbox OAuth and trust tests (board TRACK: security). No stage is `[risky]`: no product code, data, migration or send. Stage 21 gets none. Review text: "Review F125 stage NN at the candidate commit. Check: every changed case maps to an approved key of the stage file; no key of `audit/reject.tsv` and no other case changed; tables keep each old name and input (D19); rewrites assert exact values and each has a break-once line (D23); the `cut-proof` section shows PASS for the stage's `--expect`; each deferred row has a reason. The plan follows `.agents/limen/planner.md` § Plan size." plus the board's BLOCKING / TEST GAP / NOTE line.
 
 ## Stages
 
@@ -184,7 +211,23 @@ Phase A:
 
 Gate G1 (owner).
 
-Phase B: stages 08+ written by a planner job after G1 (D2).
+Phase B (§ Phase B; Needs lines in each file):
+- [ ] [Stage 08 — Cut tools: key resolve, stage run, before/after proof](stages/stage-08-cut-tools.md)
+- [ ] [Stage 09 — G01 part 1: fake lab mail client, six lab bot cases to unit](stages/stage-09-lab-bots-unit-1.md)
+- [ ] [Stage 10 — G01 part 2: five lab bot cases to unit](stages/stage-10-lab-bots-unit-2.md)
+- [ ] [Stage 11 — G01 part 3: stats:week arguments and the bounded close to unit](stages/stage-11-stats-week-and-bounded-close.md)
+- [ ] [Stage 12 — G02: five duplicate cases go](stages/stage-12-delete-dups.md)
+- [ ] [Stage 13 — G03 part 1: server unit tables](stages/stage-13-tables-server-unit.md)
+- [ ] [Stage 14 — G03 part 2: web, docs and deploy tables](stages/stage-14-tables-web-docs-deploy.md)
+- [ ] [Stage 15 — G03 part 3: CLI stream tables](stages/stage-15-tables-cli-streams.md)
+- [ ] [Stage 16 — G04 and G05: core tables, mutants still killed](stages/stage-16-tables-core.md)
+- [ ] [Stage 17 — G06: e2e seed cases in the CI e2e job](stages/stage-17-e2e-seed-in-ci.md)
+- [ ] [Stage 18 — G07 and G08: OAuth spike tests in `test:unit`](stages/stage-18-oauth-spike-in-unit.md)
+- [ ] [Stage 19 — G09: exact asserts in server unit cases](stages/stage-19-rewrite-server-unit.md)
+- [ ] [Stage 20 — G10: exact asserts in core, fake Telegram and int cases](stages/stage-20-rewrite-core-tools-int.md)
+- [ ] [Stage 21 — Phase B result in the report](stages/stage-21-phase-b-result.md)
+
+Order: 08, 17 and 18 at once; 09, 11–15 and 19 after 08; 10 after 09; 16 after 08 and F154 stages 11, 12, 14; 20 after 08 and F154 stage 12; 21 last.
 
 ## How to run (coordinator)
 
@@ -203,6 +246,7 @@ Phase B: stages 08+ written by a planner job after G1 (D2).
 6. If the parallel-runs ticket (F124) has not landed yet, wait for it before phase B.
 7. After G1: spawn a planner job: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan cuts · F125" "Plan F125 phase B: write stages/stage-08+ for spec/features/active/F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged/ from the groups the owner marked ok in audit/report.md, by plan.md § Cut stage rules and D9. Keep stages 01–07 as they are."` Then build the cut stages one by one; each gets a review job (§ Review).
 8. Drop each job DB after its land.
+9. Phase B spawns: the step 2 command with the stage number, its stage file and the label `<what it cuts> · F125`; final proof: "plan.md § Phase B D24". Add the board line for reviewed stages. `--timeout 3h` for 16 and 20 (two mutation runs and the mutation lock wait of up to 2 h), default for the rest. Review each of 08–20 (§ Review), then land with `--keep-open`; stage 21 lands last and closes the ticket.
 
 ## Planning progress
 
@@ -218,6 +262,7 @@ Phase B: stages 08+ written by a planner job after G1 (D2).
 - [x] cold review (`plan-review-1.md`)
 - [x] refresh 1 to 1927d052 (`plan-refresh-1.md`), no scouts (refresh job). Words after the refresh and review 2: plan.md 5,194, stage 01 1,266, 02 1,038, 03 754, 04 621, 05 326, 06 626, 07 754. The plan predates the 2026-11-14 size rule in practice (plan.md and stages 01–03, 07 are over it); the refresh does not restructure it.
 - [x] cold review of refresh 1 (`plan-review-2.md`): Sonnet 5.5, no `[risky]` stage; FAIL with 1 blocking finding, all fixed (`plan-refresh-1.md` § Changes after plan review 2).
+- [x] Phase B, 2026-11-20 at 1685baff: stages 08–21 [written]. Words: stage 08 698, 09 531, 10 351, 11 554, 12 442, 13 412, 14 268, 15 301, 16 449, 17 516, 18 440, 19 469, 20 411, 21 358. Scouts: 0, cold review: none run (the planning job's instruction forbids `limen wait` and every tool that waits for another job; § Cold review). The facts the decisions need were read at 1685baff: the `LabMailClient` port, `parseStatsWeekArgs` (renamed from the row's `readStatsWeekOptions`), `CLOSE_LOGOUT_TIMEOUT_MS` in `mail/imap/client.ts`, the `e2e` job env and steps of `ci.yml`, the `e2e-seed.test.ts` skip condition, the `test:unit` paths, the spike imports, the F154 stage files, Bun 1.4.4 fake timers (probe).
 
 ## Cold review
 
@@ -235,7 +280,10 @@ One round, 2026-11-14, Opus 5.5 high, scout job `2026-11-14-f125-plan-review-3dc
 - 10 (facts): fixed; F1 note on fast counts, 13 e2e files, K4 names the contract module, stage 06 CLI rule by spawn, not by file name.
 - Note (quarantined cases, tool tests not in CI): fixed; K5 covers quarantined cases; D3 states it.
 
+Phase B: no cold review ran. The planning job could not start and wait for a review job (instruction of 2026-11-20). Proposal for the coordinator: one plan review of stages 08–21 (`claude-sonnet-5-5`, no `[risky]` stage) before stage 08 spawns, filed as `plan-review-3.md`; the per-stage reviews of § Review stay.
+
 ## Log
 
 - 2026-11-14: planned in an interactive owner session (Opus 5.5), from the probes in F1–F6.
 - 2026-11-19: refreshed to 1927d052 (`plan-refresh-1.md`): counts, new unit areas in stage 04, K4/K5/F6 facts, Needs lines, F136 overlap in stage 06.
+- 2026-11-20: phase B planned at 1685baff by a planner job (Opus 5.5): stages 08–21 from the ten approved groups; no scouts and no cold review (the job could not wait for other jobs).
