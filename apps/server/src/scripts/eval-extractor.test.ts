@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { llmPrices, type SentPart } from "@ea/core";
-import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { extractorGateFileSchema } from "../modules/loops";
 import { loadConfig } from "../platform/config";
@@ -15,7 +15,12 @@ import { readSentSlots } from "../platform/sim-sent-files";
 import { parseEvalArgs } from "./eval-args";
 import { runExtractorEval } from "./eval-extractor";
 import { runSimInProcess } from "./sim-fixtures.test-helper";
-import { completeSentCorpus, miniSentFloors, type SentCorpus } from "./sim-sent-fixtures.test-helper";
+import {
+  completeSentCorpus,
+  miniSentFloors,
+  type SentCorpus,
+  removeAllSentCorpora,
+} from "./sim-sent-fixtures.test-helper";
 
 // The extractor runner on a mini sent corpus with a fake LLM. No real call, no money.
 
@@ -29,6 +34,7 @@ const config = loadConfig({ ...env, OPENAI_API_KEY: "o-key" });
 const keyless = loadConfig(env);
 
 let tmp = "";
+afterAll(removeAllSentCorpora);
 let corpus: SentCorpus | undefined;
 let lines: string[] = [];
 let stdout = "";
