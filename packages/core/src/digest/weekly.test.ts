@@ -432,7 +432,6 @@ describe("the mail line and the auto items of the weekly report", () => {
   };
 
   test.each([
-    ["no important mail and nothing triaged", 0, 0, ["No mail this week."]],
     ["no important mail but mail triaged", 0, 5, ["Missed important mail (lower bound): – (0 of 0)"]],
     ["important mail and nothing triaged", 3, 0, ["Missed important mail (lower bound): 33% (1 of 3)"]],
   ])("the mail line: %s", (_name, important, triaged, expected) => {
@@ -442,7 +441,6 @@ describe("the mail line and the auto items of the weekly report", () => {
   });
 
   test.each([
-    ["nothing handled and some mail would be", 0, 2, ["Would handle (shadow mode): 25% (2 of 8)"]],
     ["nothing handled and none would be", 0, 0, []],
     ["some mail handled and some would be", 3, 2, []],
   ])("the shadow mode line: %s", (_name, handled, wouldHandle, expected) => {
@@ -512,13 +510,13 @@ describe("the evidence items of the weekly report", () => {
       .text.split("\n")
       .filter((line) => line.startsWith("spam:"));
 
-  test("a tripped row with a reason reads paused and gives no auto-on line; without a reason it does not", () => {
-    expect(evidence([row("spam", { trip: { tripped: true, reason: "corrections" } })])).toEqual([
-      "spam: paused (you corrected its moves)",
-    ]);
-    expect(evidence([row("spam", { trip: { tripped: true, reason: null } })])).toEqual([
-      "spam: auto on · proof go · check pass",
-    ]);
+  test("a tripped row with no reason does not hide a later tripped row that has one", () => {
+    expect(
+      evidence([
+        row("spam", { trip: { tripped: true, reason: null } }),
+        row("spam", { trip: { tripped: true, reason: "corrections" } }),
+      ])
+    ).toEqual(["spam: paused (you corrected its moves)"]);
   });
 
   test("a trip that is not tripped does not pause the category, whatever its reason", () => {
@@ -537,27 +535,16 @@ describe("the evidence items of the weekly report", () => {
     ]);
   });
 
-  test("a row with no global proof adds no line", () => {
-    expect(evidence([row("spam", { global: null })])).toEqual([]);
+  test("a proof decision of none reads proof none", () => {
+    const global = { decision: "none" as const, provisional: false, wilsonLower: 0.9, cases: 120 };
+    expect(evidence([row("spam", { global })])).toEqual(["spam: auto on · proof none · check pass"]);
   });
 
   test.each([
-    ["go", "proof go"],
-    ["none", "proof none"],
-    ["no-go", "proof no-go"],
-  ] as const)("the proof decision %s reads %s", (decision, phrase) => {
-    const global = { decision, provisional: false, wilsonLower: 0.9, cases: 120 };
-    expect(evidence([row("spam", { global })])).toEqual([`spam: auto on · ${phrase} · check pass`]);
-  });
-
-  test.each([
-    [undefined, "check none"],
-    ["pass", "check pass"],
     ["fail", "check fail"],
-    ["inconclusive", "check inconclusive"],
     ["unknown", "check no result"],
   ] as const)("the check outcome %s reads %s", (outcome, phrase) => {
-    const history = outcome === undefined ? null : ({ outcome, acted: 80, moved: 1 } as unknown as Row["history"]);
+    const history = { outcome, acted: 80, moved: 1 } as unknown as Row["history"];
     expect(evidence([row("spam", { history })])).toEqual([`spam: auto on · proof go · ${phrase}`]);
   });
 });

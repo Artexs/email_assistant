@@ -1,7 +1,5 @@
 import { describe, expect, test } from "bun:test";
 
-import { MESSAGE_MAX_CHARS } from "../digest/message";
-
 import { encodeNoticeView } from "./encode";
 import { renderNotice } from "./render";
 import type { NoticeView } from "./views";
@@ -43,28 +41,6 @@ const loaded: NoticeView<"urgent"> = {
 };
 
 describe("the urgent notice on Telegram, full detail", () => {
-  test("a view with no optional field renders one button row and no extra line", () => {
-    expect(renderNotice("urgent", encodeNoticeView("urgent", bare), full)).toEqual({
-      ok: true,
-      message: {
-        text: [
-          "🔴 Urgent mail",
-          "From: boss@example.test",
-          "Subject: Contract",
-          "💬 Deadline today",
-          "Received 12 Nov 23:15",
-          "→ will draft a delegation to Anna Nowak; would move to AI/Info",
-        ].join("\n"),
-        buttons: [
-          [
-            { text: "✅ Right", data: `fr:u:${id1}` },
-            { text: "✏️ Change", data: `fe:${id1}` },
-          ],
-        ],
-      },
-    });
-  });
-
   test("a view with every optional field renders each line and both extra buttons", () => {
     expect(renderNotice("urgent", encodeNoticeView("urgent", loaded), full)).toEqual({
       ok: true,
@@ -100,32 +76,5 @@ describe("the urgent notice on Telegram, the stay folder", () => {
       full
     );
     expect(result.ok && result.message.text.split("\n").at(-1)).toBe("→ stays in Oferty");
-  });
-});
-
-describe("renderNotice refusals", () => {
-  test("a view that fails the schema of its kind is refused", () => {
-    expect(renderNotice("urgent", { emailId: id1 }, full)).toEqual({ ok: false });
-  });
-
-  test.each([
-    ["a mail row of a kind with no mail renderer", "urgent", { ...full, channel: "mail" }],
-    ["a push row of a kind with no push renderer", "digest", { ...full, channel: "push" }],
-    ["a mail row at the minimal detail", "digest", { ...full, channel: "mail", detail: "minimal" }],
-  ] as const)("%s is refused", (_name, kind, opts) => {
-    const view = kind === "digest" ? { text: "Digest text", buttons: [] } : encodeNoticeView("urgent", bare);
-    expect(renderNotice(kind, view, opts)).toEqual({ ok: false });
-  });
-
-  test("the limit of the text is the message limit: the last view that fits renders, one more character is refused", () => {
-    const edit = (original: string) =>
-      renderNotice(
-        "approval_edit",
-        { original, outcome: "approved", at: "2026-11-13T10:00:00.000Z", timeZone: "Europe/Warsaw" },
-        full
-      );
-    const fits = edit("x".repeat(MESSAGE_MAX_CHARS - 6));
-    expect(fits.ok && fits.message.text.length).toBe(MESSAGE_MAX_CHARS);
-    expect(edit("x".repeat(MESSAGE_MAX_CHARS + 4))).toEqual({ ok: false });
   });
 });

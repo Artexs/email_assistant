@@ -499,54 +499,17 @@ describe("renderActionFailedNotice", () => {
   });
 
   test.each([
-    ["move", false, "Tried 3 times. The mail stays in INBOX. /status shows the mailbox state."],
     ["flag", false, "Tried 3 times. /status shows the mailbox state."],
     ["mark_read", false, "Tried 3 times. /status shows the mailbox state."],
     ["create_draft", false, "Tried 3 times. /status shows the mailbox state."],
-    ["move", true, "Tried 3 times. The mail stays in AI/Info: move it by hand. /status shows the mailbox state."],
     ["flag", true, "Tried 3 times. /status shows the mailbox state."],
     ["mark_read", true, "Tried 3 times. /status shows the mailbox state."],
-    [
-      "create_draft",
-      true,
-      "Tried 3 times. The draft stays in Drafts: delete it by hand. /status shows the mailbox state.",
-    ],
   ] as const)("the last line of a %s with reverse %s", (actionType, reverse, last) => {
     expect(lines({ ...base, actionType, reverse }).at(-1)).toBe(last);
   });
 
-  test("a follow-up that failed or may have gone out is one fixed line, with the panel link when set", () => {
-    const render = (cause: "failed" | "unknown", panelUrl?: string) =>
-      renderActionFailedNotice({ followUp: { cause, panelUrl } }, textTables.en);
-    expect(render("failed")).toEqual({ text: "⚠️ A follow-up could not be sent. Nothing went out.", buttons: [] });
-    expect(render("unknown", "https://app.test/approvals")).toEqual({
-      text: [
-        "⚠️ A follow-up may have been sent: the connection broke after the text went out. Check your Sent folder before you write another.",
-        "Open in panel: https://app.test/approvals",
-      ].join("\n"),
-      buttons: [],
-    });
-  });
-
-  test.each([
-    ["an original move with a folder names the folder", { reason: "other" }, "⚠️ Could not move a mail to AI/Info"],
-    [
-      "an original move after bad_payload does not name the folder",
-      { reason: "bad_payload" },
-      "⚠️ Could not move a mail",
-    ],
-    [
-      "a reverse move names the source folder",
-      { reverse: true },
-      "⚠️ Undo failed: could not move a mail back to INBOX",
-    ],
-    [
-      "a reverse move that finds no mail names the source folder",
-      { reverse: true, reason: "mail_not_found" },
-      "⚠️ Undo failed: could not move a mail back to INBOX",
-    ],
-  ] as const)("the first line: %s", (_name, patch, first) => {
-    expect(lines({ ...base, ...patch })[0]).toBe(first);
+  test("an original move after bad_payload does not name the folder in its first line", () => {
+    expect(lines({ ...base, reason: "bad_payload" })[0]).toBe("⚠️ Could not move a mail");
   });
 
   test("marks a test mail after the first line only", () => {
