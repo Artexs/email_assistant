@@ -89,7 +89,7 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 - **Samples.** One run a day for each mailbox (the quota day turns at 09:00 Polish time, 10:00 in summer); the panel waits at most one minute (a reload shows the rest). A sample shows the owner the text of a real mail's reply (owner only; retention clears it after 90 days).
 - **Quota-day texts.** The preview limit texts `rs_preview_limit` and `rs_preview_cap` still say "tomorrow".
 - **OAuth mailboxes.** No reply drafts until E9 (F117).
-- **Style.** The writing style is a text that the user writes, or a suggestion from the sent mail that the owner edits and saves (rules 18 and 19). Learning from edits, auto-send and meeting slots are not built.
+- **Style.** The writing style is a text that the user writes, or a suggestion from the sent mail that the owner edits and saves (rules 18 and 19). Learning from edits, auto-send and meeting slots are not built. The style gate run of 2026-11-20 failed at its dev smoke: with the suggested style, `drafter-v4` drafts got the same mean `style_match` as with no style (1.85 on 20 pairs), so the holdout did not run and the flag `style_from_sent` stays off (`spec/features/active/F122-e6b-style-from-sent/tuning-1.md`).
 - **Pilot.** The consent text and `TERMS_VERSION` changed in stage 17. Stage 18 (the pilot, owner step O1) is not done: three real replies from drafts on the pilot mailbox, and the flag `draft_copy_check` for the other kinds, wait for it. The user docs pages `explanation/never-sends-alone.mdx` and `how-to/approve-a-send.mdx` still say "Do not send the draft from your mail client" for the other kinds; they change when `draft_copy_check` goes on.
 
 ## Decisions

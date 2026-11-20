@@ -1,0 +1,14 @@
+{
+  "scenario": "lab-01",
+  "part": "sent-dev",
+  "promptVersion": "stylist-v1",
+  "model": "gpt-6-luna",
+  "effort": "low",
+  "sampleCount": 50,
+  "text": "Dostosowuje formę zwracania się do relacji: używa imion w kontaktach ze współpracownikami, a wobec osób zewnętrznych lub wyższych rangą wybiera formę formalną. Rozpoczyna wiadomości od powitania dopasowanego do odbiorcy. Zakończenie bywa formalnym pożegnaniem z podpisem, krótkim podpisem albo go brakuje. Długość maili jest zróżnicowana: od krótkich próśb i potwierdzeń po dłuższe, uporządkowane wyjaśnienia. Pisze profesjonalnie, uprzejmie i rzeczowo, z nastawieniem na współpracę i podjęcie decyzji. Używa jasnego, konkretnego języka, przedstawia kontekst, wskazuje oczekiwane działanie i często podaje termin. Niekiedy dodaje podziękowanie lub uznanie dla pracy odbiorców.",
+  "checks": {
+    "ok": true,
+    "failures": []
+  },
+  "usd": 0.0008601
+}
