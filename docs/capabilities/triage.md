@@ -203,7 +203,10 @@ emails.status:   pending → processing → triaged → done                (don
 
 ## Tests
 
-- `apps/server/test/integration/triage-job.test.ts`
+- `apps/server/test/integration/triage-job-basic.test.ts`
+- `apps/server/test/integration/triage-job-errors.test.ts`
+- `apps/server/test/integration/triage-job-limits.test.ts`
+- `apps/server/test/integration/triage-job-suspended.test.ts`
 - `apps/server/test/integration/triage-feedback.test.ts`
 - `apps/server/test/integration/triage-gate.test.ts`
 - `apps/server/test/integration/triage-repo.test.ts`
