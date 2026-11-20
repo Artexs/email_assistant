@@ -6,17 +6,6 @@
     "apps/server/src/scripts/org-export.ts",
     "apps/server/src/scripts/web-two-factor-reset.ts"
   ],
-  "org": [
-    "apps/server/src/scripts/lib/invite-delivery.ts",
-    "apps/server/src/scripts/org-create.ts",
-    "apps/server/src/scripts/org-flag.ts",
-    "apps/server/src/scripts/org-invite.ts",
-    "apps/server/src/scripts/org-member.ts",
-    "apps/server/src/scripts/org-plan.ts",
-    "apps/server/src/scripts/org-sso.ts",
-    "apps/server/src/scripts/org-status.ts",
-    "apps/server/src/scripts/web-invite.ts"
-  ],
   "mailbox": [
     "apps/server/src/scripts/mailbox-check.ts",
     "apps/server/src/scripts/mailbox-connect.ts",

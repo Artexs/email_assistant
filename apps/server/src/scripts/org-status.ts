@@ -1,39 +1,13 @@
-import { parseArgs } from "node:util";
-
-import { z } from "zod";
-
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
 import { orgStatusLines } from "./lib/org-status-lines";
+import { cliDescriptions, parseOrgStatusArgs } from "./org-status-args";
 
-const out = createCliOutput("org-status");
-
-const usage = "usage: bun run org:status [--org-id <uuid>]";
-
-function readOptions(): { orgId?: string } | undefined {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: { "org-id": { type: "string" } },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    if (orgId === undefined) return {};
-    return z.uuid().safeParse(orgId).success ? { orgId } : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function main(): Promise<number> {
-  const options = readOptions();
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
+// An error is not caught here: `runCli` prints `failed:` (exit 1) or `unreachable:` (exit 3, the database did not answer).
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseOrgStatusArgs(argv);
 
   const config = loadConfig();
   const db = createDb(config.DATABASE_URL);
@@ -48,19 +22,13 @@ async function main(): Promise<number> {
       out.print("no organizations");
       return 0;
     }
-    process.stdout.write(`${lines.join("\n")}\n`);
+    out.write(`${lines.join("\n")}\n`);
     return 0;
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "org-status", descriptions: cliDescriptions, main });
+}

@@ -266,9 +266,9 @@ describe("db-worktree streams", () => {
 });
 
 describe("org-status streams", () => {
-  test("a bad --org-id: the usage on stderr, exit 1", async () => {
+  test("a bad --org-id: the usage on stderr, exit 2", async () => {
     const result = await run("org-status", ["--org-id", "nope"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "org-status", "usage: bun run org:status");
   });
 
@@ -291,10 +291,10 @@ describe("org-status streams", () => {
     expectOnlyStdout(result, "org-status", "no organizations");
   });
 
-  test("a database that is down: `failed:` on stderr, exit 1", async () => {
+  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
     const result = await run("org-status", [], { env: { DATABASE_URL: deadDb } });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "org-status", "failed: ");
+    expect(result.code).toBe(3);
+    expectOnlyStderr(result, "org-status", "unreachable: ");
   });
 
   test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {
@@ -522,21 +522,23 @@ describe("eval streams", () => {
 // The scripts that read the config outside their try block: a missing DATABASE_URL ends in the final `.catch` of the
 // file; a database that is down ends in the `catch` of `main`. Both print `failed:` on stderr.
 describe("failed lines of the database scripts", () => {
-  const scripts: { script: string; args: () => string[] }[] = [
+  // `unreachable`: the script follows the CLI standard (docs/cli.md), so a database that is down gives `unreachable:` and exit 3.
+  const scripts: { script: string; args: () => string[]; unreachable?: true }[] = [
     {
       script: "org-create",
       args: () => ["--org-name", "Stream Org", "--email", "stream@x.test", "--display-name", "Owner"],
+      unreachable: true,
     },
-    { script: "org-flag", args: () => ["--org-id", randomUUID()] },
-    { script: "org-plan", args: () => ["--org-id", randomUUID(), "--plan", "active"] },
+    { script: "org-flag", args: () => ["--org-id", randomUUID()], unreachable: true },
+    { script: "org-plan", args: () => ["--org-id", randomUUID(), "--plan", "active"], unreachable: true },
     { script: "rules", args: () => ["list", "--org-id", randomUUID()] },
   ];
 
-  for (const { script, args } of scripts) {
-    test(`${script}: a database that is down gives \`failed:\` on stderr`, async () => {
+  for (const { script, args, unreachable } of scripts) {
+    test(`${script}: a database that is down gives \`${unreachable ? "unreachable" : "failed"}:\` on stderr`, async () => {
       const result = await run(script, args(), { env: { DATABASE_URL: deadDb } });
-      expect(result.code).toBe(1);
-      expectOnlyStderr(result, script, "failed: ");
+      expect(result.code).toBe(unreachable ? 3 : 1);
+      expectOnlyStderr(result, script, unreachable ? "unreachable: " : "failed: ");
     });
 
     test(`${script}: a missing DATABASE_URL gives \`failed:\` on stderr`, async () => {
@@ -548,9 +550,9 @@ describe("failed lines of the database scripts", () => {
 });
 
 describe("org-plan streams", () => {
-  test("no argument: the usage on stderr, exit 1", async () => {
+  test("no argument: the usage on stderr, exit 2", async () => {
     const result = await run("org-plan", []);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "org-plan", "usage: bun run org:plan");
   });
 

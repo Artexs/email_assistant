@@ -105,10 +105,10 @@ describe("org:flag CLI", () => {
     expectNoName(result, orgName);
   });
 
-  test("4. --flag alone prints the usage", async () => {
+  test("4. --flag alone prints the usage and exits 2", async () => {
     const { orgId, orgName } = await createOrg();
     const result = await run(["--org-id", orgId, "--flag", "stats_page"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stderr).toContain("usage: bun run org:flag");
     expectNoName(result, orgName);
   });
