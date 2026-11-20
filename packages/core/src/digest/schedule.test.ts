@@ -80,6 +80,53 @@ describe("dueDigestSlot", () => {
   });
 });
 
+describe("dueDigestSlot at the edges of the six hours", () => {
+  const slotOf = (nowIso: string, afterKey: string | null, times: readonly string[]) =>
+    dueDigestSlot({ now: new Date(nowIso), timeZone: TZ, times, afterKey });
+
+  test("a slot exactly six hours old is not due; one minute younger is", () => {
+    expect(slotOf("2026-11-06T13:00:00Z", null, ["08:00"])).toBeNull();
+    expect(slotOf("2026-11-06T12:59:00Z", null, ["08:00"])).toEqual({
+      key: "2026-11-06T08:00",
+      date: "2026-11-06",
+      time: "08:00",
+    });
+  });
+
+  test("a slot at the clock of now is due; one minute ahead is not", () => {
+    expect(slotOf("2026-11-06T07:00:00Z", null, ["08:00"])?.key).toBe("2026-11-06T08:00");
+    expect(slotOf("2026-11-06T06:59:00Z", null, ["08:00"])).toBeNull();
+  });
+
+  test("a slot equal to the key after which none is wanted is not due; the next one is", () => {
+    expect(slotOf("2026-11-06T07:00:00Z", "2026-11-06T08:00", ["08:00"])).toBeNull();
+    expect(slotOf("2026-11-06T07:00:00Z", "2026-11-06T07:59", ["08:00"])?.key).toBe("2026-11-06T08:00");
+  });
+
+  test("across midnight the newest of the slots of both days wins and its date and time are split from the key", () => {
+    expect(slotOf("2026-11-06T23:30:00Z", null, ["22:00", "23:00"])).toEqual({
+      key: "2026-11-06T23:00",
+      date: "2026-11-06",
+      time: "23:00",
+    });
+    expect(slotOf("2026-11-06T23:30:00Z", "2026-11-06T23:00", ["22:00", "23:00", "00:30"])).toEqual({
+      key: "2026-11-07T00:30",
+      date: "2026-11-07",
+      time: "00:30",
+    });
+  });
+
+  test("a slot of the day before is due when it lies within the six hours, an older one is not", () => {
+    expect(slotOf("2026-11-06T00:30:00Z", null, ["22:00", "01:30"])).toEqual({
+      key: "2026-11-06T01:30",
+      date: "2026-11-06",
+      time: "01:30",
+    });
+    expect(slotOf("2026-11-06T00:30:00Z", "2026-11-06T01:29", ["22:00"])).toBeNull();
+    expect(slotOf("2026-11-06T04:30:00Z", null, ["22:00", "23:00"])).toBeNull();
+  });
+});
+
 describe("nextDigestTime", () => {
   const next = (nowIso: string, times: readonly string[] = TIMES) =>
     nextDigestTime({ now: new Date(nowIso), timeZone: TZ, times });

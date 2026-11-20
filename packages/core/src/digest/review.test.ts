@@ -78,6 +78,50 @@ describe("renderReviewPage", () => {
     expect(message.text).toContain(`Review: ${kept} ${kept === 1 ? "mail" : "mails"} without`);
   });
 
+  test("the page is exact: a missing summary, an empty one, a long one and a mail of today", () => {
+    const items = [
+      item(1, "urgent", { aiText: null }),
+      item(2, "info", { aiText: "" }),
+      item(3, "unsure", { from: null, subject: null, aiText: "a".repeat(121) }),
+      item(4, "needs_reply", { receivedAt: new Date("2026-11-20T10:00:00Z") }),
+    ];
+    const message = renderReviewPage({ items, now, timeZone }, en);
+    expect(message.text).toBe(
+      [
+        "Review: 4 mails without a label (random sample of the last 30 days). Tap ✅ when the AI category is right, ✏️ to correct it.",
+        "",
+        "1. 🔴 Urgent · Ann1 <ann1@firma.test> · 19 Nov 09:01",
+        "Subject 1",
+        "",
+        "2. ℹ️ Info · Ann2 <ann2@firma.test> · 19 Nov 09:02",
+        "Subject 2",
+        "",
+        "3. ❓ Unsure · (unknown sender) · 19 Nov 09:03",
+        "(no subject)",
+        `💬 ${"a".repeat(119)}…`,
+        "",
+        "4. ✉️ Reply · Ann4 <ann4@firma.test> · 11:00",
+        "Subject 4",
+        "💬 AI text 4",
+      ].join("\n")
+    );
+    expect(message.buttons.map((row) => row.map((button) => button.text))).toEqual([
+      ["✅ 1", "✏️ 1"],
+      ["✅ 2", "✏️ 2"],
+      ["✏️ 3"],
+      ["✅ 4", "✏️ 4"],
+    ]);
+  });
+
+  test("a page of 60 mails keeps the first 23 and no more than fit in one message", () => {
+    const items = Array.from({ length: 60 }, (_, i) => item(i + 1, "info", { aiText: "w".repeat(100) }));
+    const message = renderReviewPage({ items, now, timeZone }, en);
+    expect(message.text.split("\n")[0]).toContain("Review: 23 mails without a label");
+    expect(message.text.length).toBe(3998);
+    expect(message.buttons).toHaveLength(23);
+    expect(message.buttons.at(-1)?.[0]?.data).toBe(`vr:i:${uuid(23)}`);
+  });
+
   test("Polish: plural forms and the same buttons", () => {
     const pl = textTables.pl;
     const head = (n: number) =>
