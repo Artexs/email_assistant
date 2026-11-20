@@ -1,0 +1,90 @@
+{
+  "danger": [
+    "apps/server/src/scripts/org-break-glass.ts",
+    "apps/server/src/scripts/org-delete.ts",
+    "apps/server/src/scripts/org-dsr.ts",
+    "apps/server/src/scripts/org-export.ts",
+    "apps/server/src/scripts/web-two-factor-reset.ts"
+  ],
+  "org": [
+    "apps/server/src/scripts/lib/invite-delivery.ts",
+    "apps/server/src/scripts/org-create.ts",
+    "apps/server/src/scripts/org-flag.ts",
+    "apps/server/src/scripts/org-invite.ts",
+    "apps/server/src/scripts/org-member.ts",
+    "apps/server/src/scripts/org-plan.ts",
+    "apps/server/src/scripts/org-sso.ts",
+    "apps/server/src/scripts/org-status.ts",
+    "apps/server/src/scripts/web-invite.ts"
+  ],
+  "mailbox": [
+    "apps/server/src/scripts/mailbox-check.ts",
+    "apps/server/src/scripts/mailbox-connect.ts",
+    "apps/server/src/scripts/mailbox-password.ts",
+    "apps/server/src/scripts/mailbox-probe.ts",
+    "apps/server/src/scripts/mailbox-profile.ts",
+    "apps/server/src/scripts/mailbox-rescan.ts",
+    "apps/server/src/scripts/mailbox-settings.ts"
+  ],
+  "mailbox-cli": [
+    "apps/server/src/scripts/mailbox-audit.ts",
+    "apps/server/src/scripts/mailbox-backfill.ts",
+    "apps/server/src/scripts/mailbox-seed.ts",
+    "apps/server/src/scripts/mailbox-signals.ts"
+  ],
+  "delegation": [
+    "apps/server/src/scripts/delegates.ts",
+    "apps/server/src/scripts/delegations.ts",
+    "apps/server/src/scripts/digest-times.ts",
+    "apps/server/src/scripts/reply-check-copy.ts",
+    "apps/server/src/scripts/rules.ts",
+    "apps/server/src/scripts/trust-history-check.ts"
+  ],
+  "eval": [
+    "apps/server/src/scripts/eval.ts",
+    "apps/server/src/scripts/lib/eval-drafter.ts",
+    "apps/server/src/scripts/lib/eval-extractor.ts",
+    "apps/server/src/scripts/lib/eval-sim.ts",
+    "apps/server/src/scripts/lib/eval-suspicious.ts",
+    "apps/server/src/scripts/llm-check.ts",
+    "apps/server/src/scripts/sim.ts"
+  ],
+  "testmail-ops": [
+    "apps/server/src/scripts/credentials-check.ts",
+    "apps/server/src/scripts/ops-alert-test.ts",
+    "apps/server/src/scripts/ops-alerts.ts",
+    "apps/server/src/scripts/release-prepare.ts",
+    "apps/server/src/scripts/testmail-remote.ts",
+    "apps/server/src/scripts/testmail-target.ts",
+    "apps/server/src/scripts/testmail.ts"
+  ],
+  "e2e-dev": [
+    "apps/server/src/scripts/db-worktree.ts",
+    "apps/server/src/scripts/demo-org-setup.ts",
+    "apps/server/src/scripts/e2e-activity.ts",
+    "apps/server/src/scripts/e2e-job-env.ts",
+    "apps/server/src/scripts/e2e-seed.ts",
+    "apps/server/src/scripts/e2e-suggestions.ts",
+    "apps/server/src/scripts/job-run.ts"
+  ],
+  "build": [
+    "apps/server/src/scripts/api-spec.ts",
+    "apps/server/src/scripts/check-migrations.ts",
+    "apps/server/src/scripts/module-graph.ts",
+    "tools/fake-telegram/src/cli.ts"
+  ],
+  "telegram": [
+    "apps/server/src/scripts/push-keys.ts",
+    "apps/server/src/scripts/stats-week.ts",
+    "apps/server/src/scripts/telegram-check.ts",
+    "apps/server/src/scripts/telegram-link.ts",
+    "apps/server/src/scripts/telegram-unlink.ts"
+  ],
+  "lab": [
+    "apps/server/src/scripts/lab-env-check.ts",
+    "apps/server/src/scripts/lab.ts",
+    "apps/server/src/scripts/sim-compose-check.ts",
+    "apps/server/src/scripts/triage-cost.ts",
+    "apps/server/src/scripts/triage-label.ts"
+  ]
+}
