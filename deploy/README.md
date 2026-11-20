@@ -482,7 +482,7 @@ $C run --rm cli bun run mailbox:settings auto --org-id <uuid> --mailbox-id <uuid
 ```
 
 - `mode --mode assist` sets the switches `move`, `mark_read` and `flag` on. Add `--keep-switches` to keep the old values. Without it, `mode --mode assist` also expires the `ready` rows of each switch it turns off.
-- `auto --value on` needs a go/no-go `go` for the category on real labeled mail (bar 0.98, at least 30 kept). If the gate says no-go, the command exits with code 2. `--force` sets `auto` on anyway and records `forced` in the audit log.
+- `auto --value on` needs a go/no-go `go` for the category on real labeled mail (bar 0.98, at least 30 kept). If the gate says no-go, the command exits with code 1 (bad arguments exit 2). `--force` sets `auto` on anyway and records `forced` in the audit log.
 - `switch --name <name> --value on|off` changes one switch.
 - A change that closes a gate expires the `ready` actions it closes. The command prints `expired <n> ready actions`.
 - Before you set `ACTIONS_SCOPE=all`, run `mailbox:settings expire-ready`. Real mail of the shadow-scope days then does not move when the scope opens. If `ready mailbox actions left` is above 0, a committer run holds a row: run the command again after 15 seconds.

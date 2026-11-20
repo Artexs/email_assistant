@@ -353,7 +353,7 @@ describe("committed rows", () => {
     }
   });
 
-  test("CLI: auto on an empty mailbox exits 2; with --force it exits 0 and audits forced", async () => {
+  test("CLI: auto on an empty mailbox exits 1; with --force it exits 0 and audits forced", async () => {
     const created = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
     const ctx = { orgId: created.orgId };
     const run = async (extra: string[]) => {
@@ -384,7 +384,7 @@ describe("committed rows", () => {
     try {
       await insertDefaultSettings(db, ctx, created.mailboxId);
       const refused = await run([]);
-      expect(refused.code).toBe(2);
+      expect(refused.code).toBe(1);
       expect(refused.out).toContain("refused: info did not pass go/no-go");
       expect(refused.out).toContain("go/no-go info: no-go: too few");
       expect(refused.out).not.toContain("FORCED");

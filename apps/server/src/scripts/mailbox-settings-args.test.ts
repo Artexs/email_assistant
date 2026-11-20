@@ -1,3 +1,4 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { describeSentSync, describeUrgency, parseSettingsArgs, parseUrgencyFile, usage } from "./mailbox-settings-args";
@@ -28,7 +29,7 @@ describe("parseSettingsArgs", () => {
       mode: "shadow",
       keepSwitches: true,
     });
-    expect(parseSettingsArgs(["mode", ...ids, "--mode", "live"])).toBeUndefined();
+    expect(() => parseSettingsArgs(["mode", ...ids, "--mode", "live"])).toThrow(UsageError);
   });
 
   test("auto", () => {
@@ -54,15 +55,15 @@ describe("parseSettingsArgs", () => {
   });
 
   test("auto refuses bad input", () => {
-    expect(parseSettingsArgs(["auto", ...ids, "--category", "unsure", "--value", "on"])).toBeUndefined();
-    expect(parseSettingsArgs(["auto", ...ids, "--category", "delegation", "--value", "on"])).toBeUndefined();
-    expect(parseSettingsArgs(["auto", ...ids, "--category", "info", "--value", "maybe"])).toBeUndefined();
-    expect(
+    expect(() => parseSettingsArgs(["auto", ...ids, "--category", "unsure", "--value", "on"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["auto", ...ids, "--category", "delegation", "--value", "on"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["auto", ...ids, "--category", "info", "--value", "maybe"])).toThrow(UsageError);
+    expect(() =>
       parseSettingsArgs(["auto", ...ids, "--category", "info", "--value", "on", "--threshold", "1.5"])
-    ).toBeUndefined();
-    expect(
+    ).toThrow(UsageError);
+    expect(() =>
       parseSettingsArgs(["auto", ...ids, "--category", "info", "--value", "on", "--threshold", "0"])
-    ).toBeUndefined();
+    ).toThrow(UsageError);
   });
 
   test("switch", () => {
@@ -84,14 +85,14 @@ describe("parseSettingsArgs", () => {
       value: true,
     });
     expect(usage).toContain("reply_drafts");
-    expect(parseSettingsArgs(["switch", ...ids, "--name", "send", "--value", "on"])).toBeUndefined();
+    expect(() => parseSettingsArgs(["switch", ...ids, "--name", "send", "--value", "on"])).toThrow(UsageError);
   });
 
   test("refuses a missing command, a bad id or a foreign flag", () => {
-    expect(parseSettingsArgs([...ids])).toBeUndefined();
-    expect(parseSettingsArgs(["show", "--org-id", "x", "--mailbox-id", mailbox])).toBeUndefined();
-    expect(parseSettingsArgs(["show", ...ids, "--force"])).toBeUndefined();
-    expect(parseSettingsArgs(["show", "extra", ...ids])).toBeUndefined();
+    expect(() => parseSettingsArgs([...ids])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["show", "--org-id", "x", "--mailbox-id", mailbox])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["show", ...ids, "--force"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["show", "extra", ...ids])).toThrow(UsageError);
   });
 
   test("sync-folder", () => {
@@ -102,11 +103,27 @@ describe("parseSettingsArgs", () => {
       key: "junk",
       value: false,
     });
-    expect(parseSettingsArgs(["sync-folder", ...ids, "--key", "inbox", "--value", "off"])).toBeUndefined();
-    expect(parseSettingsArgs(["sync-folder", ...ids, "--key", "junk"])).toBeUndefined();
-    expect(
+    expect(() => parseSettingsArgs(["sync-folder", ...ids, "--key", "inbox", "--value", "off"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["sync-folder", ...ids, "--key", "junk"])).toThrow(UsageError);
+    expect(() =>
       parseSettingsArgs(["sync-folder", ...ids, "--key", "junk", "--value", "off", "--name", "move"])
-    ).toBeUndefined();
+    ).toThrow(UsageError);
+  });
+});
+
+// Each subcommand takes only its own flags: a flag of another subcommand is a usage error.
+describe("a flag of another subcommand", () => {
+  test.each([
+    ["show", ["--force"]],
+    ["expire-ready", ["--value", "on"]],
+    ["mode", ["--mode", "assist", "--value", "on"]],
+    ["auto", ["--category", "info", "--value", "on", "--mode", "assist"]],
+    ["switch", ["--name", "move", "--value", "on", "--key", "junk"]],
+    ["sync-folder", ["--key", "junk", "--value", "on", "--name", "move"]],
+    ["sent-sync", ["--value", "on", "--file", "p.json"]],
+    ["urgency", ["--clear", "--keep-switches"]],
+  ])("%s refuses it", (kind, flags) => {
+    expect(() => parseSettingsArgs([kind, ...ids, ...flags])).toThrow(UsageError);
   });
 });
 
@@ -124,11 +141,11 @@ describe("urgency", () => {
       mailboxId: mailbox,
       source: { clear: true },
     });
-    expect(parseSettingsArgs(["urgency", ...ids])).toBeUndefined();
-    expect(parseSettingsArgs(["urgency", ...ids, "--file", "p.json", "--clear"])).toBeUndefined();
-    expect(parseSettingsArgs(["urgency", ...ids, "--file", ""])).toBeUndefined();
-    expect(parseSettingsArgs(["urgency", ...ids, "--clear", "--value", "on"])).toBeUndefined();
-    expect(parseSettingsArgs(["show", ...ids, "--clear"])).toBeUndefined();
+    expect(() => parseSettingsArgs(["urgency", ...ids])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["urgency", ...ids, "--file", "p.json", "--clear"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["urgency", ...ids, "--file", ""])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["urgency", ...ids, "--clear", "--value", "on"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["show", ...ids, "--clear"])).toThrow(UsageError);
   });
 
   test("the usage names the command", () => {
@@ -163,9 +180,9 @@ describe("urgency", () => {
       value: true,
     });
     expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "off"])).toMatchObject({ value: false });
-    expect(parseSettingsArgs(["sent-sync", ...ids])).toBeUndefined();
-    expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "maybe"])).toBeUndefined();
-    expect(parseSettingsArgs(["sent-sync", ...ids, "--value", "on", "--key", "junk"])).toBeUndefined();
+    expect(() => parseSettingsArgs(["sent-sync", ...ids])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["sent-sync", ...ids, "--value", "maybe"])).toThrow(UsageError);
+    expect(() => parseSettingsArgs(["sent-sync", ...ids, "--value", "on", "--key", "junk"])).toThrow(UsageError);
     expect(usage).toContain("mailbox:settings sent-sync");
     expect(usage).toContain("only on the owner's instruction");
   });

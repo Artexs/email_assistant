@@ -1,6 +1,7 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { parseProfileArgs, usage } from "./mailbox-profile-args";
+import { cliDescriptions, parseProfileArgs } from "./mailbox-profile-args";
 
 const org = "11111111-1111-4111-8111-111111111111";
 const mailbox = "22222222-2222-4222-8222-222222222222";
@@ -27,17 +28,17 @@ describe("parseProfileArgs", () => {
   });
 
   test("a bad or missing id, an empty path, an unknown flag or a positional word is undefined", () => {
-    expect(parseProfileArgs([])).toBeUndefined();
-    expect(parseProfileArgs(["--mailbox-id", mailbox])).toBeUndefined();
-    expect(parseProfileArgs(["--org-id", "x", "--mailbox-id", mailbox])).toBeUndefined();
-    expect(parseProfileArgs([...ids, "--signature-file", ""])).toBeUndefined();
-    expect(parseProfileArgs([...ids, "--signature", "text"])).toBeUndefined();
-    expect(parseProfileArgs([...ids, "show"])).toBeUndefined();
+    expect(() => parseProfileArgs([])).toThrow(UsageError);
+    expect(() => parseProfileArgs(["--mailbox-id", mailbox])).toThrow(UsageError);
+    expect(() => parseProfileArgs(["--org-id", "x", "--mailbox-id", mailbox])).toThrow(UsageError);
+    expect(() => parseProfileArgs([...ids, "--signature-file", ""])).toThrow(UsageError);
+    expect(() => parseProfileArgs([...ids, "--signature", "text"])).toThrow(UsageError);
+    expect(() => parseProfileArgs([...ids, "show"])).toThrow(UsageError);
   });
 
   test("the usage names the command and every flag", () => {
     for (const flag of ["--org-id", "--mailbox-id", "--display-name", "--signature-file", "--style-file"]) {
-      expect(usage).toContain(flag);
+      expect(cliDescriptions[0]?.usage).toContain(flag);
     }
   });
 });

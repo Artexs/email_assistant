@@ -214,7 +214,7 @@ describe("mailbox:profile", () => {
     }
   }, 60_000);
 
-  test("a name with a bad character, a long style file, a missing file or a bad argument exits 1 and stores nothing", async () => {
+  test("a refused name, a long style file or a missing file exits 1; a bad argument exits 2; nothing is stored", async () => {
     const created = await box();
     try {
       const args = idArgs(created);
@@ -235,7 +235,7 @@ describe("mailbox:profile", () => {
       expect(missing.stderr).toContain("cannot read the signature file");
 
       const usage = await run(profileScript, ["--mailbox-id", created.mailboxId]);
-      expect(usage.code).toBe(1);
+      expect(usage.code).toBe(2);
       expect(usage.stderr).toContain("usage:");
 
       const rows = await db

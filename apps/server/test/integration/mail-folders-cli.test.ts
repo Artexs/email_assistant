@@ -92,7 +92,7 @@ describe("mailbox:settings sync-folder", () => {
     });
   });
 
-  test("the CLI exits 1 for a missing folder row, and for --key inbox", async () => {
+  test("the CLI exits 1 for a missing folder row and 2 for --key inbox", async () => {
     const created = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
     try {
       const args = ["sync-folder", "--org-id", created.orgId, "--mailbox-id", created.mailboxId, "--value", "off"];
@@ -101,7 +101,7 @@ describe("mailbox:settings sync-folder", () => {
       expect(missing.stderr).toContain("sync folder offers: no such folder row");
 
       const inbox = await runSettings([...args, "--key", "inbox"]);
-      expect(inbox.code).toBe(1);
+      expect(inbox.code).toBe(2);
       expect(inbox.stderr).toContain("usage");
     } finally {
       await db.deleteFrom("organizations").where("id", "=", created.orgId).execute();

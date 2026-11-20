@@ -1,5 +1,4 @@
-import { format, parseArgs } from "node:util";
-
+import { EXIT } from "@ea/core";
 import { z } from "zod";
 
 import {
@@ -12,20 +11,14 @@ import {
   type MailCapabilities,
 } from "../modules/mail";
 import { queueHistoryCheckOnConnect } from "../modules/trust";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 
-const out = createCliOutput("mailbox-connect");
-
-const usage = [
-  "usage: read -rs P && printf '%s' \"$P\" | bun run mailbox:connect --org-id <uuid> --address <email>",
-  "  [--secret-kind password|app_password (default password)]",
-  "  [--imap-host poczta.interia.pl] [--imap-port 993] [--smtp-host poczta.interia.pl] [--smtp-port 465]",
-  "  [--smtp-security tls|starttls (default tls; starttls is for SMTP port 587)]",
-  "The password comes only from stdin, never from an argument.",
-].join("\n");
+import { reportFailure } from "./lib/mailbox-failure";
+import { readStdinSecret } from "./lib/stdin-secret";
+import { cliDescriptions, parseMailboxConnectArgs, type MailboxConnectArgs } from "./mailbox-connect-args";
 
 const CAPABILITY_LABELS: [keyof MailCapabilities, string][] = [
   ["idle", "IDLE"],
@@ -36,61 +29,7 @@ const CAPABILITY_LABELS: [keyof MailCapabilities, string][] = [
   ["keywords", "KEYWORDS"],
 ];
 
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        address: { type: "string" },
-        "secret-kind": { type: "string", default: "password" },
-        "imap-host": { type: "string", default: "poczta.interia.pl" },
-        "imap-port": { type: "string", default: "993" },
-        "smtp-host": { type: "string", default: "poczta.interia.pl" },
-        "smtp-port": { type: "string", default: "465" },
-        "smtp-security": { type: "string", default: "tls" },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const address = values.address;
-    const secretKind = values["secret-kind"];
-    if (orgId === undefined || address === undefined) return undefined;
-    if (secretKind !== "password" && secretKind !== "app_password") return undefined;
-    const smtpSecurity = values["smtp-security"];
-    if (smtpSecurity !== "tls" && smtpSecurity !== "starttls") return undefined;
-    if (!z.uuid().safeParse(orgId).success) return undefined;
-    return {
-      orgId,
-      address,
-      secretKind,
-      imapHost: values["imap-host"],
-      imapPort: Number(values["imap-port"]),
-      smtpHost: values["smtp-host"],
-      smtpPort: Number(values["smtp-port"]),
-      smtpSecurity,
-    } as const;
-  } catch {
-    return undefined;
-  }
-}
-
-// A terminal would show the typed password, so stdin must be a pipe.
-async function readPassword(): Promise<string | undefined> {
-  if (process.stdin.isTTY) return undefined;
-  const text = await Bun.stdin.text();
-  const password = text.replace(/\r?\n$/, "");
-  return password === "" ? undefined : password;
-}
-
-async function main(): Promise<number> {
-  const options = readOptions();
-  const password = options && (await readPassword());
-  if (!options || password === undefined) {
-    out.fail(usage);
-    return 1;
-  }
-
+async function run(options: MailboxConnectArgs, password: string, out: CliRawOutput): Promise<number> {
   const config = loadConfig();
 
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
@@ -126,10 +65,12 @@ async function main(): Promise<number> {
     } else if (error instanceof MailboxLimitError) {
       out.fail(`mailbox limit reached (max ${error.max})`);
     } else if (error instanceof z.ZodError) {
+      // A bad value that the service refused before any login: usage (exit 2).
       out.fail(`invalid input: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
-      out.fail(usage);
+      out.fail(`usage: ${cliDescriptions.map((description) => description.usage).join("\n")}`);
+      return EXIT.usage;
     } else {
-      out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
+      return reportFailure(out, error, "message");
     }
     return 1;
   } finally {
@@ -137,9 +78,21 @@ async function main(): Promise<number> {
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before stdin, config or DB. The password comes only from a pipe.
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseMailboxConnectArgs(argv);
+  const secret = await readStdinSecret();
+  if (!secret.ok) {
+    out.fail(secret.refusal);
+    return 1;
+  }
+  try {
+    return await run(options, secret.secret, out);
+  } catch (error) {
+    return reportFailure(out, error, "message");
+  }
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "mailbox-connect", descriptions: cliDescriptions, main });
+}

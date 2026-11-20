@@ -141,11 +141,17 @@ async function removeOrg(orgId: string, userId: string): Promise<void> {
   await db.deleteFrom("users").where("id", "=", userId).execute();
 }
 
+// The tools of the standard (docs/cli.md) exit 2 on bad arguments; the four old ones still exit 1.
 describe("usage goes to stderr", () => {
-  for (const name of ["mailbox-audit", "mailbox-backfill", "mailbox-rescan", "mailbox-settings"]) {
+  for (const [name, code] of [
+    ["mailbox-audit", 1],
+    ["mailbox-backfill", 1],
+    ["mailbox-rescan", 2],
+    ["mailbox-settings", 2],
+  ] as const) {
     test(name, async () => {
       const result = await run(name, []);
-      expect(result.code).toBe(1);
+      expect(result.code).toBe(code);
       expectOnlyStderr(result, name, "usage");
     });
   }
@@ -155,36 +161,38 @@ describe("mailbox-probe usage goes to stderr", () => {
   for (const sub of ["move", "send"]) {
     test(sub, async () => {
       const result = await run("mailbox-probe", [sub]);
-      expect(result.code).toBe(1);
+      expect(result.code).toBe(2);
       expectOnlyStderr(result, `mailbox-probe-${sub}`, "usage");
     });
   }
 
   test("no subcommand", async () => {
     const result = await run("mailbox-probe", []);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "mailbox-probe", "usage");
   });
 });
 
-describe("a database that is down: `failed:` goes to stderr, nothing to stdout", () => {
+// A tool of the standard prints `unreachable:` and exits 3 (docs/cli.md); the four old mailbox tools still print `failed:` and exit 1.
+describe("a database that is down: one line on stderr, nothing to stdout", () => {
   const id = randomUUID();
   const args = ["--org-id", id, "--mailbox-id", id];
-  const cases: [string, string[], { stdin?: string; env?: Record<string, string> }][] = [
-    ["mailbox-audit", [...args, "--since", "2026-11-01T00:00:00Z"], {}],
-    ["mailbox-backfill", args, {}],
-    ["mailbox-check", args, {}],
-    ["mailbox-rescan", args, {}],
-    ["mailbox-seed", args, { env: { TEST_MAILBOX_ADDRESS: "a@localhost" } }],
-    ["mailbox-settings", ["show", ...args], {}],
-    ["mailbox-password", args, { stdin: "secret\n" }],
-    ["mailbox-connect", ["--org-id", id, "--address", "a@localhost"], { stdin: "secret\n" }],
+  const cases: [string, string[], { stdin?: string; env?: Record<string, string> }, number, string][] = [
+    ["mailbox-audit", [...args, "--since", "2026-11-01T00:00:00Z"], {}, 1, "failed:"],
+    ["mailbox-backfill", args, {}, 1, "failed:"],
+    ["mailbox-check", args, {}, 3, "unreachable:"],
+    ["mailbox-rescan", args, {}, 3, "unreachable:"],
+    ["mailbox-seed", args, { env: { TEST_MAILBOX_ADDRESS: "a@localhost" } }, 1, "failed:"],
+    ["mailbox-settings", ["show", ...args], {}, 3, "unreachable:"],
+    ["mailbox-profile", args, {}, 3, "unreachable:"],
+    ["mailbox-password", args, { stdin: "secret\n" }, 3, "unreachable:"],
+    ["mailbox-connect", ["--org-id", id, "--address", "a@localhost"], { stdin: "secret\n" }, 3, "unreachable:"],
   ];
-  for (const [name, scriptArgs, opts] of cases) {
+  for (const [name, scriptArgs, opts, code, text] of cases) {
     test(name, async () => {
       const result = await run(name, scriptArgs, { ...opts, env: { ...opts.env, DATABASE_URL: deadDb } });
-      expect(result.code).toBe(1);
-      expectOnlyStderr(result, name, "failed:");
+      expect(result.code).toBe(code);
+      expectOnlyStderr(result, name, text);
     });
   }
 });
@@ -336,7 +344,7 @@ describe("mailbox-password on an OAuth mailbox", () => {
 });
 
 describe("mailbox:connect", () => {
-  test("a bad address: `invalid input` and the usage go to stderr", async () => {
+  test("a bad address: `invalid input` and the usage go to stderr, exit 2", async () => {
     const { orgId, userId } = await createOrg(db);
     try {
       const result = await run(
@@ -344,7 +352,7 @@ describe("mailbox:connect", () => {
         ["--org-id", orgId, "--address", "not-an-address", "--imap-host", host, "--smtp-host", host],
         { stdin: "secret\n" }
       );
-      expect(result.code).toBe(1);
+      expect(result.code).toBe(2);
       expectOnlyStderr(result, "mailbox-connect", "invalid input: address");
       expect(result.stderr).toContain("usage");
     } finally {
@@ -384,7 +392,7 @@ describe("mailbox:connect", () => {
     }
   }, 30_000);
 
-  test("a mail server that refuses the connection: `failed:` goes to stderr", async () => {
+  test("a mail server that refuses the connection: `unreachable:` goes to stderr, exit 3", async () => {
     const { orgId, userId } = await createOrg(db);
     try {
       const result = await run(
@@ -405,9 +413,10 @@ describe("mailbox:connect", () => {
         ],
         { stdin: "secret\n" }
       );
-      expect(result.code).toBe(1);
+      expect(result.code).toBe(3);
       expect(result.stdout).toBe("");
-      expectPrefixed(result.stderr, "mailbox-connect");
+      expect(result.stderr).toStartWith("[mailbox-connect] unreachable: ");
+      expect(result.stderr.split("\n").filter((line) => line !== "")).toHaveLength(1);
     } finally {
       await removeOrg(orgId, userId);
     }
@@ -438,6 +447,21 @@ describe("mailbox:probe-move and mailbox:probe-send", () => {
     expect(result.code).toBe(1);
     expectOnlyStderr(result, "mailbox-probe-send", "refused: --to is not a test address");
   });
+
+  test("an IMAP server that does not answer: exit 3 within 20 s, one `unreachable:` line, no password", async () => {
+    const address = `u-${randomUUID()}@localhost`;
+    const password = `probe-pw-${randomUUID()}`;
+    const started = performance.now();
+    const result = await run("mailbox-probe", ["move", "--host", host, "--port", "1", "--address", address], {
+      stdin: `${password}\n`,
+      env: { TEST_MAILBOX_ADDRESS: address },
+    });
+    expect(performance.now() - started).toBeLessThan(20_000);
+    expect(result.code).toBe(3);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toBe("[mailbox-probe-move] unreachable: SoftError\n");
+    expect(`${result.stdout}${result.stderr}`).not.toContain(password);
+  }, 30_000);
 
   test("the report lines of a probe go to stdout, stderr stays empty", async () => {
     const address = `u-${randomUUID()}@localhost`;

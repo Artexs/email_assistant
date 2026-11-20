@@ -1,14 +1,26 @@
-import { parseArgs } from "node:util";
-
+import { type CliDescription, UsageError } from "@ea/core";
 import { z } from "zod";
 
-export const usage = [
-  "usage: bun run mailbox:profile --org-id <uuid> --mailbox-id <uuid>",
-  "  [--display-name <text>] [--signature-file <path>] [--style-file <path>]",
-  "  No change flag: print the profile (the stored values and the fallbacks).",
-  "  An empty name or an empty file clears the field: the fallback applies.",
-  "  Exit 0: ok. Exit 1: usage error, a refused text or a failure.",
-].join("\n");
+import { parseFlags } from "./lib/parse-flags";
+
+export const cliDescriptions = [
+  {
+    name: "mailbox:profile",
+    summary: "Shows or sets the display name, signature and writing style of one mailbox.",
+    risk: "write",
+    needs: ["db"],
+    usage: [
+      "bun run mailbox:profile --org-id <uuid> --mailbox-id <uuid>",
+      "  [--display-name <text>] [--signature-file <path>] [--style-file <path>]",
+      "  No change flag: print the profile (the stored values and the fallbacks).",
+      "  An empty name or an empty file clears the field: the fallback applies.",
+    ].join("\n"),
+    exits: {
+      1: "a refused text, an unreadable file, an unknown mailbox or a failure",
+      3: "the database did not answer",
+    },
+  },
+] satisfies readonly CliDescription[];
 
 export interface ProfileCommand {
   orgId: string;
@@ -18,10 +30,10 @@ export interface ProfileCommand {
   styleFile?: string;
 }
 
-// Returns undefined on any bad argument; the script prints the usage.
-export function parseProfileArgs(argv: string[]): ProfileCommand | undefined {
+// Throws `UsageError` (or a `parseArgs` error, which `runCli` also maps to exit 2) on any bad argument.
+export function parseProfileArgs(argv: string[]): ProfileCommand {
   try {
-    const { values, positionals } = parseArgs({
+    const { values, positionals } = parseFlags({
       args: argv,
       options: {
         "org-id": { type: "string" },
@@ -31,9 +43,8 @@ export function parseProfileArgs(argv: string[]): ProfileCommand | undefined {
         "style-file": { type: "string" },
       },
       allowPositionals: true,
-      strict: true,
     });
-    if (positionals.length > 0) return undefined;
+    if (positionals.length > 0) throw new UsageError("no operand");
     const ids = z.object({ orgId: z.uuid(), mailboxId: z.uuid() }).parse({
       orgId: values["org-id"],
       mailboxId: values["mailbox-id"],
@@ -45,7 +56,10 @@ export function parseProfileArgs(argv: string[]): ProfileCommand | undefined {
       ...(values["signature-file"] === undefined ? {} : { signatureFile: file.parse(values["signature-file"]) }),
       ...(values["style-file"] === undefined ? {} : { styleFile: file.parse(values["style-file"]) }),
     };
-  } catch {
-    return undefined;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new UsageError(`bad or missing argument: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+    }
+    throw error;
   }
 }

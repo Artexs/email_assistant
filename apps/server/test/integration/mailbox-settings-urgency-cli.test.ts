@@ -164,16 +164,16 @@ describe("mailbox:settings urgency", () => {
     }
   }, 60_000);
 
-  test("without --file or --clear, or with both: usage on stderr, exit 1", async () => {
+  test("without --file or --clear, or with both: usage on stderr, exit 2", async () => {
     const created = await box();
     try {
       const args = ["--org-id", created.orgId, "--mailbox-id", created.mailboxId];
       const file = await fixture("any.json", { topics: [], deadlines: [] });
       for (const extra of [[], ["--file", file, "--clear"]]) {
         const result = await run(["urgency", ...args, ...extra]);
-        expect(result.code).toBe(1);
+        expect(result.code).toBe(2);
         expect(result.stdout).toBe("");
-        expect(result.stderr.startsWith(`[${NAME}] usage:`)).toBe(true);
+        expect(result.stderr).toContain(`[${NAME}] usage: bun run mailbox:settings show`);
       }
     } finally {
       await removeOrg(created.orgId, created.userId);

@@ -42,7 +42,7 @@ One table for all tools.
 
 - Human text goes through `createCliOutput`: results on stdout, problems on stderr, `[name] text`. `write` and `writeErr` print exact bytes for machine output that a person or a test reads line by line.
 - Content: ids, codes, counts and dates. No mail text, subject, address, secret or server error text. A tool whose job is to show an address names that exception in `outputNote` of its description.
-- Exception to the log rule, from `docs/code-patterns.md` § Logs: an existing print of `error.message` in a mail-connection script (`mailbox-cli.ts`, `mailbox-probe-move.ts`) stays. A new one is allowed only in a mail-connection script, never for a Telegram error.
+- Exception to the log rule, from `docs/code-patterns.md` § Logs: an existing print of `error.message` in a mail-connection script (`mailbox-cli.ts`, `mailbox-probe.ts`, `mailbox-check.ts`, `mailbox-connect.ts`, `mailbox-rescan.ts`) stays. A new one is allowed only in a mail-connection script, never for a Telegram error.
 - `--json` only for a tool whose output another program parses. Stdout then holds exactly one JSON value and nothing else (`out.json(value)`); human lines go to stderr. The schema is a Zod schema next to the args file.
 - English only. No colors, no spinners.
 - A long run prints one progress line per step or per N items, not per item.

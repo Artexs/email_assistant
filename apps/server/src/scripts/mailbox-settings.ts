@@ -24,12 +24,13 @@ import {
   setSyncFolderEnabled,
   type TestMailRule,
 } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { loadConfig, mailAllowLocal, testMailRule } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
-import { describeError } from "../platform/errors";
 
+import { reportFailure } from "./lib/mailbox-failure";
 import {
+  cliDescriptions,
   describeSentSync,
   describeSyncFolder,
   describeUrgency,
@@ -39,11 +40,9 @@ import {
   type SettingsCommand,
 } from "./mailbox-settings-args";
 
-const out = createCliOutput("mailbox-settings");
-
 const ACTOR = "cli";
 
-function printTable(before: SettingsSnapshot, after: SettingsSnapshot): void {
+function printTable(out: CliRawOutput, before: SettingsSnapshot, after: SettingsSnapshot): void {
   const beforeLines = describeSettings(before);
   describeSettings(after).forEach((line, index) => {
     const old = beforeLines[index];
@@ -55,8 +54,8 @@ function printTable(before: SettingsSnapshot, after: SettingsSnapshot): void {
   });
 }
 
-function printChange(result: SettingsChange): void {
-  printTable(result.before, result.after);
+function printChange(out: CliRawOutput, result: SettingsChange): void {
+  printTable(out, result.before, result.after);
   for (const warning of result.warnings) {
     out.print(`warning: ${warning}`);
   }
@@ -69,6 +68,7 @@ function printChange(result: SettingsChange): void {
 }
 
 async function run(
+  out: CliRawOutput,
   command: SettingsCommand,
   db: Db,
   now: Date,
@@ -126,7 +126,7 @@ async function run(
         }
         const parsed = parseUrgencyFile(text);
         if (!parsed.ok) {
-          out.fail(usage);
+          out.fail(`usage: ${usage}`);
           out.fail(
             parsed.reason === "not_json"
               ? "urgency file: not JSON"
@@ -157,7 +157,7 @@ async function run(
         keepSwitches: command.keepSwitches,
         actor: ACTOR,
       });
-      printChange(result);
+      printChange(out, result);
       return 0;
     }
     case "switch": {
@@ -167,7 +167,7 @@ async function run(
           value: command.value,
           actor: ACTOR,
         });
-        printChange(result);
+        printChange(out, result);
         return 0;
       } catch (error) {
         // Reply drafts are for password IMAP mailboxes until Graph and Gmail get them.
@@ -195,9 +195,9 @@ async function run(
         out.fail(
           `refused: ${command.category} did not pass go/no-go${blocks.length > 0 ? ` (${blocks.join(", ")})` : ""} (use --force to set auto on anyway)`
         );
-        return 2;
+        return 1;
       }
-      printChange(result.change);
+      printChange(out, result.change);
       return 0;
     }
     case "expire-ready": {
@@ -213,31 +213,29 @@ async function run(
   }
 }
 
-async function main(): Promise<number> {
-  const command = parseSettingsArgs(process.argv.slice(2));
-  if (!command) {
-    out.fail(usage);
-    return 1;
-  }
-
+async function runCommand(command: SettingsCommand, out: CliRawOutput): Promise<number> {
   const config = loadConfig();
 
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    return await run(command, db, new Date(), testMailRule(config), gateEvidenceOf(config, { quiet: true }));
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
+    return await run(out, command, db, new Date(), testMailRule(config), gateEvidenceOf(config, { quiet: true }));
   } finally {
     await db.destroy();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB. Any later error gets one line and its code.
+const main: CliSpec["main"] = async (argv, out) => {
+  const command = parseSettingsArgs(argv);
+  try {
+    return await runCommand(command, out);
+  } catch (error) {
+    return reportFailure(out, error, "label");
+  }
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "mailbox-settings", descriptions: cliDescriptions, main });
+}
