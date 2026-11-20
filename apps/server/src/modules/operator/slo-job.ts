@@ -1,4 +1,12 @@
-import { HOUR_MS, nextAlertStep, SLO_KINDS, type SloKind, type SloThresholds } from "@ea/core";
+import {
+  HOUR_MS,
+  nextAlertStep,
+  renderSloAlert,
+  SLO_KINDS,
+  type SloKind,
+  type SloThresholds,
+  type UserLocale,
+} from "@ea/core";
 
 import type { Db } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
@@ -6,7 +14,6 @@ import type { Log } from "../../platform/log";
 
 import { getActiveAlert, markAlertSent, openAlert, resolveAlert, type AlertPhase } from "./alerts-repo";
 import type { SloReading } from "./slo-checks";
-import { sloAlertText, type AlertLocale } from "./slo-texts";
 
 // One tick of the `ops.slo` job. For each kind it reads the check, asks `nextAlertStep` what to do, sends the
 // text and then writes the mark (send first, then mark: a crash repeats one notice, never loses one). The tick keeps no
@@ -28,7 +35,7 @@ export interface SloTickDeps {
   send: ((text: string) => Promise<void>) | null;
   cfg: Pick<SloThresholds, "repeatH">;
   log: Pick<Log, "info" | "warn">;
-  locale?: AlertLocale;
+  locale: UserLocale;
 }
 
 export async function runSloTick(deps: SloTickDeps, now: Date): Promise<void> {
@@ -65,15 +72,10 @@ async function applyReading(deps: SloTickDeps, reading: SloReading, now: Date): 
   }
   if (step === "open" || step === "repeat") {
     const active = row ?? (await openAlert(db, { kind: check.kind, at: now, facts: check.facts }));
-    const text = sloAlertText({
-      kind: check.kind,
-      phase: step,
-      facts: check.facts,
-      ids,
-      openedAt: active.openedAt,
-      now,
-      locale: deps.locale,
-    });
+    const text = renderSloAlert(
+      { kind: check.kind, phase: step, facts: check.facts, ids, openedAt: active.openedAt, now },
+      deps.locale
+    );
     if (await deliver(deps, check.kind, step, text)) await markAlertSent(db, active.id, step, now, check.facts);
     return;
   }
@@ -81,15 +83,10 @@ async function applyReading(deps: SloTickDeps, reading: SloReading, now: Date): 
   if (row === null) return;
   const resolvedAt = row.resolvedAt ?? now;
   if (row.resolvedAt === null) await resolveAlert(db, row.id, now, check.facts, { silent: false });
-  const text = sloAlertText({
-    kind: check.kind,
-    phase: "resolved",
-    facts: check.facts,
-    ids,
-    openedAt: row.openedAt,
-    now: resolvedAt,
-    locale: deps.locale,
-  });
+  const text = renderSloAlert(
+    { kind: check.kind, phase: "resolved", facts: check.facts, ids, openedAt: row.openedAt, now: resolvedAt },
+    deps.locale
+  );
   if (await deliver(deps, check.kind, "resolved", text)) await markAlertSent(db, row.id, "resolved", now, check.facts);
 }
 
