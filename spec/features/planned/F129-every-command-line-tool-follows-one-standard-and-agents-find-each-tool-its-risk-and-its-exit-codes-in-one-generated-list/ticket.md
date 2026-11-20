@@ -32,10 +32,14 @@ Agents check their changes with the repository's command-line tools (`job:run`, 
 - The inventory stage report lists each candidate with its decision and reason; removed commands are gone from `package.json` and from every doc.
 - `bun run test:int:ci` and `bun run test:e2e` pass; `plan.md` § Done when holds the full list.
 
+## Slices
+
+Fifteen worker stages (00–14), one job each; groups and Needs in `plan.md` § Stages and § How to run. The nine conversion stages (05–13) run next to each other. No migration, no `bun.lock` change.
+
 ## Sequenced
 
 - Plan after: none.
-- Build after: F103 stage 04 (it converts the same script files and sets `scripts/` to lint error).
+- Build after: F136 (parallel Playwright: it owns `e2e-job-env.ts`, `db-worktree.ts`, `scripts/limen-prepare.sh`) and F141 (one LLM provider: it edits `llm-check.ts`, `eval-args.ts`, `eval-config.ts`) in `done/`. F103 (log lines and the CLI output helper) is in `done/`.
 - Gate: —
 
 ## Notes
