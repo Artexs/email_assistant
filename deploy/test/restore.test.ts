@@ -66,7 +66,9 @@ beforeEach(() => {
   copyFileSync(join(DEPLOY, "restore.sh"), join(root, "deploy", "restore.sh"));
   chmodSync(join(root, "deploy", "restore.sh"), 0o755);
   copyFileSync(join(DEPLOY, "compose-lib.sh"), join(root, "deploy", "compose-lib.sh"));
-  writeFileSync(join(root, ".env"), "POSTGRES_PASSWORD=live-pg\n");
+  // A split-env host: the passwords are in deploy/db.env, and `.env` holds none of them.
+  writeFileSync(join(root, "deploy", "db.env"), "POSTGRES_PASSWORD=live-pg\nMIGRATOR_PASSWORD=m\nAPP_PASSWORD=a\n");
+  writeFileSync(join(root, ".env"), "LOG_LEVEL=info\n");
   writeFileSync(join(root, "age-identity.txt"), "AGE-SECRET-KEY-TEST\n");
   writeFileSync(join(root, "backup.dump.age"), "ciphertext\n");
 
@@ -166,6 +168,7 @@ describe("restore.sh refusals", () => {
 
   test("new-host without .env exits 2", () => {
     rmSync(join(root, ".env"));
+    rmSync(join(root, "deploy", "db.env"));
     expect(run(["--target", "new-host", "--stdin"], { stdin: DUMP }).code).toBe(2);
     expect(dockerCalls()).toEqual([]);
   });
@@ -485,7 +488,7 @@ describe("restore.sh new-host", () => {
     expect(result.code).toBe(0);
     const lines = dockerCalls();
     for (const line of lines) {
-      expect(line.startsWith("docker compose -f deploy/compose.yaml --env-file .env "), line).toBe(true);
+      expect(line.startsWith("docker compose -f deploy/compose.yaml --env-file deploy/db.env "), line).toBe(true);
     }
     const text = lines.join("\n");
     expect(text).not.toContain("ea-drill");
@@ -505,6 +508,26 @@ describe("restore.sh new-host", () => {
     expect(out.at(-2)).toContain("record: dsr erase");
   });
 
+  test("9. a host that is not split exits 2 before any docker call; the drill has no such guard", () => {
+    rmSync(join(root, "deploy", "db.env"));
+    writeFileSync(join(root, ".env"), "POSTGRES_PASSWORD=sentinel-p-81\nMIGRATOR_PASSWORD=m\nAPP_PASSWORD=a\n");
+    const old = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
+    expect(old.code).toBe(2);
+    expect(old.output).toContain("restore refused: run deploy/env-split.sh first (state old)");
+    expect(old.output).not.toContain("sentinel-p-81");
+    expect(dockerCalls()).toEqual([]);
+
+    writeFileSync(join(root, "deploy", "db.env"), "POSTGRES_PASSWORD=x\n");
+    const mixed = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
+    expect(mixed.code).toBe(2);
+    expect(mixed.output).toContain("(state mixed)");
+    expect(dockerCalls()).toEqual([]);
+
+    rmSync(join(root, "deploy", "db.env"));
+    writeDrillEnv();
+    expect(run(["--target", "drill", "--stdin"], { stdin: DUMP }).code).toBe(0);
+  });
+
   test("4b. one table in the target exits 2 and never restores over data, with no build call", () => {
     setSwitch("tables", "3\n");
     const result = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
@@ -513,7 +536,7 @@ describe("restore.sh new-host", () => {
     expect(dockerCalls().some((line) => / build /.test(line))).toBe(false);
     expect(
       dockerCalls().map(
-        (line) => line.replace(/^docker compose -f deploy\/compose.yaml --env-file .env /, "").split(" ")[0]
+        (line) => line.replace(/^docker compose -f deploy\/compose.yaml --env-file deploy\/db.env /, "").split(" ")[0]
       )
     ).toEqual(["up", "exec", "exec"]);
     expect(result.output).toContain("never goes over data");
