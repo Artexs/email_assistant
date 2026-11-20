@@ -33,12 +33,12 @@ The demo video and the docs screenshots come from the synthetic demo-week export
 
 ## Slices
 
-Seven stages, one worker job each: [`plan.md`](plan.md) § Stages and § How to run. Stages 01–04 need no export; 05–07 need the C1 export.
+Seven stages, one worker job each: [`plan.md`](plan.md) § Stages and § How to run. Eight stages. Stages 01–04 and 08 need no export; 05–07 need an export of an ended run day 1 or later; the day-5 export is only for the final take, a follow-up ticket.
 
 ## Sequenced
 
 - Plan after: none. The public pages and demo ticket (F121) is in `done/`. The parallel Playwright ticket (F136) has stages and changes the same e2e env files; this plan uses none of its interfaces.
-- Build after: F121 (in `done/`). Gate: the C1 demo-week export at `~/.local/share/email-assistant/demo/demo-seed-day5.json` and the `*_demo` database of F121 C3, for stages 05–07 only. Owner gates G2 and G3 (default: prepare, do not publish).
+- Build after: F121 (in `done/`). Gate: for stages 05–07 only, an export of an ended run day 1 or later (plan C1a) in `~/.local/share/email-assistant/demo/` and a `*_demo` database; the day-5 export (C1) only for the final take (C3, follow-up ticket). Owner gates G2 and G3 (default: prepare, do not publish).
 
 ## Notes
 
