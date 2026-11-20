@@ -142,20 +142,29 @@ async function removeOrg(orgId: string, userId: string): Promise<void> {
 }
 
 describe("usage goes to stderr", () => {
-  for (const name of [
-    "mailbox-audit",
-    "mailbox-backfill",
-    "mailbox-probe-move",
-    "mailbox-probe-send",
-    "mailbox-rescan",
-    "mailbox-settings",
-  ]) {
+  for (const name of ["mailbox-audit", "mailbox-backfill", "mailbox-rescan", "mailbox-settings"]) {
     test(name, async () => {
       const result = await run(name, []);
       expect(result.code).toBe(1);
       expectOnlyStderr(result, name, "usage");
     });
   }
+});
+
+describe("mailbox-probe usage goes to stderr", () => {
+  for (const sub of ["move", "send"]) {
+    test(sub, async () => {
+      const result = await run("mailbox-probe", [sub]);
+      expect(result.code).toBe(1);
+      expectOnlyStderr(result, `mailbox-probe-${sub}`, "usage");
+    });
+  }
+
+  test("no subcommand", async () => {
+    const result = await run("mailbox-probe", []);
+    expect(result.code).toBe(1);
+    expectOnlyStderr(result, "mailbox-probe", "usage");
+  });
 });
 
 describe("a database that is down: `failed:` goes to stderr, nothing to stdout", () => {
@@ -416,30 +425,14 @@ describe("mailbox:probe-move and mailbox:probe-send", () => {
     ...extra,
   ];
 
-  test("a wrong test address: `failed:` goes to stderr, stdout stays empty", async () => {
-    const address = `u-${randomUUID()}@localhost`;
-    const env = { TEST_MAILBOX_ADDRESS: "other@localhost" };
-    const move = await run("mailbox-probe-move", args(address), { stdin: "pw\n", env });
-    expect(move.code).toBe(1);
-    expectOnlyStderr(move, "mailbox-probe-move", "failed:");
-
-    const send = await run(
-      "mailbox-probe-send",
-      args(address, ["--smtp-host", host, "--smtp-port", String(smtpPort), "--to", address]),
-      {
-        stdin: "pw\n",
-        env,
-      }
-    );
-    expect(send.code).toBe(1);
-    expectOnlyStderr(send, "mailbox-probe-send", "failed:");
-  }, 30_000);
-
   test("probe-send refuses a recipient that is not a test address: stderr", async () => {
     const address = `u-${randomUUID()}@localhost`;
     const result = await run(
-      "mailbox-probe-send",
-      args(address, ["--smtp-host", host, "--smtp-port", String(smtpPort), "--to", "someone@elsewhere.test"]),
+      "mailbox-probe",
+      [
+        "send",
+        ...args(address, ["--smtp-host", host, "--smtp-port", String(smtpPort), "--to", "someone@elsewhere.test"]),
+      ],
       { stdin: "pw\n", env: { TEST_MAILBOX_ADDRESS: address, SEND_TEST_ADDRESSES: "" } }
     );
     expect(result.code).toBe(1);
@@ -449,15 +442,15 @@ describe("mailbox:probe-move and mailbox:probe-send", () => {
   test("the report lines of a probe go to stdout, stderr stays empty", async () => {
     const address = `u-${randomUUID()}@localhost`;
     const env = { TEST_MAILBOX_ADDRESS: address };
-    const move = await run("mailbox-probe-move", args(address), { stdin: "pw\n", env });
+    const move = await run("mailbox-probe", ["move", ...args(address)], { stdin: "pw\n", env });
     expect(move.code).toBe(0);
     expect(move.stderr).toBe("");
     expectPrefixed(move.stdout, "mailbox-probe-move", true);
 
     // A closed SMTP port: the probe reports the failed send and stops before its long waits for the copy and the mail.
     const send = await run(
-      "mailbox-probe-send",
-      args(address, ["--smtp-host", host, "--smtp-port", "1", "--to", address]),
+      "mailbox-probe",
+      ["send", ...args(address, ["--smtp-host", host, "--smtp-port", "1", "--to", address])],
       {
         stdin: "pw\n",
         env,

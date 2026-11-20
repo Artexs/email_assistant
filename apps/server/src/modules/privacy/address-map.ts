@@ -1,4 +1,4 @@
-import { addressCaseForms, addressCasedCodePoints, normalizeSenderAddress } from "@ea/core";
+import { addressCaseForms, addressCasedCodePoints, normalizeAddress } from "@ea/core";
 import { sql, type Expression, type RawBuilder } from "kysely";
 
 // The registry of the columns that can hold the address of a third party (account data).
@@ -331,13 +331,13 @@ export const NO_PERSONAL_TABLES: Readonly<Record<string, string>> = {
 
 const MAX_ADDRESS_LENGTH = 254;
 
-// Trims and lower-cases by the one address rule of `@ea/core` (`normalizeSenderAddress`): the same form as the SQL compare
+// Trims and lower-cases by the one address rule of `@ea/core` (`normalizeAddress`): the same form as the SQL compare
 // of the match (`normalizedAddress`), also for a Greek final sigma and a Turkish dotted capital I. Null unless the value is one address: one `@`, a domain of non-empty labels with a dot, at most
 // 254 characters, and no whitespace, quote, backslash, angle bracket, control, format (zero-width) or separator
 // character. A value that NFKC changes (full-width letters) is null: it would match no stored address. Reviewed after
 // `p@x.test.`, `p@.test` and `p@x..test` matched nothing and passed.
 export function normalizeDsrAddress(input: string): string | null {
-  const address = normalizeSenderAddress(input);
+  const address = normalizeAddress(input);
   if (address.length === 0 || address.length > MAX_ADDRESS_LENGTH) return null;
   if (/[\s"\\<>\p{Cc}\p{Cf}\p{Z}]/u.test(address)) return null;
   if (address.normalize("NFKC") !== address) return null;
@@ -399,7 +399,7 @@ function letterPattern(letter: string): string {
 
 // The Postgres regular expression for `text` and `json` columns (fact 5). Run it with `matchesAddress` and
 // `replaceAddress`, never with the case-insensitive operator or the flag `i`: the pattern is case-sensitive and holds, for each letter of the
-// address, every form that the one address rule (`normalizeSenderAddress`) folds to it (`addressCaseForms`: `K` and the
+// address, every form that the one address rule (`normalizeAddress`) folds to it (`addressCaseForms`: `K` and the
 // Kelvin sign for `k`, `ẞ` for `ß`, `Σ`, `σ` and `ς` for `σ`, `I`, `İ` and `i` or `I` with a combining dot for `i`). So the
 // text match agrees with the equality match (`normalizedAddress`): a dotless `ı` is not an `i`, and `ſ` is not an `s`, which
 // a case-insensitive match did not know. `jimbob@x.test`, `o'bob@x.test`, `bob@x.test.pl`, `bob@x.test_x` and
