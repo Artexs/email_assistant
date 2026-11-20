@@ -1,5 +1,6 @@
 // Summary of a Stryker mutation run of packages/core: kills per test case, the greedy cover, per-file scores.
 // Usage: bun scripts/test-audit/mutation-summary.ts --in <mutation.json> --data <audit data dir>
+//        bun scripts/test-audit/mutation-summary.ts --compare <run-1 mutation.json> <run-2 mutation.json>
 // Reads <data>/junit-cases.tsv (the scan key of each JUnit case); writes mutation-tests.tsv, mutation-files.tsv,
 // mutation-survived.tsv, mutation-baseline.tsv and mutation-summary.md into <data>.
 
@@ -316,6 +317,29 @@ export function summaryMd(report: MutationReport, kills: CaseKills[], unjoined: 
   return lines.join("\n");
 }
 
+export interface Difference {
+  mutant: string;
+  first: string;
+  second: string;
+}
+
+// Two runs on one commit: mutants compare by (file, line, column, mutator, replacement); a mutant that is in
+// one run only is a difference too.
+export function compareRuns(first: MutantRow[], second: MutantRow[]): { first: number; second: number; differences: Difference[] } {
+  const place = (m: MutantRow): string => `${m.file}:${m.line}:${m.column} ${m.mutator} ${m.replacement}`;
+  const left = new Map<string, string>();
+  const right = new Map<string, string>();
+  for (const m of first) left.set(place(m), m.status);
+  for (const m of second) right.set(place(m), m.status);
+  const differences: Difference[] = [];
+  for (const mutant of [...new Set([...left.keys(), ...right.keys()])].sort()) {
+    const a = left.get(mutant) ?? "absent";
+    const b = right.get(mutant) ?? "absent";
+    if (a !== b) differences.push({ mutant, first: a, second: b });
+  }
+  return { first: first.length, second: second.length, differences };
+}
+
 function arg(name: string): string {
   const at = process.argv.indexOf(name);
   const value = at === -1 ? undefined : process.argv[at + 1];
@@ -323,7 +347,14 @@ function arg(name: string): string {
   return value;
 }
 
-if (import.meta.main) {
+if (import.meta.main && process.argv.includes("--compare")) {
+  const at = process.argv.indexOf("--compare");
+  const [one, two] = [process.argv[at + 1], process.argv[at + 2]];
+  if (one === undefined || two === undefined) throw new Error("usage: mutation-summary.ts --compare <a.json> <b.json>");
+  const result = compareRuns(readReport(await Bun.file(one).json()).mutants, readReport(await Bun.file(two).json()).mutants);
+  process.stdout.write(`mutants ${result.first} and ${result.second}; status differences ${result.differences.length}\n`);
+  for (const item of result.differences) process.stdout.write(`${item.mutant}\t${item.first} -> ${item.second}\n`);
+} else if (import.meta.main) {
   const report = readReport(await Bun.file(arg("--in")).json());
   const data = arg("--data");
   const rows = parseJunitKeys(await Bun.file(`${data}/junit-cases.tsv`).text());

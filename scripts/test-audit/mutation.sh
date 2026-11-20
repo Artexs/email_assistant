@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Mutation run of packages/core (Stryker) in a work folder outside the repo.
-# Usage: bash scripts/test-audit/mutation.sh <out dir> [--mutate <glob>]...
-# Default mutate: src/**/*.ts and !src/**/*.test.ts. Copies mutation.json and mutation.log to <out dir>.
+# Usage: bash scripts/test-audit/mutation.sh <out dir> [--mutate <glob>]... [--with-static]
+# Default mutate: src/**/*.ts, not *.test.ts and not *.test-helper.ts (test support code). Copies mutation.json and mutation.log to <out dir>.
+# Static mutants (module-level code, about 36 % of the core mutants at 2026-11-20) are ignored by default: each one
+# runs the whole suite (about 19 CPU seconds), which is tens of CPU hours for core. --with-static tests them too.
 # Installs only in the work folder (never bun add / bun install in the repo); an EXIT trap removes it.
 # Prints no env value.
 set -euo pipefail
 
 usage() {
-  echo "usage: mutation.sh <out dir> [--mutate <glob>]..." >&2
+  echo "usage: mutation.sh <out dir> [--mutate <glob>]... [--with-static]" >&2
   exit 2
 }
 
@@ -16,6 +18,7 @@ out="$1"
 shift
 
 globs=()
+ignore_static=true
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --mutate)
@@ -23,11 +26,15 @@ while [[ $# -gt 0 ]]; do
       globs+=("$2")
       shift 2
       ;;
+    --with-static)
+      ignore_static=false
+      shift
+      ;;
     *) usage ;;
   esac
 done
 if [[ ${#globs[@]} -eq 0 ]]; then
-  globs=('src/**/*.ts' '!src/**/*.test.ts')
+  globs=('src/**/*.ts' '!src/**/*.test.ts' '!src/**/*.test-helper.ts')
 fi
 
 node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
@@ -80,6 +87,7 @@ export default {
   reporters: ['json', 'clear-text', 'progress-append-only'],
   concurrency: 8,
   disableBail: true,
+  ignoreStatic: $ignore_static,
   timeoutMS: 20000,
   bun: { timeout: 300000 },
   tempDirName: '.stryker-tmp',

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   caseKills,
+  compareRuns,
   fileScores,
   greedyCover,
   joinKey,
@@ -100,5 +101,16 @@ describe("files and survived", () => {
     expect([score?.mutants, score?.killed, score?.timeout, score?.survived, score?.noCoverage, score?.errors]).toEqual([5, 1, 1, 1, 1, 1]);
     expect(score?.score).toBe(50);
     expect(survivedTsv(mutants).trimEnd().split("\n")).toHaveLength(3);
+  });
+});
+
+describe("compareRuns", () => {
+  test("7 the same mutants with one flipped status and one missing mutant give two differences", () => {
+    const one = readReport({ files: { "src/a.ts": { mutants: [mutant("1", "Killed", ["t1"], 1), mutant("2", "Timeout", undefined, 2), mutant("3", "Survived", undefined, 3)] } } }).mutants;
+    const two = readReport({ files: { "src/a.ts": { mutants: [mutant("1", "Killed", ["t1"], 1), mutant("2", "Killed", ["t1"], 2)] } } }).mutants;
+    const result = compareRuns(one, two);
+    expect([result.first, result.second]).toEqual([3, 2]);
+    expect(result.differences.map((d) => [d.first, d.second])).toEqual([["Timeout", "Killed"], ["Survived", "absent"]]);
+    expect(compareRuns(one, one).differences).toEqual([]);
   });
 });
