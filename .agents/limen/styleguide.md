@@ -4,7 +4,7 @@
 
 Full rules: `docs/code-patterns.md` (accepted, wins on conflict). Architecture: `docs/architecture.md`, `docs/modules.md`, ADRs in `docs/decisions/`.
 
-Checks before a commit: `bun run lint && bun run typecheck && bun run test:unit:ci && bun run test:int:ci`. The `:ci` scripts run the Bun of `.bun-version` (CI and the server image). Each Limen job has its own DB, so `test:int:ci` needs no lock; `test:e2e` runs under `flock /tmp/email-assistant-shared-tests.lock` (`CLAUDE.md`).
+Checks (owner, 2026-11-20): the pre-commit hook (`scripts/pre-commit.sh`) lints the staged files, typechecks and runs the unit tests that import a changed file on each commit. A job runs `bun run check:job` once as its last step (merge master, then lint, typecheck, unit and integration tests of the changed files). GitHub CI runs every suite on master. `test:e2e` runs under `flock /tmp/email-assistant-shared-tests.lock` (`CLAUDE.md`).
 
 ## Shape
 
