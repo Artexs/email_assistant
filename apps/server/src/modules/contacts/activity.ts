@@ -3,7 +3,7 @@ import {
   DAY_MS,
   isNoreplyAddress,
   matchSender,
-  normalizeSenderAddress,
+  normalizeAddress,
   registrableDomain,
   relationOf,
   type Category,
@@ -12,12 +12,10 @@ import {
 } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
+import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
 import { listMailboxes, mailKindFilter, type TestMailRule } from "../mail";
-
-import { normalizedAddress } from "./address-sql";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -133,7 +131,7 @@ const emptyActivity = (address: string): SenderActivity => ({
 // The own addresses of the mailbox: every mailbox address of the organization, and the From addresses of the Sent rows of
 // this mailbox (aliases, `send as`). Lower case. They never get a row.
 async function ownAddresses(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<Set<string>> {
-  const own = new Set((await listMailboxes(db, ctx)).map((mailbox) => normalizeSenderAddress(mailbox.address)));
+  const own = new Set((await listMailboxes(db, ctx)).map((mailbox) => normalizeAddress(mailbox.address)));
   const { rows } = await sql<{ address: string }>`
     SELECT ${normalizedAddress("from_address")} AS address
     FROM sent_emails
@@ -249,9 +247,7 @@ export async function readSenderActivity(
 
   const own = await ownAddresses(db, ctx, mailboxId);
   const rules = await listSenderRules(db, ctx, mailboxId);
-  const delegateEmails = new Set(
-    (await listDelegateAddresses(db, ctx, { activeOnly: true })).map(normalizeSenderAddress)
-  );
+  const delegateEmails = new Set((await listDelegateAddresses(db, ctx, { activeOnly: true })).map(normalizeAddress));
 
   const mails = await sql<MailRow>`
     WITH win AS (${win}), nt AS (${newestResult}), m AS (
@@ -440,7 +436,7 @@ export async function readSenderActivity(
     GROUP BY ${normalizedAddress("d.email")}
   `.execute(db);
 
-  const testSenders = new Set(testMail.senders.map(normalizeSenderAddress));
+  const testSenders = new Set(testMail.senders.map(normalizeAddress));
   const byAddress = new Map<string, SenderActivity>();
   const entry = (address: string): SenderActivity | null => {
     if (own.has(address) || testSenders.has(address)) return null;

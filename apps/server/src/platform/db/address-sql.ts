@@ -1,14 +1,14 @@
-import { ADDRESS_TRIM_CHARS, normalizeSenderAddress } from "@ea/core";
-import { sql, type RawBuilder, type Transaction } from "kysely";
+import { ADDRESS_TRIM_CHARS, normalizeAddress } from "@ea/core";
+import { sql, type Kysely, type RawBuilder, type Transaction } from "kysely";
 
-import type { DB, Db } from "../../platform/db";
+import type { DB } from "./schema";
 
 // The set that `btrim` strips, built once from the program set as `chr(n)` calls joined by `||`: no string literal, so no
 // dependence on the string literal settings of the database. `btrim(column)` alone strips spaces only, while the program
 // form strips the 25 code points of `String.prototype.trim()` (tab, NBSP, U+3000, newline, ...).
 const SQL_TRIM_SET = [...ADDRESS_TRIM_CHARS].map((char) => `chr(${char.codePointAt(0)})`).join(" || ");
 
-// The SQL form of `normalizeSenderAddress` (`@ea/core`): trim the same code points as `trim()`, `lower()`, then the Greek
+// The SQL form of `normalizeAddress` (`@ea/core`): trim the same code points as `trim()`, `lower()`, then the Greek
 // final sigma (U+03C2) becomes the plain sigma (U+03C3) and the combining dot above (U+0307) after an `i` goes. The column
 // is a trusted literal, never user input. Every read of an address in the profile pass goes through it, so the incoming
 // sender, the Sent recipient, the alias, the delegate and the test sender give one form, and the key hash comes from that
@@ -28,7 +28,7 @@ export interface DivergentCodePoint {
 // so only the code points that the database changes are read (about 1,500 rows, not 1.1 million).
 // `form` is the SQL form under test; a test passes a broken form to prove that this check sees the break.
 export async function divergentCodePoints(
-  db: Db | Transaction<DB>,
+  db: Kysely<DB> | Transaction<DB>,
   form: (column: string) => RawBuilder<unknown> = normalizedAddress
 ): Promise<DivergentCodePoint[]> {
   const rows = await sql<{ cp: number; db: string }>`
@@ -41,7 +41,7 @@ export async function divergentCodePoints(
   for (let cp = 1; cp <= 0x10ffff; cp++) {
     if (cp >= 0xd800 && cp <= 0xdfff) continue;
     const char = String.fromCodePoint(cp);
-    const js = normalizeSenderAddress(char);
+    const js = normalizeAddress(char);
     const dbText = dbForm.get(cp) ?? char;
     if (js !== dbText) found.push({ cp, js, db: dbText });
   }

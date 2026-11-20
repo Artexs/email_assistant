@@ -1,11 +1,24 @@
-import { isValidSenderPattern, normalizeSenderPattern, SENDER_RULE_LIMIT, type SenderRuleKind } from "@ea/core";
+import {
+  isValidSenderPattern,
+  normalizeAddress,
+  SENDER_RULE_LIMIT,
+  storedAddressForm,
+  type SenderRuleKind,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
 import { HardError } from "../../platform/errors";
 import { auditEvents, recordAudit, type AuditData } from "../audit";
 
-import { countSenderRules, deleteSenderRule, insertSenderRule, mailboxInOrg, type SenderRuleRow } from "./repo";
+import {
+  countSenderRules,
+  deleteSenderRule,
+  insertSenderRule,
+  mailboxInOrg,
+  senderRuleWithFoldedPattern,
+  type SenderRuleRow,
+} from "./repo";
 
 export type AddRuleResult =
   | { kind: "added"; rule: SenderRuleRow }
@@ -32,7 +45,7 @@ export async function addSenderRule(
   ctx: TenantContext,
   input: { mailboxId: string | null; pattern: string; kind: SenderRuleKind; actor: string; now: Date }
 ): Promise<AddRuleResult> {
-  const normalized = normalizeSenderPattern(input.pattern);
+  const normalized = storedAddressForm(input.pattern);
   if (!isValidSenderPattern(normalized)) throw new HardError("invalid sender pattern");
 
   const run = async (trx: Transaction<DB>): Promise<AddRuleResult> => {
@@ -40,6 +53,17 @@ export async function addSenderRule(
       return { kind: "mailbox_not_found" };
     }
     if ((await countSenderRules(trx, ctx)) >= SENDER_RULE_LIMIT) return { kind: "limit" };
+    // The unique key sees the stored form only: a pattern that the one address rule folds to an existing one is a duplicate.
+    const folded = normalizeAddress(normalized);
+    if (
+      await senderRuleWithFoldedPattern(trx, ctx, {
+        mailboxId: input.mailboxId,
+        kind: input.kind,
+        foldedPattern: folded,
+      })
+    ) {
+      return { kind: "exists" };
+    }
     const rule = await insertSenderRule(trx, ctx, {
       mailboxId: input.mailboxId,
       pattern: normalized,

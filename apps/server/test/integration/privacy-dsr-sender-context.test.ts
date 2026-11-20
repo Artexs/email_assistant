@@ -465,7 +465,7 @@ describe("org:dsr CLI", () => {
 });
 
 describe("the address rule of the profile key in a data request", () => {
-  // The pass keys a profile on `normalizeSenderAddress` (SQL form): a Greek final sigma and a Turkish dotted capital I give the
+  // The pass keys a profile on `normalizeAddress` (SQL form): a Greek final sigma and a Turkish dotted capital I give the
   // same key as the address typed in the other case. The find and the erase hash the typed address with the same rule.
   const FOLDS: [string, string][] = [
     ["αννας@χρ.gr", "ΑΝΝΑΣ@ΧΡ.GR"],
