@@ -367,5 +367,35 @@ describe("simGoNoGo", () => {
     test("a support exactly at minSupport and kept exactly at minKept pass", () => {
       expect(run({ bar: 0.2, minSupport: 3, minKept: 5 }).decision).toBe("go");
     });
+
+    test("a category with no rows has no kept rows and no numbers", () => {
+      expect(simGoNoGo(rows, { bar: 0.2, minSupport: 3, minKept: 2 }).notification).toEqual({
+        support: 0,
+        threshold: null,
+        kept: 0,
+        tp: 0,
+        precision: null,
+        wilsonLower: null,
+        recall: null,
+        decision: "no-go: too few",
+      });
+    });
+
+    test("a Wilson lower bound exactly at the bar is go", () => {
+      expect(run({ bar: 0.23072427940911855, minSupport: 3, minKept: 2 }).decision).toBe("go");
+    });
+
+    test("a row with no kept mails never passes, even with a bar of 0 and a minimum of 0", () => {
+      expect(simGoNoGo([], { bar: 0, minSupport: 0, minKept: 0 }).urgent).toEqual({
+        support: 0,
+        threshold: null,
+        kept: 0,
+        tp: 0,
+        precision: null,
+        wilsonLower: null,
+        recall: null,
+        decision: "no-go",
+      });
+    });
   });
 });

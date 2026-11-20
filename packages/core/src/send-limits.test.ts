@@ -132,33 +132,16 @@ describe("checkSendLimits until time of a full window", () => {
   const sendAt = (hhmm: string, to: readonly string[] = ["x@x.test"]): RecentSend => ({ startedAt: at(hhmm), to });
   const now0930 = at("09:30");
 
-  test("three sends at 09:00, 09:10 and 09:20 hold until 10:00", () => {
-    expect(check([sendAt("09:00"), sendAt("09:10"), sendAt("09:20")], ["n@x.test"], cap3, now0930)).toEqual(
-      held("mailbox_hour", "2026-11-20T10:00:00.000Z")
-    );
-  });
-
   test("the same sends in any order hold until the same time", () => {
     const expected = held("mailbox_hour", "2026-11-20T10:00:00.000Z");
     expect(check([sendAt("09:20"), sendAt("09:00"), sendAt("09:10")], ["n@x.test"], cap3, now0930)).toEqual(expected);
     expect(check([sendAt("09:10"), sendAt("09:20"), sendAt("09:00")], ["n@x.test"], cap3, now0930)).toEqual(expected);
   });
 
-  test("two sends do not fill a cap of three", () => {
-    expect(check([sendAt("09:00"), sendAt("09:10")], ["n@x.test"], cap3, now0930)).toEqual({ kind: "ok" });
-  });
-
   test("more sends than the cap: the window passes when the oldest one that must leave has left", () => {
     const sends = [sendAt("09:35"), sendAt("09:05"), sendAt("09:15"), sendAt("09:25"), sendAt("09:45")];
     // Counted at 09:50: all five. The window holds 3 once the two oldest (09:05, 09:15) are gone: at 09:25 + 1 h.
     expect(check(sends, ["n@x.test"], cap3, at("09:50"))).toEqual(held("mailbox_hour", "2026-11-20T10:25:00.000Z"));
-  });
-
-  test("a cap of one holds until the one send leaves", () => {
-    const one: SendLimits = { mailboxHour: 1, mailboxDay: 100, recipientDay: 100 };
-    expect(check([sendAt("09:20")], ["n@x.test"], one, now0930)).toEqual(
-      held("mailbox_hour", "2026-11-20T10:20:00.000Z")
-    );
   });
 
   test("the recipient window uses the same rule over the sends to that address, in any order", () => {

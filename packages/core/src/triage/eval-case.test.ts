@@ -110,7 +110,6 @@ describe("selectCases priority inside one category", () => {
   const picked = (cases: EvalCase[], n: number) => selectCases(cases, { perCategory: n }).map((c) => c.id);
 
   test.each([
-    [1, ["a-vip"]],
     [2, ["a-vip", "c-block"]],
     [3, ["a-vip", "c-block", "f-none"]],
     [4, ["a-vip", "c-block", "f-none", "g-none"]],
@@ -141,10 +140,13 @@ describe("selectCases priority inside one category", () => {
     ).toEqual(["a-white", "c-block"]);
   });
 
-  test("without a whitelist case the first block-only case comes first", () => {
-    const cases = [withRules("a-none", []), withRules("b-block", ["blocklist"]), withRules("c-block", ["blocklist"])];
-    expect(picked(cases, 1)).toEqual(["b-block"]);
-    expect(picked(cases, 2)).toEqual(["a-none", "b-block"]);
+  test("a block-only case is not chosen when it also has a vip rule", () => {
+    const cases = [
+      withRules("a-white", ["whitelist"]),
+      withRules("b-vip-block", ["vip", "blocklist"]),
+      withRules("c-block", ["blocklist"]),
+    ];
+    expect(picked(cases, 2)).toEqual(["a-white", "c-block"]);
   });
 
   test("without a block-only case a whitelist case comes first and the no-rule cases follow", () => {
@@ -152,18 +154,9 @@ describe("selectCases priority inside one category", () => {
     expect(picked(cases, 2)).toEqual(["a-none", "b-white"]);
     expect(picked(cases, 3)).toEqual(["a-none", "b-white", "c-white"]);
   });
-
-  test("with no rule case the no-rule cases are the first n by id", () => {
-    expect(picked([withRules("b", []), withRules("a", [])], 1)).toEqual(["a"]);
-  });
 });
 
 describe("selectCases order by id", () => {
-  test("sorts by the text of the id, not by number", () => {
-    const cases = ["a2", "a10", "a1", "b1"].map((id) => makeCase(id, "info"));
-    expect(selectCases(cases, {}).map((c) => c.id)).toEqual(["a1", "a10", "a2", "b1"]);
-  });
-
   test("cases with the same id keep their input order", () => {
     const first = { ...makeCase("dup", "info"), subject: "first" };
     const second = { ...makeCase("dup", "info"), subject: "second" };

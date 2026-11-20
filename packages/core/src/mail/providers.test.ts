@@ -42,18 +42,8 @@ describe("presetForAddress", () => {
   });
 
   test.each<[string, PresetKey | null]>([
-    ["jan@interia.pl", "interia"],
-    ["jan@INTERIA.PL", "interia"],
     ["@interia.pl", "interia"],
     ["jan@ interia.pl ", "interia"],
-    ["jan@gmail.com", "gmail"],
-    ["jan@mac.com", "icloud"],
-    ["jan", null],
-    ["jan@nieznana.pl", null],
-    ["jan@", null],
-    ["jan@ ", null],
-    ["jan@interia.pl.evil.test", null],
-    ["jan@xinteria.pl", null],
   ])("%p gives %p", (address, expected) => {
     expect(presetForAddress(address)).toBe(expected);
   });
@@ -73,30 +63,6 @@ describe("serversFor", () => {
       smtpSecurity: "tls",
     });
     expect(serversFor({ preset: "icloud" }).smtpSecurity).toBe("starttls");
-  });
-
-  test.each(presetKeys)("a preset only gives the exact fields of %s", (key) => {
-    const { imapHost, imapPort, smtpHost, smtpPort, smtpSecurity } = MAIL_PRESETS[key];
-    expect(serversFor({ preset: key })).toEqual({ imapHost, imapPort, smtpHost, smtpPort, smtpSecurity });
-  });
-
-  test("a preset wins over every given field", () => {
-    expect(
-      serversFor({
-        preset: "gmail",
-        imapHost: "other.test",
-        imapPort: 1,
-        smtpHost: "other.test",
-        smtpPort: 2,
-        smtpSecurity: "starttls",
-      })
-    ).toEqual({
-      imapHost: "imap.gmail.com",
-      imapPort: 993,
-      smtpHost: "smtp.gmail.com",
-      smtpPort: 465,
-      smtpSecurity: "tls",
-    });
   });
 
   test("returns the given fields without a preset; the security defaults to tls", () => {

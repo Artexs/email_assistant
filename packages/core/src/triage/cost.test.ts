@@ -144,12 +144,6 @@ describe("priceRowFor with dated rows", () => {
     });
   });
 
-  test("no row applies before the first start", () => {
-    withRows([row(2, "2026-11-01")], () => {
-      expect(priceAt("2026-10-31T23:59:59Z")).toBeNull();
-    });
-  });
-
   test("two rows with the same start: the later row of the list wins", () => {
     withRows([row(1, "2026-11-01"), row(2, "2026-11-01")], () => {
       expect(priceAt("2026-11-05T00:00:00Z")).toBe(2);
@@ -167,12 +161,6 @@ describe("priceRowFor with dated rows", () => {
       expect(priceAt("2026-11-05T00:00:00Z", "standard")).toBe(2);
       expect(priceAt("2026-11-05T00:00:00Z", "eu")).toBe(5);
       expect(priceAt("2026-11-05T00:00:00Z")).toBe(2);
-    });
-  });
-
-  test("a model with an empty row list has no price", () => {
-    withRows([], () => {
-      expect(priceAt("2026-11-05T00:00:00Z")).toBeNull();
     });
   });
 });

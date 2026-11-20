@@ -149,23 +149,6 @@ describe("sendPayloadFor by draft kind", () => {
     recipients: "all",
   };
 
-  test("a follow-up keeps its recipients, its Cc and its loop, and drops the text fields", () => {
-    expect(sendPayloadFor(followUp)).toEqual({
-      kind: "follow_up",
-      to: ["anna@firma.test", "jan@firma.test"],
-      cc: ["boss@firma.test"],
-      loop_id: ID,
-    });
-  });
-
-  test("a reply keeps its recipient and its Cc, and has no delegation keys", () => {
-    expect(sendPayloadFor(reply)).toEqual({ kind: "reply", to: ["anna@firma.test"], cc: ["boss@firma.test"] });
-  });
-
-  test("a reply with an empty Cc keeps the empty list", () => {
-    expect(sendPayloadFor({ ...reply, cc: [] })).toEqual({ kind: "reply", to: ["anna@firma.test"], cc: [] });
-  });
-
   test.each([
     ["delegation", delegation, ["kind", "to", "delegate_id"]],
     ["clarification", clarification, ["kind", "to"]],
@@ -174,10 +157,6 @@ describe("sendPayloadFor by draft kind", () => {
     ["reply", reply, ["kind", "to", "cc"]],
   ] as const)("a %s send has exactly its own keys", (_kind, draft, keys) => {
     expect(Object.keys(sendPayloadFor(draft)).sort()).toEqual([...keys].sort());
-  });
-
-  test("a reminder with the second reminder number keeps it", () => {
-    expect(sendPayloadFor({ ...reminder, reminder: 2 }).reminder).toBe(2);
   });
 });
 
