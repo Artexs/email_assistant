@@ -4,15 +4,13 @@ import { Hono } from "hono";
 import { describeRoute } from "hono-openapi";
 import { z } from "zod";
 
-import { loadConfig } from "./platform/config";
-import { createSecretBox } from "./platform/crypto";
+import { buildFakeApp } from "./openapi-app";
 import type { Db } from "./platform/db";
 import { buildTrustedProxies, createApp, type WebDeps } from "./platform/http";
 import { apiDoc, openApiSpec } from "./platform/openapi";
-import { apiPublicRouters, apiRouters } from "./web";
 
 // Every `/api` route has an `apiDoc` (ADR 0023), or a hidden key with a reason. This test fails for a route that has
-// neither, and for a hidden key that no longer holds. A new route is described: there is no list of gaps. The real app is built with fakes: no DB is read.
+// neither, and for a hidden key that no longer holds. A new route is described: there is no list of gaps. The real app is built with fakes (`openapi-app.ts`): no DB is read.
 
 const HIDDEN_ROUTES: Record<string, string> = {
   "GET /api/auth/*": "Better Auth",
@@ -165,65 +163,16 @@ function describeWithoutSchema() {
   return describeRoute({ operationId: "bare", summary: "s", tags: ["t"], responses: { 200: { description: "OK" } } });
 }
 
-function realApp() {
-  const config = loadConfig({
-    DATABASE_URL: "postgres://app:x@127.0.0.1:1/x",
-    CREDENTIALS_KEY: Buffer.alloc(32, 1).toString("base64"),
-    WEB_BASE_URL: "http://127.0.0.1:8080",
-    WEB_AUTH_SECRET: "x".repeat(32),
-  });
-  const origin = config.WEB_BASE_URL as string;
-  const extras = {
-    secrets: createSecretBox(Buffer.alloc(32, 1).toString("base64"), 1),
-    actionsScope: { kind: "off" },
-    sendScope: { kind: "off" },
-    botUsername: null,
-  } as const;
-  const web = {
-    auth: { handler: async () => new Response(null), getSession: async () => null },
-    db: {} as Db,
-    now: () => new Date("2026-11-20T10:00:00Z"),
-    dist: "/nonexistent/dist",
-    baseUrl: new URL(origin),
-    trustedOrigins: new Set([origin]),
-    trustedProxies: buildTrustedProxies([]),
-    connInfo: () => undefined,
-    listMembershipsOfUser: async () => [],
-    publicRouters: apiPublicRouters(config, {} as Db, extras, () => new Date("2026-11-20T10:00:00Z")),
-    routers: apiRouters(
-      config,
-      {} as Db,
-      extras,
-      () => new Date("2026-11-20T10:00:00Z"),
-      async () => [],
-      async () => null,
-      {
-        lockout: {
-          isLocked: async () => false,
-          recordFailure: async () => null,
-          recordSuccess: async () => undefined,
-          clear: async () => undefined,
-          claimMail: async () => false,
-        },
-        onEvent: async () => undefined,
-        verifyPassword: async () => false,
-        expiredSessionCookie: async () => "",
-      }
-    ),
-  } satisfies WebDeps;
-  return createApp({ checkDb: async () => true, web });
-}
-
 describe("the real app", () => {
   test("every /api route is described or hidden, and no hidden key is stale", async () => {
-    const app = realApp();
+    const app = buildFakeApp();
     const spec = await openApiSpec(app);
     expect(routeGaps(app, spec, HIDDEN_ROUTES)).toEqual({ undescribed: [], stale: [] });
     expect(specProblems(spec, HIDDEN_ROUTES)).toEqual([]);
   });
 
   test("the 409 answers of the suggestion routes name their codes", async () => {
-    const spec = await openApiSpec(realApp());
+    const spec = await openApiSpec(buildFakeApp());
     const conflict = (path: string) =>
       JSON.stringify(
         (spec.paths as Record<string, { post?: { responses?: Record<string, unknown> } }>)[path]?.post?.responses?.[
@@ -237,7 +186,7 @@ describe("the real app", () => {
   });
 
   test("the operations of the file plus the hidden keys are the route keys of the app", async () => {
-    const app = realApp();
+    const app = buildFakeApp();
     const keys = routeKeys(app);
     const operations = describedKeys(await openApiSpec(app));
     expect(keys.size).toBe(operations.size + Object.keys(HIDDEN_ROUTES).length);
@@ -245,7 +194,7 @@ describe("the real app", () => {
   });
 
   test("POST /api/mailboxes has the connect body: its required list is that of the connect body schema", async () => {
-    const spec = await openApiSpec(realApp());
+    const spec = await openApiSpec(buildFakeApp());
     const body = spec.paths?.["/api/mailboxes"]?.post?.requestBody as RequestBodyJson | undefined;
     const schema = body?.content?.["application/json"]?.schema as { required?: string[] } | undefined;
     const expected = z.toJSONSchema(connectMailboxBodySchema, { io: "input", unrepresentable: "any" }) as {
@@ -256,7 +205,7 @@ describe("the real app", () => {
   });
 
   test("PATCH /api/settings/{mailboxId}/mode has the path parameter mailboxId and a request body", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/settings/{mailboxId}/mode"]?.patch;
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/settings/{mailboxId}/mode"]?.patch;
     // One entry, typed as a UUID (hono-openapi alone would list a plain string).
     expect(operation?.parameters).toMatchObject([
       { name: "mailboxId", in: "path", required: true, schema: { type: "string", format: "uuid" } },
@@ -265,7 +214,7 @@ describe("the real app", () => {
   });
 
   test("PUT /api/settings/{mailboxId}/urgency is described: uuid path parameter, body, settings view answer, owner_only", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/settings/{mailboxId}/urgency"]?.put as {
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/settings/{mailboxId}/urgency"]?.put as {
       parameters?: unknown;
       requestBody?: unknown;
       responses?: Record<string, { description?: string } | undefined>;
@@ -279,7 +228,7 @@ describe("the real app", () => {
   });
 
   test("an empty answer is described as 204 with no body, and the shared guard codes are listed", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/me/locale"]?.patch as {
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/me/locale"]?.patch as {
       responses?: Record<string, { description?: string } | undefined>;
     };
     expect(Object.keys(operation.responses ?? {}).sort()).toEqual(["204", "400", "401", "403", "404", "413"]);
@@ -287,7 +236,7 @@ describe("the real app", () => {
   });
 
   test("GET /api/activity has the query parameters before and limit", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/activity"]?.get;
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/activity"]?.get;
     const names = (operation?.parameters as { name: string; in: string }[] | undefined)?.map(
       (p) => `${p.in}:${p.name}`
     );
@@ -296,7 +245,7 @@ describe("the real app", () => {
   });
 
   test("POST /api/actions/{id}/reject-reason lists the codes not_found and not_rejected", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/actions/{id}/reject-reason"]?.post as {
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/actions/{id}/reject-reason"]?.post as {
       responses?: Record<string, { description?: string } | undefined>;
     };
     expect(operation.responses?.["404"]?.description).toContain("not_found");
@@ -304,7 +253,7 @@ describe("the real app", () => {
   });
 
   test("the three approval writes are described: owner only, a body, and the 409 codes", async () => {
-    const paths = (await openApiSpec(realApp())).paths;
+    const paths = (await openApiSpec(buildFakeApp())).paths;
     for (const [route, operationId, conflict] of [
       ["approve", "approveApproval", "draft_not_ready"],
       ["reject", "rejectApproval", "changed"],
@@ -324,7 +273,7 @@ describe("the real app", () => {
   });
 
   test("GET /api/newsletters/{mailboxId} is described: operation id, tag, uuid path parameter, 200 and 404, no body", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/newsletters/{mailboxId}"]?.get as {
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/newsletters/{mailboxId}"]?.get as {
       operationId?: string;
       tags?: string[];
       parameters?: unknown;
@@ -342,7 +291,7 @@ describe("the real app", () => {
   });
 
   test("POST /api/newsletters/{mailboxId}/unsubscribe is described: operation id, tag, uuid path parameter, a body, owner only, the 404, 409 and 429 codes", async () => {
-    const operation = (await openApiSpec(realApp())).paths?.["/api/newsletters/{mailboxId}/unsubscribe"]?.post as {
+    const operation = (await openApiSpec(buildFakeApp())).paths?.["/api/newsletters/{mailboxId}/unsubscribe"]?.post as {
       operationId?: string;
       tags?: string[];
       parameters?: unknown;
@@ -364,7 +313,7 @@ describe("the real app", () => {
   });
 
   test("the three trust routes are described: operation ids, a uuid path parameter, 202 for the check, owner only on the writes, the 409 codes", async () => {
-    const paths = (await openApiSpec(realApp())).paths;
+    const paths = (await openApiSpec(buildFakeApp())).paths;
     interface Operation {
       operationId?: string;
       tags?: string[];
@@ -399,7 +348,7 @@ describe("the real app", () => {
   });
 
   test("T13. the three delegate routes are described: operation ids, owner only on the writes, the codes of the answers", async () => {
-    const paths = (await openApiSpec(realApp())).paths;
+    const paths = (await openApiSpec(buildFakeApp())).paths;
     interface Operation {
       operationId?: string;
       tags?: string[];
@@ -431,7 +380,7 @@ describe("the real app", () => {
   });
 
   test("the remind route is described: operation id, owner only, a body, the 409 codes and the answer", async () => {
-    const paths = (await openApiSpec(realApp())).paths;
+    const paths = (await openApiSpec(buildFakeApp())).paths;
     interface Operation {
       operationId?: string;
       tags?: string[];
@@ -451,7 +400,7 @@ describe("the real app", () => {
   });
 
   test("the loop routes are described: each operation id, its schemas, who may call it and the codes of the 409", async () => {
-    const paths = (await openApiSpec(realApp())).paths;
+    const paths = (await openApiSpec(buildFakeApp())).paths;
     interface Operation {
       operationId?: string;
       tags?: string[];
@@ -530,7 +479,7 @@ describe("the real app", () => {
   });
 
   test("F110 s18: GET and PATCH /api/me/notify are described, the patch has a body and the 409 no_mailbox", async () => {
-    const path = (await openApiSpec(realApp())).paths?.["/api/me/notify"] as
+    const path = (await openApiSpec(buildFakeApp())).paths?.["/api/me/notify"] as
       | Record<
           string,
           { operationId?: string; requestBody?: unknown; responses?: Record<string, { description?: string }> }
@@ -543,7 +492,7 @@ describe("the real app", () => {
   });
 
   test("F118 s06: the notify body takes `routes` (three groups, telegram, push or both) and the view returns `routes` and `routeDefaults`", async () => {
-    const path = (await openApiSpec(realApp())).paths?.["/api/me/notify"] as
+    const path = (await openApiSpec(buildFakeApp())).paths?.["/api/me/notify"] as
       | Record<string, { requestBody?: unknown; responses?: Record<string, unknown> }>
       | undefined;
     const body = JSON.stringify(path?.patch?.requestBody);
@@ -556,7 +505,7 @@ describe("the real app", () => {
   });
 
   test("F118 s03: the four push device routes are described with their error codes; the answers hold no endpoint or key", async () => {
-    const paths = (await openApiSpec(realApp())).paths as Record<
+    const paths = (await openApiSpec(buildFakeApp())).paths as Record<
       string,
       Record<
         string,
@@ -576,7 +525,7 @@ describe("the real app", () => {
   });
 
   test("the middleware entries are no route keys", () => {
-    const app = realApp();
+    const app = buildFakeApp();
     // The app has middleware entries under /api (the guards, the 404 catch-all); none of them is a key.
     expect(
       app.routes.filter((route) => route.method === "ALL" && route.path.startsWith("/api/")).length
