@@ -237,6 +237,51 @@ describe("the public claims of the security page", () => {
     expect(receives?.text.pl).toMatch(/500 znaków/);
   });
 
+  // The shared 7-day scan reads a whole text, so another sentence with "context" and "classif" would hide a dropped one: each sentence is pinned here.
+  test("the claim ai-provider-receives keeps each sentence of what is sent, in both languages", () => {
+    const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
+    const { en, pl } = receives?.text ?? { en: "", pl: "" };
+    // The 7-day rule and its exceptions: the one-off backfill and the history check.
+    expect(en).toMatch(
+      /does not classify a mail that is older than 7 days, unless the operator loads old mail once or the optional history check runs/
+    );
+    expect(pl).toMatch(
+      /nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii/
+    );
+    // A context mail can be older than 7 days.
+    expect(en).toMatch(/can be older than 7 days/);
+    expect(pl).toMatch(/może być starsza niż 7 dni/);
+    // The history check: size, window, off by default.
+    expect(en).toMatch(/off by default, classifies up to 500 mails of the last 30 days/);
+    expect(pl).toMatch(/domyślnie wyłączona, klasyfikuje do 500 wiadomości z ostatnich 30 dni/);
+    // Up to three earlier mails of the thread go along as context.
+    expect(en).toMatch(/up to three earlier mails of the same thread as context/);
+    expect(pl).toMatch(/do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst/);
+    // The operator can start the check by hand, also with the feature off.
+    expect(en).toMatch(
+      /operator of the install can also start that check by hand, and it then runs when the feature is off/
+    );
+    expect(pl).toMatch(
+      /Operator instalacji może też uruchomić tę kontrolę ręcznie, a wtedy działa ona także przy wyłączonej funkcji/
+    );
+    // The sender marks.
+    expect(en).toMatch(/whether the sender is on the whitelist or the VIP list or looks automatic/);
+    expect(pl).toMatch(/czy nadawca jest na białej liście lub liście VIP albo wygląda na automatyczny/);
+  });
+
+  test("the short-list line of the claim names the two exceptions of the 7-day rule, in both languages", () => {
+    const [en, pl] = PAGES.map(
+      ({ file }) =>
+        readPage(file)
+          .split("\n")
+          .find((line) => line.includes("#claim-ai-provider-receives")) ?? ""
+    );
+    expect(en).toMatch(/unless the operator loads old mail once or the optional history check runs/);
+    expect(pl).toMatch(
+      /chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii/
+    );
+  });
+
   test("the section of what the product does not promise holds no line about the 7-day limit, in either language", () => {
     for (const { file, heading } of PAGES) {
       const lines = readPage(file).split("\n");
