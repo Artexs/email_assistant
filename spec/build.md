@@ -23,7 +23,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
-- `F068-actions-transitions-runtime` (🟠 ACTIVE): The `actions.status` writers take their guards from the transitions map, and no writer admits an edge that no caller uses
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
 
 ## NEXT
@@ -67,7 +66,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
 - `F116-e5b-open-loops` (🟢 PROVEN): E5b Open loops; landed 2026-11-19
 - `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
-- 2026-11: 104 landed. spec/features/done/2026-11/
+- 2026-11: 105 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
