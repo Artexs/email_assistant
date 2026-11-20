@@ -1,9 +1,25 @@
-import { OPEN_LOOPS_CONSENT_SINCE, REPLY_CONSENT_SINCE, TELEGRAM_CONSENT_VERSION } from "@ea/core";
+import {
+  compareLegalVersions,
+  OPEN_LOOPS_CONSENT_SINCE,
+  parseLegalVersion,
+  REPLY_CONSENT_SINCE,
+  TELEGRAM_CONSENT_VERSION,
+} from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { en, enPlurals, type PluralKey, type TextKey } from "./en";
 import { setLocaleForTest, t, tp } from "./index";
 import { pl, plPlurals } from "./pl";
+
+// Orders two legal versions with the shared parser (the counter `.10` is after `.9`; string order is not). A version that does not
+// parse fails the test with its name.
+function versionIsBefore(older: string, newer: string, names: [string, string]): boolean {
+  const first = parseLegalVersion(older);
+  const second = parseLegalVersion(newer);
+  if (first === null) throw new Error(`${names[0]} "${older}" is not a legal version`);
+  if (second === null) throw new Error(`${names[1]} "${newer}" is not a legal version`);
+  return compareLegalVersions(first, second) < 0;
+}
 
 afterEach(() => setLocaleForTest("en"));
 
@@ -153,7 +169,12 @@ describe("the Telegram consent text", () => {
   });
 
   test("T7 the current version is not older than the open-loops version", () => {
-    expect(TELEGRAM_CONSENT_VERSION >= OPEN_LOOPS_CONSENT_SINCE).toBe(true);
+    expect(
+      versionIsBefore(TELEGRAM_CONSENT_VERSION, OPEN_LOOPS_CONSENT_SINCE, [
+        "TELEGRAM_CONSENT_VERSION",
+        "OPEN_LOOPS_CONSENT_SINCE",
+      ])
+    ).toBe(false);
   });
 
   // A Telegram user is covered for reply data only by a consent version that offered a text naming it. While
@@ -161,7 +182,14 @@ describe("the Telegram consent text", () => {
   // addresses. While it is above the current version nobody is covered; once it is not above, both consent texts must name
   // that data, or this test fails.
   test("T8 the reply version is not offered before its text names reply data", () => {
-    if (REPLY_CONSENT_SINCE > TELEGRAM_CONSENT_VERSION) return;
+    if (
+      versionIsBefore(TELEGRAM_CONSENT_VERSION, REPLY_CONSENT_SINCE, [
+        "TELEGRAM_CONSENT_VERSION",
+        "REPLY_CONSENT_SINCE",
+      ])
+    ) {
+      return;
+    }
     expect(en.tg_consent_text).toContain("reply drafts that the AI writes");
     expect(en.tg_consent_text).toContain("Reply-To addresses of the original mail");
     expect(en.tg_consent_text).toContain("(To, Cc)");
@@ -171,7 +199,12 @@ describe("the Telegram consent text", () => {
   });
 
   test("T7b the open-loops version is newer than the F109 attachment version", () => {
-    expect(OPEN_LOOPS_CONSENT_SINCE > "2026-11-15").toBe(true);
+    expect(
+      versionIsBefore("2026-11-15", OPEN_LOOPS_CONSENT_SINCE, [
+        "the attachment consent version",
+        "OPEN_LOOPS_CONSENT_SINCE",
+      ])
+    ).toBe(true);
   });
 });
 

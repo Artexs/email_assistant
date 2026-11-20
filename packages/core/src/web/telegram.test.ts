@@ -1,6 +1,13 @@
 import { describe, expect, test } from "bun:test";
 
-import { consentCovers, REPLY_CONSENT_SINCE, telegramConsentBodySchema, TELEGRAM_CONSENT_VERSION } from "./telegram";
+import { isCanonicalLegalVersion } from "./legal-version";
+import {
+  consentCovers,
+  OPEN_LOOPS_CONSENT_SINCE,
+  REPLY_CONSENT_SINCE,
+  telegramConsentBodySchema,
+  TELEGRAM_CONSENT_VERSION,
+} from "./telegram";
 
 describe("consentCovers", () => {
   test("T5 is true only for a version that is not older than `since`", () => {
@@ -25,6 +32,38 @@ describe("consentCovers", () => {
       expect(consentCovers(garbage, since)).toBe(false);
     }
     expect(consentCovers("2026-11-16", "garbage")).toBe(false);
+  });
+});
+
+describe("consentCovers on the stored consent values", () => {
+  // The four values that a consent row ever held (the constants' history), against the two gates. These are the answers
+  // from before `consentCovers` ran on `legal-version.ts`: no stored consent gains or loses cover.
+  test.each([
+    ["2026-11-14", false, false],
+    ["2026-11-15", false, false],
+    ["2026-11-15.2", true, false],
+    ["2026-11-19", true, true],
+  ])("stored %s: open loops %p, replies %p", (stored, loops, replies) => {
+    expect(consentCovers(stored, OPEN_LOOPS_CONSENT_SINCE)).toBe(loops);
+    expect(consentCovers(stored, REPLY_CONSENT_SINCE)).toBe(replies);
+  });
+
+  test.each([
+    ["2026-11-15.10", "2026-11-15.9", true, "the counter is a number, not text"],
+    ["2026-11-15-2", "2026-11-15.2", true, "the hyphen spelling is read as the dot spelling (no row holds it)"],
+    ["2026-11-15.1", "2026-11-15", false, "counter 1 is not a version (no row holds it)"],
+  ])("%s against %s is %p: %s", (version, since, expected) => {
+    expect(consentCovers(version, since)).toBe(expected);
+  });
+});
+
+describe("the consent constants", () => {
+  test.each([
+    ["TELEGRAM_CONSENT_VERSION", TELEGRAM_CONSENT_VERSION],
+    ["OPEN_LOOPS_CONSENT_SINCE", OPEN_LOOPS_CONSENT_SINCE],
+    ["REPLY_CONSENT_SINCE", REPLY_CONSENT_SINCE],
+  ])("T8 %s is in the canonical format", (_name, value) => {
+    expect(isCanonicalLegalVersion(value)).toBe(true);
   });
 });
 

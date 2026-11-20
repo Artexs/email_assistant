@@ -21,6 +21,10 @@ describe("the consent gate of open-loop data", () => {
     expect(usersOf(/\bOPEN_LOOPS_CONSENT_SINCE\b/)).toEqual(["modules/channels/consent.ts"]);
   });
 
+  test("no server file compares versions with the legal version module: the gate keeps its name `consentCovers`", () => {
+    expect(usersOf(/\blegalVersionCovers\b|\bcompareLegalVersions\b|\bparseLegalVersion\b/)).toEqual([]);
+  });
+
   test("only the gate of the notices, the digest job (and the gate itself) calls loopConsentOf; the raw version reader has no other caller", () => {
     expect(usersOf(/\bloopConsentOf\(/)).toEqual([
       "modules/channels/consent.ts",
