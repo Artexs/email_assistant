@@ -2,85 +2,65 @@ import { cleanSubject, localDateTime, textTables } from "@ea/core";
 
 import { closeDelegation, listDelegations } from "../modules/delegation";
 import { getOrganization } from "../modules/tenancy";
-import { createCliOutput } from "../platform/cli";
-import { loadConfig } from "../platform/config";
-import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
+import type { Db } from "../platform/db";
 
-import { parseDelegationsArgs, usage } from "./delegations-args";
-
-const cli = createCliOutput("delegations");
+import { cliDescriptions, type DelegationsCommand, parseDelegationsArgs } from "./delegations-args";
+import { withDb } from "./lib/with-db";
 
 const ACTOR = "cli";
-
-// Delegations are the user's own data: they go to stdout for the user, not through `log`.
-function out(line: string): void {
-  process.stdout.write(`${line}\n`);
-}
 
 function day(date: Date | null, timeZone: string): string {
   return date === null ? "-" : localDateTime(date, timeZone).date;
 }
 
-async function main(): Promise<number> {
-  const command = parseDelegationsArgs(process.argv.slice(2));
-  if (!command) {
-    cli.fail(usage);
-    return 1;
-  }
+// Delegations are the user's own data: they go to stdout for the user, not through `log`.
+async function run(out: CliRawOutput, command: DelegationsCommand, db: Db): Promise<number> {
+  const ctx = { orgId: command.orgId };
 
-  const config = loadConfig();
-  const db = createDb(config.DATABASE_URL);
-  try {
-    await assertAppRole(db);
-    const ctx = { orgId: command.orgId };
-
-    if (command.kind === "list") {
-      const org = await getOrganization(db, ctx);
-      if (!org) {
-        out("not found");
-        return 1;
-      }
-      const rows = await listDelegations(db, ctx, {
-        limit: command.limit,
-        ...(command.status === undefined ? {} : { status: command.status }),
-      });
-      if (rows.length === 0) out("no delegations");
-      for (const row of rows) {
-        out(
-          [
-            row.id,
-            row.status,
-            row.delegate_name,
-            cleanSubject(row.subject, textTables.en),
-            `due ${day(row.due_at, org.timezone)}`,
-            `sent ${day(row.sent_at, org.timezone)}`,
-            `reminders ${row.reminders_sent}`,
-          ].join("\t")
-        );
-      }
-      return 0;
+  if (command.kind === "list") {
+    const org = await getOrganization(db, ctx);
+    if (!org) {
+      out.raw("not found");
+      return 1;
     }
-
-    const result = await db
-      .transaction()
-      .execute((trx) => closeDelegation(trx, ctx, command.id, { actor: ACTOR, at: new Date() }));
-    if (result.kind === "done") out(`done ${command.id}`);
-    else if (result.kind === "already") out("already done");
-    else if (result.kind === "not_closable") out(`not closable: status ${result.status}`);
-    else out("not found");
-    return result.kind === "not_found" || result.kind === "not_closable" ? 1 : 0;
-  } catch (error) {
-    cli.fail(`failed: ${describeError(error)}`);
-    return 1;
-  } finally {
-    await db.destroy();
+    const rows = await listDelegations(db, ctx, {
+      limit: command.limit,
+      ...(command.status === undefined ? {} : { status: command.status }),
+    });
+    if (rows.length === 0) out.raw("no delegations");
+    for (const row of rows) {
+      out.raw(
+        [
+          row.id,
+          row.status,
+          row.delegate_name,
+          cleanSubject(row.subject, textTables.en),
+          `due ${day(row.due_at, org.timezone)}`,
+          `sent ${day(row.sent_at, org.timezone)}`,
+          `reminders ${row.reminders_sent}`,
+        ].join("\t")
+      );
+    }
+    return 0;
   }
+
+  const result = await db
+    .transaction()
+    .execute((trx) => closeDelegation(trx, ctx, command.id, { actor: ACTOR, at: new Date() }));
+  if (result.kind === "done") out.raw(`done ${command.id}`);
+  else if (result.kind === "already") out.raw("already done");
+  else if (result.kind === "not_closable") out.raw(`not closable: status ${result.status}`);
+  else out.raw("not found");
+  return result.kind === "not_found" || result.kind === "not_closable" ? 1 : 0;
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    cli.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB.
+const main: CliSpec["main"] = async (argv, out) => {
+  const command = parseDelegationsArgs(argv);
+  return withDb(out, (db) => run(out, command, db));
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "delegations", descriptions: cliDescriptions, main });
+}

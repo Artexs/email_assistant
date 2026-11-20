@@ -1,39 +1,44 @@
+import { EXIT } from "@ea/core";
+
 import { mailOAuthRuntime } from "../composition";
 import { checkDraftCopy } from "../modules/actions";
 import { configureMailHosts, openImapProvider, openMailboxProvider } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
+import { exitCodeOf, runCli, type CliSpec } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
-import { assertAppRole, createDb } from "../platform/db";
-import { errorFields } from "../platform/errors";
+import { assertAppRole, createDb, type Db } from "../platform/db";
+import { describeError, errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
-import { readCheckCopyOptions, usage } from "./reply-check-copy-args";
+import { cliDescriptions, readCheckCopyOptions } from "./reply-check-copy-args";
 
-const out = createCliOutput("reply-check-copy");
 const log = createLog("reply-check-copy");
 
 // The probe of the copy hash (reply drafts): reads the Drafts copy of one draft and compares it with the stored hash.
-async function main(): Promise<number> {
-  const options = readCheckCopyOptions(process.argv.slice(2));
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
-  const config = loadConfig();
-  configureMailHosts({ allowLocal: mailAllowLocal(config) });
-  const db = createDb(config.DATABASE_URL);
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB.
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = readCheckCopyOptions(argv);
+  let db: Db | undefined;
   try {
-    await assertAppRole(db);
+    const config = loadConfig();
+    configureMailHosts({ allowLocal: mailAllowLocal(config) });
+    db = createDb(config.DATABASE_URL);
+    const openDb = db;
+    await assertAppRole(openDb);
     const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
-    const oauthTokens = mailOAuthRuntime(config, db, secrets).tokens;
+    const oauthTokens = mailOAuthRuntime(config, openDb, secrets).tokens;
     const result = await checkDraftCopy(
       {
-        db,
+        db: openDb,
         // The same opener as the committer: the credentials of the mailbox, and the token store for an OAuth mailbox.
         openProvider: async (ctx, mailboxId) =>
-          (await openMailboxProvider({ db, secrets, openProvider: openImapProvider, oauthTokens }, ctx, mailboxId))
-            .provider,
+          (
+            await openMailboxProvider(
+              { db: openDb, secrets, openProvider: openImapProvider, oauthTokens },
+              ctx,
+              mailboxId
+            )
+          ).provider,
       },
       { orgId: options.orgId },
       options.actionId
@@ -46,15 +51,14 @@ async function main(): Promise<number> {
     return 0;
   } catch (error) {
     log.error("reply_check_copy_failed", { ...errorFields(error) });
-    return 1;
+    const code = exitCodeOf(error);
+    if (code === EXIT.unreachable) out.fail(`unreachable: ${describeError(error)}`);
+    return code;
   } finally {
-    await db.destroy();
+    await db?.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    log.error("reply_check_copy_failed", { ...errorFields(error) });
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "reply-check-copy", descriptions: cliDescriptions, main });
+}
