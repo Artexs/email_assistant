@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, mock, spyOn, test } from "bun:test";
 
 import { createHeartbeat } from "./heartbeat";
 
@@ -75,12 +75,16 @@ describe("heartbeat", () => {
   });
 
   test("does not throw when checkDb throws", async () => {
-    await createHeartbeat({
+    const fetchSpy = mock(async () => new Response("ok"));
+    const heartbeat = createHeartbeat({
       url: "http://127.0.0.1:1/ping",
       checkDb: async () => {
         throw new Error("db boom");
       },
-    }).tick();
+      fetch: fetchSpy as unknown as typeof fetch,
+    });
+    await expect(heartbeat.tick()).resolves.toBeUndefined();
+    expect(fetchSpy).toHaveBeenCalledTimes(0);
   });
 
   test("gives up on a server that never answers", async () => {

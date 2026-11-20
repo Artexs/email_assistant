@@ -25,26 +25,17 @@ async function logEventSeverities(file: string, line: string, importPath = "../.
 }
 
 describe("log lint: old forms fail", () => {
-  test(
-    "a template literal fails",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, "log.info(`sync ${id} done`);")).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "free text fails",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.info("sync done");')).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "a plain string with ${ fails",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.info("sync ${id}");')).toEqual([2]);
+  test.each([
+    ["a template literal fails", fixtureFile, "log.info(`sync ${id} done`);", [2]],
+    ["free text fails", fixtureFile, 'log.info("sync done");', [2]],
+    ["a plain string with ${ fails", fixtureFile, 'log.info("sync ${id}");', [2]],
+    ["three arguments fail", fixtureFile, 'log.warn("ping_failed", a, b);', [2]],
+    ["a child logger with a template literal fails", fixtureFile, "mailboxLog.info(`x ${y}`);", [2]],
+    ["a call with no argument fails", fixtureFile, "log.info();", [2]],
+  ] as [string, string, string, number[]][])(
+    "%s",
+    async (_name, file, line, severities) => {
+      expect(await logEventSeverities(file, line)).toEqual(severities);
     },
     TIMEOUT
   );
@@ -53,22 +44,6 @@ describe("log lint: old forms fail", () => {
     "a text with an error argument fails",
     async () => {
       expect(await logEventSeverities(fixtureFile, 'log.error("config error:", e);')).toEqual([2, 2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "three arguments fail",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.warn("ping_failed", a, b);')).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "a child logger with a template literal fails",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, "mailboxLog.info(`x ${y}`);")).toEqual([2]);
     },
     TIMEOUT
   );
@@ -94,58 +69,22 @@ describe("log lint: old forms fail", () => {
     },
     TIMEOUT
   );
-
-  test(
-    "a member logger with an event code passes",
-    async () => {
-      expect(
-        await logEventSeverities(
-          fixtureFile,
-          'declare const o: { log: typeof log };\no.log.info("sync_done", { count: 1 });'
-        )
-      ).toEqual([]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "a call with no argument fails",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, "log.info();")).toEqual([2]);
-    },
-    TIMEOUT
-  );
 });
 
 describe("log lint: event form passes", () => {
-  test(
-    "an event code with fields passes",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.info("sync_done", { mailbox_id: id });')).toEqual([]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an event code alone passes",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, 'log.info("sync_done");')).toEqual([]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "a child logger with an event code passes",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, 'mailboxLog.debug("sync_done", {});')).toEqual([]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "console calls are not log calls",
-    async () => {
-      expect(await logEventSeverities(fixtureFile, "console.info(`x ${y}`);")).toEqual([]);
+  test.each([
+    [
+      "a member logger with an event code passes",
+      'declare const o: { log: typeof log };\no.log.info("sync_done", { count: 1 });',
+    ],
+    ["an event code with fields passes", 'log.info("sync_done", { mailbox_id: id });'],
+    ["an event code alone passes", 'log.info("sync_done");'],
+    ["a child logger with an event code passes", 'mailboxLog.debug("sync_done", {});'],
+    ["console calls are not log calls", "console.info(`x ${y}`);"],
+  ] as [string, string][])(
+    "%s",
+    async (_name, line) => {
+      expect(await logEventSeverities(fixtureFile, line)).toEqual([]);
     },
     TIMEOUT
   );
@@ -162,22 +101,81 @@ describe("log lint: event form passes", () => {
 });
 
 describe("log lint: converted files fail", () => {
-  test(
-    "a template literal in platform fails",
-    async () => {
-      expect(
-        await logEventSeverities("apps/server/src/platform/__log-fixture.ts", "log.info(`x ${y}`);", "./log")
-      ).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "a template literal in scripts fails",
-    async () => {
-      expect(
-        await logEventSeverities("apps/server/src/scripts/__log-fixture.ts", "log.info(`x ${y}`);", "../platform/log")
-      ).toEqual([2]);
+  test.each([
+    [
+      "a template literal in platform fails",
+      "apps/server/src/platform/__log-fixture.ts",
+      "./log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "a template literal in scripts fails",
+      "apps/server/src/scripts/__log-fixture.ts",
+      "../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in channels/sender.ts fails",
+      "apps/server/src/modules/channels/sender.ts",
+      "../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in channels/telegram/ fails",
+      "apps/server/src/modules/channels/telegram/__log-fixture.ts",
+      "../../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in another file of channels fails",
+      "apps/server/src/modules/channels/__log-fixture.ts",
+      "../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in channels/notices/ fails",
+      "apps/server/src/modules/channels/notices/__log-fixture.ts",
+      "../../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in delegation fails",
+      "apps/server/src/modules/delegation/__log-fixture.ts",
+      "../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in triage fails",
+      "apps/server/src/modules/triage/__log-fixture.ts",
+      "../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in a root file (web.ts) fails",
+      "apps/server/src/web.ts",
+      "./platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+    [
+      "an old-form line in testmail fails",
+      "apps/server/src/modules/testmail/__log-fixture.ts",
+      "../../platform/log",
+      "log.info(`x ${y}`);",
+      [2],
+    ],
+  ] as [string, string, string, string, number[]][])(
+    "%s",
+    async (_name, file, importPath, line, severities) => {
+      expect(await logEventSeverities(file, line, importPath)).toEqual(severities);
     },
     TIMEOUT
   );
@@ -188,20 +186,6 @@ describe("log lint: converted files fail", () => {
       expect(
         await logEventSeverities("apps/server/src/main.ts", 'log.error("config error:", e);', "./platform/log")
       ).toEqual([2, 2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an old-form line in channels/sender.ts fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/channels/sender.ts",
-          "log.info(`x ${y}`);",
-          "../../platform/log"
-        )
-      ).toEqual([2]);
     },
     TIMEOUT
   );
@@ -221,48 +205,6 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
-    "an old-form line in channels/telegram/ fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/channels/telegram/__log-fixture.ts",
-          "log.info(`x ${y}`);",
-          "../../../platform/log"
-        )
-      ).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an old-form line in another file of channels fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/channels/__log-fixture.ts",
-          "log.info(`x ${y}`);",
-          "../../platform/log"
-        )
-      ).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an old-form line in channels/notices/ fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/channels/notices/__log-fixture.ts",
-          "log.info(`x ${y}`);",
-          "../../../platform/log"
-        )
-      ).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
     "an old-form line in a file of actions or in actions/repo/ fails",
     async () => {
       expect(
@@ -277,20 +219,6 @@ describe("log lint: converted files fail", () => {
           "apps/server/src/modules/actions/repo/__log-fixture.ts",
           "log.info(`x ${y}`);",
           "../../../platform/log"
-        )
-      ).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an old-form line in delegation fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/delegation/__log-fixture.ts",
-          "log.info(`x ${y}`);",
-          "../../platform/log"
         )
       ).toEqual([2]);
     },
@@ -324,20 +252,6 @@ describe("log lint: converted files fail", () => {
   );
 
   test(
-    "an old-form line in triage fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/triage/__log-fixture.ts",
-          "log.info(`x ${y}`);",
-          "../../platform/log"
-        )
-      ).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
     "an event line in platform passes",
     async () => {
       expect(
@@ -357,28 +271,6 @@ describe("log lint: converted files fail", () => {
       expect(
         await logEventSeverities("apps/server/src/platform/__log-fixture.test.ts", "log.info(`x ${y}`);", "./log")
       ).toEqual([]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an old-form line in a root file (web.ts) fails",
-    async () => {
-      expect(await logEventSeverities("apps/server/src/web.ts", "log.info(`x ${y}`);", "./platform/log")).toEqual([2]);
-    },
-    TIMEOUT
-  );
-
-  test(
-    "an old-form line in testmail fails",
-    async () => {
-      expect(
-        await logEventSeverities(
-          "apps/server/src/modules/testmail/__log-fixture.ts",
-          "log.info(`x ${y}`);",
-          "../../platform/log"
-        )
-      ).toEqual([2]);
     },
     TIMEOUT
   );

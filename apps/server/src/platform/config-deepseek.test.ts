@@ -83,12 +83,10 @@ describe("LLM_PROVIDER=deepseek", () => {
   });
 
   test("2d: openai and gemini load with the scope all outside the sim stack", () => {
-    expect(
-      loadConfig({ ...baseEnv, LLM_PROVIDER: "openai", OPENAI_API_KEY: "o", TRIAGE_LLM_SCOPE: "all" })
-    ).toBeTruthy();
-    expect(
-      loadConfig({ ...baseEnv, LLM_PROVIDER: "gemini", GEMINI_API_KEY: "g", TRIAGE_LLM_SCOPE: "all" })
-    ).toBeTruthy();
+    const openai = loadConfig({ ...baseEnv, LLM_PROVIDER: "openai", OPENAI_API_KEY: "o", TRIAGE_LLM_SCOPE: "all" });
+    expect(llmRoleTable(openai).roles.classifier.provider).toBe("openai");
+    const gemini = loadConfig({ ...baseEnv, LLM_PROVIDER: "gemini", GEMINI_API_KEY: "g", TRIAGE_LLM_SCOPE: "all" });
+    expect(llmRoleTable(gemini).roles.classifier.provider).toBe("gemini");
   });
 
   test("3: no key with a triage scope on fails and names DEEPSEEK_API_KEY", () => {

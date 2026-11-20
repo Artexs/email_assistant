@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F154 · The core functions with 5 or more surviving mutants get tests that fail when the code breaks

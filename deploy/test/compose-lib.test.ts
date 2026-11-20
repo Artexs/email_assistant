@@ -51,10 +51,14 @@ describe("ea_compose_init", () => {
 });
 
 describe("ea_env_split_state", () => {
-  test("4a. db.env and a .env without D5 keys: split", () => {
+  test.each([
+    ["4a. db.env and a .env without D5 keys: split", ["A=1"], "split"],
+    ["4c. db.env and a .env with APP_PASSWORD=: mixed", ["APP_PASSWORD="], "mixed"],
+    ["4d. db.env and a .env with only MIGRATOR_DATABASE_URL=: mixed", ["MIGRATOR_DATABASE_URL="], "mixed"],
+  ])("%s", (_name, envLines, expected) => {
     file("deploy/db.env", PASSWORDS);
-    file(".env", ["A=1"]);
-    expect(state()).toBe("split");
+    file(".env", envLines);
+    expect(state()).toBe(expected);
   });
 
   test("4b. no db.env and a .env with the three passwords, with or without the migrator URL: old", () => {
@@ -62,18 +66,6 @@ describe("ea_env_split_state", () => {
     expect(state()).toBe("old");
     file(".env", [...PASSWORDS, "MIGRATOR_DATABASE_URL=postgres://x"]);
     expect(state()).toBe("old");
-  });
-
-  test("4c. db.env and a .env with APP_PASSWORD=: mixed", () => {
-    file("deploy/db.env", PASSWORDS);
-    file(".env", ["APP_PASSWORD="]);
-    expect(state()).toBe("mixed");
-  });
-
-  test("4d. db.env and a .env with only MIGRATOR_DATABASE_URL=: mixed", () => {
-    file("deploy/db.env", PASSWORDS);
-    file(".env", ["MIGRATOR_DATABASE_URL="]);
-    expect(state()).toBe("mixed");
   });
 
   test("4e. no db.env and a .env with two of the three passwords: mixed", () => {

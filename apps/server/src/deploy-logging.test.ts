@@ -371,7 +371,7 @@ describe("deploy/compose.yaml service migrate", () => {
 
   test("7. server still carries the migrator URL (expand; the contract stage flips this test)", () => {
     const env = (services.server?.environment ?? {}) as Record<string, string>;
-    expect(env.MIGRATOR_DATABASE_URL).toBeDefined();
+    expect(new URL(env.MIGRATOR_DATABASE_URL ?? "").username).toBe("migrator");
   });
 });
 

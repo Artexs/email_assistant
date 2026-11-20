@@ -164,6 +164,6 @@ describe("AgentMail fake", () => {
     const other = await startFakeAgentMail({ apiKey });
     const url = other.baseUrl;
     await other.stop();
-    expect(await failure(fetch(`${url}/inboxes/x`))).toBeDefined();
+    expect(await failure(fetch(`${url}/inboxes/x`))).toBeInstanceOf(TypeError);
   });
 });

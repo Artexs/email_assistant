@@ -3,6 +3,7 @@
 This kit asks the real Microsoft 365 and Google servers the questions that the docs do not answer.
 It runs on the owner's machine with the owner's test accounts.
 It is temporary: stage 19 of F117 deletes it.
+When the kit is deleted, remove `tools/mail-oauth-spike` from the `test:unit` path list in the root `package.json` and from `scripts/check-job.sh` too. A path to a missing folder fails the suite.
 
 The kit has no `package.json` on purpose. `tools/*` is a workspace glob, and a `package.json` here would change `bun.lock`.
 It uses `imapflow` and `nodemailer` from the root `node_modules`, and `fetch`.

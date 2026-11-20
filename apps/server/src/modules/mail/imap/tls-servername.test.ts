@@ -88,6 +88,7 @@ describe("TLS to a DNS host checks the certificate against the host name", () =>
     );
     const client = new ImapFlow({ ...options, tls: { ca: cert } });
     await client.connect();
+    expect(client.authenticated).toBe(true);
     await client.logout();
   });
 

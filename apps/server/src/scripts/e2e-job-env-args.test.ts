@@ -89,6 +89,7 @@ describe("loadRepoDotEnv", () => {
 
   test("a folder with no .env does nothing", () => {
     dir = mkdtempSync(join(tmpdir(), "f136-env-"));
-    expect(() => loadRepoDotEnv(dir)).not.toThrow();
+    loadRepoDotEnv(dir);
+    expect(probe()).toBeUndefined();
   });
 });
