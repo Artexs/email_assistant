@@ -1,7 +1,17 @@
 import { MINUTE_MS } from "@ea/core";
+import { isAPIError } from "better-auth/api";
 import { sql } from "kysely";
 
 import type { AuthDeps } from "./auth";
+import type { AuthHookPart, AuthPartContext } from "./auth-hooks";
+import {
+  failingPasswordVerify,
+  signInBody,
+  SIGN_IN_PATH,
+  wasSsoRequiredRefusal,
+  type HookContext,
+  type SignInOverride,
+} from "./auth-sso-required";
 import type { Db } from "./db";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
@@ -114,4 +124,64 @@ export async function recordPasswordFailure(
   if (deps.sendLockoutMail && (await lockout.claimMail(user.id, now()))) {
     deps.sendLockoutMail({ userId: user.id, email: user.email });
   }
+}
+
+// A locked user gets the answer and the time of a wrong password, also for a request that the endpoint refuses before it checks the password
+// (the form-CSRF middleware, the e-mail and length checks). The hook does not throw: the endpoint runs all its own checks,
+// and its password check always fails. An error of `isLocked` is not caught (fail closed).
+async function lockSignIn(
+  ctx: HookContext,
+  lockout: LockoutStore,
+  now: () => Date
+): Promise<SignInOverride | undefined> {
+  const body = signInBody(ctx);
+  if (body === null) return undefined;
+  const found = await ctx.context.internalAdapter.findUserByEmail(body.email.toLowerCase());
+  if (!found || !(await lockout.isLocked(found.user.id, now()))) return undefined;
+  return failingPasswordVerify(ctx);
+}
+
+async function countSignIn(ctx: HookContext, deps: AuthDeps, lockout: LockoutStore, now: () => Date): Promise<void> {
+  // A refusal by "SSO required" is no wrong password: no count, no lock, no lock mail.
+  if (wasSsoRequiredRefusal(ctx)) return;
+  const returned = ctx.context.returned;
+  if (isAPIError(returned)) {
+    const body = returned.body as { code?: unknown } | undefined;
+    if (returned.statusCode !== 401 || body?.code !== "INVALID_EMAIL_OR_PASSWORD") return;
+    const email = (ctx.body as { email?: unknown } | undefined)?.email;
+    if (typeof email !== "string") return;
+    const found = await ctx.context.internalAdapter.findUserByEmail(email.toLowerCase());
+    if (!found) return;
+    await recordPasswordFailure(
+      { lockout, now, onEvent: deps.onEvent, sendLockoutMail: deps.sendLockoutMail },
+      { id: found.user.id, email: found.user.email }
+    );
+    return;
+  }
+  const userId = ctx.context.newSession?.user.id;
+  if (userId) await lockout.recordSuccess(userId, now());
+}
+
+// The sign-in lock (`before`: a locked user gets the lock answer first; both look like a wrong password) and the
+// failure count (`after`). Absent `deps.lockout` = no lockout. An error of the count is logged, not thrown.
+export function hooksOf(part: AuthPartContext): AuthHookPart[] {
+  const { deps, now } = part;
+  const lockout = deps.lockout;
+  return [
+    {
+      name: "lockout",
+      async before(ctx) {
+        if (ctx.path !== SIGN_IN_PATH || !lockout) return undefined;
+        return lockSignIn(ctx, lockout, now);
+      },
+      async after(ctx) {
+        if (ctx.path !== SIGN_IN_PATH || !lockout) return;
+        try {
+          await countSignIn(ctx, deps, lockout, now);
+        } catch (error) {
+          log.error("lockout_failed", { ...errorFields(error) });
+        }
+      },
+    },
+  ];
 }
