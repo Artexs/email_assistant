@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { createCliOutput } from "../platform/cli";
 
-import { checkSimCompose } from "./sim-compose-rules";
+import { checkSimCompose } from "./lib/sim-compose-rules";
 
 // Usage: bun run sim:check [compose file]. Default: deploy/compose.sim.yaml. CI runs it (job `image`). It never prints a value of the file.
 const out = createCliOutput("sim-compose-check");

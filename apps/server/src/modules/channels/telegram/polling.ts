@@ -1,4 +1,4 @@
-import { botCommandNames, textTables, type UserLocale } from "@ea/core";
+import { botCommandNames, textTables, type UserLocale, MINUTE_MS } from "@ea/core";
 import { GrammyError, type Bot } from "grammy";
 
 import { createLog } from "../../../platform/log";
@@ -15,8 +15,8 @@ function commandList(locale: UserLocale): { command: CommandName; description: s
 // The default menu is English; the Polish menu is for Telegram apps set to Polish.
 export const BOT_COMMANDS: readonly { command: CommandName; description: string }[] = commandList("en");
 
-const BASE_DELAY_MS = 60_000;
-const MAX_DELAY_MS = 30 * 60_000;
+const BASE_DELAY_MS = MINUTE_MS;
+const MAX_DELAY_MS = 30 * MINUTE_MS;
 
 export interface PollingDeps {
   sleep?(ms: number, signal: AbortSignal): Promise<void>;

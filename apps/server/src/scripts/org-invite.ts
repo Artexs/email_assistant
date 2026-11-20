@@ -6,7 +6,7 @@ import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { deliverInvite } from "./invite-delivery";
+import { deliverInvite } from "./lib/invite-delivery";
 import { orgInviteUsage, parseOrgInviteArgs } from "./org-invite-args";
 
 const out = createCliOutput("org-invite");

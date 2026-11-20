@@ -15,7 +15,7 @@ import { sql, type Transaction } from "kysely";
 import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
-import { listMailboxes, mailKindFilter, type TestMailRule } from "../mail";
+import { incomingCountsBySender, ownAddressesOf, senderWindow, type SenderScope, type TestMailRule } from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -70,7 +70,7 @@ export interface SenderActivity {
 }
 
 // One address, or one registrable domain with its subdomains.
-export type ActivityScope = { address: string } | { domain: string };
+export type ActivityScope = SenderScope;
 
 export interface ReadActivityOptions {
   now: Date;
@@ -128,45 +128,11 @@ const emptyActivity = (address: string): SenderActivity => ({
   relation: "new",
 });
 
-// The own addresses of the mailbox: every mailbox address of the organization, and the From addresses of the Sent rows of
-// this mailbox (aliases, `send as`). Lower case. They never get a row.
-async function ownAddresses(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<Set<string>> {
-  const own = new Set((await listMailboxes(db, ctx)).map((mailbox) => normalizeAddress(mailbox.address)));
-  const { rows } = await sql<{ address: string }>`
-    SELECT ${normalizedAddress("from_address")} AS address
-    FROM sent_emails
-    WHERE org_id = ${ctx.orgId} AND mailbox_id = ${mailboxId} AND from_address IS NOT NULL AND btrim(from_address) <> ''
-    GROUP BY ${normalizedAddress("from_address")}
-    ORDER BY max(sent_at) DESC, ${normalizedAddress("from_address")}
-    LIMIT ${MAX_ALIASES}
-  `.execute(db);
-  for (const row of rows) own.add(row.address);
-  return own;
-}
-
-interface MailRow {
-  addr: string;
-  received: number;
-  received30: number;
-  answered: number;
-  answered30: number;
-  flagged: number;
-  flagged30: number;
-  unseen7d: number;
-  suspicious: number;
-  hdr_ok: number;
-  hdr_bulk: number;
-  sig_list_id: boolean;
-  sig_list_unsubscribe: boolean;
-  sig_auto_submitted: boolean;
-  first_at: Date;
-  last_at: Date;
-}
-
 interface CategoryRow {
   addr: string;
   category: string;
   n: number;
+  suspicious: number;
 }
 
 interface FeedbackRow {
@@ -215,19 +181,9 @@ export async function readSenderActivity(
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const before7 = new Date(now.getTime() - 7 * DAY_MS);
 
-  // The incoming mails of the window: real mail of this mailbox with a sender. `emails` has no alias, as `mailKindFilter` needs.
-  const win = sql`
-    SELECT emails.id, ${normalizedAddress("emails.from_address_lower")} AS addr, emails.received_at, emails.message_id_header, emails.in_reply_to
-    FROM emails
-    WHERE emails.org_id = ${ctx.orgId}
-      AND emails.mailbox_id = ${mailboxId}
-      AND emails.received_at >= ${since}
-      AND emails.received_at <= ${now}
-      AND emails.from_address_lower IS NOT NULL
-      AND emails.from_address_lower <> ''
-      ${scopeCondition(only, normalizedAddress("emails.from_address_lower"))}
-      AND ${mailKindFilter("real", testMail)}
-  `;
+  // The incoming mails of the window: the mail module owns the select; the statements below embed it as the CTE `win`.
+  const windowOptions = { mailboxId, since, until: now, testMail, ...(only === undefined ? {} : { only }) };
+  const win = senderWindow(db, ctx, windowOptions);
   // The newest triage result and the newest feedback row of each mail of the window. One `DISTINCT ON` pass over the mailbox
   // (a hash join with the window), not one index probe per mail: the plan does not depend on the table statistics.
   const newestResult = sql`
@@ -245,60 +201,24 @@ export async function readSenderActivity(
     ORDER BY tf.email_id, tf.created_at DESC, tf.id DESC
   `;
 
-  const own = await ownAddresses(db, ctx, mailboxId);
+  const own = await ownAddressesOf(db, ctx, mailboxId, { maxAliases: MAX_ALIASES });
   const rules = await listSenderRules(db, ctx, mailboxId);
   const delegateEmails = new Set((await listDelegateAddresses(db, ctx, { activeOnly: true })).map(normalizeAddress));
 
-  const mails = await sql<MailRow>`
-    WITH win AS (${win}), nt AS (${newestResult}), m AS (
-      SELECT
-        w.addr, w.received_at,
-        COALESCE(f.answered, false) AS answered,
-        COALESCE(f.flagged, false) AS flagged,
-        (f.email_id IS NOT NULL AND NOT f.seen) AS unseen,
-        (h.email_id IS NOT NULL AND h.texts_cleared_at IS NULL) AS hdr_ok,
-        (h.email_id IS NOT NULL AND h.texts_cleared_at IS NULL AND btrim(COALESCE(h.list_id, '')) <> '') AS s_list_id,
-        (h.email_id IS NOT NULL AND h.texts_cleared_at IS NULL AND btrim(COALESCE(h.list_unsubscribe, '')) <> '') AS s_unsub,
-        (h.email_id IS NOT NULL AND h.texts_cleared_at IS NULL AND NOT ${notAutomatic("h.auto_submitted")}) AS s_auto,
-        COALESCE(nt.suspicious, false) AS suspicious
-      FROM win w
-      LEFT JOIN email_flags f ON f.email_id = w.id AND f.org_id = ${ctx.orgId}
-      LEFT JOIN email_headers h ON h.email_id = w.id AND h.org_id = ${ctx.orgId}
-      LEFT JOIN nt ON nt.email_id = w.id
-    )
-    SELECT
-      addr,
-      count(*)::int AS received,
-      (count(*) FILTER (WHERE received_at >= ${since30}))::int AS received30,
-      (count(*) FILTER (WHERE answered))::int AS answered,
-      (count(*) FILTER (WHERE answered AND received_at >= ${since30}))::int AS answered30,
-      (count(*) FILTER (WHERE flagged))::int AS flagged,
-      (count(*) FILTER (WHERE flagged AND received_at >= ${since30}))::int AS flagged30,
-      (count(*) FILTER (WHERE unseen AND received_at < ${before7}))::int AS unseen7d,
-      (count(*) FILTER (WHERE suspicious))::int AS suspicious,
-      (count(*) FILTER (WHERE hdr_ok))::int AS hdr_ok,
-      (count(*) FILTER (WHERE s_list_id OR s_unsub OR s_auto))::int AS hdr_bulk,
-      COALESCE(bool_or(s_list_id), false) AS sig_list_id,
-      COALESCE(bool_or(s_unsub), false) AS sig_list_unsubscribe,
-      COALESCE(bool_or(s_auto), false) AS sig_auto_submitted,
-      min(received_at) AS first_at,
-      max(received_at) AS last_at
-    FROM m
-    GROUP BY addr
-  `.execute(db);
+  const mails = await incomingCountsBySender(db, ctx, { ...windowOptions, since30, unseenBefore: before7 });
 
   const categories = await sql<CategoryRow>`
     WITH win AS (${win}), nt AS (${newestResult})
-    SELECT w.addr, nt.category, count(*)::int AS n
+    SELECT w.address AS addr, nt.category, count(*)::int AS n, (count(*) FILTER (WHERE nt.suspicious))::int AS suspicious
     FROM win w
     JOIN nt ON nt.email_id = w.id
-    GROUP BY w.addr, nt.category
+    GROUP BY w.address, nt.category
   `.execute(db);
 
   // The newest feedback of each mail and the newest triage category: one correction per mail (a later mark replaces an earlier).
   const feedback = await sql<FeedbackRow>`
     WITH win AS (${win}), nt AS (${newestResult}), nf AS (${newestFeedback}), fb AS (
-      SELECT w.addr, nf.verdict, nf.true_category, nf.source, nt.category AS category
+      SELECT w.address AS addr, nf.verdict, nf.true_category, nf.source, nt.category AS category
       FROM win w
       JOIN nf ON nf.email_id = w.id
       LEFT JOIN nt ON nt.email_id = w.id
@@ -344,7 +264,7 @@ export async function readSenderActivity(
     WITH win AS (${win})
     SELECT addr, count(*)::int AS n, percentile_cont(0.5) WITHIN GROUP (ORDER BY hours) AS median
     FROM (
-      SELECT w.addr, extract(epoch FROM (r.sent_at - w.received_at)) / 3600 AS hours
+      SELECT w.address AS addr, extract(epoch FROM (r.sent_at - w.received_at)) / 3600 AS hours
       FROM win w
       JOIN LATERAL (
         SELECT s.sent_at
@@ -357,7 +277,7 @@ export async function readSenderActivity(
           AND s.sent_at >= ${since}
           AND ${notAutomatic("s.auto_submitted")}
           AND (cardinality(s.to_addresses || s.cc_addresses) = 0 OR EXISTS (
-            SELECT 1 FROM unnest(s.to_addresses || s.cc_addresses) AS r(x) WHERE ${normalizedAddress("r.x")} = w.addr
+            SELECT 1 FROM unnest(s.to_addresses || s.cc_addresses) AS r(x) WHERE ${normalizedAddress("r.x")} = w.address
           ))
         ORDER BY s.sent_at, s.id
         LIMIT 1
@@ -371,7 +291,7 @@ export async function readSenderActivity(
   // always to the sender). The profile counts `answered` from the IMAP flag only; this count is for the suggestion rules.
   const replied = await sql<RepliedRow>`
     WITH win AS (${win})
-    SELECT w.addr, count(*)::int AS n
+    SELECT w.address AS addr, count(*)::int AS n
     FROM win w
     WHERE w.message_id_header IS NOT NULL AND EXISTS (
       SELECT 1 FROM sent_emails s
@@ -383,7 +303,7 @@ export async function readSenderActivity(
         AND s.sent_at >= ${since}
         AND ${notAutomatic("s.auto_submitted")}
     )
-    GROUP BY w.addr
+    GROUP BY w.address
   `.execute(db);
 
   // Their delay is the time from a Sent mail to the incoming mail that names its Message-ID in In-Reply-To (a whole id, as
@@ -397,7 +317,7 @@ export async function readSenderActivity(
       FROM sent_emails s
       WHERE s.org_id = ${ctx.orgId} AND s.mailbox_id = ${mailboxId} AND s.origin = 'user' AND s.message_id IS NOT NULL
     ), named AS MATERIALIZED (
-      SELECT w.id, w.addr, w.received_at, t.id AS ref
+      SELECT w.id, w.address AS addr, w.received_at, t.id AS ref
       FROM win w
       CROSS JOIN LATERAL unnest(
         COALESCE(
@@ -448,10 +368,10 @@ export async function readSenderActivity(
     return value;
   };
 
-  for (const row of mails.rows) {
-    const item = entry(row.addr);
+  for (const row of mails) {
+    const item = entry(row.address);
     if (item === null) continue;
-    const noreply = isNoreplyAddress(row.addr);
+    const noreply = isNoreplyAddress(row.address);
     item.received = row.received;
     item.received30 = row.received30;
     item.answered = row.answered;
@@ -459,22 +379,23 @@ export async function readSenderActivity(
     item.flagged = row.flagged;
     item.flagged30 = row.flagged30;
     item.unseen7d = row.unseen7d;
-    item.suspicious90 = row.suspicious;
-    item.firstSeenAt = row.first_at;
-    item.lastSeenAt = row.last_at;
+    item.firstSeenAt = row.firstAt;
+    item.lastSeenAt = row.lastAt;
     // A noreply sender is bulk on every mail, whatever the age of its headers.
-    item.bulkBase = noreply ? row.received : row.hdr_ok;
-    item.bulkMails = noreply ? row.received : row.hdr_bulk;
+    item.bulkBase = noreply ? row.received : row.headersKept;
+    item.bulkMails = noreply ? row.received : row.headersBulk;
     item.bulkSignals = [
-      ...(row.sig_list_id ? (["list_id"] as const) : []),
-      ...(row.sig_list_unsubscribe ? (["list_unsubscribe"] as const) : []),
+      ...(row.listId ? (["list_id"] as const) : []),
+      ...(row.listUnsubscribe ? (["list_unsubscribe"] as const) : []),
       ...(noreply ? (["noreply"] as const) : []),
-      ...(row.sig_auto_submitted ? (["auto_submitted"] as const) : []),
+      ...(row.autoSubmitted ? (["auto_submitted"] as const) : []),
     ];
   }
   for (const row of categories.rows) {
     const item = byAddress.get(row.addr);
-    if (item !== undefined) item.byCategory[categorySchema.parse(row.category)] = row.n;
+    if (item === undefined) continue;
+    item.byCategory[categorySchema.parse(row.category)] = row.n;
+    item.suspicious90 += row.suspicious;
   }
   for (const row of feedback.rows) {
     const item = byAddress.get(row.addr);

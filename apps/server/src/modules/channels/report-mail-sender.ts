@@ -1,4 +1,4 @@
-import { buildReportMail, renderNotice, reportMailKinds, type ReportMailKind } from "@ea/core";
+import { buildReportMail, renderNotice, reportMailKinds, type ReportMailKind, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
@@ -25,7 +25,7 @@ import { backoff, MAX_OTHER_ERRORS, OUTBOX_MAX_AGE_MS, SENDER_STALE_MS } from ".
 const log = createLog("channels");
 
 // A row that cannot go now (the flag is off, the mailbox is not `active`) is looked at again after this time, with no attempt counted.
-export const REPORT_MAIL_WAIT_MS = 15 * 60_000;
+export const REPORT_MAIL_WAIT_MS = 15 * MINUTE_MS;
 const DEFAULT_BATCH_SIZE = 20;
 
 export interface ReportMailSenderDeps {

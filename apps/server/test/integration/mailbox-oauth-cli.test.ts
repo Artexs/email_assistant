@@ -19,9 +19,9 @@ import { insertCredentials, insertInboxFolder, insertMailbox } from "../../src/m
 import type { CliRawOutput } from "../../src/platform/cli";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
+import type { CliDeps } from "../../src/scripts/lib/mailbox-cli";
 import { run as runAudit } from "../../src/scripts/mailbox-audit";
 import { run as runBackfill } from "../../src/scripts/mailbox-backfill";
-import type { CliDeps } from "../../src/scripts/mailbox-cli";
 import { run as runSeed } from "../../src/scripts/mailbox-seed";
 import { run as runSignals } from "../../src/scripts/mailbox-signals";
 import { startFakeMailOAuth, type FakeMailOAuth } from "../fake-mail-oauth";

@@ -13,8 +13,8 @@ import { readSlots, writeJson } from "../platform/sim-files";
 
 import { runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
-import { runSim } from "./eval-sim";
-import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
+import { runSim } from "./lib/eval-sim";
+import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./lib/sim-fixtures.test-helper";
 
 // A holdout run per endpoint. Own state and gate files, no budget for an own run, and the
 // guard that stops an uncapped PAID run stays. Fake client, temp dirs: no real call, no money.

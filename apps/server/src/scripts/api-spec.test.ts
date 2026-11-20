@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
-import { buildSpecText, parseApiSpecArgs, REPO_ROOT, SPEC_FILE } from "./api-spec-build";
+import { buildSpecText, parseApiSpecArgs, REPO_ROOT, SPEC_FILE } from "./lib/api-spec-build";
 
 const committed = (): string => readFileSync(join(REPO_ROOT, SPEC_FILE), "utf8");
 

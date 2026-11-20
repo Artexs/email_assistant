@@ -6,7 +6,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import { createDb, type DB } from "../../src/platform/db";
-import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
+import { checkMigrationSql } from "../../src/scripts/lib/check-migrations-rules";
 
 import { createOrgWithMailbox, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
