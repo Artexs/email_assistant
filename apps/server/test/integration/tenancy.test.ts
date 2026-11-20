@@ -224,9 +224,9 @@ describe("org:create CLI", () => {
     }
   });
 
-  test("a missing option prints the usage and exits 1", async () => {
+  test("a missing option prints the usage and exits 2", async () => {
     const proc = runOrgCreate(["--org-name", "No Email"]);
-    expect(await proc.exited).toBe(1);
+    expect(await proc.exited).toBe(2);
     expect(await new Response(proc.stderr).text()).toContain("usage");
   });
 });
