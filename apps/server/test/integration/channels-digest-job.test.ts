@@ -1,5 +1,6 @@
 import { format } from "node:util";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -30,7 +31,6 @@ afterAll(async () => {
 
 // L = the link time; the organization is in Europe/Warsaw (UTC+1 in November).
 const L = new Date("2026-11-05T20:00:00Z");
-const HOUR = 3_600_000;
 
 let errorLines: string[] = [];
 let infoLines: string[] = [];
@@ -143,7 +143,7 @@ describe("scheduleDigests", () => {
       const found = await digests(trx, o.orgId);
       expect(found).toHaveLength(1);
       expect(found[0]?.slot_key).toBe("2026-11-06T08:00");
-      expect(found[0]?.period_start.toISOString()).toBe(new Date(L.getTime() - 24 * HOUR).toISOString());
+      expect(found[0]?.period_start.toISOString()).toBe(new Date(L.getTime() - DAY_MS).toISOString());
       expect(found[0]?.period_end.toISOString()).toBe("2026-11-06T07:00:00.000Z");
       const sent = await outbox(trx, o.orgId);
       expect(sent).toHaveLength(1);
@@ -194,7 +194,7 @@ describe("scheduleDigests", () => {
       await run(trx, "2026-11-06T15:00:00Z");
       const found = await digests(trx, o.orgId);
       expect(found).toHaveLength(2);
-      expect(found[1]?.period_start.toISOString()).toBe(new Date(L.getTime() - 24 * HOUR).toISOString());
+      expect(found[1]?.period_start.toISOString()).toBe(new Date(L.getTime() - DAY_MS).toISOString());
     });
   });
 

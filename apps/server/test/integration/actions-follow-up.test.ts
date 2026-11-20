@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { sendPayloadFor, type DraftPayload, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -42,13 +42,10 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
 const NOW = new Date("2026-11-20T10:00:00Z"); // a Friday
-const CREATED = new Date(NOW.getTime() - HOUR);
+const CREATED = new Date(NOW.getTime() - HOUR_MS);
 const SENT_AT = "2026-11-10T09:30:00.000Z";
-const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 const run = randomUUID();
@@ -146,7 +143,7 @@ async function followUp(trx: Transaction<DB>, s: Setup, opts: FollowUpOpts = {})
     cc_addresses: cc,
     counterpart: to[0] ?? null,
     language: "en",
-    due_at: new Date(NOW.getTime() - DAY),
+    due_at: new Date(NOW.getTime() - DAY_MS),
     ...opts.loop,
   });
   const draftPayload: DraftPayload = {
@@ -224,11 +221,11 @@ async function auditOf(conn: Db | Transaction<DB>, actionId: string, event: stri
 }
 
 async function draftsCount(s: Setup): Promise<number> {
-  return (await s.fake.searchSinceIn("Drafts", new Date(CREATED.getTime() - DAY))).length;
+  return (await s.fake.searchSinceIn("Drafts", new Date(CREATED.getTime() - DAY_MS))).length;
 }
 
 async function sentCount(s: Setup): Promise<number> {
-  return (await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - DAY))).length;
+  return (await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - DAY_MS))).length;
 }
 
 async function prepare(trx: Transaction<DB>): Promise<Setup> {
@@ -461,7 +458,7 @@ async function claimOne(trx: Transaction<DB>, s: Setup, id: string, time: Date):
   const claimed = await claimActions(trx, s.ctx, s.mailboxId, {
     now: time,
     limit: 20,
-    staleBefore: new Date(time.getTime() - 10 * MINUTE),
+    staleBefore: new Date(time.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
   });
   const action = claimed.find((entry) => entry.id === id);
@@ -553,7 +550,7 @@ describe("T9 the Sent copy of a follow-up is the system's own mail", () => {
         folderMap: {},
       };
       const done = await followUp(trx, s, { draftStatus: "applied", sendStatus: "applied" });
-      put(org, 1, new Date(NOW.getTime() - HOUR), { headers: { "X-EA-Action-Id": done.draftId } });
+      put(org, 1, new Date(NOW.getTime() - HOUR_MS), { headers: { "X-EA-Action-Id": done.draftId } });
       const result = await syncSentHeaders(sentDepsOf(trx, org), org.ctx, org.mailboxId);
       expect(result).toMatchObject({ status: "done", stored: 1, system: 1 });
       const rows = await trx
@@ -729,7 +726,7 @@ describe("the recipients come from the loop only, and the scope covers the Cc", 
       const claimed = await claimActions(trx, s.ctx, s.mailboxId, {
         now: NOW,
         limit: 20,
-        staleBefore: new Date(NOW.getTime() - 10 * MINUTE),
+        staleBefore: new Date(NOW.getTime() - 10 * MINUTE_MS),
         filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
       });
       expect(claimed.map((entry) => entry.id)).toEqual([]);
@@ -811,7 +808,7 @@ describe("the recipients come from the loop only, and the scope covers the Cc", 
       const claimed = await claimActions(trx, s.ctx, s.mailboxId, {
         now: NOW,
         limit: 20,
-        staleBefore: new Date(NOW.getTime() - 10 * MINUTE),
+        staleBefore: new Date(NOW.getTime() - 10 * MINUTE_MS),
         filter: { mailbox: { kind: "all" }, send: { kind: "self", addresses: [MARKERS.anna, MARKERS.jan] } },
       });
       expect(claimed.map((entry) => entry.id)).toEqual([]);

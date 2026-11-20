@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { format } from "node:util";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -56,11 +57,9 @@ afterEach(() => {
   setLogFormat(logFormatFromEnv(process.env));
 });
 
-const MINUTE = 60_000;
-const DAY = 24 * 60 * MINUTE;
 const NOW = new Date("2026-11-07T12:00:00Z");
 const CREATED = new Date("2026-11-07T11:00:00Z");
-const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE_MS);
 const DELEGATION_ID = "11111111-1111-4111-8111-111111111111";
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -152,7 +151,7 @@ const claimWhere = (trx: Transaction<DB>, s: Setup, time: Date) =>
   claimActions(trx, s.ctx, s.mailboxId, {
     now: time,
     limit: 20,
-    staleBefore: new Date(time.getTime() - 10 * MINUTE),
+    staleBefore: new Date(time.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
   });
 
@@ -236,7 +235,7 @@ const smtp = (
 ) => new SmtpSendError(stage, code, responseCode, permanent, soft);
 
 async function sentFolderCount(s: Setup): Promise<number> {
-  return (await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - DAY))).length;
+  return (await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - DAY_MS))).length;
 }
 
 describe("applySend", () => {
@@ -270,7 +269,7 @@ describe("applySend", () => {
           delegationId: DELEGATION_ID,
           sentMessageId: send.outgoing_message_id as string,
           sentAt: NOW,
-          dueAtWhenNull: new Date(NOW.getTime() + 3 * DAY),
+          dueAtWhenNull: new Date(NOW.getTime() + 3 * DAY_MS),
         },
       ]);
       expect(calls.reminders).toEqual([]);
@@ -284,7 +283,7 @@ describe("applySend", () => {
         payload: { kind: "delegation", folder: "Drafts", uid: 1, reason: "sent" },
       });
 
-      const [uid] = await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - DAY));
+      const [uid] = await s.fake.searchSinceIn("Sent", new Date(CREATED.getTime() - DAY_MS));
       const copy = await s.fake.fetchMetaIn("Sent", uid as number);
       expect(copy?.actionId).toBe(p.draftId);
       expect(copy?.flags).toContain("\\Seen");
@@ -372,7 +371,7 @@ describe("applySend", () => {
       const beforeCap = at(-1 + 6 * 60 - 5);
       expect(await applyOnce(trx, s, p.sendId, beforeCap, { hooks })).toEqual({ kind: "retry", soft: true });
       expect(await row(trx, p.sendId)).toMatchObject({ status: "approved", attempts: 0, locked_at: null });
-      expect((await row(trx, p.sendId)).next_attempt_at).toEqual(new Date(beforeCap.getTime() + 5 * MINUTE));
+      expect((await row(trx, p.sendId)).next_attempt_at).toEqual(new Date(beforeCap.getTime() + 5 * MINUTE_MS));
 
       const atCap = at(-1 + 6 * 60);
       expect(await applyOnce(trx, s, p.sendId, atCap, { hooks })).toEqual({ kind: "failed", reason: "smtp_error" });
@@ -408,7 +407,7 @@ describe("applySend", () => {
 
       const send = await row(trx, p.sendId);
       expect(send).toMatchObject({ status: "approved", attempts: 1, locked_at: null });
-      expect(send.next_attempt_at).toEqual(new Date(late.getTime() + 5 * MINUTE));
+      expect(send.next_attempt_at).toEqual(new Date(late.getTime() + 5 * MINUTE_MS));
     });
   });
 
@@ -1016,7 +1015,7 @@ function fakeLlm(answer: Record<string, unknown>): LlmClient {
 }
 
 const pause = {
-  trip: (_kind: string, _code: string, time: Date) => new Date(time.getTime() + 5 * MINUTE),
+  trip: (_kind: string, _code: string, time: Date) => new Date(time.getTime() + 5 * MINUTE_MS),
   isPaused: () => false,
   pausedUntil: () => null,
   pausedSince: () => null,
@@ -1069,7 +1068,7 @@ describe("send end to end", () => {
         claimEmails(trx, s.ctx, s.mailboxId, {
           now: time,
           limit: 10,
-          staleBefore: new Date(time.getTime() - 5 * MINUTE),
+          staleBefore: new Date(time.getTime() - 5 * MINUTE_MS),
           syntheticOnly: false,
         });
       const triageDeps = (answer: Record<string, unknown>) => ({

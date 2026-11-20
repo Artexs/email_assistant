@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { countWaitingApprovals, listApprovalSends } from "../../src/modules/actions";
@@ -12,7 +13,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-20T12:00:00Z");
-const STALE_BEFORE = new Date(NOW.getTime() - 10 * 60_000);
+const STALE_BEFORE = new Date(NOW.getTime() - 10 * MINUTE_MS);
 const appr = (userId: string) => ({ userId, at: NOW });
 
 describe("listApprovalSends and countWaitingApprovals (F102 stage 10)", () => {
@@ -49,14 +50,14 @@ describe("listApprovalSends and countWaitingApprovals (F102 stage 10)", () => {
       const ctx = { orgId: a.orgId };
       const make = (over: Parameters<typeof insertDraftAndSend>[3], minutes: number) =>
         insertDraftAndSend(trx, ctx, a.mailboxId, {
-          createdAt: new Date(NOW.getTime() - minutes * 60_000),
+          createdAt: new Date(NOW.getTime() - minutes * MINUTE_MS),
           approved: appr(a.userId),
           ...over,
         });
       const waiting = await make({}, 1);
       const held = await make({ sendStatus: "approved" }, 2);
-      const staleLock = await make({ sendStatus: "approved", lockedAt: new Date(NOW.getTime() - 3_600_000) }, 3);
-      const freshLock = await make({ sendStatus: "approved", lockedAt: new Date(NOW.getTime() - 60_000) }, 4);
+      const staleLock = await make({ sendStatus: "approved", lockedAt: new Date(NOW.getTime() - HOUR_MS) }, 3);
+      const freshLock = await make({ sendStatus: "approved", lockedAt: new Date(NOW.getTime() - MINUTE_MS) }, 4);
       for (const status of ["applying", "applied", "rejected", "expired", "failed"])
         await make({ sendStatus: status }, 5);
 

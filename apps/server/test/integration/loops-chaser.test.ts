@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -57,7 +58,7 @@ describe("the gates", () => {
       expect(await markers(trx, o.ctx.orgId, "loops.chaser_run")).toHaveLength(1);
       expect(await markers(trx, o.ctx.orgId, "delegation.chaser_run")).toHaveLength(1);
 
-      const later = new Date(NOW.getTime() + 14 * 60_000);
+      const later = new Date(NOW.getTime() + 14 * MINUTE_MS);
       expect((await chase(trx, o, later)).skipped).toBe("gate");
       expect(await markers(trx, o.ctx.orgId, "loops.chaser_run")).toHaveLength(1);
 
@@ -91,7 +92,7 @@ describe("the gates", () => {
           actor: "system",
           event: "delegation.chaser_run",
           data: JSON.stringify({ mailbox_id: o.mailboxId }),
-          created_at: new Date(NOW.getTime() - 60_000),
+          created_at: new Date(NOW.getTime() - MINUTE_MS),
         })
         .execute();
       const result = await chase(trx, o, NOW);
@@ -207,7 +208,7 @@ describe("the follow-up rules (a) and (b)", () => {
       const o = await org(trx);
       const ids: string[] = [];
       for (let i = 0; i < 12; i += 1) {
-        const loop = await delegatedLoop(trx, o, { due_at: new Date(DUE_YESTERDAY.getTime() - (12 - i) * 60_000) });
+        const loop = await delegatedLoop(trx, o, { due_at: new Date(DUE_YESTERDAY.getTime() - (12 - i) * MINUTE_MS) });
         ids.push(loop.id);
       }
       expect((await chase(trx, o, NOW)).followUps).toBe(10);
@@ -267,7 +268,7 @@ describe("the follow-up rules (a) and (b)", () => {
     await withRollback(db, async (trx) => {
       const o = await org(trx);
       await setAutoFollowUp(trx, o, true);
-      const future = await dueLoop(trx, o, { due_at: new Date(NOW.getTime() + 60_000) });
+      const future = await dueLoop(trx, o, { due_at: new Date(NOW.getTime() + MINUTE_MS) });
       const promised = await dueLoop(trx, o, { kind: "promised" });
       const closed = await dueLoop(trx, o, { status: "closed", close_reason: "done", closed_at: NOW });
       expect((await chase(trx, o, NOW)).followUps).toBe(0);

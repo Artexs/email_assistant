@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import type { Insertable, Transaction } from "kysely";
 
 import { upsertOrgFeature } from "../../src/modules/tenancy";
@@ -11,7 +12,6 @@ import type { SeededWeek } from "./metrics-fixtures";
 // due on Wednesday 11-18 at 10:00 local (09:00Z), so the deadline is Thursday 11-19 at 10:00 local (09:00Z).
 
 export const DUE = new Date("2026-11-18T09:00:00Z");
-const HOUR_MS = 3_600_000;
 
 type Org = SeededWeek["orgA"];
 

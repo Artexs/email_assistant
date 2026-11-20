@@ -1,4 +1,4 @@
-import { textTables } from "@ea/core";
+import { textTables, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -25,8 +25,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const QUOTE = "QUOTE-card-edit-7f3a";
 const TO = "to-card-edit-7f3a@sent.example.test";
 const CC = "cc-card-edit-7f3a@sent.example.test";
@@ -36,10 +34,10 @@ const PLANTED = [QUOTE, TO, CC, SUBJECT];
 async function world(trx: Transaction<DB>, locale: "en" | "pl" = "en") {
   await isolateChannels(trx);
   const org: CommandOrg = await commandOrg(trx);
-  await markSynced(trx, org.ctx, org.mailboxId, new Date(T.getTime() - 5 * MINUTE));
+  await markSynced(trx, org.ctx, org.mailboxId, new Date(T.getTime() - 5 * MINUTE_MS));
   await trx.updateTable("users").set({ locale }).where("id", "=", org.userId).execute();
-  await linkChat(trx, org.ctx, org.userId, randomChatId(), new Date(T.getTime() - 2 * HOUR));
-  await consentRow(trx, org.ctx.orgId, org.userId, CURRENT_CONSENT, new Date(T.getTime() - HOUR));
+  await linkChat(trx, org.ctx, org.userId, randomChatId(), new Date(T.getTime() - 2 * HOUR_MS));
+  await consentRow(trx, org.ctx.orgId, org.userId, CURRENT_CONSENT, new Date(T.getTime() - HOUR_MS));
   await setOrgFeature(trx, org.ctx, { flag: "approvals_page", enabled: true, actor: "cli", now: T });
   const f = await insertFollowUp(trx, org.ctx, org.mailboxId, org.userId, {
     to: [TO],
@@ -52,7 +50,7 @@ async function world(trx: Transaction<DB>, locale: "en" | "pl" = "en") {
 }
 
 const notify = (trx: Transaction<DB>, when: Date) =>
-  detectNotices({ db: trx, now: () => when, startedAt: new Date(when.getTime() - HOUR), testMail: NO_TEST_SENDERS });
+  detectNotices({ db: trx, now: () => when, startedAt: new Date(when.getTime() - HOUR_MS), testMail: NO_TEST_SENDERS });
 
 const edits = (trx: Transaction<DB>, orgId: string) =>
   trx
@@ -80,7 +78,7 @@ describe("the switch off edits a delivered follow-up card", () => {
       const card = first.channel.sent[0];
       expect(card?.message.buttons.flat().length).toBeGreaterThan(0);
 
-      const later = new Date(T.getTime() + HOUR);
+      const later = new Date(T.getTime() + HOUR_MS);
       await setSentSync(trx, org.ctx, org.mailboxId, { enabled: false, actor: "test", at: later }, sentSwitchHooks);
 
       const send = await trx
@@ -100,7 +98,7 @@ describe("the switch off edits a delivered follow-up card", () => {
       await notify(trx, later);
       expect(await edits(trx, org.ctx.orgId)).toHaveLength(1);
 
-      const second = await deliver(trx, new Date(later.getTime() + MINUTE));
+      const second = await deliver(trx, new Date(later.getTime() + MINUTE_MS));
       expect(second.channel.edited).toHaveLength(1);
       const edit = second.channel.edited[0];
       expect(edit?.messageId).toBe(card?.messageId ?? -1);

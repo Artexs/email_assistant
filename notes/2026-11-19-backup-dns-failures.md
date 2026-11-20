@@ -71,3 +71,10 @@ What the owner reported: a 401 from two backup.sh runs at the same time. The lin
 `rclone lsf b2:email-assistant/pilot` (rclone 1.53 and 1.75.2; read-only, 401 as expected); `rclone config show` with key values hidden by `sed`;
 `cat deploy/backup.env` with `AGE_RECIPIENT` hidden; `command -v flock`.
 One exception to "read only": the flock check ran `touch /tmp/x-lock-test-never; rm -f …` (an empty temp file, created and removed at once), and the rclone tests wrote and removed `/tmp/ea-rc-a.err` and `/tmp/ea-rc-b.err`.
+
+## 2026-11-20: the 1.53 copy 401 is proved
+
+- A `copyto` upload with the apt `rclone` 1.53.3 fails: two `ssh home_vm` runs of bare `deploy/backup.sh` (16:26Z and 16:34Z) failed 10 of 10 tries with `Failed to create file system for destination "b2:email-assistant/pilot/": Unknown 401`.
+- The same script with the cron `PATH` (`PATH=/home/serwer/bin:/usr/local/bin:/usr/bin:/bin`, `rclone` 1.75.2) printed `backup ok` at 16:43Z and 16:45Z. So the B2 key is good, and the old guess (a run without `~/bin` in `PATH`) is the cause of the 401.
+- Logs: `~/ea-logs/f108-s04c/` on the VPS (`05-backup.log`, `05b-rclone-probe.log`, `05c-backup-cron-path.log`). Record: `notes/2026-11-15-vps-deploy-queue.md` § F108 rollout.
+- Over ssh, always run `PATH=$HOME/bin:$PATH deploy/backup.sh`.

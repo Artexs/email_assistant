@@ -1,4 +1,4 @@
-import { unitCost } from "@ea/core";
+import { unitCost, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -194,7 +194,7 @@ describe("endpoint in llm.call rows and cost readers (F111 stage 03)", () => {
       };
       await add("standard");
       await add("eu");
-      const since = new Date(Date.now() - 3_600_000);
+      const since = new Date(Date.now() - HOUR_MS);
       const rows = await listUsageSince(trx, ctxA, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(rows.map((row) => row.endpoint).sort()).toEqual(["eu", "standard"]);
       const groups = groupUsage(rows);

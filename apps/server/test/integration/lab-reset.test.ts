@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -61,7 +62,7 @@ const host = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
 const imapPort = Number(process.env.TEST_IMAP_PORT ?? String(LAB_IMAP_PORT));
 const smtpPort = Number(process.env.TEST_SMTP_PORT ?? String(LAB_SMTP_PORT));
 // One GreenMail login takes about 250 ms and a reset makes several: the default 5 s is too short by design.
-setDefaultTimeout(60_000);
+setDefaultTimeout(MINUTE_MS);
 
 const db = testDb();
 const SIM_ROOT = resolve(import.meta.dir, "../../../../evals/sim");
