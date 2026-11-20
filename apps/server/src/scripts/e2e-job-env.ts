@@ -62,7 +62,7 @@ function otherWorktreeEnvTexts(): string[] {
 // A bind test on the loopback address: `Bun.listen` throws when the port is in use and stops at once.
 function canBind(port: number): boolean {
   try {
-    Bun.listen({ hostname: "127.0.0.1", port, socket: { data() {} } }).stop(true);
+    Bun.listen({ hostname: "127.0.0.1", port, socket: { data: () => undefined } }).stop(true);
     return true;
   } catch {
     return false;

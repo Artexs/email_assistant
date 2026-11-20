@@ -32,7 +32,7 @@ async function run(cwd: string, args: string[]): Promise<{ code: number; stdout:
 
 function canBind(port: number): boolean {
   try {
-    Bun.listen({ hostname: "127.0.0.1", port, socket: { data() {} } }).stop(true);
+    Bun.listen({ hostname: "127.0.0.1", port, socket: { data: () => undefined } }).stop(true);
     return true;
   } catch {
     return false;
