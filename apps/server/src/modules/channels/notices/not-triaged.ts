@@ -1,4 +1,4 @@
-import { isQuietTime, matchSender } from "@ea/core";
+import { isQuietTime, matchSender, DAY_MS } from "@ea/core";
 
 import { listSenderRules } from "../../config";
 import { listWaitingFromSenders, listWaitingSenders, type WaitingQuery } from "../../mail";
@@ -7,7 +7,7 @@ import { listNotTriagedEmailIds } from "../repo";
 
 import { log, queue, warnSkipped, type Detector, type OrgRun } from "./run";
 
-export const NOT_TRIAGED_LOOKBACK_MS = 24 * 3_600_000;
+export const NOT_TRIAGED_LOOKBACK_MS = DAY_MS;
 // At most this many mails per mailbox get a notice during one run of pauses. A whole-domain whitelist could flood the chat.
 export const NOT_TRIAGED_MAX_PER_MAILBOX = 5;
 

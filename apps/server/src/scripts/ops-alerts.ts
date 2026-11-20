@@ -4,8 +4,8 @@ import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
+import { alertLine } from "./lib/ops-alerts-lines";
 import { alertsUsage, parseOpsAlertsArgs } from "./ops-alerts-args";
-import { alertLine } from "./ops-alerts-lines";
 
 const out = createCliOutput("ops-alerts");
 

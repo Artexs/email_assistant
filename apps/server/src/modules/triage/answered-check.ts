@@ -1,4 +1,4 @@
-import { categorySchema, type AnsweredItem, type Category } from "@ea/core";
+import { categorySchema, type AnsweredItem, type Category, DAY_MS } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
@@ -11,7 +11,7 @@ import { getLabelTarget, latestFeedback } from "./repo";
 type DbOrTrx = Db | Transaction<DB>;
 
 // How far back the answered check looks (the `/review` block).
-export const ANSWERED_CHECK_WINDOW_MS = 14 * 24 * 3_600_000;
+export const ANSWERED_CHECK_WINDOW_MS = 14 * DAY_MS;
 
 // The categories the assistant did not treat as "needs reply".
 const QUIET_CATEGORIES = ["info", "notification", "spam"] as const satisfies readonly Category[];

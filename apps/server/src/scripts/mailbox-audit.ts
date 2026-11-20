@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { auditExitCode, auditMailbox } from "../modules/mail";
 
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
 
 const usage = [
   "usage: bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>",
