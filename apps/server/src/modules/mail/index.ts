@@ -203,12 +203,16 @@ export {
   incomingCountsBySender,
   ownAddressesOf,
   senderWindow,
+  repliedBySentBySender,
+  sentCountsByRecipient,
 } from "./repo";
 export type {
   IncomingCounts,
   SenderScope,
   SenderWindow,
   SenderWindowOptions,
+  SentCount,
+  SentCountsOptions,
   EmailFlagsRow,
   EmailHeadersRow,
   HistoryCandidate,
