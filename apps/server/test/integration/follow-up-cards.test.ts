@@ -2,6 +2,7 @@
 // loop and the 48 hour expiry. Every test runs in a transaction that is rolled back. The races are in `follow-up-cards-races.test.ts`.
 import { format } from "node:util";
 
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -24,8 +25,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const at = (ms: number) => new Date(T.getTime() + ms);
 
 // The notice code logs and warns about rows it skips; these tests read the output.
@@ -65,10 +64,10 @@ async function world(trx: Transaction<DB>): Promise<World> {
   await isolateChannels(trx);
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
-  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE_MS));
   await trx
     .updateTable("mailboxes")
-    .set({ status_changed_at: at(-HOUR) })
+    .set({ status_changed_at: at(-HOUR_MS) })
     .where("id", "=", created.mailboxId)
     .execute();
   const owner2 = await addMember(trx, created.orgId, "owner");
@@ -76,12 +75,12 @@ async function world(trx: Transaction<DB>): Promise<World> {
   const noConsentOwner = await addMember(trx, created.orgId, "owner");
   const member = await addMember(trx, created.orgId, "assistant");
   for (const user of [created.userId, owner2, oldOwner, noConsentOwner, member]) {
-    await linkChat(trx, ctx, user, randomChatId(), at(-2 * HOUR));
+    await linkChat(trx, ctx, user, randomChatId(), at(-2 * HOUR_MS));
   }
-  await consentRow(trx, created.orgId, created.userId, CURRENT_CONSENT, at(-HOUR));
-  await consentRow(trx, created.orgId, owner2, CURRENT_CONSENT, at(-HOUR));
-  await consentRow(trx, created.orgId, oldOwner, OLD_CONSENT, at(-HOUR));
-  await consentRow(trx, created.orgId, member, CURRENT_CONSENT, at(-HOUR));
+  await consentRow(trx, created.orgId, created.userId, CURRENT_CONSENT, at(-HOUR_MS));
+  await consentRow(trx, created.orgId, owner2, CURRENT_CONSENT, at(-HOUR_MS));
+  await consentRow(trx, created.orgId, oldOwner, OLD_CONSENT, at(-HOUR_MS));
+  await consentRow(trx, created.orgId, member, CURRENT_CONSENT, at(-HOUR_MS));
   await setOrgFeature(trx, ctx, { flag: "approvals_page", enabled: true, actor: "cli", now: T });
   return {
     ctx,
@@ -100,7 +99,7 @@ async function run(trx: Transaction<DB>, webBaseUrl: string | null = "https://pa
   await detectNotices({
     db: trx,
     now: () => T,
-    startedAt: at(-HOUR),
+    startedAt: at(-HOUR_MS),
     testMail: NO_TEST_SENDERS,
     ...(webBaseUrl === null ? {} : { webBaseUrl }),
   });
@@ -207,7 +206,7 @@ describe("T4 the approval card of a follow-up and the consent gate", () => {
   test("a withdrawn consent: a consent older than the last unlink does not count, a newer one does", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await unlinkRow(trx, w.orgId, w.owner2, at(-30 * MINUTE)); // owner2 unlinked after the consent at -1 h
+      await unlinkRow(trx, w.orgId, w.owner2, at(-30 * MINUTE_MS)); // owner2 unlinked after the consent at -1 h
       await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
       await run(trx);
       expect(users(await outbox(trx, w.orgId, "approval"))).toEqual([w.owner]);
@@ -225,7 +224,7 @@ describe("T4 the approval card of a follow-up and the consent gate", () => {
       // A later detector of the same organization (an expired send result) still gets its row.
       const ended = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
         sendStatus: "expired",
-        notifiedAt: at(-HOUR),
+        notifiedAt: at(-HOUR_MS),
       });
       await trx.updateTable("actions").set({ status_reason: "timeout" }).where("id", "=", ended.sendId).execute();
       await run(trx);
@@ -280,7 +279,7 @@ describe("T4 the approval card of a follow-up and the consent gate", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const { insertDraftAndSend } = await import("./fixtures");
-      const mail = await insertDraftAndSend(trx, w.ctx, w.mailboxId, { createdAt: at(-HOUR) });
+      const mail = await insertDraftAndSend(trx, w.ctx, w.mailboxId, { createdAt: at(-HOUR_MS) });
       await run(trx);
       const cards = await outbox(trx, w.orgId, "approval");
       expect(users(cards)).toEqual([w.owner, w.owner2, w.oldOwner, w.noConsentOwner].sort());
@@ -299,10 +298,10 @@ describe("loopConsentOf: the one choke point of the gate", () => {
       expect(await loopConsentOf(trx, w.ctx, [])).toEqual(new Set());
       const other = await addMember(trx, w.orgId, "owner");
       for (const version of ["garbage", "", "2026-11-15.", "2026-11-15.x", "20261115", "2026-11-14"]) {
-        await consentRow(trx, w.orgId, other, version, at(-10 * MINUTE));
+        await consentRow(trx, w.orgId, other, version, at(-10 * MINUTE_MS));
         expect((await loopConsentOf(trx, w.ctx, [other])).has(other)).toBe(false);
       }
-      await consentRow(trx, w.orgId, other, "2026-11-16", at(-5 * MINUTE));
+      await consentRow(trx, w.orgId, other, "2026-11-16", at(-5 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [other])).has(other)).toBe(true);
     });
   });
@@ -311,16 +310,16 @@ describe("loopConsentOf: the one choke point of the gate", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const user = await addMember(trx, w.orgId, "owner");
-      await consentRow(trx, w.orgId, user, CURRENT_CONSENT, at(-10 * MINUTE));
+      await consentRow(trx, w.orgId, user, CURRENT_CONSENT, at(-10 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [user])).has(user)).toBe(true);
-      await unlinkRow(trx, w.orgId, user, at(-10 * MINUTE));
+      await unlinkRow(trx, w.orgId, user, at(-10 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [user])).has(user)).toBe(false);
-      await consentRow(trx, w.orgId, user, CURRENT_CONSENT, at(-10 * MINUTE + 1));
+      await consentRow(trx, w.orgId, user, CURRENT_CONSENT, at(-10 * MINUTE_MS + 1));
       expect((await loopConsentOf(trx, w.ctx, [user])).has(user)).toBe(true);
       // A later unlink withdraws it again; an unlink of another user does not.
-      await unlinkRow(trx, w.orgId, w.owner, at(-5 * MINUTE));
+      await unlinkRow(trx, w.orgId, w.owner, at(-5 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [user])).has(user)).toBe(true);
-      await unlinkRow(trx, w.orgId, user, at(-5 * MINUTE));
+      await unlinkRow(trx, w.orgId, user, at(-5 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [user])).has(user)).toBe(false);
     });
   });
@@ -332,11 +331,11 @@ describe("loopConsentOf: the one choke point of the gate", () => {
         await recordAudit(
           trx,
           { orgId: w.orgId },
-          { event, actor: "cli", data: { user_id: w.owner, role: "owner" }, at: at(-5 * MINUTE) }
+          { event, actor: "cli", data: { user_id: w.owner, role: "owner" }, at: at(-5 * MINUTE_MS) }
         );
       }
       expect((await loopConsentOf(trx, w.ctx, [w.owner])).has(w.owner)).toBe(true);
-      await unlinkRow(trx, w.orgId, w.owner, at(-4 * MINUTE));
+      await unlinkRow(trx, w.orgId, w.owner, at(-4 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [w.owner])).has(w.owner)).toBe(false);
     });
   });
@@ -345,7 +344,7 @@ describe("loopConsentOf: the one choke point of the gate", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const other = await createOrgWithMailbox(trx);
-      await unlinkRow(trx, other.orgId, w.owner, at(-1 * MINUTE));
+      await unlinkRow(trx, other.orgId, w.owner, at(-1 * MINUTE_MS));
       expect((await loopConsentOf(trx, w.ctx, [w.owner])).has(w.owner)).toBe(true);
       expect((await loopConsentOf(trx, { orgId: other.orgId }, [w.owner])).has(w.owner)).toBe(false);
     });
@@ -369,8 +368,8 @@ describe("T8 the result notice of a follow-up", () => {
       const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
         to: ["anna@example.test"],
         sendStatus: "applied",
-        notifiedAt: at(-HOUR),
-        send: { provider_result: JSON.stringify({ sent_copy: "appended" }), applied_at: at(-10 * MINUTE) },
+        notifiedAt: at(-HOUR_MS),
+        send: { provider_result: JSON.stringify({ sent_copy: "appended" }), applied_at: at(-10 * MINUTE_MS) },
       });
       await run(trx);
       const results = await outbox(trx, w.orgId, "send_result");
@@ -399,11 +398,11 @@ describe("T8 the result notice of a follow-up", () => {
       const w = await world(trx);
       const rejected = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
         sendStatus: "rejected",
-        notifiedAt: at(-HOUR),
+        notifiedAt: at(-HOUR_MS),
       });
       const expired = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
         sendStatus: "expired",
-        notifiedAt: at(-HOUR),
+        notifiedAt: at(-HOUR_MS),
       });
       await trx.updateTable("actions").set({ status_reason: "loop_closed" }).where("id", "=", expired.sendId).execute();
       await run(trx);
@@ -423,7 +422,7 @@ describe("T8 the result notice of a follow-up", () => {
       const w = await world(trx);
       const changed = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
         sendStatus: "expired",
-        notifiedAt: at(-HOUR),
+        notifiedAt: at(-HOUR_MS),
       });
       await trx
         .updateTable("actions")
@@ -451,16 +450,19 @@ describe("T3b a failed follow-up: one fixed action_failed notice, no recipient, 
         to: ["secret-anna@example.test"],
         subject: "SECRET-SUBJECT",
         sendStatus: "failed",
-        notifiedAt: at(-HOUR),
+        notifiedAt: at(-HOUR_MS),
         send: { status_reason: "smtp_error", attempts: 3 },
       });
       const unknown = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
         sendStatus: "failed",
-        notifiedAt: at(-HOUR),
+        notifiedAt: at(-HOUR_MS),
         send: { status_reason: "outcome_unknown" },
       });
       const { insertDraftAndSend } = await import("./fixtures");
-      const mail = await insertDraftAndSend(trx, w.ctx, w.mailboxId, { sendStatus: "failed", notifiedAt: at(-HOUR) });
+      const mail = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
+        sendStatus: "failed",
+        notifiedAt: at(-HOUR_MS),
+      });
       await run(trx);
 
       const failed = (await outbox(trx, w.orgId, "action_failed")).filter((row) => row.loop_id !== null);
@@ -501,7 +503,10 @@ describe("T3b a failed follow-up: one fixed action_failed notice, no recipient, 
   test("with no linked owner nothing is queued or marked, so the notice comes when an owner links", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { sendStatus: "failed", notifiedAt: at(-HOUR) });
+      const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
+        sendStatus: "failed",
+        notifiedAt: at(-HOUR_MS),
+      });
       // Only the assistant keeps a chat: the organization is visited, but it has no owner to tell.
       await trx.deleteFrom("chat_links").where("org_id", "=", w.orgId).where("user_id", "<>", w.member).execute();
       await run(trx);
@@ -519,7 +524,7 @@ describe("a send held by a limit (G13)", () => {
   test("approved follow-ups held by a limit give one fixed send_held line per owner and day; the mail hold keeps its own", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const held = { last_error: "send_limit:mailbox_hour", next_attempt_at: at(HOUR) };
+      const held = { last_error: "send_limit:mailbox_hour", next_attempt_at: at(HOUR_MS) };
       await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { sendStatus: "approved", send: held });
       await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { sendStatus: "approved", send: held });
       await run(trx);
@@ -539,7 +544,7 @@ describe("a send held by a limit (G13)", () => {
       // When the hold ends, a notice that no sender took yet is cancelled.
       await trx
         .updateTable("actions")
-        .set({ next_attempt_at: at(-MINUTE) })
+        .set({ next_attempt_at: at(-MINUTE_MS) })
         .where("org_id", "=", w.orgId)
         .execute();
       await run(trx);
@@ -560,13 +565,13 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
       const [sentCard, pendingCard] = cards;
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", text: sentCard?.text ?? "", external_message_id: 4242, sent_at: at(MINUTE) })
+        .set({ status: "sent", text: sentCard?.text ?? "", external_message_id: 4242, sent_at: at(MINUTE_MS) })
         .where("id", "=", sentCard?.id ?? "")
         .execute();
       // The loop closes: the committer, the switch-off and the close rules end the send directly.
       await trx
         .updateTable("actions")
-        .set({ status: "expired", status_reason: "loop_closed", updated_at: at(5 * MINUTE) })
+        .set({ status: "expired", status_reason: "loop_closed", updated_at: at(5 * MINUTE_MS) })
         .where("id", "=", f.sendId)
         .execute();
       await run(trx);
@@ -594,7 +599,7 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
       await run(trx);
       await trx
         .updateTable("outbox")
-        .set((eb) => ({ status: "sent", text: eb.ref("dedup_key"), external_message_id: 77, sent_at: at(MINUTE) }))
+        .set((eb) => ({ status: "sent", text: eb.ref("dedup_key"), external_message_id: 77, sent_at: at(MINUTE_MS) }))
         .where("org_id", "=", w.orgId)
         .where("kind", "=", "approval")
         .execute();
@@ -607,7 +612,7 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
         uidplus: async () => true,
       };
       expect(
-        (await approve(deps, w.ctx, f.sendId, { userId: w.owner, via: "telegram", now: at(2 * MINUTE) })).kind
+        (await approve(deps, w.ctx, f.sendId, { userId: w.owner, via: "telegram", now: at(2 * MINUTE_MS) })).kind
       ).toBe("approved");
       // The tapped card is edited by the tap answer; the other owner's card gets an `approval_edit` row of the loop.
       const edits = await outbox(trx, w.orgId, "approval_edit");
@@ -642,7 +647,7 @@ describe("the card of a follow-up whose loop closed loses its buttons", () => {
       await run(trx);
       await trx
         .updateTable("outbox")
-        .set((eb) => ({ status: "sent", text: eb.ref("dedup_key"), external_message_id: 1, sent_at: at(MINUTE) }))
+        .set((eb) => ({ status: "sent", text: eb.ref("dedup_key"), external_message_id: 1, sent_at: at(MINUTE_MS) }))
         .where("kind", "=", "approval")
         .execute();
       await trx
@@ -664,7 +669,7 @@ describe("the cards that a closed loop still lists (the limit must not clog)", (
         const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
         await trx
           .updateTable("actions")
-          .set({ status: "expired", status_reason: "loop_closed", updated_at: at(-minutesAgo * MINUTE) })
+          .set({ status: "expired", status_reason: "loop_closed", updated_at: at(-minutesAgo * MINUTE_MS) })
           .where("id", "=", f.sendId)
           .execute();
         return f;
@@ -715,10 +720,10 @@ describe("T7 the 48 hour expiry of a follow-up", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const old = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
-        notifiedAt: new Date(T.getTime() - 49 * HOUR),
+        notifiedAt: new Date(T.getTime() - 49 * HOUR_MS),
       });
       const fresh = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
-        notifiedAt: new Date(T.getTime() - 47 * HOUR),
+        notifiedAt: new Date(T.getTime() - 47 * HOUR_MS),
       });
       // The card of the old one went out: the request counts as seen, so the reason is `timeout`.
       await trx
@@ -766,11 +771,11 @@ describe("a follow-up that no owner could see (every owner uncovered)", () => {
   test("the hourly job ends it after 48 h with the reason the code gives; the loop stays open", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      for (const user of [w.owner, w.owner2]) await consentRow(trx, w.orgId, user, OLD_CONSENT, at(-10 * MINUTE));
+      for (const user of [w.owner, w.owner2]) await consentRow(trx, w.orgId, user, OLD_CONSENT, at(-10 * MINUTE_MS));
       const f = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {});
       await run(trx);
       expect(await outbox(trx, w.orgId, "approval")).toEqual([]);
-      const later = at(49 * HOUR);
+      const later = at(49 * HOUR_MS);
       await createExpiryJob({ db: trx, now: () => later, hooks: noDelegationHooks, uidplus: async () => true }).run();
       const row = await trx
         .selectFrom("actions")

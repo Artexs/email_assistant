@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -34,8 +35,6 @@ function at(offsetMs: number): Date {
 }
 
 const SECOND = 1000;
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 
 let logLines: string[] = [];
 let errorLines: string[] = [];
@@ -192,7 +191,7 @@ describe("outbox sender", () => {
       expect(row.status).toBe("sent");
       expect(Number(row.external_message_id)).toBe(1000);
       expect(allLines().some((line) => line.includes(SECRET))).toBe(false);
-      await s.run(at(MINUTE));
+      await s.run(at(MINUTE_MS));
       expect(s.channel.sent).toHaveLength(1);
     });
   });
@@ -212,7 +211,7 @@ describe("outbox sender", () => {
       const stale = await addRow(trx, b);
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", locked_at: at(-HOUR) })
+        .set({ status: "sending", locked_at: at(-HOUR_MS) })
         .where("id", "=", stale)
         .execute();
       await suspendOrg(trx, b.ctx.orgId);
@@ -226,7 +225,7 @@ describe("outbox sender", () => {
       for (const id of waiting) {
         expect(await rowState(trx, id)).toMatchObject({ status: "pending", locked_at: null, attempts: 0 });
       }
-      expect(await rowState(trx, stale)).toMatchObject({ status: "sending", locked_at: at(-HOUR) });
+      expect(await rowState(trx, stale)).toMatchObject({ status: "sending", locked_at: at(-HOUR_MS) });
     });
   });
 
@@ -237,7 +236,7 @@ describe("outbox sender", () => {
       const digestId = await insertDigest(trx, t.ctx, {
         userId: t.userId,
         slotKey: "2026-11-06T08:00",
-        periodStart: at(-8 * HOUR),
+        periodStart: at(-8 * HOUR_MS),
         periodEnd: T,
       });
       if (!digestId) throw new Error("no digest");
@@ -338,13 +337,13 @@ describe("outbox sender", () => {
       const s = senderFor(trx);
       s.channel.failWith(new ChannelError("config", "telegram_401"), 1);
       await s.run(T);
-      const due = await addRow(trx, t, { nextAttemptAt: at(5 * MINUTE) });
-      await s.run(at(5 * MINUTE));
+      const due = await addRow(trx, t, { nextAttemptAt: at(5 * MINUTE_MS) });
+      await s.run(at(5 * MINUTE_MS));
       expect(s.channel.sent).toHaveLength(0);
       expect((await rowState(trx, due)).status).toBe("pending");
       expectEvent("outbox_token_rejected", "error", { outbox_id: id });
       expect((await rowState(trx, id)).attempts).toBe(0);
-      await s.run(at(11 * MINUTE));
+      await s.run(at(11 * MINUTE_MS));
       expect(s.channel.sent).toHaveLength(2);
       expect((await rowState(trx, id)).status).toBe("sent");
     });
@@ -406,7 +405,7 @@ describe("outbox sender", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      const id = await addRow(trx, t, { createdAt: at(-25 * HOUR) });
+      const id = await addRow(trx, t, { createdAt: at(-25 * HOUR_MS) });
       const s = senderFor(trx);
       await s.run(T);
       const row = await rowState(trx, id);
@@ -456,7 +455,7 @@ describe("outbox sender", () => {
       const id = await addRow(trx, t);
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", locked_at: at(-6 * MINUTE) })
+        .set({ status: "sending", locked_at: at(-6 * MINUTE_MS) })
         .where("id", "=", id)
         .execute();
       const s = senderFor(trx);
@@ -565,7 +564,7 @@ describe("outbox sender, rows without text (F088)", () => {
       const id = await addRow(trx, t, { marker: "MARKER-F088" });
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", locked_at: at(-6 * MINUTE) })
+        .set({ status: "sending", locked_at: at(-6 * MINUTE_MS) })
         .where("id", "=", id)
         .execute();
       const s = senderFor(trx);
@@ -628,7 +627,7 @@ describe("outbox sender log events", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const t = await tenant(trx);
-      const id = await addRow(trx, t, { createdAt: at(-25 * HOUR) });
+      const id = await addRow(trx, t, { createdAt: at(-25 * HOUR_MS) });
       await senderFor(trx).run(T);
       expectEvent("outbox_expired", "warn", { outbox_id: id });
     });
@@ -823,7 +822,7 @@ describe("outbox sender: own quiet hours", () => {
       await flagOn(trx, t);
       await setHours(trx, t, otherId, "10:00", "10:00");
       const night = new Date("2026-11-06T02:00:00Z");
-      const earlier = new Date(night.getTime() - HOUR);
+      const earlier = new Date(night.getTime() - HOUR_MS);
       const row = await addRow(trx, t, { userId: otherId, createdAt: earlier, nextAttemptAt: earlier });
       const s = senderFor(trx);
       await s.run(night);
@@ -898,12 +897,12 @@ describe("outbox sender: own quiet hours", () => {
       const first = new Date("2026-03-08T06:05:00Z"); // 01:05 EST
       const row = await addRow(trx, t, {
         userId: t.userId,
-        createdAt: new Date(first.getTime() - HOUR),
-        nextAttemptAt: new Date(first.getTime() - HOUR),
+        createdAt: new Date(first.getTime() - HOUR_MS),
+        nextAttemptAt: new Date(first.getTime() - HOUR_MS),
       });
       const s = senderFor(trx);
       for (const minutes of [0, 1, 2]) {
-        await s.run(new Date(first.getTime() + minutes * MINUTE));
+        await s.run(new Date(first.getTime() + minutes * MINUTE_MS));
         const held = await rowState(trx, row);
         expect(held.status).toBe("pending");
         expect(held.next_attempt_at.toISOString()).toBe("2026-03-08T07:00:00.000Z");
@@ -920,8 +919,8 @@ describe("outbox sender: own quiet hours", () => {
       const now = new Date("2026-11-07T04:59:30Z");
       const row = await addRow(trx, t, {
         userId: t.userId,
-        createdAt: new Date(now.getTime() - HOUR),
-        nextAttemptAt: new Date(now.getTime() - HOUR),
+        createdAt: new Date(now.getTime() - HOUR_MS),
+        nextAttemptAt: new Date(now.getTime() - HOUR_MS),
       });
       await senderFor(trx).run(now);
       const held = await rowState(trx, row);
@@ -947,11 +946,11 @@ describe("outbox sender: own quiet hours", () => {
         }
         const rowFirst = await addRow(trx, first, {
           createdAt: new Date(LOCAL_2230.getTime() - 3 * SECOND),
-          nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR),
+          nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR_MS),
         });
         const rowSecond = await addRow(trx, second, {
           createdAt: new Date(LOCAL_2230.getTime() - 2 * SECOND),
-          nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR),
+          nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR_MS),
         });
         await senderFor(trx).run(LOCAL_2230);
         // 22:30 local: own hours 23:00–06:00 let the row go; the default hours hold it.
@@ -987,8 +986,8 @@ describe("outbox sender: own quiet hours", () => {
       await setHours(trx, b, a.userId, "08:00", "09:00");
       const rowA = await addRow(trx, a, {
         userId: a.userId,
-        createdAt: new Date(LOCAL_2230.getTime() - HOUR),
-        nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR),
+        createdAt: new Date(LOCAL_2230.getTime() - HOUR_MS),
+        nextAttemptAt: new Date(LOCAL_2230.getTime() - HOUR_MS),
       });
       await senderFor(trx).run(LOCAL_2230);
       // Hours of `a` (23:00–06:00) at 22:30: not quiet. The hours of `b` (08:00–09:00) would not hold it either, so use 23:30.
@@ -996,8 +995,8 @@ describe("outbox sender: own quiet hours", () => {
       const later = new Date("2026-11-06T22:30:00Z"); // 23:30 local
       const rowA2 = await addRow(trx, a, {
         userId: a.userId,
-        createdAt: new Date(later.getTime() - HOUR),
-        nextAttemptAt: new Date(later.getTime() - HOUR),
+        createdAt: new Date(later.getTime() - HOUR_MS),
+        nextAttemptAt: new Date(later.getTime() - HOUR_MS),
       });
       await senderFor(trx).run(later);
       // Inside the hours of `a`: held, whatever the hours of `b` say.

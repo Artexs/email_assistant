@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -49,10 +50,9 @@ afterEach(() => {
   setLogFormat(logFormatFromEnv(process.env));
 });
 
-const MINUTE = 60_000;
 const NOW = new Date("2026-11-20T10:00:00Z");
-const CREATED = new Date(NOW.getTime() - 60 * MINUTE);
-const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+const CREATED = new Date(NOW.getTime() - HOUR_MS);
+const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE_MS);
 const run = randomUUID();
 const CANARY = {
   recipient: `canary-recipient-${run}@x.test`,
@@ -166,7 +166,7 @@ async function claimOne(trx: Transaction<DB>, s: Setup, id: string, time: Date =
   const claimed = await claimActions(trx, s.ctx, s.mailboxId, {
     now: time,
     limit: 20,
-    staleBefore: new Date(time.getTime() - 10 * MINUTE),
+    staleBefore: new Date(time.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
   });
   const action = claimed.find((row) => row.id === id);
@@ -558,8 +558,8 @@ describe("apply log events", () => {
       const s = await setup(trx);
       const mail = await insertTriagedWithActions(trx, s.ctx, s.mailboxId, {
         category: "info",
-        createdAt: new Date(NOW.getTime() - 60 * MINUTE),
-        receivedAt: new Date(NOW.getTime() - 60 * MINUTE),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
+        receivedAt: new Date(NOW.getTime() - HOUR_MS),
         from: CANARY.recipient,
         subject: CANARY.subject,
         actions: [{ type: "flag", status: "ready" }],

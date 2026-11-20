@@ -1,6 +1,7 @@
 // The guards under the brief: the flag, the marks that keep their first time, the logs and the audit rows, and the local day.
 import { format } from "node:util";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -140,7 +141,7 @@ describe("the local day of the member", () => {
         org_id: org.ctx.orgId,
         user_id: org.userId,
         slot_key: slot,
-        period_start: new Date(Date.parse(at) - 24 * 3_600_000),
+        period_start: new Date(Date.parse(at) - DAY_MS),
         period_end: new Date(at),
       })
       .returning("id")

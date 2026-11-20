@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -19,7 +20,6 @@ afterAll(async () => {
 
 // The /review command: the flag, the page, the suspended wrapper, the taps and the tenant filter.
 const T = new Date("2026-11-20T12:00:00Z");
-const HOUR = 3_600_000;
 const TEST_SENDER = "agent@test-sender.test";
 const OFF_TEXT = "This command is not on for your account.";
 const EMPTY_TEXT = "Nothing to review: every recent mail has a label.";
@@ -48,7 +48,7 @@ async function setup(trx: Transaction<DB>) {
     userId: a.userId,
     role: "owner",
     chatId: 7,
-    linkedAt: new Date(T.getTime() - 30 * 24 * HOUR),
+    linkedAt: new Date(T.getTime() - 30 * DAY_MS),
     locale: "en",
   };
   return { a, ctx: { orgId: a.orgId }, link };
@@ -61,7 +61,7 @@ async function flagOn(trx: Transaction<DB>, orgId: string): Promise<void> {
 const triaged = (trx: Transaction<DB>, orgId: string, mailboxId: string, subject: string, from = "ann@firma.test") =>
   insertTriaged(trx, { orgId }, mailboxId, {
     category: "info",
-    createdAt: new Date(T.getTime() - HOUR),
+    createdAt: new Date(T.getTime() - HOUR_MS),
     subject,
     from,
   });
@@ -178,7 +178,7 @@ describe("/review", () => {
       await flagOn(trx, a.orgId);
       await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, {
         category: "info",
-        createdAt: new Date(T.getTime() - 31 * 24 * HOUR),
+        createdAt: new Date(T.getTime() - 31 * DAY_MS),
         subject: `MARKER-OLD-${randomUUID()}`,
       });
       expect(await reviewMessage(depsAt(trx), link)).toEqual({ text: EMPTY_TEXT, buttons: [] });

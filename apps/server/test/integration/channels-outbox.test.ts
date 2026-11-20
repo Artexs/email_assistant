@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { NoticeViewError, renderSyncOkNotice, textTables } from "@ea/core";
+import { NoticeViewError, renderSyncOkNotice, textTables, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -37,10 +37,10 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-06T10:00:00Z");
-const staleBefore = new Date(T.getTime() - 5 * 60_000);
+const staleBefore = new Date(T.getTime() - 5 * MINUTE_MS);
 
 function minutesFromT(minutes: number): Date {
-  return new Date(T.getTime() + minutes * 60_000);
+  return new Date(T.getTime() + minutes * MINUTE_MS);
 }
 
 let counter = 0;

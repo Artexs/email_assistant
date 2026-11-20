@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { textTables } from "@ea/core";
+import { textTables, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -46,8 +46,7 @@ afterAll(async () => {
 
 // T is 11:00 in Warsaw (UTC+1 in November). The quota day (Los Angeles, UTC-8) started at 08:00Z = 09:00 local.
 const T = new Date("2026-11-06T10:00:00Z");
-const MIN = 60_000;
-const HOUR = 3_600_000;
+const MIN = MINUTE_MS;
 const at = (offset: number) => new Date(T.getTime() + offset);
 const utc = (iso: string) => new Date(iso);
 
@@ -93,7 +92,7 @@ async function setup(trx: Transaction<DB>) {
     userId: a.userId,
     role: "owner",
     chatId: 1,
-    linkedAt: at(-30 * 24 * HOUR),
+    linkedAt: at(-30 * DAY_MS),
     locale: "en",
   };
   return { a, ctx, link, address: address.address };
@@ -131,7 +130,7 @@ describe("statusMessage", () => {
       await llmCall(trx, a.orgId, a.mailboxId, utc("2026-11-06T09:00:00Z"));
       await llmCall(trx, a.orgId, a.mailboxId, utc("2026-11-06T09:30:00Z"));
       await llmCall(trx, a.orgId, a.mailboxId, utc("2026-11-06T07:59:00Z"));
-      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-HOUR) });
+      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-HOUR_MS) });
 
       const message = await statusMessage(depsAt(trx, T), link);
 
@@ -187,12 +186,12 @@ describe("statusMessage", () => {
       const off = await statusMessage(depsAt(trx, T), link);
       expect(off.text).toContain("Actions: off · last 24 h: applied 0, undone 0, failed 0");
 
-      const emailId = await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-2 * HOUR) });
-      await insertAction(trx, ctx, emailId, { type: "mark_read", status: "applied", appliedAt: at(-HOUR) });
-      await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-2 * HOUR) });
-      await insertAction(trx, ctx, emailId, { type: "move", status: "failed", createdAt: at(-HOUR) });
-      await insertAction(trx, ctx, emailId, { type: "save_summary", status: "applied", appliedAt: at(-HOUR) });
-      await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-30 * HOUR) });
+      const emailId = await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-2 * HOUR_MS) });
+      await insertAction(trx, ctx, emailId, { type: "mark_read", status: "applied", appliedAt: at(-HOUR_MS) });
+      await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-2 * HOUR_MS) });
+      await insertAction(trx, ctx, emailId, { type: "move", status: "failed", createdAt: at(-HOUR_MS) });
+      await insertAction(trx, ctx, emailId, { type: "save_summary", status: "applied", appliedAt: at(-HOUR_MS) });
+      await insertAction(trx, ctx, emailId, { type: "flag", status: "applied", appliedAt: at(-30 * HOUR_MS) });
 
       const all = await statusMessage(depsAt(trx, T, { actionsScope: { kind: "all" } }), link);
       expect(all.text).toContain(
@@ -214,11 +213,11 @@ describe("statusMessage", () => {
       expect(empty.text).toContain("Send: off");
       expect(empty.text).toContain("Delegations: 0 waiting for a reply, 0 overdue");
 
-      await insertDraftAndSend(trx, ctx, a.mailboxId, { notifiedAt: at(-2 * HOUR), createdAt: at(-3 * HOUR) });
+      await insertDraftAndSend(trx, ctx, a.mailboxId, { notifiedAt: at(-2 * HOUR_MS), createdAt: at(-3 * HOUR_MS) });
       await insertDraftAndSend(trx, ctx, a.mailboxId, {
         sendStatus: "approved",
-        approved: { userId: a.userId, at: at(-HOUR) },
-        createdAt: at(-3 * HOUR),
+        approved: { userId: a.userId, at: at(-HOUR_MS) },
+        createdAt: at(-3 * HOUR_MS),
       });
       const off = await statusMessage(depsAt(trx, T), link);
       expect(off.text).toContain(
@@ -255,8 +254,8 @@ describe("statusMessage", () => {
       for (const status of ["sent", "sent", "overdue", "done"]) {
         const row = await insertDraftAndSend(trx, ctx, a.mailboxId, {
           sendStatus: "applied",
-          approved: { userId: a.userId, at: at(-HOUR) },
-          createdAt: at(-3 * HOUR),
+          approved: { userId: a.userId, at: at(-HOUR_MS) },
+          createdAt: at(-3 * HOUR_MS),
         });
         await insertDelegation(trx, ctx, {
           mailboxId: a.mailboxId,
@@ -286,7 +285,7 @@ describe("statusMessage", () => {
         capabilities: testCapabilities,
         folderMap: {},
       });
-      await insertDraftAndSend(trx, ctx, a.mailboxId, { notifiedAt: at(-2 * HOUR), createdAt: at(-3 * HOUR) });
+      await insertDraftAndSend(trx, ctx, a.mailboxId, { notifiedAt: at(-2 * HOUR_MS), createdAt: at(-3 * HOUR_MS) });
       const lines = (await statusMessage(depsAt(trx, T), link)).text
         .split("\n")
         .filter((line) => line.startsWith("Approvals"));
@@ -347,7 +346,7 @@ describe("statusMessage", () => {
       await insertDefaultSettings(trx, { orgId: b.orgId }, b.mailboxId);
       await llmCall(trx, b.orgId, b.mailboxId, at(-MIN));
       await llmCall(trx, b.orgId, a.mailboxId, at(-MIN));
-      await insertTestEmail(trx, { orgId: b.orgId }, b.mailboxId, { status: "pending", received_at: at(-HOUR) });
+      await insertTestEmail(trx, { orgId: b.orgId }, b.mailboxId, { status: "pending", received_at: at(-HOUR_MS) });
 
       const message = await statusMessage(depsAt(trx, T), link);
 
@@ -462,7 +461,7 @@ describe("digestNowMessage", () => {
       const { a, ctx, link } = await setup(trx);
       await insertTriaged(trx, ctx, a.mailboxId, {
         category: "urgent",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
         subject: "MARKER-SUBJECT",
       });
       const count = async () =>
@@ -494,12 +493,16 @@ describe("digestNowMessage", () => {
       const id = await insertDigest(trx, ctx, {
         userId: a.userId,
         slotKey: "2026-11-06T08:00",
-        periodStart: at(-12 * HOUR),
-        periodEnd: at(-2 * HOUR),
+        periodStart: at(-12 * HOUR_MS),
+        periodEnd: at(-2 * HOUR_MS),
       });
-      await markDigestSent(trx, ctx, id as string, at(-2 * HOUR));
-      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-3 * HOUR), subject: "MARKER-OLD" });
-      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR), subject: "MARKER-NEW" });
+      await markDigestSent(trx, ctx, id as string, at(-2 * HOUR_MS));
+      await insertTriaged(trx, ctx, a.mailboxId, {
+        category: "info",
+        createdAt: at(-3 * HOUR_MS),
+        subject: "MARKER-OLD",
+      });
+      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR_MS), subject: "MARKER-NEW" });
 
       const message = await digestNowMessage(depsAt(trx, T), link);
 

@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { AI_FOLDER_NAMES } from "@ea/core";
+import { AI_FOLDER_NAMES, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -41,12 +41,10 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const NOW = new Date("2026-11-07T12:00:00Z");
-const RECEIVED = new Date(NOW.getTime() - 2 * HOUR);
-const APPLIED = new Date(NOW.getTime() - HOUR);
-const SINCE = new Date(RECEIVED.getTime() - DAY);
+const RECEIVED = new Date(NOW.getTime() - 2 * HOUR_MS);
+const APPLIED = new Date(NOW.getTime() - HOUR_MS);
+const SINCE = new Date(RECEIVED.getTime() - DAY_MS);
 const MESSAGE_ID = "<undo-1@x.test>";
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -236,7 +234,7 @@ describe("undo: the reverse rows", () => {
   test("(5) applied 8 days ago: too_old; a mix undoes the recent one only", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
-      const old = new Date(NOW.getTime() - 8 * DAY);
+      const old = new Date(NOW.getTime() - 8 * DAY_MS);
       const oldMail = await insertMail(trx, s, [{ type: "flag", status: "applied", appliedAt: old }]);
       expect(await undo(trx, s.ctx, oldMail.emailId, opts(s))).toEqual({ kind: "too_old" });
       expect(await reverseRows(trx, s)).toHaveLength(0);
@@ -313,7 +311,7 @@ describe("undo: the reverse rows", () => {
       ]);
       await trx
         .updateTable("actions")
-        .set({ next_attempt_at: new Date(NOW.getTime() + 5 * 60_000) })
+        .set({ next_attempt_at: new Date(NOW.getTime() + 5 * MINUTE_MS) })
         .where("id", "=", mail.actionIds[1] as string)
         .execute();
 
@@ -457,7 +455,7 @@ describe("undo: a reverse move in flight (D22)", () => {
     return claimActions(trx, s.ctx, s.mailboxId, {
       now: at,
       limit: 20,
-      staleBefore: new Date(at.getTime() - 10 * 60_000),
+      staleBefore: new Date(at.getTime() - 10 * MINUTE_MS),
       filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
     });
   }
@@ -495,11 +493,11 @@ describe("undo: a reverse move in flight (D22)", () => {
       const s = await setup(trx, { ...INTERIA, uidValidity: 7 });
       const mail = await stoppedReverse(trx, s);
 
-      const later = new Date(NOW.getTime() + 60_000);
+      const later = new Date(NOW.getTime() + MINUTE_MS);
       const result = await syncMailbox(syncDeps(trx, s, later), s.ctx, s.mailboxId);
       expect(result).toMatchObject({ stored: 0, moveInFlight: 1 });
 
-      const retryAt = new Date(NOW.getTime() + 11 * 60_000);
+      const retryAt = new Date(NOW.getTime() + 11 * MINUTE_MS);
       const [again] = await claim(trx, s, retryAt);
       expect(again?.type).toBe("move");
       expect((await applyAction(depsOf(s, trx, retryAt), s.ctx, again as ClaimedAction, s.fake)).kind).toBe("applied");
@@ -524,11 +522,11 @@ describe("undo: a reverse move in flight (D22)", () => {
       const mail = await stoppedReverse(trx, s);
       await trx
         .updateTable("emails")
-        .set({ move_pending_at: new Date(NOW.getTime() - 25 * HOUR) })
+        .set({ move_pending_at: new Date(NOW.getTime() - 25 * HOUR_MS) })
         .where("id", "=", mail.emailId)
         .execute();
 
-      const result = await syncMailbox(syncDeps(trx, s, new Date(NOW.getTime() + 60_000)), s.ctx, s.mailboxId);
+      const result = await syncMailbox(syncDeps(trx, s, new Date(NOW.getTime() + MINUTE_MS)), s.ctx, s.mailboxId);
 
       expect(result).toMatchObject({ stored: 1, moveInFlight: 0 });
       const rows = await trx.selectFrom("emails").select("dedup_key").where("mailbox_id", "=", s.mailboxId).execute();
@@ -562,7 +560,7 @@ describe("undo: a reverse move in flight (D22)", () => {
 
       const outcomes = [];
       for (const attempt of [0, 1, 2]) {
-        const at = new Date(NOW.getTime() + attempt * 10 * 60_000);
+        const at = new Date(NOW.getTime() + attempt * 10 * MINUTE_MS);
         const [reverse] = await claim(trx, s, at);
         outcomes.push(await applyAction(depsOf(s, trx, at), s.ctx, reverse as ClaimedAction, s.fake));
       }

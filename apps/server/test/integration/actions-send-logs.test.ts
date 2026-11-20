@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { parseToolSwitches } from "@ea/core";
+import { parseToolSwitches, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { createCommitterJob, createExpiryJob } from "../../src/modules/actions";
@@ -34,8 +34,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 // 07:30 in Warsaw (CET): the chaser acts.
 const T0 = new Date("2026-11-10T06:30:00Z");
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -69,7 +67,7 @@ describe("send logs", () => {
           secretKind: "password",
           keyVersion: secret.keyVersion,
         });
-        await linkChat(trx, ctx, userId, randomChatId(), new Date(T0.getTime() - 24 * HOUR));
+        await linkChat(trx, ctx, userId, randomChatId(), new Date(T0.getTime() - DAY_MS));
         await insertDefaultSettings(trx, ctx, mailboxId);
         const settings = await getMailboxSettings(trx, ctx, mailboxId);
         await updateMailboxSettings(trx, ctx, mailboxId, {
@@ -78,7 +76,7 @@ describe("send logs", () => {
         });
 
         const delegateId = await insertDelegate(trx, ctx, { name: MARKERS.name, email: MARKERS.delegate });
-        const created = new Date(T0.getTime() - HOUR);
+        const created = new Date(T0.getTime() - HOUR_MS);
         const mail = (extra: Parameters<typeof insertDraftAndSend>[3] = {}) =>
           insertDraftAndSend(trx, ctx, mailboxId, {
             delegateId,
@@ -101,14 +99,14 @@ describe("send logs", () => {
         // A third send waits for a tap for 49 h: the expiry job closes it.
         const stale = await mail({
           sendStatus: "awaiting_approval",
-          notifiedAt: new Date(T0.getTime() - 49 * HOUR),
+          notifiedAt: new Date(T0.getTime() - 49 * HOUR_MS),
           requestSent: true,
           draftProviderResult: { uid: 3, folder: "Drafts" },
         });
         // A delegation that was sent and is overdue: the chaser plans a reminder.
         const sent = await mail({
           sendStatus: "applied",
-          approved: { userId, at: new Date(T0.getTime() - 5 * 24 * HOUR) },
+          approved: { userId, at: new Date(T0.getTime() - 5 * DAY_MS) },
           delegationId: undefined,
         });
         await insertDelegation(trx, ctx, {
@@ -151,19 +149,19 @@ describe("send logs", () => {
           now: () => clock,
         });
         const advance = (minutes: number) => {
-          clock = new Date(clock.getTime() + minutes * MINUTE);
+          clock = new Date(clock.getTime() + minutes * MINUTE_MS);
         };
         const notices = async () => {
-          await markSynced(trx, ctx, mailboxId, new Date(clock.getTime() - MINUTE));
+          await markSynced(trx, ctx, mailboxId, new Date(clock.getTime() - MINUTE_MS));
           await trx
             .updateTable("mailboxes")
-            .set({ status_changed_at: new Date(T0.getTime() - 24 * HOUR) })
+            .set({ status_changed_at: new Date(T0.getTime() - DAY_MS) })
             .where("id", "=", mailboxId)
             .execute();
           await detectNotices({
             db: trx,
             now: () => clock,
-            startedAt: new Date(T0.getTime() - 24 * HOUR),
+            startedAt: new Date(T0.getTime() - DAY_MS),
             testMail: NO_TEST_SENDERS,
           });
         };
@@ -192,7 +190,7 @@ describe("send logs", () => {
           userId,
           role: "owner",
           chatId: 1,
-          linkedAt: new Date(T0.getTime() - HOUR),
+          linkedAt: new Date(T0.getTime() - HOUR_MS),
           locale: "en",
         };
         const tapDeps: CallbackDeps = {
