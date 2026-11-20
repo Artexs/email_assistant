@@ -807,3 +807,6 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - 2026-11-20 · F129 plan D12 · rule exception · `fake-tg` has its own exit site `tools/fake-telegram/src/cli-run.ts` (a tool never imports `apps/`). Undo: none needed. · new
 - 2026-11-20 · F129 plan D9 · scope · No new dev-DB guard (the refusals in `e2e:seed` and `db:worktree` stay). Undo: add a guard stage. · new
 - 2026-11-20 · F129 plan stage 00 · rule exception · Positional operands stay for `db:worktree`, `release:prepare`, `fake-tg send` and `wait`. Undo: convert them to flags. · new
+- 2026-11-20 · F144 plan · scope · Contacts reads triage through a new same-layer edge in `layers.json` (contacts → triage), not through a hook in a composition root. Undo: replace the edge with a hook. · new
+- 2026-11-20 · F144 plan · scope · Out of scope: the data-request address list in `contacts/privacy.ts` and the mailbox reads of the suggestion commands. Undo: add them to a stage. · new
+- 2026-11-20 · F144 plan · scope · The F100 metric readers that select `FROM emails` stay where they are; the new rule in `docs/code-patterns.md` says they predate it. Undo: move them in a follow-up. · new
