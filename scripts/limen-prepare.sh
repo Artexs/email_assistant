@@ -98,7 +98,7 @@ printf '%s\n' "$db_urls" | sed 's/^/E2E_/' >> .env.new
 # The port block and the `.env` write run under one lock: another prepare reads this `.env` to see the claimed blocks, so the
 # claim must be in place before the lock goes. This lock is not a test lock.
 exec 9> "$ports_lock"
-flock -w 120 9 || fail "could not get $ports_lock within 120 s"
+flock -w 120 9 || fail "could not lock $ports_lock (waited up to 120 s)"
 job_env="$(bun apps/server/src/scripts/e2e-job-env.ts --job-name "$name")" || fail "no e2e port block (e2e-job-env failed)"
 printf '%s\n' "$job_env" | grep -E '^(E2E_PORT|E2E_TELEGRAM_PORT|DOCS_TEST_PORT|E2E_MAIL_TAG)=' >> .env.new || true
 for key in DATABASE_URL MIGRATOR_DATABASE_URL E2E_DATABASE_URL E2E_MIGRATOR_DATABASE_URL E2E_PORT E2E_TELEGRAM_PORT DOCS_TEST_PORT E2E_MAIL_TAG; do
