@@ -6,24 +6,34 @@ opened: 2026-11-19
 
 ## Outcome
 
-Stale state statements and bare codes outside comments are cleaned and the lint rule covers them.
-
-<!-- Two to four sentences: what becomes true for a user or operator. -->
+An agent or a developer who reads the repository finds no statement that contradicts the code: the project guide names the real layout, no "planned" task file describes landed work, and the docs flag guard lists the default-off features that really show text. Ticket and decision codes no longer hide in strings, the module layer file, the public docs pages or the module map; the bare-code scan that today reads only comments also reads those places, so they stay clean.
 
 ## Scope
 
-- <!-- Boundary and starting seam, not an edit list. -->
+- The stale statements of quality pass 2 finding 14: the layout line of `CLAUDE.md`, the two task files for landed work, the one-off migration script.
+- The "no visible text" list of the docs flag guard (`apps/docs/src/flagged-text.ts`): every reason true, every flag with visible text in the flagged lists.
+- Bare codes in non-test source strings, in `layers.json` and in `docs/modules.md`, replaced by names.
+- The existing bare-code scan (`apps/server/src/comment-codes.test.ts`, a Bun test, not an ESLint rule) extended to those places.
 
 ## Out of scope
 
-- <!-- Nearby work that is not part of this ticket. -->
+- Bare codes in `docs/capabilities/`, ADRs, `docs/owner-decisions.md`, tool READMEs, `spec/` and test files (test names belong to the test audit ticket).
+- The other findings of quality pass 2.
+- New visible text or a changed flag default.
 
 ## Acceptance
 
-- <!-- One observable result or check per line. -->
+- `CLAUDE.md` names the real workspaces, and its layout line names no folder that is gone.
+- `tasks/planned/` holds only `s6f-hosted-production.md`, and `scripts/one-off/` is gone.
+- `NO_VISIBLE_TEXT` holds only flags whose code shows no user text; the docs page scan checks the texts of the others.
+- The bare-code scan reports a ticket code in a non-test source string, a JSON value, a docs site page or `docs/modules.md`.
+- The same scan finds nothing on the branch at the end of the ticket.
+
+## Sequenced
+
+Plan after: none.
+Build after: none. Gate: none (quality pass 2 ticket line 9; not a Stage 2 row of `docs/product/stage-2/05-execution-plan.md` § 2).
 
 ## Notes
 
-<!-- Optional decisions or open questions; no progress log. -->
-
-Source: spec/quality/2026-11-20-pass-2.md (quality pass 2). Findings and fix there; plan with the planner role after the current planner round.
+Source: `spec/quality/2026-11-20-pass-2.md` finding 14. Detail: `plan.md`.
