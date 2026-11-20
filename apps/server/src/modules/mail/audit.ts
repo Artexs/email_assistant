@@ -47,8 +47,8 @@ export function compareInboxWithDb(inbox: InboxKey[], rows: InboxKey[]): AuditCo
   return compareFolderWithDb(inbox, rows, []);
 }
 
-/** Exit code of `mailbox:audit`: from the INBOX counts only; `cross` never changes it. No INBOX counts (the server does not list it) is an error: 1. */
-export function auditExitCode(counts: AuditCounts | null | undefined): 0 | 1 | 2 {
+/** Exit code of `mailbox:audit` (docs/cli.md): 1 when INBOX has lost or duplicate mail, from the INBOX counts only; `cross` never changes it. No INBOX counts (the server does not list it) is an error: 1. */
+export function auditExitCode(counts: AuditCounts | null | undefined): 0 | 1 {
   if (counts === null || counts === undefined) return 1;
-  return counts.missing > 0 || counts.duplicates > 0 ? 2 : 0;
+  return counts.missing > 0 || counts.duplicates > 0 ? 1 : 0;
 }

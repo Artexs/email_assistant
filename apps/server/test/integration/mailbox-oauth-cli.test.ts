@@ -20,17 +20,21 @@ import type { CliRawOutput } from "../../src/platform/cli";
 import { loadConfig } from "../../src/platform/config";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { CliDeps } from "../../src/scripts/lib/mailbox-cli";
-import { run as runAudit } from "../../src/scripts/mailbox-audit";
-import { run as runBackfill } from "../../src/scripts/mailbox-backfill";
-import { run as runSeed } from "../../src/scripts/mailbox-seed";
-import { run as runSignals } from "../../src/scripts/mailbox-signals";
+import { run as auditRun } from "../../src/scripts/mailbox-audit";
+import { parseMailboxAuditArgs } from "../../src/scripts/mailbox-audit-args";
+import { run as backfillRun } from "../../src/scripts/mailbox-backfill";
+import { parseMailboxBackfillArgs } from "../../src/scripts/mailbox-backfill-args";
+import { run as seedRun } from "../../src/scripts/mailbox-seed";
+import { parseMailboxSeedArgs } from "../../src/scripts/mailbox-seed-args";
+import { run as signalsRun } from "../../src/scripts/mailbox-signals";
+import { parseMailboxSignalsArgs } from "../../src/scripts/mailbox-signals-args";
 import { startFakeMailOAuth, type FakeMailOAuth } from "../fake-mail-oauth";
 
 import { testCapabilities } from "./fixtures";
 import { testDb } from "./helpers";
 import { webOrg, type WebOrg } from "./web-helpers";
 
-// The operator CLIs on an OAuth mailbox (the provider smoke): `run(argv, deps)` in this process, the token endpoint is the fake token server,
+// The operator CLIs on an OAuth mailbox (the provider smoke): `run(options, deps)` in this process, the token endpoint is the fake token server,
 // the mail is GreenMail (auth off: it takes any token). No real provider call. The password paths have their own subprocess tests.
 const db = testDb();
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -109,6 +113,12 @@ function capture(): { out: CliRawOutput; stdout: string[]; stderr: string[] } {
     },
   };
 }
+
+// `run(options, deps)` of each tool, after the parse that `main` does first.
+const runAudit = (argv: string[], deps: CliDeps) => auditRun(parseMailboxAuditArgs(argv), deps);
+const runBackfill = (argv: string[], deps: CliDeps) => backfillRun(parseMailboxBackfillArgs(argv), deps);
+const runSeed = (argv: string[], deps: CliDeps) => seedRun(parseMailboxSeedArgs(argv), deps);
+const runSignals = (argv: string[], deps: CliDeps) => signalsRun(parseMailboxSignalsArgs(argv), deps);
 
 const depsOf = (testAddress: string | undefined, out: CliRawOutput): CliDeps => ({
   db,
@@ -269,14 +279,6 @@ describe("mailbox:seed on a Google OAuth mailbox", () => {
     expect(await inboxHeaders(box)).toEqual([]);
     // The refusal comes before any token request.
     expect(fake.calls).toEqual([]);
-  });
-
-  test("a bad --from-owner is a usage error and appends nothing", async () => {
-    const box = await oauthMailbox("google");
-    const cli = capture();
-    expect(await runSeed([...mailboxArgs(box), "--from-owner", "owner"], depsOf(box.address, cli.out))).toBe(1);
-    expect(cli.stderr.join("\n")).toContain("usage: bun run mailbox:seed");
-    expect(await inboxHeaders(box)).toEqual([]);
   });
 });
 

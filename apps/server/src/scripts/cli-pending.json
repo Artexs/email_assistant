@@ -1,10 +1,4 @@
 {
-  "mailbox-cli": [
-    "apps/server/src/scripts/mailbox-audit.ts",
-    "apps/server/src/scripts/mailbox-backfill.ts",
-    "apps/server/src/scripts/mailbox-seed.ts",
-    "apps/server/src/scripts/mailbox-signals.ts"
-  ],
   "eval": [
     "apps/server/src/scripts/eval.ts",
     "apps/server/src/scripts/lib/eval-drafter.ts",
