@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { parseAllowList, publicContentScan } from "@ea/core/web";
 import type { AstroIntegration } from "astro";
 
-const TEXT_SUFFIXES = [".html", ".xml", ".txt", ".json", ".css", ".js", ".svg", ".webmanifest"];
+const TEXT_SUFFIXES = [".html", ".xml", ".txt", ".json", ".css", ".js", ".svg", ".webmanifest", ".vtt"];
 // The Pagefind index and its runtime are generated, not authored; they are outside the check.
 const SKIPPED_TOP_FOLDER = "pagefind";
 

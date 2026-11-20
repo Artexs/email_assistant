@@ -80,6 +80,13 @@ describe("deployDecision", () => {
     }
   });
 
+  test("T7 the tag of the demo video release deploys nothing, whatever the tag list holds", () => {
+    expect(decide(push("demo-video"), ["demo-video", "v0.1.0"], ALL)).toEqual({
+      deploy: false,
+      reason: "skip: demo-video is not a release tag",
+    });
+  });
+
   test("a pre-release tag in the list never counts as newest", () => {
     expect(decide(push("v0.2.0"), ["v0.2.0", "v0.3.0-rc.1", "vtest", "v1"], ALL).deploy).toBe(true);
   });
