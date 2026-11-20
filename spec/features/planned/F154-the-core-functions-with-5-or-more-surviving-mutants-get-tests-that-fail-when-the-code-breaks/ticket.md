@@ -24,3 +24,12 @@ The core code that no test catches is covered. The 122 functions with 5 or more 
 - A mutation rerun shows fewer survived or no-coverage mutants in each named function.
 - Each new case has an exact expected value and fails when its function is broken once.
 - The mutation score of `packages/core` does not fall below 86.45 %.
+
+## Slices
+
+Eighteen stages, one worker job each: `plan.md` § Stages and § How to run. Stage 01 adds the per-function gap report; stages 02–17 each cover one module group and may run next to each other; stage 18 runs the full core mutation run. No migration, no `bun.lock` change, no owner checkpoint.
+
+## Sequenced
+
+Plan after: none.
+Build after: none. Gate: none (tests and one audit tool only; not a row of `docs/product/stage-2/05-execution-plan.md` § 2). The cut stages of the test audit (F125 groups G04, G05, G10) edit core test files too; a land conflict is "merge master, re-prove".
