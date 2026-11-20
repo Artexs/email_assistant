@@ -75,16 +75,6 @@ function trustedAlignedPassDomains(
   return found;
 }
 
-// A trusted `dkim=pass` for the From domain (or a parent). This does NOT prove that the signature covers the
-// `List-Unsubscribe` headers: for that use `hasCoveredDkimPass`.
-export function hasTrustedAlignedDkimPass(
-  authResults: string | null,
-  trustedAuthservIds: readonly string[],
-  fromDomain: string
-): boolean {
-  return trustedAlignedPassDomains(authResults, trustedAuthservIds, fromDomain).length > 0;
-}
-
 // RFC 8058 asks that the signature covers `List-Unsubscribe` and `List-Unsubscribe-Post`. The trusted server verified
 // one signature and named its domain in `header.d`; it did not say which signature header it was, and a replayer can
 // add signature headers of the same domain. So the proof is this: there is a trusted aligned `dkim=pass`, and EVERY
