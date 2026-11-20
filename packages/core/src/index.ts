@@ -24,3 +24,4 @@ export * from "./loops";
 export * from "./contacts";
 export * from "./replies";
 export * from "./trust";
+export * from "./cli";
