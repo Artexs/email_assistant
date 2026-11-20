@@ -4,7 +4,7 @@ import { llmRoles } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { ConfigError, llmRoleTable, loadConfig } from "./config";
-import { removedEnvKeys } from "./config-llm";
+import { isRemovedEnvKey, removedEnvKeys } from "./config-llm";
 import type { LlmRoleSettings } from "./llm";
 
 const fullEnv = {
@@ -75,6 +75,12 @@ describe("the role table from tiers", () => {
       expect(error.message).not.toContain('"x"');
       expect(error.message).not.toMatch(/\bx\b/);
     }
+  });
+
+  test("the start log marks a removed key: only the 12 removed keys are removed", () => {
+    for (const key of removedEnvKeys) expect(isRemovedEnvKey(key)).toBe(true);
+    expect(isRemovedEnvKey("LLM_JUDGE_RPM")).toBe(false);
+    expect(isRemovedEnvKey("OPENAI_OWN_MODEL")).toBe(false);
   });
 
   test("5: an empty removed key loads, also in the e2e style env", () => {

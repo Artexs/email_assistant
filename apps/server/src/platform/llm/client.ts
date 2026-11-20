@@ -109,7 +109,7 @@ export interface LlmClient {
 }
 
 type RateLimiter = ReturnType<typeof createRateLimiter>;
-type ProviderRegistry = Record<LlmProviderId, Pick<LlmProvider, "createGenerate" | "classifyError">>;
+export type ProviderRegistry = Record<LlmProviderId, Pick<LlmProvider, "createGenerate" | "classifyError">>;
 
 export function createLlmClient(opts: {
   table: LlmRoleTable;

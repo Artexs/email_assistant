@@ -32,8 +32,10 @@ export type ReplySet = (typeof replySets)[number];
 export const SIM_DEFAULT_CONCURRENCY = 8;
 export const SIM_DEFAULT_RPM = 240;
 
+const ids = llmProviderIds.join("|");
+
 export const evalUsage = [
-  "usage: bun run eval [--provider gemini|openai] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|delegation|all] [--bar 0.98] [--min-kept 30]",
+  `usage: bun run eval [--provider ${ids}] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|delegation|all] [--bar 0.98] [--min-kept 30]`,
   "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
   "                    [--out <file.md>]",
   "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>] [--bar 0.98] [--min-kept 30]",
@@ -45,7 +47,8 @@ export const evalUsage = [
   "                    [--prompt-version classifier-v2|classifier-v3|classifier-v4 (default: the production prompt)]",
   "                    [--prompt-parts urgency,history,list,profile|none (only with classifier-v3 or classifier-v4; profile only with classifier-v4; none = attachments only; default: the production parts when v3 is in production, else none)]",
   "                    (the history part gives the model the sim's generated received count and corrections: the persona group's ideal mix, not the model's own past labels)",
-  "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
+  `                    [--judge [--judge-provider ${ids}] [--judge-model <id>] [--judge-rpm <n>]]`,
+  "       (--provider sets every role of the run, the judge too; --judge-provider then moves only the judge; --model and --reasoning-effort pin the judged role; --judge-model pins the judge; default judge: the strong tier of the provider)",
   "       bun run eval --sim <scenario> --part dev|holdout|week --suspicious [--out <file.md>]   (suspicious-mail rules, no LLM)",
   "       bun run eval --sim <scenario> --part sent-dev|sent-holdout --extractor [--provider …] [--model …] [--reasoning-effort …]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
@@ -56,8 +59,8 @@ export const evalUsage = [
   `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev|week or --set reply-commitment)]`,
   `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
-  "                    [--judge [--judge-provider gemini|openai] [--judge-model <id>] [--judge-rpm <n>]]",
-  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider and --model pick the drafter; the judge model must differ from the drafter model (default judge gpt-6.1-terra); the injection set needs --judge)",
+  `                    [--judge [--judge-provider ${ids}] [--judge-model <id>] [--judge-rpm <n>]]`,
+  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider sets every role, --model picks the drafter model; the judge model must differ from the drafter model (default judge: the strong tier of the provider); the injection set needs --judge)",
 ].join("\n");
 
 const optionsSchema = z.object({

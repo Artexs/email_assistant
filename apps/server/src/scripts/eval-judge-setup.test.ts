@@ -169,14 +169,17 @@ describe("simRoleTable: the rates of a judged run on one provider", () => {
     ]);
   });
 
-  test("2: without --judge-rpm the judge role keeps LLM_JUDGE_RPM (judgeRoleRpm)", () => {
-    const table = simRoleTable(judged(), { rpm: 60, judge: true, judgeRoleRpm: 20 });
-    expect(table.roles.judge.rpm).toBe(20);
-    expect(table.providers.openai.rpm).toBe(60);
+  test("2: without --judge-rpm the judge role keeps LLM_JUDGE_RPM, also after a judge override", () => {
     expect(simRoleTable(judged({ LLM_JUDGE_RPM: "6" }), { rpm: 60, judge: true }).roles.judge.rpm).toBe(6);
     expect(simRoleTable(judged(), { rpm: 60, judge: true }).roles.judge.rpm).toBeNull();
+    const moved = llmRoleTable(loadConfig({ ...base, LLM_JUDGE_RPM: "20", GEMINI_API_KEY: "g" }), {
+      judge: { provider: "gemini" },
+    });
+    expect(simRoleTable(moved, { rpm: 60, judge: true }).roles.judge.rpm).toBe(20);
     // --judge-rpm wins over the role's rate.
-    expect(simRoleTable(judged(), { rpm: 60, judge: true, judgeRoleRpm: 6, judgeRpm: 30 }).roles.judge.rpm).toBe(30);
+    expect(simRoleTable(judged({ LLM_JUDGE_RPM: "6" }), { rpm: 60, judge: true, judgeRpm: 30 }).roles.judge.rpm).toBe(
+      30
+    );
   });
 
   test("3: without --judge a judge rate changes nothing", () => {
