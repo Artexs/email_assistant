@@ -542,13 +542,13 @@ Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the co
 
 A delegate is a person who gets tasks by mail. Manage delegates and delegations from the terminal. Each command needs `--org-id <uuid>`.
 
-- `bun run delegates:add --org-id <uuid> --name <text> --email <address> [--tags a,b,c]`: add a delegate. Output: `added <id>`, `already there`, or `refused: …` (exit 2).
+- `bun run delegates:add --org-id <uuid> --name <text> --email <address> [--tags a,b,c]`: add a delegate. Output: `added <id>`, `already there`, or `refused: …` (exit 1).
 - `bun run delegates:list --org-id <uuid> [--all]`: list active delegates. `--all` also shows disabled ones.
 - `bun run delegates:disable --org-id <uuid> --id <uuid>` and `delegates:enable`: switch a delegate off or on.
 - `bun run delegations:list --org-id <uuid> [--status drafted|sent|answered|overdue|done|cancelled] [--limit 50]`: list delegations.
 - `bun run delegations:done --org-id <uuid> --id <uuid>`: close an answered or overdue delegation. Its pending reminders expire.
 
-Rule: a delegate address is never a mailbox address of the organization. `delegates:add` refuses it (exit 2).
+Rule: a delegate address is never a mailbox address of the organization. `delegates:add` refuses it (exit 1).
 The audit rows have the actor `cli`.
 
 On the VPS run each command as `$C run --rm cli bun run …`. A mail can be delegated only to an active delegate: with no active delegate the classifier does not use the category `delegation`.
