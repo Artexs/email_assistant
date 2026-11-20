@@ -1,3 +1,6 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+
 import { expect, test, type Page } from "@playwright/test";
 
 import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from "@ea/core";
@@ -5,7 +8,7 @@ import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from
 import { publicClaims } from "../src/security/claims";
 
 import { expectNoA11yViolations } from "./a11y";
-import { builtPagePaths, distIsBuilt, docsTestOrigin } from "./site";
+import { builtPagePaths, distIsBuilt, DOCS_DIST, docsTestOrigin } from "./site";
 
 // The browser check of the built docs site. The page list comes from the built `.html` files, not from a hand list.
 // With `DOCS_TEST_URL` the tests open that site; the list still comes from the local `dist` (build the same commit first).
@@ -193,5 +196,48 @@ for (const [lang, path] of [
     for (const target of ["start/", "security/", "pricing/"]) {
       await expect(page.locator(`main .sl-markdown-content a[href="${target}"]`).first()).toBeVisible();
     }
+  });
+}
+
+// The demo video: a build with the three files (the release assets, or the fixtures of `apps/docs/e2e/fixtures`) shows a <video> with two caption
+// tracks; a build without them shows none. No playback assert: Playwright's Chromium may lack H.264. The test reads the built folder to know which case it checks.
+const DEMO_BUILT = ["demo.mp4", "demo.en.vtt", "demo.pl.vtt"].every((name) =>
+  existsSync(join(DOCS_DIST, "demo", name))
+);
+
+for (const [lang, path] of [
+  ["en", `${DOCS_BASE}/`],
+  ["pl", `${DOCS_BASE}/pl/`],
+] as const) {
+  test(`F121-11 the ${lang} home page ${DEMO_BUILT ? "has the demo video with two caption tracks and no violation" : "has no video: no demo files in the build"}`, async ({
+    page,
+  }) => {
+    const seen = await watch(page);
+    await open(page, path);
+    const video = page.locator("main video");
+    if (!DEMO_BUILT) {
+      await expect(video).toHaveCount(0);
+      return;
+    }
+    await expect(video).toHaveCount(1);
+    await expect(video).toHaveAttribute("controls", "");
+    await expect(video).not.toHaveAttribute("autoplay", /.*/);
+    const tracks = video.locator('track[kind="captions"]');
+    await expect(tracks).toHaveCount(2);
+    await expect(video.locator("track[default]")).toHaveAttribute("srclang", lang);
+    // The files answer 200 with a video or caption type, under the site's own origin.
+    const sources = [
+      (await video.getAttribute("src")) ?? "",
+      ...(await tracks.evaluateAll((list) => list.map((item) => item.getAttribute("src") ?? ""))),
+    ];
+    expect(sources).toHaveLength(3);
+    for (const src of sources) {
+      const response = await page.request.get(`${ORIGIN}${src}`);
+      expect(response.status(), src).toBe(200);
+      expect(response.headers()["content-type"], src).toMatch(src.endsWith(".mp4") ? /^video\/mp4/ : /^text\/vtt/);
+    }
+    expect(seen.violations, "CSP violations").toEqual([]);
+    expect(seen.pageErrors, "page errors").toEqual([]);
+    await expectNoA11yViolations(page);
   });
 }
