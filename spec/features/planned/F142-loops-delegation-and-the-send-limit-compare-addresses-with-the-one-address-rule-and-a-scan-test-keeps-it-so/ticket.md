@@ -10,8 +10,8 @@ Loops, delegation and the send limit compare addresses with the one address rule
 
 ## Scope
 
-- The one rule gets one name in `@ea/core` (`normalizeAddress`) and its SQL form moves to the platform DB layer, so the delegation module can use it.
-- The send limit and the sender rule patterns use the one rule.
+- The one rule gets one name in `@ea/core` (`normalizeAddress`); its SQL form moves to the platform DB layer.
+- The send limit and the sender rules use the one rule.
 - The delegation module: add a delegate, refuse a mailbox address, refuse a duplicate, and find the delegate of a reply.
 - The loops module and the core loop rules: loop creation, own addresses and aliases, the reply read, and the close match.
 - One scan test over these files fails on a private lower-case fold of an address.
@@ -25,14 +25,15 @@ Loops, delegation and the send limit compare addresses with the one address rule
 ## Acceptance
 
 - `normalizeSenderAddress` and `normalizeSenderPattern` no longer exist; `normalizeAddress` is the one export of the rule (typecheck).
-- A send to `ΝΊΚΟΣ@example.gr` and five recent sends to `νίκος@example.gr` hold the sixth send with `recipient_day` (unit test).
-- A delegate add of `İlker@Example.com` stores `ilker@example.com`, and a second add of `ilker@example.com` gives `exists` (integration test).
-- A loop to `ΝΊΚΟΣ@example.gr` closes on a reply outside the thread from `νίκος@example.gr` with the loop subject (integration test).
+- Five recent sends to `νίκος@example.gr` and `ΝΊΚΟΣ@example.gr` hold a sixth send to `νίκοσ@example.gr` with `recipient_day` (unit test).
+- After a delegate add of `İlker@Example.com`, an add of `ilker@example.com` gives `exists` (integration test).
+- Stored, shown and sent addresses keep today's form (trimmed, lower case); the folded form is never a recipient (integration test of the loop counterpart).
+- A loop to `νίκος@example.gr` closes on a reply outside the thread from `ΝΊΚΟΣ@example.gr` with the loop subject (integration test).
 - `bun test apps/server/src/address-rule-scan.test.ts` passes at the last stage, and fails when a `.toLowerCase()` of an address or an SQL `lower(` goes back into a scanned file (plan.md § Done when, 6 items).
 
 ## Slices
 
-Five stages, one worker each. Stage 01 first; then 02, 03 and 04 in parallel; then 05. No migration, no `bun.lock` change. Stage 03 is `[risky]` and gets a review. Detail: `plan.md` § How to run.
+Five stages: 01; then 02, 03, 04 in parallel; then 05. No migration, no `bun.lock` change. Stage 03 is `[risky]`. Detail: `plan.md` § How to run.
 
 ## Sequenced
 
