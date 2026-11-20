@@ -122,7 +122,10 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `apps/server/test/integration/mail-host-blocked.test.ts`
 - `apps/server/test/integration/mail-password.test.ts`
 - `apps/server/test/integration/mail-remove.test.ts`
-- `apps/server/test/integration/mail-jobs.test.ts`
+- `apps/server/test/integration/mail-jobs-sync.test.ts`
+- `apps/server/test/integration/mail-jobs-suspended.test.ts`
+- `apps/server/test/integration/mail-jobs-sent-pass.test.ts`
+- `apps/server/test/integration/mail-jobs-logs.test.ts`
 - `apps/server/test/integration/imap-sent-greenmail.test.ts`
 - `apps/server/src/modules/mail/sync-rules.test.ts`
 - `apps/server/src/modules/mail/host-guard.test.ts`

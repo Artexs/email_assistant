@@ -83,7 +83,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 ## Tests
 
 - `apps/server/test/integration/imap-sent-greenmail.test.ts`
-- `apps/server/test/integration/mail-jobs.test.ts`
+- `apps/server/test/integration/mail-jobs-sent-pass.test.ts`
 - `apps/server/test/integration/mail-sent-sync.test.ts`
 - `apps/server/test/integration/mail-sent-budget.test.ts`
 - `apps/server/test/integration/mail-sent-sync-concurrent.test.ts`
