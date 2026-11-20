@@ -132,7 +132,7 @@ $ bun run fake-tg wait "Urgent mail" --timeout 600 --after 7
 | 2    | Usage error: bad option, missing argument, bad number or bad regex. The usage text goes to stderr. |
 | 3    | The fake is not reachable at the URL.                                                              |
 
-Errors go to stderr as `fake-tg: <message>`.
+Errors go to stderr as `fake-tg: <message>`. A usage error adds the `usage:` lines. `fake-tg --help` prints the usage, the risk (`dev`) and this table, and exits 0. The code of the tool is in `cli-args.ts` (the description and the parser), `cli-run.ts` (help, exit code: the only file that calls `process.exit`) and `cli.ts`. The standard of all tools is `docs/cli.md`.
 
 ## Read-only chat view
 

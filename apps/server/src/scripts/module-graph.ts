@@ -1,8 +1,7 @@
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 
-import { createCliOutput } from "../platform/cli";
-import { describeError } from "../platform/errors";
+import { runCli, type CliSpec } from "../platform/cli";
 
 import {
   formatFor,
@@ -12,11 +11,11 @@ import {
   renderGraphJson,
   renderGraphMarkdown,
 } from "./lib/module-graph-build";
-
-const out = createCliOutput("module-graph");
+import { cliDescriptions, parseModuleGraphArgs } from "./module-graph-args";
 
 // Writes docs/diagrams/module-graph.{json,md} from the imports in apps/server/src/modules. No DB, no env.
-async function main(): Promise<number> {
+const main: CliSpec["main"] = async (argv, out) => {
+  parseModuleGraphArgs(argv);
   const paths = graphPaths(path.resolve(import.meta.dir, "../../../.."));
   const graph = readModuleGraph(paths.modulesDir);
   const layers = loadLayers(paths.layersFile);
@@ -24,12 +23,8 @@ async function main(): Promise<number> {
   writeFileSync(paths.markdown, await formatFor(paths.markdown, renderGraphMarkdown(graph, layers)));
   out.print(`module graph: ${graph.modules.length} modules, ${graph.edges.length} edges`);
   return 0;
-}
+};
 
-main().then(
-  (code) => process.exit(code),
-  (error: unknown) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  }
-);
+if (import.meta.main) {
+  await runCli({ prefix: "module-graph", descriptions: cliDescriptions, main });
+}
