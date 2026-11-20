@@ -47,3 +47,8 @@ Groups G07 and G08 (both `FIX-NEVER-RUNS`). Owner answer: keep `tools/mail-oauth
 
 `bun test tools/mail-oauth-spike` (log `/tmp/f125-s18/spike.log`): `23 pass`, `0 fail`, `138 expect() calls`, `Ran 23 tests across 2 files`. Case delta: the unit suite grows by 23. No lcov or mutant check (the cases never ran before).
 
+## check:job
+
+`bun run check:job` (full suites, because `package.json` changed; log `/tmp/f125-s18/check-job.log`):
+
+`check:job PASS master=e2bfbc7cbd tip=0ec9c81272 full=1`
