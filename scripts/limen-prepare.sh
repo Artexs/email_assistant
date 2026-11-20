@@ -26,7 +26,8 @@ fi
 [[ -f "$root/.env" ]] || { echo "limen-prepare: no .env in $root" >&2; exit 1; }
 umask 077
 trap 'rm -f .env.base-db' EXIT
-grep -vE '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' "$root/.env" > .env
+# The LLM lines of the main .env (a real provider, a stopgap endpoint) make config tests fail in a job: a job never calls a real provider, so it gets none.
+grep -vE '^(DATABASE_URL|MIGRATOR_DATABASE_URL|LLM_[A-Z_]*|OPENAI_[A-Z_]*|GEMINI_[A-Z_]*|DEEPSEEK_[A-Z_]*)=' "$root/.env" > .env
 # The DB URLs of the main checkout are needed once, to create the job DB.
 grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' "$root/.env" > .env.base-db
 echo "limen-prepare: .env copied from the main checkout"

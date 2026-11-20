@@ -3,8 +3,8 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
-import { REPO_URL } from "../in-place";
-import { claimProblems, parseLedger, type PublicClaim, proofUrl } from "./claims";
+import { REPO_URL, repoRoot } from "../in-place";
+import { claimProblems, parseLedger, type PublicClaim, proofUrl, publicClaims } from "./claims";
 
 const LEDGER = `# Claims
 
@@ -122,5 +122,107 @@ describe("proofUrl", () => {
   });
   test("the default ref is master without DOCS_GIT_REF", () => {
     if (process.env.DOCS_GIT_REF === undefined) expect(proofUrl("a/b.ts")).toBe(`${REPO_URL}/blob/master/a/b.ts`);
+  });
+});
+
+describe("the public claims of the security page", () => {
+  const ledgerText = readFileSync(join(import.meta.dir, "../../../../docs/legal/claims.md"), "utf8");
+
+  test("T1 the claim check finds no problem at HEAD", () => {
+    expect(claimProblems(publicClaims, repoRoot(), ledgerText)).toEqual([]);
+  });
+
+  test("T2 every claim has an English and a Polish text with no angle bracket and no TODO", () => {
+    expect(publicClaims.length).toBeGreaterThanOrEqual(5);
+    for (const claim of publicClaims) {
+      const texts = [claim.text.en, claim.text.pl, claim.condition?.en ?? "x", claim.condition?.pl ?? "x"];
+      for (const text of texts) {
+        expect(text.trim()).not.toBe("");
+        expect(text).not.toMatch(/[<>]|TODO/);
+      }
+      expect(claim.id).toMatch(/^[a-z][a-z0-9-]*$/);
+    }
+  });
+
+  test("T3 the first claim is never-sends-alone and its ledger holds the send-approval row", () => {
+    expect(publicClaims[0]?.id).toBe("never-sends-alone");
+    expect(publicClaims[0]?.ledger).toContain("C018");
+    expect(parseLedger(ledgerText).get("C018")?.source).toContain("drafts-and-send.md");
+  });
+
+  test("the order is the order of the page, and no claim text or condition names a condition by a config key or a provider that is off by default", () => {
+    expect(publicClaims.map((claim) => claim.id)).toEqual([
+      "never-sends-alone",
+      "mail-storage",
+      "ai-provider-receives",
+      "ai-provider-keeps",
+      "telegram",
+      "backups",
+      "logs",
+      "healthchecks",
+      "retention",
+      "export-and-delete",
+      "undo",
+      "shadow-first",
+      "private-panel",
+    ]);
+    for (const claim of publicClaims) {
+      for (const text of [claim.text.en, claim.text.pl, claim.condition?.en ?? "", claim.condition?.pl ?? ""]) {
+        expect(text).not.toMatch(/gemini/i);
+        expect(text).not.toMatch(/\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/);
+      }
+    }
+  });
+
+  test("a claim that cites a ledger row that names Gemini says so only with the condition: optional, off by default", () => {
+    const rows = parseLedger(ledgerText);
+    const geminiRows = new Set(
+      [...rows.values()]
+        .filter((row) => /gemini/i.test(row.source) || /gemini/i.test(row.condition))
+        .map((row) => row.id)
+    );
+    for (const claim of publicClaims) {
+      if (!claim.ledger.some((id) => geminiRows.has(id))) continue;
+      expect(claim.condition?.en.toLowerCase()).toContain("optional, off by default");
+    }
+  });
+
+  // The 7-day limit is for the mail that the assistant classifies. The earlier mails of the thread go along as context, with no
+  // age limit (`listThreadContext` in `apps/server/src/modules/mail/repo/lookup.ts` filters only on `received_at`). A text that names
+  // the 7-day limit must say that it is about the classified mail and name the thread context, so a reader cannot take the limit for all mail that the AI gets.
+  const SEVEN_DAYS = /older than 7 days|starszej niż 7 dni|starszych niż 7 dni/i;
+  const CONTEXT = /context|kontekst/i;
+  const CLASSIFIED = /classif|klasyfik/i;
+  const sevenDayProblems = (texts: readonly string[]): string[] =>
+    texts.filter((text) => SEVEN_DAYS.test(text) && !(CONTEXT.test(text) && CLASSIFIED.test(text)));
+
+  test("a text that names the 7-day limit also names the thread context", () => {
+    expect(sevenDayProblems(["It does not send mail older than 7 days."])).toEqual([
+      "It does not send mail older than 7 days.",
+    ]);
+    expect(sevenDayProblems(["Nie wysyła wiadomości starszych niż 7 dni."]).length).toBe(1);
+    // The first wording of the claim named "context" for another reason and still said the false thing.
+    expect(
+      sevenDayProblems([
+        "It sends up to three earlier mails of the same thread as context. It does not send mail older than 7 days.",
+      ]).length
+    ).toBe(1);
+    expect(sevenDayProblems(["Mail older than 7 days is not classified; context mails can be older."])).toEqual([]);
+  });
+
+  test("no claim, in either language, and no line of the page names the 7-day limit without the thread context", () => {
+    const claimTexts = publicClaims.flatMap((claim) => [
+      claim.text.en,
+      claim.text.pl,
+      claim.condition?.en ?? "",
+      claim.condition?.pl ?? "",
+    ]);
+    expect(sevenDayProblems(claimTexts)).toEqual([]);
+    const page = readFileSync(join(import.meta.dir, "../content/docs/security.mdx"), "utf8");
+    expect(sevenDayProblems(page.split("\n"))).toEqual([]);
+    const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
+    expect(receives?.text.en).toMatch(/older than 7 days/);
+    expect(receives?.text.en).toMatch(/thread as context/);
+    expect(receives?.text.pl).toMatch(/kontekst/);
   });
 });
