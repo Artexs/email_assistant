@@ -39,7 +39,7 @@ import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
 import { parseLabArgs, usage } from "./lab-args";
-import { runLabCommand } from "./lab-run";
+import { runLabCommand } from "./lib/lab-run";
 
 const cli = createCliOutput("lab");
 

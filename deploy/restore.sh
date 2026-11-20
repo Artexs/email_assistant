@@ -254,7 +254,7 @@ restore() {
   creds="$("${C[@]}" run --rm -T cli bun run credentials:check </dev/null)"
   echo "$creds"
   # The result line is `[credentials-check] credentials ok=<n> failed=<m>` (createCliOutput adds the prefix; the script holds the
-  # text in apps/server/src/scripts/credentials-check-lines.ts). The bare line is accepted too.
+  # text in apps/server/src/scripts/lib/credentials-check-lines.ts). The bare line is accepted too.
   # Exactly one exact result line counts. Two lines (a fault, or output that a bad actor shaped) could hide a failure behind a good
   # line, so the script stops; the message never prints a line of the output.
   local results lines

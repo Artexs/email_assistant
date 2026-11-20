@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { parseCheckMigrationsArgs } from "./check-migrations-args";
-import { CONTRACT_CHECK_AFTER } from "./check-migrations-rules";
+import { CONTRACT_CHECK_AFTER } from "./lib/check-migrations-rules";
 
 const script = join(import.meta.dir, "check-migrations.ts");
 const cutoff = "20260101000000";

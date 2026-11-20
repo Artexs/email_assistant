@@ -1,4 +1,4 @@
-import type { RejectReason } from "@ea/core";
+import { DAY_MS, type RejectReason } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -8,7 +8,7 @@ import { inTransaction } from "./apply-shared";
 import { insertMistakeOnce, lockSend, upsertRejectReason, type ActionFeedbackVia } from "./repo";
 
 // A mistake can be marked within 7 days of the send.
-export const MISTAKE_WINDOW_MS = 7 * 24 * 3_600_000;
+export const MISTAKE_WINDOW_MS = 7 * DAY_MS;
 
 export type RejectReasonResult = { kind: "saved" } | { kind: "not_rejected" } | { kind: "not_found" };
 export type MistakeResult =

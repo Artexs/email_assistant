@@ -1,4 +1,4 @@
-import { isQuietTime, QUIET_HOURS, quietEnd, type QuietHours } from "@ea/core";
+import { isQuietTime, QUIET_HOURS, quietEnd, type QuietHours, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -6,7 +6,7 @@ import { getOrganization, isFeatureOn, listQuietHoursOf } from "../tenancy";
 
 import type { ClaimedOutbox } from "./repo";
 
-const MIN_HOLD_MS = 60_000;
+const MIN_HOLD_MS = MINUTE_MS;
 
 export interface QuietGate {
   /** The time zone of the organization, read once per batch. Throws when the organization is gone. */

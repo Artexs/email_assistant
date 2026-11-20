@@ -5,7 +5,7 @@ import { createCliOutput } from "../platform/cli";
 import { describeError } from "../platform/errors";
 
 import { checkMigrationsUsage, parseCheckMigrationsArgs } from "./check-migrations-args";
-import { checkMigrationSql, migrationTimestamp } from "./check-migrations-rules";
+import { checkMigrationSql, migrationTimestamp } from "./lib/check-migrations-rules";
 
 const out = createCliOutput("check-migrations");
 

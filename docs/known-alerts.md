@@ -461,8 +461,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/platform/auth.ts` (the default `sendResetPassword`, level `info`, field `user_id`).
-- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP. With the auth-mail sender off, the `/api/auth/*` allow-list answers 404 for that path. With the sender on (S6b), `webDeps` passes its own `sendResetPassword`. The CLIs (`web:invite`, `org:invite`) pass their own callback in `scripts/invite-delivery.ts` and print the link, so they log no line.
-- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`).
+- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP. With the auth-mail sender off, the `/api/auth/*` allow-list answers 404 for that path. With the sender on (S6b), `webDeps` passes its own `sendResetPassword`. The CLIs (`web:invite`, `org:invite`) pass their own callback in `scripts/lib/invite-delivery.ts` and print the link, so they log no line.
+- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/lib/invite-delivery.ts`, `scripts/e2e-seed.ts`).
 - **Status:** investigating
 
 ### `operator_notice_unsent`, `operator_notice_send_failed` and `operator_notice_failed` (field `kind=auth_mail_failed`)

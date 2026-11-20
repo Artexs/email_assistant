@@ -6,6 +6,8 @@ import {
   type SenderRule,
   type SuspiciousInput,
   type SuspiciousReason,
+  DAY_MS,
+  MINUTE_MS,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -82,7 +84,7 @@ interface SentCandidates {
 // A per-mailbox cache of the Sent candidates. The key is the count and the newest id of the user Sent mail (a new Sent mail ends the entry) and the age
 // of 10 minutes (the 90-day window and the newest results of incoming mail move on). Staleness only ever keeps a target on the
 // list a little longer, or leaves one off for 10 minutes; a target never exempts a sender. One entry per mailbox, at most 1000.
-const SENT_CACHE_MAX_AGE_MS = 10 * 60_000;
+const SENT_CACHE_MAX_AGE_MS = 10 * MINUTE_MS;
 const SENT_CACHE_MAX_ENTRIES = 1000;
 const sentCache = new Map<string, SentCandidates>();
 
@@ -114,7 +116,7 @@ async function sentCandidates(
     return cached.domains;
   }
 
-  const since = new Date(now.getTime() - SENT_DOMAIN_WINDOW_DAYS * 24 * 3_600_000);
+  const since = new Date(now.getTime() - SENT_DOMAIN_WINDOW_DAYS * DAY_MS);
   let domains: string[] = [];
   const written =
     mails === 0
@@ -203,7 +205,7 @@ export async function loadSuspiciousContext(
     sentDomains = await sentDomainsToKnow(db, ctx, mailbox.id, input.now, [...knownDomains]);
   }
 
-  const since = new Date(input.now.getTime() - FREQUENT_WINDOW_DAYS * 24 * 3_600_000);
+  const since = new Date(input.now.getTime() - FREQUENT_WINDOW_DAYS * DAY_MS);
   const candidates = [...new Set(input.senders.flatMap((sender) => (sender === null ? [] : [lower(sender)])))];
   const frequent = new Set(await listFrequentSenders(db, ctx, mailbox.id, candidates, since));
 

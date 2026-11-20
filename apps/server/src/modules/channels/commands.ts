@@ -20,6 +20,7 @@ import {
   type CoreTexts,
   type NoticeDetail,
   type OutMessage,
+  DAY_MS,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -77,7 +78,7 @@ const log = createLog("channels");
 
 const ADDRESS_MAX = 60;
 
-const ACTIONS_WINDOW_MS = 24 * 3_600_000;
+const ACTIONS_WINDOW_MS = DAY_MS;
 
 // The detail level of a chat: the effective level of the member of the link now (flag, lock, own level). The same reader as the sender.
 export async function telegramDetailOf(deps: CommandDeps, link: LinkedChat): Promise<NoticeDetail> {

@@ -26,12 +26,12 @@ import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable } from "../platform/llm";
 
 import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
-import { loadEvalConfig } from "./eval-config";
-import { runDrafterEval } from "./eval-drafter";
-import { runExtractorEval } from "./eval-extractor";
-import { evalFailureLine } from "./eval-failure-line";
-import { runSim } from "./eval-sim";
-import { runSuspicious } from "./eval-suspicious";
+import { loadEvalConfig } from "./lib/eval-config";
+import { runDrafterEval } from "./lib/eval-drafter";
+import { runExtractorEval } from "./lib/eval-extractor";
+import { evalFailureLine } from "./lib/eval-failure-line";
+import { runSim } from "./lib/eval-sim";
+import { runSuspicious } from "./lib/eval-suspicious";
 
 const cli = createCliOutput("eval");
 

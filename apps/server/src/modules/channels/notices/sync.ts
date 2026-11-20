@@ -1,3 +1,5 @@
+import { MINUTE_MS } from "@ea/core";
+
 import { type TenantContext } from "../../../platform/db";
 import { type MailboxSummary } from "../../mail";
 import { type NoticeRecipient } from "../notice-fan-out";
@@ -5,8 +7,8 @@ import { cancelPendingOutbox, listSentStaleEpisodes } from "../repo";
 
 import { NoticeDeps, queue, warnSkipped, type Detector } from "./run";
 
-export const SYNC_LATE_MS = 30 * 60_000;
-export const STALE_GRACE_AFTER_START_MS = 10 * 60_000;
+export const SYNC_LATE_MS = 30 * MINUTE_MS;
+export const STALE_GRACE_AFTER_START_MS = 10 * MINUTE_MS;
 
 async function detectSync(
   deps: NoticeDeps,

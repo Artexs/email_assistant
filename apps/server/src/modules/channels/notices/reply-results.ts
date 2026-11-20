@@ -1,4 +1,4 @@
-import { NoticeViewError } from "@ea/core";
+import { NoticeViewError, MINUTE_MS } from "@ea/core";
 
 import { listEndedRequestsVia, USER_REQUEST_TIMEOUT_MS, type EndedRequest } from "../../replies";
 import { isFeatureOn } from "../../tenancy";
@@ -13,7 +13,7 @@ import { queue, warnSkipped, type Detector, type OrgRun } from "./run";
 // reason code. Only the owner who asked gets it, only when the request came through Telegram (the audit row of the service says so) and
 // only while the consent of that owner covers reply data. Each answer is queued once: the line by its dedup key, the card by a check for a
 // card of that send queued after the end of the request. A request is looked at for 30 minutes after its end.
-export const REPLY_RESULT_WINDOW_MS = 30 * 60_000;
+export const REPLY_RESULT_WINDOW_MS = 30 * MINUTE_MS;
 const RESULT_LIMIT = 50;
 
 async function answerCard(run: OrgRun, request: EndedRequest): Promise<"queued" | "none"> {
