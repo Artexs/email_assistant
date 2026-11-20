@@ -61,6 +61,17 @@ const PL_TEXTS = {
   rs_samples_failed: "Asystent nie mógł napisać tego przykładu.",
   rs_samples_no_draft: "Asystent nie napisał przykładu dla tej wiadomości.",
   rs_samples_slow: "Przykłady powstają dłużej niż zwykle. Odśwież stronę za minutę.",
+  rs_suggest_button: "Zaproponuj mój styl na podstawie wysłanych wiadomości",
+  rs_suggest_note:
+    "Jednorazowo wysyła do dostawcy AI maksymalnie 100 wiadomości wysłanych z tej skrzynki z ostatnich 14 dni. Zachowany zostanie tylko tekst, który zapiszesz.",
+  rs_suggest_running: "Asystent czyta Twoje wysłane wiadomości…",
+  rs_suggest_use: "Użyj tego tekstu",
+  rs_suggest_discard: "Odrzuć",
+  rs_suggest_too_few: "Na razie za mało wysłanych wiadomości ({count} z 5). Spróbuj ponownie po wysłaniu kolejnych.",
+  rs_suggest_sent_off: "Włącz „Śledź moją wysłaną pocztę”, aby z tego skorzystać.",
+  rs_suggest_limit: "Możesz poprosić o 3 propozycje dziennie. Spróbuj ponownie później.",
+  rs_suggest_busy: "Propozycja jest właśnie tworzona. Poczekaj chwilę.",
+  rs_suggest_failed: "Tym razem nie udało się przygotować propozycji. Spróbuj ponownie później.",
 } as const;
 
 const ownKeys = Object.keys(PL_TEXTS) as (keyof typeof PL_TEXTS)[];

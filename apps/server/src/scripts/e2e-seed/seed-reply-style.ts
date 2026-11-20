@@ -15,8 +15,9 @@ import { seedAssistMailbox } from "./seed-assist-mailbox";
 import type { SeedContext } from "./seed-context";
 
 export async function seedReplyStyle({ db, secretBox }: SeedContext) {
-  // One organization per project for the style card spec. The flag `reply_drafts` is on; two mailboxes in assist mode,
-  // one with a password and one that signs in with a provider (the reply drafts switch is disabled for it).
+  // One organization per project for the style card spec. The flags `reply_drafts`, `style_from_sent` and `sent_sync` are on
+  // (sent tracking stays off until a spec turns it on); two mailboxes in assist mode, one with a password and one that signs in
+  // with a provider (the reply drafts switch is disabled for it).
   const replyStyleIds = {} as Record<
     E2eProject,
     { orgId: string; ownerId: string; memberId: string; boxId: string; oauthId: string }
@@ -34,12 +35,9 @@ export async function seedReplyStyle({ db, secretBox }: SeedContext) {
       displayName: `E2E Reply Style member ${project}`,
     });
     await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
-    await upsertOrgFeature(db, ctx, {
-      flag: "reply_drafts",
-      enabled: true,
-      setBy: replyOwner.userId,
-      setAt: new Date(),
-    });
+    for (const flag of ["reply_drafts", "style_from_sent", "sent_sync"] as const) {
+      await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: replyOwner.userId, setAt: new Date() });
+    }
     const boxId = await seedAssistMailbox(db, secretBox, ctx, e2eReplyStyleMailbox(project, "box"));
     const oauthId = await seedAssistMailbox(db, secretBox, ctx, e2eReplyStyleMailbox(project, "oauth"), "assist", {
       oauthProvider: "google",

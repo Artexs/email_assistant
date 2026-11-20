@@ -52,6 +52,18 @@ export const enReply = {
   rs_samples_failed: "The assistant could not write this sample.",
   rs_samples_no_draft: "The assistant wrote no sample for this mail.",
   rs_samples_slow: "The samples take longer than usual. Reload the page in a minute.",
+  // The writing style suggested from the sent mail of the owner
+  rs_suggest_button: "Suggest my style from my sent mail",
+  rs_suggest_note:
+    "Sends up to 100 sent mails of this mailbox from the last 14 days to the AI provider, once. Only the text you save is kept.",
+  rs_suggest_running: "The assistant is reading your sent mail…",
+  rs_suggest_use: "Use this text",
+  rs_suggest_discard: "Discard",
+  rs_suggest_too_few: "Not enough sent mail yet ({count} of 5). Try again after you send more mail.",
+  rs_suggest_sent_off: "Turn on 'Track my sent mail' to use this.",
+  rs_suggest_limit: "You can ask for 3 suggestions a day. Try again later.",
+  rs_suggest_busy: "A suggestion is being written. Wait a moment.",
+  rs_suggest_failed: "No suggestion this time. Try again later.",
   // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Report",
   rep_off: "This page is off for your organization.",

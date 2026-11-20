@@ -1,14 +1,14 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
-import { t } from "../../src/i18n";
+import { t, tp } from "../../src/i18n";
 import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
-// The style card (name, signature, writing style, Preview) and the reply drafts switch. The seed gives each project an
-// organization with the flag `reply_drafts` on and two mailboxes: `box` (password) and `oauth` (a provider is set). The tests of a
+// The style card (name, signature, writing style, Preview, the style suggestion) and the reply drafts switch. The seed gives each project an
+// organization with the flags `reply_drafts`, `style_from_sent` and `sent_sync` on (sent tracking is off) and two mailboxes: `box` (password) and `oauth` (a provider is set). The tests of a
 // project run in this order and leave the organization as they found it (`reset`).
 //
 // The e2e server runs with the LLM scope off, so a real Preview answers `llm_off` (the first Preview test checks that round trip). The
@@ -61,6 +61,7 @@ async function reset(page: Page): Promise<void> {
         headers,
         data: { value: false },
       });
+      await page.request.patch(`/api/settings/${mailbox.id}/sent-sync`, { headers, data: { enabled: false } });
     }
   } catch {
     // Ignored on purpose.
@@ -435,4 +436,125 @@ test("T12: a run that is not over after one minute says so, keeps the button off
   await expect(card(page).locator("[data-samples=slow]")).toHaveText(en.rs_samples_slow);
   await expect(card(page).getByRole("alert")).toHaveCount(0);
   await expect(button).toBeDisabled();
+});
+
+const sentSyncOn = (page: Page) =>
+  page.request.patch(`/api/settings/${org().box.id}/sent-sync`, {
+    headers: { origin: E2E_BASE_URL },
+    data: { enabled: true },
+  });
+const suggestButton = (page: Page) => card(page).getByRole("button", { name: en.rs_suggest_button, exact: true });
+
+test("T13: with sent tracking off the owner reads why and sees no button; an OAuth mailbox gets the reason; a member sees nothing", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  await expect(card(page).getByText(en.rs_suggest_sent_off)).toBeVisible();
+  await expect(suggestButton(page)).toHaveCount(0);
+  await page.goto(`/settings?mailbox=${org().oauth.id}`);
+  await expect(card(page)).toBeVisible();
+  await expect(card(page).getByText(en.rs_switch_oauth).first()).toBeVisible();
+  await expect(suggestButton(page)).toHaveCount(0);
+
+  await context.clearCookies();
+  await startSession(context, page, "member");
+  await expect(card(page).getByText(en.rs_suggest_sent_off)).toHaveCount(0);
+  await expect(suggestButton(page)).toHaveCount(0);
+});
+
+test("T14: the owner asks for a suggestion, uses the text and saves; nothing is saved before Save", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  expect((await sentSyncOn(page)).ok()).toBe(true);
+  await page.reload();
+  await expect(card(page)).toBeVisible();
+
+  const asked: string[] = [];
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/mailboxes/*/profile/style-suggestion", async (route) => {
+    asked.push(route.request().method());
+    await held;
+    await route.fulfill({ json: { text: "Pisz krótko i uprzejmie. <b>Bez</b> ozdobników.", count: 7 } });
+  });
+  await styleField(page).fill("Stary styl.");
+  await suggestButton(page).click();
+  await expect(suggestButton(page)).toBeDisabled();
+  release();
+
+  const box = card(page).locator("[data-suggest-text]");
+  await expect(box).toHaveText("Pisz krótko i uprzejmie. <b>Bez</b> ozdobników.");
+  await expect(card(page).getByText(tp("rs_suggest_result", 7))).toBeVisible();
+  await expect(card(page).locator("[data-suggest-text] b")).toHaveCount(0);
+  // The box is not the field: the old text stays until "Use this text".
+  await expect(styleField(page)).toHaveValue("Stary styl.");
+  await expectNoA11yViolations(page);
+
+  await card(page).getByRole("button", { name: en.rs_suggest_use, exact: true }).click();
+  await expect(styleField(page)).toHaveValue("Pisz krótko i uprzejmie. <b>Bez</b> ozdobników.");
+  await expect(styleField(page)).toBeFocused();
+  await expect(box).toHaveCount(0);
+  expect(asked).toEqual(["POST"]);
+
+  // Nothing is saved before Save: a reload shows an empty writing style; the same steps and Save keep the text.
+  await page.unroute("**/api/mailboxes/*/profile/style-suggestion");
+  await page.reload();
+  await expect(styleField(page)).toHaveValue("");
+  await page.route("**/api/mailboxes/*/profile/style-suggestion", (route) =>
+    route.fulfill({ json: { text: "Pisz krótko.", count: 7 } })
+  );
+  await suggestButton(page).click();
+  await card(page).getByRole("button", { name: en.rs_suggest_use, exact: true }).click();
+  await card(page).getByRole("button", { name: en.save, exact: true }).click();
+  await expect(page.getByText(en.rs_saved_toast)).toBeVisible();
+  await page.reload();
+  await expect(styleField(page)).toHaveValue("Pisz krótko.");
+});
+
+test("T15: a discarded suggestion closes the box and leaves the field; the refusals have their own lines", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, "owner");
+  expect((await sentSyncOn(page)).ok()).toBe(true);
+  await page.reload();
+  await expect(card(page)).toBeVisible();
+  await styleField(page).fill("Mój styl.");
+
+  await page.route("**/api/mailboxes/*/profile/style-suggestion", (route) =>
+    route.fulfill({ json: { text: "Inny styl.", count: 5 } })
+  );
+  await suggestButton(page).click();
+  await expect(card(page).locator("[data-suggest-text]")).toHaveText("Inny styl.");
+  await card(page).getByRole("button", { name: en.rs_suggest_discard, exact: true }).click();
+  await expect(card(page).locator("[data-suggest-text]")).toHaveCount(0);
+  await expect(styleField(page)).toHaveValue("Mój styl.");
+  await page.unroute("**/api/mailboxes/*/profile/style-suggestion");
+
+  const answers = [
+    { status: 409, json: { error: "too_few", count: 3 }, text: t("rs_suggest_too_few", { count: 3 }) },
+    { status: 409, json: { error: "sent_off" }, text: en.rs_suggest_sent_off },
+    { status: 429, json: { error: "suggest_limit" }, text: en.rs_suggest_limit },
+    { status: 429, json: { error: "suggest_busy" }, text: en.rs_suggest_busy },
+    { status: 200, json: { kind: "failed", reason: "llm_cap" }, text: en.rs_preview_cap },
+    { status: 200, json: { kind: "failed", reason: "checks" }, text: en.rs_suggest_failed },
+  ];
+  for (const answer of answers) {
+    await page.route("**/api/mailboxes/*/profile/style-suggestion", (route) =>
+      route.fulfill({ status: answer.status, json: answer.json })
+    );
+    await suggestButton(page).click();
+    await expect(card(page).locator("[data-suggest=shown]")).toHaveText(answer.text);
+    await expect(card(page).locator("[data-suggest-text]")).toHaveCount(0);
+    await page.unroute("**/api/mailboxes/*/profile/style-suggestion");
+  }
+  // The real route on this server: the model is off, so the answer is a refusal with its own text, never a suggestion.
+  await suggestButton(page).click();
+  await expect(card(page).locator("[data-suggest=shown]")).toHaveText(en.rs_preview_llm_off);
+  await expect(card(page).locator("[data-suggest-text]")).toHaveCount(0);
 });
