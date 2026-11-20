@@ -24,7 +24,7 @@ May run next to 03 and 05: this stage adds only `mail/repo/sender-delays.ts` and
   7. A mail of `c@example.com` whose In-Reply-To names two own mails takes the newer one (one sample).
   8. Tenant (plan rule form): both readers with org A's `ctx` and org B's mailbox id return `[]`.
   9. Mailbox: a Sent mail of a second mailbox of org A never pairs with a mail of the first.
-- **Guard check:** remove `s.sent_at > w.received_at` in the user-delay lateral, see test 3 fail; remove `LIMIT 1`, see test 4 fail; remove the window `org_id` filter, see test 8 fail; remove `s.mailbox_id` in `own_sent`, see test 9 fail.
+- **Guard check:** remove `s.sent_at > w.received_at` in the user-delay lateral, see test 3 fail; remove `LIMIT 1`, see test 4 fail; remove the window `org_id` filter together with the `sent_emails.org_id` filter of the lateral, see user test 8 fail (each alone fails no test: the composite foreign key `(mailbox_id, org_id)` keeps rows of another organization out of this mailbox); remove the window `org_id` filter together with the `own_sent` `org_id` filter, see their test 5 fail; remove `sent_emails.mailbox_id` in the lateral, see user test 9 fail; remove it in `own_sent`, see their test 6 fail.
 - **SQL check:** compare the `.compile()` SQL of both readers with today's text (scratch, not committed); name any change of `LATERAL`, `MATERIALIZED`, `DISTINCT ON` or `LIMIT 1` in your final message.
 - **Check:** `bun test` on the new file, the golden test and the `contacts-refresh*` integration files.
 - **Done when:** the golden test passes unchanged, the new tests pass, `contacts/activity.ts` names no `sent_emails` once stage 03 has landed too, and the Proof prints `PROOF_OK`.
