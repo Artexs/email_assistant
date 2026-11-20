@@ -116,9 +116,10 @@ async function emails(trx: Db | Transaction<DB>, mailboxId: string) {
 
 async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
   const row = await trx
-    .selectFrom("mailboxes")
+    .selectFrom("mailbox_folders")
     .select(["uidvalidity", "last_uid"])
-    .where("id", "=", mailboxId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", "inbox")
     .executeTakeFirstOrThrow();
   return { uidValidity: Number(row.uidvalidity), lastUid: Number(row.last_uid) };
 }

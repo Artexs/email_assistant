@@ -775,3 +775,9 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: removes the 8 deadlocks (4 of 5 traced to DDL in the schema Down/Up tests) without a serial exception list.
 - Undo: remove the `command:` line in `deploy/compose.dev.yaml`; delete `worker-db.ts`, its call in `preload.ts` and `EA_TEST_WORKER_DB=1` in `test:int`; restore `expectEvent` in `channels-operator.test.ts`.
 - Source: `spec/features/active/F124-*/stage-02-open.md`.
+
+### 2026-11-20 · F062 stage 02: two extra mapper checks; rollback SQL removed from the README · scope · new
+
+- Decision: (1) `mail-repo.test.ts` gets two `not.toHaveProperty` checks on `uidvalidity` and `last_uid` of the mapped row (they read no column, so they survive stage 05). (2) `deploy/README.md` loses rollback sub-bullet (b), the SQL that copied the cursor from `mailboxes` (stale value; stage rule "no SQL").
+- Undo: delete the two lines; restore the bullet from `git show 477f939b^`.
+- Source: `.limen/jobs/2026-11-19-f062-stage-02-54735125/note.md`.

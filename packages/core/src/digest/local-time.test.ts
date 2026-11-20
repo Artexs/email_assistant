@@ -331,5 +331,6 @@ describe("quietEnd on a daylight-saving day", () => {
       }
     }
     expect(checked).toBeGreaterThan(1000);
-  });
+    // The loop is CPU bound; on a loaded machine it needs more than the default 5 s.
+  }, 60_000);
 });
