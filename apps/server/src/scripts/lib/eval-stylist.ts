@@ -16,8 +16,8 @@ import { llmErrorCode } from "../../platform/llm";
 import { corpusDir, readScenario } from "../../platform/sim-files";
 import { readSentManifest, sentEvalCasesOf } from "../../platform/sim-sent-files";
 import { type EvalOptions } from "../eval-args";
-import { STYLE_INJECTION_SET } from "../eval-args-stylist";
 
+import { STYLE_INJECTION_SET } from "./eval-args-stylist";
 import { loadEvalConfig } from "./eval-config";
 import { type styleFileSchema } from "./eval-drafter-style";
 import { runStyleInjection } from "./eval-stylist-injection";

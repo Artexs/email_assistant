@@ -31,7 +31,7 @@ import {
 import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
-import { stylistArgsValid, STYLE_INJECTION_SET } from "./eval-args-stylist";
+import { stylistArgsValid, STYLE_INJECTION_SET } from "./lib/eval-args-stylist";
 import { parseFlags } from "./lib/parse-flags";
 
 const sets = ["synthetic", "injection", "delegation", "all"] as const;

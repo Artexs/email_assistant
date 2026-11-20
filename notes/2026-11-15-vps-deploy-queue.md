@@ -152,6 +152,23 @@ Result: **env split ok**. Release N is `v0.4.2`; rollback target `v0.4.1` (after
 - Agents: run a manual backup over ssh as `PATH=$HOME/bin:$PATH deploy/backup.sh`, never bare.
 - env split ok. Stage 05 may be spawned now.
 
+### Stage 06, 2026-11-20 (job `2026-11-20-f108-release-v0-4-3-and-backup-c-02079832`): backups and env copies done, release v0.4.3 NOT deployed
+
+Logs on the VPS: `~/ea-logs/f108-s06/` (`01-pre.log` … `05-cleanup.log`).
+
+- Step 1 (`01-pre.log`): `ea_env_split_state` → `split`. State `current=v0.4.2 previous=v0.4.1 pending=` empty; checkout at `v0.4.2`, `git status` clean (the old `..env.swp` is gone); 18 G free. `ea-sim` containers untouched (created 2026-11-19).
+- Step 2, release commit: `6b249098` holds `package.json` version `0.4.2`, and `deploy/release.sh` refuses a tag whose `package.json` version differs. So the tag cannot sit on `6b249098` itself. Release commit `a03575252` ("Release v0.4.3", parent `6b249098`, only `package.json` and `CHANGELOG.md`; `db:check-migrations` ok, `docs:stale --strict` stale 0) is on the pushed branch `task/release-v0.4.3`; CI run 44796745878 on it is green (ci, image, docs, e2e). `release.sh` also refuses a tag that is not an ancestor of `origin/master`, so the release commit must reach `master` first. This job merged it into its own branch; the land of that branch puts it on `master`. No tag `v0.4.3` pushed yet.
+- Next for the release (a new job after the land): `git tag -a v0.4.3 -m v0.4.3 a03575252 && git push origin v0.4.3`; on the VPS `nohup bash -c "deploy/release.sh v0.4.3; echo RELEASE_RC=\$?" > ~/ea-logs/f108-s06/06-release.log 2>&1 &` (not near 03:30); expect `release ok v0.4.3 previous v0.4.2`; rollback target `v0.4.2`. Then step 3: `deploy/check-server-env.sh` → `server env ok keys=<n>`; `$C run --rm -T cli env | cut -d= -f1` has none of `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`, `MIGRATOR_DATABASE_URL`; step 4 the 30-minute watch. The migration `20261119140001_emails_neutral_names.sql` is an expand step (two new columns, a copy trigger); a rollback is `deploy/rollback.sh` alone.
+- Step 5 (`02-backups.log`): 1 crontab line for `deploy/backup.sh`: `30 3 * * * cd /home/serwer/email_assistant && <cut>`. `status.json`: `result=ok`, `last_ok_at=2026-11-20T16:45:40Z` (2.1 h old at 18:5xZ). Last `backup ok` line of `~/ea-logs/backup.log`: `ea-20261120T033001Z.dump.age 697994` (the nightly run). It is not the `status.json` name `ea-20261120T164532Z.dump.age`: that run was the manual stage 04 run, which logged to `~/ea-logs/f108-s04c/10-backup-after-split.log` (its `backup ok` line holds that name). Counts in `backup.log`: `rclone copyto try` 0, `another backup run holds` 0 over the last 7 days and over the whole file. No overlap.
+- Step 6: `ops:alerts` rc 0, only resolved alerts (`slo_backup_age` opened 16:35:30Z resolved 16:45:30Z; older `slo_backup_age` and `slo_sync_lag`, resolved). `OPERATOR_TELEGRAM_CHAT_ID` set; `BACKUP_PING_URL` empty: owner step U2 (Healthchecks URL) is still open.
+- Step 7: this PC has no `rclone` (`which rclone`: not found), so no remote. Bucket listing: owner step O1.
+- Step 8: lifecycle not read (no read remote).
+- Step 9 (`03-candidates.log`): `~` none; `~/email_assistant`: `.env.bak-20261119-operator`, `.env.bak-f069`, `.env.bak-f097-c2`, `.env.bak-f099`, `.env.bak-s5e`; `deploy/`: only the allowed files.
+- Step 10 (`04-compare.log`, script in a mode-700 `mktemp -d` folder, removed after; key names and words only): `.env.bak-20261119-operator` 32 same, `.env.bak-f097-c2` 31 same, `.env.bak-f099` 30 same → removed (`05-cleanup.log`). Kept: `.env.bak-f069` (28 same; `OPENAI_API_KEY` differs, `WEB_TRUSTED_PROXIES` differs) and `.env.bak-s5e` (26 same; `OPENAI_API_KEY` differs). Owner item: `notes/owner-later.md` item 5.
+- Step 11: `~/ea-logs/f108-s04c/crontab-before-split.txt` removed.
+- Step 12: `docs/capabilities/backups.md` § Limits holds the check date, the cron time, "owner step O1", "lifecycle not read" and the env layout line.
+- Not changed: the DB (no restore, no `down -v`), `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack. No backup ran in this job.
+
 ## Demo run for F151 (C1)
 
 Started 2026-11-20 16:36 UTC on the VPS sim stack (`ea-sim`) by `demo-reset --yes`, beside the live lab day run (owner decision 2026-11-20: do not wait for it).

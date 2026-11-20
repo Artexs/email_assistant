@@ -1,7 +1,7 @@
 import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { parseEvalArgs } from "./eval-args";
+import { parseEvalArgs } from "../eval-args";
 
 describe("parseEvalArgs: the stylist run", () => {
   test.each([
