@@ -69,7 +69,7 @@ export {
   mailKindFilter,
   markEmailRelocated,
   markEmailReturned,
-  setUndoPending,
+  setMovePending,
   updateEmailLocation,
   updateEmailUid,
   type EmailMeta,
