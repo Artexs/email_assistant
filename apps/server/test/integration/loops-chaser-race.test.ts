@@ -4,7 +4,7 @@
 // at a time (the chaser and a tap at once give one pair); a loop closes once (the chaser and Done at once give one close row and
 // no card on a closed loop); the Sent switch off wins over the chaser (no copy of the Sent mail is left, no open loop); a
 // settings change that commits before the run's lock stops the run.
-import { parseToolSwitches, MINUTE_MS, DAY_MS } from "@ea/core";
+import { parseToolSwitches, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 

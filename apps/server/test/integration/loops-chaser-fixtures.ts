@@ -8,7 +8,6 @@ import type { DB, Db, TenantContext } from "../../src/platform/db";
 import { insertDelegate } from "./fixtures";
 import { commandLoop, type CommandOrg } from "./loops-commands-fixtures";
 import { insertLoopActionPair } from "./loops-fixtures";
-import { DAY_MS } from "@ea/core";
 
 // Rows for the tests of the one chaser. The clock is Friday 2026-11-20 07:31 in Warsaw (06:31 UTC, CET);
 // the organization time zone is Europe/Warsaw. A loop is "due yesterday" at Thursday 17:00 Warsaw.

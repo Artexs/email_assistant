@@ -1,4 +1,4 @@
-import { MINUTE_MS, DAY_MS } from "@ea/core";
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
