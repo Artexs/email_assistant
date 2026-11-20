@@ -1,7 +1,7 @@
 import { HOUR_MS, DAY_MS } from "@ea/core";
 
 /**
- * Time values of source lines, for the value check of the time-spelling rewrite (`time-rewrite-check.ts`). The rules are in the plan, `spec/features/active/F145-…/plan.md`.
+ * Time values of source lines, for the value check of the time-spelling rewrite (`time-rewrite-check.ts`). The rules are in the plan of the ticket that adds the `MINUTE_MS` rule.
  * Pure: no git, no file, no clock. The tool writes no minute literal: the minute is derived from the core hour.
  */
 

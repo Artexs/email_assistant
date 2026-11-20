@@ -6,7 +6,7 @@ import { describeError } from "../platform/errors";
 
 import { compareHunk, importLines, timeValuesOf } from "./time-rewrite-check-values";
 
-// A dev tool: no DB, no config (docs/code-patterns.md § Size and shape). Stage 06 of the one-time-spelling ticket deletes it.
+// A dev tool: no DB, no config (docs/code-patterns.md § Size and shape). The last stage of the time-spelling ticket deletes it.
 export { compareHunk, timeValuesOf };
 
 const out = createCliOutput("time-rewrite-check");
@@ -35,7 +35,7 @@ interface Hunk {
   added: NumberedLine[];
 }
 
-/** Hunks of `git diff -U0` text. Only files that `sourceFile` accepts, and not the tool's own files. */
+/** Hunks of the diff text of `git diff` with no context lines. Only source files, and not the tool's own files. */
 export function parseDiff(diff: string): Hunk[] {
   const hunks: Hunk[] = [];
   let oldFile = "";
