@@ -17,7 +17,7 @@ export const REGISTRY_PATHS = ["apps/server/src/platform/llm/providers/", "packa
 /** File path -> reason. Every entry is a permanent exception: `stays: <reason>`. */
 export const ALLOWED_SITES: Record<string, string> = {
   "apps/server/src/platform/outside-services.ts": "stays: a hand list by design, each outside key is a decision",
-  "apps/server/src/scripts/e2e-seed-args.ts":
+  "apps/server/src/scripts/e2e-seed/args-llm-pin.ts":
     "stays: the e2e pin sets every removed key and OPENAI_OWN_MODEL to empty text",
   "packages/core/src/legal/subprocessors.ts":
     "stays: the legal rows name the sub-processors, the owner wants no legal change",
