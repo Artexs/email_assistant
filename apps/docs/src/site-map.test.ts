@@ -66,12 +66,17 @@ const EXPECTED_PAGE_IDS = [
   "pl/how-to/two-factor",
   "pl/how-to/undo-a-move",
   "pl/index",
+  "pl/pricing",
+  "pl/security",
   "pl/start",
   "pricing",
+  "reference/api",
+  "reference/autonomy-evidence",
   "reference/categories",
   "reference/limits",
   "reference/settings",
   "reference/telegram",
+  "security",
   "start",
 ];
 
@@ -104,10 +109,13 @@ describe("site map", () => {
       "how-to/two-factor",
       "how-to/undo-a-move",
       "pricing",
+      "reference/api",
+      "reference/autonomy-evidence",
       "reference/categories",
       "reference/limits",
       "reference/settings",
       "reference/telegram",
+      "security",
       "start",
     ]);
     for (const id of userPages)

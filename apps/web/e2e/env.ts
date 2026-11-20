@@ -1,6 +1,6 @@
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { e2ePorts, loadRepoDotEnv } from "../../server/src/scripts/e2e-job-env-args";
 import {
   E2E_AUTHSERV_ID,
   E2E_GATE_FIXTURE_DIR,
@@ -11,14 +11,21 @@ import {
 import { generateVapidKeyPair } from "../../server/src/platform/vapid-keys";
 import { FAKE_TOKEN } from "../../../tools/fake-telegram/src/state";
 
+export const repoRoot = resolve(import.meta.dirname, "../../..");
+
 // The one place that knows the e2e environment: the port, the base URL, the fixed secret and the server env.
-export const E2E_PORT = 8081;
+// The ports are those of this run: `E2E_PORT` and `E2E_TELEGRAM_PORT` (a job `.env` or the process env), else 8081 and 8092.
+// The repo `.env` loads here, at import, so a config that imports this module sees it before its own body runs.
+// A key that is already set wins over the file. A bad value throws before any server starts.
+loadRepoDotEnv(repoRoot);
+const ports = e2ePorts(process.env);
+export const E2E_PORT = ports.app;
 export const E2E_BASE_URL = `http://127.0.0.1:${E2E_PORT}`;
 // A test value, not a secret (WEB_AUTH_SECRET needs 32 characters).
 export const E2E_SECRET = "e2e-web-auth-secret-0123456789abcdefghij";
 
-// The fake Telegram server of the run. Port 8092, not 8090: a developer's own fake on 8090 stays untouched.
-export const E2E_TELEGRAM_PORT = 8092;
+// The fake Telegram server of the run. Default port 8092, not 8090: a developer's own fake on 8090 stays untouched.
+export const E2E_TELEGRAM_PORT = ports.telegram;
 export const E2E_TELEGRAM_URL = `http://127.0.0.1:${E2E_TELEGRAM_PORT}`;
 
 // The GreenMail of `bun run dev:up` (the same host the integration tests use).
@@ -32,20 +39,12 @@ export const GREENMAIL = {
 // push manager, and no spec calls a push service). The server needs it so that `GET /api/me/push` answers a public key.
 const e2eVapid = generateVapidKeyPair();
 
-export const repoRoot = resolve(import.meta.dirname, "../../..");
-
 const missingMessage =
   "set E2E_DATABASE_URL and E2E_MIGRATOR_DATABASE_URL: run bun run db:worktree e2e | grep -E '^(DATABASE_URL|MIGRATOR_DATABASE_URL)=' | sed 's/^/E2E_/' >> .env";
 
-// Playwright runs on Node, which loads no `.env` by itself (fact 18). A CI run has no file and gets the keys from the job.
+// Kept for the Playwright configs: the load already ran at import, and a second call changes nothing (set keys win).
 export function loadDotEnv(): void {
-  const path = `${repoRoot}/.env`;
-  if (!existsSync(path)) return;
-  try {
-    process.loadEnvFile(path);
-  } catch {
-    // An unreadable file is not fatal: the keys can also come from the real environment.
-  }
+  loadRepoDotEnv(repoRoot);
 }
 
 function runEnv(): Record<string, string> {

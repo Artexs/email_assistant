@@ -53,6 +53,8 @@ export default defineConfig({
             { slug: "reference/telegram" },
             { slug: "reference/settings" },
             { slug: "reference/limits" },
+            { slug: "reference/api" },
+            { slug: "reference/autonomy-evidence" },
           ],
         },
         {
@@ -64,6 +66,7 @@ export default defineConfig({
           ],
         },
         { label: "FAQ", items: [{ slug: "faq" }] },
+        { label: "Security and data", items: [{ slug: "security" }] },
         // The public pages come after the FAQ: security (its own stage) and then pricing.
         { slug: "pricing" },
         { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },

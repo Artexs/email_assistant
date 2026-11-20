@@ -165,6 +165,28 @@ describe("docs:stale", () => {
       rmSync(join(dir, file));
     }
   });
+  test("T3 --strict fails a stale `security` page and names it; T4 the same for `pricing`; a stale `faq` only warns", () => {
+    putIndex();
+    for (const source of ["security", "pricing"]) {
+      put(`${source}.md`, "---\ntitle: S\n---\nOld\n");
+      put(`pl/${source}.mdx`, polish(bodyHash("---\ntitle: S\n---\nOld\n"), source));
+      expect(run("--strict").code).toBe(0);
+      put(`${source}.md`, "---\ntitle: S\n---\nNew\n");
+      const strict = run("--strict");
+      expect(strict.code).toBe(1);
+      expect(strict.out).toContain(`stale pl/${source} (source ${source})`);
+      expect(strict.err).toContain(`pl/${source} is stale and its source ${source} is public`);
+      expect(run().code).toBe(0);
+      put(`${source}.md`, "---\ntitle: S\n---\nOld\n");
+    }
+    put("faq.md", "---\ntitle: S\n---\nOld\n");
+    put("pl/faq.mdx", polish(bodyHash("---\ntitle: S\n---\nOld\n"), "faq"));
+    put("faq.md", "---\ntitle: S\n---\nNew\n");
+    const warned = run("--strict");
+    expect(warned.code).toBe(0);
+    expect(warned.out).toContain("stale pl/faq (source faq)");
+    expect(warned.err).toBe("");
+  });
   test("T6 a POLISH_SET id without a Polish page: exit 1 and `missing pl/<id>`", () => {
     put("start.md", "---\ntitle: S\n---\nHello\n");
     const result = checkStale({ contentDir: dir, polishSet: ["start"] });

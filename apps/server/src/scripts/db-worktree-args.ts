@@ -4,7 +4,7 @@ export const usage = [
   "usage: bun run db:worktree <name> [--drop]",
   "  name: lower-case letters, digits, _ and - (the first one a letter or digit); - becomes _.",
   "  Creates the database email_assistant_<name> on the dev Postgres, with grants and migrations,",
-  "  and prints DATABASE_URL and MIGRATOR_DATABASE_URL for it. --drop removes it and its test worker databases <name>_w<n>.",
+  "  and prints DATABASE_URL and MIGRATOR_DATABASE_URL for it. --drop removes it, its -e2e sibling and its test worker databases <name>_w<n>.",
   "  Exit 0: done. Exit 1: failure or refusal. Exit 2: usage or env error.",
 ].join("\n");
 
@@ -38,6 +38,11 @@ export function worktreeDatabaseName(name: string): string | null {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(name)) return null;
   const database = `${databasePrefix}${name.replaceAll("-", "_")}`;
   return database.length <= maxIdentifierBytes ? database : null;
+}
+
+// The e2e database of a job: `db:worktree <name>-e2e`. Null when the sibling name is too long.
+export function siblingDatabaseName(name: string): string | null {
+  return worktreeDatabaseName(`${name}-e2e`);
 }
 
 export function withDatabase(url: string, database: string): string {

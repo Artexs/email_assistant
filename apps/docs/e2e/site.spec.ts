@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH } from "@ea/core";
+import { DOCS_BASE, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, PRODUCT_NAME } from "@ea/core";
+
+import { publicClaims } from "../src/security/claims";
 
 import { expectNoA11yViolations } from "./a11y";
 import { builtPagePaths, distIsBuilt, docsTestOrigin } from "./site";
@@ -119,6 +121,22 @@ test("T10 the changelog page shows released versions with a date and no operator
   }
 });
 
+test("the security page has its heading, a checklist whose links reach claim anchors, and every claim row", async ({
+  page,
+}) => {
+  await open(page, `${DOCS_BASE}/security/`);
+  await expect(page.locator("main h1")).toHaveText("Security and data");
+  const links = page.locator('main ul a[href^="#claim-"]');
+  const count = await links.count();
+  expect(count).toBeGreaterThanOrEqual(5);
+  for (let index = 0; index < count; index += 1) {
+    const href = (await links.nth(index).getAttribute("href")) ?? "";
+    await expect(page.locator(`tr${href}`), `anchor ${href}`).toHaveCount(1);
+  }
+  await expect(page.locator('main tr[id^="claim-"]').first()).toHaveAttribute("id", "claim-never-sends-alone");
+  await expect(page.locator('main tr[id^="subprocessor-"]').first()).toBeVisible();
+});
+
 test("F121-03 the pricing page shows the banner, the price and three cost rows, with no form or input", async ({
   page,
 }) => {
@@ -134,3 +152,46 @@ test("F121-03 the pricing page shows the banner, the price and three cost rows, 
   expect((await main.innerText()).toLowerCase()).not.toContain("gemini");
   await expectNoA11yViolations(page);
 });
+
+test("F121-05 the Polish security page shows the Polish text of the first claim, and no Gemini text", async ({
+  page,
+}) => {
+  await open(page, `${DOCS_BASE}/pl/security/`);
+  await expect(page.locator("main h1")).toHaveText("Bezpieczeństwo i dane");
+  await expect(page.locator("main tr#claim-never-sends-alone td").first()).toHaveText(publicClaims[0]?.text.pl ?? "");
+  await expect(page.locator('main tr[id^="subprocessor-"]').first()).toBeVisible();
+  expect((await page.locator("main").innerText()).toLowerCase()).not.toContain("gemini");
+  await expectNoA11yViolations(page);
+});
+
+test("F121-05 the Polish pricing page shows the banner, the price and three cost rows, with no form or input", async ({
+  page,
+}) => {
+  await open(page, `${DOCS_BASE}/pl/pricing/`);
+  const main = page.locator("main");
+  await expect(main.locator("h1")).toHaveText("Cennik");
+  await expect(main).toContainText("Nie na sprzedaż.");
+  await expect(main).toContainText(`${PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH} USD`);
+  await expect(main.locator("tbody tr")).toHaveCount(3);
+  await expect(main.locator("form")).toHaveCount(0);
+  await expect(main.locator("input")).toHaveCount(0);
+  expect((await main.innerText()).toLowerCase()).not.toContain("gemini");
+  await expectNoA11yViolations(page);
+});
+
+for (const [lang, path] of [
+  ["en", `${DOCS_BASE}/`],
+  ["pl", `${DOCS_BASE}/pl/`],
+] as const) {
+  test(`F121-04 the ${lang} home page has the product name as h1, the tutorial as first link, and links to security and pricing`, async ({
+    page,
+  }) => {
+    await open(page, path);
+    await expect(page.locator("main h1")).toHaveText(PRODUCT_NAME);
+    const links = page.locator("main .sl-markdown-content a[href]");
+    await expect(links.first()).toHaveAttribute("href", "start/");
+    for (const target of ["start/", "security/", "pricing/"]) {
+      await expect(page.locator(`main .sl-markdown-content a[href="${target}"]`).first()).toBeVisible();
+    }
+  });
+}

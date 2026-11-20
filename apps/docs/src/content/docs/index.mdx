@@ -1,12 +1,42 @@
 ---
 title: Email Assistant
-description: Documentation for the Email Assistant.
+description: An assistant for managers that makes sure nothing slips in the mail, on any mailbox.
 ---
 
-This site holds the guides and the reference for the Email Assistant. It also holds the operator docs and the changelog.
+import ProductName from "../../components/ProductName.astro";
 
-Start with the [tutorial](start/). It takes you from your invite link to your first digest.
-The [FAQ](faq/) answers the questions of the first week.
+<ProductName /> is an executive's assistant that makes sure nothing slips, on any mailbox.
 
+[Start here](start/): the tutorial takes you from your invite link to your first digest.
+
+## What it does
+
+1. **Nothing slips.** An urgent mail gets its own notice in Telegram. You can hand a task from a mail to a delegate, and the assistant tracks the answer and chases it. See [Delegate a task and follow up](how-to/delegate-and-follow-up/).
+2. **Less time in the inbox.** The assistant sorts noise such as spam, notifications and newsletters out of the inbox, and it shows why for each mail. See [How a mail is sorted](explanation/how-a-mail-is-sorted/).
+3. **Trust and privacy.** Each move has a reason and an Undo. The assistant never sends a mail without your tap. See [Security and data](security/).
+
+## Who it is for
+
+Managers and executives who answer a lot of mail, with or without a human assistant. You stay in charge: the assistant prepares, and you decide.
+
+## What is different
+
+- Any IMAP host with a password works. You connect the mailbox with a login, not with a vendor sign-in. See the [FAQ](faq/).
+- It works in Polish and in English. See [Change the language](how-to/language/).
+- The assistant stores your mail on a server that your install runs, not on a shared service. See the [claim about where mail is stored](security/#claim-mail-storage).
+- It chases delegated work: it writes to your delegate and follows up until you close the task. See [Delegate a task and follow up](how-to/delegate-and-follow-up/).
+- It never sends without your tap on the exact text. See the [claim about approval](security/#claim-never-sends-alone).
+
+## Read more
+
+- [Tutorial](start/)
+- [Security and data](security/)
+- [Pricing](pricing/)
+- [FAQ](faq/)
+- [Changelog](changelog/)
+
+## About this site
+
+This site holds the guides and the reference for <ProductName />. It also holds the operator docs and the changelog.
 Use the how-to guides for one task, the reference for facts and the explanations for reasons. The sidebar lists them.
 The home page, the tutorial, the how-to guides, the FAQ and "How a mail is sorted" also exist in Polish. The reference and the operator docs are in English only.

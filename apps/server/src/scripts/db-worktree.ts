@@ -10,6 +10,7 @@ import {
   isLoopbackHost,
   parseDbWorktreeArgs,
   sameServer,
+  siblingDatabaseName,
   usage,
   withDatabase,
   worktreeDatabaseName,
@@ -133,15 +134,33 @@ async function dropOne(client: Client, database: string): Promise<number> {
 
 // `bun test --parallel` makes one database per test worker, `<name>_w<n>` (`apps/server/test/worker-db.ts`). A drop of the
 // base database drops them too, each with its own mark check. The name holds only [a-z0-9_] (`worktreeDatabaseName`).
-async function dropDatabase(adminPostgresUrl: string, database: string): Promise<number> {
+async function dropWithWorkers(client: Client, database: string): Promise<number> {
+  const workers = await client.query<{ datname: string }>(
+    "SELECT datname FROM pg_database WHERE datname ~ $1 ORDER BY datname",
+    [`^${database}_w[0-9]+$`]
+  );
+  let code = await dropOne(client, database);
+  for (const worker of workers.rows) code = Math.max(code, await dropOne(client, worker.datname));
+  return code;
+}
+
+// A drop covers the base database and its e2e sibling (`<name>-e2e`, made by prepare for the Playwright suites). The
+// marks of both are read first: a database that the script did not create stops the whole command, with nothing dropped.
+// A missing sibling prints nothing. The sibling goes first; an in-use error on either one stops the command.
+async function dropDatabase(adminPostgresUrl: string, database: string, sibling: string | null): Promise<number> {
   return withClient(adminPostgresUrl, async (client) => {
-    const workers = await client.query<{ datname: string }>(
-      "SELECT datname FROM pg_database WHERE datname ~ $1 ORDER BY datname",
-      [`^${database}_w[0-9]+$`]
-    );
-    let code = await dropOne(client, database);
-    for (const worker of workers.rows) code = Math.max(code, await dropOne(client, worker.datname));
-    return code;
+    for (const name of sibling === null ? [database] : [database, sibling]) {
+      const mark = await markOf(client, name);
+      if (mark.exists && !hasWorktreeMark(mark.comment)) {
+        out.fail(refusal(name));
+        return exitFailure;
+      }
+    }
+    if (sibling !== null && (await markOf(client, sibling)).exists) {
+      const code = await dropWithWorkers(client, sibling);
+      if (code !== exitDone) return code;
+    }
+    return dropWithWorkers(client, database);
   });
 }
 
@@ -178,7 +197,7 @@ async function main(): Promise<number> {
       return exitFailure;
     }
     const adminPostgresUrl = adminUrl(MIGRATOR_DATABASE_URL, POSTGRES_PASSWORD);
-    if (args.drop) return await dropDatabase(adminPostgresUrl, database);
+    if (args.drop) return await dropDatabase(adminPostgresUrl, database, siblingDatabaseName(args.name));
     if (!(await createDatabase(adminPostgresUrl, database))) return exitFailure;
     await grantSchema(withDatabase(adminPostgresUrl, database));
     const migratorUrl = withDatabase(MIGRATOR_DATABASE_URL, database);

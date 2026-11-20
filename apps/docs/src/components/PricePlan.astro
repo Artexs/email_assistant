@@ -1,14 +1,37 @@
 ---
 // The one plan. The price is the constant of `@ea/core`.
-import { PLACEHOLDER_PRICE } from "../pricing";
+import { placeholderPrice } from "../pricing";
+
+interface Props {
+  lang?: "en" | "pl";
+}
+
+const { lang = "en" } = Astro.props;
+const text = {
+  en: {
+    unit: "per mailbox per month",
+    items: [
+      "Sorts the mail of one mailbox into categories.",
+      "Sends a daily digest to Telegram.",
+      "Prepares drafts and delegations. It sends nothing until you approve.",
+      "Moves are undoable.",
+    ],
+  },
+  pl: {
+    unit: "za jedną skrzynkę miesięcznie",
+    items: [
+      "Sortuje pocztę jednej skrzynki do kategorii.",
+      "Wysyła codzienne podsumowanie do Telegrama.",
+      "Przygotowuje szkice i zlecenia. Nic nie wysyła, dopóki tego nie zatwierdzisz.",
+      "Przeniesienia można cofnąć.",
+    ],
+  },
+}[lang];
 ---
 
 <section class="plan">
-  <p><strong>{PLACEHOLDER_PRICE}</strong> per mailbox per month</p>
+  <p><strong>{placeholderPrice(lang)}</strong> {text.unit}</p>
   <ul>
-    <li>Sorts the mail of one mailbox into categories.</li>
-    <li>Sends a daily digest to Telegram.</li>
-    <li>Prepares drafts and delegations. It sends nothing until you approve.</li>
-    <li>Moves are undoable.</li>
+    {text.items.map((item) => <li>{item}</li>)}
   </ul>
 </section>

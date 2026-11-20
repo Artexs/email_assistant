@@ -1,14 +1,44 @@
 ---
 title: Email Assistant
-description: Dokumentacja Email Assistant.
+description: Asystent dla menedżerów, który dba o to, żeby nic nie umknęło w poczcie, na każdej skrzynce.
 source: index
-sourceHash: "83f7ab5b1497f98f"
+sourceHash: "492beda57b460790"
 ---
 
-Ta strona zawiera przewodniki i opis działania Email Assistant. Zawiera też dokumentację dla operatora i listę zmian.
+import ProductName from "../../../components/ProductName.astro";
 
-Zacznij od [samouczka](start/). Prowadzi od linku z zaproszeniem do pierwszego podsumowania.
-[FAQ](faq/) odpowiada na pytania z pierwszego tygodnia.
+<ProductName /> to asystent kadry zarządzającej, który dba o to, żeby nic nie umknęło, na każdej skrzynce.
 
+[Zacznij tutaj](start/): samouczek prowadzi od linku z zaproszeniem do pierwszego podsumowania.
+
+## Co robi
+
+1. **Nic nie umyka.** Pilna wiadomość dostaje własne powiadomienie w Telegramie. Zadanie z wiadomości możesz przekazać osobie delegowanej, a asystent śledzi odpowiedź i ją ponagla. Zobacz [Przekaż zadanie i dopilnuj odpowiedzi](how-to/delegate-and-follow-up/).
+2. **Mniej czasu w skrzynce.** Asystent wyprowadza ze skrzynki szum, taki jak spam, powiadomienia i newslettery, i pokazuje powód dla każdej wiadomości. Zobacz [Jak system sortuje wiadomość](explanation/how-a-mail-is-sorted/).
+3. **Zaufanie i prywatność.** Każdy ruch ma powód i opcję Cofnij. Asystent nigdy nie wysyła wiadomości bez Twojego stuknięcia. Zobacz [Bezpieczeństwo i dane](security/).
+
+## Dla kogo
+
+Dla menedżerów i członków zarządu, którzy odpowiadają na dużo poczty, z asystentem lub bez niego. Ty decydujesz: asystent przygotowuje, a Ty zatwierdzasz.
+
+## Co jest inne
+
+- Działa każdy host IMAP z hasłem. Skrzynkę łączysz loginem, a nie logowaniem u dostawcy. Zobacz [FAQ](faq/).
+- Działa po polsku i po angielsku. Zobacz [Zmień język](how-to/language/).
+- Asystent przechowuje Twoją pocztę na serwerze, który prowadzi Twoja instalacja, a nie w usłudze współdzielonej. Zobacz [twierdzenie o miejscu przechowywania poczty](security/#claim-mail-storage).
+- Pilnuje przekazanych zadań: pisze do osoby delegowanej i ponagla, aż zamkniesz zadanie. Zobacz [Przekaż zadanie i dopilnuj odpowiedzi](how-to/delegate-and-follow-up/).
+- Nigdy nie wysyła bez Twojego stuknięcia na dokładnym tekście. Zobacz [twierdzenie o zatwierdzaniu](security/#claim-never-sends-alone).
+
+## Czytaj dalej
+
+- [Samouczek](start/)
+- [Bezpieczeństwo i dane](security/)
+- [Cennik](pricing/)
+- [FAQ](faq/)
+- [Lista zmian](changelog/)
+
+## O tej witrynie
+
+Ta witryna zawiera przewodniki i opis działania <ProductName />. Zawiera też dokumentację dla operatora i listę zmian.
 Poradniki opisują jedno zadanie, opis działania podaje fakty, a wyjaśnienia podają powody. Znajdziesz je na pasku bocznym.
 Strona główna, samouczek, poradniki, FAQ i wyjaśnienie „Jak system sortuje wiadomość” są też po polsku. Opis działania i dokumentacja operatora są tylko po angielsku.
