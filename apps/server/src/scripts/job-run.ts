@@ -12,7 +12,7 @@ import {
   trustEvidenceOf,
   uidplusOf,
 } from "../composition";
-import { createCommitterJob, createExpiryJob } from "../modules/actions";
+import { type CommitterDeps, createCommitterJob, createExpiryJob } from "../modules/actions";
 import { cardEditHooks, createTelegramRuntime } from "../modules/channels";
 import { createContactsRefreshJob } from "../modules/contacts";
 import { delegationHooks } from "../modules/delegation";
@@ -20,15 +20,28 @@ import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "../modu
 import { configureMailHosts } from "../modules/mail";
 import { createReplyJobs, createReplySweep } from "../modules/replies";
 import { type CliSpec, exitCodeOf, runCli } from "../platform/cli";
-import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
+import { type Config, llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
-import { assertAppRole, createDb } from "../platform/db";
+import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { createLlmClient } from "../platform/llm";
 import { setLogRelease, withLogContext } from "../platform/log";
 import { createRetentionJob } from "../retention";
 
 import { cliDescriptions, parseJobRunArgs } from "./job-run-args";
+
+/** The deps of the committer job: the same secret box, token store, scopes and send limits as the server. */
+export function jobRunCommitterDeps(config: Config, db: Db): CommitterDeps {
+  const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
+  return committerDeps({
+    db,
+    secrets,
+    oauthTokens: mailOAuthRuntime(config, db, secrets).tokens,
+    scope: actionsScope(config),
+    sendScope: sendScope(config),
+    sendLimits: sendLimits(config),
+  });
+}
 
 // Runs one job once with the deps of `main.ts`. For dev and ops checks; it logs ids and counts only, like the server.
 const main: CliSpec["main"] = async (argv, out) => {
@@ -67,17 +80,7 @@ const main: CliSpec["main"] = async (argv, out) => {
         return run.mailboxErrors > 0 ? 1 : 0;
       } else if (args.name === "actions.committer") {
         out.fail("do not run the committer here while the server runs on the same database: the log lines double");
-        const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_VERSION);
-        await createCommitterJob(
-          committerDeps({
-            db,
-            secrets,
-            oauthTokens: mailOAuthRuntime(config, db, secrets).tokens,
-            scope: actionsScope(config),
-            sendScope: sendScope(config),
-            sendLimits: sendLimits(config),
-          })
-        ).run();
+        await createCommitterJob(jobRunCommitterDeps(config, db)).run();
       } else if (args.name === "platform.retention") {
         await createRetentionJob({ db, now }).run();
       } else if (args.name === "loops.analyze") {

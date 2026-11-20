@@ -5,13 +5,16 @@ import { join } from "node:path";
 import { DEFAULT_SEND_LIMITS } from "@ea/core";
 import { describe, expect, spyOn, test } from "bun:test";
 
-import { actionsScope, committerDeps, gateEvidenceDir, sendScope } from "./composition";
+import { actionsScope, committerDeps, gateEvidenceDir, gateEvidenceOf, sendScope } from "./composition";
 import { noApprovalHooks, noLoopHooks } from "./modules/actions";
-import type { OAuthTokens } from "./modules/mail";
-import { loadConfig } from "./platform/config";
+import { type OAuthTokens, openImapProvider, type openMailboxProvider } from "./modules/mail";
+import { loadConfig, testMailRule } from "./platform/config";
 import type { SecretBox } from "./platform/crypto";
 import type { Db } from "./platform/db";
+import { jobRunCommitterDeps } from "./scripts/job-run";
+import { checkCopyDeps } from "./scripts/reply-check-copy";
 import { startSource } from "./start/source.test-helper";
+import { settingsRouteDeps } from "./web-route-deps";
 
 // Every composition root that opens mailboxes (the sync job, the committer, the web Reconnect) gets the token store.
 // A call without it would fail every OAuth mailbox with "oauth not wired", or leave a Reconnect without a cache drop. The
@@ -212,10 +215,6 @@ describe("the token store is wired into every composition root", () => {
     expect(web).toContain("mailOAuthClients: mailOAuth.clients");
   });
 
-  test("scripts/job-run.ts: the committer deps get a token store", () => {
-    expect(callOf(read("scripts/job-run.ts"), "committerDeps")).toContain("oauthTokens:");
-  });
-
   test("committerDeps carries the real approval hooks: a send that the committer closes edits its cards", () => {
     const deps = committerDeps({
       db: {} as never,
@@ -227,10 +226,6 @@ describe("the token store is wired into every composition root", () => {
     });
     expect(deps.approvalHooks).toBeDefined();
     expect(deps.approvalHooks).not.toBe(noApprovalHooks);
-  });
-
-  test("scripts/reply-check-copy.ts: the mailbox opener gets a token store", () => {
-    expect(callOf(read("scripts/reply-check-copy.ts"), "openMailboxProvider")).toContain("oauthTokens");
   });
 
   test("the history check is queued at every connect path: web form, OAuth callback and mailbox:connect", () => {
@@ -382,6 +377,41 @@ const baseEnv = {
 };
 const configWith = (env: Record<string, string>) => loadConfig({ ...baseEnv, ...env });
 
+describe("the CLI scripts and the web hand their shared parts to the deps they build", () => {
+  test("scripts/job-run.ts: the committer deps get a token store", () => {
+    const deps = jobRunCommitterDeps(configWith({}), {} as never);
+    expect(typeof deps.oauthTokens?.accessToken).toBe("function");
+  });
+
+  test("scripts/reply-check-copy.ts: the mailbox opener gets a token store", async () => {
+    const provider = { kind: "provider" };
+    const seen: Parameters<typeof openMailboxProvider>[] = [];
+    const spy = (async (...args: Parameters<typeof openMailboxProvider>) => {
+      seen.push(args);
+      return { provider };
+    }) as unknown as typeof openMailboxProvider;
+
+    const deps = checkCopyDeps(configWith({}), {} as never, spy);
+
+    expect(await deps.openProvider({ orgId: "org-1" }, "mb-1")).toBe(provider as never);
+    expect(seen).toHaveLength(1);
+    const [openDeps, ctx, mailboxId] = seen[0] as Parameters<typeof openMailboxProvider>;
+    expect(typeof openDeps.oauthTokens?.accessToken).toBe("function");
+    expect(openDeps.openProvider).toBe(openImapProvider);
+    expect(ctx).toEqual({ orgId: "org-1" });
+    expect(mailboxId).toBe("mb-1");
+  });
+
+  test("the web passes the gate to the one settings deps builder", () => {
+    const config = configWith({});
+    const gate = gateEvidenceOf(config, { quiet: true });
+
+    const deps = settingsRouteDeps({} as never, () => new Date("2026-01-01T00:00:00Z"), testMailRule(config), gate);
+
+    expect(deps.settings.gate).toBe(gate);
+  });
+});
+
 describe("actionsScope writes one actions_scope event per scope", () => {
   for (const scope of ["off", "synthetic", "all"] as const) {
     test(`ACTIONS_SCOPE=${scope}`, () => {
@@ -442,10 +472,6 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
   test("the image copies the gate files to the path the reader defaults to", () => {
     const dockerfile = readFileSync(join(import.meta.dir, "../../../deploy/Dockerfile"), "utf8");
     expect(dockerfile).toContain("COPY evals/results/gate evals/results/gate\n");
-  });
-
-  test("the web passes the gate to the one settings deps builder", () => {
-    expect(callOf(read("web-route-deps.ts"), "settingsDeps")).toContain("gate");
   });
 
   test("the web mounts the trust routes with the settings deps of the same gate and the test mail rule", () => {

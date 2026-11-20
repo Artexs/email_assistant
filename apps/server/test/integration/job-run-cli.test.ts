@@ -18,10 +18,10 @@ afterAll(async () => {
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const script = resolve(import.meta.dir, "../../src/scripts/job-run.ts");
 
-async function runJob(args: string[]) {
+async function runJob(args: string[], env: Record<string, string | undefined> = process.env) {
   const proc = Bun.spawn(["bun", script, ...args], {
     cwd: repoRoot,
-    env: process.env,
+    env,
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -42,6 +42,23 @@ describe("job:run CLI", () => {
     expect(result.stdout).not.toContain("do not run the committer");
     expect(result.stdout).toContain("[job-run] actions.committer: ran once");
     expect(result.stderr).not.toContain("ran once");
+  });
+
+  // Retention writes `retention_done` on every run that does not throw, so it shows the release stamp.
+  test("every JSON line of job-run carries EA_RELEASE", async () => {
+    const result = await runJob(["--name", "platform.retention"], {
+      ...process.env,
+      EA_RELEASE: "test-r1",
+      LOG_FORMAT: "json",
+    });
+
+    expect(result.code).toBe(0);
+    const done = result.stdout
+      .split("\n")
+      .filter((line) => line.startsWith("{"))
+      .map((line) => JSON.parse(line) as { event?: string; release?: string })
+      .find((entry) => entry.event === "retention_done");
+    expect(done?.release).toBe("test-r1");
   });
 
   test("an unknown job name exits 2 with the usage line and runs nothing", async () => {
