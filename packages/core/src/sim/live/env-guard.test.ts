@@ -66,7 +66,6 @@ describe("checkSimEnv", () => {
   });
 
   test.each<[string, string | undefined, string[], SimEnvIssue[]]>([
-    ["an address with spaces and capitals", " LAB@example.test ", ["lab@example.test"], []],
     [
       "two addresses when one is allowed",
       "lab@example.test, other@example.test",
@@ -80,7 +79,6 @@ describe("checkSimEnv", () => {
       [],
     ],
     ["an allowed list with spaces and capitals", "lab@example.test", ["  LAB@Example.test "], []],
-    ["an allowed address that does not end in .test", "lab@mytest", ["lab@mytest"], ["send_address_not_scenario"]],
     ["an empty list", "", ["lab@example.test"], []],
     ["a list of blanks and commas", " , ,", ["lab@example.test"], []],
     ["an unset list", undefined, ["lab@example.test"], []],

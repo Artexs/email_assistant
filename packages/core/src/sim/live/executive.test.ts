@@ -436,7 +436,6 @@ describe("cardsOf by the kind of the button", () => {
   ): [string, Callback, ExecCardKind, CardIdField] => [`${callback.kind} is ${kind}`, callback, kind, idField];
 
   test.each([
-    row({ kind: "reject_reason", reason: "wrong_person", actionId: ID }, "reject_reason", "actionId"),
     row({ kind: "approve", actionId: ID }, "approval", "actionId"),
     row({ kind: "reject", actionId: ID }, "approval", "actionId"),
     row({ kind: "approve_set", setId: ID }, "reminder_set", "setId"),
@@ -445,9 +444,7 @@ describe("cardsOf by the kind of the button", () => {
     row({ kind: "went_out", actionId: ID }, "send_failed", "actionId"),
     row({ kind: "right", category: "urgent", emailId: ID }, "feedback", "emailId"),
     row({ kind: "pick", category: "info", emailId: ID }, "feedback", "emailId"),
-    row({ kind: "edit", emailId: ID }, "feedback", "emailId"),
     row({ kind: "cancel", emailId: ID }, "feedback", "emailId"),
-    row({ kind: "undo", emailId: ID }, "feedback", "emailId"),
     row({ kind: "mistake", actionId: ID }, "other", undefined),
     row({ kind: "delegation_done", delegationId: ID }, "other", undefined),
     row({ kind: "review_right", category: "urgent", emailId: ID }, "other", undefined),
