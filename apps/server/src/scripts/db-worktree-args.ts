@@ -4,7 +4,7 @@ export const usage = [
   "usage: bun run db:worktree <name> [--drop]",
   "  name: lower-case letters, digits, _ and - (the first one a letter or digit); - becomes _.",
   "  Creates the database email_assistant_<name> on the dev Postgres, with grants and migrations,",
-  "  and prints DATABASE_URL and MIGRATOR_DATABASE_URL for it. --drop removes it.",
+  "  and prints DATABASE_URL and MIGRATOR_DATABASE_URL for it. --drop removes it and its test worker databases <name>_w<n>.",
   "  Exit 0: done. Exit 1: failure or refusal. Exit 2: usage or env error.",
 ].join("\n");
 

@@ -40,15 +40,21 @@ const config = (files: string[], project: string[] = ["-p", "ea-drill"]): Resolv
   return JSON.parse(result.stdout.toString()) as Resolved;
 };
 
-// The services of compose.yaml that run the server image: `server` and each one that extends it.
+// The services of compose.yaml that run the server image: `server`, each one that extends it, and each one that names the image
+// `ea-server` itself (`migrate`).
 const serverImageServices = (): string[] => {
   const base = Bun.YAML.parse(readFileSync(join(deployDir, "compose.yaml"), "utf8")) as {
-    services: Record<string, { extends?: { service?: string } }>;
+    services: Record<string, { extends?: { service?: string }; image?: string }>;
   };
   return Object.entries(base.services)
-    .filter(([name, service]) => name === "server" || service.extends?.service === "server")
+    .filter(
+      ([name, service]) => name === "server" || service.extends?.service === "server" || service.image === "ea-server"
+    )
     .map(([name]) => name);
 };
+
+// The server image services that carry the app env (`drill.env`, forced channels). `migrate` has only its migrator URL.
+const appEnvServices = ["server", "cli"];
 
 const composeVersion = (): string =>
   Bun.spawnSync(["docker", "compose", "version"], { env: { PATH: process.env.PATH ?? "", HOME: dir } })
@@ -102,7 +108,7 @@ describe("deploy/compose.drill.yaml", () => {
 
   test("the server image services are server and cli, and each one has the drill block", () => {
     const names = serverImageServices();
-    expect(names).toEqual(expect.arrayContaining(["server", "cli"]));
+    expect(names).toEqual(expect.arrayContaining(["server", "cli", "migrate"]));
     for (const name of names) {
       const service = drill.services[name];
       expect(service, name).toBeDefined();
@@ -131,8 +137,8 @@ describe("deploy/compose.drill.yaml", () => {
     for (const name of ["victorialogs", "vlagent"]) expect(drill.services[name]?.profiles).toEqual(["ops"]);
   });
 
-  test("the live .env is never read: only drill.env feeds the server image services; the live sentinels are absent", () => {
-    for (const name of serverImageServices()) {
+  test("the live .env is never read: only drill.env feeds server and cli; the live sentinels are absent", () => {
+    for (const name of appEnvServices) {
       const env = drill.services[name]?.environment ?? {};
       expect(env.LIVE_ONLY_SENTINEL, name).toBeUndefined();
       expect(env.POSTGRES_PASSWORD, name).toBe("drill-pg");
@@ -142,7 +148,7 @@ describe("deploy/compose.drill.yaml", () => {
   });
 
   test("the channels and the scopes are forced, even when drill.env or the live env sets them", () => {
-    for (const name of serverImageServices()) {
+    for (const name of appEnvServices) {
       const env = drill.services[name]?.environment ?? {};
       for (const key of [
         "TELEGRAM_BOT_TOKEN",
@@ -167,6 +173,20 @@ describe("deploy/compose.drill.yaml", () => {
       expect(service.restart, name).toBe("no");
     }
     for (const name of ["db", ...serverImageServices()]) expect(drill.services[name]?.restart, name).toBe("no");
+  });
+
+  test("8. migrate in the drill: drill image, no restart, local log, no port, no env_file; only the drill migrator URL and LOG_FORMAT", () => {
+    const migrate = drill.services.migrate;
+    expect(migrate?.image).toBe("ea-drill-server");
+    expect(migrate?.restart).toBe("no");
+    expect(migrate?.logging?.driver).toBe("local");
+    expect(migrate?.ports ?? []).toEqual([]);
+    expect(migrate?.env_file).toBeUndefined();
+    expect(migrate?.environment).toEqual({
+      MIGRATOR_DATABASE_URL: "postgres://migrator:drill-migrator@db:5432/email_assistant?sslmode=disable",
+      LOG_FORMAT: "text",
+    });
+    expect(JSON.stringify(migrate)).not.toContain("live-");
   });
 
   test("the db service publishes no port and keeps the shared postgres:17 image", () => {

@@ -166,7 +166,11 @@ describe("unsubscribe_requests: constraints", () => {
       await request(trx, a);
       await request(trx, b);
       await trx.deleteFrom("mailboxes").where("id", "=", a.mailboxId).execute();
-      const left = await trx.selectFrom("unsubscribe_requests").select("org_id").execute();
+      const left = await trx
+        .selectFrom("unsubscribe_requests")
+        .select("org_id")
+        .where("org_id", "in", [a.orgId, b.orgId])
+        .execute();
       expect(left.map((row) => row.org_id)).toEqual([b.orgId]);
     });
   });

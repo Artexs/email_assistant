@@ -47,6 +47,7 @@ evals/.runs/
 
 # e2e seed output and Playwright reports
 apps/web/e2e/.seed.json
+apps/web/e2e/.demo-owner.json
 apps/web/e2e/test-results/
 apps/web/e2e/playwright-report/
 apps/docs/e2e/test-results/

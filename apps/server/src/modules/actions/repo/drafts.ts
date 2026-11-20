@@ -3,7 +3,11 @@ import { sql, type Transaction } from "kysely";
 import type { DB, TenantContext } from "../../../platform/db";
 import { anchorOfRow } from "../anchor";
 
+import { statusGuard, writerGuard } from "./guard";
 import type { DbOrTrx } from "./shared";
+
+// The guard row, resolved at load: an unknown row throws at import.
+const EXPIRE_READY_DRAFT_GUARD = writerGuard("expireReadyDraft", "default");
 
 export interface DraftRow {
   id: string;
@@ -97,9 +101,8 @@ export async function expireReadyDraft(
     .set({ status: "expired", status_reason: "send_closed", locked_at: null, updated_at: at })
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("type", "=", "create_draft")
+    .where((eb) => statusGuard(eb, EXPIRE_READY_DRAFT_GUARD))
     .where("reverses_action_id", "is", null)
-    .where("status", "=", "ready")
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
