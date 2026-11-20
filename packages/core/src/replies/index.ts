@@ -8,6 +8,8 @@ export {
 } from "./checks";
 export type { ReplyCheckCode, ReplyCheckResult, SensitiveCode } from "./checks";
 export { GAP_LABEL_MAX, gapsOf, hasBrokenGapSyntax, hasGaps } from "./gaps";
+export { classifyReplySentences, isSkeletonDraft, LEANING_PHRASES } from "./sentences";
+export type { ReplySentenceCounts } from "./sentences";
 export { detectLanguage } from "./language";
 export type { DetectedLanguage } from "./language";
 export { DRAFTER_BODY_MAX, drafterOutputSchema, noDraftReasons } from "./schema";

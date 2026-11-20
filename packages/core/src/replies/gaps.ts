@@ -27,7 +27,12 @@ export function hasBrokenGapSyntax(body: string): boolean {
   return rest.includes("[[") || rest.includes("]]");
 }
 
+/** The body with each well-formed gap replaced by `replacement`. */
+export function replaceGaps(body: string, replacement: string): string {
+  return body.normalize("NFKC").replace(GAP, replacement);
+}
+
 /** The body without its gaps: the language and length rules read the sentences, not the labels. */
 export function withoutGaps(body: string): string {
-  return body.normalize("NFKC").replace(GAP, " ");
+  return replaceGaps(body, " ");
 }
