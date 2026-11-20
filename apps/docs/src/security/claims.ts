@@ -46,7 +46,7 @@ export const publicClaims: readonly PublicClaim[] = [
     id: "ai-provider-receives",
     text: {
       en: 'This install uses OpenAI as the AI model. For each mail that it classifies, the assistant sends the text, subject and sender, the delegates, and up to three earlier mails of the same thread as context. It does not classify a mail that is older than 7 days, unless the operator loads old mail once. The 7-day limit is about the mail that the assistant classifies. The section "What this product does not promise" says what goes along as thread context.',
-      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat i nadawcę, delegatów oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę. Limit 7 dni dotyczy klasyfikowanej wiadomości. Sekcja „Czego ten produkt nie obiecuje” mówi, co trafia do AI jako kontekst wątku.",
+      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat i nadawcę, wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę. Limit 7 dni dotyczy klasyfikowanej wiadomości. Sekcja „Czego ten produkt nie obiecuje” mówi, co trafia do AI jako kontekst wątku.",
     },
     ledger: ["C030", "C031", "C032"],
     proofs: [
@@ -64,7 +64,7 @@ export const publicClaims: readonly PublicClaim[] = [
     id: "ai-provider-keeps",
     text: {
       en: "The assistant asks OpenAI not to store the data. OpenAI keeps abuse logs for up to 30 days (its data-controls page, read 2026-11-17).",
-      pl: "Asystent prosi OpenAI, aby nie przechowywało danych. OpenAI przechowuje logi nadużyć do 30 dni (jego strona o kontroli danych, odczytana 2026-11-17).",
+      pl: "Asystent prosi OpenAI, aby nie przechowywało danych. OpenAI przechowuje logi nadużyć do 30 dni (jego strona o kontroli danych, stan na 2026-11-17).",
     },
     ledger: ["C034", "C035"],
     proofs: [

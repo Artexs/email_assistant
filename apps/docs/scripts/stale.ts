@@ -1,12 +1,12 @@
 // `bun run docs:stale [--strict] [--stamp <pl file>]`: a Polish page names its English source and the hash of the
 // source body it was written from. A changed source body makes the Polish page stale. A stale page is visible in CI and,
-// with `--strict`, blocks a release when its source is public (the home page and the start pages).
+// with `--strict`, blocks a release when its source is public (the home page, the start pages, the security page and the pricing page).
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createCliOutput, type CliOutput } from "../../server/src/platform/cli";
-import { POLISH_SET } from "../src/front-matter";
+import { isStrictSource, POLISH_SET } from "../src/front-matter";
 
 const FRONT_MATTER = /^---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|$)/;
 // A line that holds only a `<Shot … />` tag (the tag may span lines): a screenshot never stales a translation.
@@ -87,11 +87,6 @@ export interface StaleOptions {
   polishSet?: readonly string[];
 }
 
-// A source of the public set: the home page and the start pages.
-function isPublicSource(source: string): boolean {
-  return source === "index" || source.startsWith("start");
-}
-
 export function checkStale(options: StaleOptions): StaleResult {
   const { contentDir, strict = false, polishSet = POLISH_SET } = options;
   const errors: string[] = [];
@@ -114,7 +109,7 @@ export function checkStale(options: StaleOptions): StaleResult {
     }
     if (bodyHash(readFileSync(english, "utf8")) === sourceHash) continue;
     stale.push(`stale ${id} (source ${source})`);
-    if (strict && isPublicSource(source)) errors.push(`${id} is stale and its source ${source} is public`);
+    if (strict && isStrictSource(source)) errors.push(`${id} is stale and its source ${source} is public`);
   }
   for (const id of polishSet) {
     if (!polishIds.has(`pl/${id}`)) errors.push(`missing pl/${id}`);

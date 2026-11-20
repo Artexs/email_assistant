@@ -31,21 +31,43 @@ export function costBasis(compute: CostCompute = costToRun): CostToRun["basis"] 
   return compute(PRICING_MAILS_PER_DAY[0]).basis;
 }
 
-export function formatUsd(value: number): string {
-  return `$${value.toFixed(2)}`;
+export type Lang = "en" | "pl";
+
+/** Dollars: `$0.62` in English, `0,62 USD` in Polish (the decimal comma of the Polish pages). */
+export function formatUsd(value: number, lang: Lang = "en"): string {
+  return lang === "pl" ? `${value.toFixed(2).replace(".", ",")} USD` : `$${value.toFixed(2)}`;
 }
 
 /** The note under the table for a basis. The page never shows the model names of the pilot. */
 export function basisNote(
   basis: CostToRun["basis"],
-  pilot: Pick<typeof pilotCost, "weeks" | "measuredOn"> = pilotCost
+  pilot: Pick<typeof pilotCost, "weeks" | "measuredOn"> = pilotCost,
+  lang: Lang = "en"
 ): string {
+  const first = pilot.weeks[0];
+  const last = pilot.weeks[pilot.weeks.length - 1];
+  if (lang === "pl") {
+    if (basis === "estimate") return "Szacunek: zmierzonych danych jest za mało.";
+    return `Zmierzono w ${pilot.weeks.length} tygodniach (od ${first} do ${last}), dnia ${pilot.measuredOn}.`;
+  }
   if (basis === "estimate") return "Estimate: the measured data is too small.";
-  return `Measured over ${pilot.weeks.length} weeks (${pilot.weeks[0]} to ${pilot.weeks[pilot.weeks.length - 1]}), on ${pilot.measuredOn}.`;
+  return `Measured over ${pilot.weeks.length} weeks (${first} to ${last}), on ${pilot.measuredOn}.`;
 }
 
 export const ROUNDING_NOTE = "Each amount is rounded to the cent, so the parts may not add up to the total.";
+export const ROUNDING_NOTE_PL =
+  "Każda kwota jest zaokrąglona do centa, więc części mogą nie sumować się do łącznej kwoty.";
+export const roundingNote = (lang: Lang = "en"): string => (lang === "pl" ? ROUNDING_NOTE_PL : ROUNDING_NOTE);
 
-export const hostSizeNote = (): string => `Hosting assumes ${costModel.mailboxesPerHost} mailboxes per host.`;
+export const hostSizeNote = (lang: Lang = "en"): string =>
+  lang === "pl"
+    ? `Hosting zakłada ${costModel.mailboxesPerHost} skrzynek na jednym serwerze.`
+    : `Hosting assumes ${costModel.mailboxesPerHost} mailboxes per host.`;
 
-export const PLACEHOLDER_PRICE = formatUsd(PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH).replace(/\.00$/, "");
+/** The price for the plan card: whole dollars lose their cents (`$25`, `25 USD`), other prices keep two decimals. */
+export const placeholderPrice = (
+  lang: Lang = "en",
+  priceUsd: number = PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH
+): string => formatUsd(priceUsd, lang).replace(/[.,]00(?= USD$|$)/, "");
+
+export const PLACEHOLDER_PRICE = placeholderPrice("en");

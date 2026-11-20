@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 
 // The port contract of the Playwright suites. One pure place parses the keys, so the panel suite, the docs suite,
@@ -38,4 +39,54 @@ export function loadRepoDotEnv(repoRoot: string): void {
   } catch {
     // An unreadable file is not fatal: the keys can also come from the real environment.
   }
+}
+
+// A job gets a block of three ports: the web server, the fake Telegram and the docs server. Slot `s` (0–999) starts at
+// `20000 + 10·s`. The range is free of the OS ephemeral ports and of the fixed ports of a main checkout.
+const BLOCK_BASE = 20000;
+const BLOCK_STRIDE = 10;
+export const PORT_SLOTS = 1000;
+
+export function portBlock(slot: number): { app: number; telegram: number; docs: number } {
+  const app = BLOCK_BASE + BLOCK_STRIDE * slot;
+  return { app, telegram: app + 1, docs: app + 2 };
+}
+
+// The job name is `<date>-<hash>`. The tail after the last `-` is the hash when it is 1–16 hex characters. Any other
+// name gets the first 8 hex characters of its SHA-1, so the slot and the mail tag stay stable for that name.
+export function jobHash(jobName: string): string {
+  const tail = jobName.slice(jobName.lastIndexOf("-") + 1);
+  if (/^[0-9a-f]{1,16}$/i.test(tail)) return tail.toLowerCase();
+  return createHash("sha1").update(jobName).digest("hex").slice(0, 8);
+}
+
+export function firstSlot(hash: string): number {
+  if (!/^[0-9a-f]{1,16}$/i.test(hash)) throw new Error(`hash must be 1 to 16 hex characters: ${hash}`);
+  return Number(BigInt(`0x${hash}`) % BigInt(PORT_SLOTS));
+}
+
+// Probes linearly from the first slot and wraps after the last one. `null` means that every slot is taken.
+export function pickPortSlot(hash: string, isTaken: (slot: number) => boolean): number | null {
+  const start = firstSlot(hash);
+  for (let step = 0; step < PORT_SLOTS; step += 1) {
+    const slot = (start + step) % PORT_SLOTS;
+    if (!isTaken(slot)) return slot;
+  }
+  return null;
+}
+
+// Reads only `E2E_PORT=` lines of other worktrees' `.env` files. No other line is kept, so no secret leaves the function.
+export function claimedSlots(envTexts: string[]): Set<number> {
+  const slots = new Set<number>();
+  for (const text of envTexts) {
+    for (const line of text.split("\n")) {
+      const match = /^E2E_PORT=["']?(\d+)["']?\s*$/.exec(line.replace(/\r$/, ""));
+      if (match === null || match[1] === undefined) continue;
+      const offset = Number(match[1]) - BLOCK_BASE;
+      if (offset >= 0 && offset % BLOCK_STRIDE === 0 && offset / BLOCK_STRIDE < PORT_SLOTS) {
+        slots.add(offset / BLOCK_STRIDE);
+      }
+    }
+  }
+  return slots;
 }

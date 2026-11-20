@@ -6,7 +6,7 @@ export type Lang = "en" | "pl";
 
 export const NOT_CONFIRMED: Readonly<Record<Lang, string>> = {
   en: "Not confirmed yet",
-  pl: "Jeszcze nie potwierdzone",
+  pl: "Jeszcze niepotwierdzone",
 };
 
 // The AI provider that the config runs when no key chooses one (`LLM_PROVIDER` in `platform/config-llm.ts`; a test ties the two).

@@ -75,7 +75,7 @@ describe("front matter capabilities", () => {
     expect(isUserPage("pl/faq")).toBe(true);
     expect(isUserPage("pl/index")).toBe(false);
   });
-  test("POLISH_SET is the home page, the tutorial, every how-to guide, the FAQ and how a mail is sorted (plan P6)", () => {
+  test("POLISH_SET is the home page, the tutorial, every how-to guide, the FAQ, how a mail is sorted, the security page and the pricing page (plan P6)", () => {
     expect([...POLISH_SET]).toEqual([
       "index",
       "start",
@@ -91,6 +91,8 @@ describe("front matter capabilities", () => {
       "how-to/undo-a-move",
       "faq",
       "explanation/how-a-mail-is-sorted",
+      "security",
+      "pricing",
     ]);
   });
 });

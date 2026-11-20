@@ -30,7 +30,7 @@ describe("subprocessorView", () => {
       termsUrl: "<to confirm: SMTP provider privacy page>",
     });
     expect(subprocessorView(placeholder, "en").location).toBe("Not confirmed yet");
-    expect(subprocessorView(placeholder, "pl").location).toBe("Jeszcze nie potwierdzone");
+    expect(subprocessorView(placeholder, "pl").location).toBe("Jeszcze niepotwierdzone");
     expect(subprocessorView(placeholder, "en").termsUrl).toBeNull();
   });
 
