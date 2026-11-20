@@ -1,6 +1,6 @@
 # F157 stage 02 — time fixes: int files a–l
 
-Needs: none. May run next to 01, 03 and 05.
+Needs F125 stages 09–20 in `done/` or landed: the test-audit cuts that edit the same test files (`ticket.md` § Sequenced). May run next to 01, 03 and 05.
 
 Part of [`../plan.md`](../plan.md). Steps: [`../procedures.md`](../procedures.md) § Probe and § Time fix.
 

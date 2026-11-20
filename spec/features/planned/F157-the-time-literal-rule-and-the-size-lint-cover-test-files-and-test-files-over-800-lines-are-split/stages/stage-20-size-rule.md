@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Steps for a late split: [`../procedures.md`]
 
 - **Goal:** no test-code file (plan D1) is over 800 lines at this stage's `HEAD`.
 - **Check:** `git ls-files` of the D1 globs `| xargs wc -l`, list each file over 800.
-- **Decision D11:** at most 2 such files: split them here (procedures § Split; log in `split-log/stage-20.md`). More than 2: commit nothing for this step, list them in the final message, and stop: the coordinator adds a split stage.
+- **Decision D11:** at most 2 such files: split them here (procedures § Split, all steps, with the references of step 10 and the checks of step 11; log in `split-log/stage-20.md`). More than 2: commit nothing for this step, list them in the final message, and stop: the coordinator adds a split stage.
 
 ## Step 2 — rule on for test code
 
