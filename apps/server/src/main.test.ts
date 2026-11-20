@@ -38,15 +38,17 @@ describe("main", () => {
     expect(stderr).not.toContain("abc");
   });
 
-  // Source-level pin of the wiring: the `ops.slo` tick sends through the one operator send that
-  // `channels.operator` also gets (a function when OPERATOR_TELEGRAM_CHAT_ID is set, null when it is unset).
-  test("the ops.slo job and the operator notices share one operator send", () => {
+  // Source-level pin of the wiring: one delivery, built from the one operator send, serves the `channels.operator`
+  // notices and the `ops.slo` tick (the send is a function when OPERATOR_TELEGRAM_CHAT_ID is set, null when it is unset).
+  test("the ops.slo job and the operator notices share one operator delivery", () => {
     const source = startSource();
     expect(source).toMatch(/const operatorSend =\s+operatorChat === null\s+\? null\s+: async/);
+    expect(source.match(/createOperatorDelivery\(/g)).toHaveLength(1);
+    expect(source).toMatch(/createOperatorDelivery\(\{ send: operatorSend, log \}\)/);
     expect(source).toMatch(
-      /createOperatorNotices\(\{\s+db,\s+now: \(\) => new Date\(\),\s+send: operatorSend,\s+locale: config\.OPERATOR_LOCALE,\s+\}\)/
+      /createOperatorNotices\(\{\s+db,\s+now: \(\) => new Date\(\),\s+delivery,\s+locale: config\.OPERATOR_LOCALE,\s+\}\)/
     );
-    expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?send: operatorSend,/);
+    expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?delivery,/);
   });
 
   // The release stamp: the entry point reads EA_RELEASE before it logs, so every JSON line carries it. The job-run

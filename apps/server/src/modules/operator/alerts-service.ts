@@ -1,12 +1,4 @@
-import {
-  DAY_MS,
-  renderSloAlert,
-  SLO_KINDS,
-  SLO_TEST_FACTS,
-  SLO_TEST_IDS,
-  type SloKind,
-  type UserLocale,
-} from "@ea/core";
+import { DAY_MS, OPERATOR_ALERT_KINDS, type OperatorAlertKind, renderTestAlert, type UserLocale } from "@ea/core";
 
 import type { Db } from "../../platform/db";
 
@@ -22,17 +14,17 @@ export async function recentAlerts(db: Db, input: { days: number; now: Date }): 
 }
 
 export interface TestAlertResult {
-  kind: SloKind;
+  kind: OperatorAlertKind;
   outcome: "sent" | "no_chat";
 }
 
 /**
- * Sends the `test` text of each kind with fixed facts through the same send as the job. It writes no `ops_alerts` row.
+ * Sends the test text of each kind (incident or event) with fixed facts through the same send as the jobs. It writes no `ops_alerts` row and no audit row.
  * `send` null (no operator chat) gives `no_chat`. `report` gets each result as it happens. A send error stops the run and
  * reaches the caller, so the results reported before it are the kinds that went out.
  */
 export async function sendTestAlerts(input: {
-  kinds: readonly SloKind[];
+  kinds: readonly OperatorAlertKind[];
   send: ((text: string) => Promise<void>) | null;
   now: Date;
   locale: UserLocale;
@@ -43,22 +35,12 @@ export async function sendTestAlerts(input: {
     results.push(result);
     input.report?.(result);
   };
-  for (const kind of SLO_KINDS.filter((candidate) => input.kinds.includes(candidate))) {
+  for (const kind of OPERATOR_ALERT_KINDS.filter((candidate) => input.kinds.includes(candidate))) {
     if (input.send === null) {
       add({ kind, outcome: "no_chat" });
       continue;
     }
-    const text = renderSloAlert(
-      {
-        kind,
-        phase: "test",
-        facts: SLO_TEST_FACTS[kind],
-        ids: SLO_TEST_IDS[kind],
-        openedAt: input.now,
-        now: input.now,
-      },
-      input.locale
-    );
+    const text = renderTestAlert(kind, input.now, input.locale);
     await input.send(text);
     add({ kind, outcome: "sent" });
   }

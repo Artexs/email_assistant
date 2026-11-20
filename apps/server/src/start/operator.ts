@@ -6,6 +6,7 @@ import {
   checkLlmErrors,
   checkSyncLag,
   checkUrgentLatency,
+  createOperatorDelivery,
   createOperatorNotices,
   runSloTick,
   type SloCheckEntry,
@@ -18,7 +19,7 @@ export interface OperatorStart {
   operator: ReturnType<typeof createOperatorNotices>;
 }
 
-// The operator notices and the service-level alerts. Both send through the operator chat; the Telegram runtime is read at send time.
+// The operator notices and the service-level alerts. Both deliver through one delivery to the operator chat; the Telegram runtime is read at send time.
 export function startOperator(ctx: StartContext): OperatorStart {
   const { config, db, log, scheduler, runs, startedAt, late } = ctx;
   // Operator notices: the chat id is private data and never reaches a log line.
@@ -30,18 +31,19 @@ export function startOperator(ctx: StartContext): OperatorStart {
           if (late.telegram === null) throw new Error("telegram is off");
           await late.telegram.sendDirect(operatorChat, text);
         };
+  const delivery = createOperatorDelivery({ send: operatorSend, log });
   const operator = createOperatorNotices({
     db,
     now: () => new Date(),
-    send: operatorSend,
+    delivery,
     locale: config.OPERATOR_LOCALE,
   });
   // prettier-ignore
   scheduler.add("channels.operator", "0 13 * * * *", runs.track("channels.operator", () => operator.run()));
-  log.info("operator_notices_on", { kind: operatorChat === null ? "log" : "telegram" });
+  log.info("operator_alerts_on", { kind: operatorChat === null ? "log" : "telegram" });
 
-  // The service-level alerts. The job runs in every case: with no operator chat the `slo_alert_sent` line is the send.
-  // The alert goes only to the operator chat, through the same send as the operator notices. The scheduler runs the tick
+  // The service-level alerts. The job runs in every case: with no operator chat the `operator_alert_unsent` line stands for the send.
+  // The alert goes only to the operator chat, through the same delivery as the operator notices. The scheduler runs the tick
   // with no tenant scope, because the checks read every organization.
   const slo = sloThresholds(config);
   const sloChecks: SloCheckEntry[] = [
@@ -58,7 +60,7 @@ export function startOperator(ctx: StartContext): OperatorStart {
   // prettier-ignore
   scheduler.add("ops.slo", "30 */5 * * * *", runs.track("ops.slo", () =>
     runSloTick(
-      { db, checks: sloChecks, send: operatorSend, cfg: slo, log, locale: config.OPERATOR_LOCALE },
+      { db, checks: sloChecks, delivery, cfg: slo, log, locale: config.OPERATOR_LOCALE },
       new Date()
     )
   ));

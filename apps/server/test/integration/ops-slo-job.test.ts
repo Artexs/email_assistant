@@ -1,8 +1,9 @@
-import type { SloKind } from "@ea/core";
+import { OPERATOR_ALERT_KINDS, type SloKind } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import {
+  createOperatorDelivery,
   runSloTick,
   sendTestAlerts,
   checkBackupAge,
@@ -48,7 +49,7 @@ async function inRollback(fn: (trx: Trx) => Promise<void>): Promise<void> {
 }
 
 interface LogLine {
-  level: "info" | "warn";
+  level: "info" | "warn" | "error";
   event: string;
   fields: Record<string, unknown>;
 }
@@ -62,6 +63,8 @@ function harness(trx: Trx) {
       void lines.push({ level: "info", event, fields: fields ?? {} }),
     warn: (event: string, fields?: Record<string, unknown>) =>
       void lines.push({ level: "warn", event, fields: fields ?? {} }),
+    error: (event: string, fields?: Record<string, unknown>) =>
+      void lines.push({ level: "error", event, fields: fields ?? {} }),
   };
   const send = async (text: string): Promise<void> => {
     if (state.failSend) throw new Error("telegram down: secret chat 123");
@@ -71,9 +74,9 @@ function harness(trx: Trx) {
   const deps = (checks: SloCheckEntry[], withSend = true): SloTickDeps => ({
     db: trx,
     checks,
-    send: withSend ? send : null,
+    delivery: createOperatorDelivery({ send: withSend ? send : null, log }),
     cfg,
-    log: log as SloTickDeps["log"],
+    log,
     locale: "en",
   });
   return { sent, lines, state, deps };
@@ -125,7 +128,7 @@ describe("the ops.slo tick", () => {
       expect(found).toHaveLength(1);
       expect(found[0]?.notice_count).toBe(1);
       expect(h.lines).toEqual([
-        { level: "info", event: "slo_alert_sent", fields: { kind: "slo_disk", status: "open" } },
+        { level: "info", event: "operator_alert_sent", fields: { kind: "slo_disk", status: "open" } },
       ]);
     });
   });
@@ -211,7 +214,11 @@ describe("the ops.slo tick", () => {
       expect(found[0]?.open_sent_at).toBeNull();
       expect(found[0]?.notice_count).toBe(0);
       expect(h.lines).toEqual([
-        { level: "warn", event: "slo_alert_send_failed", fields: { kind: "slo_disk", status: "open", error: "Error" } },
+        {
+          level: "error",
+          event: "operator_alert_send_failed",
+          fields: { kind: "slo_disk", status: "open", error: "Error" },
+        },
       ]);
       h.state.failSend = false;
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(5 * MINUTE));
@@ -238,13 +245,13 @@ describe("the ops.slo tick", () => {
     });
   });
 
-  test("7. with no send (no operator chat): no send call, the line `slo_alert_sent` counts as the send, the row is marked", async () => {
+  test("7. with no send (no operator chat): no send call, the `warn` line `operator_alert_unsent` counts as the send, the row is marked", async () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       await runSloTick(h.deps([entry("slo_disk", diskFiring)], false), T0);
       expect(h.sent).toHaveLength(0);
       expect(h.lines).toEqual([
-        { level: "info", event: "slo_alert_sent", fields: { kind: "slo_disk", status: "open" } },
+        { level: "warn", event: "operator_alert_unsent", fields: { kind: "slo_disk", status: "open" } },
       ]);
       const [row] = await rows(trx, "slo_disk");
       expect(row?.notice_count).toBe(1);
@@ -255,18 +262,18 @@ describe("the ops.slo tick", () => {
     });
   });
 
-  test("8. a sync check that throws logs `slo_check_failed` with its kind; the disk alert still opens", async () => {
+  test("8. a sync check that throws logs `operator_check_failed` with its kind; the disk alert still opens", async () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       const boom = Object.assign(new Error("the subject was Secret plan"), { code: "XX001" });
       await runSloTick(h.deps([entry("slo_sync_lag", boom), entry("slo_disk", diskFiring)]), T0);
       expect(h.lines).toEqual([
         {
-          level: "warn",
-          event: "slo_check_failed",
+          level: "error",
+          event: "operator_check_failed",
           fields: { kind: "slo_sync_lag", error: "Error", error_code: "XX001" },
         },
-        { level: "info", event: "slo_alert_sent", fields: { kind: "slo_disk", status: "open" } },
+        { level: "info", event: "operator_alert_sent", fields: { kind: "slo_disk", status: "open" } },
       ]);
       expect(JSON.stringify(h.lines)).not.toContain("Secret");
       expect(h.sent).toHaveLength(1);
@@ -305,11 +312,17 @@ describe("the ops.slo tick", () => {
       ]);
       // The facts are not a finite number: the repository refuses them, the tick logs the kind and goes on.
       await runSloTick({ ...deps, checks: [...deps.checks, entry("slo_disk", diskFiring)] }, T0);
-      expect(h.lines[0]).toMatchObject({ level: "warn", event: "slo_check_failed", fields: { kind: "slo_sync_lag" } });
+      expect(h.lines[0]).toMatchObject({
+        level: "error",
+        event: "operator_alert_failed",
+        fields: { kind: "slo_sync_lag" },
+      });
       expect(h.sent).toHaveLength(1);
       expect(h.sent[0]?.split("\n")[0]).toBe("ALERT slo_disk");
     });
   });
+
+  const quiet = { info: () => undefined, warn: () => undefined, error: () => undefined };
 
   test("8e. the tick runs with no tenant scope when the scheduler runs it", async () => {
     const seen: (string | null)[] = [];
@@ -323,7 +336,14 @@ describe("the ops.slo tick", () => {
     await withTenantScope("11111111-1111-4111-8111-111111111111", () =>
       runJobTick("ops.slo", () =>
         runSloTick(
-          { db, checks: [check], send: null, cfg, log: { info: () => undefined, warn: () => undefined }, locale: "en" },
+          {
+            db,
+            checks: [check],
+            delivery: createOperatorDelivery({ send: null, log: quiet }),
+            cfg,
+            log: quiet,
+            locale: "en",
+          },
           T0
         )
       )
@@ -368,29 +388,31 @@ describe("the text of a real reading", () => {
   });
 });
 
+// The rows a test send must not write: incident rows and operator notice audit rows (other runs may leave some).
+async function counts(trx: Trx): Promise<{ alerts: number; notices: number }> {
+  const { rows: found } = await sql<{ alerts: number; notices: number }>`
+    select (select count(*)::int from ops_alerts) as alerts,
+           (select count(*)::int from audit_log where event = 'operator.notice') as notices`.execute(trx);
+  return found[0] ?? { alerts: -1, notices: -1 };
+}
+
 describe("ops:alert-test", () => {
-  test("11. --all with a fake send: five sends, each line 1 `TEST <kind>`; no ops_alerts row", async () => {
+  test("11. --all with a fake send: ten sends, each line 1 `TEST <kind>`; no ops_alerts row and no operator.notice row", async () => {
     await inRollback(async (trx) => {
       const sent: string[] = [];
       const reported: string[] = [];
+      const before = await counts(trx);
       const results = await sendTestAlerts({
-        kinds: ["slo_sync_lag", "slo_urgent_latency", "slo_llm_errors", "slo_disk", "slo_backup_age"],
+        kinds: OPERATOR_ALERT_KINDS,
         send: async (text) => void sent.push(text),
         now: T0,
         locale: "en",
         report: (result) => void reported.push(`${result.outcome} ${result.kind}`),
       });
-      expect(sent.map((text) => text.split("\n")[0])).toEqual([
-        "TEST slo_sync_lag",
-        "TEST slo_urgent_latency",
-        "TEST slo_llm_errors",
-        "TEST slo_disk",
-        "TEST slo_backup_age",
-      ]);
-      expect(results.map((result) => result.outcome)).toEqual(["sent", "sent", "sent", "sent", "sent"]);
-      expect(reported).toHaveLength(5);
-      const { rows: found } = await sql<{ n: number }>`select count(*)::int as n from ops_alerts`.execute(trx);
-      expect(found[0]?.n).toBe(0);
+      expect(sent.map((text) => text.split("\n")[0])).toEqual(OPERATOR_ALERT_KINDS.map((kind) => `TEST ${kind}`));
+      expect(results.map((result) => result.outcome)).toEqual(OPERATOR_ALERT_KINDS.map(() => "sent"));
+      expect(reported).toEqual(OPERATOR_ALERT_KINDS.map((kind) => `sent ${kind}`));
+      expect(await counts(trx)).toEqual(before);
     });
   });
 

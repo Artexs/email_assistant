@@ -1,10 +1,10 @@
 import type { UserLocale } from "../tenancy";
 import { textsFor } from "../texts";
 import type { SloIdType } from "../texts/operator";
-import { MINUTE_MS } from "../time";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../time";
 
 import type { OperatorEvent } from "./events";
-import type { SloKind } from "./kinds";
+import { OPERATOR_EVENT_KINDS, type OperatorAlertKind, type OperatorEventKind, SLO_KINDS, type SloKind } from "./kinds";
 
 // The text of one operator message, in `OPERATOR_LOCALE`. Plain text for Telegram.
 // It holds numbers, UUIDs of mailboxes, mails or organizations, the kind code and the runbook path. It never holds a
@@ -103,3 +103,35 @@ export const SLO_TEST_IDS: Record<SloKind, string[]> = {
   slo_disk: [],
   slo_backup_age: [],
 };
+
+/** A fixed event of each kind: test ids, dates from `now`. The `ops:alert-test` text of an event kind shows it. */
+export function operatorEventSample(kind: OperatorEventKind, now: Date): OperatorEvent {
+  const orgId = testId(6);
+  const mailboxId = testId(7);
+  switch (kind) {
+    case "trial_ending":
+      return { kind, orgId, endsAt: new Date(now.getTime() + 3 * DAY_MS), ended: false };
+    case "auth_error_24h":
+      return { kind, orgId, mailboxId, since: new Date(now.getTime() - DAY_MS) };
+    case "llm_cap":
+      return { kind, orgId, mailboxId, cap: 300, dayStart: now };
+    case "auth_mail_failed":
+      return { kind, orgId, userId: testId(8), mail: "reset", code: "EAUTH", at: now };
+    case "send_limit":
+      return { kind, orgId, mailboxId, limit: "mailbox_hour", at: now, until: new Date(now.getTime() + HOUR_MS) };
+  }
+}
+
+/** The text of `ops:alert-test` for any kind: the `test` text of an incident, or `TEST <kind>` and the text of a sample event. */
+export function renderTestAlert(kind: OperatorAlertKind, now: Date, locale: UserLocale): string {
+  const sloKind = SLO_KINDS.find((candidate) => candidate === kind);
+  if (sloKind !== undefined) {
+    return renderSloAlert(
+      { kind: sloKind, phase: "test", facts: SLO_TEST_FACTS[sloKind], ids: SLO_TEST_IDS[sloKind], openedAt: now, now },
+      locale
+    );
+  }
+  const eventKind = OPERATOR_EVENT_KINDS.find((candidate) => candidate === kind);
+  if (eventKind === undefined) throw new Error("unknown alert kind");
+  return `TEST ${kind}\n${renderOperatorEvent(operatorEventSample(eventKind, now), locale)}`;
+}
