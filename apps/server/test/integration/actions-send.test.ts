@@ -1078,6 +1078,7 @@ describe("send end to end", () => {
         pause,
         testMail: NO_TEST_SENDERS,
         dailyCap: 1000,
+        junkDailyCap: 1000,
         now: () => NOW,
       });
 

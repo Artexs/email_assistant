@@ -69,7 +69,7 @@ export const cliDescriptionSchema = z
     usage: z
       .string()
       .refine((usage) => USAGE_PATTERN.test(usage), "usage starts with 'bun run <name>'")
-      .refine((usage) => !usage.trimEnd().endsWith("\n"), "usage has no trailing newline"),
+      .refine((usage) => !usage.endsWith("\n"), "usage has no trailing newline"),
     exits: z.strictObject({ 1: exitText.optional(), 3: exitText.optional(), 4: exitText.optional() }).optional(),
     outputNote: z.string().min(1).optional(),
   })

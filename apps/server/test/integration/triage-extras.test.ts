@@ -191,6 +191,7 @@ async function promptOf(
       pause: createLlmPause(),
       testMail: opts.testMail ?? NO_TEST_SENDERS,
       dailyCap: 1000,
+      junkDailyCap: 1000,
       now: () => now,
       ...(opts.prompt === undefined ? {} : { prompt: opts.prompt }),
     },
@@ -420,6 +421,7 @@ describe("loadClassifierExtras in triage", () => {
         pause: createLlmPause(),
         testMail: NO_TEST_SENDERS,
         dailyCap: 1000,
+        junkDailyCap: 1000,
         now: () => now,
       });
       expect((await triageOne(deps(watched), s.ctx, mailboxOf(s), v2)).kind).toBe("triaged");

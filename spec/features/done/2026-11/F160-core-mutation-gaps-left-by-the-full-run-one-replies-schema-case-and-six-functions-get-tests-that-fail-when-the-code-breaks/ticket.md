@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F160 · Core mutation gaps left by the full run (one replies schema case and six functions) get tests that fail when the code breaks

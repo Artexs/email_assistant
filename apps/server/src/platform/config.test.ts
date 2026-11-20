@@ -155,6 +155,7 @@ describe("loadConfig", () => {
     expect(config.GEMINI_TIMEOUT_MS).toBe(30000);
     expect(config.GEMINI_RPM).toBe(12);
     expect(config.LLM_DAILY_CAP).toBe(300);
+    expect(config.LLM_JUNK_DAILY_CAP).toBe(100);
     expect(config.TRIAGE_LLM_SCOPE).toBe("off");
   });
 
@@ -260,12 +261,20 @@ describe("loadConfig", () => {
   });
 
   test("reads the LLM numbers and rejects bad ones", () => {
-    const config = loadConfig({ ...fullEnv, GEMINI_TIMEOUT_MS: "5000", GEMINI_RPM: "3", LLM_DAILY_CAP: "50" });
+    const config = loadConfig({
+      ...fullEnv,
+      GEMINI_TIMEOUT_MS: "5000",
+      GEMINI_RPM: "3",
+      LLM_DAILY_CAP: "50",
+      LLM_JUNK_DAILY_CAP: "20",
+    });
     expect(config.GEMINI_TIMEOUT_MS).toBe(5000);
     expect(config.GEMINI_RPM).toBe(3);
     expect(config.LLM_DAILY_CAP).toBe(50);
+    expect(config.LLM_JUNK_DAILY_CAP).toBe(20);
     expect(configError({ ...fullEnv, GEMINI_RPM: "0" }).keys).toContain("GEMINI_RPM");
     expect(configError({ ...fullEnv, LLM_DAILY_CAP: "0" }).keys).toContain("LLM_DAILY_CAP");
+    expect(configError({ ...fullEnv, LLM_JUNK_DAILY_CAP: "0" }).keys).toContain("LLM_JUNK_DAILY_CAP");
     expect(configError({ ...fullEnv, GEMINI_TIMEOUT_MS: "1.5" }).keys).toContain("GEMINI_TIMEOUT_MS");
   });
 

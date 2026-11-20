@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { type CliDescription, cliDescriptionSchema, renderHelp, renderToolTable, UsageError } from "./index";
+import {
+  CLI_NEEDS,
+  type CliDescription,
+  cliDescriptionSchema,
+  type CliToolRow,
+  renderHelp,
+  renderToolTable,
+  UsageError,
+} from "./index";
 
 const orgStatus: CliDescription = {
   name: "org:status",
@@ -73,6 +81,111 @@ describe("cliDescriptionSchema", () => {
   });
 });
 
+describe("cliDescriptionSchema issues and edges", () => {
+  const issuesOf = (change: Record<string, unknown>) => {
+    const result = cliDescriptionSchema.safeParse({ ...orgStatus, ...change });
+    if (result.success) return [];
+    return result.error.issues.map((issue) => ({ code: issue.code, path: issue.path, message: issue.message }));
+  };
+
+  test.each([
+    ["Add", false],
+    ["add:user", false],
+    ["add-", false],
+    ["-add", false],
+    ["add user", false],
+    ["", false],
+    ["add\n", false],
+  ])("the subcommand %j is ok = %s", (subcommand, ok) => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, subcommand }).success).toBe(ok);
+  });
+
+  test("a name that breaks the pattern gets the package.json message", () => {
+    expect(issuesOf({ name: "Org", usage: "bun run Org" })).toEqual([
+      {
+        code: "invalid_format",
+        path: ["name"],
+        message: "name is a package.json key: kebab-case parts joined by ':'",
+      },
+    ]);
+  });
+
+  test.each([
+    {
+      name: "a summary over the limit",
+      change: { summary: `${"a".repeat(100)}.` },
+      issues: [{ code: "too_big", path: ["summary"], message: "summary is at most 100 characters" }],
+    },
+    {
+      name: "a summary with no final dot",
+      change: { summary: "Prints one organization" },
+      issues: [{ code: "invalid_format", path: ["summary"], message: "summary is one sentence that ends with '.'" }],
+    },
+    {
+      name: "a summary that starts with a space",
+      change: { summary: " Prints one organization." },
+      issues: [{ code: "invalid_format", path: ["summary"], message: "summary is one sentence that ends with '.'" }],
+    },
+    {
+      name: "a summary of two lines",
+      change: { summary: "Prints one.\nPrints two." },
+      issues: [
+        { code: "invalid_format", path: ["summary"], message: "summary is one sentence that ends with '.'" },
+        { code: "custom", path: ["summary"], message: "summary is one line" },
+      ],
+    },
+    {
+      name: "needs with a duplicate",
+      change: { needs: ["db", "db"] },
+      issues: [{ code: "custom", path: ["needs"], message: "needs has no duplicate" }],
+    },
+    {
+      name: "none next to another need",
+      change: { needs: ["none", "db"] },
+      issues: [{ code: "custom", path: ["needs"], message: "'none' stands alone" }],
+    },
+    {
+      name: "a usage that does not start with bun run",
+      change: { usage: "bun org:status" },
+      issues: [
+        { code: "custom", path: ["usage"], message: "usage starts with 'bun run <name>'" },
+        { code: "custom", path: ["usage"], message: "usage first line names the tool" },
+      ],
+    },
+    {
+      name: "a usage with text before bun run",
+      change: { usage: "x bun run org:status" },
+      issues: [
+        { code: "custom", path: ["usage"], message: "usage starts with 'bun run <name>'" },
+        { code: "custom", path: ["usage"], message: "usage first line names the tool" },
+      ],
+    },
+    {
+      name: "a usage for another tool",
+      change: { usage: "bun run org:delete" },
+      issues: [{ code: "custom", path: ["usage"], message: "usage first line names the tool" }],
+    },
+    {
+      name: "a usage that ends with a newline",
+      change: { usage: "bun run org:status --org-id <uuid>\n" },
+      issues: [{ code: "custom", path: ["usage"], message: "usage has no trailing newline" }],
+    },
+  ])("refuses $name with its exact issues", ({ change, issues }) => {
+    expect<unknown>(issuesOf(change)).toEqual(issues);
+  });
+
+  test("refuses an empty output note", () => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, outputNote: "" }).success).toBe(false);
+  });
+
+  test.each([
+    ["every need but none", { needs: CLI_NEEDS.filter((need) => need !== "none") }],
+    ["none as the only need", { needs: ["none"] }],
+  ])("accepts %s", (_label, change) => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, ...change }).success).toBe(true);
+  });
+});
+
 describe("renderToolTable", () => {
   const row = (name: string, summary: string, available = true) => ({
     name,
@@ -92,6 +205,64 @@ describe("renderToolTable", () => {
     const table = renderToolTable([row("fake-tg", "Hidden.", false), row("job:run", "One.")]);
     expect(table).toContain("fake-tg  -     -   not in this install");
     expect(table).not.toContain("Hidden.");
+  });
+});
+
+describe("renderToolTable columns and order", () => {
+  const tool = (name: string, risk: CliToolRow["risk"], needs: CliToolRow["needs"], summary: string) => ({
+    name,
+    risk,
+    needs,
+    summary,
+    available: true,
+  });
+
+  test("pads each of the three first columns to its widest cell plus two spaces and leaves the summary unpadded", () => {
+    expect(
+      renderToolTable([
+        tool("b", "outside", ["db", "imap"], "Second."),
+        tool("long-name", "read", ["none"], "Third."),
+        tool("a", "danger", ["llm"], "First."),
+      ])
+    ).toBe(
+      [
+        "a          danger   llm       First.",
+        "b          outside  db, imap  Second.",
+        "long-name  read     none      Third.",
+        "",
+      ].join("\n")
+    );
+  });
+
+  test("sorts by name whatever the input order", () => {
+    const names = (rows: readonly string[]) =>
+      renderToolTable(rows.map((name) => tool(name, "read", ["db"], "S.")))
+        .trimEnd()
+        .split("\n")
+        .map((line) => line.split(" ")[0]);
+    expect(names(["c", "a", "b"])).toEqual(["a", "b", "c"]);
+    expect(names(["a", "b", "c"])).toEqual(["a", "b", "c"]);
+    expect(names(["b", "c", "a"])).toEqual(["a", "b", "c"]);
+  });
+
+  test("keeps the input order of two rows with the same name", () => {
+    const lines = renderToolTable([tool("x", "read", ["db"], "One."), tool("x", "read", ["db"], "Two.")])
+      .trimEnd()
+      .split("\n");
+    expect(lines).toEqual(["x  read  db  One.", "x  read  db  Two."]);
+  });
+
+  test("an unavailable row counts in the widths with its dashes and name", () => {
+    expect(
+      renderToolTable([
+        tool("a", "read", ["db"], "One."),
+        { ...tool("zzzz", "danger", ["vps"], "Hidden."), available: false },
+      ])
+    ).toBe(["a     read  db  One.", "zzzz  -     -   not in this install", ""].join("\n"));
+  });
+
+  test("a list with no rows prints an empty string", () => {
+    expect(renderToolTable([])).toBe("");
   });
 });
 

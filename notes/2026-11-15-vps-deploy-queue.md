@@ -151,3 +151,18 @@ Result: **env split ok**. Release N is `v0.4.2`; rollback target `v0.4.1` (after
 - Not changed: the DB (no restore, no `down -v`), `deploy/sim.env`, the crontab, `..env.swp`.
 - Agents: run a manual backup over ssh as `PATH=$HOME/bin:$PATH deploy/backup.sh`, never bare.
 - env split ok. Stage 05 may be spawned now.
+
+## Demo run for F151 (C1)
+
+Started 2026-11-20 16:36 UTC on the VPS sim stack (`ea-sim`) by `demo-reset --yes`, beside the live lab day run (owner decision 2026-11-20: do not wait for it).
+
+- Run id: `week-20261123-b99f`, org `demo` ("Kordelan demo", id `a6716460-341a-46c9-983b-b4b386320a6f`), cap $5.00, 855 planned mails, `modePlan.assistFromDay` 4. Mailbox mode now `shadow`.
+- Start date: 2026-11-23 (Monday). A week run starts only on a Monday (`planLiveRun` refuses `not_monday`), so "now" means the next Monday; no `--date` was passed (the default is the first Monday after today). The run is active now and waits for its first slot (2026-11-23T04:37Z).
+- Day 1–3 shadow: 2026-11-23 to 2026-11-25. Assist from 2026-11-26 00:00 Warsaw (2026-11-25T23:00Z).
+- **End of day 5: 2026-11-27T23:00:00Z** (2026-11-28 00:00 Warsaw). Run `endsAt` (day 7) 2026-11-29T23:00Z, `tailEndsAt` 2026-12-03T23:00Z.
+- Serve ticks it: first tick at 16:36:38Z wrote the `seen` events (Telegram cursor, three bot inbox cursors); `serve.json` lists both runs with no failures.
+- Classifier setup: sim image `ea-sim-base:v0.3.1` (`EA_RELEASE=v0.3.1`), `LLM_PROVIDER=openai`, prompt pointer `classifier-v2` at v0.3.1 (`prompts/index.ts`), model `gpt-6-luna` (the 121 classifier `llm.call` rows of the last day on the sim DB all have that model). The lab demo code (`modules/lab/demo-seed`, `reset.ts`, `start.ts`, `serve*.ts`) equals master except one test file.
+- Month budget at start: no ledger file yet (spend 0); active caps $1 (lab day run) + $5 (demo).
+- Preview before the reset: `would delete org none and 0 mails` of the demo mailbox (no demo org existed). The lab org, its run (`day-20261120-215c`), the `ea-sim` containers (created 2026-11-19) and the production stack were not touched.
+- Export after 2026-11-27T23:00Z (not before): `bun run lab demo-export --day 5 --out ~/.local/share/email-assistant/demo/demo-seed-day5.json` (the D6 path of F121, mode 0600). On the VPS it runs in the `lab` container: `$L demo-export --day 5 --out /var/lib/ea-lab/demo-seed-day5.json`, then `$S cp lab:/var/lib/ea-lab/demo-seed-day5.json /tmp/` and copy the file to the D6 path on the owner's PC. First a trial export after day 1 (`deploy/README.md` § Sim stack, step 12).
+- VPS checkout note: an untracked `..env.swp` (a vim swap file of `.env`) is in `~/email_assistant`; it was there before this job and was not touched.

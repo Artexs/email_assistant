@@ -30,7 +30,7 @@ import { errorFields, SoftError } from "../../platform/errors";
 import { LlmBlockedError, LlmConfigError, llmErrorCode, type LlmClient, type LlmUsage } from "../../platform/llm";
 import { createLog, type Log } from "../../platform/log";
 import { createPlanned, setDelegationId, type CreatedAction, type PlannedActionInput } from "../actions";
-import { auditEvents, countLlmCallsSince, recordAudit, recordLlmCall } from "../audit";
+import { auditEvents, countLlmCallsOfFolderSince, countLlmCallsSince, recordAudit, recordLlmCall } from "../audit";
 import { lockSettingsForShare } from "../config";
 import { createDelegation, detectReply, markAnswered } from "../delegation";
 import { finishEmail, PENDING_BODY_DAYS, releaseEmail, type ClaimedEmail, type TestMailRule } from "../mail";
@@ -106,6 +106,8 @@ export interface TriageDeps {
   testMail: TestMailRule;
   // The most `llm.call` rows of one mailbox per quota day.
   dailyCap: number;
+  // The most `llm.call` rows of one mailbox per quota day for mail from its junk folder. These calls also count in `dailyCap`.
+  junkDailyCap: number;
   now(): Date;
   // Absent: the production prompt (`productionClassifierChoice`). Tests inject another version and part list; the registry stays.
   prompt?: ClassifierPromptChoice;
@@ -121,6 +123,8 @@ export type TriageOutcome =
   | { kind: "settings_changed" }
   | { kind: "skipped" }
   | { kind: "capped"; until: Date; dayStart: Date }
+  // The mail is from the junk folder and the junk limit of the quota day is used up; other mail still runs.
+  | { kind: "junk_capped"; until: Date; dayStart: Date }
   | { kind: "paused"; until: Date };
 
 // A mail ends in `triage_error` when it reaches this many tries (the count includes stale take-backs).
@@ -515,6 +519,18 @@ export async function triageOne(
       countAttempt: false,
     });
     return released ? { kind: "capped", until, dayStart } : { kind: "lost" };
+  }
+  if (
+    mailbox.junkFolder !== null &&
+    email.source_folder === mailbox.junkFolder &&
+    (await countLlmCallsOfFolderSince(deps.db, ctx, mailbox.id, dayStart, mailbox.junkFolder)) >= deps.junkDailyCap
+  ) {
+    const until = nextQuotaDayStart(callTime, QUOTA_TIMEZONE);
+    const released = await releaseEmail(deps.db, ctx, email.id, email.locked_at, {
+      nextAttemptAt: until,
+      countAttempt: false,
+    });
+    return released ? { kind: "junk_capped", until, dayStart } : { kind: "lost" };
   }
 
   const { choice, classifierEmail, extras } = await buildClassifierInput(deps, ctx, mailbox, email, suspiciousReasons);
