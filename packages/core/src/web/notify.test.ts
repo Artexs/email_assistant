@@ -68,3 +68,59 @@ describe("the longest quiet window", () => {
     expect(notifyPatchSchema.safeParse({ quietStart: null, quietEnd: null }).success).toBe(true);
   });
 });
+
+describe("notifyPatchSchema issues", () => {
+  const issues = (body: unknown): { code: string; path: PropertyKey[]; message: string }[] | null => {
+    const result = notifyPatchSchema.safeParse(body);
+    return result.success ? null : result.error.issues.map(({ code, path, message }) => ({ code, path, message }));
+  };
+
+  test.each([
+    ["an empty body", {}],
+    ["quiet keys with a channel", { quietStart: "23:00", quietEnd: "06:00", reportChannel: "mail" }],
+  ])("%s is one custom issue for the whole body", (_name, body) => {
+    expect(issues(body)).toEqual([{ code: "custom", path: [], message: "notify_one_group" }]);
+  });
+
+  test("routes next to quiet keys are one group too many: the issue is on the whole body", () => {
+    expect(issues({ routes: { urgent: "telegram" }, quietStart: null, quietEnd: null })).toEqual([
+      { code: "custom", path: [], message: "notify_one_group" },
+    ]);
+  });
+
+  test.each([
+    ["a route value", { routes: { urgent: "telegram" } }],
+    ["a route key removed with null", { routes: { updates: null } }],
+  ])("routes alone parse: %s", (_name, body) => {
+    expect(notifyPatchSchema.safeParse(body).success).toBe(true);
+  });
+
+  test.each([
+    ["a start with no end", { quietStart: "23:00" }],
+    ["an end with no start", { quietEnd: "06:00" }],
+    ["a time start with a null end", { quietStart: "23:00", quietEnd: null }],
+    ["a null start with a time end", { quietStart: null, quietEnd: "06:00" }],
+  ])("quiet hours: %s is quiet_pair on quietEnd", (_name, body) => {
+    expect(issues(body)).toEqual([{ code: "custom", path: ["quietEnd"], message: "quiet_pair" }]);
+  });
+
+  test("a window over 18 hours is quiet_too_long on quietEnd", () => {
+    expect(issues({ quietStart: "00:00", quietEnd: "23:59" })).toEqual([
+      { code: "custom", path: ["quietEnd"], message: "quiet_too_long" },
+    ]);
+  });
+
+  test.each([
+    ["a mailbox with no channel", { reportMailboxId: id }],
+    ["a null mailbox with no channel", { reportMailboxId: null }],
+  ])("channel: %s is channel_required on reportChannel", (_name, body) => {
+    expect(issues(body)).toEqual([{ code: "custom", path: ["reportChannel"], message: "channel_required" }]);
+  });
+
+  test.each([
+    ["telegram with a mailbox", { reportChannel: "telegram", reportMailboxId: id }],
+    ["a null channel with a mailbox", { reportChannel: null, reportMailboxId: id }],
+  ])("channel: %s parses", (_name, body) => {
+    expect(notifyPatchSchema.safeParse(body).success).toBe(true);
+  });
+});
