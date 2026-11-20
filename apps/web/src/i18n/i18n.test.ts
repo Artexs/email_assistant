@@ -137,8 +137,10 @@ describe("Polish dictionary", () => {
   });
 
   test("few and many differ in every plural key", () => {
+    // After "na podstawie" the noun takes the genitive plural, which is the same for few and many.
+    const sameFewAndMany: readonly string[] = ["rs_suggest_result"];
     for (const key of pluralKeys) {
-      expect(plPlurals[key].few).not.toBe(plPlurals[key].many);
+      if (!sameFewAndMany.includes(key)) expect(plPlurals[key].few).not.toBe(plPlurals[key].many);
       expect(plPlurals[key].one).not.toBe(plPlurals[key].few);
     }
   });

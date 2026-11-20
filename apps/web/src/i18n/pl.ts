@@ -66,8 +66,8 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
   },
   // The result of a style suggestion
   rs_suggest_result: {
-    one: "Podstawa: 1 wysłana wiadomość",
-    few: "Podstawa: {count} wysłane wiadomości",
-    many: "Podstawa: {count} wysłanych wiadomości",
+    one: "Na podstawie 1 wysłanej wiadomości",
+    few: "Na podstawie {count} wysłanych wiadomości",
+    many: "Na podstawie {count} wysłanych wiadomości",
   },
 };

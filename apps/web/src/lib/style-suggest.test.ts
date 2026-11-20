@@ -127,14 +127,14 @@ describe("the answer of the style suggestion route", () => {
   test("the Polish result head takes the plural form of its count", () => {
     setLocaleForTest("pl");
     expect([1, 2, 5, 22, 12].map((count) => tp("rs_suggest_result", count))).toEqual([
-      "Podstawa: 1 wysłana wiadomość",
-      "Podstawa: 2 wysłane wiadomości",
-      "Podstawa: 5 wysłanych wiadomości",
-      "Podstawa: 22 wysłane wiadomości",
-      "Podstawa: 12 wysłanych wiadomości",
+      "Na podstawie 1 wysłanej wiadomości",
+      "Na podstawie 2 wysłanych wiadomości",
+      "Na podstawie 5 wysłanych wiadomości",
+      "Na podstawie 22 wysłanych wiadomości",
+      "Na podstawie 12 wysłanych wiadomości",
     ]);
     expect(t("rs_suggest_too_few", { count: 3 })).toBe(
-      "Za mało wysłanych wiadomości (3 z 5). Spróbuj ponownie po wysłaniu kolejnych."
+      "Na razie za mało wysłanych wiadomości (3 z 5). Spróbuj ponownie po wysłaniu kolejnych."
     );
   });
 });
