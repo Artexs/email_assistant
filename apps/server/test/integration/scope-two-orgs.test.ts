@@ -84,6 +84,7 @@ function fakeLlm(): FakeLlm {
   return {
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     prompts,
     async generate(req) {
       prompts.push(req.prompt);
@@ -97,6 +98,7 @@ function fakeLlm(): FakeLlm {
           tokensOut: 20,
           latencyMs: 300,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },

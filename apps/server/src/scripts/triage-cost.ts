@@ -75,7 +75,7 @@ async function main(): Promise<number> {
     const groups = groupUsage(rows);
     if (groups.length === 0) out("no results with an LLM call");
     for (const group of groups) {
-      for (const line of modelReportLines(group.model, group.endpoint, group.rows, options.days)) out(line);
+      for (const line of modelReportLines(group, options.days)) out(line);
     }
 
     out("");

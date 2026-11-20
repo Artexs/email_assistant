@@ -1,4 +1,4 @@
-import { type LlmEndpointKind, type LlmRole, toEndpointKind } from "@ea/core";
+import { type LlmEndpointKind, type LlmProviderId, type LlmRole, toEndpointKind } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -207,6 +207,8 @@ export interface LlmCallRecord {
   model: string;
   /** Where the call ran. A success takes it from `LlmUsage.endpoint`, an error from `LlmClient.endpointOf(role)`. */
   endpoint: LlmEndpointKind;
+  /** The provider row of the role. A success takes it from `LlmUsage.provider`, an error from `LlmClient.providerOf(role)`. */
+  provider: LlmProviderId;
   /** `ok` or the LLM error code. */
   outcome: string;
   tokensIn: number | null;
@@ -232,6 +234,7 @@ export async function recordLlmCall(db: DbOrTrx, ctx: TenantContext, call: LlmCa
       role: call.role,
       model: call.model,
       endpoint: call.endpoint,
+      provider: call.provider,
       prompt_version: call.promptVersion,
       tokens_in: call.tokensIn,
       tokens_out: call.tokensOut,

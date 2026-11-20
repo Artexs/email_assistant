@@ -92,6 +92,7 @@ function fakeClient(opts: FakeOpts = {}) {
   const client: LlmClient = {
     modelOf: () => MODEL,
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const usage = (role: R, tokensIn: number) => ({
         role,
@@ -101,6 +102,7 @@ function fakeClient(opts: FakeOpts = {}) {
         tokensOut: 100,
         latencyMs: 5,
         endpoint: "standard" as const,
+        provider: "openai" as const,
       });
       if (req.role === "judge") {
         calls.judge += 1;

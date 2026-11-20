@@ -36,6 +36,7 @@ const usage: LlmUsage = {
   tokensOut: 20,
   latencyMs: 50,
   endpoint: "standard",
+  provider: "openai" as const,
 };
 
 type Step = Record<string, unknown> | Error;
@@ -62,6 +63,7 @@ function fakeLlm(script: Step[] | ((c: Recorded, n: number) => Step)): { llm: Ll
   const llm: LlmClient = {
     modelOf: () => "gemini-3.5-flash-lite",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const n = calls.length;
       calls.push({ prompt: req.prompt, system: req.system });
@@ -600,6 +602,7 @@ function delayedLlm(plan: (id: string, n: number) => { ms: number; step: Step })
   const llm: LlmClient = {
     modelOf: () => "gemini-3.5-flash-lite",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const id = /^Subject: (.*)$/m.exec(req.prompt)?.[1] ?? "?";
       const n = started.length;
@@ -898,6 +901,7 @@ describe("evalStateFileName", () => {
     promptVersion: PROMPT_VERSION,
     set: "all",
     endpoint: "standard" as LlmEndpointKind,
+    provider: "openai" as const,
   };
 
   test("Gemini name has no effort part", () => {

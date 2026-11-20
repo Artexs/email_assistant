@@ -97,6 +97,7 @@ function decision(overrides: Partial<TriageDecision> = {}): TriageDecision {
       tokensOut: 30,
       latencyMs: 850,
       endpoint: "standard",
+      provider: "openai" as const,
     },
     auditReasonCode: "newsletter",
     delegation: null,
@@ -260,6 +261,7 @@ function fakeLlm(answer: (() => unknown) | Error, endpoint: LlmEndpointKind = "s
   return {
     modelOf: () => "fake-model",
     endpointOf: () => endpoint,
+    providerOf: () => "openai",
     requests,
     async generate(req) {
       requests.push({ system: req.system, prompt: req.prompt });
@@ -274,6 +276,7 @@ function fakeLlm(answer: (() => unknown) | Error, endpoint: LlmEndpointKind = "s
           tokensOut: 20,
           latencyMs: 300,
           endpoint,
+          provider: "openai" as const,
         },
       };
     },
@@ -372,6 +375,7 @@ describe("triageOne", () => {
         role: "classifier",
         model: "fake-model",
         endpoint: "standard",
+        provider: "openai" as const,
         prompt_version: "classifier-v2",
         tokens_in: 100,
         tokens_out: 20,
@@ -1199,6 +1203,7 @@ describe("triageOne: the delegation plan", () => {
       const recording: LlmClient = {
         modelOf: () => "fake-model",
         endpointOf: () => "standard",
+        providerOf: () => "openai",
         async generate(req) {
           const shape = (req.schema as unknown as { shape: { category: { options: string[] } } }).shape;
           seen.push({ categories: shape.category.options, delegates: req.prompt.includes("Anna") });
@@ -1212,6 +1217,7 @@ describe("triageOne: the delegation plan", () => {
               tokensOut: 1,
               latencyMs: 1,
               endpoint: "standard",
+              provider: "openai" as const,
             },
           };
         },
@@ -1245,6 +1251,7 @@ describe("triageOne: the delegation plan", () => {
         const recording = {
           modelOf: () => "fake-model",
           endpointOf: () => "standard",
+          providerOf: () => "openai",
           async generate(req) {
             calls.push({ role: req.role, promptVersion: req.promptVersion });
             return {
@@ -1257,6 +1264,7 @@ describe("triageOne: the delegation plan", () => {
                 tokensOut: 1,
                 latencyMs: 1,
                 endpoint: "standard",
+                provider: "openai" as const,
               },
             };
           },

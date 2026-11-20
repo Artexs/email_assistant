@@ -301,6 +301,7 @@ describe("6. the daily cap leaves the history calls out", () => {
       const base = {
         ...call,
         endpoint: "standard" as const,
+        provider: "openai" as const,
         outcome: "ok",
         tokensIn: 1,
         tokensOut: 1,
