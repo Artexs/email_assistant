@@ -1,4 +1,4 @@
-// Rule `ea/no-time-literals` (F145): minutes, hours and days are written with MINUTE_MS, HOUR_MS or DAY_MS from the
+// Rule `ea/no-time-literals`: minutes, hours and days are written with MINUTE_MS, HOUR_MS or DAY_MS from the
 // core time module (packages/core/src/time.ts). Plain ESM: `eslint .` loads the config without a TypeScript loader.
 
 const MESSAGE =
@@ -54,7 +54,7 @@ function chainReports(factors) {
   );
 }
 
-/** True when `node` sits in the initializer of a declarator or class field that D2 (c) reports by name. */
+/** True when `node` sits in the initializer of a declarator or class field whose name copies a unit (reported on its own). */
 function inNamedCopy(node) {
   let child = node;
   for (let parent = node.parent; parent; child = parent, parent = parent.parent) {

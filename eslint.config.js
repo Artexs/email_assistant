@@ -261,8 +261,8 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors], "no-console": "error" },
   },
   {
-    // One time spelling (F145): MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Warn while the rewrites land
-    // (D9); tests stay out until the test audit cuts them. The local plugin `ea` is registered here once: later local
+    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Warn while the rewrites land;
+    // tests stay out until the test audit cuts them. The local plugin `ea` is registered here once: later local
     // rules join tools/eslint-rules/index.js (a second `ea` plugin object makes flat config fail).
     files: ["{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}"],
     ignores: [
