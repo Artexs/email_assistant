@@ -1,7 +1,8 @@
 import type { LlmClient, LlmUsage } from "../../platform/llm";
 
 import { type JudgePrompt, prompts } from "./prompts";
-import { judgeSchema, type RubricKind, rubricItems } from "./prompts/judge-v1";
+import type { RubricKind } from "./prompts/judge-v1";
+import { STYLE_SCORE } from "./prompts/judge-v4";
 
 export interface JudgeResult {
   kind: RubricKind;
@@ -10,12 +11,13 @@ export interface JudgeResult {
   passed: boolean;
 }
 
-// The draft passes when every check is true, every score is at least 1 and the code checks passed.
+// The draft passes when every check is true, every score is at least 1 and the code checks passed. The style score of
+// judge-v4 is a measure, not a bar: it does not decide.
 export function judgePassed(result: Omit<JudgeResult, "passed">, codeChecksPassed: boolean): boolean {
   return (
     codeChecksPassed &&
     Object.values(result.checks).every((value) => value) &&
-    Object.values(result.scores).every((value) => value >= 1)
+    Object.entries(result.scores).every(([name, value]) => name === STYLE_SCORE || value >= 1)
   );
 }
 
@@ -31,12 +33,12 @@ export async function judgeDraft(
   const { data, usage } = await llm.generate({
     role: prompt.role,
     promptVersion: prompt.version,
-    schema: judgeSchema(input.kind),
+    schema: prompt.answerSchema(input.kind),
     system: prompt.buildSystem(input.kind),
     prompt: prompt.buildUser(input),
     model: opts.model,
   });
-  const names = rubricItems[input.kind];
+  const names = prompt.rubricItems[input.kind];
   const scores = Object.fromEntries(names.scores.map((name) => [name, data[name] as 0 | 1 | 2]));
   const checks = Object.fromEntries(names.checks.map((name) => [name, data[name] === true]));
   return {

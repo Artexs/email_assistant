@@ -165,7 +165,8 @@ export async function judgeReplyDraft(
   c: EvalCase,
   draft: string,
   setup: Pick<JudgeSetup, "llm" | "model"> & { prompt?: JudgePrompt },
-  input: { retries: number },
+  // `referenceStyle` is the style the draft is measured against; only judge-v4 shows it.
+  input: { retries: number; referenceStyle?: string },
   attempts?: AttemptHooks
 ): Promise<{ judge: ReplyJudge; usage: CaseUsage | null }> {
   const graded = await judgeWithRetry(deps, c.id, input.retries, attempts, () =>
@@ -180,6 +181,7 @@ export async function judgeReplyDraft(
         lang: c.lang,
         ...(c.sim?.expectedPoints === undefined ? {} : { expectedPoints: c.sim.expectedPoints }),
         ...(c.sim?.mustNot === undefined ? {} : { mustNot: c.sim.mustNot }),
+        ...(input.referenceStyle === undefined ? {} : { referenceStyle: input.referenceStyle }),
         nonce: randomBytes(16).toString("hex"),
       },
       { model: setup.model, ...(setup.prompt === undefined ? {} : { prompt: setup.prompt }) }
