@@ -108,7 +108,14 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 
 ## Tests
 
-- `apps/server/test/integration/mail-sync.test.ts`
+- `apps/server/test/integration/mail-sync-copies.test.ts`
+- `apps/server/test/integration/mail-sync-incremental.test.ts`
+- `apps/server/test/integration/mail-sync-returned.test.ts`
+- `apps/server/test/integration/mail-sync-returned-copies.test.ts`
+- `apps/server/test/integration/mail-sync-folders.test.ts`
+- `apps/server/test/integration/mail-sync-folders-cross.test.ts`
+- `apps/server/test/integration/mail-sync-folders-below.test.ts`
+- `apps/server/test/integration/mail-sync-log.test.ts`
 - `apps/server/test/integration/mail-sync-capture.test.ts`
 - `apps/server/test/integration/mail-headers-repo.test.ts`
 - `apps/server/test/integration/mail-flags-repo.test.ts`
