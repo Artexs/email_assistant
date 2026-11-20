@@ -15,7 +15,7 @@ import { resetDemoDb } from "./db-reset";
 // 2. Rebuilds the demo database (drop every object, `db:migrate`), so a second run starts from the same state.
 // 3. Runs `demo.config.ts` (Playwright): servers, seed, the eight steps in one recorded page; it writes the raw video and the cue times.
 // 4. Encodes `demo.mp4` (the first step is the start of the video), writes `demo.en.vtt` and `demo.pl.vtt` with the cue times shifted by
-//    that trim, and prints the duration, the size and the sha256 of `demo.mp4` (the owner pins the hash when the video goes public).
+//    that trim, and prints the duration, the size and the sha256 of `demo.mp4` and of both caption files (the owner pins the three hashes when the video goes public).
 // Exit 1 on a refusal, a failed run, an MP4 over 15 MB, or a length outside 100 to 130 seconds. Run it under
 // `flock /tmp/email-assistant-shared-tests.lock` (fixed ports, one shared mail server, one shared demo database).
 const repoRoot = resolve(import.meta.dirname, "../../../..");
@@ -110,11 +110,18 @@ async function main(): Promise<number> {
   if (probe.code !== 0 || !Number.isFinite(seconds)) return fail("ffprobe_failed");
   const bytes = statSync(mp4).size;
   const sha256 = createHash("sha256").update(readFileSync(mp4)).digest("hex");
+  const captionSha256 = (lang: "en" | "pl"): string =>
+    createHash("sha256")
+      .update(readFileSync(join(args.out, `demo.${lang}.vtt`)))
+      .digest("hex");
   rmSync(work, { recursive: true, force: true });
 
   print(`duration_seconds ${seconds.toFixed(1)}`);
   print(`size_bytes ${bytes}`);
   print(`sha256 ${sha256}`);
+  // The owner pins all three files at G3 (`DEMO_VIDEO_SHA256`, `DEMO_CAPTION_SHA256` in `apps/docs/src/demo-video.ts`).
+  print(`caption_sha256 en ${captionSha256("en")}`);
+  print(`caption_sha256 pl ${captionSha256("pl")}`);
   print(
     `not_live ${DEMO_STEPS.filter((step) => !step.live)
       .map((step) => step.id)
