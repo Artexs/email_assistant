@@ -1,6 +1,6 @@
 # F143 stage 11 — e2e seed steps by area
 
-Needs: nothing. Reads `SIZE_EXCEPTIONS` of stage 01 only if it exists at `HEAD`. May run next to every other stage (it imports names from `./e2e-seed-args`, which stage 10 keeps); not next to an open F121 stage 09 or an F151 stage (they edit the seed). Changes `layers.json` (stage 03 does too: merge `master`, re-prove).
+Needs: nothing. Reads `size-exceptions.json` of stage 01 only if it exists at `HEAD`. May run next to every other stage (it imports names from `./e2e-seed-args`, which stage 10 keeps). Overlap (advisory): the public pages (F121 stage 09) and the demo-video ticket (F151) edit the seed; on a land conflict, D6. Changes `layers.json`.
 Part of [`../plan.md`](../plan.md).
 
 ## Goal
@@ -18,13 +18,14 @@ Part of [`../plan.md`](../plan.md).
 
 ## Step 2 — lint borders
 
-- `apps/server/src/modules/layers.json` `rootDeepImportExceptions`: the entry for `scripts/e2e-seed.ts` also covers the parts that deep-import a repository (`scripts/e2e-seed/seed-*.ts`, with the same `why`). Check that `eslint.config.js` and `scripts/module-graph.ts` accept a glob there; if one does not, list each part file.
-- If `SIZE_EXCEPTIONS` exists, delete the `e2e-seed.ts` entry; if it was the last, delete the constant and its config block (D4).
+- `apps/server/src/modules/layers.json` `rootDeepImportExceptions`: add one entry per part file that deep-imports a repository (`scripts/e2e-seed/seed-<area>.ts`, the same `why`). No glob: `modules/layers.test.ts` checks each `file` with `existsSync`. Check that `apps/server/src/scripts/module-graph.ts` reads the new entries.
+- If `size-exceptions.json` exists, delete the `e2e-seed.ts` entry; if it was the last, delete the file, its read and its block in `eslint.config.js` (D4).
+- `apps/server/src/scripts/e2e-mail-tag.test.ts` reads `e2e-seed.ts` for every `e2e…Mailbox` use and for the body of `seedAssistMailbox`: it reads `e2e-seed.ts` and every `e2e-seed/seed-*.ts` instead (path only, no assert change).
 
 ## Test
 
-1. **Row-count proof:** run the seed the way `apps/server/test/integration/e2e-seed.test.ts` runs it, at the base (a `git worktree add` in `/tmp`) and at the head, each on a fresh wipe, then `SELECT count(*)` of every table in the `public` schema, ordered by table name. `diff` prints nothing. Save both outputs in `/tmp/f143-s11/`.
-2. **Mutation check:** comment out one part call in a scratch edit; check 1 prints a diff. Revert. Write it in the final message.
+1. **Row proof:** run the seed the way `apps/server/test/integration/e2e-seed.test.ts` runs it, before the first change and after the trim, each on a fresh wipe. Then dump every table of the `public` schema: the rows with `uuid` and time columns left out, sorted, plus the row count per table and organization name (join to `organizations`). `diff` prints nothing. Save both dumps in `/tmp/f143-s11/`.
+2. **Mutation checks:** comment out one part call; change one seeded name. Each time check 1 prints a diff. Revert. Write both in the final message.
 3. Each part file: `git log --follow` reaches the first commit of `e2e-seed.ts`.
 4. `wc -l`: as in step 1.
 5. Existing guards, unchanged: `e2e-seed.test.ts` (runs the script; refuses a wrong target).

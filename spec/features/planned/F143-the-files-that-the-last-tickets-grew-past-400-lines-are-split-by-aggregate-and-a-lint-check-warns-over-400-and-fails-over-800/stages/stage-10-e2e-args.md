@@ -1,6 +1,6 @@
 # F143 stage 10 — e2e seed constants by area
 
-Needs: nothing. Reads `SIZE_EXCEPTIONS` of stage 01 only if it exists at `HEAD`. May run next to every other stage (stage 11 imports the same names from `./e2e-seed-args`); not next to an open F121 stage 09 or an F151 stage (they edit the seed).
+Needs: nothing. Reads `size-exceptions.json` of stage 01 only if it exists at `HEAD`. May run next to every other stage (stage 11 imports the same names from `./e2e-seed-args`). Overlap (advisory): the public pages (F121 stage 09) and the demo-video ticket (F151) edit the seed; on a land conflict, D6.
 Part of [`../plan.md`](../plan.md).
 
 ## Goal
@@ -13,7 +13,8 @@ Part of [`../plan.md`](../plan.md).
 - `e2e-seed-args.ts` keeps its path and becomes `export { … } from "./e2e-seed/args-<area>";` lines that name every export (no `export *`), nothing else.
 - Each area file imports only what the `HEAD` file imports. This file is read by `apps/web/e2e/` (`env.ts`, `helpers.ts`, `seed.ts`) and must stay free of DB, server-module and test-tool imports.
 - The comments above each block move with the block.
-- If `SIZE_EXCEPTIONS` exists in `eslint.config.js`, delete the `e2e-seed-args.ts` entry; if it was the last entry, delete the constant and its config block (D4).
+- If `size-exceptions.json` exists, delete the `e2e-seed-args.ts` entry; if it was the last, delete the file, its read and its block in `eslint.config.js` (D4).
+- `apps/server/src/platform/llm/provider-scan.test.ts` lists the model pin block of `e2e-seed-args.ts` in `ALLOWED_SITES`: change that entry to the `args-*.ts` file that holds the block after the move (path only). The provider-registry ticket (F141) owns that list; the overlap is advisory.
 
 ## Method
 
@@ -27,15 +28,15 @@ No new test: behaviour does not change. Move proofs in `/tmp/f143-s10/`:
 2. `exports-of.ts` of the base file equals that of the new `e2e-seed-args.ts`.
 3. Each new file: `git log --follow` reaches the first commit of `e2e-seed-args.ts`.
 4. `wc -l` of each new file ≤ 400 and of `e2e-seed-args.ts` ≤ 400.
-5. `git diff --name-only <base> HEAD -- apps/web apps/server/test` prints nothing.
-6. Value proof: a `/tmp` script imports `e2e-seed-args.ts` at base and head and prints every export (a function as its source text with whitespace collapsed); `diff` prints nothing.
+5. `git diff --name-only <base> HEAD -- apps/web apps/server/test` prints nothing; the only changed test file is `provider-scan.test.ts`.
+6. Value proof: a `/tmp` script imports `e2e-seed-args.ts` before the first change and after the trim and prints every export (a function as its source text with whitespace collapsed); `diff` prints nothing.
 
 Existing guards, unchanged: `apps/server/test/integration/e2e-seed.test.ts` and `e2e-suggestion-rows.test.ts` (both import these names).
 
 ## Done when
 
 - Checks 1–6 passed; the logs are named in the final message.
-- Proof: `mkdir -p /tmp/f143-s10 && bun run lint > /tmp/f143-s10/lint.log 2>&1 && bun run typecheck > /tmp/f143-s10/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f143-s10/unit.log 2>&1 && bun run test:int:ci > /tmp/f143-s10/int.log 2>&1 && echo PROOF_OK`
+- Proof: `plan.md` § Proof with `NN=10`.
 
 ## Out of scope
 

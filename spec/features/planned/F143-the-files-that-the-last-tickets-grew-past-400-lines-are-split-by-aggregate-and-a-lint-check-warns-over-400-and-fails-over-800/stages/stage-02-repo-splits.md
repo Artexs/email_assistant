@@ -1,6 +1,6 @@
 # F143 stage 02 — delegation, audit and push repositories by aggregate
 
-Needs: nothing. Reads `SIZE_EXCEPTIONS` of stage 01 only if it exists at `HEAD`. May run next to every other stage; not next to an open F142 stage 02 (the one-address-rule change of `delegation/repo.ts`).
+Needs: nothing. Reads `size-exceptions.json` of stage 01 only if it exists at `HEAD`. May run next to every other stage. Overlap (advisory): the one-address-rule ticket (F142 stage 02) edits `delegation/repo.ts`; on a land conflict, D6.
 Part of [`../plan.md`](../plan.md).
 
 ## Goal
@@ -10,7 +10,7 @@ Three repository files become `repo/` folders by aggregate, with the F091 tools 
 ## Step 1 — delegation (809 lines)
 
 - `apps/server/src/modules/delegation/repo.ts` → `delegation/repo/delegates.ts` (the `delegates` table and its reads) and `delegation/repo/delegations.ts` (the `delegations` table). A third file only if one of them is still over 400 lines: split `delegations` by reads and writes (`delegations-read.ts`), not by a helper file. `repo/shared.ts` only for code with no topic (`docs/code-patterns.md` § Size and shape).
-- If `SIZE_EXCEPTIONS` exists, delete the `delegation/repo.ts` entry (D4).
+- If `size-exceptions.json` exists, delete the `delegation/repo.ts` entry; if it was the last, delete the file, its read and its block in `eslint.config.js` (D4).
 
 ## Step 2 — audit (559 lines)
 
@@ -46,7 +46,7 @@ Update a path to `delegation/repo.ts`, `audit/repo.ts` or `push/repo.ts` in `doc
 ## Done when
 
 - The three folders exist, every check above passed, and the logs are named in the final message.
-- Proof: `mkdir -p /tmp/f143-s02 && bun run lint > /tmp/f143-s02/lint.log 2>&1 && bun run typecheck > /tmp/f143-s02/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f143-s02/unit.log 2>&1 && bun run test:int:ci > /tmp/f143-s02/int.log 2>&1 && echo PROOF_OK`
+- Proof: `plan.md` § Proof with `NN=02`.
 
 ## Out of scope
 

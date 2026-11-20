@@ -26,7 +26,7 @@ Three server files over 400 lines split by aggregate as top-level moves (D5, D7)
 
 ## Method (each step)
 
-D5: copy the F091 scripts to `/tmp/f143-s08/`; history copies, trim right after the history merge; adapted `same-bodies.ts`. A helper that both files of a step need stays in the file of its topic with an internal export. Edit by hand only an import line that typecheck names. D6 if `master` changes a file first.
+D5: copy the F091 scripts to `/tmp/f143-s08/`; history copies, trim right after the history merge; adapted `same-bodies.ts`. A value that both files of a step need goes to a leaf file that imports neither (D16); the old file re-exports the new one, so a new file never imports a value back from it. Edit by hand only an import line that typecheck names. D6 if `master` changes a file first.
 
 ## Test
 
@@ -41,14 +41,16 @@ No new test: behaviour does not change. Move proofs in `/tmp/f143-s08/<file>/`:
 
 Existing guards, unchanged: the digest, command and suggestion tests (unit and integration).
 
+One text-reading test changes its path only: `modules/channels/consent-gate.test.ts` allows the `firstOfDay` read only in `modules/reports/digest.ts`; it names the file that holds `loadBrief` after the move. Grep tests for `reports/digest.ts`, `channels/commands.ts` and `contacts/suggest.ts` for more; name each in the final message.
+
 ## Conflicts
 
-The time-constant ticket (F145) edits the digest and command constants; the callback-registry ticket (F149) may edit `createUpdateHandlers`. Either lands first; the other merges `master` (D6 for this stage).
+The time-constant ticket (F145) edits the digest and command constants; the callback-registry ticket (F149) may edit `createUpdateHandlers`. The overlap is advisory: start the stage; on a land conflict, D6.
 
 ## Done when
 
 - Checks 1–6 passed; the logs are named in the final message.
-- Proof: `mkdir -p /tmp/f143-s08 && bun run lint > /tmp/f143-s08/lint.log 2>&1 && bun run typecheck > /tmp/f143-s08/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f143-s08/unit.log 2>&1 && bun run test:int:ci > /tmp/f143-s08/int.log 2>&1 && echo PROOF_OK`
+- Proof: `plan.md` § Proof with `NN=08`.
 
 ## Out of scope
 

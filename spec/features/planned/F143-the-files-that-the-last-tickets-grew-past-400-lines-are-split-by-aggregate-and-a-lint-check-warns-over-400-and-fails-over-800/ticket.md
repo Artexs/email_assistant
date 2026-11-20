@@ -30,16 +30,16 @@ The source files that the last ten tickets grew past 400 lines are split by aggr
 - `bun run lint` at the last land has no size error and no size exception list.
 - No file that this ticket splits, and no file it creates, is over 400 lines.
 - Every file made by a move keeps its history: `git log --follow` reaches the first commit of the old file.
-- `bun run typecheck`, `bun run test:unit:ci` and `bun run test:int:ci` pass with no test assert changed, except the tests the stages name.
+- `bun run typecheck`, `bun run test:unit:ci` and `bun run test:int:ci` pass. A test edit only changes the file a test reads, except the start-up asserts that `plan.md` D7 names.
 
 ## Slices
 
-Eleven stages, one worker job each; all may run in parallel (plan § Stages). Stages 03 and 09 are `[risky]` and get a review. No owner checkpoint. See `plan.md` § How to run.
+Twelve stages, one worker job each. All may run in parallel, except the start-up file split, which needs the run tracker stage first. Three stages are `[risky]` and get a review. No owner checkpoint. See `plan.md` § How to run.
 
 ## Sequenced
 
 Plan after: none.
-Build after: none. Gate: none. Conflict note: the one-address-rule ticket (F142 stage 02) edits `delegation/repo.ts`, the cursor-column drop (F062 stages 04–05) edits `privacy/export-map.ts`, the public pages (F121 stage 09) and the demo-video ticket (F151) edit the e2e seed; the coordinator does not run a split stage next to an open stage that edits the same file.
+Build after: none. Gate: none. File overlaps with other tickets are advisory (`plan.md` § How to run lists them); a split stage that meets a land conflict redoes its split on the new `master`.
 
 ## Notes
 

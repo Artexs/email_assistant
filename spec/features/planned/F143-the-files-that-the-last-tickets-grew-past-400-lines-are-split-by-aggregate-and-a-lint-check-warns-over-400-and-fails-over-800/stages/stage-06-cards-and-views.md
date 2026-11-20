@@ -12,12 +12,13 @@ Part of [`../plan.md`](../plan.md).
 - `digest/approvals.ts` keeps the card request: the quote and link helpers, the recipient lines, `renderApprovalRequest`, `renderApprovalSetRequest`, and the constants they use.
 - `digest/approval-results.ts`: `SendResultKind`, the reason lists and `renderSendResult`, `renderFollowUpResult`, `renderDelegationAnswered`.
 - `digest/approval-edit.ts`: `ApprovalEditOutcome`, `HeldBy`, `approvalEdit`.
-- A helper both files use stays in the file of its topic with an internal export (no `shared.ts`).
+- A helper that `approvals.ts` and `approval-results.ts` both use goes to a leaf file `digest/approval-text.ts` that imports neither (D16: `approvals.ts` re-exports the results file, so a helper import back into it is a value cycle).
 - `digest/approvals.ts` re-exports by name every export that moved, so `digest/index.ts` and the importers keep `./approvals` (D7).
 
 ## Step 2 — notice views
 
-- `notices/views.ts` keeps the shared field schemas, the type checks against the core types (`approvalViewMatches` …) and the kind-to-schema record.
+- The shared field schemas (`isoDate`, `id`, `draftKind`, `text`, `nullableText`, `timeZone` and the like) go to a leaf file `notices/view-fields.ts` that imports no other view file (D16; a review repro showed `Cannot access 'id' before initialization` for the cycle).
+- `notices/views.ts` keeps the type checks against the core types (`approvalViewMatches` …) and the kind-to-schema record.
 - Move the view schemas of one family into `notices/views-approvals.ts`: the approval notice, the approval set, the send result and the delegation answer, with `sendResultKindSchema`. If `views.ts` is still over 400, move the digest views (`digestMinimalSchema`, `digestView`) into `notices/views-digest.ts`.
 - The view schemas do not change: a queued notice of the last 24 hours must still parse (styleguide, notices are facts).
 
@@ -41,7 +42,7 @@ Existing guards, unchanged: the `notices/` and `digest/` tests, `core/triage/dra
 ## Done when
 
 - Checks 1–6 passed; the logs are named in the final message.
-- Proof: `mkdir -p /tmp/f143-s06 && bun run lint > /tmp/f143-s06/lint.log 2>&1 && bun run typecheck > /tmp/f143-s06/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f143-s06/unit.log 2>&1 && bun run test:int:ci > /tmp/f143-s06/int.log 2>&1 && echo PROOF_OK`
+- Proof: `plan.md` § Proof with `NN=06`.
 
 ## Out of scope
 
