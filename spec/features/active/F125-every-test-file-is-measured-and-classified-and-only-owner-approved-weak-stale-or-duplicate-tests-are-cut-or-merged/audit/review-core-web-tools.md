@@ -1,12 +1,13 @@
 # Review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools` (F125 stage 04)
 
-Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `535e6f76` (branch head after the merge of master at the job start).
+Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `535e6f76` (branch head after the merge of master at the job start of the first job). Continuation 1 base: `1d4db8b4` (branch head at its start; it equals master then).
 
 Notes for the reader:
 
 - **Keys.** Keys are `file:line` at the base above, from a fresh `bun scripts/test-audit/scan-cli.ts` run (`/tmp/f125-s04/rescan/`), not from the committed `cases-static.tsv`. Reason: master changed 9 files of this area after the stage 03 data (`deploy/test/backup`, `compose-drill`, `release-identity`; new `check-server-env`, `compose-lib`, `docs-env-split`, `env-split`; `apps/docs/scripts/workflows`, `shots-build`, new `apps/docs/src/extra-pages`): the committed keys of these files are stale and the committed `groups.tsv` ids (`B`/`T` numbers) differ from the fresh ones. Group ids in this file are the fresh ones; each group row lists all its keys. Times come from `cases.tsv` joined by file and name; a case that is new since stage 02 has no time (0.000). Core keys, `mutation-tests.tsv` and `mutation-survived.tsv` stay valid: no core test file changed after the mutation run (`git diff 4ce3f351 HEAD -- packages/core` shows only `legal/subprocessors.ts`).
 - **Items.** An item is one flagged case, or one B or T group whose first key is in this area, or one core test file with `S10` cases and no other flag. Order: (a) `S1`, `S7`, `not-run`, then `S8` by file and line; (b) `S2`/`S3`/`S4`; (c) B groups; (d) T groups; (e) core `S11` (one item per distinct call-site key), then core `S10` files; (f) `S9`. The area is `packages/core`, `apps/web/src`, `apps/web/integrations`, `apps/docs/src`, `apps/docs/integrations`, `apps/docs/scripts`, `deploy/test`, `tools/fake-telegram/src`, `tools/mail-oauth-spike` (unit only; `apps/web/e2e`, `apps/docs/e2e` and `tools/fake-telegram/test` belong to stage 06). A case that is in a group and has no other flag is read inside its group row only. A case with `S8` and a group flag (`deploy/test/compose-lib.test.ts` 4a, 4c, 4d) is read as its own item and its group stays in the `not read` list.
-- **Cap.** The job reads 150 items of 660 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
+- **Continuation 1.** Rescan at `1d4db8b4`: `bun scripts/test-audit/scan-cli.ts --out /tmp/f125-s04c1/rescan` gave 11,983 rows (core 2,108 keys). Against the committed `cases-static.tsv` the fresh core scan has 12 new keys and 1 removed key: `llm-providers.test.ts` (7 new cases), `metrics/m7.test.ts` (2 new keys, 1 removed), `metrics/cost-model.test.ts` (2 new) and `site.test.ts` (1 new). `git diff 4ce3f351 HEAD` on core test files shows only `llm-providers.test.ts` and `m7.test.ts` (the mutation run base), so the mutation data is stale only for those two files; `cost-model.test.ts` changed between the stage 02 scan and the mutation run (commit `035b982f`) and the cause for `site.test.ts` is not checked. All 767 core keys in the first `not read` list resolve in the fresh scan, and the 150 items read here join to the mutation data by case name with 0 mismatches. The new `llm-providers.test.ts` and `m7.test.ts` cases have no mutation data, so no `S10` or `S11` flag can exist for them: they are not items of this stage; the coordinator may order a mutation rerun. Keys in the rows below are the fresh ones.
+- **Cap.** The first job read 150 items of 660 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so the first job read only tier (a). No core item was read in it, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
 - **S8 is mostly a false positive in this area.** The flagged cases run a real script, parse a real Compose or workflow file, or test a fake of a test tool, so `S8` is expected (stage 04 rules). Every `S8` row is `KEEP` unless another flag applies. The K rule is named where one applies: K3 for deploy and secret rules, K2 for completeness checks.
 - **Columns.** `Lines` = test lines the action removes (0 for KEEP, REWRITE-WEAK and FIX-NEVER-RUNS). `Time (s)` = JUnit time of the case at the stage 02 run (not time saved).
 - **Unstable mutants.** Stage 03 found 6 status differences between two runs (`replies/digits.ts` 297:21, 368:17, 372:23; `testmail/batch.ts` 107:5; `triage/suspicious.ts` 342:7). GAP counts leave out those mutants (4 of them are in `mutation-survived.tsv`).
@@ -14,7 +15,7 @@ Notes for the reader:
 
 ## Core
 
-No core item was read in this job (see Cap). GAP rows come from `mutation-survived.tsv`.
+Continuation job 1 read 150 core items (the 2 `S2` items, the 2 `S5` groups B5 and B6, the 21 `S6` groups T18 to T38, and the first 125 `S11` keys in file order). The first job read none. GAP rows come from `mutation-survived.tsv`.
 
 ### GAP
 
@@ -145,160 +146,165 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | GAP121 | `packages/core/src/triage/suspicious.ts` | `domainOfAddress` | 5 | 254:7 ConditionalExpression → `false` ; 254:7 EqualityOperator → `at <= 0` |
 | GAP122 | `packages/core/src/web/csp.ts` | `parseDirectives` | 5 | 41:10 MethodExpression → `content.split(";").map(part => part.trim())` ; 44:23 ConditionalExpression → `true` |
 
-### Not read (495)
+### Read (150)
+
+| Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `packages/core/src/notices/encode.test.ts:100` | `packages/core/src/notices/encode.test.ts:100` | S2 | REWRITE-WEAK | none | – | `not.toThrow()` only (S2): kills no mutant and would pass on any non-throwing output. Proposed: `expect(encodeNoticeView("approval", approval({}) as never)).toMatchObject({ actionId: emailId, view: { kind: "delegation" } })` and `expect(encoded.view).not.toHaveProperty("version")` (encode returns the parsed JSON, `notices/encode.ts:15`). | 0 | 0.000 |
+| `packages/core/src/notices/encode.test.ts:104` | `packages/core/src/notices/encode.test.ts:104` | S2 | REWRITE-WEAK | none | – | Two `not.toThrow()` checks (S2). Proposed: `expect(encodeNoticeView(...version: 2, panelUrl: url)).toMatchObject({ view: { version: 2, panelUrl: url } })` and the same for the `http://localhost:8081/approvals` URL, so a schema that drops the field fails the case. The refusal side stays in the `test.each` below (`T5 panelUrl %p fails`). | 0 | 0.000 |
+| B5 | `packages/core/src/digest/answered-check.test.ts:109`, `packages/core/src/features.test.ts:128` | S5 | KEEP | K2 | – | Feature-flag pins (`default`, `epic`, epic pattern); the same body is in `features.test.ts:128`. Both keys are zero-kill (S11). K2 keeps both; if the owner wants one copy, cut `digest/answered-check.test.ts:109` and keep `features.test.ts:128` (the registry's own test). | 0 | 0.000 |
+| B6 | `packages/core/src/digest/callback-loop.test.ts:88`, `packages/core/src/digest/callback.test.ts:42`, `packages/core/src/digest/callback.test.ts:73`, `packages/core/src/digest/callback.test.ts:98`, `packages/core/src/digest/callback.test.ts:143`, `packages/core/src/digest/callback.test.ts:173` | S5 | KEEP | none | – | Same body `expect(parseCallback(data)).toBeNull()` in six `test.each` tables, but each table has other inputs: invalid forms of one callback prefix (`lf`, `fr`/`fu`, `ap`, `rw`, `vr`, `ay`). Different input classes, not duplicates. Every row kills 23 mutants, none uniquely. A single table would drop the per-prefix grouping; saving is the wrapper only (about 12 lines). | 0 | 0.000 |
+| T18 | `packages/core/src/digest/ai-text.test.ts:17`, `packages/core/src/digest/ai-text.test.ts:21`, `packages/core/src/digest/ai-text.test.ts:27` | S6 | MERGE-TABLE | K1 | – | Three `aiTextFor` reason codes, one assertion shape. Two cases kill mutants no other case kills (`llm_blocked`, `blocklist`). Proposed: `test.each([["triage_error", "AI triage failed 3 times."], ["llm_blocked", "The AI safety filter blocked this mail."], ["blocklist", "The sender is on your blocklist."]])("%s", (reasonCode, text) => expect(aiTextFor({ ...base, reasonCode }, textTables.en)).toBe(text))`. Inputs stay. | 7 | 0.000 |
+| T19 | `packages/core/src/digest/llm-pause.test.ts:10`, `packages/core/src/digest/llm-pause.test.ts:17`, `packages/core/src/digest/llm-pause.test.ts:24` | S6 | MERGE-TABLE | none | – | Three `llmPauseLine` cases (quota, other code, other day) with one assertion shape. No unique kill; all inputs stay. Proposed: `test.each([[code, since, line], …])("%s")` with `(pause, "Europe/Warsaw", now, textTables.en)`. | 14 | 0.000 |
+| T20 | `packages/core/src/digest/local-time.test.ts:62`, `packages/core/src/digest/local-time.test.ts:66`, `packages/core/src/digest/local-time.test.ts:70` | S6 | MERGE-TABLE | none | – | Three `formatClock` inputs (same day, same year, other year). Proposed: `test.each([[iso, "07:55"], ["2026-11-04T22:55:00Z", "4 Nov 23:55"], ["2025-12-31T10:00:00Z", "31 Dec 2025 11:00"]])`. No unique kill; inputs stay. | 5 | 0.000 |
+| T21 | `packages/core/src/digest/local-time.test.ts:123`, `packages/core/src/digest/local-time.test.ts:127`, `packages/core/src/digest/local-time.test.ts:136` | S6 | MERGE-TABLE | none | – | Three `quietEnd` inputs (before midnight, after midnight, spring night). Proposed: `test.each([[from, expectedIso], …])` with `iso(quietEnd(new Date(from), TZ))`. No unique kill; inputs stay. Could share one table with the `quietEnd` DST cases at `local-time.test.ts:247`. | 5 | 0.002 |
+| T22 | `packages/core/src/digest/local-time.test.ts:142`, `packages/core/src/digest/local-time.test.ts:146`, `packages/core/src/digest/local-time.test.ts:160`, `packages/core/src/digest/local-time.test.ts:164` | S6 | MERGE-TABLE | K1 | – | Four `lateMin` cases, one call shape. `to before from is 0` kills a mutant no other case kills (K1: the table keeps its input). Proposed: `test.each([[from, to, minutes], …])("%s")`; the comment of the spring-night row moves into the row label. | 9 | 0.005 |
+| T23 | `packages/core/src/digest/schedule.test.ts:43`, `packages/core/src/digest/schedule.test.ts:56`, `packages/core/src/digest/schedule.test.ts:64` | S6 | MERGE-TABLE | K1 | – | Three `due(...)` cases that expect `null` (not yet due, older than 6 h, before the link time). `a slot older than 6 hours is skipped` kills one mutant alone (K1). Proposed: `test.each([[nowIso, linkedIso]])("%s", …toBeNull())`; the non-null `due` cases of the file stay as they are. | 5 | 0.000 |
+| T24 | `packages/core/src/digest/text.test.ts:15`, `packages/core/src/digest/text.test.ts:19`, `packages/core/src/digest/text.test.ts:33` | S6 | MERGE-TABLE | none | – | Three `cutText` cases: a control character in, the text without it out. No unique kill; inputs stay. Proposed: `test.each([["ab؜cd", "abcd"], ["ab‮cd", "abcd"], ["a\ud800b", "a�b"]])`. | 5 | 0.000 |
+| T25 | `packages/core/src/metrics/week.test.ts:9`, `packages/core/src/metrics/week.test.ts:13`, `packages/core/src/metrics/week.test.ts:17` | S6 | MERGE-TABLE | none | – | Three `weekStartOf` inputs at the week border. No unique kill; inputs stay. Proposed: `test.each([["2026-11-18T12:00:00Z", "2026-11-16"], ["2026-11-15T22:30:00Z", "2026-11-09"], ["2026-11-15T23:30:00Z", "2026-11-16"]])`. | 5 | 0.000 |
+| T26 | `packages/core/src/metrics/week.test.ts:53`, `packages/core/src/metrics/week.test.ts:57`, `packages/core/src/metrics/week.test.ts:61`, `packages/core/src/metrics/week.test.ts:65`, `packages/core/src/metrics/week.test.ts:74` | S6 | MERGE-TABLE | none | – | Five `addWorkingDays` cases, one call shape (start, days, expected ISO). No unique kill; inputs stay. Proposed: `test.each([[start, days, expected], …])`; the autumn-change comment becomes a row label. | 12 | 0.000 |
+| T27 | `packages/core/src/ops/alert-step.test.ts:19`, `packages/core/src/ops/alert-step.test.ts:23`, `packages/core/src/ops/alert-step.test.ts:27` | S6 | MERGE-TABLE | K1 | – | `nextAlertStep` cases 1 to 3 (no row). Case 1 kills 3 mutants alone (K1). Same table can take T28 and T29 (all `nextAlertStep` cases of the file use one call shape): `test.each([[row, state, step]])("%s")`. Inputs stay. | 5 | 0.000 |
+| T28 | `packages/core/src/ops/alert-step.test.ts:31`, `packages/core/src/ops/alert-step.test.ts:35`, `packages/core/src/ops/alert-step.test.ts:39` | S6 | MERGE-TABLE | K1 | – | `nextAlertStep` cases 4, 4b, 5 (unsent notice). Case 5 kills 3 mutants alone: K1. Fold into the table of T27 and T29. | 5 | 0.000 |
+| T29 | `packages/core/src/ops/alert-step.test.ts:43`, `packages/core/src/ops/alert-step.test.ts:47`, `packages/core/src/ops/alert-step.test.ts:51`, `packages/core/src/ops/alert-step.test.ts:55`, `packages/core/src/ops/alert-step.test.ts:59` | S6 | MERGE-TABLE | K1 | – | `nextAlertStep` cases 6 to 9 (a sent notice, 6 h repeat boundary). Cases 7 and 9 kill mutants alone: K1. Fold into the table of T27 and T28. | 11 | 0.000 |
+| T30 | `packages/core/src/outgoing/user-text.test.ts:6`, `packages/core/src/outgoing/user-text.test.ts:14`, `packages/core/src/outgoing/user-text.test.ts:18`, `packages/core/src/outgoing/user-text.test.ts:22`, `packages/core/src/outgoing/user-text.test.ts:26` | S6 | MERGE-TABLE | K1 | – | Five `cleanUserText` inputs, one call (`{ oneLine: false }`). Case "a lone CR…" kills a mutant alone (K1). Proposed: `test.each([[input, output]])("%s")`; labels stay (`T1`, `T3`, `T4`, …). | 11 | 0.000 |
+| T31 | `packages/core/src/replies/checks.test.ts:58`, `packages/core/src/replies/checks.test.ts:193`, `packages/core/src/replies/checks.test.ts:239`, `packages/core/src/replies/checks.test.ts:395`, `packages/core/src/replies/checks.test.ts:523` | S6 | KEEP | K1 | – | Same-shape only on the surface: five pins in five different describes ("the cases of the stage", "quoted, encoded and lookalike forms", "pins of the number rules", "pins of the second re-review", "mutation survivors"). Each names a separate rule and holds two expects. `a spaced scheme is read through its spaces` kills 6 mutants alone (K1). A table across describes would break the pin structure; no merge proposed. | 0 | 0.000 |
+| T32 | `packages/core/src/site.test.ts:6`, `packages/core/src/site.test.ts:10`, `packages/core/src/site.test.ts:14`, `packages/core/src/site.test.ts:18`, `packages/core/src/site.test.ts:52` | S6 | MERGE-TABLE | none | – | Five `docsUrl` cases (home, page, in both languages, plus a `..` name). No unique kill; inputs stay. Proposed: `test.each([["/", "en", "https://artexs.github.io/email_assistant/"], …])`. | 11 | 0.000 |
+| T33 | `packages/core/src/triage/cost.test.ts:6`, `packages/core/src/triage/cost.test.ts:10`, `packages/core/src/triage/cost.test.ts:14`, `packages/core/src/triage/cost.test.ts:18` | S6 | MERGE-TABLE | K1 | – | Four `costPerMail` cases (price per model and day). The 2027-01-01 switch kills 5 mutants alone (K1). Proposed: `test.each([[model, inTokens, outTokens, day, price]])("%s")` with `toBeCloseTo`. Inputs stay. | 8 | 0.000 |
+| T34 | `packages/core/src/triage/untrusted-text.test.ts:6`, `packages/core/src/triage/untrusted-text.test.ts:36`, `packages/core/src/triage/untrusted-text.test.ts:41`, `packages/core/src/triage/untrusted-text.test.ts:65` | S6 | MERGE-TABLE | none | – | Four `markUntrustedText` cases, two input and output pairs each. No unique kill. Proposed: one `test.each` of `[input, output]` pairs (8 rows), shared with T35, which tests the same function. | 14 | 0.000 |
+| T35 | `packages/core/src/triage/untrusted-text.test.ts:17`, `packages/core/src/triage/untrusted-text.test.ts:53`, `packages/core/src/triage/untrusted-text.test.ts:57`, `packages/core/src/triage/untrusted-text.test.ts:61` | S6 | MERGE-TABLE | K1 | – | Four `markUntrustedText` cases; `replaces a leftover @` kills 3 mutants alone (K1). Same table as T34: add rows `["ping @janek", "ping (at)janek"]`, `["Tel 0800-12-34-56", "Tel [phone]"]`, … Inputs stay. | 8 | 0.000 |
+| T36 | `packages/core/src/trust/history.test.ts:20`, `packages/core/src/trust/history.test.ts:23`, `packages/core/src/trust/history.test.ts:26` | S6 | MERGE-TABLE | K1 | – | Three `historyOutcome` cases at the 0.02 border; two kill mutants alone (K1). Proposed: `test.each([[{ acted: 188, moved: 0 }, "inconclusive"], [{ acted: 100, moved: 3 }, "fail"], [{ acted: 100, moved: 2 }, "inconclusive"]])`. | 5 | 0.000 |
+| T37 | `packages/core/src/web/csp.test.ts:28`, `packages/core/src/web/csp.test.ts:31`, `packages/core/src/web/csp.test.ts:34`, `packages/core/src/web/csp.test.ts:47`, `packages/core/src/web/csp.test.ts:52`, `packages/core/src/web/csp.test.ts:57` | S6 | KEEP | K3 | – | `cspProblem` checks the Content-Security-Policy rules (no `default-src`, no inline script, no `unsafe-eval`): a security header rule (K3). Three of six cases kill mutants alone (K1). The table shape is possible, but K3 keeps the cases as they are. | 0 | 0.000 |
+| T38 | `packages/core/src/web/errors.test.ts:19`, `packages/core/src/web/errors.test.ts:33`, `packages/core/src/web/errors.test.ts:37`, `packages/core/src/web/errors.test.ts:41` | S6 | KEEP | K2 | – | Error-code list pins (`apiErrorCodes` contains `too_large`, `mailbox_limit`, `org_suspended`, `terms_outdated`): enum checks, zero kills (known from the stage 03 probe, F3). K2 keeps them. A `test.each` over the four codes would hold the same pins in fewer lines; this is not a cut. | 0 | 0.000 |
+| `packages/core/src/contacts/address.test.ts:41` | `packages/core/src/contacts/address.test.ts:41` | S11 | KEEP | K2 | – | Checks `ADDRESS_TRIM_CHARS` against `String.prototype.trim` over every code point (completeness of a generated set). Zero kills because the set is data. K2. | 0 | 0.089 |
+| `packages/core/src/contacts/address.test.ts:52` | `packages/core/src/contacts/address.test.ts:52` | S11 | KEEP | K2 | – | The list holds 25 code points, ascending, no duplicates: "the list is fixed" check. K2. | 0 | 0.000 |
+| `packages/core/src/contacts/address.test.ts:61` | `packages/core/src/contacts/address.test.ts:61` | S11 | KEEP | K2 | – | Fixes the length (66) and two entries of `ADDRESS_RULE_PROBES`, because tests read entries by index. K2. | 0 | 0.000 |
+| `packages/core/src/contacts/address.test.ts:67` | `packages/core/src/contacts/address.test.ts:67` | S11 | KEEP | K2 | – | The probe list must hold a tab, a no-break space, U+3000 and a newline: completeness of the list. K2. | 0 | 0.000 |
+| `packages/core/src/contacts/address.test.ts:72` | `packages/core/src/contacts/address.test.ts:72` | S11 | KEEP | K2 | – | The probe list has no duplicate entry (66 unique). K2. | 0 | 0.000 |
+| `packages/core/src/contacts/address.test.ts:168` | `packages/core/src/contacts/address.test.ts:168` | S11 | KEEP | none | – | Zero kills, but it is the only check that the cased set leaves out the dotless i, the long s, digits and punctuation; the neighbour cases check the opposite side (holds the capitals) and ordering. Different input classes: not a duplicate. Unsure: could join the `holds` case as one test, no cut. | 0 | 0.000 |
+| `packages/core/src/digest/answered-check.test.ts:109` | `packages/core/src/digest/answered-check.test.ts:109` | S11 | KEEP | K2 | – | Feature-flag pin (default off, epic E3a): twin of `features.test.ts:128` (same body). K2. If the owner wants one copy, cut this key and keep `packages/core/src/features.test.ts:128`. | 0 | 0.000 |
+| `packages/core/src/digest/answers.test.ts:10` | `packages/core/src/digest/answers.test.ts:10` | S11 | KEEP | none | – | `en.answers.undo` object pinned with `toEqual`. No other test pins these five texts (grep of `Too old to undo` in `*.test.ts`: this file only). Zero kills only because the texts also run in bot tests that kill their mutants. Exact strings: not weak. | 0 | 0.000 |
+| `packages/core/src/digest/approvals-follow-up.test.ts:156` | `packages/core/src/digest/approvals-follow-up.test.ts:156` | S11 | KEEP | K2 | – | Schema check of `approvalViewSchema`: the follow-up view parses, an older queued view without the new fields still parses (queued rows of the last 24 h, `.agents/limen/styleguide.md` Notices rule), empty `to` and `followUpNumber: 3` do not. Zero kills: schema checks (K2). | 0 | 0.001 |
+| `packages/core/src/digest/approvals-follow-up.test.ts:221` | `packages/core/src/digest/approvals-follow-up.test.ts:221` | S11 | KEEP | K3 | – | `accepts` rows of `addressSchema`: plain addresses stay valid; the pair of the `refuses` rows below. A recipient safety rule (LLM text never a recipient, hidden characters). K3. Zero kills. | 0 | 0.000 |
+| `packages/core/src/digest/approvals-follow-up.test.ts:225` | `packages/core/src/digest/approvals-follow-up.test.ts:225` | S11 | KEEP | K3 | – | 85 `refuses` rows: quoted, angle, list, header injection and hidden characters (zero-width, bidi, tag characters) in an address. Recipient safety (K3). Zero kills; the schema is data-driven. | 0 | 0.000 |
+| `packages/core/src/digest/approvals-follow-up.test.ts:226` | `packages/core/src/digest/approvals-follow-up.test.ts:226` | S11 | KEEP | K3 | – | Guards the test labels: no label of a bad address holds `@`, so a failing test name never prints an address (log redaction rule). K3. | 0 | 0.000 |
+| `packages/core/src/digest/approvals.test.ts:390` | `packages/core/src/digest/approvals.test.ts:390` | S11 | KEEP | none | – | Exact copy of the two card lines in English and Polish. English `sendLine` is asserted again at `approvals.test.ts:239`, `:312` and in `approvals-follow-up.test.ts:64`; the Polish texts and `sendLineEditable` are pinned only here. Not a duplicate; copy-check wording (K6 candidate: the capability page of drafts states the line). Unsure. | 0 | 0.000 |
+| `packages/core/src/digest/local-time.test.ts:32` | `packages/core/src/digest/local-time.test.ts:32` | S11 | KEEP | none | – | `localToInstant` for a winter and a summer date (Warsaw). Zero kills: the same mutants die in the `quietEnd` and `lateMin` cases. Two different offsets, so two input classes; it is the direct unit check of the function. No cut: a wrong KEEP costs nothing. | 0 | 0.000 |
+| `packages/core/src/digest/local-time.test.ts:43` | `packages/core/src/digest/local-time.test.ts:43` | S11 | KEEP | none | – | Ambiguous autumn time in Warsaw gives the later instant. Same rule at `local-time.test.ts:247` for New York (west of UTC): a different input class (the offset sign), so not a duplicate. Zero kills; both could join one `test.each` of `[zone, date, time, instant]`. | 0 | 0.000 |
+| `packages/core/src/digest/local-time.test.ts:247` | `packages/core/src/digest/local-time.test.ts:247` | S11 | KEEP | none | – | Ambiguous time in New York (zone west of UTC), `quietEnd` describe. Different offset sign from `local-time.test.ts:43` (Warsaw); not a duplicate of it. Zero kills. | 0 | 0.000 |
+| `packages/core/src/digest/notices.test.ts:680` | `packages/core/src/digest/notices.test.ts:680` | S11 | KEEP | K2 | – | Iterates every text of `notices.replyDrafts.results` and `bot.taps.reply.blocked` in en and pl: one line, no address, not empty. Registry-style check (K2); the "no address" part is also K3. | 0 | 0.000 |
+| `packages/core/src/digest/review.test.ts:93` | `packages/core/src/digest/review.test.ts:93` | S11 | KEEP | K2 | – | Flag pin: `review_command` defaults off, epic E2a. Registry pin (K2). Other flags have the same pin in `features.test.ts`; this one is the only place for `review_command`. | 0 | 0.000 |
+| `packages/core/src/digest/weekly.test.ts:321` | `packages/core/src/digest/weekly.test.ts:321` | S11 | KEEP | K2 | – | `weekly_report` view schema: an older queued view parses, a bad link and an extra key do not. Schema check (K2); rule of queued views (styleguide, Notices). Zero kills. | 0 | 0.001 |
+| `packages/core/src/digest/weekly.test.ts:383` | `packages/core/src/digest/weekly.test.ts:383` | S11 | KEEP | K2 | – | `weekly_report` view schema: a view without `replyDrafts` still parses with zeros, an extra key fails. Schema check (K2). Zero kills. | 0 | 0.000 |
+| `packages/core/src/features.test.ts:15` | `packages/core/src/features.test.ts:15` | S11 | KEEP | K2 | – | Registry check: every `featureFlags` entry has a valid key, description, epic and remove-by date. Iterates the registry; zero kills (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:26` | `packages/core/src/features.test.ts:26` | S11 | KEEP | K2 | – | Pins the two mailbox OAuth flags (off, epic E9a, remove-by 2027-06-01, descriptions). Registry pin (K2). A `test.each` over all pins of the file is possible; no cut. | 0 | 0.000 |
+| `packages/core/src/features.test.ts:38` | `packages/core/src/features.test.ts:38` | S11 | KEEP | K2 | – | Epic pattern accepts seven code forms and refuses four. The pattern is the registry's rule for epic codes (K2); inputs are distinct classes. | 0 | 0.000 |
+| `packages/core/src/features.test.ts:47` | `packages/core/src/features.test.ts:47` | S11 | KEEP | K2 | – | Four placeholder flags exist and default off. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:54` | `packages/core/src/features.test.ts:54` | S11 | KEEP | K2 | – | `reply_drafts` flag pin (off, E6a, remove-by). Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:60` | `packages/core/src/features.test.ts:60` | S11 | KEEP | K2 | – | `web_push` flag pin (off, E9, remove-by). Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:66` | `packages/core/src/features.test.ts:66` | S11 | KEEP | K2 | – | `telegram_minimal` flag pin and its position after `web_push` in the registry order. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:73` | `packages/core/src/features.test.ts:73` | S11 | KEEP | K2 | – | `draft_copy_check` flag pin. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:79` | `packages/core/src/features.test.ts:79` | S11 | KEEP | K2 | – | Three sender flags: off, E11a, remove-by, and their order in the registry. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:89` | `packages/core/src/features.test.ts:89` | S11 | KEEP | K2 | – | `security_log` flag pin (off, E7-T2, remove-by 2027-03-01). Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:96` | `packages/core/src/features.test.ts:96` | S11 | KEEP | K2 | – | `mistake_capture` flag pin. Registry pin (K2). Same pattern as the `answered_check` copy at `:128` and in `digest/answered-check.test.ts:109`. | 0 | 0.000 |
+| `packages/core/src/features.test.ts:102` | `packages/core/src/features.test.ts:102` | S11 | KEEP | K2 | – | `llm_pause_line` flag pin. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:109` | `packages/core/src/features.test.ts:109` | S11 | KEEP | K2 | – | `weekly_report` and `handled_share` flag pins. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:128` | `packages/core/src/features.test.ts:128` | S11 | KEEP | K2 | – | `answered_check` flag pin. The kept copy for B5: `digest/answered-check.test.ts:109` has the same body (K2 keeps both; a cut would remove that copy). | 0 | 0.000 |
+| `packages/core/src/features.test.ts:134` | `packages/core/src/features.test.ts:134` | S11 | KEEP | K2 | – | `featureKeys` equals the registry keys in order, first four fixed. List fixed (K2). | 0 | 0.000 |
+| `packages/core/src/legal/data-categories.test.ts:6` | `packages/core/src/legal/data-categories.test.ts:6` | S11 | KEEP | K2 | – | Data category ids are unique. Registry check (K2); legal data map. | 0 | 0.000 |
+| `packages/core/src/legal/data-categories.test.ts:11` | `packages/core/src/legal/data-categories.test.ts:11` | S11 | KEEP | K2 | – | Every category text has a non-empty en and pl, and a subject. Registry check over all rows (K2); privacy map (K3). | 0 | 0.000 |
+| `packages/core/src/legal/data-categories.test.ts:24` | `packages/core/src/legal/data-categories.test.ts:24` | S11 | KEEP | K2 | – | Every category column entry is `table.column` or `table.*`. Registry format check (K2). | 0 | 0.000 |
+| `packages/core/src/legal/data-categories.test.ts:49` | `packages/core/src/legal/data-categories.test.ts:49` | S11 | KEEP | K3 | – | No table is both in a data category and in `NO_PERSONAL_DATA_TABLES`: guards the personal-data map used for the organization delete and DSR (privacy, K3). Also K2. | 0 | 0.000 |
+| `packages/core/src/legal/data-categories.test.ts:55` | `packages/core/src/legal/data-categories.test.ts:55` | S11 | KEEP | K2 | – | Every `NO_PERSONAL_DATA_TABLES` entry has a reason. Registry check (K2). | 0 | 0.000 |
+| `packages/core/src/legal/data-categories.test.ts:60` | `packages/core/src/legal/data-categories.test.ts:60` | S11 | KEEP | K3 | – | Pins the `sender-context` data category: both tables, subjects "others", 365 days. Privacy retention statement (K3). | 0 | 0.000 |
+| `packages/core/src/legal/subprocessors.test.ts:6` | `packages/core/src/legal/subprocessors.test.ts:6` | S11 | KEEP | K2 | – | Sub-processor ids are unique. Registry check (K2). | 0 | 0.000 |
+| `packages/core/src/legal/subprocessors.test.ts:11` | `packages/core/src/legal/subprocessors.test.ts:11` | S11 | KEEP | K2 | – | Every sub-processor text has a non-empty en and pl. Registry check (K2). | 0 | 0.000 |
+| `packages/core/src/legal/subprocessors.test.ts:25` | `packages/core/src/legal/subprocessors.test.ts:25` | S11 | KEEP | K2 | – | Placeholders (`<…>`) match between en and pl for every sub-processor text: the "placeholder in both languages" check (K2). | 0 | 0.000 |
+| `packages/core/src/legal/subprocessors.test.ts:34` | `packages/core/src/legal/subprocessors.test.ts:34` | S11 | KEEP | K2 | – | Every `termsUrl` is an https URL or a `<to confirm: …>` placeholder. Registry content check (K2). | 0 | 0.000 |
+| `packages/core/src/llm-roles.test.ts:6` | `packages/core/src/llm-roles.test.ts:6` | S11 | KEEP | K2 | – | The role list is fixed (`classifier`, `judge`, `drafter`, `extractor`). "The list is fixed" check (K2). | 0 | 0.000 |
+| `packages/core/src/llm-roles.test.ts:17` | `packages/core/src/llm-roles.test.ts:17` | S11 | KEEP | none | – | The value of the case is the `@ts-expect-error` line, which `bun run typecheck` checks; the runtime `toHaveLength(2)` is a placeholder assertion (S2-like). Zero kills. No cut: removing it drops the only compile-time pin of the `PromptVersion` role prefix. Unsure. | 0 | 0.000 |
+| `packages/core/src/loops/brief.test.ts:93` | `packages/core/src/loops/brief.test.ts:93` | S11 | KEEP | none | – | Section cap of 5 lines, "more" counted from the reader's total, oldest due first. The only test of `BRIEF_SECTION_LINES` in the folder (grep). Zero kills; no twin named. | 0 | 0.000 |
+| `packages/core/src/loops/dates.test.ts:25` | `packages/core/src/loops/dates.test.ts:25` | S11 | KEEP | none | – | `resolveDue`: a weekday word is the next such day, never the same day (three inputs). Zero kills; each input is a distinct class (same day, later, earlier in the week). No twin named. | 0 | 0.002 |
+| `packages/core/src/loops/dates.test.ts:37` | `packages/core/src/loops/dates.test.ts:37` | S11 | KEEP | none | – | `resolveDue`: `end_of_week` and `next_week` on a weekend. Distinct input class (weekend start); zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/loops/dates.test.ts:47` | `packages/core/src/loops/dates.test.ts:47` | S11 | KEEP | none | – | `resolveDue`: a Saturday in March gives Monday 17:00 local in CEST (the DST edge). Distinct input class; zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/loops/dates.test.ts:53` | `packages/core/src/loops/dates.test.ts:53` | S11 | KEEP | none | – | `resolveDue`: a date resolves to 17:00 local on that day. Plain case; zero kills because the other cases share its path. Could join a `test.each` with `:57`, `:68`; no cut. | 0 | 0.000 |
+| `packages/core/src/loops/dates.test.ts:57` | `packages/core/src/loops/dates.test.ts:57` | S11 | KEEP | none | – | `resolveDue`: a date in the past and `today` after 17:00 give null. Two inputs of the "before the sent mail" class; zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/loops/dates.test.ts:62` | `packages/core/src/loops/dates.test.ts:62` | S11 | KEEP | none | – | `resolveDue`: the 60-day limit (day 61 and 62 give null, day 60 holds). Boundary values; zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/loops/dates.test.ts:68` | `packages/core/src/loops/dates.test.ts:68` | S11 | KEEP | none | – | `resolveDue`: a date that does not exist (`2026-02-30`) gives null. Distinct input class; zero kills. | 0 | 0.000 |
+| `packages/core/src/loops/dates.test.ts:84` | `packages/core/src/loops/dates.test.ts:84` | S11 | KEEP | K2 | – | `dueRefSchema` accepts a date and a word, refuses an unknown word, a bad date form and an extra key. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/loops/extractor.test.ts:184` | `packages/core/src/loops/extractor.test.ts:184` | S11 | KEEP | K2 | – | The JSON schema that the provider gets: strict object, all six output keys required, no other key. Schema list check (K2); it guards the provider contract. | 0 | 0.000 |
+| `packages/core/src/mail/providers.test.ts:6` | `packages/core/src/mail/providers.test.ts:6` | S11 | KEEP | K2 | – | Every mail preset key has IMAP port 993 and an SMTP port that matches its security mode. Iterates the registry (K2). | 0 | 0.000 |
+| `packages/core/src/mail/providers.test.ts:13` | `packages/core/src/mail/providers.test.ts:13` | S11 | KEEP | K2 | – | Pins the iCloud preset exactly (hosts, ports, app password, domains). Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/mail/sync-folders.test.ts:54` | `packages/core/src/mail/sync-folders.test.ts:54` | S11 | KEEP | K2 | – | `SORT_FOLDER_NAMES` equals the sync defaults. Registry pin (K2). | 0 | 0.000 |
+| `packages/core/src/mail/sync-folders.test.ts:60` | `packages/core/src/mail/sync-folders.test.ts:60` | S11 | KEEP | K2 | – | The AI folder root is the first part of the AI info folder path. Registry consistency (K2). | 0 | 0.000 |
+| `packages/core/src/mail/sync-folders.test.ts:66` | `packages/core/src/mail/sync-folders.test.ts:66` | S11 | KEEP | K2 | – | `syncFolderDefaultPath` returns the default path of two folder keys (`offers`, `junk`). Registry lookup (K2). | 0 | 0.000 |
+| `packages/core/src/metrics/cost-model.test.ts:57` | `packages/core/src/metrics/cost-model.test.ts:57` | S11 | KEEP | none | – | The pilot block of the cost model equals the sum of the four weeks of `pilot-cost.md` (docs consistency). Zero kills; the only check of those totals (grep of `pilotCost`). | 0 | 0.000 |
+| `packages/core/src/metrics/m1.test.ts:44` | `packages/core/src/metrics/m1.test.ts:44` | S11 | KEEP | none | – | `missedImportant([])` gives zeros and no upper bound. The empty class; zero kills; the other cases of the file use rows. Distinct input. | 0 | 0.000 |
+| `packages/core/src/metrics/m2.test.ts:57` | `packages/core/src/metrics/m2.test.ts:57` | S11 | KEEP | K6 | – | `DELEGATION_DEFAULT_DUE_MS` is 3 days: `docs/capabilities/delegation.md` states the 3-day default and this is the only test of the constant (the other cases use the value indirectly). K6. | 0 | 0.000 |
+| `packages/core/src/metrics/m4.test.ts:21` | `packages/core/src/metrics/m4.test.ts:21` | S11 | KEEP | none | – | `handledShare([])` gives zeros. The empty class; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/metrics/m5.test.ts:44` | `packages/core/src/metrics/m5.test.ts:44` | S11 | KEEP | none | – | `urgentLatency([])` gives zeros and a null p90. The empty class; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/metrics/reply-drafts.test.ts:30` | `packages/core/src/metrics/reply-drafts.test.ts:30` | S11 | KEEP | none | – | `replyOutcomeCounts` with no rows gives zeros everywhere. The empty class; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/metrics/week-stats.test.ts:106` | `packages/core/src/metrics/week-stats.test.ts:106` | S11 | KEEP | none | – | An empty week builds and passes the schema: null mailbox, null p90, one mailbox. The only whole-week empty input of `buildWeekStats`; zero kills. No twin. | 0 | 0.001 |
+| `packages/core/src/metrics/week.test.ts:23` | `packages/core/src/metrics/week.test.ts:23` | S11 | KEEP | none | – | `weekRange` for a normal week (Monday 00:00 local to next Monday). Exact ISO values; zero kills. Two DST cases follow; each is a different input class. | 0 | 0.001 |
+| `packages/core/src/metrics/week.test.ts:29` | `packages/core/src/metrics/week.test.ts:29` | S11 | KEEP | none | – | `weekRange` of the autumn change week: 169 hours, exact ISO start and end. DST class; zero kills. | 0 | 0.001 |
+| `packages/core/src/metrics/week.test.ts:36` | `packages/core/src/metrics/week.test.ts:36` | S11 | KEEP | none | – | `weekRange` of the spring change week: 167 hours. DST class (the other direction); zero kills. Could share one `test.each` with `:29`; no cut. | 0 | 0.000 |
+| `packages/core/src/notices/digest-view.test.ts:12` | `packages/core/src/notices/digest-view.test.ts:12` | S11 | KEEP | K2 | – | Digest view `loopIds`: an older view without it, `[]`, one id and 40 ids parse. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/digest-view.test.ts:19` | `packages/core/src/notices/digest-view.test.ts:19` | S11 | KEEP | K2 | – | 11 `refuses` rows of the `loopIds` id form (upper case, braces, urn prefix, newline, look-alike digit, NUL, empty …). Schema check (K2); already a table. | 0 | 0.000 |
+| `packages/core/src/notices/digest-view.test.ts:35` | `packages/core/src/notices/digest-view.test.ts:35` | S11 | KEEP | K2 | – | `loopIds` limit: 41 ids, a non-array, a number and null are refused. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/digest-view.test.ts:42` | `packages/core/src/notices/digest-view.test.ts:42` | S11 | KEEP | K2 | – | The digest view stays strict: an unknown key is refused. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/encode.test.ts:32` | `packages/core/src/notices/encode.test.ts:32` | S11 | KEEP | none | – | `encodeNoticeView` writes a `Date` as an ISO string (`lastSyncedAt`). One exact value; zero kills; the only check of the date encoding in this file. | 0 | 0.000 |
+| `packages/core/src/notices/encode.test.ts:42` | `packages/core/src/notices/encode.test.ts:42` | S11 | KEEP | K3 | – | A lone surrogate becomes U+FFFD and a NUL becomes a space in a view string (text safety before storage, written to the outbox). Distinct input classes; zero kills. | 0 | 0.000 |
+| `packages/core/src/notices/encode.test.ts:130` | `packages/core/src/notices/encode.test.ts:130` | S11 | KEEP | none | – | `encodeNoticeView("mailbox_removed", {})` gives `{}`. The empty-view class; exact value; zero kills. | 0 | 0.000 |
+| `packages/core/src/notices/push.test.ts:41` | `packages/core/src/notices/push.test.ts:41` | S11 | KEEP | K3 | – | `pushPayloadSchema` refuses an extra key (a subject), bad count, version, language, kind and id: the push payload never holds mail text (privacy, K3). Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/push.test.ts:55` | `packages/core/src/notices/push.test.ts:55` | S11 | KEEP | K2 | – | Push `id` and `itemId` stay at most 64 characters (the 256-byte budget). Boundary values (64, 65); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/push.test.ts:61` | `packages/core/src/notices/push.test.ts:61` | S11 | KEEP | K2 | – | The device-API test payload passes; every push kind passes and stays under 256 bytes. Iterates `pushPayloadKinds` (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:350` | `packages/core/src/notices/registry.test.ts:350` | S11 | KEEP | K2 | – | One renderer and one view schema per notice kind. The "one entry per kind" check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:356` | `packages/core/src/notices/registry.test.ts:356` | S11 | KEEP | K2 | – | The fixture table has one case per notice kind. Completeness check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:364` | `packages/core/src/notices/registry.test.ts:364` | S11 | KEEP | K3 | – | `weekly_report` view accepts the stored view, refuses an extra `subject` key and a negative waiting count. A notice view never holds mail text (K3); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:370` | `packages/core/src/notices/registry.test.ts:370` | S11 | KEEP | K3 | – | `weekly_report` refuses a week with a `subject` field. Same privacy rule (K3); schema check. | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:376` | `packages/core/src/notices/registry.test.ts:376` | S11 | KEEP | K2 | – | `weekly_report` renderer uses the view schema of the registry. Registry link (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:407` | `packages/core/src/notices/registry.test.ts:407` | S11 | KEEP | K3 | – | `not_triaged` view: a subject, a name or a summary is refused. No mail text in views (K3); schema check. | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:418` | `packages/core/src/notices/registry.test.ts:418` | S11 | KEEP | K3 | – | `sent_missing` view: the stored view parses; an extra `subject` and a missing `since` do not. K3 (no mail text) and K2 (schema). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:468` | `packages/core/src/notices/registry.test.ts:468` | S11 | KEEP | K2 | – | `mailbox_removed` encoded view keeps the `access` field (a stored-view compatibility check). Schema round trip (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:505` | `packages/core/src/notices/registry.test.ts:505` | S11 | KEEP | K2 | – | `approval_edit` view: an extra field, an unknown outcome and an empty text are refused. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/registry.test.ts:545` | `packages/core/src/notices/registry.test.ts:545` | S11 | KEEP | K2 | – | Table over the fixture of every notice kind: the Polish text fits one Telegram message (`MESSAGE_MAX_CHARS`). Iterates the registry (K2); already a `test.each`. Of its 23 rows, 1 has zero kills; the key is zero-kill by the data of the first row. | 0 | 0.002 |
+| `packages/core/src/notices/registry.test.ts:659` | `packages/core/src/notices/registry.test.ts:659` | S11 | KEEP | K2 | – | Exactly the report kinds have a mail renderer. Registry completeness (K2). | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:14` | `packages/core/src/notices/reply-views.test.ts:14` | S11 | KEEP | K2 | – | `replies_ready` view: accepts count, queue time, time zone and flag; the panel link is optional and must be a link. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:23` | `packages/core/src/notices/reply-views.test.ts:23` | S11 | KEEP | K3 | – | `replies_ready` view: refuses an extra key (`subject`, `emailId`), a missing key and a count below 1. No mail text in notice views (K3). | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:34` | `packages/core/src/notices/reply-views.test.ts:34` | S11 | KEEP | K2 | – | `reply_prompt` view accepts the mail id and nothing else (positive side). Schema check (K2); pair of `:38`. | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:38` | `packages/core/src/notices/reply-views.test.ts:38` | S11 | KEEP | K3 | – | `reply_prompt` view is strict: a subject, a reason or an empty id is refused. No mail text in views (K3). | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:47` | `packages/core/src/notices/reply-views.test.ts:47` | S11 | KEEP | K2 | – | `reply_result` view accepts the mail id and five reason codes (four real, one 40-character). Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:53` | `packages/core/src/notices/reply-views.test.ts:53` | S11 | KEEP | K3 | – | `reply_result` view refuses an extra `body` key: no mail text in a notice view (K3). | 0 | 0.000 |
+| `packages/core/src/notices/reply-views.test.ts:59` | `packages/core/src/notices/reply-views.test.ts:59` | S11 | KEEP | K3 | – | `reply_result` view refuses a text as the reason (sentence, upper case, empty, too long, an address, Polish letters) and a missing reason. Reason is a code, never LLM or mail text (K3); eight input classes. | 0 | 0.000 |
+| `packages/core/src/notices/routes.test.ts:113` | `packages/core/src/notices/routes.test.ts:113` | S11 | KEEP | K2 | – | `noticeRoutesSchema` keeps the three groups and three values of the database CHECK, refuses eight bad shapes. Schema list that mirrors a CHECK (K2). | 0 | 0.000 |
+| `packages/core/src/replies/checks.test.ts:231` | `packages/core/src/replies/checks.test.ts:231` | S11 | KEEP | K2 | – | Each language word list has 30 distinct words and the lists share none. List check (K2). | 0 | 0.000 |
+| `packages/core/src/replies/digits.test.ts:763` | `packages/core/src/replies/digits.test.ts:763` | S11 | KEEP | K2 | – | IBAN lengths of three countries that have no registry example (BI 27, DJ 27, NI 28). Registry pin; the only test of those three values (K2). | 0 | 0.000 |
+| `packages/core/src/security-log.test.ts:6` | `packages/core/src/security-log.test.ts:6` | S11 | KEEP | K2 | – | Every security event value is a known kind, each kind is used once, codes equal the keys. Registry completeness (K2). | 0 | 0.000 |
+| `packages/core/src/sim/audit.test.ts:83` | `packages/core/src/sim/audit.test.ts:83` | S11 | KEEP | K2 | – | `verdictFileSchema` accepts `pending`, `ok`, `wrong: spam`, refuses four other texts. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/files.test.ts:25` | `packages/core/src/sim/files.test.ts:25` | S11 | KEEP | K2 | – | A blind case file refuses a `category` field (blind files must not show labels). Schema check (K2); the guard of the blind set (K3 candidate: holdout is never read by tuning). | 0 | 0.000 |
+| `packages/core/src/sim/files.test.ts:41` | `packages/core/src/sim/files.test.ts:41` | S11 | KEEP | K2 | – | A label takes `delegation`, refuses `unsure` and a missing `blindHash`. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:31` | `packages/core/src/sim/hard-cases.test.ts:31` | S11 | KEEP | K2 | – | 27 hard-case tags, unique ids and unique short ids of 2 to 4 letters. Registry completeness (K2). | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:39` | `packages/core/src/sim/hard-cases.test.ts:39` | S11 | KEEP | K2 | – | Every hard-case rule has non-empty valid categories. Registry check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:46` | `packages/core/src/sim/hard-cases.test.ts:46` | S11 | KEEP | K2 | – | The 8 reply-injection rules are injections on `needs_reply`, and no other rule has the flag. Registry check (K2); injection rules also K3. | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:57` | `packages/core/src/sim/hard-cases.test.ts:57` | S11 | KEEP | none | – | `calendar_invite` adds one `text/calendar` attachment named `invite.ics`. One rule, exact values; zero kills. No twin (rule-specific facts are also in `facts of the table`, `:87`, but not this one). | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:64` | `packages/core/src/sim/hard-cases.test.ts:64` | S11 | KEEP | K2 | – | Every rule applies to a draft of each of its categories: valid brief of at most 200 characters, input unchanged. Iterates the registry (K2). | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:78` | `packages/core/src/sim/hard-cases.test.ts:78` | S11 | KEEP | none | – | `urgent_no_keyword` drops `contextRef` when it sets the source to `text`. Specific rule behaviour; `:87` checks only the source (`urgencySource`), not the dropped reference, so this holds the unique `contextRef` assertion. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/hard-cases.test.ts:87` | `packages/core/src/sim/hard-cases.test.ts:87` | S11 | KEEP | none | – | 36-line case with the facts of 11 rules (language, headers, from override, cc). One case holds many rules: a failure shows only the first. Zero kills; a split into a `test.each` over rules is possible; no cut. Overlaps `:57` and `:78` only on `urgent_no_keyword`. | 0 | 0.000 |
+| `packages/core/src/sim/live/env-guard.test.ts:43` | `packages/core/src/sim/live/env-guard.test.ts:43` | S11 | KEEP | K2 | – | Each of the 12 env-guard codes has a case (set of 12 codes). Completeness check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:38` | `packages/core/src/sim/plan-bank.test.ts:38` | S11 | KEEP | none | – | `planBank` twice gives the same JSON (determinism). Zero kills; the only determinism check of the bank (the seed case at `:136` checks that another seed differs). | 0 | 0.058 |
+| `packages/core/src/sim/plan-bank.test.ts:42` | `packages/core/src/sim/plan-bank.test.ts:42` | S11 | KEEP | K2 | – | Slot counts per value category (5 dev, 20 holdout) and per hard-case tag. Registry iteration (K2). | 0 | 0.001 |
+| `packages/core/src/sim/plan-bank.test.ts:53` | `packages/core/src/sim/plan-bank.test.ts:53` | S11 | KEEP | K2 | – | Slot ids are unique and never in both parts (dev, holdout). Part separation: tuning never sees holdout (K3 candidate); uniqueness list check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:59` | `packages/core/src/sim/plan-bank.test.ts:59` | S11 | KEEP | none | – | Urgent holdout sources 10 text, 5 vip, 5 context; vip persona is a vip, context index is in range. Exact counts; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:73` | `packages/core/src/sim/plan-bank.test.ts:73` | S11 | KEEP | none | – | Language counts follow the largest remainder of 0.6, per category and part, with a fixed 12 for `info` in holdout. Exact counts; zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/sim/plan-bank.test.ts:83` | `packages/core/src/sim/plan-bank.test.ts:83` | S11 | KEEP | none | – | Delegation slots carry a delegate, missing-data slots a clarification and no delegate, ids start with `h-dmd`. Exact rules; zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/sim/plan-bank.test.ts:100` | `packages/core/src/sim/plan-bank.test.ts:100` | S11 | KEEP | none | – | Newsletter and marketing senders carry `List-Unsubscribe` and `List-Id` headers with a `.test` host. Zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/sim/plan-bank.test.ts:122` | `packages/core/src/sim/plan-bank.test.ts:122` | S11 | KEEP | none | – | `receivedAt` is a weekday in the two bank weeks, local hour 7 to 18. Range checks; zero kills; no twin. | 0 | 0.012 |
+| `packages/core/src/sim/plan-bank.test.ts:136` | `packages/core/src/sim/plan-bank.test.ts:136` | S11 | KEEP | none | – | Another seed gives another urgent dev id set. A `not.toEqual` (weak negative form), but it is the only seed check and a stricter form (an exact set) would pin the random generator. Unsure. | 0 | 0.052 |
+| `packages/core/src/sim/plan-bank.test.ts:146` | `packages/core/src/sim/plan-bank.test.ts:146` | S11 | KEEP | K2 | – | Batches hold at most 25 slots and count from `batch-001` per part; ids sorted. List shape check (K2). | 0 | 0.000 |
+
+### Not read (345)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `packages/core/src/notices/encode.test.ts:100` | `packages/core/src/notices/encode.test.ts:100` | S2 |
-| `packages/core/src/notices/encode.test.ts:104` | `packages/core/src/notices/encode.test.ts:104` | S2 |
-| B5 | `packages/core/src/digest/answered-check.test.ts:109`, `packages/core/src/features.test.ts:128` | S5 |
-| B6 | `packages/core/src/digest/callback-loop.test.ts:88`, `packages/core/src/digest/callback.test.ts:42`, `packages/core/src/digest/callback.test.ts:73`, `packages/core/src/digest/callback.test.ts:98`, `packages/core/src/digest/callback.test.ts:143`, `packages/core/src/digest/callback.test.ts:173` | S5 |
-| T18 | `packages/core/src/digest/ai-text.test.ts:17`, `packages/core/src/digest/ai-text.test.ts:21`, `packages/core/src/digest/ai-text.test.ts:27` | S6 |
-| T19 | `packages/core/src/digest/llm-pause.test.ts:10`, `packages/core/src/digest/llm-pause.test.ts:17`, `packages/core/src/digest/llm-pause.test.ts:24` | S6 |
-| T20 | `packages/core/src/digest/local-time.test.ts:62`, `packages/core/src/digest/local-time.test.ts:66`, `packages/core/src/digest/local-time.test.ts:70` | S6 |
-| T21 | `packages/core/src/digest/local-time.test.ts:123`, `packages/core/src/digest/local-time.test.ts:127`, `packages/core/src/digest/local-time.test.ts:136` | S6 |
-| T22 | `packages/core/src/digest/local-time.test.ts:142`, `packages/core/src/digest/local-time.test.ts:146`, `packages/core/src/digest/local-time.test.ts:160`, `packages/core/src/digest/local-time.test.ts:164` | S6 |
-| T23 | `packages/core/src/digest/schedule.test.ts:43`, `packages/core/src/digest/schedule.test.ts:56`, `packages/core/src/digest/schedule.test.ts:64` | S6 |
-| T24 | `packages/core/src/digest/text.test.ts:15`, `packages/core/src/digest/text.test.ts:19`, `packages/core/src/digest/text.test.ts:33` | S6 |
-| T25 | `packages/core/src/metrics/week.test.ts:9`, `packages/core/src/metrics/week.test.ts:13`, `packages/core/src/metrics/week.test.ts:17` | S6 |
-| T26 | `packages/core/src/metrics/week.test.ts:53`, `packages/core/src/metrics/week.test.ts:57`, `packages/core/src/metrics/week.test.ts:61`, `packages/core/src/metrics/week.test.ts:65`, `packages/core/src/metrics/week.test.ts:74` | S6 |
-| T27 | `packages/core/src/ops/alert-step.test.ts:19`, `packages/core/src/ops/alert-step.test.ts:23`, `packages/core/src/ops/alert-step.test.ts:27` | S6 |
-| T28 | `packages/core/src/ops/alert-step.test.ts:31`, `packages/core/src/ops/alert-step.test.ts:35`, `packages/core/src/ops/alert-step.test.ts:39` | S6 |
-| T29 | `packages/core/src/ops/alert-step.test.ts:43`, `packages/core/src/ops/alert-step.test.ts:47`, `packages/core/src/ops/alert-step.test.ts:51`, `packages/core/src/ops/alert-step.test.ts:55`, `packages/core/src/ops/alert-step.test.ts:59` | S6 |
-| T30 | `packages/core/src/outgoing/user-text.test.ts:6`, `packages/core/src/outgoing/user-text.test.ts:14`, `packages/core/src/outgoing/user-text.test.ts:18`, `packages/core/src/outgoing/user-text.test.ts:22`, `packages/core/src/outgoing/user-text.test.ts:26` | S6 |
-| T31 | `packages/core/src/replies/checks.test.ts:58`, `packages/core/src/replies/checks.test.ts:193`, `packages/core/src/replies/checks.test.ts:239`, `packages/core/src/replies/checks.test.ts:395`, `packages/core/src/replies/checks.test.ts:523` | S6 |
-| T32 | `packages/core/src/site.test.ts:6`, `packages/core/src/site.test.ts:10`, `packages/core/src/site.test.ts:14`, `packages/core/src/site.test.ts:18`, `packages/core/src/site.test.ts:52` | S6 |
-| T33 | `packages/core/src/triage/cost.test.ts:6`, `packages/core/src/triage/cost.test.ts:10`, `packages/core/src/triage/cost.test.ts:14`, `packages/core/src/triage/cost.test.ts:18` | S6 |
-| T34 | `packages/core/src/triage/untrusted-text.test.ts:6`, `packages/core/src/triage/untrusted-text.test.ts:36`, `packages/core/src/triage/untrusted-text.test.ts:41`, `packages/core/src/triage/untrusted-text.test.ts:65` | S6 |
-| T35 | `packages/core/src/triage/untrusted-text.test.ts:17`, `packages/core/src/triage/untrusted-text.test.ts:53`, `packages/core/src/triage/untrusted-text.test.ts:57`, `packages/core/src/triage/untrusted-text.test.ts:61` | S6 |
-| T36 | `packages/core/src/trust/history.test.ts:20`, `packages/core/src/trust/history.test.ts:23`, `packages/core/src/trust/history.test.ts:26` | S6 |
-| T37 | `packages/core/src/web/csp.test.ts:28`, `packages/core/src/web/csp.test.ts:31`, `packages/core/src/web/csp.test.ts:34`, `packages/core/src/web/csp.test.ts:47`, `packages/core/src/web/csp.test.ts:52`, `packages/core/src/web/csp.test.ts:57` | S6 |
-| T38 | `packages/core/src/web/errors.test.ts:19`, `packages/core/src/web/errors.test.ts:33`, `packages/core/src/web/errors.test.ts:37`, `packages/core/src/web/errors.test.ts:41` | S6 |
-| `packages/core/src/contacts/address.test.ts:41` | `packages/core/src/contacts/address.test.ts:41` | S11 |
-| `packages/core/src/contacts/address.test.ts:52` | `packages/core/src/contacts/address.test.ts:52` | S11 |
-| `packages/core/src/contacts/address.test.ts:61` | `packages/core/src/contacts/address.test.ts:61` | S11 |
-| `packages/core/src/contacts/address.test.ts:67` | `packages/core/src/contacts/address.test.ts:67` | S11 |
-| `packages/core/src/contacts/address.test.ts:72` | `packages/core/src/contacts/address.test.ts:72` | S11 |
-| `packages/core/src/contacts/address.test.ts:168` | `packages/core/src/contacts/address.test.ts:168` | S11 |
-| `packages/core/src/digest/answered-check.test.ts:109` | `packages/core/src/digest/answered-check.test.ts:109` | S11 |
-| `packages/core/src/digest/answers.test.ts:10` | `packages/core/src/digest/answers.test.ts:10` | S11 |
-| `packages/core/src/digest/approvals-follow-up.test.ts:156` | `packages/core/src/digest/approvals-follow-up.test.ts:156` | S11 |
-| `packages/core/src/digest/approvals-follow-up.test.ts:221` | `packages/core/src/digest/approvals-follow-up.test.ts:221` | S11 |
-| `packages/core/src/digest/approvals-follow-up.test.ts:225` | `packages/core/src/digest/approvals-follow-up.test.ts:225` | S11 |
-| `packages/core/src/digest/approvals-follow-up.test.ts:226` | `packages/core/src/digest/approvals-follow-up.test.ts:226` | S11 |
-| `packages/core/src/digest/approvals.test.ts:390` | `packages/core/src/digest/approvals.test.ts:390` | S11 |
-| `packages/core/src/digest/local-time.test.ts:32` | `packages/core/src/digest/local-time.test.ts:32` | S11 |
-| `packages/core/src/digest/local-time.test.ts:43` | `packages/core/src/digest/local-time.test.ts:43` | S11 |
-| `packages/core/src/digest/local-time.test.ts:247` | `packages/core/src/digest/local-time.test.ts:247` | S11 |
-| `packages/core/src/digest/notices.test.ts:680` | `packages/core/src/digest/notices.test.ts:680` | S11 |
-| `packages/core/src/digest/review.test.ts:93` | `packages/core/src/digest/review.test.ts:93` | S11 |
-| `packages/core/src/digest/weekly.test.ts:321` | `packages/core/src/digest/weekly.test.ts:321` | S11 |
-| `packages/core/src/digest/weekly.test.ts:383` | `packages/core/src/digest/weekly.test.ts:383` | S11 |
-| `packages/core/src/features.test.ts:15` | `packages/core/src/features.test.ts:15` | S11 |
-| `packages/core/src/features.test.ts:26` | `packages/core/src/features.test.ts:26` | S11 |
-| `packages/core/src/features.test.ts:38` | `packages/core/src/features.test.ts:38` | S11 |
-| `packages/core/src/features.test.ts:47` | `packages/core/src/features.test.ts:47` | S11 |
-| `packages/core/src/features.test.ts:54` | `packages/core/src/features.test.ts:54` | S11 |
-| `packages/core/src/features.test.ts:60` | `packages/core/src/features.test.ts:60` | S11 |
-| `packages/core/src/features.test.ts:66` | `packages/core/src/features.test.ts:66` | S11 |
-| `packages/core/src/features.test.ts:73` | `packages/core/src/features.test.ts:73` | S11 |
-| `packages/core/src/features.test.ts:79` | `packages/core/src/features.test.ts:79` | S11 |
-| `packages/core/src/features.test.ts:89` | `packages/core/src/features.test.ts:89` | S11 |
-| `packages/core/src/features.test.ts:96` | `packages/core/src/features.test.ts:96` | S11 |
-| `packages/core/src/features.test.ts:102` | `packages/core/src/features.test.ts:102` | S11 |
-| `packages/core/src/features.test.ts:109` | `packages/core/src/features.test.ts:109` | S11 |
-| `packages/core/src/features.test.ts:128` | `packages/core/src/features.test.ts:128` | S11 |
-| `packages/core/src/features.test.ts:134` | `packages/core/src/features.test.ts:134` | S11 |
-| `packages/core/src/legal/data-categories.test.ts:6` | `packages/core/src/legal/data-categories.test.ts:6` | S11 |
-| `packages/core/src/legal/data-categories.test.ts:11` | `packages/core/src/legal/data-categories.test.ts:11` | S11 |
-| `packages/core/src/legal/data-categories.test.ts:24` | `packages/core/src/legal/data-categories.test.ts:24` | S11 |
-| `packages/core/src/legal/data-categories.test.ts:49` | `packages/core/src/legal/data-categories.test.ts:49` | S11 |
-| `packages/core/src/legal/data-categories.test.ts:55` | `packages/core/src/legal/data-categories.test.ts:55` | S11 |
-| `packages/core/src/legal/data-categories.test.ts:60` | `packages/core/src/legal/data-categories.test.ts:60` | S11 |
-| `packages/core/src/legal/subprocessors.test.ts:6` | `packages/core/src/legal/subprocessors.test.ts:6` | S11 |
-| `packages/core/src/legal/subprocessors.test.ts:11` | `packages/core/src/legal/subprocessors.test.ts:11` | S11 |
-| `packages/core/src/legal/subprocessors.test.ts:25` | `packages/core/src/legal/subprocessors.test.ts:25` | S11 |
-| `packages/core/src/legal/subprocessors.test.ts:34` | `packages/core/src/legal/subprocessors.test.ts:34` | S11 |
-| `packages/core/src/llm-roles.test.ts:6` | `packages/core/src/llm-roles.test.ts:6` | S11 |
-| `packages/core/src/llm-roles.test.ts:17` | `packages/core/src/llm-roles.test.ts:17` | S11 |
-| `packages/core/src/loops/brief.test.ts:93` | `packages/core/src/loops/brief.test.ts:93` | S11 |
-| `packages/core/src/loops/dates.test.ts:25` | `packages/core/src/loops/dates.test.ts:25` | S11 |
-| `packages/core/src/loops/dates.test.ts:37` | `packages/core/src/loops/dates.test.ts:37` | S11 |
-| `packages/core/src/loops/dates.test.ts:47` | `packages/core/src/loops/dates.test.ts:47` | S11 |
-| `packages/core/src/loops/dates.test.ts:53` | `packages/core/src/loops/dates.test.ts:53` | S11 |
-| `packages/core/src/loops/dates.test.ts:57` | `packages/core/src/loops/dates.test.ts:57` | S11 |
-| `packages/core/src/loops/dates.test.ts:62` | `packages/core/src/loops/dates.test.ts:62` | S11 |
-| `packages/core/src/loops/dates.test.ts:68` | `packages/core/src/loops/dates.test.ts:68` | S11 |
-| `packages/core/src/loops/dates.test.ts:84` | `packages/core/src/loops/dates.test.ts:84` | S11 |
-| `packages/core/src/loops/extractor.test.ts:184` | `packages/core/src/loops/extractor.test.ts:184` | S11 |
-| `packages/core/src/mail/providers.test.ts:6` | `packages/core/src/mail/providers.test.ts:6` | S11 |
-| `packages/core/src/mail/providers.test.ts:13` | `packages/core/src/mail/providers.test.ts:13` | S11 |
-| `packages/core/src/mail/sync-folders.test.ts:54` | `packages/core/src/mail/sync-folders.test.ts:54` | S11 |
-| `packages/core/src/mail/sync-folders.test.ts:60` | `packages/core/src/mail/sync-folders.test.ts:60` | S11 |
-| `packages/core/src/mail/sync-folders.test.ts:66` | `packages/core/src/mail/sync-folders.test.ts:66` | S11 |
-| `packages/core/src/metrics/cost-model.test.ts:57` | `packages/core/src/metrics/cost-model.test.ts:57` | S11 |
-| `packages/core/src/metrics/m1.test.ts:44` | `packages/core/src/metrics/m1.test.ts:44` | S11 |
-| `packages/core/src/metrics/m2.test.ts:57` | `packages/core/src/metrics/m2.test.ts:57` | S11 |
-| `packages/core/src/metrics/m4.test.ts:21` | `packages/core/src/metrics/m4.test.ts:21` | S11 |
-| `packages/core/src/metrics/m5.test.ts:44` | `packages/core/src/metrics/m5.test.ts:44` | S11 |
-| `packages/core/src/metrics/reply-drafts.test.ts:30` | `packages/core/src/metrics/reply-drafts.test.ts:30` | S11 |
-| `packages/core/src/metrics/week-stats.test.ts:106` | `packages/core/src/metrics/week-stats.test.ts:106` | S11 |
-| `packages/core/src/metrics/week.test.ts:23` | `packages/core/src/metrics/week.test.ts:23` | S11 |
-| `packages/core/src/metrics/week.test.ts:29` | `packages/core/src/metrics/week.test.ts:29` | S11 |
-| `packages/core/src/metrics/week.test.ts:36` | `packages/core/src/metrics/week.test.ts:36` | S11 |
-| `packages/core/src/notices/digest-view.test.ts:12` | `packages/core/src/notices/digest-view.test.ts:12` | S11 |
-| `packages/core/src/notices/digest-view.test.ts:19` | `packages/core/src/notices/digest-view.test.ts:19` | S11 |
-| `packages/core/src/notices/digest-view.test.ts:35` | `packages/core/src/notices/digest-view.test.ts:35` | S11 |
-| `packages/core/src/notices/digest-view.test.ts:42` | `packages/core/src/notices/digest-view.test.ts:42` | S11 |
-| `packages/core/src/notices/encode.test.ts:32` | `packages/core/src/notices/encode.test.ts:32` | S11 |
-| `packages/core/src/notices/encode.test.ts:42` | `packages/core/src/notices/encode.test.ts:42` | S11 |
-| `packages/core/src/notices/encode.test.ts:130` | `packages/core/src/notices/encode.test.ts:130` | S11 |
-| `packages/core/src/notices/push.test.ts:41` | `packages/core/src/notices/push.test.ts:41` | S11 |
-| `packages/core/src/notices/push.test.ts:55` | `packages/core/src/notices/push.test.ts:55` | S11 |
-| `packages/core/src/notices/push.test.ts:61` | `packages/core/src/notices/push.test.ts:61` | S11 |
-| `packages/core/src/notices/registry.test.ts:350` | `packages/core/src/notices/registry.test.ts:350` | S11 |
-| `packages/core/src/notices/registry.test.ts:356` | `packages/core/src/notices/registry.test.ts:356` | S11 |
-| `packages/core/src/notices/registry.test.ts:364` | `packages/core/src/notices/registry.test.ts:364` | S11 |
-| `packages/core/src/notices/registry.test.ts:370` | `packages/core/src/notices/registry.test.ts:370` | S11 |
-| `packages/core/src/notices/registry.test.ts:376` | `packages/core/src/notices/registry.test.ts:376` | S11 |
-| `packages/core/src/notices/registry.test.ts:407` | `packages/core/src/notices/registry.test.ts:407` | S11 |
-| `packages/core/src/notices/registry.test.ts:418` | `packages/core/src/notices/registry.test.ts:418` | S11 |
-| `packages/core/src/notices/registry.test.ts:468` | `packages/core/src/notices/registry.test.ts:468` | S11 |
-| `packages/core/src/notices/registry.test.ts:505` | `packages/core/src/notices/registry.test.ts:505` | S11 |
-| `packages/core/src/notices/registry.test.ts:545` | `packages/core/src/notices/registry.test.ts:545` | S11 |
-| `packages/core/src/notices/registry.test.ts:659` | `packages/core/src/notices/registry.test.ts:659` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:14` | `packages/core/src/notices/reply-views.test.ts:14` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:23` | `packages/core/src/notices/reply-views.test.ts:23` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:34` | `packages/core/src/notices/reply-views.test.ts:34` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:38` | `packages/core/src/notices/reply-views.test.ts:38` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:47` | `packages/core/src/notices/reply-views.test.ts:47` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:53` | `packages/core/src/notices/reply-views.test.ts:53` | S11 |
-| `packages/core/src/notices/reply-views.test.ts:59` | `packages/core/src/notices/reply-views.test.ts:59` | S11 |
-| `packages/core/src/notices/routes.test.ts:113` | `packages/core/src/notices/routes.test.ts:113` | S11 |
-| `packages/core/src/replies/checks.test.ts:231` | `packages/core/src/replies/checks.test.ts:231` | S11 |
-| `packages/core/src/replies/digits.test.ts:763` | `packages/core/src/replies/digits.test.ts:763` | S11 |
-| `packages/core/src/security-log.test.ts:6` | `packages/core/src/security-log.test.ts:6` | S11 |
-| `packages/core/src/sim/audit.test.ts:83` | `packages/core/src/sim/audit.test.ts:83` | S11 |
-| `packages/core/src/sim/files.test.ts:25` | `packages/core/src/sim/files.test.ts:25` | S11 |
-| `packages/core/src/sim/files.test.ts:41` | `packages/core/src/sim/files.test.ts:41` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:31` | `packages/core/src/sim/hard-cases.test.ts:31` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:39` | `packages/core/src/sim/hard-cases.test.ts:39` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:46` | `packages/core/src/sim/hard-cases.test.ts:46` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:57` | `packages/core/src/sim/hard-cases.test.ts:57` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:64` | `packages/core/src/sim/hard-cases.test.ts:64` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:78` | `packages/core/src/sim/hard-cases.test.ts:78` | S11 |
-| `packages/core/src/sim/hard-cases.test.ts:87` | `packages/core/src/sim/hard-cases.test.ts:87` | S11 |
-| `packages/core/src/sim/live/env-guard.test.ts:43` | `packages/core/src/sim/live/env-guard.test.ts:43` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:38` | `packages/core/src/sim/plan-bank.test.ts:38` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:42` | `packages/core/src/sim/plan-bank.test.ts:42` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:53` | `packages/core/src/sim/plan-bank.test.ts:53` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:59` | `packages/core/src/sim/plan-bank.test.ts:59` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:73` | `packages/core/src/sim/plan-bank.test.ts:73` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:83` | `packages/core/src/sim/plan-bank.test.ts:83` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:100` | `packages/core/src/sim/plan-bank.test.ts:100` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:122` | `packages/core/src/sim/plan-bank.test.ts:122` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:136` | `packages/core/src/sim/plan-bank.test.ts:136` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:146` | `packages/core/src/sim/plan-bank.test.ts:146` | S11 |
 | `packages/core/src/sim/plan-bank.test.ts:157` | `packages/core/src/sim/plan-bank.test.ts:157` | S11 |
 | `packages/core/src/sim/plan-bank.test.ts:163` | `packages/core/src/sim/plan-bank.test.ts:163` | S11 |
 | `packages/core/src/sim/plan-bank.test.ts:179` | `packages/core/src/sim/plan-bank.test.ts:179` | S11 |
@@ -860,12 +866,13 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Summary
 
-- Items selected by § Reader method step 2: 660. Items in this file: 660 (150 read rows + 510 `not read` rows). Read: 150. Not read: 510.
+- Items selected by § Reader method step 2: 660. Items in this file: 660 (300 read rows + 360 `not read` rows). Read: 300 (150 in the first job, 150 in continuation 1). Not read: 360.
 - GAP rows: 122 (information, not items).
+- Not read, by kind: core 345 (211 `S11` keys, 133 `S10` files, 1 `S9` case), web 3, docs 9, deploy 1, tools 2. The next continuation reads the next 150 in the same order: the 211 core `S11` keys first (file order, from `packages/core/src/sim/plan-bank.test.ts:157` on), then the core `S10` files.
 
 | Section | Read | Not read |
 | --- | --- | --- |
-| Core | 0 | 495 |
+| Core | 150 | 345 |
 | Web | 8 | 3 |
 | Docs | 30 | 9 |
 | Deploy | 72 | 1 |
@@ -873,12 +880,14 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 | Action | Rows | Lines | Time of cases (s) |
 | --- | --- | --- | --- |
-| KEEP | 126 | 0 | 6.667 |
+| KEEP | 256 | 0 | 6.895 |
 | DELETE-DUP | 0 | 0 | 0.000 |
-| MERGE-TABLE | 0 | 0 | 0.000 |
-| REWRITE-WEAK | 1 | 0 | 0.003 |
+| MERGE-TABLE | 18 | 145 | 0.007 |
+| REWRITE-WEAK | 3 | 0 | 0.003 |
 | DELETE-STALE | 0 | 0 | 0.000 |
 | MOVE-TO-UNIT | 0 | 0 | 0.000 |
 | FIX-NEVER-RUNS | 23 | 0 | 0.000 |
 
-KEEP and FIX-NEVER-RUNS by rule: K2 8, K3 73, none 69.
+KEEP and FIX-NEVER-RUNS by rule: K1 1, K2 83, K3 89, K6 1, none 105. The 18 MERGE-TABLE rows have K1 in 10 rows (they keep every input) and no K rule in 8; the 3 REWRITE-WEAK rows have none.
+
+Core `S11` rows of this job are mostly KEEP by K2 or K3 (registries, schemas, privacy rules) or a plain case with a distinct input class. No `DELETE-DUP` row: that class needs an `S10` case and a named twin, and the `S11` and `S6` items of this job have neither. The `S10` files are the first place where a `DELETE-DUP` can appear.
