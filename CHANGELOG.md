@@ -17,6 +17,10 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+### Removed
+
+- The old organization signature column `organizations.style_text`. Release v0.4.4 already copied it into the mailbox signatures and stopped using it. A rollback of this release goes to v0.4.4 with `deploy/rollback.sh` alone; an older release needs a restore from the backup that `deploy/release.sh` took before the migration.
+
 ## [0.4.4] - 2026-11-20
 
 ### Removed

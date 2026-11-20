@@ -525,6 +525,7 @@ The sync reads INBOX and, at Interia, `Oferty`, `Społeczności`, `Rachunki` and
   - A rollback of the release that carries it is `deploy/rollback.sh` alone, to v0.4.3. No SQL. v0.4.3 names no dropped column.
   - A rollback to an older release is not possible after the migration: the older code reads the dropped columns. Restore from the backup that `deploy/release.sh` took before the migration (§ Backups).
   - `deploy/release.sh` with a tag older than v0.4.3 has the same limit: restore from that backup first.
+- Contract migration `drop_style_text` (it drops `organizations.style_text`): a rollback of the release that carries it is `deploy/rollback.sh` alone, to v0.4.4. A rollback to an older release needs a restore from the backup that `deploy/release.sh` took before the migration.
 
 ### Notice `action_failed`
 
