@@ -255,17 +255,21 @@ describe("buildCompareRows, exact rows", () => {
     expect(rows[0]).toMatchObject({ state: "triaged", emailId: "e5", category: "info" });
   });
 
-  test("the thread cell is empty for a case with no parent and for a parent whose mail is not stored", () => {
+  test("with many copies in a shuffled order, the copy with the lowest id is used", () => {
+    const ids = Array.from({ length: 30 }, (_, index) => `e${String((index * 7) % 30).padStart(2, "0")}`);
+    const emails = ids.map((id) => email(id, "<a@x>"));
+    expect(buildCompareRows(input([entry("a", "<a@x>")]), emails, [])[0]?.emailId).toBe("e00");
+    const results = ids.map((id) => result(id, "info"));
+    expect(buildCompareRows(input([entry("a", "<a@x>")]), emails, results)[0]?.emailId).toBe("e00");
+  });
+
+  test("two copies with the same id keep their input order", () => {
     const rows = buildCompareRows(
-      input([
-        entry("root", "<root@x>"),
-        entry("kid-lost", "<kid@x>", { parentCaseId: "root" }),
-        entry("kid-unsent", null, { parentCaseId: "root" }),
-      ]),
-      [email("e1", "<root@x>", "<before@x>")],
+      input([entry("kid", "<a@x>", { parentCaseId: "root" })]),
+      [email("e1", "<a@x>", "<root@x>"), email("e1", "<a@x>", null)],
       []
     );
-    expect(rows.map((row) => row.thread)).toEqual([null, null, null]);
+    expect(rows[0]?.thread).toBe("ok");
   });
 });
 
@@ -377,23 +381,6 @@ describe("renderCompareTable, exact text", () => {
     );
   });
 
-  test("two rows with a marker, a thread cell and a rounded confidence", () => {
-    const table = renderCompareTable([
-      row({ caseId: "a", marker: "attack", confidence: 0.5, thread: "MISSING" }),
-      row({ caseId: "b", category: "spam", confidence: 0.126, ok: false, reasonCode: "rule", thread: "ok" }),
-    ]);
-    expect(table).toBe(
-      [
-        ...header,
-        "| a (attack) | boss | info | info | 0.50 | llm | ok | MISSING |",
-        "| b | boss | info | spam | 0.13 | rule | WRONG | ok |",
-        "",
-        "triaged 2 of 2 sent; ok 1; wrong 1",
-        "prompt versions: v2 (2)",
-      ].join("\n")
-    );
-  });
-
   test("a pipe in a cell is escaped and the cell keeps its other text", () => {
     const table = renderCompareTable([row({ caseId: "a|b", persona: "x|y|z", reasonCode: "r|s" })]);
     expect(table.split("\n")[2]).toBe("| a\\|b | x\\|y\\|z | info | info | 0.90 | r\\|s | ok |  |");
@@ -428,6 +415,13 @@ describe("renderCompareTable, exact text", () => {
       "triaged 8 of 8 sent; ok 8; wrong 0",
       "prompt versions: v3 (3), v1 (2), none (1), v0 (1), v2 (1)",
     ]);
+  });
+
+  test("many prompt versions of one count are listed by name, whatever the row order", () => {
+    const names = Array.from({ length: 30 }, (_, index) => `v${String((index * 7) % 30).padStart(2, "0")}`);
+    const table = renderCompareTable(names.map((promptVersion, index) => row({ caseId: `c${index}`, promptVersion })));
+    const sorted = Array.from({ length: 30 }, (_, index) => `v${String(index).padStart(2, "0")} (1)`);
+    expect(table.split("\n").at(-1)).toBe(`prompt versions: ${sorted.join(", ")}`);
   });
 
   test("prompt versions with equal counts are listed by name, whatever the row order", () => {

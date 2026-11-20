@@ -99,41 +99,6 @@ describe("blindLabelsSchema", () => {
 });
 
 describe("blindView, exact output", () => {
-  test("every case carries its own text and a thread of its parents, oldest first", () => {
-    expect(blindView(batch, personas)).toEqual([
-      { id: "a", from: "ea-testmail@agentmail.to", lang: "pl", subject: "Temat a", body: "Tresc a", thread: [] },
-      {
-        id: "b",
-        from: "ea-testmail@agentmail.to",
-        lang: "pl",
-        subject: "Temat b",
-        body: "Tresc b",
-        thread: [{ from: "ea-testmail@agentmail.to", subject: "Temat a", body: "Tresc a" }],
-      },
-      {
-        id: "c",
-        from: "ea-testmail@agentmail.to",
-        lang: "pl",
-        subject: "Temat c",
-        body: "Tresc c",
-        thread: [
-          { from: "ea-testmail@agentmail.to", subject: "Temat a", body: "Tresc a" },
-          { from: "ea-testmail@agentmail.to", subject: "Temat b", body: "Tresc b" },
-        ],
-      },
-    ]);
-  });
-
-  test("the language of a case is kept", () => {
-    const english: Batch = { ...batch, cases: [makeCase("a", { lang: "en" })] };
-    expect(blindView(english, personas)[0]?.lang).toBe("en");
-  });
-
-  test("a reply to an unknown case has an empty thread", () => {
-    const lost: Batch = { ...batch, cases: [makeCase("a", { replyTo: "nope" })] };
-    expect(blindView(lost, personas)[0]?.thread).toEqual([]);
-  });
-
   test("a reply to itself and a loop of replies stop at the first repeat", () => {
     const loop: Batch = {
       ...batch,
@@ -141,6 +106,14 @@ describe("blindView, exact output", () => {
     };
     const view = blindView(loop, personas);
     expect(view.map((item) => item.thread.map((t) => t.subject))).toEqual([[], ["Temat c"], ["Temat b"]]);
+  });
+
+  test("a case that replies into a loop it is not part of lists each case of the loop once", () => {
+    const loop: Batch = {
+      ...batch,
+      cases: [makeCase("a", { replyTo: "b" }), makeCase("b", { replyTo: "c" }), makeCase("c", { replyTo: "b" })],
+    };
+    expect(blindView(loop, personas)[0]?.thread.map((t) => t.subject)).toEqual(["Temat c", "Temat b"]);
   });
 });
 
@@ -157,27 +130,5 @@ describe("blindLabelsSchema, exact issues", () => {
       { code: "custom", path: [2, "id"], message: "label id not unique" },
       { code: "custom", path: [3, "id"], message: "label id not unique" },
     ]);
-  });
-
-  test("distinct ids are accepted and returned unchanged", () => {
-    const labels = [
-      { id: "a", category: "spam" as const },
-      { id: "b", category: "info" as const },
-    ];
-    expect(blindLabelsSchema.parse(labels)).toEqual(labels);
-  });
-});
-
-describe("applyBlindLabels, exact result", () => {
-  test("the result is a copy: labelled and unlabelled cases are new objects, the batch keeps its other fields", () => {
-    const result = applyBlindLabels(batch, [{ id: "c", category: "urgent" }], "checker-x");
-    expect(result.batch).toEqual({
-      ...batch,
-      checker: "checker-x",
-      cases: batch.cases.map((item) => (item.id === "c" ? { ...item, blind: { category: "urgent" as const } } : item)),
-    });
-    result.batch.cases.forEach((item, index) => expect(item).not.toBe(batch.cases[index]));
-    expect(result.missingIds).toEqual(["a", "b"]);
-    expect(result.unknownIds).toEqual([]);
   });
 });

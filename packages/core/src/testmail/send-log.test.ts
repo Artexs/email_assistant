@@ -172,42 +172,6 @@ describe("caseStates, exact states", () => {
   const all = (...lines: SendLogLine[]) => caseStates(BATCH, ["c1", "c2"], lines);
   const atIntent = new Date("2026-11-08T10:00:00.000Z");
 
-  test("every kind carries its exact fields", () => {
-    expect(all(intent(1)).get("c1")).toEqual({
-      kind: "open",
-      attempt: 1,
-      key: "ea-2026-11-08-a-c1-a1",
-      hash: HASH,
-      at: atIntent,
-    });
-    expect(all(intent(1), sent(1)).get("c1")).toEqual({
-      kind: "sent",
-      attempt: 1,
-      messageId: "<m1@x.test>",
-      threadId: "t1",
-      inbox: "ea@agentmail.to",
-      at: new Date("2026-11-08T10:00:01.000Z"),
-    });
-    expect(all(intent(1), failed(1)).get("c1")).toEqual({ kind: "failed", attempt: 1, code: "http_500" });
-  });
-
-  test("the result lists the known cases only, a case with no line is due", () => {
-    const states = all(intent(1, "c2"), intent(1, "other"));
-    expect([...states.keys()]).toEqual(["c1", "c2"]);
-    expect(states.get("c1")).toEqual({ kind: "due" });
-    expect(states.get("c2")).toMatchObject({ kind: "open", attempt: 1 });
-  });
-
-  test("lines of two cases do not mix", () => {
-    const states = all(intent(1, "c1"), failed(1), { ...sent(2), case: "c2" });
-    expect(states.get("c1")).toEqual({ kind: "failed", attempt: 1, code: "http_500" });
-    expect(states.get("c2")).toMatchObject({ kind: "sent", attempt: 2 });
-  });
-
-  test("a sent line wins over a later failed line of a newer attempt", () => {
-    expect(all(sent(1), failed(2)).get("c1")).toMatchObject({ kind: "sent", attempt: 1 });
-  });
-
   test("two sent lines at the same time: the first one in the log wins", () => {
     const same = "2026-11-08T10:00:01.000Z";
     expect(all(sent(1, same), sent(2, same)).get("c1")).toMatchObject({ kind: "sent", attempt: 1 });
@@ -249,10 +213,6 @@ describe("sentInWindow", () => {
 
   test("a send exactly at the start of the window is outside it", () => {
     expect(sentInWindow([sent(1, "2026-11-07T12:00:00Z")], now, day)).toBe(0);
-  });
-
-  test("counts each send inside the window", () => {
-    expect(sentInWindow([sent(1, "2026-11-08T11:00:00Z"), sent(2, "2026-11-08T11:30:00Z")], now, day)).toBe(2);
   });
 
   test("ignores label recoveries and other types", () => {

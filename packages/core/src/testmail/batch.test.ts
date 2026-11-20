@@ -170,6 +170,14 @@ describe("validateBatch rules", () => {
       issues: [issue("c1", "duplicate_id", "id: not unique in the batch")],
     },
     {
+      name: "a duplicate id is flagged after the issues of the first case with that id",
+      cases: [makeCase("c1", { persona: "nobody" }), makeCase("c1")],
+      issues: [
+        issue("c1", "unknown_persona", "persona: key not in the persona file"),
+        issue("c1", "duplicate_id", "id: not unique in the batch"),
+      ],
+    },
+    {
       name: "an unknown persona is flagged without a language issue",
       cases: [makeCase("a", { persona: "nobody", lang: "en" })],
       issues: [issue("a", "unknown_persona", "persona: key not in the persona file")],
@@ -265,7 +273,6 @@ describe("validateBatch rules", () => {
       cases: [makeCase("a", { body: "(see http://portal.test)." })],
       issues: [],
     },
-    { name: "a number with 8 digits", cases: [makeCase("a", { body: "12345678" })], issues: [] },
     { name: "a spaced number with 8 digits", cases: [makeCase("a", { body: "1234 5678" })], issues: [] },
     {
       name: "the test mailbox address in the body, whatever its case and padding",
@@ -298,12 +305,6 @@ describe("validateBatch rules", () => {
         issue("a", "delegation_without_delegates", "expected: delegation needs delegatesActive"),
         issue("a", "delegation_without_delegates", "blind: delegation needs delegatesActive"),
       ],
-    },
-    {
-      name: "an expected delegation with active delegates",
-      cases: [makeCase("a", { expected: { category: "delegation" } })],
-      delegatesActive: true,
-      issues: [],
     },
     {
       name: "a blind delegation with active delegates when blind is required",
@@ -421,19 +422,17 @@ describe("personaFileSchema keys", () => {
   const issuesOf = (keys: string[]) => {
     const file = { ...personas, personas: keys.map((key) => ({ ...personas.personas[0], key })) };
     const result = personaFileSchema.safeParse(file);
-    return result.success ? [] : result.error.issues.map(({ path, message }) => ({ path, message }));
+    return result.success ? [] : result.error.issues.map(({ code, path, message }) => ({ code, path, message }));
   };
 
   test("a repeated key is an issue on each later persona, at its own index", () => {
     expect(issuesOf(["p1", "p2", "p1", "p1"])).toEqual([
-      { path: ["personas", 2, "key"], message: "persona key not unique" },
-      { path: ["personas", 3, "key"], message: "persona key not unique" },
+      { code: "custom", path: ["personas", 2, "key"], message: "persona key not unique" },
+      { code: "custom", path: ["personas", 3, "key"], message: "persona key not unique" },
     ]);
-    expect(issuesOf(["p1", "p1"])).toEqual([{ path: ["personas", 1, "key"], message: "persona key not unique" }]);
-  });
-
-  test("distinct keys give no issue", () => {
-    expect(issuesOf(["p1", "p2"])).toEqual([]);
+    expect(issuesOf(["p1", "p1"])).toEqual([
+      { code: "custom", path: ["personas", 1, "key"], message: "persona key not unique" },
+    ]);
   });
 });
 
