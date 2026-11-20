@@ -169,6 +169,19 @@ Logs on the VPS: `~/ea-logs/f108-s06/` (`01-pre.log` … `05-cleanup.log`).
 - Step 12: `docs/capabilities/backups.md` § Limits holds the check date, the cron time, "owner step O1", "lifecycle not read" and the env layout line.
 - Not changed: the DB (no restore, no `down -v`), `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack. No backup ran in this job.
 
+### Stage 06 release, 2026-11-20 (job `2026-11-20-f108-release-v0-4-3-on-the-vps-s-9f6492a4`): release ok v0.4.3, server env ok
+
+Release N+1 is `v0.4.3` (`a03575252`); rollback target `v0.4.2` (`deploy/rollback.sh` alone; the host is split and `v0.4.2` reads `deploy/db.env`). Logs on the VPS: `~/ea-logs/f108-s06/06-release.log`, `07-env.log`, `08-watch.log` (watch script `watch.sh` beside them; it prints counts and event names only).
+
+- Tag: `git tag -a v0.4.3 -m v0.4.3 a03575252`, pushed 19:27Z; `git ls-remote origin refs/tags/v0.4.3^{}` → `a03575252f6f…`. `a03575252` is an ancestor of `origin/master`; CI run 44796745878 on it green.
+- Pre-checks (19:28Z): 18 G free; `git status` clean; state `current=v0.4.2 previous=v0.4.1 pending=` empty. Far from the 03:30 backup cron.
+- Step 2 (19:28:06Z, `nohup bash -c 'deploy/release.sh v0.4.3; echo RELEASE_RC=$?'`): `backup ok ea-20261120T192809Z.dump.age 710765`; `Applying: 20261119140001_emails_neutral_names.sql` (the expand step: two new columns and a copy trigger); server recreated and healthy 19:35:58Z; old image `ea-server:v0.4.1` untagged; `release ok v0.4.3 previous v0.4.2`; `RELEASE_RC=0`. State now `current=v0.4.3 previous=v0.4.2 pending=` empty; checkout at `v0.4.3`, `git status` clean.
+- Step 3 (19:36:52Z, `07-env.log`): `bash deploy/check-server-env.sh` → `server env ok keys=38`, rc 0. `$C run --rm -T cli env` key names (names only, rc 0), 39: `ACTIONS_SCOPE AGENTMAIL_API_KEY BACKUP_STATUS_FILE BUN_INSTALL_BIN BUN_RUNTIME_TRANSPILER_CACHE_PATH CREDENTIALS_KEY CREDENTIALS_KEY_VERSION DATABASE_URL EA_RELEASE GEMINI_API_KEY GEMINI_MODEL HEARTBEAT_URL HOME HOSTNAME LLM_PROVIDER LOG_FORMAT LOG_LEVEL OPENAI_API_KEY OPERATOR_TELEGRAM_CHAT_ID OPERATOR_USER_IDS PATH PORT PWD SEND_SCOPE SEND_TEST_ADDRESSES TELEGRAM_API_HASH TELEGRAM_API_ID TELEGRAM_BOT_TOKEN TEST_IMAPS_PORT TEST_IMAP_HOST TEST_IMAP_PORT TEST_MAILBOX_ADDRESS TEST_SENDER_ADDRESSES TEST_SMTP_PORT TRIAGE_LLM_SCOPE WEB_AUTH_SECRET WEB_BASE_URL WEB_DIST WEB_TRUSTED_PROXIES`. None of `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`, `MIGRATOR_DATABASE_URL` (count 0). `$C config --format json` not printed.
+- Start log (19:36Z–19:38Z): `sync_done`, `sent_sync_done`, 5 `sync_folder_done`, 0 `error`. Warns: `actions_scope`, `send_scope`, `triage_scope`, `scope_targets`, `operator_contact_empty` (config warns; `operator_contact_empty` is also in `v0.4.2` `main.ts`, so not new).
+- Step 4, 30-minute watch (checklist step 10), 19:37:28Z–20:07:46Z (`08-watch.log`, a tick each 5 minutes over `deploy/logs.sh --since 40m`): `EA_RELEASE=v0.4.3`; each of 6 ticks `error=0`, health 200, container `healthy restarts=0`; `sync_done` count grew 3 → 15. Error events in the window: none. Warn events: the 5 start-up config warns once each, nothing later. `ops:alerts` rc 0: only resolved alerts (`slo_backup_age` 2026-11-20 16:35Z–16:45Z and 2026-11-18–19; `slo_sync_lag` 2026-11-17–19). No rollback.
+- `ea-sim` containers untouched (up 25 h at 19:49Z). Crontab 2 lines (unchanged).
+- Not changed: the DB beyond the release migration (no restore, no `down -v`), `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack (not rebuilt).
+
 ## Demo run for F151 (C1)
 
 Started 2026-11-20 16:36 UTC on the VPS sim stack (`ea-sim`) by `demo-reset --yes`, beside the live lab day run (owner decision 2026-11-20: do not wait for it).
