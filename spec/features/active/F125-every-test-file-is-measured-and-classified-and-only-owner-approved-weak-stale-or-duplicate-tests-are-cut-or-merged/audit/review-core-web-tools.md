@@ -1,12 +1,12 @@
 # Review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools` (F125 stage 04)
 
-Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `535e6f76` (branch head after the merge of master at the job start).
+Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `6e6c7faf` (branch head after the merge of master at the job start).
 
 Notes for the reader:
 
 - **Keys.** Keys are `file:line` at the base above, from a fresh `bun scripts/test-audit/scan-cli.ts` run (`/tmp/f125-s04/rescan/`), not from the committed `cases-static.tsv`. Reason: master changed 9 files of this area after the stage 03 data (`deploy/test/backup`, `compose-drill`, `release-identity`; new `check-server-env`, `compose-lib`, `docs-env-split`, `env-split`; `apps/docs/scripts/workflows`, `shots-build`, new `apps/docs/src/extra-pages`): the committed keys of these files are stale and the committed `groups.tsv` ids (`B`/`T` numbers) differ from the fresh ones. Group ids in this file are the fresh ones; each group row lists all its keys. Times come from `cases.tsv` joined by file and name; a case that is new since stage 02 has no time (0.000). Core keys, `mutation-tests.tsv` and `mutation-survived.tsv` stay valid: no core test file changed after the mutation run (`git diff 4ce3f351 HEAD -- packages/core` shows only `legal/subprocessors.ts`).
 - **Items.** An item is one flagged case, or one B or T group whose first key is in this area, or one core test file with `S10` cases and no other flag. Order: (a) `S1`, `S7`, `not-run`, then `S8` by file and line; (b) `S2`/`S3`/`S4`; (c) B groups; (d) T groups; (e) core `S11` (one item per distinct call-site key), then core `S10` files; (f) `S9`. The area is `packages/core`, `apps/web/src`, `apps/web/integrations`, `apps/docs/src`, `apps/docs/integrations`, `apps/docs/scripts`, `deploy/test`, `tools/fake-telegram/src`, `tools/mail-oauth-spike` (unit only; `apps/web/e2e`, `apps/docs/e2e` and `tools/fake-telegram/test` belong to stage 06). A case that is in a group and has no other flag is read inside its group row only. A case with `S8` and a group flag (`deploy/test/compose-lib.test.ts` 4a, 4c, 4d) is read as its own item and its group stays in the `not read` list.
-- **Cap.** The job reads 50 items of 664 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
+- **Cap.** The job reads 100 items of 664 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so this job read only tier (a). No core item was read, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
 - **S8 is mostly a false positive in this area.** The flagged cases run a real script, parse a real Compose or workflow file, or test a fake of a test tool, so `S8` is expected (stage 04 rules). Every `S8` row is `KEEP` unless another flag applies. The K rule is named where one applies: K3 for deploy and secret rules, K2 for completeness checks.
 - **Columns.** `Lines` = test lines the action removes (0 for KEEP, REWRITE-WEAK and FIX-NEVER-RUNS). `Time (s)` = JUnit time of the case at the stage 02 run (not time saved).
 - **Unstable mutants.** Stage 03 found 6 status differences between two runs (`replies/digits.ts` 297:21, 368:17, 372:23; `testmail/batch.ts` 107:5; `triage/suspicious.ts` 342:7). GAP counts leave out those mutants (4 of them are in `mutation-survived.tsv`).
@@ -649,26 +649,30 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Web
 
+### Read (8)
 
-### Not read (11)
+| Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `apps/web/integrations/pwa-shell.test.ts:28` | `apps/web/integrations/pwa-shell.test.ts:28` | S8 | KEEP | none | – | S8 expected: reads `public/manifest.webmanifest`; exact `start_url`, `display`, `scope`. Installability contract; no twin (the worker logic is in `service-worker.test.ts`). | 0 | 0.000 |
+| `apps/web/integrations/pwa-shell.test.ts:34` | `apps/web/integrations/pwa-shell.test.ts:34` | S8 | KEEP | none | – | S8 expected: reads the manifest and the PNG headers; exact sizes and purposes of three icons. No twin. | 0 | 0.000 |
+| `apps/web/integrations/pwa-shell.test.ts:51` | `apps/web/integrations/pwa-shell.test.ts:51` | S8 | KEEP | K3 | – | S8 expected: the CSP in `astro.config.mjs` names `worker-src` and `manifest-src` (the header check; `apps/server/test/integration/web-http.test.ts` checks the served header, not the source). | 0 | 0.000 |
+| `apps/web/integrations/pwa-shell.test.ts:57` | `apps/web/integrations/pwa-shell.test.ts:57` | S8 | KEEP | none | – | S8 expected: source pins (manifest link, `register-sw`, the build script order). Brittle to a rename but each string is the contract of the shell; no twin. | 0 | 0.000 |
+| `apps/web/integrations/pwa-shell.test.ts:69` | `apps/web/integrations/pwa-shell.test.ts:69` | S8 | KEEP | none | – | S8 expected: builds the worker with `Bun.build` and checks it is one file with `showNotification` and `/offline.html`, no import. Real build, exact checks. | 0 | 0.012 |
+| `apps/web/src/i18n/islands.test.ts:12` | `apps/web/src/i18n/islands.test.ts:12` | S8 | KEEP | K2 | – | S8 expected: pins the island count at 15. A completeness pin: it fails when an island is added without the next two checks being read. The hard-coded number is brittle (K2 keeps it); the other two cases already fail when an island breaks the rule. | 0 | 0.000 |
+| `apps/web/src/i18n/islands.test.ts:16` | `apps/web/src/i18n/islands.test.ts:16` | S8 | KEEP | K2 | – | S8 expected: every island file starts with `useLocale();` (the i18n rule in `docs/code-patterns.md` § Web app). Registry-style check over the folder. | 0 | 0.000 |
+| `apps/web/src/i18n/islands.test.ts:25` | `apps/web/src/i18n/islands.test.ts:25` | S8 | KEEP | K2 | – | S8 expected: every page that mounts an island uses `client:only="react"`, never `client:load`. Folder-wide rule check. | 0 | 0.000 |
+
+### Not read (3)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `apps/web/integrations/pwa-shell.test.ts:28` | `apps/web/integrations/pwa-shell.test.ts:28` | S8 |
-| `apps/web/integrations/pwa-shell.test.ts:34` | `apps/web/integrations/pwa-shell.test.ts:34` | S8 |
-| `apps/web/integrations/pwa-shell.test.ts:51` | `apps/web/integrations/pwa-shell.test.ts:51` | S8 |
-| `apps/web/integrations/pwa-shell.test.ts:57` | `apps/web/integrations/pwa-shell.test.ts:57` | S8 |
-| `apps/web/integrations/pwa-shell.test.ts:69` | `apps/web/integrations/pwa-shell.test.ts:69` | S8 |
-| `apps/web/src/i18n/islands.test.ts:12` | `apps/web/src/i18n/islands.test.ts:12` | S8 |
-| `apps/web/src/i18n/islands.test.ts:16` | `apps/web/src/i18n/islands.test.ts:16` | S8 |
-| `apps/web/src/i18n/islands.test.ts:25` | `apps/web/src/i18n/islands.test.ts:25` | S8 |
 | `apps/web/integrations/changelog-releases.test.ts:46` | `apps/web/integrations/changelog-releases.test.ts:46` | S2 |
 | B4 | `apps/web/src/lib/legal-terms-dpa.test.ts:78`, `apps/web/src/lib/legal-terms-dpa.test.ts:113` | S5 |
 | T16 | `apps/web/src/lib/two-factor-flow.test.ts:18`, `apps/web/src/lib/two-factor-flow.test.ts:22`, `apps/web/src/lib/two-factor-flow.test.ts:26` | S6 |
 
 ## Docs
 
-### Read (26)
+### Read (30)
 
 | Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -698,15 +702,15 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | `apps/docs/scripts/workflows.test.ts:279` | `apps/docs/scripts/workflows.test.ts:279` | S8 | KEEP | none | – | S8 expected for a workflow test: reads the YAML text and parses it. `DOCS_SHOTS` is set only for the docs build step. No other test asserts these workflow properties: a grep for `docs-deploy` finds only `deploy-gate.ts` and this file; `check-migrations.test.ts` reads `ci.yml` for another rule. | 0 | 0.000 |
 | `apps/docs/scripts/workflows.test.ts:289` | `apps/docs/scripts/workflows.test.ts:289` | S8 | KEEP | none | – | S8 expected for a workflow test: reads the YAML text and parses it. Artifact name, paths and 7 days retention on failure. No other test asserts these workflow properties: a grep for `docs-deploy` finds only `deploy-gate.ts` and this file; `check-migrations.test.ts` reads `ci.yml` for another rule. | 0 | 0.000 |
 | `apps/docs/scripts/workflows.test.ts:300` | `apps/docs/scripts/workflows.test.ts:300` | S8 | KEEP | none | – | S8 expected for a workflow test: reads the YAML text and parses it. The pages artifact is the last build step and the deploy job takes it. No other test asserts these workflow properties: a grep for `docs-deploy` finds only `deploy-gate.ts` and this file; `check-migrations.test.ts` reads `ci.yml` for another rule. | 0 | 0.000 |
+| `apps/docs/scripts/workflows.test.ts:308` | `apps/docs/scripts/workflows.test.ts:308` | S8 | KEEP | K3 | – | S8 expected for a workflow test: reads the YAML text and parses it. Supply chain: every `uses` is pinned to a major version, shared actions equal `ci.yml`. No other test asserts these workflow properties: a grep for `docs-deploy` finds only `deploy-gate.ts` and this file; `check-migrations.test.ts` reads `ci.yml` for another rule. | 0 | 0.000 |
+| `apps/docs/scripts/workflows.test.ts:318` | `apps/docs/scripts/workflows.test.ts:318` | S8 | KEEP | K3 | – | S8 expected for a workflow test: reads the YAML text and parses it. No secret, no `.env`, no token of its own; the shot run uses only localhost hosts. No other test asserts these workflow properties: a grep for `docs-deploy` finds only `deploy-gate.ts` and this file; `check-migrations.test.ts` reads `ci.yml` for another rule. | 0 | 0.000 |
+| `apps/docs/src/how-to.test.ts:29` | `apps/docs/src/how-to.test.ts:29` | S8 | KEEP | K2 | – | S8 expected: a content check of every how-to page (length, no CLI command, numbered steps, closing section) through `test.each` over the page files. A page-list completeness check; no twin. | 0 | 0.000 |
+| `apps/docs/src/how-to.test.ts:35` | `apps/docs/src/how-to.test.ts:35` | S8 | KEEP | K2 | – | S8 expected: self-test of the page rules with synthetic text (one problem per rule). It guards the checker of the case above. Exact expected problem lists. | 0 | 0.000 |
 
-### Not read (13)
+### Not read (9)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `apps/docs/scripts/workflows.test.ts:308` | `apps/docs/scripts/workflows.test.ts:308` | S8 |
-| `apps/docs/scripts/workflows.test.ts:318` | `apps/docs/scripts/workflows.test.ts:318` | S8 |
-| `apps/docs/src/how-to.test.ts:29` | `apps/docs/src/how-to.test.ts:29` | S8 |
-| `apps/docs/src/how-to.test.ts:35` | `apps/docs/src/how-to.test.ts:35` | S8 |
 | `apps/docs/integrations/csp-finalize.test.ts:104` | `apps/docs/integrations/csp-finalize.test.ts:104` | S2 |
 | T1 | `apps/docs/integrations/link-check.test.ts:33`, `apps/docs/integrations/link-check.test.ts:109`, `apps/docs/integrations/link-check.test.ts:114` | S6 |
 | T2 | `apps/docs/integrations/link-check.test.ts:38`, `apps/docs/integrations/link-check.test.ts:76`, `apps/docs/integrations/link-check.test.ts:105` | S6 |
@@ -719,49 +723,53 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Deploy
 
+### Read (38)
 
-### Not read (75)
+| Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `deploy/test/backup.test.ts:97` | `deploy/test/backup.test.ts:97` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Exact status file fields, one ping to the URL. | 0 | 0.020 |
+| `deploy/test/backup.test.ts:117` | `deploy/test/backup.test.ts:117` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Failed status keeps `last_ok_at`, pings `/fail`, leaves no dump. | 0 | 0.055 |
+| `deploy/test/backup.test.ts:136` | `deploy/test/backup.test.ts:136` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. First failed run has `last_ok_at` null; a bad or missing `backup.env` also writes `failed` (three runs in one case). | 0 | 0.047 |
+| `deploy/test/backup.test.ts:150` | `deploy/test/backup.test.ts:150` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. The ping URL (a secret) is never printed, even when curl prints it on stderr. | 0 | 0.019 |
+| `deploy/test/backup.test.ts:159` | `deploy/test/backup.test.ts:159` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. No curl call when the URL is empty, on success and on failure. | 0 | 0.054 |
+| `deploy/test/backup.test.ts:168` | `deploy/test/backup.test.ts:168` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Exact URLs pinged with a trailing slash. | 0 | 0.052 |
+| `deploy/test/backup.test.ts:176` | `deploy/test/backup.test.ts:176` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Status file mode 644, no `.tmp` left. (Two cases carry the label `5`; the other is in the Compose env describe.) | 0 | 0.055 |
+| `deploy/test/backup.test.ts:186` | `deploy/test/backup.test.ts:186` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Retry: ok after 3 tries, messages `try 1 of 5 failed`. | 0 | 0.028 |
+| `deploy/test/backup.test.ts:197` | `deploy/test/backup.test.ts:197` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. `BACKUP_RCLONE_TRIES` bound, no dump left. | 0 | 0.022 |
+| `deploy/test/backup.test.ts:207` | `deploy/test/backup.test.ts:207` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Backoff 1 s then 2 s. It waits in real time (about 3 s, assertion `>= 2900` ms): slow and time-driven; speed is the parallel-runs ticket, not a cut. | 0 | 3.023 |
+| `deploy/test/backup.test.ts:216` | `deploy/test/backup.test.ts:216` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Three invalid values fail before any dump (zero rclone calls). | 0 | 0.022 |
+| `deploy/test/backup.test.ts:226` | `deploy/test/backup.test.ts:226` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Single-flight lock: the second run exits 75 and does not touch the status file; it waits for a real 3 s docker stub (slow). Near the case 5c below; 5c adds a host with no env file, so the inputs differ. | 0 | 3.044 |
+| `deploy/test/backup.test.ts:260` | `deploy/test/backup.test.ts:260` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. The docker call reads `deploy/db.env`, not `.env` (the env-split rule: DB passwords out of the server env). | 0 | 0 |
+| `deploy/test/backup.test.ts:271` | `deploy/test/backup.test.ts:271` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. Lock check comes before env file resolution: a lost lock exits 75 with neither env file. Same 75 path as case 10 but a different input (`.env` removed); keep both. | 0 | 0 |
+| `deploy/test/backup.test.ts:294` | `deploy/test/backup.test.ts:294` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/backup.sh` in a temp copy with stub `docker`, `age`, `rclone`, `curl`. No env file: exit not 75, status `failed`. | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:61` | `deploy/test/check-server-env.test.ts:61` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. Clean env is ok with a key count. | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:68` | `deploy/test/check-server-env.test.ts:68` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. The server env must not hold the migrator URL or `APP_PASSWORD`: names printed sorted, exit 1, no values. | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:80` | `deploy/test/check-server-env.test.ts:80` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. `DATABASE_URL` alone is allowed (boundary of the rule above). | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:87` | `deploy/test/check-server-env.test.ts:87` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. Docker failure exit code 2. | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:93` | `deploy/test/check-server-env.test.ts:93` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. Exact argv: `exec -T server env` and the env file chosen by the helper. | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:107` | `deploy/test/check-server-env.test.ts:107` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. A multi-line value that holds a key-like text does not count as a key (no false alarm). | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:112` | `deploy/test/check-server-env.test.ts:112` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. No env file: exit 2 and no docker call. | 0 | 0 |
+| `deploy/test/check-server-env.test.ts:119` | `deploy/test/check-server-env.test.ts:119` | S8 | KEEP | K3 | – | S8 expected: runs the real `deploy/check-server-env.sh` with a stub `docker`; an `afterEach` also asserts that no sentinel secret appears in any output. Fail closed: an empty list is exit 2, not `ok keys=0`. | 0 | 0 |
+| `deploy/test/compose-backup-status.test.ts:16` | `deploy/test/compose-backup-status.test.ts:16` | S8 | KEEP | none | – | S8 expected: parses `deploy/compose.yaml`; the server mounts `./backup-status` read-only and names the file. The status route of the server depends on it. | 0 | 0.000 |
+| `deploy/test/compose-backup-status.test.ts:22` | `deploy/test/compose-backup-status.test.ts:22` | S8 | KEEP | none | – | S8 expected: `backup.sh` writes the same folder and file name as the mount. Text pins on the script. | 0 | 0.000 |
+| `deploy/test/compose-backup-status.test.ts:28` | `deploy/test/compose-backup-status.test.ts:28` | S8 | KEEP | none | – | S8 expected: dev file empties `BACKUP_STATUS_FILE`; no sim service has the key or a backup mount. | 0 | 0.000 |
+| `deploy/test/compose-drill.test.ts:100` | `deploy/test/compose-drill.test.ts:100` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. The restore drill cannot touch the live project, volume or subnet (172.29 against 172.30). | 0 | 0.000 |
+| `deploy/test/compose-drill.test.ts:106` | `deploy/test/compose-drill.test.ts:106` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. The restore drill cannot touch the live project, volume or subnet (172.29 against 172.30). | 0 | 0.064 |
+| `deploy/test/compose-drill.test.ts:110` | `deploy/test/compose-drill.test.ts:110` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. Every server image service has the drill image, no published port, local logging. | 0 | 0.077 |
+| `deploy/test/compose-drill.test.ts:125` | `deploy/test/compose-drill.test.ts:125` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. Text pin: `ports: !reset []` in each server image block (the `<<` merge loses `!reset` on Compose 2.29 to 2.40; the comment in the test says so). | 0 | 0.001 |
+| `deploy/test/compose-drill.test.ts:134` | `deploy/test/compose-drill.test.ts:134` | S8 | KEEP | none | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. Log store services stay behind the profile `ops`. | 0 | 0.000 |
+| `deploy/test/compose-drill.test.ts:141` | `deploy/test/compose-drill.test.ts:141` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. Only `drill.env` feeds server and cli; live sentinel values are absent. | 0 | 0 |
+| `deploy/test/compose-drill.test.ts:151` | `deploy/test/compose-drill.test.ts:151` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. Telegram, LLM, VAPID and URL keys forced empty, `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE`, `SEND_SCOPE` forced `off`: the drill cannot send mail or message anyone. | 0 | 0.000 |
+| `deploy/test/compose-drill.test.ts:172` | `deploy/test/compose-drill.test.ts:172` | S8 | KEEP | none | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. `restart: no` for every non-ops drill service. | 0 | 0.000 |
+| `deploy/test/compose-drill.test.ts:180` | `deploy/test/compose-drill.test.ts:180` | S8 | KEEP | K3 | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. The drill migrate service uses the drill image and the drill migrator URL only, no `env_file`, no live value. | 0 | 0 |
+| `deploy/test/compose-drill.test.ts:194` | `deploy/test/compose-drill.test.ts:194` | S8 | KEEP | none | – | S8 expected: parses the real merged Compose config (`docker compose config`) of `deploy/compose.drill.yaml`. No published port on `db`; image `postgres:17`. | 0 | 0.000 |
+| `deploy/test/compose-lib.test.ts:30` | `deploy/test/compose-lib.test.ts:30` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. The command ends with `--env-file .env`. | 0 | 0 |
+| `deploy/test/compose-lib.test.ts:36` | `deploy/test/compose-lib.test.ts:36` | S8 | KEEP | none | – | S8 expected: runs the real `deploy/compose-lib.sh` in bash in a temp repo. The command ends with `--env-file deploy/db.env`. | 0 | 0 |
+
+### Not read (37)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `deploy/test/backup.test.ts:97` | `deploy/test/backup.test.ts:97` | S8 |
-| `deploy/test/backup.test.ts:117` | `deploy/test/backup.test.ts:117` | S8 |
-| `deploy/test/backup.test.ts:136` | `deploy/test/backup.test.ts:136` | S8 |
-| `deploy/test/backup.test.ts:150` | `deploy/test/backup.test.ts:150` | S8 |
-| `deploy/test/backup.test.ts:159` | `deploy/test/backup.test.ts:159` | S8 |
-| `deploy/test/backup.test.ts:168` | `deploy/test/backup.test.ts:168` | S8 |
-| `deploy/test/backup.test.ts:176` | `deploy/test/backup.test.ts:176` | S8 |
-| `deploy/test/backup.test.ts:186` | `deploy/test/backup.test.ts:186` | S8 |
-| `deploy/test/backup.test.ts:197` | `deploy/test/backup.test.ts:197` | S8 |
-| `deploy/test/backup.test.ts:207` | `deploy/test/backup.test.ts:207` | S8 |
-| `deploy/test/backup.test.ts:216` | `deploy/test/backup.test.ts:216` | S8 |
-| `deploy/test/backup.test.ts:226` | `deploy/test/backup.test.ts:226` | S8 |
-| `deploy/test/backup.test.ts:260` | `deploy/test/backup.test.ts:260` | S8 |
-| `deploy/test/backup.test.ts:271` | `deploy/test/backup.test.ts:271` | S8 |
-| `deploy/test/backup.test.ts:294` | `deploy/test/backup.test.ts:294` | S8 |
-| `deploy/test/check-server-env.test.ts:61` | `deploy/test/check-server-env.test.ts:61` | S8 |
-| `deploy/test/check-server-env.test.ts:68` | `deploy/test/check-server-env.test.ts:68` | S8 |
-| `deploy/test/check-server-env.test.ts:80` | `deploy/test/check-server-env.test.ts:80` | S8 |
-| `deploy/test/check-server-env.test.ts:87` | `deploy/test/check-server-env.test.ts:87` | S8 |
-| `deploy/test/check-server-env.test.ts:93` | `deploy/test/check-server-env.test.ts:93` | S8 |
-| `deploy/test/check-server-env.test.ts:107` | `deploy/test/check-server-env.test.ts:107` | S8 |
-| `deploy/test/check-server-env.test.ts:112` | `deploy/test/check-server-env.test.ts:112` | S8 |
-| `deploy/test/check-server-env.test.ts:119` | `deploy/test/check-server-env.test.ts:119` | S8 |
-| `deploy/test/compose-backup-status.test.ts:16` | `deploy/test/compose-backup-status.test.ts:16` | S8 |
-| `deploy/test/compose-backup-status.test.ts:22` | `deploy/test/compose-backup-status.test.ts:22` | S8 |
-| `deploy/test/compose-backup-status.test.ts:28` | `deploy/test/compose-backup-status.test.ts:28` | S8 |
-| `deploy/test/compose-drill.test.ts:100` | `deploy/test/compose-drill.test.ts:100` | S8 |
-| `deploy/test/compose-drill.test.ts:106` | `deploy/test/compose-drill.test.ts:106` | S8 |
-| `deploy/test/compose-drill.test.ts:110` | `deploy/test/compose-drill.test.ts:110` | S8 |
-| `deploy/test/compose-drill.test.ts:125` | `deploy/test/compose-drill.test.ts:125` | S8 |
-| `deploy/test/compose-drill.test.ts:134` | `deploy/test/compose-drill.test.ts:134` | S8 |
-| `deploy/test/compose-drill.test.ts:141` | `deploy/test/compose-drill.test.ts:141` | S8 |
-| `deploy/test/compose-drill.test.ts:151` | `deploy/test/compose-drill.test.ts:151` | S8 |
-| `deploy/test/compose-drill.test.ts:172` | `deploy/test/compose-drill.test.ts:172` | S8 |
-| `deploy/test/compose-drill.test.ts:180` | `deploy/test/compose-drill.test.ts:180` | S8 |
-| `deploy/test/compose-drill.test.ts:194` | `deploy/test/compose-drill.test.ts:194` | S8 |
-| `deploy/test/compose-lib.test.ts:30` | `deploy/test/compose-lib.test.ts:30` | S8 |
-| `deploy/test/compose-lib.test.ts:36` | `deploy/test/compose-lib.test.ts:36` | S8 |
 | `deploy/test/compose-lib.test.ts:46` | `deploy/test/compose-lib.test.ts:46` | S8 |
 | `deploy/test/compose-lib.test.ts:54` | `deploy/test/compose-lib.test.ts:54` | S6,S8 |
 | `deploy/test/compose-lib.test.ts:60` | `deploy/test/compose-lib.test.ts:60` | S8 |
@@ -856,20 +864,20 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Summary
 
-- Items selected by § Reader method step 2: 664. Items in this file: 664 (50 read rows + 614 `not read` rows). Read: 50. Not read: 614.
+- Items selected by § Reader method step 2: 664. Items in this file: 664 (100 read rows + 564 `not read` rows). Read: 100. Not read: 564.
 - GAP rows: 122 (information, not items).
 
 | Section | Read | Not read |
 | --- | --- | --- |
 | Core | 0 | 497 |
-| Web | 0 | 11 |
-| Docs | 26 | 13 |
-| Deploy | 0 | 75 |
+| Web | 8 | 3 |
+| Docs | 30 | 9 |
+| Deploy | 38 | 37 |
 | Tools | 24 | 18 |
 
 | Action | Rows | Lines | Time of cases (s) |
 | --- | --- | --- | --- |
-| KEEP | 26 | 0 | 0.000 |
+| KEEP | 76 | 0 | 6.595 |
 | DELETE-DUP | 0 | 0 | 0.000 |
 | MERGE-TABLE | 0 | 0 | 0.000 |
 | REWRITE-WEAK | 1 | 0 | 0.003 |
@@ -877,4 +885,4 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | MOVE-TO-UNIT | 0 | 0 | 0.000 |
 | FIX-NEVER-RUNS | 23 | 0 | 0.000 |
 
-KEEP and FIX-NEVER-RUNS by rule: K3 29, none 21.
+KEEP and FIX-NEVER-RUNS by rule: K2 5, K3 48, none 47.
