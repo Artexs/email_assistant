@@ -76,6 +76,10 @@ describe("joinKey", () => {
     expect(joinKey(test_("src/a.test.ts > a > x > y", 10), rows)).toBe("packages/core/src/a.test.ts:9");
   });
 
+  test("4b Stryker's [n] suffix on a repeated each name is dropped when the full name has no row", () => {
+    expect(joinKey(test_("src/a.test.ts > a > one [2]", 5), rows)).toBe("packages/core/src/a.test.ts:4");
+  });
+
   test("5 a test with no JUnit row of that file and name is unjoined and counted", () => {
     expect(joinKey(test_("src/a.test.ts > a > other", 5), rows)).toBe(UNJOINED);
     const out = testsTsv(caseKills(readReport(report)), rows);

@@ -151,13 +151,18 @@ export const UNJOINED = "unjoined";
 // The scan key of a Stryker test (plan F4): the JUnit rows of the same file whose name ends the Stryker name
 // (`<file> > <describe> > <test>`; the last part may itself hold " > "), the nearest line wins.
 export function joinKey(test: { file: string; line: number; name: string }, rows: JunitKeyRow[]): string {
-  let best: JunitKeyRow | undefined;
-  for (const row of rows) {
-    if (row.file !== test.file) continue;
-    if (test.name !== row.name && !test.name.endsWith(`${NAME_JOINER}${row.name}`)) continue;
-    if (best === undefined || Math.abs(row.line - test.line) < Math.abs(best.line - test.line)) best = row;
+  // Stryker adds " [n]" to the second and later tests of one file that share a full name (`each` rows).
+  const names = [test.name, test.name.replace(/ \[\d+\]$/, "")];
+  for (const full of names) {
+    let best: JunitKeyRow | undefined;
+    for (const row of rows) {
+      if (row.file !== test.file) continue;
+      if (full !== row.name && !full.endsWith(`${NAME_JOINER}${row.name}`)) continue;
+      if (best === undefined || Math.abs(row.line - test.line) < Math.abs(best.line - test.line)) best = row;
+    }
+    if (best !== undefined) return best.key;
   }
-  return best === undefined ? UNJOINED : best.key;
+  return UNJOINED;
 }
 
 export function parseJunitKeys(text: string): JunitKeyRow[] {
