@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F155 · The source-text regexes in main.test.ts and composition.test.ts are replaced by behaviour tests
