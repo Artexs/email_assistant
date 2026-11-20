@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { textTables } from "@ea/core";
+import { textTables, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -288,7 +288,7 @@ describe("removeMailbox", () => {
     const [email] = await claimEmails(db, s.ctx, s.mailboxId, {
       now,
       limit: 10,
-      staleBefore: new Date(now.getTime() - 5 * 60_000),
+      staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
       syntheticOnly: false,
     });
     if (!email) throw new Error("claim failed");
@@ -476,7 +476,7 @@ describe("removeMailbox", () => {
     const claimed = await claimDueOutbox(db, {
       now,
       limit: 50,
-      staleBefore: new Date(now.getTime() - 5 * 60_000),
+      staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
       orgIds: [s.orgId],
     });
     expect(claimed.some((row) => renderedOf(row).text === "[removed]")).toBe(false);

@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -92,7 +93,7 @@ async function readyMail(
 ): Promise<{ emailId: string; actionIds: string[] }> {
   const mail = await insertTriagedWithActions(trx, s.ctx, s.mailboxId, {
     category,
-    createdAt: new Date(NOW.getTime() - 3_600_000),
+    createdAt: new Date(NOW.getTime() - HOUR_MS),
     actions: types.map((type) => ({ type, status: "ready" })),
   });
   if (extra.lockedAt) {
@@ -405,7 +406,7 @@ const DELEGATION_B = "22222222-2222-4222-8222-222222222222";
 
 // A `ready` draft + send pair, an `applied` draft + send pair, and an `approved` send.
 async function sendPairs(trx: Transaction<DB>, s: Setup) {
-  const createdAt = new Date(NOW.getTime() - 3_600_000);
+  const createdAt = new Date(NOW.getTime() - HOUR_MS);
   const ready = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
     draftStatus: "ready",
     delegationId: DELEGATION_A,

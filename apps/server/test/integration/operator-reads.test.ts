@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -27,7 +28,6 @@ import { testDb, withRollback } from "./helpers";
 // The tenant-scoped reads of the operator list and detail.
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
 const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs);
 
 afterAll(async () => {
@@ -53,11 +53,11 @@ describe("operator reads (F099 D14, D17, D18)", () => {
         });
         await trx.updateTable("actions").set({ updated_at: updatedAt }).where("id", "=", id).execute();
       };
-      await add("failed", at(-2 * HOUR));
-      await add("failed", at(-30 * HOUR));
-      await add("applied", at(-1 * HOUR));
-      expect(await countFailedSendsSince(trx, ctxA, at(-24 * HOUR))).toBe(1);
-      expect(await countFailedSendsSince(trx, ctxB, at(-24 * HOUR))).toBe(0);
+      await add("failed", at(-2 * HOUR_MS));
+      await add("failed", at(-30 * HOUR_MS));
+      await add("applied", at(-1 * HOUR_MS));
+      expect(await countFailedSendsSince(trx, ctxA, at(-24 * HOUR_MS))).toBe(1);
+      expect(await countFailedSendsSince(trx, ctxB, at(-24 * HOUR_MS))).toBe(0);
     });
   });
 
@@ -83,14 +83,14 @@ describe("operator reads (F099 D14, D17, D18)", () => {
           .where("dedup_key", "=", dedupKey)
           .execute();
       };
-      await add("failed", "telegram_error", at(-1 * HOUR));
-      await add("failed", null, at(-25 * HOUR));
-      await add("failed", "outdated", at(-1 * HOUR));
-      await add("failed", "expired", at(-1 * HOUR));
-      await add("failed", "no_device", at(-1 * HOUR));
-      await add("sent", null, at(-1 * HOUR));
-      expect(await countFailedOutboxSince(trx, ctxA, at(-24 * HOUR))).toBe(1);
-      expect(await countFailedOutboxSince(trx, ctxB, at(-24 * HOUR))).toBe(0);
+      await add("failed", "telegram_error", at(-1 * HOUR_MS));
+      await add("failed", null, at(-25 * HOUR_MS));
+      await add("failed", "outdated", at(-1 * HOUR_MS));
+      await add("failed", "expired", at(-1 * HOUR_MS));
+      await add("failed", "no_device", at(-1 * HOUR_MS));
+      await add("sent", null, at(-1 * HOUR_MS));
+      expect(await countFailedOutboxSince(trx, ctxA, at(-24 * HOUR_MS))).toBe(1);
+      expect(await countFailedOutboxSince(trx, ctxB, at(-24 * HOUR_MS))).toBe(0);
     });
   });
 
@@ -98,7 +98,7 @@ describe("operator reads (F099 D14, D17, D18)", () => {
     await withRollback(db, async (trx) => {
       const { a } = await twoOrgs(trx);
       for (const code of ["telegram_error", "no_device", "expired", "outdated", "push_refused"]) {
-        const createdAt = at(-1 * HOUR);
+        const createdAt = at(-1 * HOUR_MS);
         await insertOutbox(
           trx,
           { orgId: a.orgId },
@@ -121,7 +121,7 @@ describe("operator reads (F099 D14, D17, D18)", () => {
           .execute();
       }
       // `telegram_error` and `push_refused` count; the end of a removed device, an old row and an outdated one do not.
-      expect((await countFailedOutboxSinceOfAll(trx, at(-24 * HOUR))).get(a.orgId)).toBe(2);
+      expect((await countFailedOutboxSinceOfAll(trx, at(-24 * HOUR_MS))).get(a.orgId)).toBe(2);
     });
   });
 
@@ -150,7 +150,7 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       await call("gpt-6-luna", "2026-11-20T07:59:00Z", 100_000);
       const since = new Date("2026-11-20T08:00:00Z");
       expect(await sumLlmCallsByModelSince(trx, ctxA, since)).toEqual([
-        { model: "gpt-6-luna", endpoint: "standard", calls: 3, tokensIn: 300_000, tokensOut: 60_000 },
+        { model: "gpt-6-luna", endpoint: "standard", calls: 3, tokensIn: 300_000, tokensOut: MINUTE_MS },
         { model: "unknown-model", endpoint: "standard", calls: 2, tokensIn: 0, tokensOut: 0 },
       ]);
       expect(await sumLlmCallsByModelSince(trx, ctxB, since)).toEqual([]);
@@ -162,17 +162,17 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       const { a, ctxA, ctxB } = await twoOrgs(trx);
       const none = { orgId: (await createOrgWithMailbox(trx)).orgId } as TenantContext;
 
-      await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: at(-3 * HOUR) });
-      await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: at(-10 * 60_000) });
+      await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: at(-3 * HOUR_MS) });
+      await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: at(-10 * MINUTE_MS) });
 
       for (const [slot, sentAt] of [
-        ["2026-11-20T01:00", at(-9 * HOUR)],
-        ["2026-11-20T07:00", at(-3 * HOUR)],
+        ["2026-11-20T01:00", at(-9 * HOUR_MS)],
+        ["2026-11-20T07:00", at(-3 * HOUR_MS)],
       ] as const) {
         const id = await insertDigest(trx, ctxA, {
           userId: a.userId,
           slotKey: slot,
-          periodStart: at(-12 * HOUR),
+          periodStart: at(-12 * HOUR_MS),
           periodEnd: sentAt,
         });
         await markDigestSent(trx, ctxA, id as string, sentAt);
@@ -181,13 +181,13 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       await insertDigest(trx, ctxA, {
         userId: a.userId,
         slotKey: "2026-11-20T09:00",
-        periodStart: at(-2 * HOUR),
-        periodEnd: at(-1 * HOUR),
+        periodStart: at(-2 * HOUR_MS),
+        periodEnd: at(-1 * HOUR_MS),
       });
 
       for (const [status, appliedAt] of [
-        ["applied", at(-5 * HOUR)],
-        ["applied", at(-1 * HOUR)],
+        ["applied", at(-5 * HOUR_MS)],
+        ["applied", at(-1 * HOUR_MS)],
         ["failed", null],
       ] as const) {
         const emailId = await insertTestEmail(trx, ctxA, a.mailboxId);
@@ -200,10 +200,10 @@ describe("operator reads (F099 D14, D17, D18)", () => {
       }
       // An applied move is not a send.
       const moveEmail = await insertTestEmail(trx, ctxA, a.mailboxId);
-      await insertAction(trx, ctxA, moveEmail, { type: "move", status: "applied", appliedAt: at(-1 * 60_000) });
+      await insertAction(trx, ctxA, moveEmail, { type: "move", status: "applied", appliedAt: at(-1 * MINUTE_MS) });
 
-      for (const sentAt of [at(-20 * 60_000), at(-4 * HOUR), null]) {
-        const createdAt = at(-6 * HOUR);
+      for (const sentAt of [at(-20 * MINUTE_MS), at(-4 * HOUR_MS), null]) {
+        const createdAt = at(-6 * HOUR_MS);
         const dedupKey = `sync_ok:${randomUUID()}`;
         await insertOutbox(trx, ctxA, {
           userId: a.userId,
@@ -225,10 +225,10 @@ describe("operator reads (F099 D14, D17, D18)", () => {
         }
       }
 
-      expect(await lastTriageAt(trx, ctxA)).toEqual(at(-10 * 60_000));
-      expect(await lastDigestSentAt(trx, ctxA)).toEqual(at(-3 * HOUR));
-      expect(await lastSendAppliedAt(trx, ctxA)).toEqual(at(-1 * HOUR));
-      expect(await lastOutboxSentAt(trx, ctxA)).toEqual(at(-20 * 60_000));
+      expect(await lastTriageAt(trx, ctxA)).toEqual(at(-10 * MINUTE_MS));
+      expect(await lastDigestSentAt(trx, ctxA)).toEqual(at(-3 * HOUR_MS));
+      expect(await lastSendAppliedAt(trx, ctxA)).toEqual(at(-1 * HOUR_MS));
+      expect(await lastOutboxSentAt(trx, ctxA)).toEqual(at(-20 * MINUTE_MS));
 
       // Organization B and an organization with no rows never see the times of A.
       for (const other of [ctxB, none]) {
@@ -250,34 +250,34 @@ describe("operator reads (F099 D14, D17, D18)", () => {
           data: { kind: "trial_ending", key },
           at: when,
         });
-      await notice(ctxA, "a-1h", at(-1 * HOUR));
-      await notice(ctxA, "a-2h", at(-2 * HOUR));
-      await notice(ctxA, "a-8d", at(-8 * 24 * HOUR));
-      await notice(ctxB, "b-1h", at(-1 * HOUR));
-      await recordAudit(trx, ctxA, { actor: "system", event: auditEvents.webLogin, at: at(-30 * 60_000) });
+      await notice(ctxA, "a-1h", at(-1 * HOUR_MS));
+      await notice(ctxA, "a-2h", at(-2 * HOUR_MS));
+      await notice(ctxA, "a-8d", at(-8 * DAY_MS));
+      await notice(ctxB, "b-1h", at(-1 * HOUR_MS));
+      await recordAudit(trx, ctxA, { actor: "system", event: auditEvents.webLogin, at: at(-30 * MINUTE_MS) });
 
       const rows = await listAuditEvents(trx, ctxA, {
         events: [auditEvents.operatorNotice],
-        since: at(-7 * 24 * HOUR),
+        since: at(-7 * DAY_MS),
         limit: 2,
       });
       expect(rows.map((row) => row.data)).toEqual([
         { kind: "trial_ending", key: "a-1h" },
         { kind: "trial_ending", key: "a-2h" },
       ]);
-      expect(rows.map((row) => row.at)).toEqual([at(-1 * HOUR), at(-2 * HOUR)]);
+      expect(rows.map((row) => row.at)).toEqual([at(-1 * HOUR_MS), at(-2 * HOUR_MS)]);
       expect(rows.every((row) => row.event === auditEvents.operatorNotice && row.actor === "system")).toBe(true);
 
       const limited = await listAuditEvents(trx, ctxA, {
         events: [auditEvents.operatorNotice],
-        since: at(-7 * 24 * HOUR),
+        since: at(-7 * DAY_MS),
         limit: 1,
       });
       expect(limited).toHaveLength(1);
 
       // events [] returns at once: this stub rejects on any query.
       const closed = { selectFrom: () => Promise.reject(new Error("query")) } as unknown as Transaction<DB>;
-      expect(await listAuditEvents(closed, ctxA, { events: [], since: at(-HOUR), limit: 5 })).toEqual([]);
+      expect(await listAuditEvents(closed, ctxA, { events: [], since: at(-HOUR_MS), limit: 5 })).toEqual([]);
     });
   });
 });

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import type { Insertable, Transaction } from "kysely";
 
 import type { DB } from "../../src/platform/db";
@@ -12,7 +13,7 @@ import type { Org } from "./mail-sent-fixtures";
 
 export { loopsOrg };
 
-export const DAY_MS = 86_400_000;
+export { DAY_MS } from "@ea/core";
 export const WAIT_FROM = new Date("2026-11-10T10:00:00Z");
 export const after = (days: number): Date => new Date(WAIT_FROM.getTime() + days * DAY_MS);
 // The clock of a run: five days after the wait began.

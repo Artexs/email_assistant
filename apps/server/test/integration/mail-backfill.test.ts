@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { format } from "node:util";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -31,8 +32,6 @@ afterAll(async () => {
 
 const UID_VALIDITY = 7;
 const NOW = new Date("2026-11-03T12:00:00Z");
-const HOUR_MS = 3_600_000;
-const DAY_MS = 24 * HOUR_MS;
 
 function ago(ms: number): Date {
   return new Date(NOW.getTime() - ms);

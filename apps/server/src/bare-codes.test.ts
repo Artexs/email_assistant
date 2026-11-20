@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { MINUTE_MS } from "@ea/core";
 import { Glob } from "bun";
 import { describe, expect, test } from "bun:test";
 import ts from "typescript";
@@ -28,7 +29,10 @@ const TEST_FILE = /\.test\.tsx?$|\.test-helper\.ts$|(^|\/)(test|e2e)\//;
 
 // Files whose comments name test fixtures by a short label that the same file defines: they are not plan codes.
 const FIXTURE_LABELS: Record<string, RegExp> = {
-  "apps/server/test/integration/channels-card-sync.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-decisions.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-helpers.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-hooks.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
+  "apps/server/test/integration/channels-card-sync-probes.test.ts": /\b[UC]\d\b/, // the two owners and their two sent cards
   "apps/server/test/integration/web-approvals-kit.ts": /\bU\d\b/, // the two owners
   "apps/server/test/integration/web-delegations.test.ts": /\b[DU]\d\b/, // the six delegations and the two owners
 };
@@ -186,16 +190,20 @@ describe("comments, strings, JSON and docs carry no bare ticket or decision code
     expect(bareCodes(file, text)).toHaveLength(count);
   });
 
-  test("no scanned file holds one", () => {
-    const hits: string[] = [];
-    const files: string[] = [];
-    for (const dir of roots) files.push(...sourceFiles(dir));
-    files.push(...new Glob("apps/docs/src/content/**/*.{md,mdx}").scanSync({ cwd: root }), "docs/modules.md");
-    for (const file of files) {
-      if (skipped.test(file)) continue;
-      hits.push(...bareCodes(file, readFileSync(resolve(root, file), "utf8")));
-    }
-    expect(hits).toEqual([]);
-    // The scan reads every source file; on a loaded machine it needs more than the default 5 s.
-  }, 60_000);
+  test(
+    "no scanned file holds one",
+    () => {
+      const hits: string[] = [];
+      const files: string[] = [];
+      for (const dir of roots) files.push(...sourceFiles(dir));
+      files.push(...new Glob("apps/docs/src/content/**/*.{md,mdx}").scanSync({ cwd: root }), "docs/modules.md");
+      for (const file of files) {
+        if (skipped.test(file)) continue;
+        hits.push(...bareCodes(file, readFileSync(resolve(root, file), "utf8")));
+      }
+      expect(hits).toEqual([]);
+      // The scan reads every source file; on a loaded machine it needs more than the default 5 s.
+    },
+    MINUTE_MS
+  );
 });

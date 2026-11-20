@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../time";
+
 import {
   formatClock,
   formatDay,
@@ -202,12 +204,12 @@ describe("own quiet hours", () => {
     const spring = new Date("2026-03-29T00:30:00Z");
     expect(localDateTime(spring, TZ).time).toBe("01:30");
     expect(iso(quietEnd(spring, TZ))).toBe("2026-03-29T05:00:00.000Z");
-    expect(quietEnd(spring, TZ).getTime() - spring.getTime()).toBe(270 * 60_000);
+    expect(quietEnd(spring, TZ).getTime() - spring.getTime()).toBe(270 * MINUTE_MS);
     // 2026-10-25 fall back: the first 01:30 is CEST (23:30Z the day before); 07:00 CET is 06:00Z: 6 h 30 min.
     const autumn = new Date("2026-10-24T23:30:00Z");
     expect(localDateTime(autumn, TZ).time).toBe("01:30");
     expect(iso(quietEnd(autumn, TZ))).toBe("2026-10-25T06:00:00.000Z");
-    expect(quietEnd(autumn, TZ).getTime() - autumn.getTime()).toBe(390 * 60_000);
+    expect(quietEnd(autumn, TZ).getTime() - autumn.getTime()).toBe(390 * MINUTE_MS);
   });
 
   test("lateMin takes the own hours: the same wait is late for 22:00–07:00 and not for 21:00–08:00", () => {
@@ -278,7 +280,7 @@ describe("quietEnd on a daylight-saving day", () => {
     let quiet = 0;
     for (const start of starts) {
       for (const end of ["02:00", "02:30"]) {
-        for (let t = Date.parse("2026-03-07T12:00:00Z"); t < Date.parse("2026-03-09T12:00:00Z"); t += 15 * 60_000) {
+        for (let t = Date.parse("2026-03-07T12:00:00Z"); t < Date.parse("2026-03-09T12:00:00Z"); t += 15 * MINUTE_MS) {
           const now = new Date(t);
           if (!isQuietTime(now, NY, { start, end })) continue;
           quiet += 1;
@@ -297,37 +299,41 @@ describe("quietEnd on a daylight-saving day", () => {
     ["Australia/Lord_Howe", ["2026-04-05", "2026-10-04"]],
   ];
 
-  test("every zone and change day: after now, not early, never past the end by more than the change, at most window + 1 h", () => {
-    let checked = 0;
-    for (const [zone, days] of changeDays) {
-      for (const day of days) {
-        const from = Date.parse(`${day}T00:00:00Z`) - 18 * 3_600_000;
-        for (const start of ["20:00", "22:00", "00:00", "01:00"]) {
-          for (const end of ["00:00", "00:30", "01:00", "01:30", "02:00", "02:30", "03:00", "03:30", "06:00"]) {
-            if (start === end) continue;
-            const quiet = { start, end };
-            const [sh, sm] = start.split(":").map(Number) as [number, number];
-            const [eh, em] = end.split(":").map(Number) as [number, number];
-            const spanMin = (eh * 60 + em - sh * 60 - sm + 1440) % 1440;
-            for (let t = from; t < from + 48 * 3_600_000; t += 30 * 60_000) {
-              const now = new Date(t);
-              if (!isQuietTime(now, zone, quiet)) continue;
-              checked += 1;
-              const end2 = quietEnd(now, zone, quiet);
-              const hold = end2.getTime() - t;
-              expect(hold).toBeGreaterThan(0);
-              expect(hold).toBeLessThanOrEqual((spanMin + 60) * 60_000);
-              // At the end the wall clock is out of the quiet hours, and one minute before it is quiet (or the change itself).
-              expect(isQuietTime(end2, zone, quiet)).toBe(false);
-              expect(isQuietTime(new Date(end2.getTime() - 60_000), zone, quiet)).toBe(true);
+  test(
+    "every zone and change day: after now, not early, never past the end by more than the change, at most window + 1 h",
+    () => {
+      let checked = 0;
+      for (const [zone, days] of changeDays) {
+        for (const day of days) {
+          const from = Date.parse(`${day}T00:00:00Z`) - 18 * HOUR_MS;
+          for (const start of ["20:00", "22:00", "00:00", "01:00"]) {
+            for (const end of ["00:00", "00:30", "01:00", "01:30", "02:00", "02:30", "03:00", "03:30", "06:00"]) {
+              if (start === end) continue;
+              const quiet = { start, end };
+              const [sh, sm] = start.split(":").map(Number) as [number, number];
+              const [eh, em] = end.split(":").map(Number) as [number, number];
+              const spanMin = (eh * 60 + em - sh * 60 - sm + 1440) % 1440;
+              for (let t = from; t < from + 2 * DAY_MS; t += 30 * MINUTE_MS) {
+                const now = new Date(t);
+                if (!isQuietTime(now, zone, quiet)) continue;
+                checked += 1;
+                const end2 = quietEnd(now, zone, quiet);
+                const hold = end2.getTime() - t;
+                expect(hold).toBeGreaterThan(0);
+                expect(hold).toBeLessThanOrEqual((spanMin + 60) * MINUTE_MS);
+                // At the end the wall clock is out of the quiet hours, and one minute before it is quiet (or the change itself).
+                expect(isQuietTime(end2, zone, quiet)).toBe(false);
+                expect(isQuietTime(new Date(end2.getTime() - MINUTE_MS), zone, quiet)).toBe(true);
+              }
             }
           }
         }
       }
-    }
-    expect(checked).toBeGreaterThan(1000);
-    // The loop is CPU bound; on a loaded machine it needs more than the default 5 s.
-  }, 60_000);
+      expect(checked).toBeGreaterThan(1000);
+      // The loop is CPU bound; on a loaded machine it needs more than the default 5 s.
+    },
+    MINUTE_MS
+  );
 });
 
 describe("a quiet window that does not wrap midnight", () => {

@@ -1,3 +1,4 @@
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -14,7 +15,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-14T12:00:00Z");
-const DAY = 24 * 3_600_000;
 
 type Trx = Transaction<DB>;
 
@@ -76,7 +76,7 @@ describe("recordRejectReason", () => {
         data: { via: "telegram" },
       });
 
-      const later = new Date(NOW.getTime() + 60_000);
+      const later = new Date(NOW.getTime() + MINUTE_MS);
       expect(
         await recordRejectReason(trx, s.ctx, { ...input, reason: "wrong_content", via: "web", now: later })
       ).toEqual({ kind: "saved" });
@@ -125,7 +125,7 @@ describe("markSentMistake", () => {
       const other = await setup(trx);
       const input = { userId: s.userId, via: "telegram", now: NOW } as const;
 
-      const recent = await sendOf(trx, s, "applied", new Date(NOW.getTime() - 2 * DAY));
+      const recent = await sendOf(trx, s, "applied", new Date(NOW.getTime() - 2 * DAY_MS));
       expect(await markSentMistake(trx, s.ctx, { ...input, actionId: recent.sendId })).toEqual({ kind: "saved" });
       expect(await markSentMistake(trx, s.ctx, { ...input, actionId: recent.sendId })).toEqual({ kind: "already" });
       const rows = await feedbackRows(trx, s.orgId, "mistake");
@@ -141,7 +141,7 @@ describe("markSentMistake", () => {
         data: { via: "telegram" },
       });
 
-      const old = await sendOf(trx, s, "applied", new Date(NOW.getTime() - 8 * DAY));
+      const old = await sendOf(trx, s, "applied", new Date(NOW.getTime() - 8 * DAY_MS));
       expect(await markSentMistake(trx, s.ctx, { ...input, actionId: old.sendId })).toEqual({ kind: "too_late" });
 
       const edge = await sendOf(trx, s, "applied", new Date(NOW.getTime() - MISTAKE_WINDOW_MS));
@@ -165,7 +165,7 @@ describe("getActionFeedback", () => {
       const s = await setup(trx);
       const other = await setup(trx);
       const rejected = await sendOf(trx, s, "rejected");
-      const applied = await sendOf(trx, s, "applied", new Date(NOW.getTime() - DAY));
+      const applied = await sendOf(trx, s, "applied", new Date(NOW.getTime() - DAY_MS));
       const input = { userId: s.userId, via: "web", now: NOW } as const;
       await recordRejectReason(trx, s.ctx, { ...input, actionId: rejected.sendId, reason: "wrong_content" });
       await markSentMistake(trx, s.ctx, { ...input, actionId: applied.sendId });

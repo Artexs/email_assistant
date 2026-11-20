@@ -1,4 +1,4 @@
-import { replyEligibility } from "@ea/core";
+import { replyEligibility, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -17,7 +17,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-17T12:00:00Z");
-const HOUR = 3_600_000;
 
 async function captured(trx: Transaction<DB>, orgId: string, emailId: string): Promise<void> {
   await trx
@@ -44,8 +43,8 @@ describe("loadReplyFacts", () => {
       const { ctx, mailboxId } = await setup(trx);
       const id = await insertTriaged(trx, ctx, mailboxId, {
         category: "needs_reply",
-        createdAt: new Date(NOW.getTime() - HOUR),
-        receivedAt: new Date(NOW.getTime() - HOUR),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
+        receivedAt: new Date(NOW.getTime() - HOUR_MS),
         from: "anna@client.test",
         fields: { language: "en" },
       });
@@ -86,7 +85,7 @@ describe("loadReplyFacts", () => {
       const { ctx, mailboxId } = await setup(trx);
       const id = await insertTriaged(trx, ctx, mailboxId, {
         category: "needs_reply",
-        createdAt: new Date(NOW.getTime() - HOUR),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
         from: "anna@client.test",
         fields: { language: "pl" },
       });
@@ -104,7 +103,7 @@ describe("loadReplyFacts", () => {
       const { ctx, mailboxId } = await setup(trx);
       const id = await insertTriaged(trx, ctx, mailboxId, {
         category: "needs_reply",
-        createdAt: new Date(NOW.getTime() - HOUR),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
         from: "anna@client.test",
         fields: { language: "pl" },
         suspiciousReasons: ["reply_to_mismatch"],
@@ -123,7 +122,7 @@ describe("loadReplyFacts", () => {
       const mail = async (fields: Record<string, unknown>) => {
         const id = await insertTriaged(trx, ctx, mailboxId, {
           category: "needs_reply",
-          createdAt: new Date(NOW.getTime() - HOUR),
+          createdAt: new Date(NOW.getTime() - HOUR_MS),
           from: "anna@client.test",
           fields,
         });
@@ -148,7 +147,7 @@ describe("loadReplyFacts", () => {
       const { ctx, mailboxId } = await setup(trx);
       const id = await insertTriaged(trx, ctx, mailboxId, {
         category: "info",
-        createdAt: new Date(NOW.getTime() - 3 * HOUR),
+        createdAt: new Date(NOW.getTime() - 3 * HOUR_MS),
         from: "anna@client.test",
         fields: { language: "en" },
       });
@@ -162,7 +161,7 @@ describe("loadReplyFacts", () => {
           confidence: 0.9,
           reason_code: "direct_request",
           fields: JSON.stringify({ language: "pl" }),
-          created_at: new Date(NOW.getTime() - HOUR),
+          created_at: new Date(NOW.getTime() - HOUR_MS),
         })
         .execute();
       const { facts } = pick(await loadReplyFacts(trx, ctx, [id], { ownerLocale: null }), id);
@@ -180,7 +179,7 @@ describe("loadReplyFacts", () => {
       ).address;
       const own = await insertTriaged(trx, a.ctx, a.mailboxId, {
         category: "needs_reply",
-        createdAt: new Date(NOW.getTime() - HOUR),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
         from: ownAddress.toUpperCase(),
         fields: { language: "pl" },
       });

@@ -1,6 +1,14 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { operatorNoticesSchema, operatorOrgDetailSchema, type OperatorNotices, type OperatorOrgDetail } from "@ea/core";
+import {
+  operatorNoticesSchema,
+  operatorOrgDetailSchema,
+  type OperatorNotices,
+  type OperatorOrgDetail,
+  MINUTE_MS,
+  HOUR_MS,
+  DAY_MS,
+} from "@ea/core";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { auditEvents, recordAudit } from "../../src/modules/audit";
@@ -34,9 +42,6 @@ const extras = {
   botUsername: null,
 };
 const NOW = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs);
 
 let org: WebOrg;
@@ -99,28 +104,28 @@ beforeAll(async () => {
   org = await webOrg(db);
   const ctx = { orgId: org.orgId };
   activeId = await insertMailboxRow(org.orgId, "active", {
-    lastSyncedAt: at(-5 * MINUTE),
-    statusChangedAt: at(-3 * DAY),
+    lastSyncedAt: at(-5 * MINUTE_MS),
+    statusChangedAt: at(-3 * DAY_MS),
   });
   authErrorId = await insertMailboxRow(org.orgId, "auth_error", {
     lastSyncedAt: null,
-    statusChangedAt: at(-30 * HOUR),
+    statusChangedAt: at(-30 * HOUR_MS),
   });
   await db.transaction().execute(async (trx) => {
-    await insertTriaged(trx, ctx, activeId, { category: "info", createdAt: at(-10 * MINUTE) });
+    await insertTriaged(trx, ctx, activeId, { category: "info", createdAt: at(-10 * MINUTE_MS) });
     const digestId = await insertDigest(trx, ctx, {
       userId: org.ownerId,
       slotKey: "2026-11-20T07:00",
-      periodStart: at(-12 * HOUR),
-      periodEnd: at(-3 * HOUR),
+      periodStart: at(-12 * HOUR_MS),
+      periodEnd: at(-3 * HOUR_MS),
     });
-    await markDigestSent(trx, ctx, digestId as string, at(-3 * HOUR));
+    await markDigestSent(trx, ctx, digestId as string, at(-3 * HOUR_MS));
     const emailId = await insertTestEmail(trx, ctx, activeId);
     await insertAction(trx, ctx, emailId, {
       type: "send",
       status: "applied",
-      appliedAt: at(-1 * HOUR),
-      approvedAt: at(-1 * HOUR),
+      appliedAt: at(-1 * HOUR_MS),
+      approvedAt: at(-1 * HOUR_MS),
     });
     await insertOutbox(trx, ctx, {
       userId: org.ownerId,
@@ -129,19 +134,19 @@ beforeAll(async () => {
       mailboxId: activeId,
       view: {},
       locale: "en",
-      createdAt: at(-30 * MINUTE),
-      nextAttemptAt: at(-30 * MINUTE),
+      createdAt: at(-30 * MINUTE_MS),
+      nextAttemptAt: at(-30 * MINUTE_MS),
     });
   });
   await db
     .updateTable("outbox")
-    .set({ status: "sent", sent_at: at(-20 * MINUTE) })
+    .set({ status: "sent", sent_at: at(-20 * MINUTE_MS) })
     .where("org_id", "=", org.orgId)
     .execute();
-  await upsertOrgFeature(db, ctx, { flag: "stats_page", enabled: true, setBy: "test", setAt: at(-DAY) });
-  await notice(org.orgId, "trial_ending", "trial_ending:a", at(-1 * HOUR));
-  await notice(org.otherOrgId, "llm_cap", "llm_cap:b", at(-2 * HOUR));
-  await notice(org.orgId, "auth_error_24h", "auth_error_24h:a", at(-10 * DAY));
+  await upsertOrgFeature(db, ctx, { flag: "stats_page", enabled: true, setBy: "test", setAt: at(-DAY_MS) });
+  await notice(org.orgId, "trial_ending", "trial_ending:a", at(-1 * HOUR_MS));
+  await notice(org.otherOrgId, "llm_cap", "llm_cap:b", at(-2 * HOUR_MS));
+  await notice(org.orgId, "auth_error_24h", "auth_error_24h:a", at(-10 * DAY_MS));
 });
 
 afterAll(async () => {
@@ -179,22 +184,22 @@ describe("operator detail and notices (F099 stage 08)", () => {
       {
         mailboxId: activeId,
         status: "active",
-        statusChangedAt: at(-3 * DAY).toISOString(),
-        lastSyncedAt: at(-5 * MINUTE).toISOString(),
+        statusChangedAt: at(-3 * DAY_MS).toISOString(),
+        lastSyncedAt: at(-5 * MINUTE_MS).toISOString(),
       },
       {
         mailboxId: authErrorId,
         status: "auth_error",
-        statusChangedAt: at(-30 * HOUR).toISOString(),
+        statusChangedAt: at(-30 * HOUR_MS).toISOString(),
         lastSyncedAt: null,
       },
     ]);
     expect(body.lastRuns).toEqual({
-      sync: at(-5 * MINUTE).toISOString(),
-      triage: at(-10 * MINUTE).toISOString(),
-      digest: at(-3 * HOUR).toISOString(),
-      send: at(-1 * HOUR).toISOString(),
-      notice: at(-20 * MINUTE).toISOString(),
+      sync: at(-5 * MINUTE_MS).toISOString(),
+      triage: at(-10 * MINUTE_MS).toISOString(),
+      digest: at(-3 * HOUR_MS).toISOString(),
+      send: at(-1 * HOUR_MS).toISOString(),
+      notice: at(-20 * MINUTE_MS).toISOString(),
     });
     expect(body.flags).toContainEqual({ flag: "stats_page", enabled: true, source: "row" });
     expect(body.failures24h).toEqual({ sends: 0, outbox: 0 });
@@ -239,10 +244,10 @@ describe("operator detail and notices (F099 stage 08)", () => {
     const week = await app().request("/api/operator/notices", as("assistant"));
     expect(week.status).toBe(200);
     const weekBody = operatorNoticesSchema.parse(await week.json());
-    expect(weekBody.since).toBe(at(-7 * DAY).toISOString());
+    expect(weekBody.since).toBe(at(-7 * DAY_MS).toISOString());
     expect(mine(weekBody)).toEqual([
-      { orgId: org.orgId, kind: "trial_ending", key: "trial_ending:a", at: at(-1 * HOUR).toISOString() },
-      { orgId: org.otherOrgId, kind: "llm_cap", key: "llm_cap:b", at: at(-2 * HOUR).toISOString() },
+      { orgId: org.orgId, kind: "trial_ending", key: "trial_ending:a", at: at(-1 * HOUR_MS).toISOString() },
+      { orgId: org.otherOrgId, kind: "llm_cap", key: "llm_cap:b", at: at(-2 * HOUR_MS).toISOString() },
     ]);
     const month = await app().request("/api/operator/notices?days=30", as("assistant"));
     expect(mine(operatorNoticesSchema.parse(await month.json())).map((row) => row.kind)).toEqual([
@@ -258,7 +263,7 @@ describe("operator detail and notices (F099 stage 08)", () => {
 
   // Golden: the order of equal times, as the per-organization reads gave it before the list was batched.
   test("7b. notices of one time: by organization id, and inside one organization the newest row first", async () => {
-    const when = at(-3 * DAY);
+    const when = at(-3 * DAY_MS);
     await notice(org.orgId, "llm_cap", "tie:a1", when);
     await notice(org.orgId, "llm_cap", "tie:a2", when);
     await notice(org.otherOrgId, "llm_cap", "tie:b1", when);

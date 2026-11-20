@@ -15,6 +15,8 @@ import {
 
 // The RPD of the Gemini free tier is not known, so the cap stays 300.
 const defaultLlmDailyCap = 300;
+// Mail from the junk folder gets its own share of the cap, so a spam wave cannot use it all.
+const defaultLlmJunkDailyCap = 100;
 
 // The roles with their own env keys. The classifier keeps the provider keys (LLM_PROVIDER, <P>_TIMEOUT_MS).
 type KeyedRole = Exclude<LlmRole, "classifier">;
@@ -100,6 +102,8 @@ export const llmShape = {
   LAB_STACK: z.preprocess(emptyAsUndefined, z.string().optional()),
   // LLM call attempts per mailbox per America/Los_Angeles day.
   LLM_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmDailyCap),
+  // The most LLM call attempts per mailbox per quota day for mail from its junk folder. They count in LLM_DAILY_CAP too.
+  LLM_JUNK_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmJunkDailyCap),
   // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended.
   TRIAGE_LLM_SCOPE: z.enum(["off", "synthetic", "all"]).default("off"),
   ...roleKeyShape,

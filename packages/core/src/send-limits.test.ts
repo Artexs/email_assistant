@@ -11,18 +11,17 @@ import {
   type SendLimitResult,
   type SendLimits,
 } from "./send-limits";
+import { HOUR_MS, MINUTE_MS } from "./time";
 
 const NOW = new Date("2026-11-20T10:00:00Z");
-const MIN = 60_000;
-const HOUR = 60 * MIN;
 
 const r = (offsetMs: number, to: readonly string[] = ["x@x.test"]): RecentSend => ({
   startedAt: new Date(NOW.getTime() + offsetMs),
   to,
 });
 const range = (fromMin: number, count: number, to?: readonly string[]): RecentSend[] =>
-  Array.from({ length: count }, (_, i) => r((fromMin + i) * MIN, to));
-const fiveToA = [-10, -8, -6, -4, -2].map((h) => r(h * HOUR, ["a@x.test"]));
+  Array.from({ length: count }, (_, i) => r((fromMin + i) * MINUTE_MS, to));
+const fiveToA = [-10, -8, -6, -4, -2].map((h) => r(h * HOUR_MS, ["a@x.test"]));
 const twentyInHour = range(-50, 20);
 
 function check(recent: RecentSend[], to: string[] = ["n@x.test"], limits: SendLimits = DEFAULT_SEND_LIMITS, now = NOW) {
@@ -37,7 +36,10 @@ const held = (limit: SendLimitKind, until: string): SendLimitResult => ({
 describe("checkSendLimits, the one address rule (F142)", () => {
   test("01-T1 guard: one recipient in three Greek spellings fills the recipient window", () => {
     const now = new Date("2026-11-03T12:00:00Z");
-    const at = (minutes: number, to: string) => ({ startedAt: new Date(now.getTime() - minutes * MIN), to: [to] });
+    const at = (minutes: number, to: string) => ({
+      startedAt: new Date(now.getTime() - minutes * MINUTE_MS),
+      to: [to],
+    });
     const recent = [...[5, 10, 15, 20].map((m) => at(m, "νίκος@example.gr")), at(25, "ΝΊΚΟΣ@example.gr")];
     const result = checkSendLimits({ now, recent, to: ["νίκοσ@example.gr"], limits: DEFAULT_SEND_LIMITS });
     expect(result.kind === "held" && result.limit).toBe("recipient_day");
@@ -54,11 +56,11 @@ describe("checkSendLimits", () => {
   });
 
   test("3: a send exactly one window old does not count", () => {
-    expect(check([r(-60 * MIN), ...range(-50, 19)])).toEqual({ kind: "ok" });
+    expect(check([r(-HOUR_MS), ...range(-50, 19)])).toEqual({ kind: "ok" });
   });
 
   test("4: 100 sends in 24 h hold the mailbox for the day", () => {
-    const recent = Array.from({ length: 100 }, (_, i) => r(-23 * HOUR + i * 13 * MIN));
+    const recent = Array.from({ length: 100 }, (_, i) => r(-23 * HOUR_MS + i * 13 * MINUTE_MS));
     expect(check(recent)).toEqual(held("mailbox_day", "2026-11-20T11:00:00.000Z"));
   });
 
@@ -77,13 +79,13 @@ describe("checkSendLimits", () => {
   });
 
   test("8: a custom limit applies", () => {
-    expect(check([r(-59 * MIN)], ["n@x.test"], { ...DEFAULT_SEND_LIMITS, mailboxHour: 1 })).toEqual(
+    expect(check([r(-59 * MINUTE_MS)], ["n@x.test"], { ...DEFAULT_SEND_LIMITS, mailboxHour: 1 })).toEqual(
       held("mailbox_hour", "2026-11-20T10:01:00.000Z")
     );
   });
 
   test("9: one held address among several holds the send", () => {
-    const fiveToB = [-10, -8, -6, -4, -2].map((h) => r(h * HOUR, ["b@x.test"]));
+    const fiveToB = [-10, -8, -6, -4, -2].map((h) => r(h * HOUR_MS, ["b@x.test"]));
     const result = check(fiveToB, ["a@x.test", "b@x.test"]);
     expect(result.kind).toBe("held");
     expect(result.kind === "held" && result.limit).toBe("recipient_day");
@@ -105,16 +107,16 @@ describe("checkSendLimits", () => {
   });
 
   test("13: the later until wins; on a tie the earlier kind wins", () => {
-    expect(check([r(-30 * MIN)], ["n@x.test"], { mailboxHour: 1, mailboxDay: 1, recipientDay: 5 })).toEqual(
+    expect(check([r(-30 * MINUTE_MS)], ["n@x.test"], { mailboxHour: 1, mailboxDay: 1, recipientDay: 5 })).toEqual(
       held("mailbox_day", "2026-11-21T09:30:00.000Z")
     );
     expect(
-      check([r(-30 * MIN, ["n@x.test"])], ["n@x.test"], { mailboxHour: 20, mailboxDay: 1, recipientDay: 1 })
+      check([r(-30 * MINUTE_MS, ["n@x.test"])], ["n@x.test"], { mailboxHour: 20, mailboxDay: 1, recipientDay: 1 })
     ).toEqual(held("mailbox_day", "2026-11-21T09:30:00.000Z"));
   });
 
   test("14: a send in the future counts", () => {
-    expect(check([r(5 * MIN)], ["n@x.test"], { ...DEFAULT_SEND_LIMITS, mailboxHour: 1 })).toEqual(
+    expect(check([r(5 * MINUTE_MS)], ["n@x.test"], { ...DEFAULT_SEND_LIMITS, mailboxHour: 1 })).toEqual(
       held("mailbox_hour", "2026-11-20T11:05:00.000Z")
     );
   });

@@ -3,6 +3,7 @@
 // in a transaction that is rolled back.
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -58,7 +59,6 @@ afterEach(() => {
 
 // 11:00 in Europe/Warsaw (UTC+1): outside the default quiet hours.
 const T = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
 const BASE = "https://ea.example.ts.net";
 // A planted string: it is in the subject of every mail here and must not appear in a `minimal` text.
 const CANARY = "CANARY-SUBJECT-91c3";
@@ -82,9 +82,9 @@ async function world(
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
   await insertDefaultSettings(trx, ctx, created.mailboxId);
-  await markSynced(trx, ctx, created.mailboxId, new Date(T.getTime() - 5 * 60_000));
+  await markSynced(trx, ctx, created.mailboxId, new Date(T.getTime() - 5 * MINUTE_MS));
   const chatId = randomChatId();
-  await linkChat(trx, ctx, created.userId, chatId, new Date(T.getTime() - 30 * 24 * HOUR));
+  await linkChat(trx, ctx, created.userId, chatId, new Date(T.getTime() - 30 * DAY_MS));
   if (opts.flag ?? true)
     await setOrgFeature(trx, ctx, { flag: "telegram_minimal", enabled: true, actor: "cli", now: T });
   const w = { ctx, orgId: created.orgId, mailboxId: created.mailboxId, userId: created.userId, chatId };
@@ -236,7 +236,7 @@ describe("the Telegram sender reads the level at send time", () => {
       const w = await world(trx, { member: "full" });
       const other = await addMember(trx, w.orgId, "owner");
       const otherChat = randomChatId();
-      await linkChat(trx, w.ctx, other, otherChat, new Date(T.getTime() - 30 * 24 * HOUR));
+      await linkChat(trx, w.ctx, other, otherChat, new Date(T.getTime() - 30 * DAY_MS));
       await setMember(trx, w, other, "minimal");
       const first = await queueUrgent(trx, w);
       const second = await queueUrgent(trx, w, other);
@@ -302,7 +302,7 @@ describe("an approval card and its edit", () => {
         .set({ status: "approved", approved_by: w.userId, approved_at: T })
         .where("id", "=", sendId)
         .execute();
-      const later = new Date(T.getTime() + 60_000);
+      const later = new Date(T.getTime() + MINUTE_MS);
       const queued = await queueCardEdits(trx, w.ctx, { sendId, outcome: "approved", at: later });
       expect(queued.queued).toBe(1);
       await createOutboxSender({ db: trx, channel: s.channel, now: () => later, webBaseUrl: BASE }).run();
@@ -350,7 +350,7 @@ describe("a held card at the edit", () => {
           .set({ status: "approved", approved_by: w.userId, approved_at: T })
           .where("id", "=", sendId)
           .execute();
-        const later = new Date(T.getTime() + 60_000);
+        const later = new Date(T.getTime() + MINUTE_MS);
         await queueCardEdits(trx, w.ctx, { sendId, outcome: "approved_held", heldBy: "paused", at: later });
         await setMember(trx, w, w.userId, member);
         await createOutboxSender({ db: trx, channel: s.channel, now: () => later, webBaseUrl: BASE }).run();
@@ -385,7 +385,7 @@ describe("the direct answers", () => {
     userId: w.userId,
     role: "owner",
     chatId: w.chatId,
-    linkedAt: new Date(T.getTime() - 30 * 24 * HOUR),
+    linkedAt: new Date(T.getTime() - 30 * DAY_MS),
     locale: "en",
   });
 
@@ -394,7 +394,7 @@ describe("the direct answers", () => {
       const w = await world(trx, { member: "minimal" });
       await insertTriaged(trx, w.ctx, w.mailboxId, {
         category: "urgent",
-        createdAt: new Date(T.getTime() - HOUR),
+        createdAt: new Date(T.getTime() - HOUR_MS),
         subject: CANARY,
         from: "marker-sender@mail.test",
       });

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import { expect } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -22,8 +23,6 @@ import { createOrgWithMailbox, testCapabilities } from "./fixtures";
 // Shared setup of the Sent read tests.
 
 export const NOW = new Date("2026-11-20T10:00:00Z");
-export const HOUR = 3_600_000;
-export const DAY = 24 * HOUR;
 
 export function ago(ms: number): Date {
   return new Date(NOW.getTime() - ms);
@@ -47,7 +46,7 @@ export async function newOrg(
     await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
   }
   if (opts.switchOn !== false) {
-    await writeSentSwitch(trx, ctx, created.mailboxId, { enabled: true, at: ago(HOUR) });
+    await writeSentSwitch(trx, ctx, created.mailboxId, { enabled: true, at: ago(HOUR_MS) });
   }
   if (opts.sentPath !== null) await setFolderMapEntry(trx, ctx, created.mailboxId, "sent", opts.sentPath ?? "Sent");
   const org: Org = { ctx, mailboxId: created.mailboxId, userId: created.userId, provider: createFakeMailProvider() };
@@ -68,7 +67,7 @@ export async function siblingMailbox(trx: Transaction<DB>, org: Org): Promise<Or
     folderMap: { drafts: "Drafts" },
   });
   await insertInboxFolder(trx, org.ctx, mailboxId);
-  await writeSentSwitch(trx, org.ctx, mailboxId, { enabled: true, at: ago(HOUR) });
+  await writeSentSwitch(trx, org.ctx, mailboxId, { enabled: true, at: ago(HOUR_MS) });
   await setFolderMapEntry(trx, org.ctx, mailboxId, "sent", "Sent");
   return { ctx: org.ctx, mailboxId, userId: org.userId, provider: createFakeMailProvider() };
 }

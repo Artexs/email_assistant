@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
-import { noticeKinds } from "@ea/core";
+import { noticeKinds, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -24,7 +24,6 @@ const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const script = resolve(import.meta.dir, "../../src/scripts/org-dsr.ts");
 const KEY = Buffer.alloc(32, 7).toString("base64");
-const HOUR = 3_600_000;
 // 55 characters: the digest cuts a sender to 40, so the address pattern of the erase cannot match it there.
 const PERSON = "jan.kowalski-nowak.dzial.ksiegowosci@example-firma.test";
 const CUT_SENDER = PERSON.slice(0, 39);
@@ -59,7 +58,7 @@ const digestText = `Digest\n1. ${CUT_SENDER}… — ${SUBJECT}\n   ${AI_TEXT}`;
 const digestView = { text: digestText, buttons: [[{ text: "Open", data: "x" }]] };
 
 async function seed(options: { extraRows?: boolean; closedSets?: boolean; edge?: boolean } = {}): Promise<World> {
-  const t0 = new Date(Date.now() - 6 * HOUR);
+  const t0 = new Date(Date.now() - 6 * HOUR_MS);
   const suffix = randomUUID().slice(0, 8);
   return db.transaction().execute(async (trx) => {
     const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
@@ -74,7 +73,7 @@ async function seed(options: { extraRows?: boolean; closedSets?: boolean; edge?:
     const keptMail = await insertTestEmail(trx, ctx, mailboxId, {
       from_address: `kept-${suffix}@x.test`,
       subject: "Other",
-      created_at: new Date(t0.getTime() + HOUR),
+      created_at: new Date(t0.getTime() + HOUR_MS),
     });
     const rows: Record<string, string> = {};
     let n = 0;
@@ -91,7 +90,7 @@ async function seed(options: { extraRows?: boolean; closedSets?: boolean; edge?:
       const digestId = await insertDigest(trx, ctx, {
         userId,
         slotKey: key,
-        periodStart: new Date(createdAt.getTime() - HOUR),
+        periodStart: new Date(createdAt.getTime() - HOUR_MS),
         periodEnd: createdAt,
       });
       if (digestId === null) throw new Error("digest slot taken");
@@ -103,7 +102,7 @@ async function seed(options: { extraRows?: boolean; closedSets?: boolean; edge?:
         digestId,
       });
     };
-    const hoursAfter = (h: number) => new Date(t0.getTime() + h * HOUR);
+    const hoursAfter = (h: number) => new Date(t0.getTime() + h * HOUR_MS);
     await digest("oldSent", "sent", hoursAfter(-2));
     await digest("newSent", "sent", hoursAfter(1));
     await digest("newPending", "pending", hoursAfter(2));
@@ -155,7 +154,7 @@ async function seed(options: { extraRows?: boolean; closedSets?: boolean; edge?:
         ...closed,
         dedup: `approval_set:c2-${suffix}`,
         status: "sending",
-        lockedAt: new Date(Date.now() - HOUR),
+        lockedAt: new Date(Date.now() - HOUR_MS),
       });
       rows.closedFresh = await outbox(trx, orgId, userId, {
         ...closed,
@@ -305,14 +304,14 @@ describe("erase: stored messages that list many mails", () => {
       userId: w.userId,
       slotKey: dropped,
       periodStart: w.t0,
-      periodEnd: new Date(w.t0.getTime() + HOUR),
+      periodEnd: new Date(w.t0.getTime() + HOUR_MS),
     });
     expect(again).toBeNull();
     const next = await insertDigest(db, ctx, {
       userId: w.userId,
       slotKey: "2026-11-09T09:00",
       periodStart: w.t0,
-      periodEnd: new Date(w.t0.getTime() + HOUR),
+      periodEnd: new Date(w.t0.getTime() + HOUR_MS),
     });
     expect(next).not.toBeNull();
   });

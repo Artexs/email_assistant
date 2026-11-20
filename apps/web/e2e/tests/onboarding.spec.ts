@@ -6,6 +6,7 @@ import { expectNoA11yViolations } from "../a11y";
 import { E2E_TELEGRAM_URL } from "../env";
 import { cleanUpOrg, connectGreenMail, cspErrors, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
+import { MINUTE_MS } from "@ea/core";
 
 test.describe.configure({ mode: "serial" });
 
@@ -27,7 +28,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test("from open to done and back", async ({ page }, testInfo) => {
-  test.setTimeout(60_000);
+  test.setTimeout(MINUTE_MS);
   const mobile = testInfo.project.name === "mobile";
   const chatId = mobile ? 5550101 : 5550102;
 

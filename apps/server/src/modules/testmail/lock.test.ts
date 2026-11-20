@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { HOUR_MS } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { acquireSendLock } from "./lock";
@@ -34,7 +35,7 @@ describe("acquireSendLock", () => {
 
   test("a lock 25 h old is taken even with a live pid", () => {
     acquireSendLock(file, { pid: 111 });
-    const old = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
+    const old = new Date(Date.now() - 25 * HOUR_MS).toISOString();
     writeFileSync(file, JSON.stringify({ pid: 111, at: old }));
     acquireSendLock(file, { pid: 222, isAlive: () => true });
     expect(JSON.parse(readFileSync(file, "utf8")).pid).toBe(222);

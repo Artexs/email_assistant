@@ -112,19 +112,31 @@ describe("no-time-literals: units and copies", () => {
 describe("no-time-literals: scope", () => {
   const text = "const a = 60_000;";
   test(
-    "the time module, tests, specs, test helpers and test folders are out",
-    () =>
-      expectEach([text], [], "packages/core/src/time.ts").then(async () => {
-        for (const file of [
-          "apps/server/src/modules/mail/x.test.ts",
-          "apps/web/src/x.spec.ts",
-          "packages/core/src/loops/x.test-helper.ts",
-          "apps/web/e2e/x.ts",
-          "apps/server/test/integration/x.ts",
-        ]) {
-          expect({ file, severities: await timeSeverities(text, file) }).toEqual({ file, severities: [] });
+    "the time module and its test are out; tests, specs, test helpers, e2e files and the server and tool test folders are in",
+    async () => {
+      const cases: [string[], number[]][] = [
+        [["packages/core/src/time.ts", "packages/core/src/time.test.ts"], []],
+        [
+          [
+            "apps/server/src/modules/mail/x.test.ts",
+            "apps/web/src/x.spec.ts",
+            "packages/core/src/loops/x.test-helper.ts",
+            "apps/web/e2e/x.ts",
+            "apps/docs/scripts/x.test.ts",
+            "deploy/test/x.ts",
+            "apps/server/test/integration/x.ts",
+            "apps/server/test/integration/x.test.ts",
+            "tools/fake-telegram/test/x.test.ts",
+          ],
+          [2],
+        ],
+      ];
+      for (const [files, severities] of cases) {
+        for (const file of files) {
+          expect({ file, severities: await timeSeverities(text, file) }).toEqual({ file, severities });
         }
-      }),
+      }
+    },
     TIMEOUT
   );
   test(

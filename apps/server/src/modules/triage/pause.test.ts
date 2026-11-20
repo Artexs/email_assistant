@@ -1,9 +1,10 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createLlmPause } from "./pause";
 
 const t0 = new Date("2026-11-05T12:00:00Z");
-const minutes = (from: Date, to: Date): number => (to.getTime() - from.getTime()) / 60_000;
+const minutes = (from: Date, to: Date): number => (to.getTime() - from.getTime()) / MINUTE_MS;
 
 let errorSpy: ReturnType<typeof spyOn>;
 
@@ -42,12 +43,12 @@ describe("createLlmPause", () => {
   test("pausedSince is the first trip of the run; only reset clears it (F109 stage 15)", () => {
     const pause = createLlmPause();
     expect(pause.pausedSince()).toBeNull();
-    const second = new Date(t0.getTime() + 5 * 60_000);
+    const second = new Date(t0.getTime() + 5 * MINUTE_MS);
     pause.trip("soft", "http_429", t0);
     pause.trip("soft", "http_429", second);
     expect(pause.pausedSince()).toEqual(t0);
     // The pause ended and nothing was reset: the run goes on.
-    expect(pause.isPaused(new Date(t0.getTime() + 3_600_000))).toBe(false);
+    expect(pause.isPaused(new Date(t0.getTime() + HOUR_MS))).toBe(false);
     expect(pause.pausedSince()).toEqual(t0);
     pause.reset();
     expect(pause.pausedSince()).toBeNull();

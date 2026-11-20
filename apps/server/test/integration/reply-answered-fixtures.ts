@@ -2,6 +2,7 @@
 // same GreenMail user; the user's own reply is an APPEND to the Sent folder.
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 import MailComposer from "nodemailer/lib/mail-composer";
 
@@ -13,12 +14,10 @@ import type { DB, TenantContext } from "../../src/platform/db";
 import { NOW, type CopyBox } from "./copy-hash-fixtures";
 import { insertDraftAndSend, insertTestEmail, createOrgWithMailbox } from "./fixtures";
 
-export const HOUR = 3_600_000;
-
 // "Track my sent mail" on: the org flag `sent_sync` and the switch of the mailbox.
 export async function sentSyncOn(trx: Transaction<DB>, ctx: TenantContext, mailboxId: string): Promise<void> {
   await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
-  await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR) });
+  await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR_MS) });
 }
 
 // Only the org flag: the switch of the mailbox stays off, so the Sent mail is not read.

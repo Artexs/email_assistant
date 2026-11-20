@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { Decrypter, generateX25519Identity, identityToRecipient } from "age-encryption";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
@@ -27,7 +28,7 @@ import { tombstoneKeyHash } from "../../src/platform/crypto";
 import { waitFor } from "../wait-for";
 
 import { testDb, TEST_CREDENTIALS_KEY } from "./helpers";
-import { ago, DAY, HOUR, NOW, put, siblingMailbox, newOrg, type Org } from "./mail-sent-fixtures";
+import { ago, NOW, put, siblingMailbox, newOrg, type Org } from "./mail-sent-fixtures";
 
 // A data request finds, reports and erases sent mail. The seed is committed (the erase runs its own
 // transaction and takes row locks); `afterEach` removes it. The connection is the `app` role.
@@ -114,7 +115,7 @@ async function addSent(w: World, spec: SentSpec): Promise<{ id: string; dedupKey
   counter += 1;
   const dedupKey = `mid:<s${counter}-${randomUUID().slice(0, 8)}@x.test>:h1`;
   const old = spec.content === "cleared";
-  const at = old ? ago(40 * DAY) : ago(DAY);
+  const at = old ? ago(40 * DAY_MS) : ago(DAY_MS);
   const row: NewSentEmail = {
     mailboxId: w.org.mailboxId,
     dedupKey,
@@ -149,7 +150,7 @@ async function addSent(w: World, spec: SentSpec): Promise<{ id: string; dedupKey
       .where("id", "=", stored.id)
       .execute();
   }
-  if (old) await clearSentBodies(db, w.org.ctx, { before: ago(14 * DAY) });
+  if (old) await clearSentBodies(db, w.org.ctx, { before: ago(14 * DAY_MS) });
   return { id: stored.id, dedupKey };
 }
 
@@ -309,7 +310,7 @@ describe("data request for sent mail", () => {
 
   test("3. a later pass does not store the erased mail again; a newer mail is stored (erase again)", async () => {
     const w = await seedWorld();
-    put(w.org, 1, ago(2 * DAY), { from: w.boss, to: [w.person] });
+    put(w.org, 1, ago(2 * DAY_MS), { from: w.boss, to: [w.person] });
     const first = await syncSentHeaders(sentDeps(w.org), w.org.ctx, w.org.mailboxId);
     expect(first).toMatchObject({ status: "done", stored: 1 });
     const found = await match(w.orgId, w.person);
@@ -322,11 +323,11 @@ describe("data request for sent mail", () => {
     expect((await tombstones(w.orgId)).map((row) => row.key_hash)).toContain(tombstoneKeyHash(key));
 
     // Off and on starts a new first pass over the Sent folder, which still holds the mail.
-    const off = await setSentSync(db, w.org.ctx, w.org.mailboxId, { enabled: false, actor: "test", at: ago(HOUR) });
+    const off = await setSentSync(db, w.org.ctx, w.org.mailboxId, { enabled: false, actor: "test", at: ago(HOUR_MS) });
     expect(off.result).toBe("changed");
-    const on = await setSentSync(db, w.org.ctx, w.org.mailboxId, { enabled: true, actor: "test", at: ago(HOUR) });
+    const on = await setSentSync(db, w.org.ctx, w.org.mailboxId, { enabled: true, actor: "test", at: ago(HOUR_MS) });
     expect(on.result).toBe("changed");
-    put(w.org, 2, ago(HOUR), { from: w.boss, to: [w.person] });
+    put(w.org, 2, ago(HOUR_MS), { from: w.boss, to: [w.person] });
     const second = await syncSentHeaders(sentDeps(w.org), w.org.ctx, w.org.mailboxId);
     expect(second).toMatchObject({ status: "done", fetched: 2, stored: 1 });
     const rows = await sentRows(w.orgId);
@@ -564,8 +565,8 @@ function addLate(w: World): NewSentEmail {
     toAddresses: [w.person],
     ccAddresses: [],
     subject: "late",
-    sentAt: ago(HOUR),
-    internalDate: ago(HOUR),
+    sentAt: ago(HOUR_MS),
+    internalDate: ago(HOUR_MS),
     origin: "user",
     actionId: null,
     content: "pending",

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
+import { MINUTE_MS } from "@ea/core";
 import type { FeatureKey } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
@@ -224,7 +225,7 @@ describe("org_features", () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      const later = new Date(AT.getTime() + 60_000);
+      const later = new Date(AT.getTime() + MINUTE_MS);
       await upsertOrgFeature(trx, ctx, { flag: "stats_page", enabled: true, setBy: "cli", setAt: AT });
       await upsertOrgFeature(trx, ctx, {
         flag: "stats_page",

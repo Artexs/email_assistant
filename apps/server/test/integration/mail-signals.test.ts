@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { resolve } from "node:path";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -24,7 +25,6 @@ afterAll(async () => {
 
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 const NOW = new Date("2026-11-10T12:00:00Z");
-const DAY_MS = 86_400_000;
 const SINCE = new Date(NOW.getTime() - 30 * DAY_MS);
 
 function seed(n: number, headers?: Record<string, string>): SeedMessage {

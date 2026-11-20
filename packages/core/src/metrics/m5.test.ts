@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { MINUTE_MS } from "../time";
+
 import { urgentRow } from "./fixtures";
 import { urgentLatency } from "./m5";
 
@@ -11,7 +13,7 @@ const delays = [1, 1, 2, 2, 2, 3, 3, 4, 6, 9];
 function tenNoticed() {
   return delays.map((minutes) => {
     const receivedAt = at("09:00");
-    return urgentRow({ receivedAt, noticeAt: new Date(receivedAt.getTime() + minutes * 60_000) });
+    return urgentRow({ receivedAt, noticeAt: new Date(receivedAt.getTime() + minutes * MINUTE_MS) });
   });
 }
 
@@ -53,7 +55,7 @@ describe("urgentLatency", () => {
 
   test("a notice before the arrival counts as 0 minutes", () => {
     const receivedAt = at("09:00");
-    const rows = [urgentRow({ receivedAt, noticeAt: new Date(receivedAt.getTime() - 60_000) })];
+    const rows = [urgentRow({ receivedAt, noticeAt: new Date(receivedAt.getTime() - MINUTE_MS) })];
     expect(urgentLatency(rows, { timeZone }).p90Minutes).toBe(0);
   });
 });

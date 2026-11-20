@@ -2,7 +2,7 @@
 //
 // The columns of each table are the columns of `EXPORT_MAP` of the privacy module (the same map the account export uses):
 // an `export: false` table is never listed here, and a column in `excluded` is never read. There is no second list of
-// secret columns. The integration test `lab-demo-seed` compares this file with `information_schema`: a new column or a
+// secret columns. The integration test `lab-demo-seed-export` compares this file with `information_schema`: a new column or a
 // new foreign key on one of these tables fails there until someone decides here what the seed does with it.
 import { EXPORT_MAP } from "../../privacy";
 

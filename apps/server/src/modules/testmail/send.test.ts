@@ -1,4 +1,4 @@
-import { buildSendRequest, idempotencyKey, type Batch, type PersonaFile, type SendLogLine } from "@ea/core";
+import { buildSendRequest, HOUR_MS, idempotencyKey, type Batch, type PersonaFile, type SendLogLine } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { createAgentMailClient, type AgentMailClient } from "./agentmail/client";
@@ -8,7 +8,6 @@ import { requestHash, runSend, type SendRunInput, type SendRunResult } from "./s
 const apiKey = "k-test-secret-1234567890";
 const batchId = "2026-11-08-t";
 const to = "boss@interia.test";
-const hour = 3_600_000;
 
 const personas: PersonaFile = {
   inbox: { username: "ea-t", clientId: "ea-t-client", defaultDisplayName: "Default Name" },
@@ -171,7 +170,7 @@ describe("runSend", () => {
 
   test("4: an open intent of 1 h reuses the key", async () => {
     const firstId = await preSend("a");
-    const result = await run({ lines: [intentLine("a", hashOf("a"), hour)], batch: makeBatch([caseOf("a")]) });
+    const result = await run({ lines: [intentLine("a", hashOf("a"), HOUR_MS)], batch: makeBatch([caseOf("a")]) });
     expect(result.sent).toEqual(["a"]);
     expect(appended.filter((line) => line.type === "intent")).toEqual([]);
     expect(fake.sent).toHaveLength(1);
@@ -183,7 +182,7 @@ describe("runSend", () => {
     const firstId = await preSend("a");
     const before = sendCalls();
     const result = await run({
-      lines: [intentLine("a", hashOf("a"), 13 * hour)],
+      lines: [intentLine("a", hashOf("a"), 13 * HOUR_MS)],
       batch: makeBatch([caseOf("a")]),
     });
     expect(result.recovered).toEqual(["a"]);
@@ -196,7 +195,7 @@ describe("runSend", () => {
 
   test("6: an open intent of 13 h without a mail makes attempt 2", async () => {
     const result = await run({
-      lines: [intentLine("a", hashOf("a"), 13 * hour)],
+      lines: [intentLine("a", hashOf("a"), 13 * HOUR_MS)],
       batch: makeBatch([caseOf("a")]),
     });
     expect(result.sent).toEqual(["a"]);
@@ -212,7 +211,7 @@ describe("runSend", () => {
     await preSend("a", "other-key-2");
     const before = sendCalls();
     const result = await run({
-      lines: [intentLine("a", hashOf("a"), 13 * hour)],
+      lines: [intentLine("a", hashOf("a"), 13 * HOUR_MS)],
       batch: makeBatch([caseOf("a")]),
     });
     expect(result.stoppedBy).toBe("duplicate_found");
@@ -223,7 +222,7 @@ describe("runSend", () => {
 
   test("8: an open intent with another hash blocks the reply, others go on", async () => {
     const before = sendCalls();
-    const result = await run({ lines: [intentLine("a", "f".repeat(64), hour)] });
+    const result = await run({ lines: [intentLine("a", "f".repeat(64), HOUR_MS)] });
     expect(result.sent).toEqual(["c"]);
     expect(result.remaining).toEqual([
       { caseId: "a", reason: "changed" },
@@ -354,7 +353,7 @@ describe("runSend", () => {
 
   test("22: limit 1 on a 13 h old intent without a mail sends exactly once", async () => {
     const result = await run({
-      lines: [intentLine("a", hashOf("a"), 13 * hour)],
+      lines: [intentLine("a", hashOf("a"), 13 * HOUR_MS)],
       batch: makeBatch([caseOf("a")]),
       limit: 1,
     });
@@ -371,7 +370,7 @@ describe("runSend", () => {
 
     fake.failNext("list", { status: 401, body: {} });
     const list = await run({
-      lines: [intentLine("a", hashOf("a"), 13 * hour)],
+      lines: [intentLine("a", hashOf("a"), 13 * HOUR_MS)],
       batch: makeBatch([caseOf("a")]),
     });
     expect(list.stoppedBy).toBe("auth");
@@ -431,7 +430,7 @@ describe("runSend", () => {
     test("a recovery by label writes testmail_recovered", async () => {
       await preSend("a");
       const output = await lines(async () => {
-        await run({ lines: [intentLine("a", hashOf("a"), 13 * hour)], batch: makeBatch([caseOf("a")]) });
+        await run({ lines: [intentLine("a", hashOf("a"), 13 * HOUR_MS)], batch: makeBatch([caseOf("a")]) });
       });
       expect(output).toContain(`testmail_recovered batch=${batchId} case_id=a`);
     });

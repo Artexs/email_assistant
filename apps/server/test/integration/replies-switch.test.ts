@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -107,7 +108,7 @@ describe("the switch reply_drafts (F115 stage 10 step 1)", () => {
       const deps = settingsDeps(trx);
       await setToolSwitch(deps, s.ctx, s.mailboxId, { name: "reply_drafts", value: true, actor: s.userId });
       await updateMailboxSettings(trx, s.ctx, s.mailboxId, { mode: "assist" });
-      const createdAt = new Date(NOW.getTime() - 3_600_000);
+      const createdAt = new Date(NOW.getTime() - HOUR_MS);
       const replyA = await insertDraftAndSend(trx, s.ctx, s.mailboxId, { kind: "reply", createdAt });
       const replyB = await insertDraftAndSend(trx, s.ctx, s.mailboxId, { kind: "reply", createdAt });
       const delegation = await insertDraftAndSend(trx, s.ctx, s.mailboxId, { kind: "delegation", createdAt });
@@ -137,7 +138,7 @@ describe("the switch reply_drafts (F115 stage 10 step 1)", () => {
       await setToolSwitch(deps, s.ctx, s.mailboxId, { name: "reply_drafts", value: true, actor: s.userId });
       await setToolSwitch(deps, s.ctx, s.mailboxId, { name: "create_draft", value: true, actor: s.userId });
       await updateMailboxSettings(trx, s.ctx, s.mailboxId, { mode: "assist" });
-      const createdAt = new Date(NOW.getTime() - 3_600_000);
+      const createdAt = new Date(NOW.getTime() - HOUR_MS);
       const reply = await insertDraftAndSend(trx, s.ctx, s.mailboxId, { kind: "reply", createdAt });
       const delegation = await insertDraftAndSend(trx, s.ctx, s.mailboxId, { kind: "delegation", createdAt });
 

@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -11,7 +12,6 @@ import {
   CLEAN_ANSWER,
   jobDeps,
   llmCallRows,
-  MINUTE,
   NOW,
   pairRows,
   queueRequest,
@@ -86,11 +86,11 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
       ).toEqual([]);
       const [waiting] = await requestsOf(db, box);
       expect(waiting).toMatchObject({ status: "pending", attempts: 1, email_id: mail, send_action_id: null });
-      expect(waiting?.next_attempt_at.getTime()).toBe(NOW.getTime() + 5 * MINUTE);
+      expect(waiting?.next_attempt_at.getTime()).toBe(NOW.getTime() + 5 * MINUTE_MS);
       // The call was paid and counted although the write failed.
       expect(await llmCallRows(db, box)).toHaveLength(1);
 
-      clock.now = new Date(NOW.getTime() + 6 * MINUTE);
+      clock.now = new Date(NOW.getTime() + 6 * MINUTE_MS);
       await jobs.drafter.run({ mailboxId: box.mailboxId });
 
       expect(requests).toHaveLength(2);
@@ -126,7 +126,7 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
       );
       const seen: [string, number][] = [];
       for (let i = 0; i < 3; i += 1) {
-        clock.now = new Date(NOW.getTime() + i * 6 * MINUTE);
+        clock.now = new Date(NOW.getTime() + i * 6 * MINUTE_MS);
         await jobs.drafter.run({ mailboxId: box.mailboxId });
         const [request] = await requestsOf(db, box);
         seen.push([request?.status ?? "", request?.attempts ?? -1]);
@@ -155,7 +155,7 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
         .transaction()
         .execute((trx) => addReplyMail(trx, box, { threadKey: thread, receivedAt: at(-115) }));
       // A is older, so instance one claims it (the claim reads `created_at`, oldest first).
-      const requestA = await queueRequest(db, box, a, "auto", { at: new Date(NOW.getTime() - MINUTE) });
+      const requestA = await queueRequest(db, box, a, "auto", { at: new Date(NOW.getTime() - MINUTE_MS) });
       const requestB = await queueRequest(db, box, b, "auto");
 
       // Instance one stops inside its write transaction, after it inserted its pair and before it commits.
@@ -230,7 +230,7 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
           confidence: 0.9,
           reason_code: "direct_request",
           fields: JSON.stringify({ language: "pl" }),
-          created_at: new Date(NOW.getTime() - MINUTE),
+          created_at: new Date(NOW.getTime() - MINUTE_MS),
         })
         .execute();
       await jobs.drafter.run({ mailboxId: box.mailboxId });
@@ -307,7 +307,7 @@ describe("the drafter job with real commits (F115 stage 07)", () => {
       for (let i = 0; i < 6; i += 1) {
         const mail = await db
           .transaction()
-          .execute((trx) => addReplyMail(trx, box, { receivedAt: new Date(NOW.getTime() - (i + 1) * MINUTE * 10) }));
+          .execute((trx) => addReplyMail(trx, box, { receivedAt: new Date(NOW.getTime() - (i + 1) * MINUTE_MS * 10) }));
         ids.push(await queueRequest(db, box, mail, "auto"));
       }
       const delayed = () =>

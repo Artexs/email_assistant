@@ -14,6 +14,7 @@ import {
 } from "../helpers";
 import { E2E_BASE_URL } from "../env";
 import { readSeed } from "../seed";
+import { MINUTE_MS } from "@ea/core";
 
 test.describe.configure({ mode: "serial" });
 
@@ -48,7 +49,7 @@ async function watchText(page: Page, text: string): Promise<() => Promise<boolea
 }
 
 test("mode, switch and auto", async ({ page }, testInfo) => {
-  test.setTimeout(60_000);
+  test.setTimeout(MINUTE_MS);
   const project = testInfo.project.name;
   await page.goto("/mailboxes?connect=1");
   await connectGreenMail(page, project);

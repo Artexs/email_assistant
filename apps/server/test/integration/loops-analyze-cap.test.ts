@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -19,9 +20,9 @@ import {
   RUN_AT,
   sentMail,
 } from "./loops-analyze-fixtures";
-import { ago, HOUR, type Org, siblingMailbox } from "./mail-sent-fixtures";
+import { ago, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
-const MIN = 60_000;
+const MIN = MINUTE_MS;
 
 // The cap, the retries and the logs of the Sent analysis (step 2).
 const db = testDb();
@@ -50,7 +51,7 @@ async function llmCall(trx: Trx, ctx: TenantContext, mailboxId: string, at: Date
 }
 
 async function calls(trx: Trx, org: Org, count: number, role: "classifier" | "extractor" = "classifier") {
-  for (let i = 0; i < count; i += 1) await llmCall(trx, org.ctx, org.mailboxId, ago(HOUR), role);
+  for (let i = 0; i < count; i += 1) await llmCall(trx, org.ctx, org.mailboxId, ago(HOUR_MS), role);
   // `ago` counts from the clock of `mail-sent-fixtures` (2026-11-20 10:00): inside the quota day of RUN_AT.
 }
 
@@ -101,7 +102,7 @@ describe("the daily cap", () => {
       await sentMail(trx, org);
       await calls(trx, sibling, 60);
       // A forged row: the mailbox id of this mailbox, the organization of another one.
-      for (let i = 0; i < 60; i += 1) await llmCall(trx, other.ctx, org.mailboxId, ago(HOUR), "classifier");
+      for (let i = 0; i < 60; i += 1) await llmCall(trx, other.ctx, org.mailboxId, ago(HOUR_MS), "classifier");
       for (let i = 0; i < 60; i += 1) {
         await llmCall(trx, org.ctx, org.mailboxId, new Date("2026-11-20T07:00:00Z"), "classifier");
       }

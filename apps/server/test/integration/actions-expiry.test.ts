@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -29,8 +30,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const now = new Date("2026-11-07T12:00:00Z");
 const ago = (ms: number) => new Date(now.getTime() - ms);
 const APPLIED = { folder: "Drafts", uid: 7 };
@@ -93,8 +92,8 @@ async function waiting(trx: Transaction<DB>, ctx: TenantContext, mailboxId: stri
   return insertDraftAndSend(trx, ctx, mailboxId, {
     delegationId: "11111111-1111-4111-8111-111111111111",
     draftProviderResult: APPLIED,
-    createdAt: ago(DAY),
-    notifiedAt: ago(HOUR),
+    createdAt: ago(DAY_MS),
+    notifiedAt: ago(HOUR_MS),
     requestSent: true,
     ...opts,
   });
@@ -105,7 +104,7 @@ describe("createExpiryJob", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const { hooks, calls } = recordingHooks();
-      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       await jobFor(trx, hooks).run();
 
@@ -126,7 +125,7 @@ describe("createExpiryJob", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const { hooks, calls } = recordingHooks();
-      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(47 * HOUR) });
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(47 * HOUR_MS) });
 
       await jobFor(trx, hooks).run();
 
@@ -178,8 +177,8 @@ describe("createExpiryJob", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const { hooks, calls } = recordingHooks();
-      const old = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: null, createdAt: ago(8 * DAY) });
-      const young = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: null, createdAt: ago(6 * DAY) });
+      const old = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: null, createdAt: ago(8 * DAY_MS) });
+      const young = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: null, createdAt: ago(6 * DAY_MS) });
 
       await jobFor(trx, hooks).run();
 
@@ -194,7 +193,7 @@ describe("createExpiryJob", () => {
       const s = await setup(trx);
       const { hooks } = recordingHooks();
       const p = await waiting(trx, s.ctx, s.mailboxId, {
-        notifiedAt: ago(49 * HOUR),
+        notifiedAt: ago(49 * HOUR_MS),
         draftStatus: "ready",
         draftProviderResult: undefined,
       });
@@ -218,7 +217,7 @@ describe("createExpiryJob", () => {
       const s = await setup(trx);
       await setMailboxStatus(trx, s.ctx, s.mailboxId, "paused", now);
       const { hooks } = recordingHooks();
-      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       await jobFor(trx, hooks).run();
 
@@ -231,7 +230,7 @@ describe("createExpiryJob", () => {
       const s = await setup(trx);
       await setMailboxStatus(trx, s.ctx, s.mailboxId, "host_blocked", now);
       const { hooks } = recordingHooks();
-      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       await jobFor(trx, hooks).run();
 
@@ -246,13 +245,18 @@ describe("createExpiryJob", () => {
       const approved = (at: Date, lockedAt: Date | null = null): Pair => ({
         sendStatus: "approved",
         approved: { userId: s.userId, at },
-        notifiedAt: ago(100 * HOUR),
+        notifiedAt: ago(100 * HOUR_MS),
         lockedAt,
       });
-      const held = await waiting(trx, s.ctx, s.mailboxId, approved(ago(49 * HOUR)));
-      const fresh = await waiting(trx, s.ctx, s.mailboxId, approved(ago(47 * HOUR)));
-      const flying = await waiting(trx, s.ctx, s.mailboxId, approved(ago(72 * HOUR), ago(60_000)));
-      const staleLock = await waiting(trx, s.ctx, s.mailboxId, approved(ago(72 * HOUR), ago(STALE_AFTER_MS + 60_000)));
+      const held = await waiting(trx, s.ctx, s.mailboxId, approved(ago(49 * HOUR_MS)));
+      const fresh = await waiting(trx, s.ctx, s.mailboxId, approved(ago(47 * HOUR_MS)));
+      const flying = await waiting(trx, s.ctx, s.mailboxId, approved(ago(3 * DAY_MS), ago(MINUTE_MS)));
+      const staleLock = await waiting(
+        trx,
+        s.ctx,
+        s.mailboxId,
+        approved(ago(3 * DAY_MS), ago(STALE_AFTER_MS + MINUTE_MS))
+      );
 
       await jobFor(trx, hooks).run();
 
@@ -275,14 +279,14 @@ describe("createExpiryJob", () => {
       const clarification = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
         kind: "clarification",
         draftProviderResult: APPLIED,
-        createdAt: ago(DAY),
-        notifiedAt: ago(49 * HOUR),
+        createdAt: ago(DAY_MS),
+        notifiedAt: ago(49 * HOUR_MS),
       });
       const reminder = await insertDraftAndSend(trx, s.ctx, s.mailboxId, {
         reminder: 1,
         draftProviderResult: APPLIED,
-        createdAt: ago(DAY),
-        notifiedAt: ago(49 * HOUR),
+        createdAt: ago(DAY_MS),
+        notifiedAt: ago(49 * HOUR_MS),
       });
 
       await jobFor(trx, hooks).run();
@@ -297,7 +301,7 @@ describe("createExpiryJob", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const { hooks } = recordingHooks();
-      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       await jobFor(trx, hooks, { uidplus: false }).run();
 
@@ -310,7 +314,7 @@ describe("createExpiryJob", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const { hooks, calls } = recordingHooks();
-      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const p = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
       await trx
         .updateTable("actions")
         .set({ status: "approved", approved_at: now, approved_by: s.userId, approved_via: "telegram" })
@@ -338,8 +342,8 @@ describe("createExpiryJob", () => {
       const { hooks, calls } = recordingHooks();
       const p = await waiting(trx, s.ctx, s.mailboxId, {
         sendStatus: "approved",
-        approved: { userId: s.userId, at: ago(72 * HOUR) },
-        lockedAt: ago(60_000),
+        approved: { userId: s.userId, at: ago(3 * DAY_MS) },
+        lockedAt: ago(MINUTE_MS),
       });
 
       const closed = await expireSend(trx, s.ctx, p.sendId, {
@@ -365,19 +369,19 @@ describe("createExpiryJob", () => {
       // The job walks mailboxes by `created_at`: A comes first, so its error comes before B.
       await trx
         .updateTable("mailboxes")
-        .set({ created_at: ago(DAY) })
+        .set({ created_at: ago(DAY_MS) })
         .where("id", "=", a.mailboxId)
         .execute();
       const { hooks } = recordingHooks();
-      const pa = await waiting(trx, a.ctx, a.mailboxId, { notifiedAt: ago(49 * HOUR) });
-      const pb = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const pa = await waiting(trx, a.ctx, a.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
+      const pb = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       await jobFor(trx, hooks).run();
       expect((await getSend(trx, a.ctx, pa.sendId))?.status).toBe("expired");
       expect((await getSend(trx, { orgId: b.orgId }, pb.sendId))?.status).toBe("expired");
 
-      const pa2 = await waiting(trx, a.ctx, a.mailboxId, { notifiedAt: ago(49 * HOUR) });
-      const pb2 = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const pa2 = await waiting(trx, a.ctx, a.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
+      const pb2 = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
       let thrown = false;
       await jobFor(trx, hooks, {
         listExpired: (dbOrTrx, ctx, mailboxId, opts) => {
@@ -403,7 +407,7 @@ describe("createExpiryJob", () => {
       const a = await setup(trx);
       const b = await createOrgWithMailbox(trx);
       const { hooks } = recordingHooks();
-      const pb = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const pb = await waiting(trx, { orgId: b.orgId }, b.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       const rows = await listExpiredApprovals(trx, a.ctx, b.mailboxId, {
         now,
@@ -435,7 +439,7 @@ describe("suspended organizations", () => {
       });
       await suspendOrg(trx, s.orgId);
       const { hooks } = recordingHooks();
-      const awaiting = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR) });
+      const awaiting = await waiting(trx, s.ctx, s.mailboxId, { notifiedAt: ago(49 * HOUR_MS) });
 
       await jobFor(trx, hooks).run();
 
@@ -445,7 +449,7 @@ describe("suspended organizations", () => {
       const approved = await waiting(trx, s.ctx, s.mailboxId, {
         delegationId: undefined,
         sendStatus: "approved",
-        approved: { userId: s.userId, at: ago(49 * HOUR) },
+        approved: { userId: s.userId, at: ago(49 * HOUR_MS) },
       });
       await resumeOrg(trx, s.orgId, now);
       // The committer still applies the reverse draft row of the first expiry: it opens the provider, not the sender.

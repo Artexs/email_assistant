@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { HOUR_MS } from "../time";
+
 import { addWorkingDays, lastFinishedWeek, previousWeekStart, weekRange, weekStartOf } from "./week";
 
 const TZ = "Europe/Warsaw";
@@ -26,12 +28,12 @@ describe("weekRange", () => {
     const { start, end } = weekRange("2026-10-19", TZ);
     expect(start.toISOString()).toBe("2026-10-18T22:00:00.000Z");
     expect(end.toISOString()).toBe("2026-10-25T23:00:00.000Z");
-    expect((end.getTime() - start.getTime()) / 3_600_000).toBe(169);
+    expect((end.getTime() - start.getTime()) / HOUR_MS).toBe(169);
   });
 
   test("the week of the spring change has 167 hours", () => {
     const { start, end } = weekRange("2026-03-23", TZ);
-    expect((end.getTime() - start.getTime()) / 3_600_000).toBe(167);
+    expect((end.getTime() - start.getTime()) / HOUR_MS).toBe(167);
   });
 });
 

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import type { EvidenceKey } from "@ea/core";
 
 import type { SeedMessage } from "../../src/modules/mail";
@@ -7,7 +8,7 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import { createLlmPause } from "../../src/modules/triage";
-import { createHistoryJob, type HistoryJobDeps } from "../../src/modules/trust";
+import { createHistoryJob, queueHistoryCheck, type HistoryJobDeps } from "../../src/modules/trust";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { Db, TenantContext } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
@@ -17,10 +18,8 @@ import { createOrgWithMailbox } from "./fixtures";
 // Committed mailboxes for the tests of the history job. The job claims with a transaction of its own, so
 // these tests cannot run inside a rolled-back transaction. Every test removes its organization and its user in `finally`.
 // The fixed clock of a box: two hours ahead of the real time of the test, so a check that the database queues with `now()` is due.
-const CLOCK_AHEAD_MS = 2 * 3_600_000;
+const CLOCK_AHEAD_MS = 2 * HOUR_MS;
 export const HISTORY_UID_VALIDITY = 7;
-export const MINUTE_MS = 60_000;
-const DAY_MS = 86_400_000;
 
 export const historySecrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -163,4 +162,22 @@ export async function theCheck(conn: Db, box: HistoryBox) {
   const [row] = rows;
   if (row === undefined) throw new Error("no check");
   return row;
+}
+
+/** The helpers of the history job tests that read or queue through one database handle. */
+export function historyJobKit(db: Db) {
+  async function queue(box: HistoryBox, reason: "connect" | "cli" | "flag_on" = "connect"): Promise<string> {
+    const id = await queueHistoryCheck(db, box, box.mailboxId, reason);
+    if (id === null) throw new Error("check not queued");
+    return id;
+  }
+
+  const emailsOf = (box: HistoryBox) =>
+    db
+      .selectFrom("emails")
+      .select(["id", "status", "skip_reason", "backfilled_at"])
+      .where("mailbox_id", "=", box.mailboxId)
+      .execute();
+
+  return { queue, emailsOf };
 }

@@ -108,7 +108,14 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 
 ## Tests
 
-- `apps/server/test/integration/mail-sync.test.ts`
+- `apps/server/test/integration/mail-sync-copies.test.ts`
+- `apps/server/test/integration/mail-sync-incremental.test.ts`
+- `apps/server/test/integration/mail-sync-returned.test.ts`
+- `apps/server/test/integration/mail-sync-returned-copies.test.ts`
+- `apps/server/test/integration/mail-sync-folders.test.ts`
+- `apps/server/test/integration/mail-sync-folders-cross.test.ts`
+- `apps/server/test/integration/mail-sync-folders-below.test.ts`
+- `apps/server/test/integration/mail-sync-log.test.ts`
 - `apps/server/test/integration/mail-sync-capture.test.ts`
 - `apps/server/test/integration/mail-headers-repo.test.ts`
 - `apps/server/test/integration/mail-flags-repo.test.ts`
@@ -122,7 +129,10 @@ Sync brings mail from an IMAP mailbox into the `emails` table. An owner connects
 - `apps/server/test/integration/mail-host-blocked.test.ts`
 - `apps/server/test/integration/mail-password.test.ts`
 - `apps/server/test/integration/mail-remove.test.ts`
-- `apps/server/test/integration/mail-jobs.test.ts`
+- `apps/server/test/integration/mail-jobs-sync.test.ts`
+- `apps/server/test/integration/mail-jobs-suspended.test.ts`
+- `apps/server/test/integration/mail-jobs-sent-pass.test.ts`
+- `apps/server/test/integration/mail-jobs-logs.test.ts`
 - `apps/server/test/integration/imap-sent-greenmail.test.ts`
 - `apps/server/src/modules/mail/sync-rules.test.ts`
 - `apps/server/src/modules/mail/host-guard.test.ts`

@@ -1,11 +1,10 @@
-import { shiftDatesInText, type CaseText } from "@ea/core";
+import { DAY_MS, shiftDatesInText, type CaseText } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { corpusDir, readScenario, readTexts } from "../platform/sim-files";
 
 // The frozen lab-01 week is only read. The regexes here are the test's own, written apart from the function's.
 const OFFSET = -364;
-const DAY_MS = 86_400_000;
 const NAMES = {
   pl: "stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|października|listopada|grudnia",
   en: "January|February|March|April|May|June|July|August|September|October|November|December",

@@ -1,6 +1,7 @@
 // One seeded week with known answers for the metric readers and the week service (tests run in `withRollback`).
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import type { Category } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -17,7 +18,6 @@ export interface SeededWeek {
   orgB: { ctx: TenantContext; mailboxId: string };
 }
 
-const MINUTE_MS = 60_000;
 const at = (iso: string): Date => new Date(iso);
 
 interface MailSpec {

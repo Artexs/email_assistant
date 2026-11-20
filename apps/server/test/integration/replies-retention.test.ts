@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -20,7 +21,6 @@ afterAll(async () => {
 type Trx = Transaction<DB>;
 
 const NOW = new Date("2026-11-20T02:40:00Z");
-const DAY_MS = 24 * 3_600_000;
 const ago = (days: number, extraMs = 0): Date => new Date(NOW.getTime() - days * DAY_MS - extraMs);
 const BEFORE = ago(RETENTION_TEXT_DAYS);
 

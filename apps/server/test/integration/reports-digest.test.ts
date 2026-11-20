@@ -1,3 +1,4 @@
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -39,9 +40,7 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-06T07:00:00Z");
-const MIN = 60_000;
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
+const MIN = MINUTE_MS;
 const at = (offset: number) => new Date(T.getTime() + offset);
 
 describe("digest rows", () => {
@@ -50,7 +49,7 @@ describe("digest rows", () => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      const row = { userId: a.userId, periodStart: at(-15 * HOUR), periodEnd: T };
+      const row = { userId: a.userId, periodStart: at(-15 * HOUR_MS), periodEnd: T };
       const id = await insertDigest(trx, ctx, { ...row, slotKey: "2026-11-06T08:00" });
       expect(id).toBeString();
       expect(await insertDigest(trx, ctx, { ...row, slotKey: "2026-11-06T08:00" })).toBeNull();
@@ -75,29 +74,29 @@ describe("digestPeriodStart", () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      const member = { userId: a.userId, linkedAt: at(-2 * HOUR) };
-      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-26 * HOUR));
+      const member = { userId: a.userId, linkedAt: at(-2 * HOUR_MS) };
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-26 * HOUR_MS));
 
       const id = await insertDigest(trx, ctx, {
         userId: a.userId,
         slotKey: "2026-11-05T16:00",
-        periodStart: at(-20 * HOUR),
-        periodEnd: at(-8 * HOUR),
+        periodStart: at(-20 * HOUR_MS),
+        periodEnd: at(-8 * HOUR_MS),
       });
       // A digest that was never sent does not move the start.
-      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-26 * HOUR));
-      await markDigestSent(trx, ctx, id as string, at(-8 * HOUR));
-      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-8 * HOUR));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-26 * HOUR_MS));
+      await markDigestSent(trx, ctx, id as string, at(-8 * HOUR_MS));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-8 * HOUR_MS));
 
       // An older period end does not win over the greatest one.
       const old = await insertDigest(trx, ctx, {
         userId: a.userId,
         slotKey: "2026-11-07T08:00",
-        periodStart: at(-11 * DAY),
-        periodEnd: at(-10 * DAY),
+        periodStart: at(-11 * DAY_MS),
+        periodEnd: at(-10 * DAY_MS),
       });
-      await markDigestSent(trx, ctx, old as string, at(-10 * DAY));
-      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-8 * HOUR));
+      await markDigestSent(trx, ctx, old as string, at(-10 * DAY_MS));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-8 * HOUR_MS));
     });
   });
 
@@ -105,20 +104,20 @@ describe("digestPeriodStart", () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      const member = { userId: a.userId, linkedAt: at(-30 * DAY) };
-      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-7 * DAY));
-      const future = { userId: a.userId, linkedAt: at(5 * DAY) };
+      const member = { userId: a.userId, linkedAt: at(-30 * DAY_MS) };
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-7 * DAY_MS));
+      const future = { userId: a.userId, linkedAt: at(5 * DAY_MS) };
       expect(await digestPeriodStart(trx, ctx, future, T)).toEqual(T);
 
       // A sent digest that ended 10 days ago: the start is still at most 7 days back.
       const old = await insertDigest(trx, ctx, {
         userId: a.userId,
         slotKey: "2026-10-27T08:00",
-        periodStart: at(-11 * DAY),
-        periodEnd: at(-10 * DAY),
+        periodStart: at(-11 * DAY_MS),
+        periodEnd: at(-10 * DAY_MS),
       });
-      await markDigestSent(trx, ctx, old as string, at(-10 * DAY));
-      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-7 * DAY));
+      await markDigestSent(trx, ctx, old as string, at(-10 * DAY_MS));
+      expect(await digestPeriodStart(trx, ctx, member, T)).toEqual(at(-7 * DAY_MS));
     });
   });
 });
@@ -126,7 +125,7 @@ describe("digestPeriodStart", () => {
 describe("buildDigestMessage", () => {
   const request = {
     kind: "scheduled" as const,
-    periodStart: at(-15 * HOUR),
+    periodStart: at(-15 * HOUR_MS),
     periodEnd: T,
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
@@ -145,7 +144,7 @@ describe("buildDigestMessage", () => {
 
       const urgentId = await insertTriaged(trx, ctx, a.mailboxId, {
         category: "urgent",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "MARKER-SUBJECT-A",
         from: "boss@x.test",
         reason: "MARKER-REASON",
@@ -155,7 +154,7 @@ describe("buildDigestMessage", () => {
       ]);
       const infoId = await insertTriaged(trx, ctx, a.mailboxId, {
         category: "info",
-        createdAt: at(-3 * HOUR),
+        createdAt: at(-3 * HOUR_MS),
         subject: "News",
         from: "news@x.test",
       });
@@ -170,7 +169,7 @@ describe("buildDigestMessage", () => {
       ]);
       await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, {
         category: "urgent",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "MARKER-SUBJECT-B",
       });
 
@@ -195,18 +194,18 @@ describe("buildDigestMessage", () => {
       const ctx = { orgId: a.orgId };
       await insertDefaultSettings(trx, ctx, a.mailboxId);
       const mail = async (subject: string) =>
-        insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-2 * HOUR), subject });
+        insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-2 * HOUR_MS), subject });
       const fresh = await mail("fresh");
-      await insertAction(trx, ctx, fresh, { type: "move", status: "applied", appliedAt: at(-HOUR) });
+      await insertAction(trx, ctx, fresh, { type: "move", status: "applied", appliedAt: at(-HOUR_MS) });
       const reversed = await mail("reversed");
       const original = await insertAction(trx, ctx, reversed, {
         type: "move",
         status: "applied",
-        appliedAt: at(-HOUR),
+        appliedAt: at(-HOUR_MS),
       });
       await insertAction(trx, ctx, reversed, { type: "move", status: "ready", reversesActionId: original });
       const old = await mail("old");
-      await insertAction(trx, ctx, old, { type: "move", status: "applied", appliedAt: at(-8 * DAY) });
+      await insertAction(trx, ctx, old, { type: "move", status: "applied", appliedAt: at(-8 * DAY_MS) });
 
       const message = await buildDigestMessage(trx, ctx, request);
       const data = message.buttons.flat().map((button) => button.data);
@@ -224,7 +223,7 @@ describe("buildDigestMessage", () => {
       await markSynced(trx, ctx, a.mailboxId, at(-5 * MIN));
       await insertTriaged(trx, ctx, a.mailboxId, {
         category: "urgent",
-        createdAt: at(-16 * HOUR),
+        createdAt: at(-16 * HOUR_MS),
         subject: "MARKER-SUBJECT-A",
       });
       const message = await buildDigestMessage(trx, ctx, request);
@@ -243,9 +242,9 @@ describe("buildDigestMessage", () => {
         actor: "system",
         event: auditEvents.emailSkipped,
         reasonCode: "too_old",
-        at: at(-HOUR),
+        at: at(-HOUR_MS),
       });
-      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-DAY) });
+      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-DAY_MS) });
       const message = await buildDigestMessage(trx, ctx, request);
       expect(message.text).toContain("📭 Not processed (older than 7 days): 1");
       expect(message.text).toContain("⏳ Waiting for triage: 1");
@@ -261,7 +260,7 @@ describe("buildDigestMessage", () => {
           actor: "system",
           event: auditEvents.emailSkipped,
           reasonCode,
-          at: at(-HOUR),
+          at: at(-HOUR_MS),
         });
       }
       const message = await buildDigestMessage(trx, ctx, request);
@@ -277,7 +276,7 @@ describe("buildDigestMessage", () => {
       await insertDefaultSettings(trx, ctx, a.mailboxId);
       await insertTriagedWithActions(trx, ctx, a.mailboxId, {
         category: "needs_reply",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "MARKER-OFFER",
         folder: "Oferty",
         sourceFolder: "Oferty",
@@ -286,7 +285,7 @@ describe("buildDigestMessage", () => {
       });
       await insertTriagedWithActions(trx, ctx, a.mailboxId, {
         category: "needs_reply",
-        createdAt: at(-3 * HOUR),
+        createdAt: at(-3 * HOUR_MS),
         subject: "MARKER-RESCUED",
         folder: "INBOX",
         sourceFolder: "Wiadomości-śmieci",
@@ -295,7 +294,7 @@ describe("buildDigestMessage", () => {
       });
       await insertTriagedWithActions(trx, ctx, a.mailboxId, {
         category: "urgent",
-        createdAt: at(-5 * HOUR),
+        createdAt: at(-5 * HOUR_MS),
         subject: "MARKER-JUNK-URGENT",
         folder: "Wiadomości-śmieci",
         sourceFolder: "Wiadomości-śmieci",
@@ -304,7 +303,7 @@ describe("buildDigestMessage", () => {
       });
       await insertTriagedWithActions(trx, ctx, a.mailboxId, {
         category: "needs_reply",
-        createdAt: at(-4 * HOUR),
+        createdAt: at(-4 * HOUR_MS),
         subject: "MARKER-PLAIN",
         uid: 13,
         actions: [],
@@ -333,7 +332,7 @@ describe("buildDigestMessage", () => {
       const a = await createOrgWithMailbox(trx);
       await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, {
         category: "info",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
         subject: "Seed",
         messageId: "<x@ea-seed.test>",
       });
@@ -347,7 +346,7 @@ describe("buildDigestMessage", () => {
       const a = await createOrgWithMailbox(trx);
       await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, {
         category: "info",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
         subject: "Seed",
       });
       const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
@@ -359,8 +358,8 @@ describe("buildDigestMessage", () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR), subject: "Seed" });
-      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR), subject: "Seed 2" });
+      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR_MS), subject: "Seed" });
+      await insertTriaged(trx, ctx, a.mailboxId, { category: "info", createdAt: at(-HOUR_MS), subject: "Seed 2" });
       await recordLlmCall(trx, ctx, {
         mailboxId: a.mailboxId,
         role: "classifier",
@@ -391,7 +390,7 @@ describe("buildDigestMessage", () => {
 describe("buildDigestMessage with delegations", () => {
   const request = {
     kind: "scheduled" as const,
-    periodStart: at(-15 * HOUR),
+    periodStart: at(-15 * HOUR_MS),
     periodEnd: T,
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
@@ -412,7 +411,7 @@ describe("buildDigestMessage with delegations", () => {
         task: "MARKER-TASK",
         draftStatus: "ready",
         sendStatus: "awaiting_approval",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "Offer",
       });
       await trx
@@ -421,7 +420,10 @@ describe("buildDigestMessage with delegations", () => {
         .where("email_id", "=", pending.emailId)
         .execute();
 
-      const sentOne = await insertDraftAndSend(trx, ctx, a.mailboxId, { delegateId: anna, createdAt: at(-3 * HOUR) });
+      const sentOne = await insertDraftAndSend(trx, ctx, a.mailboxId, {
+        delegateId: anna,
+        createdAt: at(-3 * HOUR_MS),
+      });
       await insertDelegation(trx, ctx, {
         mailboxId: a.mailboxId,
         emailId: sentOne.emailId,
@@ -432,7 +434,7 @@ describe("buildDigestMessage with delegations", () => {
       });
       const overdueOne = await insertDraftAndSend(trx, ctx, a.mailboxId, {
         delegateId: anna,
-        createdAt: at(-4 * HOUR),
+        createdAt: at(-4 * HOUR_MS),
       });
       await insertDelegation(trx, ctx, {
         mailboxId: a.mailboxId,
@@ -466,7 +468,7 @@ describe("buildDigestMessage with delegations", () => {
         sendActionId: row.sendId,
         status: "sent",
       });
-      await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, { category: "info", createdAt: at(-HOUR) });
+      await insertTriaged(trx, { orgId: a.orgId }, a.mailboxId, { category: "info", createdAt: at(-HOUR_MS) });
       const message = await buildDigestMessage(trx, { orgId: a.orgId }, request);
       expect(message.text).not.toContain("Delegations");
     });
@@ -501,7 +503,7 @@ describe("buildDigestMessage with the handled share", () => {
 describe("buildDigestMessage: suspicious mail", () => {
   const request = {
     kind: "scheduled" as const,
-    periodStart: at(-15 * HOUR),
+    periodStart: at(-15 * HOUR_MS),
     periodEnd: T,
     slot: { date: "2026-11-06", time: "08:00", late: false },
     now: T,
@@ -524,7 +526,7 @@ describe("buildDigestMessage: suspicious mail", () => {
     ) => {
       const emailId = await insertTriaged(trx, orgCtx, mailboxId, {
         category: "delegation",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject,
         suspiciousReasons: reasons,
       });
@@ -576,7 +578,7 @@ describe("buildDigestMessage: suspicious mail", () => {
 describe("digest attachment line (F109 stage 06)", () => {
   const request = {
     kind: "on_demand" as const,
-    periodStart: at(-3 * HOUR),
+    periodStart: at(-3 * HOUR_MS),
     periodEnd: T,
     slot: null,
     now: T,
@@ -596,7 +598,7 @@ describe("digest attachment line (F109 stage 06)", () => {
       await insertDefaultSettings(trx, ctxB, b.mailboxId);
       const withFile = await insertTriaged(trx, ctx, a.mailboxId, {
         category: "info",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "SUBJECT-FILE",
       });
       await insertTriaged(trx, ctx, a.mailboxId, {
@@ -606,7 +608,7 @@ describe("digest attachment line (F109 stage 06)", () => {
       });
       const inOther = await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "SUBJECT-OTHER",
       });
       await insertAttachmentHeaders(trx, ctx, withFile, [pdf]);
@@ -637,7 +639,7 @@ describe("digest attachment line (F109 stage 06)", () => {
 describe("digest why lines (F110 stage 16)", () => {
   const request = {
     kind: "on_demand" as const,
-    periodStart: at(-3 * HOUR),
+    periodStart: at(-3 * HOUR_MS),
     periodEnd: T,
     slot: null,
     now: T,
@@ -656,7 +658,7 @@ describe("digest why lines (F110 stage 16)", () => {
       await insertDefaultSettings(trx, ctxB, b.mailboxId);
       await insertTriaged(trx, ctx, a.mailboxId, {
         category: "info",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "SUBJECT-MODEL",
         reason: "A model reason",
         confidence: 0.87,
@@ -716,7 +718,7 @@ describe("digest why lines (F110 stage 16)", () => {
       });
       await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "SUBJECT-OTHER",
         reason: "Other reason",
         confidence: 0.87,

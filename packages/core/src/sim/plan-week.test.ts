@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { localDateTime } from "../digest/local-time";
+import { DAY_MS, MINUTE_MS } from "../time";
 
 import { defaultWeekSpec, miniScenario } from "./fixtures";
 import { senderHistoryFor } from "./history-gen";
@@ -99,7 +100,7 @@ describe("planWeek", () => {
     expect(replies.length).toBeGreaterThan(sentReplies.length);
     for (const slot of replies) {
       const parent = byId.get(slot.parentId as string) as Slot;
-      expect(Date.parse(slot.receivedAt) - Date.parse(parent.receivedAt)).toBeGreaterThanOrEqual(10 * 60_000);
+      expect(Date.parse(slot.receivedAt) - Date.parse(parent.receivedAt)).toBeGreaterThanOrEqual(10 * MINUTE_MS);
       expect(slot.threadId).toBeDefined();
       expect(parent.threadId).toBe(slot.threadId);
       expect(depth(slot)).toBeLessThanOrEqual(5);
@@ -113,9 +114,9 @@ describe("planWeek", () => {
   test("4 days and hours: the local date follows the id; few weekday mails are off hours", () => {
     const start = Date.parse(`${scenario.calendar.weekStart}T00:00:00Z`);
     for (const slot of slots) {
-      expect(localDate(slot)).toBe(new Date(start + (dayOf(slot) - 1) * 86_400_000).toISOString().slice(0, 10));
+      expect(localDate(slot)).toBe(new Date(start + (dayOf(slot) - 1) * DAY_MS).toISOString().slice(0, 10));
     }
-    const minutes = slots.map((s) => Math.floor(Date.parse(s.receivedAt) / 60_000));
+    const minutes = slots.map((s) => Math.floor(Date.parse(s.receivedAt) / MINUTE_MS));
     expect(new Set(minutes).size).toBe(slots.length);
     for (let day = 1; day <= 5; day++) {
       const off = slots.filter((s) => dayOf(s) === day && (localHour(s) < 7 || localHour(s) >= 20));

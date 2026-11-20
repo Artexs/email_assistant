@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 
-import { QUOTA_TIMEZONE, quotaDayStart } from "@ea/core";
+import { QUOTA_TIMEZONE, quotaDayStart, DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { auditEvents, recordAudit } from "../../src/modules/audit";
@@ -140,8 +140,8 @@ describe("org:create CLI", () => {
     orgIds.push(orgId);
     const row = await planRow(orgId);
     expect(row.plan).toBe("trial");
-    const expected = before + 30 * 24 * 60 * 60 * 1000;
-    expect(Math.abs((row.trial_ends_at?.getTime() ?? 0) - expected)).toBeLessThan(60_000);
+    const expected = before + 30 * DAY_MS;
+    expect(Math.abs((row.trial_ends_at?.getTime() ?? 0) - expected)).toBeLessThan(MINUTE_MS);
     expect(created.stdout).toContain(`plan trial trial_ends_at ${row.trial_ends_at?.toISOString()}`);
 
     const refused = await run(createScript, [
@@ -164,12 +164,12 @@ describe("org:create CLI", () => {
 describe("orgStatusLines", () => {
   test("prints plan, mailbox states, calls and chats as ids and counts", async () => {
     const now = new Date();
-    const yesterday = new Date(quotaDayStart(now, QUOTA_TIMEZONE).getTime() - 60 * 60 * 1000);
+    const yesterday = new Date(quotaDayStart(now, QUOTA_TIMEZONE).getTime() - HOUR_MS);
     const a = await db.transaction().execute(async (trx) => {
       const created = await createOrgWithMailbox(trx, { address: `status-a1-${randomUUID()}@x.test` });
       await trx
         .updateTable("organizations")
-        .set({ plan: "trial", trial_ends_at: new Date(now.getTime() + 864e5) })
+        .set({ plan: "trial", trial_ends_at: new Date(now.getTime() + DAY_MS) })
         .where("id", "=", created.orgId)
         .execute();
       return created;

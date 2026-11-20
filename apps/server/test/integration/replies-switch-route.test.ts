@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -130,7 +131,7 @@ describe("PATCH /api/settings/:mailboxId/switches/reply_drafts", () => {
     await db.updateTable("mailbox_settings").set({ mode: "assist" }).where("mailbox_id", "=", mine).execute();
     const url = `/api/settings/${mine}/switches/reply_drafts`;
     expect((await app.request(url, as("owner", patch(true)))).status).toBe(200);
-    const createdAt = new Date(NOW.getTime() - 3_600_000);
+    const createdAt = new Date(NOW.getTime() - HOUR_MS);
     const replyA = await db
       .transaction()
       .execute((trx) => insertDraftAndSend(trx, ctx, mine, { kind: "reply", createdAt }));

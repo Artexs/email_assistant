@@ -1,4 +1,4 @@
-import { OPERATOR_ALERT_KINDS, type SloKind } from "@ea/core";
+import { OPERATOR_ALERT_KINDS, type SloKind, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -36,9 +36,7 @@ const cfg = sloThresholds(
   })
 );
 const T0 = new Date("2026-11-20T10:00:00Z");
-const plus = (minutes: number): Date => new Date(T0.getTime() + minutes * 60_000);
-const MINUTE = 1;
-const HOUR = 60;
+const plus = (ms: number): Date => new Date(T0.getTime() + ms);
 
 // The test runs in a transaction that rolls back; it first hides the rows of other runs.
 async function inRollback(fn: (trx: Trx) => Promise<void>): Promise<void> {
@@ -137,7 +135,7 @@ describe("the ops.slo tick", () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), T0);
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(5 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(5 * MINUTE_MS));
       expect(h.sent).toHaveLength(1);
       expect((await rows(trx, "slo_disk"))[0]?.notice_count).toBe(1);
     });
@@ -147,14 +145,14 @@ describe("the ops.slo tick", () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), T0);
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR - 1));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR_MS - MINUTE_MS));
       expect(h.sent).toHaveLength(1);
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR_MS));
       expect(h.sent).toHaveLength(2);
       expect(h.sent[1]?.split("\n")[0]).toBe("STILL OPEN slo_disk (since 2026-11-20T10:00:00.000Z)");
       expect((await rows(trx, "slo_disk"))[0]?.notice_count).toBe(2);
       // A tick in the same minute after the repeat sends nothing more.
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR + 5 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR_MS + 5 * MINUTE_MS));
       expect(h.sent).toHaveLength(2);
     });
   });
@@ -163,17 +161,17 @@ describe("the ops.slo tick", () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), T0);
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR));
-      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(6 * HOUR + 5 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(6 * HOUR_MS));
+      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(6 * HOUR_MS + 5 * MINUTE_MS));
       expect(h.sent).toHaveLength(3);
       expect(h.sent[2]?.split("\n")[0]).toBe("RESOLVED slo_disk (open 365 min)");
       expect(h.sent[2]).toContain("Free 40.0 % (60.0 GB)");
       const [row] = await rows(trx, "slo_disk");
-      expect(row?.resolved_sent_at?.getTime()).toBe(plus(6 * HOUR + 5 * MINUTE).getTime());
-      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(6 * HOUR + 10 * MINUTE));
+      expect(row?.resolved_sent_at?.getTime()).toBe(plus(6 * HOUR_MS + 5 * MINUTE_MS).getTime());
+      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(6 * HOUR_MS + 10 * MINUTE_MS));
       expect(h.sent).toHaveLength(3);
       // The same kind can open again as a new incident.
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(7 * HOUR));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(7 * HOUR_MS));
       expect(h.sent).toHaveLength(4);
       expect(await rows(trx, "slo_disk")).toHaveLength(2);
     });
@@ -184,23 +182,23 @@ describe("the ops.slo tick", () => {
       const h = harness(trx);
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), T0);
       h.state.failSend = true;
-      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(10 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(10 * MINUTE_MS));
       let [row] = await rows(trx, "slo_disk");
-      expect(row?.resolved_at?.getTime()).toBe(plus(10 * MINUTE).getTime());
+      expect(row?.resolved_at?.getTime()).toBe(plus(10 * MINUTE_MS).getTime());
       expect(row?.resolved_sent_at).toBeNull();
       h.state.failSend = false;
-      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(15 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(15 * MINUTE_MS));
       expect(h.sent).toHaveLength(2);
       // The length of the incident ends at the first clear tick, not at the late send.
       expect(h.sent[1]?.split("\n")[0]).toBe("RESOLVED slo_disk (open 10 min)");
       [row] = await rows(trx, "slo_disk");
-      expect(row?.resolved_at?.getTime()).toBe(plus(10 * MINUTE).getTime());
-      expect(row?.resolved_sent_at?.getTime()).toBe(plus(15 * MINUTE).getTime());
+      expect(row?.resolved_at?.getTime()).toBe(plus(10 * MINUTE_MS).getTime());
+      expect(row?.resolved_sent_at?.getTime()).toBe(plus(15 * MINUTE_MS).getTime());
       // The mark is not written twice: a later clear tick changes nothing.
-      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(20 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(20 * MINUTE_MS));
       expect(h.sent).toHaveLength(2);
       [row] = await rows(trx, "slo_disk");
-      expect(row?.resolved_sent_at?.getTime()).toBe(plus(15 * MINUTE).getTime());
+      expect(row?.resolved_sent_at?.getTime()).toBe(plus(15 * MINUTE_MS).getTime());
     });
   });
 
@@ -221,13 +219,13 @@ describe("the ops.slo tick", () => {
         },
       ]);
       h.state.failSend = false;
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(5 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)]), plus(5 * MINUTE_MS));
       expect(h.sent).toHaveLength(1);
       expect(h.sent[0]?.split("\n")[0]).toBe("ALERT slo_disk");
       found = await rows(trx, "slo_disk");
       expect(found).toHaveLength(1);
       expect(found[0]?.notice_count).toBe(1);
-      expect(found[0]?.open_sent_at?.getTime()).toBe(plus(5 * MINUTE).getTime());
+      expect(found[0]?.open_sent_at?.getTime()).toBe(plus(5 * MINUTE_MS).getTime());
     });
   });
 
@@ -237,10 +235,10 @@ describe("the ops.slo tick", () => {
       h.state.failSend = true;
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), T0);
       h.state.failSend = false;
-      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(5 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskClear)]), plus(5 * MINUTE_MS));
       expect(h.sent).toHaveLength(0);
       const [row] = await rows(trx, "slo_disk");
-      expect(row?.resolved_sent_at?.getTime()).toBe(plus(5 * MINUTE).getTime());
+      expect(row?.resolved_sent_at?.getTime()).toBe(plus(5 * MINUTE_MS).getTime());
       expect(row?.notice_count).toBe(0);
     });
   });
@@ -257,7 +255,7 @@ describe("the ops.slo tick", () => {
       expect(row?.notice_count).toBe(1);
       expect(row?.open_sent_at?.getTime()).toBe(T0.getTime());
       // The step counts as sent: the next tick does not log it again.
-      await runSloTick(h.deps([entry("slo_disk", diskFiring)], false), plus(5 * MINUTE));
+      await runSloTick(h.deps([entry("slo_disk", diskFiring)], false), plus(5 * MINUTE_MS));
       expect(h.lines).toHaveLength(1);
     });
   });
@@ -285,7 +283,7 @@ describe("the ops.slo tick", () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       await runSloTick(h.deps([entry("slo_disk", diskFiring)]), T0);
-      await runSloTick(h.deps([entry("slo_disk", null)]), plus(7 * HOUR));
+      await runSloTick(h.deps([entry("slo_disk", null)]), plus(7 * HOUR_MS));
       expect(h.sent).toHaveLength(1);
       const [row] = await rows(trx, "slo_disk");
       expect(row?.resolved_at).toBeNull();
@@ -458,7 +456,7 @@ describe("the ops.slo tick with the disk and backup-age checks", () => {
       expect(await rows(trx, "slo_disk")).toHaveLength(1);
       expect(await rows(trx, "slo_backup_age")).toHaveLength(1);
       // five minutes later, nothing changed: no new text
-      await runSloTick(h.deps(entries(lowDisk, noFile)), plus(5 * MINUTE));
+      await runSloTick(h.deps(entries(lowDisk, noFile)), plus(5 * MINUTE_MS));
       expect(h.sent).toHaveLength(2);
     });
   });
@@ -467,7 +465,7 @@ describe("the ops.slo tick with the disk and backup-age checks", () => {
     await inRollback(async (trx) => {
       const h = harness(trx);
       await runSloTick(h.deps(entries(lowDisk, noFile)), T0);
-      await runSloTick(h.deps(entries(goodDisk, goodFile)), plus(10 * MINUTE));
+      await runSloTick(h.deps(entries(goodDisk, goodFile)), plus(10 * MINUTE_MS));
       expect(h.sent.map((text) => text.split("\n")[0])).toEqual([
         "ALERT slo_disk",
         "ALERT slo_backup_age",

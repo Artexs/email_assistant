@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { buildOutgoingMessage, draftPayloadSchema, textTables } from "@ea/core";
+import { buildOutgoingMessage, draftPayloadSchema, textTables, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -549,9 +549,9 @@ describe("editApproval: the new version", () => {
       const result = await edit(trx, s, s.p.sendId);
       expect(result.kind).toBe("edited");
 
-      const notify = await listSendResultsToNotify(trx, s.ctx, { limit: 50, now: NOW, pendingCopyMaxAgeMs: 60_000 });
+      const notify = await listSendResultsToNotify(trx, s.ctx, { limit: 50, now: NOW, pendingCopyMaxAgeMs: MINUTE_MS });
       expect(notify.map((send) => send.id)).not.toContain(s.p.sendId);
-      const later = new Date(NOW.getTime() + 30 * 24 * 3_600_000);
+      const later = new Date(NOW.getTime() + 30 * DAY_MS);
       expect(
         await listExpiredApprovals(trx, s.ctx, s.mailboxId, { now: later, limit: 50, staleBefore: later })
       ).not.toContainEqual(expect.objectContaining({ id: s.p.sendId }));
@@ -564,7 +564,7 @@ describe("editApproval: the new version", () => {
           uidplus: true,
         })
       ).toBe(false);
-      const range = { start: new Date(NOW.getTime() - 86_400_000), end: later };
+      const range = { start: new Date(NOW.getTime() - DAY_MS), end: later };
       expect(
         await listRejectRows(trx, s.ctx, {
           range,

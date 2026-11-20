@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import type { MessageMeta } from "./port";
@@ -12,9 +13,8 @@ import {
 } from "./sent-rules";
 import { baseDedupKey, contentHash } from "./sync-rules";
 
-const DAY = 24 * 3_600_000;
 const NOW = new Date("2026-11-20T10:00:00Z");
-const ago = (days: number) => new Date(NOW.getTime() - days * DAY);
+const ago = (days: number) => new Date(NOW.getTime() - days * DAY_MS);
 
 function meta(overrides: Partial<MessageMeta> = {}): MessageMeta {
   return {
@@ -34,7 +34,7 @@ function meta(overrides: Partial<MessageMeta> = {}): MessageMeta {
   };
 }
 
-function row(m: MessageMeta, origin: SentOrigin = null, textWindowMs = 14 * DAY) {
+function row(m: MessageMeta, origin: SentOrigin = null, textWindowMs = 14 * DAY_MS) {
   return toNewSentEmail(m, { mailboxId: "mb", path: "Sent", uidValidity: 7, now: NOW, textWindowMs, origin });
 }
 
@@ -118,8 +118,8 @@ describe("toNewSentEmail", () => {
   });
 
   test("a short text window turns older mail into headers only", () => {
-    expect(row(meta({ internalDate: ago(4) }), null, 3 * DAY)?.content).toBe("headers_only");
-    expect(row(meta({ internalDate: ago(2) }), null, 3 * DAY)?.content).toBe("pending");
+    expect(row(meta({ internalDate: ago(4) }), null, 3 * DAY_MS)?.content).toBe("headers_only");
+    expect(row(meta({ internalDate: ago(2) }), null, 3 * DAY_MS)?.content).toBe("pending");
   });
 
   test("no Date header: sentAt is INTERNALDATE; no Message-ID: a hash key and the key as thread key", () => {
@@ -140,8 +140,8 @@ describe("toNewSentEmail", () => {
 
 describe("sentTextWindowMs", () => {
   test("is the smaller of 14 days and the retention", () => {
-    expect(sentTextWindowMs(3)).toBe(3 * DAY);
-    expect(sentTextWindowMs(30)).toBe(14 * DAY);
+    expect(sentTextWindowMs(3)).toBe(3 * DAY_MS);
+    expect(sentTextWindowMs(30)).toBe(14 * DAY_MS);
   });
 });
 

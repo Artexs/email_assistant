@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -76,7 +77,7 @@ async function digestRow(trx: Transaction<DB>, s: Awaited<ReturnType<typeof setu
   const digestId = await insertDigest(trx, s.ctx, {
     userId: s.userId,
     slotKey: "2026-11-17T08:00",
-    periodStart: new Date(s.now.getTime() - 86_400_000),
+    periodStart: new Date(s.now.getTime() - DAY_MS),
     periodEnd: s.now,
   });
   const id = await insertOutbox(trx, s.ctx, {
@@ -258,10 +259,10 @@ test("the APPEND landed and the mark did not: the next claim finds the message b
       // A crash after the APPEND leaves the row `sending` with an old lock (the mark never landed).
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", sent_at: null, locked_at: new Date(s.now.getTime() - 10 * 60_000) })
+        .set({ status: "sending", sent_at: null, locked_at: new Date(s.now.getTime() - 10 * MINUTE_MS) })
         .where("id", "=", id)
         .execute();
-      const later = new Date(s.now.getTime() + 60_000);
+      const later = new Date(s.now.getTime() + MINUTE_MS);
       await createReportMailSender({ db: trx, mailbox, now: () => later, webBaseUrl: BASE }).run();
       const after = await server.fetchAbove("INBOX", 0);
       expect(after.map((meta) => meta.uid)).toEqual(before.map((meta) => meta.uid));

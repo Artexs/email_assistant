@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { replyOutcomeCounts, weekRange, type ReplyOutcomeCounts, type WeekQuery } from "@ea/core";
+import { replyOutcomeCounts, weekRange, type ReplyOutcomeCounts, type WeekQuery, DAY_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -39,7 +39,6 @@ type Trx = Transaction<DB>;
 
 const WEEK = "2026-11-16";
 const RANGE = weekRange(WEEK, "Europe/Warsaw");
-const DAY_MS = 24 * 3_600_000;
 const clock: Clock = { now: NOW };
 const query = (over: Partial<WeekQuery> = {}): WeekQuery => ({
   range: RANGE,
@@ -103,7 +102,7 @@ async function redraftedPair(trx: Trx, box: JobBox, state: { status: string; rea
     .where("supersedes_action_id", "=", first.sendId)
     .where("type", "=", "send")
     .executeTakeFirstOrThrow();
-  await setSend(trx, second.id, state, new Date(at.getTime() + 60_000));
+  await setSend(trx, second.id, state, new Date(at.getTime() + MINUTE_MS));
   return { first: first.sendId, second: second.id, emailId: first.emailId };
 }
 

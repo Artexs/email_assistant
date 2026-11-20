@@ -1,4 +1,4 @@
-import { textTables } from "@ea/core";
+import { textTables, HOUR_MS, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -11,7 +11,7 @@ import type { DB } from "../../src/platform/db";
 
 import { addMember, createOrgWithMailbox, insertTestEmail, linkChat, randomChatId, renderedOf } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { addReplyMail, draftedReply, HOUR, MINUTE, NOW, requestsOf, setMailAddresses } from "./reply-job-fixtures";
+import { addReplyMail, draftedReply, NOW, requestsOf, setMailAddresses } from "./reply-job-fixtures";
 import { cardOut, openSend, outboxOf, rig, type Rig } from "./reply-telegram-fixtures";
 
 // The repair of the review of the Telegram redraft: a request is answered once and only when it ended now, the buttons follow
@@ -21,8 +21,6 @@ const db = testDb();
 afterAll(async () => {
   await db.destroy();
 });
-
-const DAY = 24 * HOUR;
 
 // The state after a redraft: the card of version 1 went out, the user wrote a line, the job made version 2 and the card of it is queued.
 async function redrafted(trx: Transaction<DB>, r: Rig) {
@@ -52,13 +50,13 @@ describe("a request is answered once, and only when it ended now", () => {
       // 91 days later by the clock of the job. The requests are moved to the real clock of this run, because retention writes the
       // clock of the database: the detector must read the end time of the request, not the time of the clearing.
       const realNow = new Date();
-      const ended = new Date(realNow.getTime() - 91 * DAY);
+      const ended = new Date(realNow.getTime() - 91 * DAY_MS);
       await trx
         .updateTable("reply_requests")
-        .set({ created_at: ended, updated_at: new Date(ended.getTime() + 3 * MINUTE) })
+        .set({ created_at: ended, updated_at: new Date(ended.getTime() + 3 * MINUTE_MS) })
         .where("org_id", "=", r.box.ctx.orgId)
         .execute();
-      const cleared = await clearReplyTexts(trx, r.box.ctx, { before: new Date(realNow.getTime() - 90 * DAY) });
+      const cleared = await clearReplyTexts(trx, r.box.ctx, { before: new Date(realNow.getTime() - 90 * DAY_MS) });
       expect(cleared).toBeGreaterThanOrEqual(1);
       expect((await redraftRequests(trx, r))[0]?.instruction).toBeNull();
       r.clock.now = realNow;
@@ -80,7 +78,7 @@ describe("a request is answered once, and only when it ended now", () => {
       await trx
         .updateTable("reply_requests")
         .set({
-          created_at: new Date(r.clock.now.getTime() - 91 * DAY),
+          created_at: new Date(r.clock.now.getTime() - 91 * DAY_MS),
           updated_at: new Date(r.clock.now.getTime() + 30_000),
         })
         .where("org_id", "=", r.box.ctx.orgId)
@@ -251,14 +249,14 @@ describe("the buttons of the card follow the recipient rules", () => {
     await withRollback(db, async (trx) => {
       const r = await rig(trx);
       const second = await addMember(trx, r.box.ctx.orgId, "owner");
-      await linkChat(trx, r.box.ctx, second, randomChatId(), new Date(NOW.getTime() - HOUR));
+      await linkChat(trx, r.box.ctx, second, randomChatId(), new Date(NOW.getTime() - HOUR_MS));
       const emailId = await addReplyMail(trx, r.box, {
         category: "urgent",
-        receivedAt: new Date(NOW.getTime() - 10 * MINUTE),
+        receivedAt: new Date(NOW.getTime() - 10 * MINUTE_MS),
       });
       await trx
         .updateTable("triage_results")
-        .set({ created_at: new Date(NOW.getTime() - 5 * MINUTE) })
+        .set({ created_at: new Date(NOW.getTime() - 5 * MINUTE_MS) })
         .where("email_id", "=", emailId)
         .execute();
 
@@ -298,7 +296,7 @@ describe("a line of text finds only what belongs to its user and organization", 
         sent_at: NOW,
         external_message_id: "7777",
       };
-      const link = { userId: r.box.userId, linkedAt: new Date(NOW.getTime() - HOUR) };
+      const link = { userId: r.box.userId, linkedAt: new Date(NOW.getTime() - HOUR_MS) };
       await trx
         .insertInto("outbox")
         .values({

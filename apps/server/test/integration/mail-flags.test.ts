@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -27,7 +28,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-03T12:00:00Z");
-const MIN = 60_000;
+const MIN = MINUTE_MS;
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 interface Box {
@@ -76,7 +77,7 @@ function jobWith(trx: Transaction<DB>, fakes: Map<string, MailProvider>, clock: 
 }
 
 function deliverTwo(fake: FakeMailProvider): number[] {
-  const internalDate = new Date(NOW.getTime() - 3_600_000);
+  const internalDate = new Date(NOW.getTime() - HOUR_MS);
   return [1, 2].map((n) => fake.deliver("INBOX", seed(n), { internalDate }));
 }
 
@@ -189,7 +190,7 @@ describe("flag refresh in the sync job", () => {
       uidNextValue: 1,
       capabilities: { move: false },
     });
-    const internalDate = new Date(NOW.getTime() - 3_600_000);
+    const internalDate = new Date(NOW.getTime() - HOUR_MS);
     const u1 = fake.deliver("INBOX", seed(1), { internalDate });
     const u2 = fake.deliver("Oferty", seed(2), { internalDate });
     const clock = { at: NOW };
@@ -430,7 +431,7 @@ describe("refreshFlags", () => {
       // The newest mail is gone from the server (uid 999 is not in the fake), so it sorts first among the never-checked mail.
       const gone = await insertTestEmail(trx, ctx, box.mailboxId, {
         uid: 999,
-        received_at: new Date(NOW.getTime() - 60_000),
+        received_at: new Date(NOW.getTime() - MINUTE_MS),
         message_id_header: "<gone@x.test>",
       });
       const at = (run: number) => new Date(NOW.getTime() + run * 11 * MIN);

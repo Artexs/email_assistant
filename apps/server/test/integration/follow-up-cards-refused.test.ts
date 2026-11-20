@@ -1,5 +1,6 @@
 // A follow-up card that the renderer refuses is not tried again at every run, so 50 of them do not hold
 // back newer cards. Every test runs in a transaction that is rolled back.
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -21,8 +22,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const at = (ms: number) => new Date(T.getTime() + ms);
 const LIMIT = APPROVAL_LIMIT;
 
@@ -46,14 +45,14 @@ async function world(trx: Transaction<DB>) {
   await isolateChannels(trx);
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
-  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE_MS));
   await trx
     .updateTable("mailboxes")
-    .set({ status_changed_at: at(-HOUR) })
+    .set({ status_changed_at: at(-HOUR_MS) })
     .where("id", "=", created.mailboxId)
     .execute();
-  await linkChat(trx, ctx, created.userId, randomChatId(), at(-2 * HOUR));
-  await consentRow(trx, created.orgId, created.userId, CURRENT_CONSENT, at(-HOUR));
+  await linkChat(trx, ctx, created.userId, randomChatId(), at(-2 * HOUR_MS));
+  await consentRow(trx, created.orgId, created.userId, CURRENT_CONSENT, at(-HOUR_MS));
   await setOrgFeature(trx, ctx, { flag: "approvals_page", enabled: true, actor: "cli", now: T });
   return { ctx, orgId: created.orgId, mailboxId: created.mailboxId, owner: created.userId };
 }
@@ -62,7 +61,7 @@ async function run(trx: Transaction<DB>): Promise<void> {
   await detectNotices({
     db: trx,
     now: () => T,
-    startedAt: at(-HOUR),
+    startedAt: at(-HOUR_MS),
     testMail: NO_TEST_SENDERS,
     webBaseUrl: "https://panel.example.test",
   });
@@ -89,11 +88,11 @@ describe("N5 refused follow-up cards", () => {
         const made = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
           to: long.slice(0, 5),
           cc: long.slice(5),
-          createdAt: at(-3 * HOUR + i * 1000),
+          createdAt: at(-3 * HOUR_MS + i * 1000),
         });
         refused.push(made.sendId);
       }
-      const good = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { createdAt: at(-HOUR) });
+      const good = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { createdAt: at(-HOUR_MS) });
 
       // Run 1 lists the 50 refused rows and no card goes out.
       await run(trx);

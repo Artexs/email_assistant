@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { formatWithOptions } from "node:util";
 
 import type { LiveRunPlan } from "@ea/core";
+import { MINUTE_MS } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { LabMailError } from "./mail-client";
@@ -444,7 +445,7 @@ describe("runServe (spec tests 7 and 8)", () => {
     envIssues: () => [],
     takeLock: () => ({ touch: () => true, release: () => calls.push("release") }),
     sleep: async () => undefined,
-    heartbeatEveryMs: 60_000,
+    heartbeatEveryMs: MINUTE_MS,
     ...over,
   });
 

@@ -2,6 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { MINUTE_MS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 // Guard against the leak of `f097-sim-*` and `f116-sim-sent-*` folders in the temp dir. About 1,700 of them used the
@@ -34,18 +35,22 @@ describe("temp folders of the sim fixtures", () => {
     expect(missing).toEqual([]);
   });
 
-  test("a run of the helpers leaves no folder in the temp dir", () => {
-    const scratch = mkdtempSync(join(tmpdir(), "tmp-leak-guard-"));
-    try {
-      const result = Bun.spawnSync(["bun", "test", join(here, "tmp-leak.fixture.ts")], {
-        env: { ...process.env, TMPDIR: scratch },
-      });
-      const output = `${result.stdout.toString()}${result.stderr.toString()}`;
-      expect(output).toContain("1 pass");
-      expect(result.exitCode).toBe(0);
-      expect(readdirSync(scratch)).toEqual([]);
-    } finally {
-      rmSync(scratch, { recursive: true, force: true });
-    }
-  }, 60_000);
+  test(
+    "a run of the helpers leaves no folder in the temp dir",
+    () => {
+      const scratch = mkdtempSync(join(tmpdir(), "tmp-leak-guard-"));
+      try {
+        const result = Bun.spawnSync(["bun", "test", join(here, "tmp-leak.fixture.ts")], {
+          env: { ...process.env, TMPDIR: scratch },
+        });
+        const output = `${result.stdout.toString()}${result.stderr.toString()}`;
+        expect(output).toContain("1 pass");
+        expect(result.exitCode).toBe(0);
+        expect(readdirSync(scratch)).toEqual([]);
+      } finally {
+        rmSync(scratch, { recursive: true, force: true });
+      }
+    },
+    MINUTE_MS
+  );
 });

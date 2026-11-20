@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -20,8 +21,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 // 13:00 in Europe/Warsaw: outside the quiet hours.
 const NOW = new Date("2026-11-14T12:00:00Z");
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -96,12 +95,12 @@ describe("a mailbox whose host the guard refuses: the whole episode", () => {
         keyVersion: secret.keyVersion,
       });
       const assistantId = await addMember(trx, created.orgId);
-      await linkChat(trx, ctx, created.userId, randomChatId(), at(-HOUR));
-      await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR));
-      await markSynced(trx, ctx, mailboxId, at(-5 * MINUTE));
+      await linkChat(trx, ctx, created.userId, randomChatId(), at(-HOUR_MS));
+      await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR_MS));
+      await markSynced(trx, ctx, mailboxId, at(-5 * MINUTE_MS));
       await trx
         .updateTable("mailboxes")
-        .set({ status_changed_at: at(-HOUR) })
+        .set({ status_changed_at: at(-HOUR_MS) })
         .where("id", "=", mailboxId)
         .execute();
 
@@ -123,7 +122,7 @@ describe("a mailbox whose host the guard refuses: the whole episode", () => {
         now: () => clock,
       });
       const notices = (time: Date) =>
-        detectNotices({ db: trx, now: () => time, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+        detectNotices({ db: trx, now: () => time, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
       const mailbox = () =>
         trx
           .selectFrom("mailboxes")
@@ -147,7 +146,7 @@ describe("a mailbox whose host the guard refuses: the whole episode", () => {
       });
 
       // 2: one notice for the owner, with no host name and no address.
-      await notices(at(MINUTE));
+      await notices(at(MINUTE_MS));
       let found = await outboxRows(trx, created.orgId, "host_blocked");
       expect(found).toHaveLength(1);
       expect(found[0]).toMatchObject({
@@ -161,9 +160,9 @@ describe("a mailbox whose host the guard refuses: the whole episode", () => {
       }
 
       // 3: still refused: nothing new, and no "sync is late" notice.
-      clock = at(5 * MINUTE);
+      clock = at(5 * MINUTE_MS);
       await job.run();
-      await notices(at(6 * MINUTE));
+      await notices(at(6 * MINUTE_MS));
       found = await outboxRows(trx, created.orgId, "host_blocked");
       expect(found).toHaveLength(1);
       expect(await auditCount(trx, mailboxId, "mailbox.host_blocked")).toBe(1);
@@ -171,17 +170,17 @@ describe("a mailbox whose host the guard refuses: the whole episode", () => {
 
       // 4: the guard passes: the re-check reopens the mailbox and the same run syncs it.
       answers.set("imap.x.test", "93.184.216.34");
-      clock = at(10 * MINUTE);
+      clock = at(10 * MINUTE_MS);
       await job.run();
       expect(await mailbox()).toMatchObject({
         status: "active",
-        status_changed_at: at(10 * MINUTE),
-        last_synced_at: at(10 * MINUTE),
+        status_changed_at: at(10 * MINUTE_MS),
+        last_synced_at: at(10 * MINUTE_MS),
       });
       expect(await auditCount(trx, mailboxId, "mailbox.host_allowed")).toBe(1);
 
       // 5: the notice is outdated; no late-sync notice, no new block notice.
-      await notices(at(11 * MINUTE));
+      await notices(at(11 * MINUTE_MS));
       found = await outboxRows(trx, created.orgId, "host_blocked");
       expect(found).toHaveLength(1);
       expect(found[0]).toMatchObject({ status: "failed", error_code: "outdated" });

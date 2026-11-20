@@ -1,4 +1,4 @@
-import { encodeCallback } from "@ea/core";
+import { encodeCallback, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -52,7 +52,7 @@ describe("T9 the Delegate button of the digest rows", () => {
       const org = await delegateOrg(trx);
       const unsure = await insertTriaged(trx, org.ctx, org.mailboxId, {
         category: "unsure",
-        createdAt: new Date(MAIL_AT.getTime() - 60_000),
+        createdAt: new Date(MAIL_AT.getTime() - MINUTE_MS),
       });
       const info = await insertTriaged(trx, org.ctx, org.mailboxId, { category: "info", createdAt: MAIL_AT });
       const { message } = await deliverDigest(trx);
@@ -245,7 +245,7 @@ describe("T12 the urgent notice", () => {
     await detectNotices({
       db: trx,
       now: () => now,
-      startedAt: new Date(now.getTime() - 3_600_000),
+      startedAt: new Date(now.getTime() - HOUR_MS),
       testMail: NO_TEST_SENDERS,
     });
     const [row] = await trx

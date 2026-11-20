@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 
 import { E2E_BASE_URL, e2eEnv, loadDotEnv } from "./env";
 import { e2eLaunchOptions, e2eWebServers } from "./servers";
+import { MINUTE_MS } from "@ea/core";
 
 // The shot run of the docs site: `bun run docs:shots` makes `apps/docs/public/shots/<name>.png` from the e2e seed.
 // It uses the web servers, the seed and the env of the panel e2e config (`servers.ts`, `global-setup.ts`), but its own test folder:
@@ -13,7 +14,7 @@ const env = e2eEnv();
 export default defineConfig({
   testDir: "./docs-shots",
   globalSetup: "./docs-shots/global-setup.ts",
-  timeout: 60_000,
+  timeout: MINUTE_MS,
   expect: { timeout: 10_000 },
   retries: 0,
   // One signed-in owner and one fixed organization: one test at a time, in file order (the last test checks the files).

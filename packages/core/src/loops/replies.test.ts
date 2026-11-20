@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
+import { DAY_MS } from "../time";
+
 import { isAutoReply, normalizeSubject, replyMatch, type ReplyLoop, type ReplyMail } from "./replies";
 
-const DAY = 86_400_000;
 const WAIT_FROM = new Date("2026-11-10T10:00:00Z");
-const after = (days: number) => new Date(WAIT_FROM.getTime() + days * DAY);
+const after = (days: number) => new Date(WAIT_FROM.getTime() + days * DAY_MS);
 const own = ["me@own.test"];
 
 const loop = (over: Partial<ReplyLoop> = {}): ReplyLoop => ({

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { barCategories } from "@ea/core";
+import { barCategories, DAY_MS } from "@ea/core";
 
 import { DEMO_SEED_FORMAT, DEMO_TABLES, type DemoSeed } from "../../../../server/src/modules/lab";
 import type { GateFile } from "../../../../server/src/modules/triage";
@@ -16,7 +16,6 @@ const PIOTR = uuid(3);
 const ADDRESS_A = "ceo@kordelan.test";
 const MODEL = "gpt-5.2";
 const PROMPT = "classifier-v3";
-const DAY_MS = 24 * 60 * 60 * 1000;
 const BASE_TIME = Date.parse("2026-11-23T08:00:00.000Z");
 
 interface MailSet {

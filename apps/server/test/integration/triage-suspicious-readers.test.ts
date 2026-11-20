@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
@@ -24,7 +25,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-15T12:00:00Z");
-const HOUR = 3_600_000;
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
 
 async function setup(trx: Transaction<DB>) {
@@ -70,17 +70,17 @@ describe("suspiciousReasonsOf", () => {
       const { a, ctxA } = await setup(trx);
       const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(3 * HOUR),
+        createdAt: ago(3 * HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
-      await insertRow(trx, ctxA, flagged, ["link_mismatch", "risky_attachment"], ago(2 * HOUR));
+      await insertRow(trx, ctxA, flagged, ["link_mismatch", "risky_attachment"], ago(2 * HOUR_MS));
       const cleaned = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(3 * HOUR),
+        createdAt: ago(3 * HOUR_MS),
         suspiciousReasons: ["lookalike_domain"],
       });
-      await insertRow(trx, ctxA, cleaned, [], ago(2 * HOUR));
-      const clean = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR) });
+      await insertRow(trx, ctxA, cleaned, [], ago(2 * HOUR_MS));
+      const clean = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR_MS) });
       const noRow = await insertTestEmail(trx, ctxA, a.mailboxId);
 
       const found = await suspiciousReasonsOf(trx, ctxA, [flagged, cleaned, clean, noRow]);
@@ -93,12 +93,12 @@ describe("suspiciousReasonsOf", () => {
       const { a, b, ctxA, ctxB } = await setup(trx);
       const own = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
       const foreign = await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["link_mismatch"],
       });
       expect([...(await suspiciousReasonsOf(trx, ctxA, [own, foreign]))]).toEqual([[own, ["auth_fail"]]]);
@@ -121,10 +121,10 @@ describe("suspicionOf", () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
       const noRow = await insertTestEmail(trx, ctxA, a.mailboxId);
-      const clean = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR) });
+      const clean = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(HOUR_MS) });
       const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
       const found = await suspicionOf(trx, ctxA, [noRow, clean, flagged]);
@@ -140,12 +140,15 @@ describe("suspicionOf", () => {
       const { a, ctxA } = await setup(trx);
       const cleaned = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(3 * HOUR),
+        createdAt: ago(3 * HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
-      await insertRow(trx, ctxA, cleaned, [], ago(HOUR));
-      const flaggedLater = await insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: ago(3 * HOUR) });
-      await insertRow(trx, ctxA, flaggedLater, ["link_mismatch"], ago(HOUR));
+      await insertRow(trx, ctxA, cleaned, [], ago(HOUR_MS));
+      const flaggedLater = await insertTriaged(trx, ctxA, a.mailboxId, {
+        category: "info",
+        createdAt: ago(3 * HOUR_MS),
+      });
+      await insertRow(trx, ctxA, flaggedLater, ["link_mismatch"], ago(HOUR_MS));
       const found = await suspicionOf(trx, ctxA, [cleaned, flaggedLater]);
       expect(found.get(cleaned)).toEqual({ state: "clean" });
       expect(found.get(flaggedLater)).toEqual({ state: "flagged", reasons: ["link_mismatch"] });
@@ -157,7 +160,7 @@ describe("suspicionOf", () => {
       const { b, ctxA } = await setup(trx);
       const foreign = await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
       expect((await suspicionOf(trx, ctxA, [foreign])).get(foreign)).toEqual({ state: "untriaged" });
@@ -169,7 +172,7 @@ describe("suspicionOf", () => {
       const { a, ctxA } = await setup(trx);
       const flagged = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         suspiciousReasons: ["auth_fail"],
       });
       const ids = [flagged, ...Array.from({ length: 600 }, () => randomUUID())];
@@ -193,7 +196,7 @@ describe("suspiciousThreadKeysOf", () => {
       const mail = (threadKey: string, reasons: string[]) =>
         insertTriaged(trx, ctxA, a.mailboxId, {
           category: "info",
-          createdAt: ago(3 * HOUR),
+          createdAt: ago(3 * HOUR_MS),
           threadKey,
           suspiciousReasons: reasons,
         });
@@ -201,7 +204,7 @@ describe("suspiciousThreadKeysOf", () => {
       await mail("t-flagged", ["link_mismatch"]);
       await mail("t-flagged", []);
       const reclassified = await mail("t-cleaned", ["auth_fail"]);
-      await insertRow(trx, ctxA, reclassified, [], ago(HOUR));
+      await insertRow(trx, ctxA, reclassified, [], ago(HOUR_MS));
       await mail("t-clean", []);
 
       const keys = await suspiciousThreadKeysOf(trx, ctxA, a.mailboxId, [
@@ -230,7 +233,7 @@ describe("suspiciousThreadKeysOf", () => {
       });
       await insertTriaged(trx, ctxA, secondId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         threadKey: "same-key",
         suspiciousReasons: ["auth_fail"],
       });
@@ -244,7 +247,7 @@ describe("suspiciousThreadKeysOf", () => {
       const { a, b, ctxA, ctxB } = await setup(trx);
       await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         threadKey: "shared-key",
         suspiciousReasons: ["auth_fail"],
       });
@@ -261,18 +264,18 @@ describe("suspiciousThreadKeysOf", () => {
 
 // The per-sender reader of bulk unsubscribe (tests 4 and 5 of the stage file).
 describe("suspiciousSendersOf", () => {
-  const SINCE = new Date(NOW.getTime() - 30 * 24 * HOUR);
+  const SINCE = new Date(NOW.getTime() - 30 * DAY_MS);
 
   test("4: a sender with one flagged mail among clean ones is in the set; a clean sender and an unknown one are not", async () => {
     await withRollback(db, async (trx) => {
       const { a, ctxA } = await setup(trx);
       const mail = (from: string, reasons: string[], at: Date) =>
         insertTriaged(trx, ctxA, a.mailboxId, { category: "info", createdAt: at, from, suspiciousReasons: reasons });
-      await mail("A@News.test", ["lookalike_domain"], ago(2 * HOUR));
-      await mail("a@news.test", [], ago(1 * HOUR));
-      await mail("b@news.test", [], ago(1 * HOUR));
+      await mail("A@News.test", ["lookalike_domain"], ago(2 * HOUR_MS));
+      await mail("a@news.test", [], ago(1 * HOUR_MS));
+      await mail("b@news.test", [], ago(1 * HOUR_MS));
       // A flagged mail older than the window does not count.
-      await mail("old@news.test", ["auth_fail"], new Date(SINCE.getTime() - HOUR));
+      await mail("old@news.test", ["auth_fail"], new Date(SINCE.getTime() - HOUR_MS));
 
       const set = await suspiciousSendersOf(
         trx,
@@ -290,13 +293,13 @@ describe("suspiciousSendersOf", () => {
       const { a, ctxA } = await setup(trx);
       const id = await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(3 * HOUR),
+        createdAt: ago(3 * HOUR_MS),
         from: "c@news.test",
         suspiciousReasons: ["auth_fail"],
       });
-      await insertRow(trx, ctxA, id, [], ago(1 * HOUR));
+      await insertRow(trx, ctxA, id, [], ago(1 * HOUR_MS));
       expect((await suspiciousSendersOf(trx, ctxA, a.mailboxId, ["c@news.test"], SINCE)).size).toBe(0);
-      await insertRow(trx, ctxA, id, ["auth_fail"], ago(30 * 60_000));
+      await insertRow(trx, ctxA, id, ["auth_fail"], ago(30 * MINUTE_MS));
       expect([...(await suspiciousSendersOf(trx, ctxA, a.mailboxId, ["c@news.test"], SINCE))]).toEqual(["c@news.test"]);
     });
   });
@@ -334,13 +337,13 @@ describe("suspiciousSendersOf", () => {
       });
       await insertTriaged(trx, ctxB, b.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         from: "x@news.test",
         suspiciousReasons: ["auth_fail"],
       });
       await insertTriaged(trx, ctxA, secondId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         from: "y@news.test",
         suspiciousReasons: ["auth_fail"],
       });
@@ -351,7 +354,7 @@ describe("suspiciousSendersOf", () => {
       // The mailbox of organization A asked in the scope of organization B: A's flagged sender stays hidden.
       await insertTriaged(trx, ctxA, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         from: "z@news.test",
         suspiciousReasons: ["auth_fail"],
       });

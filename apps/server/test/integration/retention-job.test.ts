@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -31,7 +32,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-12T02:40:00Z");
-const DAY_MS = 24 * 3_600_000;
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
 const over90 = ago(90 * DAY_MS + 1000);
 
@@ -232,7 +232,7 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
       mailbox_id: org.mailboxId,
       key_hash: randomUUID().replaceAll("-", "").repeat(2),
       relation: "known",
-      last_seen_at: new Date(NOW.getTime() - 400 * 24 * 3_600_000),
+      last_seen_at: new Date(NOW.getTime() - 400 * DAY_MS),
     })
     .execute();
   await trx
@@ -244,7 +244,7 @@ async function seedFullSet(trx: Transaction<DB>, org: Org, text: string) {
       scope: "address",
       kind: "vip",
       pattern: "never-logged@x.test",
-      created_at: new Date(NOW.getTime() - 40 * 24 * 3_600_000),
+      created_at: new Date(NOW.getTime() - 40 * DAY_MS),
     })
     .execute();
   await trx
@@ -727,8 +727,6 @@ describe("retention job: an error in a Sent clear function", () => {
 });
 
 describe("retention job: auth_verifications", () => {
-  const HOUR_MS = 3_600_000;
-
   async function insertVerification(trx: Transaction<DB>, tag: string, expiresAt: Date): Promise<void> {
     await trx
       .insertInto("auth_verifications")
@@ -773,7 +771,7 @@ describe("retention job: auth_verifications", () => {
 
       expect(await tagsLeft(trx, tags)).toEqual(["Secret2grace", "Secret3live"]);
       expect(lines.some((line) => line.includes("retention_auth_verifications_deleted"))).toBe(false);
-      expect(await deleteExpiredVerifications(trx, { before: ago(24 * HOUR_MS) })).toBe(0);
+      expect(await deleteExpiredVerifications(trx, { before: ago(DAY_MS) })).toBe(0);
     });
   });
 

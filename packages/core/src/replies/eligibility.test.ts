@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { DAY_MS } from "../time";
+
 import {
   isAutoSubmitted,
   REPLY_AUTO_MAX_AGE_MS,
@@ -11,7 +13,6 @@ import {
 } from "./index";
 
 const NOW = new Date("2026-11-17T12:00:00Z");
-const DAY = 86_400_000;
 
 const clean: ReplyFacts = {
   triaged: true,
@@ -23,7 +24,7 @@ const clean: ReplyFacts = {
   headers: { listId: null, listUnsubscribe: null, autoSubmitted: null, precedence: null, hasCalendar: false },
   suspicion: { state: "clean" },
   answered: false,
-  receivedAt: new Date(NOW.getTime() - 2 * DAY),
+  receivedAt: new Date(NOW.getTime() - 2 * DAY_MS),
   ownerLocale: null,
 };
 
@@ -108,10 +109,10 @@ describe("replyEligibility", () => {
   });
 
   test("8: auto needs mail of at most 7 days; a tap does not", () => {
-    expect(run({ receivedAt: new Date(NOW.getTime() - 8 * DAY) })).toEqual(block("too_old"));
+    expect(run({ receivedAt: new Date(NOW.getTime() - 8 * DAY_MS) })).toEqual(block("too_old"));
     expect(run({ receivedAt: new Date(NOW.getTime() - REPLY_AUTO_MAX_AGE_MS - 1) })).toEqual(block("too_old"));
     expect(run({ receivedAt: new Date(NOW.getTime() - REPLY_AUTO_MAX_AGE_MS) })).toEqual({ ok: true, language: "pl" });
-    expect(run({ receivedAt: new Date(NOW.getTime() - 8 * DAY) }, "tap")).toEqual({ ok: true, language: "pl" });
+    expect(run({ receivedAt: new Date(NOW.getTime() - 8 * DAY_MS) }, "tap")).toEqual({ ok: true, language: "pl" });
   });
 
   test("9: auto refuses the language other; a tap drafts in the language of the owner (null reads as pl)", () => {
@@ -133,7 +134,7 @@ describe("replyEligibility", () => {
       answered: true,
       category: "info",
       language: "other",
-      receivedAt: new Date(NOW.getTime() - 9 * DAY),
+      receivedAt: new Date(NOW.getTime() - 9 * DAY_MS),
     };
     expect(run(all)).toEqual(block("not_checked"));
     const triagedFlagged = {
@@ -180,7 +181,7 @@ describe("replyEligibility", () => {
       { headers: headers({ hasCalendar: true }) },
       { answered: true },
       { category: "info" as const },
-      { receivedAt: new Date(NOW.getTime() - 9 * DAY) },
+      { receivedAt: new Date(NOW.getTime() - 9 * DAY_MS) },
       { language: "other" as const },
     ]) {
       const result = run(change);

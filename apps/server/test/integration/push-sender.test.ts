@@ -2,7 +2,7 @@
 // service (a function: no request leaves the process). Every test runs in a transaction that is rolled back, with a fixed clock.
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { encodeNoticeView, type NoticeKind, type NoticeView } from "@ea/core";
+import { encodeNoticeView, type NoticeKind, type NoticeView, DAY_MS, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -26,8 +26,6 @@ afterAll(async () => {
 
 type Trx = Transaction<DB>;
 
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 // 11:00 in Warsaw (winter time): outside the default quiet hours 22:00–07:00.
 const NOON = new Date("2026-11-20T10:00:00Z");
 const box = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -83,7 +81,12 @@ async function world(trx: Trx, flag = true): Promise<World> {
   return { ctx, ...created };
 }
 
-async function newSession(trx: Trx, userId: string, expiresAt: Date, createdAt = new Date(NOON.getTime() - 48 * HOUR)) {
+async function newSession(
+  trx: Trx,
+  userId: string,
+  expiresAt: Date,
+  createdAt = new Date(NOON.getTime() - 2 * DAY_MS)
+) {
   const { rows } = await sql<{ id: string }>`
     insert into auth_sessions (user_id, token, expires_at, created_at)
     values (${userId}::uuid, ${randomUUID()}, ${expiresAt}, ${createdAt}) returning id`.execute(trx);
@@ -105,7 +108,7 @@ async function device(
 ): Promise<Device> {
   counter += 1;
   const userId = over.userId ?? w.userId;
-  const sessionId = await newSession(trx, userId, over.sessionEnd ?? new Date(NOON.getTime() + 24 * HOUR));
+  const sessionId = await newSession(trx, userId, over.sessionEnd ?? new Date(NOON.getTime() + DAY_MS));
   const receiver = newReceiver();
   const endpoint = `https://fcm.googleapis.com/fcm/send/${CANARY_PATH}-${counter}-${randomUUID()}`;
   const added = await upsertPushSubscription(trx, w.ctx, {
@@ -116,7 +119,7 @@ async function device(
     auth: receiver.sub.auth,
     deviceLabel: "Phone",
     box: over.boxOf ?? box,
-    now: new Date(NOON.getTime() - 24 * HOUR),
+    now: new Date(NOON.getTime() - DAY_MS),
   });
   return { id: added?.id ?? "", sessionId, receiver, endpoint };
 }
@@ -126,7 +129,7 @@ const urgentView = (emailId: string): NoticeView<"urgent"> => ({
   from: `${CANARY_FROM}`,
   subject: CANARY_SUBJECT,
   ai: { reasonCode: "llm", reason: CANARY_BODY },
-  receivedAt: new Date(NOON.getTime() - 20 * MINUTE),
+  receivedAt: new Date(NOON.getTime() - 20 * MINUTE_MS),
   synthetic: false,
   folderTag: null,
   actions: [],
@@ -138,7 +141,7 @@ const urgentView = (emailId: string): NoticeView<"urgent"> => ({
 
 // The mail of an urgent row (the table wants an email id for this kind).
 const urgentEmail = (trx: Trx, w: World): Promise<string> =>
-  insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: new Date(NOON.getTime() - HOUR) });
+  insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: new Date(NOON.getTime() - HOUR_MS) });
 
 interface RowOver {
   kind?: NoticeKind;
@@ -163,7 +166,7 @@ async function pushRow(trx: Trx, w: World, d: Device, over: RowOver = {}): Promi
         ? encodeNoticeView("auth_error", {
             address: CANARY_FROM,
             mailboxId: w.mailboxId,
-            since: new Date(NOON.getTime() - HOUR),
+            since: new Date(NOON.getTime() - HOUR_MS),
             now: NOON,
             timeZone: "Europe/Warsaw",
           })
@@ -178,8 +181,8 @@ async function pushRow(trx: Trx, w: World, d: Device, over: RowOver = {}): Promi
     locale: "en",
     channel: "push",
     ...(over.noDevice === true ? {} : { pushSubscriptionId: d.id }),
-    createdAt: over.createdAt ?? new Date(NOON.getTime() - 10 * MINUTE),
-    nextAttemptAt: new Date(NOON.getTime() - MINUTE),
+    createdAt: over.createdAt ?? new Date(NOON.getTime() - 10 * MINUTE_MS),
+    nextAttemptAt: new Date(NOON.getTime() - MINUTE_MS),
   });
   if (id === null) throw new Error("no row");
   if (over.status === "sending" || over.attempts !== undefined) {
@@ -303,7 +306,7 @@ describe("the push sender", () => {
         const w = await world(trx);
         const d = await device(trx, w);
         const first = await pushRow(trx, w, d);
-        const second = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 5 * MINUTE) });
+        const second = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 5 * MINUTE_MS) });
         const telegramMail = await urgentEmail(trx, w);
         const telegram = await insertOutbox(trx, w.ctx, {
           userId: w.userId,
@@ -364,7 +367,7 @@ describe("the push sender", () => {
         waits.push((state.next_attempt_at?.getTime() ?? 0) - clock.now.getTime());
         clock.now = state.next_attempt_at ?? clock.now;
       }
-      expect(waits).toEqual([30_000, 60_000, 120_000]);
+      expect(waits).toEqual([30_000, MINUTE_MS, 120_000]);
       await run.run(); // the fourth failure: 240 s
       const fourth = await stateOf(trx, id);
       expect(fourth).toMatchObject({ status: "pending", attempts: 4 });
@@ -424,7 +427,7 @@ describe("the push sender", () => {
       const w = await world(trx);
       const d = await device(trx, w);
       const night = new Date("2026-11-20T22:00:00Z"); // 23:00 in Warsaw
-      const id = await pushRow(trx, w, d, { createdAt: new Date(night.getTime() - 10 * MINUTE) });
+      const id = await pushRow(trx, w, d, { createdAt: new Date(night.getTime() - 10 * MINUTE_MS) });
       const push = fakePushService();
       await sender(trx, push, { now: night }).run();
       expect(push.calls).toHaveLength(0);
@@ -437,7 +440,7 @@ describe("the push sender", () => {
   test("6. a session that expired, and a session that sign-out deleted: no POST, the device goes, the row ends no_device", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const expired = await device(trx, w, { sessionEnd: new Date(NOON.getTime() - MINUTE) });
+      const expired = await device(trx, w, { sessionEnd: new Date(NOON.getTime() - MINUTE_MS) });
       const signedOut = await device(trx, w);
       await sql`delete from auth_sessions where id = ${signedOut.sessionId}::uuid`.execute(trx);
       const a = await pushRow(trx, w, expired);
@@ -456,7 +459,7 @@ describe("the push sender", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const d = await device(trx, w);
-      const id = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 25 * HOUR) });
+      const id = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 25 * HOUR_MS) });
       const push = fakePushService();
       await sender(trx, push, { now: NOON }).run();
       expect(push.calls).toHaveLength(0);
@@ -485,7 +488,7 @@ describe("the push sender", () => {
       const d = await device(trx, w);
       const ids: string[] = [];
       for (let n = 0; n < 4; n += 1) {
-        ids.push(await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - (10 - n) * MINUTE) }));
+        ids.push(await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - (10 - n) * MINUTE_MS) }));
       }
       const push = fakePushService();
       const clock = { now: NOON };
@@ -506,7 +509,7 @@ describe("the push sender", () => {
       await withRollback(db, async (trx) => {
         const w = await world(trx);
         const d = await device(trx, w);
-        const id = await pushRow(trx, w, d, { status: "sending", lockedAt: new Date(NOON.getTime() - 6 * MINUTE) });
+        const id = await pushRow(trx, w, d, { status: "sending", lockedAt: new Date(NOON.getTime() - 6 * MINUTE_MS) });
         const push = fakePushService();
         const run = sender(trx, push, { now: NOON });
         await run.run();
@@ -526,7 +529,7 @@ describe("the push sender", () => {
       const d = await device(trx, w);
       const id = await pushRow(trx, w, d, {
         status: "sending",
-        lockedAt: new Date(NOON.getTime() - 6 * MINUTE),
+        lockedAt: new Date(NOON.getTime() - 6 * MINUTE_MS),
         attempts: 4,
       });
       const push = fakePushService();
@@ -594,7 +597,7 @@ describe("the push sender", () => {
         const w = await world(trx);
         const d = await device(trx, w);
         const id = await pushRow(trx, w, d);
-        const other = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 5 * MINUTE) });
+        const other = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 5 * MINUTE_MS) });
         const push = fakePushService();
         // The server key is now version 2: the stored secret (version 1) cannot be opened.
         await sender(trx, push, { now: NOON }, { box: createSecretBox(randomBytes(32).toString("base64"), 2) }).run();
@@ -603,7 +606,7 @@ describe("the push sender", () => {
         for (const row of [id, other]) {
           const state = await stateOf(trx, row);
           expect(state).toMatchObject({ status: "pending", attempts: 0 });
-          expect(state.next_attempt_at?.getTime()).toBe(NOON.getTime() + 10 * MINUTE);
+          expect(state.next_attempt_at?.getTime()).toBe(NOON.getTime() + 10 * MINUTE_MS);
         }
         expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(1);
       });
@@ -632,7 +635,7 @@ describe("the push sender", () => {
       const d1 = await device(trx, w);
       const d2 = await device(trx, w, { userId: memberId });
       for (let n = 0; n < 4; n += 1)
-        await pushRow(trx, w, d1, { createdAt: new Date(NOON.getTime() - (20 - n) * MINUTE) });
+        await pushRow(trx, w, d1, { createdAt: new Date(NOON.getTime() - (20 - n) * MINUTE_MS) });
       const second = await pushRow(trx, w, d2, { userId: memberId });
       const push = fakePushService();
       await sender(trx, push, { now: NOON }).run();
@@ -651,7 +654,7 @@ describe("the push sender", () => {
         const devices = [await device(trx, w), await device(trx, w), await device(trx, w), await device(trx, w)];
         for (const [index, d] of devices.entries()) {
           planted.push(d.receiver.sub.p256dh, d.receiver.sub.auth);
-          await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - (10 - index) * MINUTE) });
+          await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - (10 - index) * MINUTE_MS) });
         }
         // Run 1: sent, gone, retry (the limit of three leaves the fourth row); run 2: refused.
         await sender(trx, fakePushService({ status: 201 }, { status: 410 }, { status: 503 }), { now: NOON }).run();
@@ -672,7 +675,7 @@ describe("the push sender", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       const d = await device(trx, w);
-      await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 23 * HOUR - 50 * MINUTE) });
+      await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 23 * HOUR_MS - 50 * MINUTE_MS) });
       await pushRow(trx, w, d, { createdAt: NOON });
       const push = fakePushService();
       await sender(trx, push, { now: NOON }).run();
@@ -722,13 +725,13 @@ describe("the push sender", () => {
         expect(eventLines(logs.lines, "outbox_failed")).toHaveLength(1);
 
         // 4 minutes later the lock is young: nobody claims the row.
-        clock.now = new Date(NOON.getTime() + 4 * MINUTE);
+        clock.now = new Date(NOON.getTime() + 4 * MINUTE_MS);
         await sender(trx, push, clock).run();
         expect(push.calls).toHaveLength(1);
         expect((await stateOf(trx, id)).status).toBe("sending");
 
         // 6 minutes later the reclaim sends it again, with an attempt counted.
-        clock.now = new Date(NOON.getTime() + 6 * MINUTE);
+        clock.now = new Date(NOON.getTime() + 6 * MINUTE_MS);
         await sender(trx, push, clock).run();
         expect(push.calls).toHaveLength(2);
         expect(await stateOf(trx, id)).toMatchObject({ status: "sent", attempts: 1 });
@@ -753,17 +756,17 @@ describe("the push sender", () => {
         expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(1);
 
         // A new row, due now: inside the pause the sender must not even claim it.
-        const fresh = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 2 * MINUTE) });
-        clock.now = new Date(NOON.getTime() + 5 * MINUTE);
+        const fresh = await pushRow(trx, w, d, { createdAt: new Date(NOON.getTime() - 2 * MINUTE_MS) });
+        clock.now = new Date(NOON.getTime() + 5 * MINUTE_MS);
         await run.run();
         const waiting = await stateOf(trx, fresh);
         expect(waiting).toMatchObject({ status: "pending", attempts: 0 });
-        expect(waiting.next_attempt_at?.getTime()).toBe(NOON.getTime() - MINUTE);
+        expect(waiting.next_attempt_at?.getTime()).toBe(NOON.getTime() - MINUTE_MS);
         expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(1);
         expect(push.calls).toHaveLength(0);
 
         // The pause is over: the sender claims again (and meets the same fault once more).
-        clock.now = new Date(NOON.getTime() + 11 * MINUTE);
+        clock.now = new Date(NOON.getTime() + 11 * MINUTE_MS);
         await run.run();
         expect(eventLines(logs.lines, "push_key_version_mismatch")).toHaveLength(2);
       });

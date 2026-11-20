@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -26,7 +27,6 @@ beforeEach(() => {
 });
 
 const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
 
 function deferred() {
   let resolve!: () => void;
@@ -52,7 +52,7 @@ async function setup() {
     const org = await createOrgWithMailbox(trx);
     const ctx: TenantContext = { orgId: org.orgId };
     await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: NOW });
-    await writeSentSwitch(trx, ctx, org.mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR) });
+    await writeSentSwitch(trx, ctx, org.mailboxId, { enabled: true, at: new Date(NOW.getTime() - HOUR_MS) });
     await setFolderMapEntry(trx, ctx, org.mailboxId, "sent", "Sent");
     return org;
   });
@@ -93,7 +93,7 @@ describe("syncSentHeaders with two connections", () => {
             text: "Body",
             headers: { "X-EA-Action-Id": randomUUID() },
           },
-          { internalDate: new Date(NOW.getTime() - HOUR) }
+          { internalDate: new Date(NOW.getTime() - HOUR_MS) }
         );
 
         // The hook runs while the pass plans its chunk. It starts a second transaction that locks the state row,
@@ -152,7 +152,7 @@ describe("syncSentHeaders with two connections", () => {
           date: NOW,
           text: "Body",
         },
-        { internalDate: new Date(NOW.getTime() - HOUR) }
+        { internalDate: new Date(NOW.getTime() - HOUR_MS) }
       );
       // The first write transaction of the pass is the reset of the path. Another run then sets another path.
       let writes = 0;

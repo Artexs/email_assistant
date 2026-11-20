@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { clearSentBodies, clearSentHeaders } from "../../src/modules/mail";
@@ -16,7 +17,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-12T03:00:00Z");
-const DAY_MS = 24 * 3_600_000;
 const OLD = new Date(NOW.getTime() - 100 * DAY_MS);
 
 function deferred() {

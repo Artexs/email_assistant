@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -31,8 +32,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const ago = (ms: number): Date => new Date(NOW.getTime() - ms);
 
 // `toMatchObject` does not compare the value of a Date: compare the time in ms.
@@ -110,13 +109,13 @@ describe("listUserAnswers", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const x = await incoming(trx, a, "<x@a.test>");
-      const s1 = await sent(trx, a, ago(2 * HOUR), { parentMessageId: "<x@a.test>" });
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<x@a.test>" });
+      const s1 = await sent(trx, a, ago(2 * HOUR_MS), { parentMessageId: "<x@a.test>" });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<x@a.test>" });
 
       const answers = await listUserAnswers(trx, a.ctx, [x]);
 
       expect(answers.size).toBe(1);
-      expect(ms(answers.get(x)?.answeredAt)).toBe(ago(2 * HOUR).getTime());
+      expect(ms(answers.get(x)?.answeredAt)).toBe(ago(2 * HOUR_MS).getTime());
       expect(answers.get(x)?.sentEmailId).toBe(s1);
     });
   });
@@ -125,8 +124,8 @@ describe("listUserAnswers", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const x = await incoming(trx, a, "<x@a.test>");
-      const first = await sent(trx, a, ago(HOUR), { parentMessageId: "<x@a.test>" });
-      const second = await sent(trx, a, ago(HOUR), { parentMessageId: "<x@a.test>" });
+      const first = await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<x@a.test>" });
+      const second = await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<x@a.test>" });
 
       expect((await listUserAnswers(trx, a.ctx, [x])).get(x)?.sentEmailId).toBe([first, second].sort()[0]);
     });
@@ -137,8 +136,8 @@ describe("listUserAnswers", () => {
       const a = await newOrg(trx);
       const x = await incoming(trx, a, "<x@a.test>");
       const y = await incoming(trx, a, "<y@a.test>");
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<x@a.test>", origin: "system", actionId: randomUUID() });
-      const byHand = await sent(trx, a, ago(HOUR), { parentMessageId: "<y@a.test>", actionId: randomUUID() });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<x@a.test>", origin: "system", actionId: randomUUID() });
+      const byHand = await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<y@a.test>", actionId: randomUUID() });
 
       const answers = await listUserAnswers(trx, a.ctx, [x, y]);
 
@@ -153,8 +152,8 @@ describe("listUserAnswers", () => {
       const other = await secondMailbox(trx, a);
       const x = await incoming(trx, a, "<x@a.test>");
       const y = await incoming(trx, a, "<y@a.test>");
-      await sent(trx, other, ago(HOUR), { parentMessageId: "<x@a.test>" });
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<y@a.test>", path: "Old" });
+      await sent(trx, other, ago(HOUR_MS), { parentMessageId: "<x@a.test>" });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<y@a.test>", path: "Old" });
 
       const answers = await listUserAnswers(trx, a.ctx, [x, y]);
 
@@ -181,18 +180,18 @@ describe("listUserAnswers", () => {
           captured_at: NOW,
         })
         .execute();
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<fwd@a.test>", toAddresses: ["colleague@x.test"] });
-      await sent(trx, a, ago(HOUR), {
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<fwd@a.test>", toAddresses: ["colleague@x.test"] });
+      await sent(trx, a, ago(HOUR_MS), {
         parentMessageId: "<to@a.test>",
         toAddresses: ["colleague@x.test", "boss@x.test"],
       });
-      await sent(trx, a, ago(HOUR), {
+      await sent(trx, a, ago(HOUR_MS), {
         parentMessageId: "<cc@a.test>",
         toAddresses: ["colleague@x.test"],
         ccAddresses: ["boss@x.test"],
       });
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<rt@a.test>", toAddresses: ["owner@x.test"] });
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<mc@a.test>", toAddresses: ["boss@x.test"] });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<rt@a.test>", toAddresses: ["owner@x.test"] });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<mc@a.test>", toAddresses: ["boss@x.test"] });
 
       const answers = await listUserAnswers(trx, a.ctx, [forward, toSender, ccSender, viaReplyTo, mixedCase]);
 
@@ -214,10 +213,10 @@ describe("listUserAnswers", () => {
       const plain = await incoming(trx, a, "<plain@a.test>");
       const setAuto = async (id: string, value: string) =>
         trx.updateTable("sent_emails").set({ auto_submitted: value }).where("id", "=", id).execute();
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<auto@a.test>" }), "auto-replied");
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<par@a.test>" }), "Auto-Generated; x=1");
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<no@a.test>" }), "no");
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<plain@a.test>" });
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<auto@a.test>" }), "auto-replied");
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<par@a.test>" }), "Auto-Generated; x=1");
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<no@a.test>" }), "no");
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<plain@a.test>" });
 
       const answers = await listUserAnswers(trx, a.ctx, [auto, withParams, no, plain]);
 
@@ -234,10 +233,10 @@ describe("listUserAnswers", () => {
       const autoParam = await incoming(trx, a, "<ap@a.test>");
       const setAuto = async (id: string, value: string) =>
         trx.updateTable("sent_emails").set({ auto_submitted: value }).where("id", "=", id).execute();
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<up@a.test>" }), "No");
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<wp@a.test>" }), "no; param=1");
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<au@a.test>" }), "AUTO-REPLIED");
-      await setAuto(await sent(trx, a, ago(HOUR), { parentMessageId: "<ap@a.test>" }), "auto-replied; x=1");
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<up@a.test>" }), "No");
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<wp@a.test>" }), "no; param=1");
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<au@a.test>" }), "AUTO-REPLIED");
+      await setAuto(await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<ap@a.test>" }), "auto-replied; x=1");
 
       const answers = await listUserAnswers(trx, a.ctx, [upper, withParam, autoUpper, autoParam]);
 
@@ -252,12 +251,12 @@ describe("listUserAnswers", () => {
       const stored = await incoming(trx, a, "<st@a.test>");
       const headersOnly = await incoming(trx, a, "<ho@a.test>");
       const pendingNo = await incoming(trx, a, "<pn@a.test>");
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<pe@a.test>", content: "pending" });
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<st@a.test>", content: "pending" }).then((id) =>
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<pe@a.test>", content: "pending" });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<st@a.test>", content: "pending" }).then((id) =>
         trx.updateTable("sent_emails").set({ content: "stored" }).where("id", "=", id).execute()
       );
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<ho@a.test>", content: "headers_only" });
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<pn@a.test>", content: "pending" }).then((id) =>
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<ho@a.test>", content: "headers_only" });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<pn@a.test>", content: "pending" }).then((id) =>
         trx.updateTable("sent_emails").set({ auto_submitted: "no" }).where("id", "=", id).execute()
       );
       const all = [pending, stored, headersOnly, pendingNo];
@@ -276,7 +275,7 @@ describe("listUserAnswers", () => {
       const a = await newOrg(trx);
       const y = await incoming(trx, a, "<y@a.test>");
       const z = await incoming(trx, a, null);
-      await sent(trx, a, ago(HOUR), { parentMessageId: null });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: null });
 
       expect((await listUserAnswers(trx, a.ctx, [y, z])).size).toBe(0);
       expect((await listUserAnswers(trx, a.ctx, [])).size).toBe(0);
@@ -288,7 +287,7 @@ describe("listUserAnswers", () => {
       const a = await newOrg(trx);
       const ids: string[] = [];
       for (let n = 0; n < 600; n += 1) ids.push(await incoming(trx, a, `<m${n}@a.test>`));
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<m550@a.test>" });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<m550@a.test>" });
 
       const answers = await listUserAnswers(trx, a.ctx, ids);
 
@@ -300,9 +299,9 @@ describe("listUserAnswers", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const x = await incoming(trx, a, "<x@a.test>");
-      await sent(trx, a, ago(100 * DAY), { parentMessageId: "<x@a.test>" });
+      await sent(trx, a, ago(100 * DAY_MS), { parentMessageId: "<x@a.test>" });
 
-      expect(await clearSentHeaders(trx, a.ctx, { before: ago(90 * DAY) })).toBe(1);
+      expect(await clearSentHeaders(trx, a.ctx, { before: ago(90 * DAY_MS) })).toBe(1);
 
       expect((await listUserAnswers(trx, a.ctx, [x])).has(x)).toBe(true);
     });
@@ -313,7 +312,7 @@ describe("listUserAnswers", () => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
       const x = await incoming(trx, a, "<x@a.test>");
-      await sent(trx, a, ago(HOUR), { parentMessageId: "<x@a.test>" });
+      await sent(trx, a, ago(HOUR_MS), { parentMessageId: "<x@a.test>" });
 
       expect((await listUserAnswers(trx, b.ctx, [x])).size).toBe(0);
     });
@@ -321,7 +320,7 @@ describe("listUserAnswers", () => {
 });
 
 async function pathOn(trx: Transaction<DB>, org: Org, path: string): Promise<void> {
-  await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: true, at: ago(DAY) });
+  await writeSentSwitch(trx, org.ctx, org.mailboxId, { enabled: true, at: ago(DAY_MS) });
   await resetSentCursor(trx, org.ctx, org.mailboxId, { path });
 }
 
@@ -330,15 +329,15 @@ describe("getSentSummary", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       await pathOn(trx, a, "Sent");
-      await sent(trx, a, ago(DAY));
-      await sent(trx, a, ago(40 * DAY));
-      await sent(trx, a, ago(HOUR), { origin: "system", actionId: randomUUID() });
-      await sent(trx, a, ago(HOUR), { path: "Old" });
+      await sent(trx, a, ago(DAY_MS));
+      await sent(trx, a, ago(40 * DAY_MS));
+      await sent(trx, a, ago(HOUR_MS), { origin: "system", actionId: randomUUID() });
+      await sent(trx, a, ago(HOUR_MS), { path: "Old" });
 
-      const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY) });
+      const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY_MS) });
 
       expect(summary.userCount).toBe(1);
-      expect(ms(summary.newestUserAt)).toBe(ago(DAY).getTime());
+      expect(ms(summary.newestUserAt)).toBe(ago(DAY_MS).getTime());
     });
   });
 
@@ -346,24 +345,24 @@ describe("getSentSummary", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       await pathOn(trx, a, "Sent");
-      await sent(trx, a, ago(40 * DAY));
+      await sent(trx, a, ago(40 * DAY_MS));
 
-      const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY) });
+      const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY_MS) });
 
       expect(summary.userCount).toBe(0);
-      expect(ms(summary.newestUserAt)).toBe(ago(40 * DAY).getTime());
+      expect(ms(summary.newestUserAt)).toBe(ago(40 * DAY_MS).getTime());
     });
   });
 
   test("no rows, no state or no path give zero and null", async () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
-      const since = ago(30 * DAY);
+      const since = ago(30 * DAY_MS);
       const none = { userCount: 0, newestUserAt: null };
       expect(await getSentSummary(trx, a.ctx, a.mailboxId, { since })).toEqual(none);
-      await sent(trx, a, ago(HOUR));
+      await sent(trx, a, ago(HOUR_MS));
       expect(await getSentSummary(trx, a.ctx, a.mailboxId, { since })).toEqual(none);
-      await writeSentSwitch(trx, a.ctx, a.mailboxId, { enabled: true, at: ago(DAY) });
+      await writeSentSwitch(trx, a.ctx, a.mailboxId, { enabled: true, at: ago(DAY_MS) });
       expect(await getSentSummary(trx, a.ctx, a.mailboxId, { since })).toEqual(none);
       await resetSentCursor(trx, a.ctx, a.mailboxId, { path: "Sent" });
       expect((await getSentSummary(trx, a.ctx, a.mailboxId, { since })).userCount).toBe(1);
@@ -375,9 +374,9 @@ describe("getSentSummary", () => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
       await pathOn(trx, a, "Sent");
-      await sent(trx, a, ago(HOUR));
+      await sent(trx, a, ago(HOUR_MS));
 
-      expect(await getSentSummary(trx, b.ctx, a.mailboxId, { since: ago(30 * DAY) })).toEqual({
+      expect(await getSentSummary(trx, b.ctx, a.mailboxId, { since: ago(30 * DAY_MS) })).toEqual({
         userCount: 0,
         newestUserAt: null,
       });
@@ -393,19 +392,25 @@ describe("listSentHealth", () => {
       const m3 = await secondMailbox(trx, m1);
       for (const m of [m1, m2]) await pathOn(trx, m, "Sent");
       await writeSentSwitch(trx, m3.ctx, m3.mailboxId, { enabled: false });
-      await updateSentCursor(trx, m1.ctx, m1.mailboxId, { uidValidity: 7, lastUid: 3 }, { firstPassAt: ago(2 * DAY) });
-      await markSentPass(trx, m1.ctx, m1.mailboxId, { at: ago(HOUR), errorCode: "folder_missing" });
-      await sent(trx, m1, ago(DAY));
-      await sent(trx, m1, ago(3 * DAY));
-      await sent(trx, m1, ago(HOUR), { origin: "system", actionId: randomUUID() });
+      await updateSentCursor(
+        trx,
+        m1.ctx,
+        m1.mailboxId,
+        { uidValidity: 7, lastUid: 3 },
+        { firstPassAt: ago(2 * DAY_MS) }
+      );
+      await markSentPass(trx, m1.ctx, m1.mailboxId, { at: ago(HOUR_MS), errorCode: "folder_missing" });
+      await sent(trx, m1, ago(DAY_MS));
+      await sent(trx, m1, ago(3 * DAY_MS));
+      await sent(trx, m1, ago(HOUR_MS), { origin: "system", actionId: randomUUID() });
 
       const rows = await listSentHealth(trx, m1.ctx);
 
       expect(rows).toHaveLength(1);
       expect(rows[0]?.mailboxId).toBe(m1.mailboxId);
-      expect(ms(rows[0]?.firstPassAt)).toBe(ago(2 * DAY).getTime());
-      expect(ms(rows[0]?.lastPassAt)).toBe(ago(HOUR).getTime());
-      expect(ms(rows[0]?.newestUserAt)).toBe(ago(DAY).getTime());
+      expect(ms(rows[0]?.firstPassAt)).toBe(ago(2 * DAY_MS).getTime());
+      expect(ms(rows[0]?.lastPassAt)).toBe(ago(HOUR_MS).getTime());
+      expect(ms(rows[0]?.newestUserAt)).toBe(ago(DAY_MS).getTime());
       expect(rows[0]?.lastErrorCode).toBe("folder_missing");
     });
   });
@@ -415,13 +420,13 @@ describe("listSentHealth", () => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
       await pathOn(trx, a, "Sent");
-      await updateSentCursor(trx, a.ctx, a.mailboxId, { uidValidity: 7, lastUid: 0 }, { firstPassAt: ago(DAY) });
+      await updateSentCursor(trx, a.ctx, a.mailboxId, { uidValidity: 7, lastUid: 0 }, { firstPassAt: ago(DAY_MS) });
 
       const rows = await listSentHealth(trx, a.ctx);
 
       expect(rows).toHaveLength(1);
       expect(rows[0]?.mailboxId).toBe(a.mailboxId);
-      expect(ms(rows[0]?.firstPassAt)).toBe(ago(DAY).getTime());
+      expect(ms(rows[0]?.firstPassAt)).toBe(ago(DAY_MS).getTime());
       expect(rows[0]?.lastPassAt).toBeNull();
       expect(rows[0]?.newestUserAt).toBeNull();
       expect(rows[0]?.lastErrorCode).toBeNull();
@@ -435,9 +440,9 @@ describe("the readers and the log", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       await pathOn(trx, a, "Sent");
-      await updateSentCursor(trx, a.ctx, a.mailboxId, { uidValidity: 7, lastUid: 1 }, { firstPassAt: ago(DAY) });
+      await updateSentCursor(trx, a.ctx, a.mailboxId, { uidValidity: 7, lastUid: 1 }, { firstPassAt: ago(DAY_MS) });
       const x = await incoming(trx, a, "<x@a.test>", "canary-to@x.test");
-      const id = await sent(trx, a, ago(HOUR), {
+      const id = await sent(trx, a, ago(HOUR_MS), {
         parentMessageId: "<x@a.test>",
         subject: "CanarySubject",
         toAddresses: ["canary-to@x.test"],
@@ -456,7 +461,7 @@ describe("the readers and the log", () => {
       );
       try {
         const answers = await listUserAnswers(trx, a.ctx, [x]);
-        const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY) });
+        const summary = await getSentSummary(trx, a.ctx, a.mailboxId, { since: ago(30 * DAY_MS) });
         const health = await listSentHealth(trx, a.ctx);
         expect(answers.has(x)).toBe(true);
         expect(summary.userCount).toBe(1);

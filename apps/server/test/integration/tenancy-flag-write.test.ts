@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -10,7 +11,7 @@ import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
 const NOW = new Date("2026-11-20T10:00:00Z");
-const MINUTE_LATER = new Date(NOW.getTime() + 60_000);
+const MINUTE_LATER = new Date(NOW.getTime() + MINUTE_MS);
 const MISSING = { orgId: "00000000-0000-4000-8000-000000000000" };
 
 afterAll(async () => {

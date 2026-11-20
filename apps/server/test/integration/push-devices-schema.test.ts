@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -61,7 +62,7 @@ interface Org {
 
 const hashOf = (text: string) => createHash("sha256").update(text).digest("hex");
 
-async function session(trx: Trx, userId: string, expiresAt = new Date(Date.now() + 3_600_000)): Promise<string> {
+async function session(trx: Trx, userId: string, expiresAt = new Date(Date.now() + HOUR_MS)): Promise<string> {
   const { rows } = await sql<{ id: string }>`
     insert into auth_sessions (user_id, token, expires_at)
     values (${userId}::uuid, ${randomUUID()}, ${expiresAt}) returning id`.execute(trx);

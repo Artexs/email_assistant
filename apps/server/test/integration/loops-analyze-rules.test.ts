@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -12,7 +13,7 @@ import { insertDelegate, insertDelegation, insertDraftAndSend } from "./fixtures
 import { testDb, withRollback } from "./helpers";
 import { analysisOf, ASK, depsOf, fakeExtractor, FRI, loopsOrg, RUN_AT, sentMail, WED } from "./loops-analyze-fixtures";
 import { insertLoopRow } from "./loops-fixtures";
-import { ago, DAY, type Org, siblingMailbox } from "./mail-sent-fixtures";
+import { ago, type Org, siblingMailbox } from "./mail-sent-fixtures";
 
 // The rules of the Sent analysis that need no model (step 1): the thread rule, the promise rule and the
 // delegation rule. The tests run without `app.org_id`: only the `org_id` filter of each
@@ -215,7 +216,7 @@ describe("the thread rule", () => {
         thread_key: thread,
         status: "closed",
         close_reason: "replied",
-        closed_at: ago(DAY),
+        closed_at: ago(DAY_MS),
         wait_from_at: new Date("2026-11-16T10:00:00Z"),
       });
       const promised = await insertLoopRow(trx, org.ctx, org.mailboxId, {

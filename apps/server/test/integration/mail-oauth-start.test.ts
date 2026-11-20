@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format, inspect } from "node:util";
 
-import { mailOAuthOptionsSchema, mailOAuthStartResultSchema } from "@ea/core";
+import { mailOAuthOptionsSchema, mailOAuthStartResultSchema, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test, type Mock } from "bun:test";
 import { sql } from "kysely";
 
@@ -153,7 +153,7 @@ describe("the state store", () => {
     expect(row?.mailbox_id).toBeNull();
     expect(row?.org_id).toBe(org.orgId);
     expect(row?.expires_at.getTime()).toBe(NOW.getTime() + OAUTH_STATE_TTL_MS);
-    expect(OAUTH_STATE_TTL_MS).toBe(10 * 60_000);
+    expect(OAUTH_STATE_TTL_MS).toBe(10 * MINUTE_MS);
     // The verifier is only in the row as ciphertext with the AAD of the row; the decrypt gives the verifier of the challenge.
     const verifier = secrets.decrypt(
       { ciphertext: row?.encrypted_verifier ?? "", keyVersion: row?.key_version ?? 0 },
@@ -298,7 +298,7 @@ describe("the state store", () => {
         state_hash: stateHashOf(stateValue),
         encrypted_verifier: encrypted.ciphertext,
         key_version: encrypted.keyVersion,
-        expires_at: new Date(NOW.getTime() + 60_000),
+        expires_at: new Date(NOW.getTime() + MINUTE_MS),
       })
       .execute();
     expect(

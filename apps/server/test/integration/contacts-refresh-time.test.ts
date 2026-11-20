@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -85,40 +86,44 @@ async function seed(): Promise<{ orgId: string; mailboxId: string }> {
 }
 
 describe("the profile pass on 5,000 mails from 500 senders", () => {
-  test(`1 committed data and fresh statistics: one pass finishes in ${BOUND_MS / 1000} s, a repeat pass writes no row`, async () => {
-    const { orgId: org, mailboxId } = await seed();
-    for (const table of [
-      "emails",
-      "triage_results",
-      "email_flags",
-      "triage_feedback",
-      "sent_emails",
-      "email_headers",
-      "sender_profiles",
-      "delegations",
-    ])
-      await sql`ANALYZE ${sql.table(table)}`.execute(owner);
+  test(
+    `1 committed data and fresh statistics: one pass finishes in ${BOUND_MS / 1000} s, a repeat pass writes no row`,
+    async () => {
+      const { orgId: org, mailboxId } = await seed();
+      for (const table of [
+        "emails",
+        "triage_results",
+        "email_flags",
+        "triage_feedback",
+        "sent_emails",
+        "email_headers",
+        "sender_profiles",
+        "delegations",
+      ])
+        await sql`ANALYZE ${sql.table(table)}`.execute(owner);
 
-    const deps = { db: app, credentialsKey: KEY, testMail: NO_TEST };
-    const pass = async () => {
-      const started = performance.now();
-      const result = await refreshMailboxProfiles(deps, { orgId: org }, mailboxId, { now: NOW });
-      return { result, ms: Math.round(performance.now() - started) };
-    };
-    const first = await pass();
-    const second = await pass();
-    // The measured times go to the test output, for the report of the stage.
-    process.stdout.write(`contacts time test: first pass ${first.ms} ms, repeat pass ${second.ms} ms\n`);
+      const deps = { db: app, credentialsKey: KEY, testMail: NO_TEST };
+      const pass = async () => {
+        const started = performance.now();
+        const result = await refreshMailboxProfiles(deps, { orgId: org }, mailboxId, { now: NOW });
+        return { result, ms: Math.round(performance.now() - started) };
+      };
+      const first = await pass();
+      const second = await pass();
+      // The measured times go to the test output, for the report of the stage.
+      process.stdout.write(`contacts time test: first pass ${first.ms} ms, repeat pass ${second.ms} ms\n`);
 
-    expect(first.result.skipped).toBe(false);
-    expect(first.result.written).toBe(SENDERS);
-    expect(first.ms).toBeLessThan(BOUND_MS);
-    // The repeat pass reads the same rows and changes none.
-    expect(second.result).toEqual({ written: 0, unchanged: SENDERS, zeroed: 0, skipped: false });
-    expect(second.ms).toBeLessThan(BOUND_MS);
-    const { rows } = await sql<{ n: string }>`
+      expect(first.result.skipped).toBe(false);
+      expect(first.result.written).toBe(SENDERS);
+      expect(first.ms).toBeLessThan(BOUND_MS);
+      // The repeat pass reads the same rows and changes none.
+      expect(second.result).toEqual({ written: 0, unchanged: SENDERS, zeroed: 0, skipped: false });
+      expect(second.ms).toBeLessThan(BOUND_MS);
+      const { rows } = await sql<{ n: string }>`
       SELECT count(*) AS n FROM sender_profiles WHERE mailbox_id = ${mailboxId}
     `.execute(app);
-    expect(Number(rows[0]?.n)).toBe(SENDERS);
-  }, 60_000);
+      expect(Number(rows[0]?.n)).toBe(SENDERS);
+    },
+    MINUTE_MS
+  );
 });

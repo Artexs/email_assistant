@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertSenderRule } from "../../src/modules/config";
@@ -23,8 +24,6 @@ const OWN_ALIAS = "me-alias@example.com";
 const TEST_MAIL = { senders: [TEST_SENDER] };
 const OPTIONS: ReadActivityOptions = { now: NOW, testMail: TEST_MAIL };
 
-const MINUTE = 60_000;
-
 // All the source rows of one world in one organization. `copies` repeats every mail, Sent mail and delegation with a fresh
 // Message-ID, one minute later each time: the second copy makes the mail of the other tenant twice as many.
 async function seedWorld(trx: Trx, org: Org, copies: number): Promise<void> {
@@ -33,11 +32,11 @@ async function seedWorld(trx: Trx, org: Org, copies: number): Promise<void> {
   await insertSenderRule(trx, ctx, { mailboxId: null, pattern: "sub.example.com", kind: "vip" });
 
   for (let copy = 0; copy < copies; copy += 1) {
-    const shift = copy * MINUTE;
+    const shift = copy * MINUTE_MS;
     // `days` before NOW (and `hours` more), plus the shift of the copy.
     const at = (days: number, hours = 0): Date => new Date(ago(days, hours).getTime() + shift);
     // The time `hours` after a mail.
-    const after = (received: Date, hours: number): Date => new Date(received.getTime() + hours * 3_600_000);
+    const after = (received: Date, hours: number): Date => new Date(received.getTime() + hours * HOUR_MS);
     const seed = (address: string, mails: Parameters<typeof seedSenderActivity>[3]["mails"], sent?: SeededSent[]) =>
       seedSenderActivity(trx, ctx, mailboxId, { address, mails, ...(sent === undefined ? {} : { sent }) });
 

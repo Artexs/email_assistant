@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { HOUR_MS } from "../time";
 import { evalCaseSchema } from "../triage/eval-case";
 
 import type { CaseText } from "./files";
@@ -7,7 +8,6 @@ import { miniScenario } from "./fixtures";
 import { slotSchema, type Slot } from "./slot";
 import { type HtmlBodyInput, toEvalCase } from "./to-eval-case";
 
-const HOUR_MS = 3_600_000;
 const at = "2026-11-02T09:00:00.000Z";
 
 function slot(over: Record<string, unknown> = {}): Slot {

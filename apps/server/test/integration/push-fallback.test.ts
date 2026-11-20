@@ -1,6 +1,7 @@
 // The Telegram fallback of a push row that ends `no_device`: the event goes to the member's chat when the member has one, no Telegram row of the
 // event exists, and the row holds no loop (the loop-consent gate stays closed). Every test runs in a transaction that is rolled back; the push
 // service is a function (no request leaves the process).
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -12,7 +13,7 @@ import { generateVapidKeyPair } from "../../src/platform/vapid-keys";
 import { insertTriaged } from "./fixtures";
 import { CURRENT_CONSENT, consentRow, insertFollowUp } from "./follow-up-fixtures";
 import { testDb, withRollback } from "./helpers";
-import { at, chat, device, HOUR, MINUTE, outbox, pushBox, run, setRoutes, shape, world, type World } from "./push-kit";
+import { at, chat, device, outbox, pushBox, run, setRoutes, shape, world, type World } from "./push-kit";
 
 const db = testDb();
 afterAll(async () => {
@@ -45,15 +46,15 @@ const urgentRows = (trx: Trx, w: World) => outbox(trx, w.orgId, "urgent");
 // wrote the push row; the sender held it for the quiet hours.
 async function heldUrgent(trx: Trx, opts: { chat?: boolean; routes?: Record<string, string> } = {}) {
   const w = await world(trx);
-  if (opts.chat !== false) await chat(trx, w, w.owner, at(-30 * HOUR));
+  if (opts.chat !== false) await chat(trx, w, w.owner, at(-30 * HOUR_MS));
   await setRoutes(trx, w, w.owner, opts.routes ?? { urgent: "push" });
-  const sub = await device(trx, w, w.owner, at(-5 * HOUR), SESSION_END);
+  const sub = await device(trx, w, w.owner, at(-5 * HOUR_MS), SESSION_END);
   const emailId = await insertTriaged(trx, w.ctx, w.mailboxId, {
     category: "urgent",
-    createdAt: new Date(NIGHT.getTime() - 5 * MINUTE),
+    createdAt: new Date(NIGHT.getTime() - 5 * MINUTE_MS),
   });
   await run(trx, NIGHT);
-  const held = sender(trx, new Date(NIGHT.getTime() + MINUTE));
+  const held = sender(trx, new Date(NIGHT.getTime() + MINUTE_MS));
   await held.run();
   expect(held.calls).toHaveLength(0);
   return { w, sub, emailId };
@@ -109,12 +110,15 @@ describe("a push row that ends no_device falls back to Telegram", () => {
   test("4. a 400 answer (push_refused): no fallback row", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await chat(trx, w, w.owner, at(-30 * HOUR));
+      await chat(trx, w, w.owner, at(-30 * HOUR_MS));
       await setRoutes(trx, w, w.owner, { urgent: "push" });
-      const sub = await device(trx, w, w.owner, at(-5 * HOUR));
-      const emailId = await insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const sub = await device(trx, w, w.owner, at(-5 * HOUR_MS));
+      const emailId = await insertTriaged(trx, w.ctx, w.mailboxId, {
+        category: "urgent",
+        createdAt: at(-10 * MINUTE_MS),
+      });
       await run(trx);
-      const refused = sender(trx, at(MINUTE), 400);
+      const refused = sender(trx, at(MINUTE_MS), 400);
       await refused.run();
       expect(refused.calls).toHaveLength(1);
       const rows = await urgentRows(trx, w);
@@ -127,8 +131,10 @@ describe("a push row that ends no_device falls back to Telegram", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR), at(30 * MINUTE));
-      const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { send: { updated_at: at(-20 * MINUTE) } });
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS), at(30 * MINUTE_MS));
+      const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
+        send: { updated_at: at(-20 * MINUTE_MS) },
+      });
       await run(trx);
       const before = await outbox(trx, w.orgId);
       expect(shape(before)).toEqual(
@@ -136,7 +142,7 @@ describe("a push row that ends no_device falls back to Telegram", () => {
       );
       expect(before.find((row) => row.channel === "push")?.loop_id).toBe(follow.loopId);
       // The device ends (its session is over); the sender finds it not live.
-      const later = sender(trx, at(HOUR));
+      const later = sender(trx, at(HOUR_MS));
       await later.run();
       expect(later.calls).toHaveLength(0);
       const rows = await outbox(trx, w.orgId);
@@ -150,11 +156,13 @@ describe("a push row that ends no_device falls back to Telegram", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR), at(30 * MINUTE));
-      await consentRow(trx, w.orgId, w.owner, CURRENT_CONSENT, at(-HOUR));
-      const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { send: { updated_at: at(-20 * MINUTE) } });
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS), at(30 * MINUTE_MS));
+      await consentRow(trx, w.orgId, w.owner, CURRENT_CONSENT, at(-HOUR_MS));
+      const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
+        send: { updated_at: at(-20 * MINUTE_MS) },
+      });
       await run(trx);
-      await sender(trx, at(HOUR)).run();
+      await sender(trx, at(HOUR_MS)).run();
       const rows = await outbox(trx, w.orgId, "approval");
       expect(shape(rows)).toEqual(
         [`telegram approval:${follow.sendId}`, `push approval:${follow.sendId}:push:${sub.id}`].sort()
@@ -166,13 +174,19 @@ describe("a push row that ends no_device falls back to Telegram", () => {
   test("6. a 410 from the push service ends every open row of the device, and each falls back once", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await chat(trx, w, w.owner, at(-30 * HOUR));
+      await chat(trx, w, w.owner, at(-30 * HOUR_MS));
       await setRoutes(trx, w, w.owner, { urgent: "push" });
-      await device(trx, w, w.owner, at(-5 * HOUR));
-      const first = await insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: at(-20 * MINUTE) });
-      const second = await insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      await device(trx, w, w.owner, at(-5 * HOUR_MS));
+      const first = await insertTriaged(trx, w.ctx, w.mailboxId, {
+        category: "urgent",
+        createdAt: at(-20 * MINUTE_MS),
+      });
+      const second = await insertTriaged(trx, w.ctx, w.mailboxId, {
+        category: "urgent",
+        createdAt: at(-10 * MINUTE_MS),
+      });
       await run(trx);
-      const gone = sender(trx, at(MINUTE), 410);
+      const gone = sender(trx, at(MINUTE_MS), 410);
       await gone.run();
       expect(gone.calls).toHaveLength(1);
       const rows = await urgentRows(trx, w);
@@ -203,14 +217,14 @@ describe("a push row that ends no_device falls back to Telegram", () => {
   test("8. a push row that was sent stays as it is when its device goes", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await chat(trx, w, w.owner, at(-30 * HOUR));
+      await chat(trx, w, w.owner, at(-30 * HOUR_MS));
       await setRoutes(trx, w, w.owner, { urgent: "push" });
-      const sub = await device(trx, w, w.owner, at(-5 * HOUR));
-      await insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const sub = await device(trx, w, w.owner, at(-5 * HOUR_MS));
+      await insertTriaged(trx, w.ctx, w.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
       await run(trx);
-      await sender(trx, at(MINUTE)).run();
+      await sender(trx, at(MINUTE_MS)).run();
       await sql`update push_subscriptions set session_id = null where id = ${sub.id}::uuid`.execute(trx);
-      await sender(trx, at(2 * MINUTE)).run();
+      await sender(trx, at(2 * MINUTE_MS)).run();
       const rows = await urgentRows(trx, w);
       expect(rows.map((row) => `${row.channel} ${row.status}`)).toEqual(["push sent"]);
     });

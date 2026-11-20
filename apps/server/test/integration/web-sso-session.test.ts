@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { TERMS_VERSION } from "@ea/core";
+import { TERMS_VERSION, HOUR_MS, DAY_MS, MINUTE_MS } from "@ea/core";
 import { hashPassword } from "better-auth/crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
@@ -26,7 +26,6 @@ const db = testDb();
 
 const PASSWORD = "correct-horse-battery-staple";
 const NEW_PASSWORD = "another-long-passphrase-42";
-const HOUR_MS = 3_600_000;
 const SSO_MS = 12 * HOUR_MS;
 
 type App = ReturnType<typeof createApp>;
@@ -306,7 +305,7 @@ describe("the SSO session", () => {
     const row = await onlySession(org.userId);
     expect(row.method).toBe("password");
     expect(row.started).toBeNull();
-    expect(within(row.expires, new Date(Date.now() + 30 * 24 * HOUR_MS), 60_000)).toBe(true);
+    expect(within(row.expires, new Date(Date.now() + 30 * DAY_MS), MINUTE_MS)).toBe(true);
   });
 
   test("3: a refresh keeps the end at sso_started_at + 12 h, not 30 days", async () => {
@@ -317,7 +316,7 @@ describe("the SSO session", () => {
     expect(answer.json).not.toBeNull();
     const row = await onlySession(org.userId);
     // Better Auth wrote the refresh (updated_at was moved 3 h back), and the trigger kept the cap.
-    expect(Date.now() - (await updatedAt(org.userId)).getTime()).toBeLessThan(60_000);
+    expect(Date.now() - (await updatedAt(org.userId)).getTime()).toBeLessThan(MINUTE_MS);
     expect(row.method).toBe("sso");
     expect(row.expires.getTime()).toBe(started.getTime() + SSO_MS);
   });

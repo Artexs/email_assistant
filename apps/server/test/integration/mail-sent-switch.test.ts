@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -18,7 +19,7 @@ import type { DB, TenantContext } from "../../src/platform/db";
 
 import { insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { ago, depsOf, HOUR, newOrg, NOW, put, rowsOf, siblingMailbox, stateOf, type Org } from "./mail-sent-fixtures";
+import { ago, depsOf, newOrg, NOW, put, rowsOf, siblingMailbox, stateOf, type Org } from "./mail-sent-fixtures";
 
 const db = testDb();
 
@@ -76,7 +77,7 @@ describe("setSentSync", () => {
       await on(trx, org);
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       const before = await stateOf(trx, org);
-      expect(await on(trx, org, new Date(AT.getTime() + HOUR))).toEqual({ result: "same", deleted: 0 });
+      expect(await on(trx, org, new Date(AT.getTime() + HOUR_MS))).toEqual({ result: "same", deleted: 0 });
       expect(await stateOf(trx, org)).toEqual(before);
       expect(await auditRows(trx, org.ctx.orgId)).toHaveLength(1);
 
@@ -92,9 +93,9 @@ describe("setSentSync", () => {
       const org = await newOrg(trx);
       const sibling = await newOrg(trx);
       for (const target of [org, sibling]) {
-        put(target, 1, ago(3 * HOUR));
-        put(target, 2, ago(2 * HOUR));
-        put(target, 3, ago(HOUR));
+        put(target, 1, ago(3 * HOUR_MS));
+        put(target, 2, ago(2 * HOUR_MS));
+        put(target, 3, ago(HOUR_MS));
         expect((await syncSentHeaders(depsOf(trx, target), target.ctx, target.mailboxId)).stored).toBe(3);
       }
       // Received mail of the same mailbox, and a second mailbox of the same organization.
@@ -127,10 +128,10 @@ describe("setSentSync", () => {
   test("3b: a second mailbox of the same organization keeps its rows and state", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(HOUR));
+      put(org, 1, ago(HOUR_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       const second = await siblingMailbox(trx, org);
-      put(second, 2, ago(HOUR));
+      put(second, 2, ago(HOUR_MS));
       await syncSentHeaders(depsOf(trx, second), second.ctx, second.mailboxId);
 
       expect(await off(trx, org)).toEqual({ result: "changed", deleted: 1 });
@@ -142,10 +143,10 @@ describe("setSentSync", () => {
   test("4: off then on later: enabled_at moves, the cursor is empty, the next pass is initial", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(2 * HOUR));
+      put(org, 1, ago(2 * HOUR_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       await off(trx, org);
-      const later = new Date(AT.getTime() + HOUR);
+      const later = new Date(AT.getTime() + HOUR_MS);
       expect(await on(trx, org, later)).toEqual({ result: "changed", deleted: 0 });
       const state = await stateOf(trx, org);
       expect(state).toMatchObject({ enabled: true, uidValidity: null, lastUid: null, path: null });
@@ -164,8 +165,8 @@ describe("setSentSync", () => {
       expect(await auditRows(trx, none.ctx.orgId)).toEqual([]);
 
       const org = await newOrg(trx);
-      put(org, 1, ago(2 * HOUR));
-      put(org, 2, ago(HOUR));
+      put(org, 1, ago(2 * HOUR_MS));
+      put(org, 2, ago(HOUR_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       await upsertOrgFeature(trx, org.ctx, { flag: "sent_sync", enabled: false, setBy: "test", setAt: NOW });
       expect(await off(trx, org)).toEqual({ result: "changed", deleted: 2 });
@@ -178,7 +179,7 @@ describe("setSentSync", () => {
   test("5b: a flag that FEATURES_OFF kills gives flag_off for on and leaves off working", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(HOUR));
+      put(org, 1, ago(HOUR_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       configureFeatures({ off: ["sent_sync"] });
       const none = await oldMailbox(trx);
@@ -191,7 +192,7 @@ describe("setSentSync", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
-      put(a, 1, ago(HOUR));
+      put(a, 1, ago(HOUR_MS));
       await syncSentHeaders(depsOf(trx, a), a.ctx, a.mailboxId);
       const stateBefore = await stateOf(trx, a);
       const unknown = randomUUID();
@@ -220,7 +221,7 @@ describe("setSentSync", () => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
       for (const org of [a, b]) {
-        put(org, 1, ago(HOUR));
+        put(org, 1, ago(HOUR_MS));
         await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       }
       expect(await off(trx, b)).toEqual({ result: "changed", deleted: 1 });
@@ -233,7 +234,7 @@ describe("setSentSync", () => {
   test("7: a pass whose origin hook turns the switch off returns cursor_moved and stores nothing", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(HOUR), { headers: { "X-EA-Action-Id": randomUUID() } });
+      put(org, 1, ago(HOUR_MS), { headers: { "X-EA-Action-Id": randomUUID() } });
       const hook = async () => {
         await off(trx, org);
         return null;
@@ -249,7 +250,7 @@ describe("setSentSync", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       const canary = `canary-${randomUUID()}`;
-      put(org, 1, ago(HOUR), { subject: canary, text: canary, to: [`${canary}@x.test`] });
+      put(org, 1, ago(HOUR_MS), { subject: canary, text: canary, to: [`${canary}@x.test`] });
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       await trx
         .updateTable("sent_emails")
@@ -282,7 +283,7 @@ describe("setSentSync with two connections", () => {
   async function committed() {
     const created = await db.transaction().execute(async (trx) => {
       const org = await newOrg(trx);
-      for (const n of [1, 2]) put(org, n, ago(n * HOUR));
+      for (const n of [1, 2]) put(org, n, ago(n * HOUR_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       return { orgId: org.ctx.orgId, userId: org.userId, mailboxId: org.mailboxId };
     });
@@ -332,8 +333,8 @@ describe("setSentSync with two connections", () => {
           toAddresses: ["a@x.test"],
           ccAddresses: [],
           subject: "late",
-          sentAt: ago(HOUR),
-          internalDate: ago(HOUR),
+          sentAt: ago(HOUR_MS),
+          internalDate: ago(HOUR_MS),
           origin: "user",
           actionId: null,
           content: "headers_only",

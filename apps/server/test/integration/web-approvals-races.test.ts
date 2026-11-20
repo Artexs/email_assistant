@@ -1,10 +1,10 @@
-import { approvalConflictSchema, approvalDetailSchema } from "@ea/core";
+import { approvalConflictSchema, approvalDetailSchema, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { ACTION_STATUSES } from "../../src/modules/actions/transitions";
 
 import { testDb } from "./helpers";
-import { approvalKit, HOUR, NOW, post, type Seed } from "./web-approvals-kit";
+import { approvalKit, NOW, post, type Seed } from "./web-approvals-kit";
 import { as } from "./web-helpers";
 
 // Approvals write API: one name for one closed send, races between the three writes, and the limit of a send that nobody was told about.
@@ -41,7 +41,7 @@ describe("one send has one name in approve, reject, edit and the detail", () => 
       {
         name: "approved, a run holds it",
         state: "sending",
-        opts: { sendStatus: "approved", approved: by, lockedAt: new Date(NOW.getTime() - 60_000) },
+        opts: { sendStatus: "approved", approved: by, lockedAt: new Date(NOW.getTime() - MINUTE_MS) },
       },
       { name: "rejected", state: "rejected", opts: { sendStatus: "rejected" } },
       { name: "expired", state: "expired", opts: { sendStatus: "expired" } },
@@ -117,7 +117,7 @@ describe("one send has one name in approve, reject, edit and the detail", () => 
 describe("a send that no owner was told about (no notified_at)", () => {
   test("older than 7 days: approve expires it as not_notified; no mail goes out", async () => {
     const s = await setup();
-    const id = await addSend(s, { notifiedAt: null, createdAt: new Date(NOW.getTime() - 7 * 24 * HOUR - HOUR) });
+    const id = await addSend(s, { notifiedAt: null, createdAt: new Date(NOW.getTime() - 7 * DAY_MS - HOUR_MS) });
     expect(await call(s, id, "approve")).toEqual({ status: 409, body: { error: "closed", state: "expired" } });
     expect(await send(id)).toMatchObject({ status: "expired", status_reason: "not_notified", approved_by: null });
     // The same expiry path as the 48 h one: each owner's card (the seed gives both) gets the expired edit.
@@ -126,7 +126,7 @@ describe("a send that no owner was told about (no notified_at)", () => {
 
   test("younger than 7 days: the panel approves it (no 48 h limit without a notice)", async () => {
     const s = await setup();
-    const id = await addSend(s, { notifiedAt: null, createdAt: new Date(NOW.getTime() - 6 * 24 * HOUR) });
+    const id = await addSend(s, { notifiedAt: null, createdAt: new Date(NOW.getTime() - 6 * DAY_MS) });
     expect(await call(s, id, "approve")).toEqual({ status: 200, body: { status: "approved" } });
     expect(await send(id)).toMatchObject({ status: "approved", approved_via: "web" });
   });

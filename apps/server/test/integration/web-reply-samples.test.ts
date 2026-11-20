@@ -1,4 +1,4 @@
-import { replySamplesQueuedSchema, replySamplesViewSchema } from "@ea/core";
+import { replySamplesQueuedSchema, replySamplesViewSchema, MINUTE_MS, DAY_MS } from "@ea/core";
 import { quotaDayStart, QUOTA_TIMEZONE } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
@@ -12,7 +12,6 @@ import {
   fakeLlm,
   jobDeps,
   llmCallRows,
-  MINUTE,
   NOW,
   queueRequest,
   requestsOf,
@@ -37,7 +36,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 24 * 60 * MINUTE;
 const BODIES = [
   "Dzień dobry,\n\nTak, wtorek mi pasuje.",
   "Dzień dobry,\n\nTak, środa mi pasuje.",
@@ -88,7 +86,7 @@ type World = Awaited<ReturnType<typeof world>>;
 
 const mail = (box: JobBox, opts: MailOpts = {}) => db.transaction().execute((trx) => addReplyMail(trx, box, opts));
 
-const ago = (minutes: number): Date => new Date(NOW.getTime() - minutes * MINUTE);
+const ago = (minutes: number): Date => new Date(NOW.getTime() - minutes * MINUTE_MS);
 
 // Four eligible mails: the newest first in the result.
 async function fourMails(box: JobBox): Promise<[string, string, string, string]> {
@@ -186,7 +184,7 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     // The limit holds after the run is done, and the next quota day gives a new run.
     await runDrafter(w);
     expect((await ask(w)).status).toBe(409);
-    kit.clock.now = new Date(NOW.getTime() + 2 * DAY);
+    kit.clock.now = new Date(NOW.getTime() + 2 * DAY_MS);
     try {
       expect((await ask(w)).status).toBe(202);
     } finally {
@@ -218,7 +216,7 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     const shown = async () =>
       replySamplesViewSchema.parse(await (await w.app.request(sampleUrl(w.box.mailboxId), as("owner"))).json()).items;
     expect(await shown()).toHaveLength(3);
-    kit.clock.now = new Date(NOW.getTime() + 2 * DAY);
+    kit.clock.now = new Date(NOW.getTime() + 2 * DAY_MS);
     try {
       expect(await shown()).toEqual([]);
     } finally {
@@ -270,7 +268,7 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     const good = await mail(w.box, { receivedAt: ago(60) });
     await mail(w.box, { category: "info", receivedAt: ago(5) });
     await mail(w.box, { category: "urgent", receivedAt: ago(6) });
-    await mail(w.box, { receivedAt: new Date(NOW.getTime() - 8 * DAY) });
+    await mail(w.box, { receivedAt: new Date(NOW.getTime() - 8 * DAY_MS) });
     await mail(w.box, { from: "no-reply@client.test", receivedAt: ago(7) });
     const answered = await mail(w.box, { receivedAt: ago(8) });
     await db
@@ -355,7 +353,7 @@ describe("POST and GET /api/mailboxes/:id/reply-samples", () => {
     await mail(w.box);
     await ask(w);
     await runDrafter(w);
-    const cleared = await clearReplyTexts(db, w.box.ctx, { before: new Date(NOW.getTime() + DAY) });
+    const cleared = await clearReplyTexts(db, w.box.ctx, { before: new Date(NOW.getTime() + DAY_MS) });
     expect(cleared).toBe(1);
     const [row] = await requestsOf(db, w.box);
     expect(row?.sample_body).toBeNull();

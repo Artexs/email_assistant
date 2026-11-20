@@ -1,7 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-import { PANEL_REVIEW_SIZE, reviewLabelResultSchema, reviewSampleSchema, type PanelReviewSample } from "@ea/core";
+import {
+  PANEL_REVIEW_SIZE,
+  reviewLabelResultSchema,
+  reviewSampleSchema,
+  type PanelReviewSample,
+  HOUR_MS,
+  DAY_MS,
+} from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import type { Hono } from "hono";
 
@@ -21,7 +28,6 @@ import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers"
 // organizations. Mail text of these tests is made up.
 const db = testDb();
 const NOW = new Date("2026-11-20T12:00:00Z");
-const DAY = 24 * 60 * 60 * 1000;
 
 interface Box {
   org: WebOrg;
@@ -80,7 +86,7 @@ async function addMail(db: Db, orgId: string, mailboxId: string, opts: MailOpts 
   const ctx = { orgId };
   return db.transaction().execute(async (trx) => {
     const emailId = await insertTestEmail(trx, ctx, mailboxId, {
-      received_at: opts.receivedAt ?? new Date(NOW.getTime() - DAY),
+      received_at: opts.receivedAt ?? new Date(NOW.getTime() - DAY_MS),
       from_address: opts.address ?? `sender-${randomUUID()}@secret.example`,
       subject: opts.subject ?? `Subject ${randomUUID()}`,
       message_id_header: opts.messageId ?? `<${randomUUID()}@real.example>`,
@@ -137,7 +143,7 @@ describe("GET /api/review/sample", () => {
     const ids: string[] = [];
     for (let n = 0; n < 12; n += 1) {
       ids.push(
-        await addMail(db, box.org.orgId, box.mailboxId, { receivedAt: new Date(NOW.getTime() - (n + 1) * DAY) })
+        await addMail(db, box.org.orgId, box.mailboxId, { receivedAt: new Date(NOW.getTime() - (n + 1) * DAY_MS) })
       );
     }
     const labelled = await addMail(db, box.org.orgId, box.mailboxId, { address: "labelled-sender@secret.example" });
@@ -147,7 +153,7 @@ describe("GET /api/review/sample", () => {
       address: "synthetic-sender@secret.example",
     });
     const old = await addMail(db, box.org.orgId, box.mailboxId, {
-      receivedAt: new Date(NOW.getTime() - 40 * DAY),
+      receivedAt: new Date(NOW.getTime() - 40 * DAY_MS),
       address: "old-sender@secret.example",
     });
     // Mail of the other organization, in its own mailbox: never in this sample.
@@ -171,7 +177,7 @@ describe("GET /api/review/sample", () => {
 
   test("2: a new request time gives a new sample; the same time gives the same one; every member gets a sample", async () => {
     for (let n = 0; n < 14; n += 1) {
-      await addMail(db, box.org.orgId, box.mailboxId, { receivedAt: new Date(NOW.getTime() - (n + 1) * 3_600_000) });
+      await addMail(db, box.org.orgId, box.mailboxId, { receivedAt: new Date(NOW.getTime() - (n + 1) * HOUR_MS) });
     }
     const first = await sampleOf("owner");
     expect((await sampleOf("owner")).items.map((i) => i.emailId)).toEqual(first.items.map((i) => i.emailId));

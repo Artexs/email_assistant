@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { llmPrices, type Category, type EvidenceKey } from "@ea/core";
+import { llmPrices, type Category, type EvidenceKey, HOUR_MS, DAY_MS, MINUTE_MS } from "@ea/core";
 
 import { insertDefaultSettings } from "../../src/modules/config";
 import { type HistoryCheckReason } from "../../src/modules/trust";
@@ -13,10 +13,10 @@ import { advance, RUNNING_KEY, withHistoryBox, type BoxOptions, type HistoryBox 
 // the test places directly (the backfill is tested in its own files), and a fake model client with a fixed price.
 
 export const MODEL = RUNNING_KEY.model;
-const HOUR_MS = 3_600_000;
-const DAY_MS = 86_400_000;
 /** Tokens that cost exactly one cent with the fixture price below (1 USD per million tokens in and out). */
 export const CENT_TOKENS = 10_000;
+/** The time between two runs of the classify step in the tests. */
+export const RUN_MS = 15_000;
 
 /** Registers the fixture price of the test model; the returned function removes it. */
 export function priceFixture(): () => void {
@@ -94,7 +94,7 @@ export async function seedClassifying(
       key: JSON.stringify(opts.key ?? RUNNING_KEY),
       window_start: new Date(box.clock.now.getTime() - 30 * DAY_MS),
       backfill_done_at: new Date(box.clock.now.getTime() - HOUR_MS),
-      next_attempt_at: opts.nextAttemptAt ?? new Date(box.clock.now.getTime() - 60_000),
+      next_attempt_at: opts.nextAttemptAt ?? new Date(box.clock.now.getTime() - MINUTE_MS),
     })
     .returning("id")
     .executeTakeFirstOrThrow();

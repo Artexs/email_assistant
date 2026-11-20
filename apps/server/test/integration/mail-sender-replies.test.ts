@@ -1,3 +1,4 @@
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import {
@@ -19,8 +20,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 86_400_000;
-const since = new Date(NOW.getTime() - 90 * DAY);
+const since = new Date(NOW.getTime() - 90 * DAY_MS);
 
 const sentOptions = (mailboxId: string, over: Partial<SentCountsOptions> = {}): SentCountsOptions => ({
   mailboxId,
@@ -66,9 +66,9 @@ describe("sentCountsByRecipient", () => {
       await seedSenderActivity(trx, org.ctx, org.mailboxId, {
         sent: [
           { at: since, to: ["a@example.com"] },
-          { at: new Date(since.getTime() - 60_000), to: ["a@example.com"] },
+          { at: new Date(since.getTime() - MINUTE_MS), to: ["a@example.com"] },
           { at: NOW, to: ["b@example.com"] },
-          { at: new Date(NOW.getTime() + 60_000), to: ["b@example.com"] },
+          { at: new Date(NOW.getTime() + MINUTE_MS), to: ["b@example.com"] },
         ],
       });
       const rows = await sentOf(trx, org);

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { delegationListSchema, type DelegationItem } from "@ea/core";
+import { delegationListSchema, type DelegationItem, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { setDelegationId } from "../../src/modules/actions";
@@ -29,8 +29,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const MINUTE = 60_000;
-
 type Status = "drafted" | "sent" | "answered" | "overdue" | "done" | "cancelled";
 
 interface Made {
@@ -58,7 +56,7 @@ async function world(s: Seed, opts: { orgId?: string; mailboxId?: string; delega
     extra: { dueAt?: Date; remindersSent?: number; task?: string } = {}
   ): Promise<Made> {
     n += 1;
-    const createdAt = new Date(NOW.getTime() - (100 - n) * MINUTE);
+    const createdAt = new Date(NOW.getTime() - (100 - n) * MINUTE_MS);
     const drafted = status === "drafted";
     const sendId = await addSend(
       s,
@@ -117,8 +115,8 @@ async function world(s: Seed, opts: { orgId?: string; mailboxId?: string; delega
   }
 
   const d1 = await make("drafted");
-  const d2 = await make("sent", { dueAt: new Date(NOW.getTime() + 24 * 60 * MINUTE) });
-  const d3 = await make("overdue", { dueAt: new Date(NOW.getTime() - 24 * 60 * MINUTE), remindersSent: 1 });
+  const d2 = await make("sent", { dueAt: new Date(NOW.getTime() + DAY_MS) });
+  const d3 = await make("overdue", { dueAt: new Date(NOW.getTime() - DAY_MS), remindersSent: 1 });
   const d4 = await make("answered");
   const d5 = await make("done");
   const d6 = await make("cancelled");
@@ -161,7 +159,7 @@ describe("GET /api/delegations", () => {
       answeredAt: null,
     });
     expect(open[0]?.sentAt).not.toBeNull();
-    expect(open[0]?.dueAt).toBe(new Date(NOW.getTime() + 24 * 60 * MINUTE).toISOString());
+    expect(open[0]?.dueAt).toBe(new Date(NOW.getTime() + DAY_MS).toISOString());
 
     const overdue = await items(await get(s, "owner", "?filter=overdue"));
     expect(overdue.map((d) => d.id)).toEqual([w.d3.id]);
@@ -208,7 +206,7 @@ describe("GET /api/delegations", () => {
   test("T2b. two delegations with the same created_at come in id order, none twice and none lost, across pages", async () => {
     const s = await setup({ delegationFlag: true });
     const w = await world(s);
-    const same = new Date(NOW.getTime() - 5 * MINUTE);
+    const same = new Date(NOW.getTime() - 5 * MINUTE_MS);
     const ids: string[] = [];
     for (let i = 0; i < 3; i += 1) {
       const d = await w.make("sent");
@@ -596,7 +594,7 @@ describe("POST /api/delegations/:id/cancel", () => {
     const w = await world(s);
     expect((await act(s, "owner", w.d1.id, "cancel")).status).toBe(200);
     const hooks = delegationHooks({ db });
-    const sentAt = new Date(NOW.getTime() + MINUTE);
+    const sentAt = new Date(NOW.getTime() + MINUTE_MS);
     const input = { delegationId: w.d1.id, sentMessageId: "<m@x.test>", dueAtWhenNull: NOW };
     expect(await db.transaction().execute((trx) => hooks.onSent(trx, w.ctx, { ...input, sentAt }))).toBe(false);
     expect(

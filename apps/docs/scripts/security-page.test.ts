@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import { barCategories, DEFAULT_THRESHOLD, GATE_BAR, GATE_MIN_KEPT, UNDO_WINDOW_MS } from "@ea/core";
+import { barCategories, DAY_MS, DEFAULT_THRESHOLD, GATE_BAR, GATE_MIN_KEPT, MINUTE_MS, UNDO_WINDOW_MS } from "@ea/core";
 import { subprocessors } from "@ea/core/web";
 
 import { flaggedTextProblems } from "../src/flagged-text";
@@ -14,7 +14,7 @@ import { publicSubprocessors } from "../src/security/subprocessor-view";
 // so `dist` stays as it was. One docs build takes 4 to 15 seconds.
 const DOCS = join(import.meta.dir, "..");
 const WORK_ROOT = join(DOCS, ".dist-security-test");
-setDefaultTimeout(60_000);
+setDefaultTimeout(MINUTE_MS);
 
 let html = "";
 let plHtml = "";
@@ -161,7 +161,7 @@ describe("the built /reference/autonomy-evidence/ page", () => {
     expect(text).toContain(`at least ${Math.round(GATE_BAR * 100)} % on at least ${GATE_MIN_KEPT} mails`);
     expect(text).toContain(`limit of confidence is ${DEFAULT_THRESHOLD}`);
     expect(text).toContain(`Auto is off for each of the ${barCategories.length} categories`);
-    expect(text).toContain(`undone for ${UNDO_WINDOW_MS / 86_400_000} days`);
+    expect(text).toContain(`undone for ${UNDO_WINDOW_MS / DAY_MS} days`);
   });
   test("the page names no Gemini and makes no claim about the providers of the code", () => {
     expect(count(evidence.toLowerCase(), "gemini")).toBe(0);

@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -14,7 +15,7 @@ import { SoftError } from "../../src/platform/errors";
 
 import { insertDraftAndSend } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
-import { ago, DAY, depsOf, HOUR, mail, newOrg, NOW, put, rowOf, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
+import { ago, depsOf, mail, newOrg, NOW, put, rowOf, rowsOf, stateOf, type Org } from "./mail-sent-fixtures";
 
 const db = testDb();
 
@@ -30,7 +31,7 @@ describe("syncSentHeaders", () => {
   test("1: flag off gives flag_off, no provider call, no row, no pass time", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx, { flag: false });
-      put(org, 1, ago(DAY));
+      put(org, 1, ago(DAY_MS));
       const result = await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(result).toEqual({ status: "flag_off", mode: null, fetched: 0, stored: 0, system: 0, tooOld: 0 });
       expect(org.provider.calls).toEqual([]);
@@ -42,14 +43,14 @@ describe("syncSentHeaders", () => {
   test("2: no state row, or a switch that is off, gives off and no provider call", async () => {
     await withRollback(db, async (trx) => {
       const none = await newOrg(trx, { switchOn: false });
-      put(none, 1, ago(DAY));
+      put(none, 1, ago(DAY_MS));
       expect((await syncSentHeaders(depsOf(trx, none), none.ctx, none.mailboxId)).status).toBe("off");
       expect(none.provider.calls).toEqual([]);
       expect(await getSentSyncState(trx, none.ctx, none.mailboxId)).toBeUndefined();
 
       const off = await newOrg(trx);
       await writeSentSwitch(trx, off.ctx, off.mailboxId, { enabled: false });
-      put(off, 1, ago(DAY));
+      put(off, 1, ago(DAY_MS));
       expect((await syncSentHeaders(depsOf(trx, off), off.ctx, off.mailboxId)).status).toBe("off");
       expect(off.provider.calls).toEqual([]);
       expect(await rowsOf(trx, off)).toEqual([]);
@@ -59,7 +60,7 @@ describe("syncSentHeaders", () => {
   test("3: no sent key gives no_folder; a folder that appears later starts a first pass", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx, { sentPath: null });
-      put(org, 1, ago(DAY));
+      put(org, 1, ago(DAY_MS));
       const first = await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(first.status).toBe("no_folder");
       expect(org.provider.calls).toEqual([]);
@@ -77,16 +78,16 @@ describe("syncSentHeaders", () => {
   // A: user mail 1 d old. B: 20 d. C: 40 d. D: a draft whose send is applied. G: a draft whose send waits.
   async function firstPass(trx: Transaction<DB>) {
     const org = await newOrg(trx);
-    const approved = { userId: org.userId, at: ago(2 * DAY) };
+    const approved = { userId: org.userId, at: ago(2 * DAY_MS) };
     const applied = await insertDraftAndSend(trx, org.ctx, org.mailboxId, { sendStatus: "applied", approved });
     const waiting = await insertDraftAndSend(trx, org.ctx, org.mailboxId, { sendStatus: "awaiting_approval" });
-    put(org, 1, ago(DAY));
-    put(org, 2, ago(20 * DAY));
-    put(org, 3, ago(40 * DAY));
-    put(org, 4, ago(2 * DAY), { headers: { "X-EA-Action-Id": applied.draftId } });
-    put(org, 5, ago(3 * DAY), { headers: { "X-EA-Action-Id": waiting.draftId } });
+    put(org, 1, ago(DAY_MS));
+    put(org, 2, ago(20 * DAY_MS));
+    put(org, 3, ago(40 * DAY_MS));
+    put(org, 4, ago(2 * DAY_MS), { headers: { "X-EA-Action-Id": applied.draftId } });
+    put(org, 5, ago(3 * DAY_MS), { headers: { "X-EA-Action-Id": waiting.draftId } });
     // The last mail is outside the header window: the cursor still ends at the last UID of the folder.
-    put(org, 6, ago(40 * DAY));
+    put(org, 6, ago(40 * DAY_MS));
     const result = await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
     return { org, result, waiting };
   }
@@ -116,8 +117,8 @@ describe("syncSentHeaders", () => {
   test("5: parent, thread root, lower case addresses and the Date header are stored", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(2 * HOUR), {
-        date: ago(3 * HOUR),
+      put(org, 1, ago(2 * HOUR_MS), {
+        date: ago(3 * HOUR_MS),
         inReplyTo: "<in-1@x.test>",
         references: ["<root@x.test>", "<in-1@x.test>"],
         to: ["Anna@X.test"],
@@ -129,15 +130,15 @@ describe("syncSentHeaders", () => {
       expect(row.thread_key).toBe("<root@x.test>");
       expect(row.to_addresses).toEqual(["anna@x.test"]);
       expect(row.cc_addresses).toEqual(["b@x.test"]);
-      expect(row.sent_at.getTime()).toBe(ago(3 * HOUR).getTime());
-      expect(row.internal_date.getTime()).toBe(ago(2 * HOUR).getTime());
+      expect(row.sent_at.getTime()).toBe(ago(3 * HOUR_MS).getTime());
+      expect(row.internal_date.getTime()).toBe(ago(2 * HOUR_MS).getTime());
     });
   });
 
   test("6: later passes are incremental; a mail below the header window only moves the cursor", async () => {
     await withRollback(db, async (trx) => {
       const { org } = await firstPass(trx);
-      const e = put(org, 6, ago(HOUR));
+      const e = put(org, 6, ago(HOUR_MS));
       const second = await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(second).toEqual({ status: "done", mode: "incremental", fetched: 1, stored: 1, system: 0, tooOld: 0 });
       expect((await stateOf(trx, org)).lastUid).toBe(e);
@@ -146,7 +147,7 @@ describe("syncSentHeaders", () => {
       expect(third).toMatchObject({ mode: "incremental", fetched: 0, stored: 0 });
       expect((await stateOf(trx, org)).lastUid).toBe(e);
 
-      const f = put(org, 7, ago(40 * DAY));
+      const f = put(org, 7, ago(40 * DAY_MS));
       const fourth = await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect(fourth).toMatchObject({ status: "done", mode: "incremental", fetched: 1, stored: 0, tooOld: 1 });
       expect((await stateOf(trx, org)).lastUid).toBe(f);
@@ -159,7 +160,7 @@ describe("syncSentHeaders", () => {
       const { org } = await firstPass(trx);
       org.provider.remove("Sent", 3);
       org.provider.resetUidValidity(900, "Sent");
-      const later = new Date(NOW.getTime() + HOUR);
+      const later = new Date(NOW.getTime() + HOUR_MS);
       const result = await syncSentHeaders(depsOf(trx, org, { now: () => later }), org.ctx, org.mailboxId);
       expect(result).toMatchObject({ status: "done", mode: "rescan", stored: 0 });
       const rows = await rowsOf(trx, org);
@@ -181,8 +182,8 @@ describe("syncSentHeaders", () => {
     for (const chunkSize of [undefined, 1]) {
       await withRollback(db, async (trx) => {
         const org = await newOrg(trx);
-        put(org, 1, ago(DAY));
-        put(org, 1, ago(DAY));
+        put(org, 1, ago(DAY_MS));
+        put(org, 1, ago(DAY_MS));
         const result = await syncSentHeaders(depsOf(trx, org, { chunkSize }), org.ctx, org.mailboxId);
         expect(result).toMatchObject({ status: "done", fetched: 2, stored: 1 });
         const rows = await rowsOf(trx, org);
@@ -196,8 +197,14 @@ describe("syncSentHeaders", () => {
       const org = await newOrg(trx);
       await org.provider.ensureFolder("Sent");
       const append = async (n: number, flags: string[]) =>
-        (await org.provider.appendMessage("Sent", Buffer.from(renderSeedMessage(mail(n, ago(HOUR)))), flags, ago(HOUR)))
-          .uid;
+        (
+          await org.provider.appendMessage(
+            "Sent",
+            Buffer.from(renderSeedMessage(mail(n, ago(HOUR_MS)))),
+            flags,
+            ago(HOUR_MS)
+          )
+        ).uid;
       const seen = await append(1, ["\\Seen"]);
       const unseen = await append(2, []);
       const flagsOf = async () =>
@@ -224,12 +231,12 @@ describe("syncSentHeaders", () => {
   test("10: a new path starts a first pass there; the old rows keep their path", async () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
-      put(org, 1, ago(DAY));
+      put(org, 1, ago(DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
-      put(org, 2, ago(2 * DAY), {}, "Wysłane");
-      put(org, 3, ago(3 * DAY), {}, "Wysłane");
+      put(org, 2, ago(2 * DAY_MS), {}, "Wysłane");
+      put(org, 3, ago(3 * DAY_MS), {}, "Wysłane");
       await setFolderMapEntry(trx, org.ctx, org.mailboxId, "sent", "Wysłane");
-      const later = new Date(NOW.getTime() + DAY);
+      const later = new Date(NOW.getTime() + DAY_MS);
       const result = await syncSentHeaders(depsOf(trx, org, { now: () => later }), org.ctx, org.mailboxId);
       expect(result).toMatchObject({ status: "done", mode: "initial", stored: 2 });
       const rows = await rowsOf(trx, org);
@@ -253,7 +260,7 @@ describe("syncSentHeaders", () => {
       expect(await rowsOf(trx, org)).toEqual([]);
 
       const later = await newOrg(trx);
-      put(later, 1, ago(DAY));
+      put(later, 1, ago(DAY_MS));
       later.provider.failOn("searchSinceIn", new MailFolderMissingError());
       expect((await syncSentHeaders(depsOf(trx, later), later.ctx, later.mailboxId)).status).toBe("folder_missing");
       expect((await stateOf(trx, later)).lastErrorCode).toBe("folder_missing");
@@ -265,7 +272,7 @@ describe("syncSentHeaders", () => {
     for (const again of [false, true]) {
       await withRollback(db, async (trx) => {
         const org = await newOrg(trx);
-        put(org, 1, ago(DAY), { headers: { "X-EA-Action-Id": randomUUID() } });
+        put(org, 1, ago(DAY_MS), { headers: { "X-EA-Action-Id": randomUUID() } });
         let hooked = 0;
         const hook: SentSyncDeps["sentOriginOf"] = async (ctx, mailboxId) => {
           hooked += 1;
@@ -313,7 +320,7 @@ describe("syncSentHeaders", () => {
         const org = await newOrg(trx);
         await org.provider.ensureFolder("Sent");
         await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
-        put(org, 1, ago(HOUR), { headers: { "X-EA-Action-Id": randomUUID() } });
+        put(org, 1, ago(HOUR_MS), { headers: { "X-EA-Action-Id": randomUUID() } });
         const hook: SentSyncDeps["sentOriginOf"] = async () => {
           await move(trx, org);
           return null;
@@ -335,7 +342,7 @@ describe("syncSentHeaders", () => {
       await org.provider.ensureFolder("Sent");
       expect((await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId)).mode).toBe("initial");
       for (let n = 1; n <= 5; n += 1) {
-        put(org, n, ago((6 - n) * HOUR), n === 3 ? { headers: { "X-EA-Action-Id": randomUUID() } } : {});
+        put(org, n, ago((6 - n) * HOUR_MS), n === 3 ? { headers: { "X-EA-Action-Id": randomUUID() } } : {});
       }
       const failing: SentSyncDeps["sentOriginOf"] = async () => {
         throw new SoftError("origin lookup failed");
@@ -357,9 +364,9 @@ describe("syncSentHeaders", () => {
     await withRollback(db, async (trx) => {
       const a = await newOrg(trx);
       const b = await newOrg(trx);
-      put(a, 1, ago(DAY));
-      put(b, 2, ago(DAY));
-      put(b, 3, ago(2 * DAY));
+      put(a, 1, ago(DAY_MS));
+      put(b, 2, ago(DAY_MS));
+      put(b, 3, ago(2 * DAY_MS));
       expect((await syncSentHeaders(depsOf(trx, b), b.ctx, b.mailboxId)).stored).toBe(2);
       expect(await rowsOf(trx, a)).toEqual([]);
       expect((await rowsOf(trx, b)).map((row) => row.org_id)).toEqual([b.ctx.orgId, b.ctx.orgId]);
@@ -379,10 +386,10 @@ describe("syncSentHeaders", () => {
       const b = await newOrg(trx);
       const foreign = await insertDraftAndSend(trx, b.ctx, b.mailboxId, {
         sendStatus: "applied",
-        approved: { userId: b.userId, at: ago(DAY) },
+        approved: { userId: b.userId, at: ago(DAY_MS) },
       });
-      put(a, 1, ago(DAY), { headers: { "X-EA-Action-Id": "not-a-uuid" } });
-      put(a, 2, ago(DAY), { headers: { "X-EA-Action-Id": foreign.draftId } });
+      put(a, 1, ago(DAY_MS), { headers: { "X-EA-Action-Id": "not-a-uuid" } });
+      put(a, 2, ago(DAY_MS), { headers: { "X-EA-Action-Id": foreign.draftId } });
       await syncSentHeaders(depsOf(trx, a), a.ctx, a.mailboxId);
       const rows = await rowsOf(trx, a);
       expect(rows.map((row) => [row.origin, row.action_id, row.content])).toEqual([
@@ -396,8 +403,8 @@ describe("syncSentHeaders", () => {
     await withRollback(db, async (trx) => {
       const org = await newOrg(trx);
       await sql`update organizations set data_retention_days = 3 where id = ${org.ctx.orgId}::uuid`.execute(trx);
-      put(org, 1, ago(5 * DAY));
-      put(org, 2, ago(2 * DAY));
+      put(org, 1, ago(5 * DAY_MS));
+      put(org, 2, ago(2 * DAY_MS));
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
       expect((await rowOf(trx, org, "Subject 1")).content).toBe("headers_only");
       expect((await rowOf(trx, org, "Subject 2")).content).toBe("pending");
@@ -409,8 +416,8 @@ describe("syncSentHeaders", () => {
       const org = await newOrg(trx);
       await org.provider.ensureFolder("Sent");
       await syncSentHeaders(depsOf(trx, org), org.ctx, org.mailboxId);
-      const erased = put(org, 1, ago(HOUR));
-      const kept = put(org, 2, ago(2 * HOUR));
+      const erased = put(org, 1, ago(HOUR_MS));
+      const kept = put(org, 2, ago(2 * HOUR_MS));
       const [meta] = await org.provider.fetchByUidsIn("Sent", [erased]);
       const key = baseDedupKey(normalizeMessageId(meta?.messageId), contentHash(meta as NonNullable<typeof meta>));
       const hash = createHash("sha256").update(key).digest("hex");
