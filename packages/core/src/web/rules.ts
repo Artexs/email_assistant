@@ -1,4 +1,5 @@
-import { isValidSenderPattern, normalizeSenderPattern, senderRuleKinds } from "../triage/rules";
+import { storedAddressForm } from "../contacts/address";
+import { isValidSenderPattern, senderRuleKinds } from "../triage/rules";
 
 import { z } from "./zod";
 
@@ -8,7 +9,7 @@ export { senderRuleKinds, type SenderRuleKind } from "../triage/rules";
 const patternSchema = z
   .string()
   .max(254, "pattern_invalid")
-  .transform(normalizeSenderPattern)
+  .transform(storedAddressForm)
   .refine(isValidSenderPattern, "pattern_invalid");
 
 export const ruleBodySchema = z.object({

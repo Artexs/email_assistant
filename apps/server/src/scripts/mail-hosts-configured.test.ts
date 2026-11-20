@@ -31,12 +31,7 @@ describe("entry points that reach mail", () => {
   const files = selectedFiles();
 
   test("the selection holds the known entry points", () => {
-    for (const name of [
-      "main.ts",
-      "scripts/job-run.ts",
-      "scripts/mailbox-connect.ts",
-      "scripts/mailbox-probe-send.ts",
-    ]) {
+    for (const name of ["main.ts", "scripts/job-run.ts", "scripts/mailbox-connect.ts", "scripts/mailbox-probe.ts"]) {
       expect(files).toContain(name);
     }
   });
