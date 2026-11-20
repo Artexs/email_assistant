@@ -4,7 +4,7 @@
 //   - Greek final sigma `ς` becomes `σ`: JavaScript lowers a capital sigma at the end of a word to `ς`, the database to `σ`.
 //   - The dotted capital I `İ` lowers to `i` plus a combining dot (U+0307) in JavaScript and to `i` in the database: the
 //     combining dot is dropped.
-// The server mirrors this rule in SQL (`contacts/address-sql.ts`) and a test compares the two on a fixed set of probes.
+// The server mirrors this rule in SQL (`platform/db/address-sql.ts`) and a test compares the two on a fixed set of probes.
 // It assumes that the database lowers non-ASCII letters (a UTF-8 locale such as `en_US.utf8` or `C.UTF-8`).
 const COMBINING_DOT_ABOVE = "\u0307";
 
@@ -16,11 +16,48 @@ const COMBINING_DOT_ABOVE = "\u0307";
 export const ADDRESS_TRIM_CHARS =
   "\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff";
 
-export function normalizeSenderAddress(address: string): string {
+const PRINTABLE_ASCII = /^[ -~]*$/;
+
+// The one rule (the compare key of an address). Printable ASCII holds no `ς` and no combining dot, so it skips the two
+// folds: the output stays the same, the cost goes down for the common case.
+export function normalizeAddress(address: string): string {
+  if (PRINTABLE_ASCII.test(address)) return address.trim().toLowerCase();
   return address.trim().toLowerCase().replaceAll("ς", "σ").replaceAll(`i${COMBINING_DOT_ABOVE}`, "i");
 }
 
-// Every single code point (1 to 0x10FFFF, no surrogates) grouped by the form that `normalizeSenderAddress` gives it. A
+// The form of an address that is stored, shown and sent: trim and lower case, no fold. The rule form (`normalizeAddress`)
+// is a compare key only: it turns `νίκος` into `νίκοσ`, which is another mailbox for a strict mail server (plan D5).
+export function storedAddressForm(address: string): string {
+  return address.trim().toLowerCase();
+}
+
+const MAX_FINAL_SIGMA_POSITIONS = 4;
+
+// The strings that the database `lower()` can give for a From address whose rule form is `address`: the input first, then
+// each variant that holds `ς` in place of a word-final `σ` (a `σ` followed by the end or by a character that is not a
+// letter), over every subset of the first four such positions (at most 16 strings, no duplicates). The database keeps a
+// typed `ς` and lowers a capital sigma to `σ`, so a column read `= ANY(forms)` on `lower(from_address)` finds the realistic
+// spellings with its index. A superset: the caller decides the exact match. A From with padding, a combining dot, or a
+// typed `ς` after the fourth word-final `σ` is not covered.
+export function addressLowerForms(address: string): string[] {
+  const positions: number[] = [];
+  for (let i = 0; i < address.length && positions.length < MAX_FINAL_SIGMA_POSITIONS; i++) {
+    if (address[i] !== "σ") continue;
+    const next = address.codePointAt(i + 1);
+    if (next === undefined || !/^\p{L}$/u.test(String.fromCodePoint(next))) positions.push(i);
+  }
+  const forms: string[] = [];
+  for (let mask = 0; mask < 1 << positions.length; mask++) {
+    let form = address;
+    positions.forEach((position, bit) => {
+      if (mask & (1 << bit)) form = `${form.slice(0, position)}ς${form.slice(position + 1)}`;
+    });
+    forms.push(form);
+  }
+  return forms;
+}
+
+// Every single code point (1 to 0x10FFFF, no surrogates) grouped by the form that `normalizeAddress` gives it. A
 // character is a case form of a letter when the rule folds it to that letter. Built once, on the first call: the scan
 // of all code points takes about 0.4 s. The whitespace set folds to the empty string and joins no letter.
 let caseForms: Map<string, string[]> | undefined;
@@ -31,7 +68,7 @@ function caseFormTable(): Map<string, string[]> {
   for (let cp = 1; cp <= 0x10ffff; cp++) {
     if (cp >= 0xd800 && cp <= 0xdfff) continue;
     const char = String.fromCodePoint(cp);
-    const target = normalizeSenderAddress(char);
+    const target = normalizeAddress(char);
     if (target === "") continue;
     const list = forms.get(target);
     if (list === undefined) forms.set(target, [char]);
@@ -41,7 +78,7 @@ function caseFormTable(): Map<string, string[]> {
   return forms;
 }
 
-// Every string that `normalizeSenderAddress` folds to `letter`, with `letter` first, then the other single code points in
+// Every string that `normalizeAddress` folds to `letter`, with `letter` first, then the other single code points in
 // code-point order, then the forms of two code points. `letter` is one code point that is already in the form of the
 // rule (a lower-case letter, a digit or a punctuation character; never `ς`, which the rule folds to `σ`). The regular
 // expression of the data request match (`addressRegex`, `modules/privacy/address-map.ts`) is built from these forms,
