@@ -3,7 +3,7 @@ import type { Loader } from "astro/loaders";
 
 import { extraPagesLoader } from "./extra-pages";
 
-const base: Loader = { name: "base", load: async () => {} };
+const base: Loader = { name: "base", load: () => Promise.resolve() };
 
 describe("extraPagesLoader", () => {
   test("with no folder it is the base loader itself", () => {
