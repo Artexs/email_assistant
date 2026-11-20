@@ -102,7 +102,7 @@ describe("telegram channel", () => {
 
   test("edit: message is not modified counts as success", async () => {
     const { api } = setup(failure(400, "Bad Request: message is not modified: specified new message content…"));
-    await createTelegramChannel(api).edit(42, 5, { text: "x", buttons: [] });
+    await expect(createTelegramChannel(api).edit(42, 5, { text: "x", buttons: [] })).resolves.toBeUndefined();
   });
 
   test("an error thrown by a transformer is unknown and leaks nothing", async () => {

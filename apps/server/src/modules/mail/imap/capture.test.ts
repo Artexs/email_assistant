@@ -320,7 +320,27 @@ describe("captureFromParsed", () => {
   });
 
   test("10: a source that is not a mail does not throw", async () => {
-    await contentFromSource(Buffer.from("not a mail"));
+    expect(await contentFromSource(Buffer.from("not a mail"))).toEqual({
+      text: null,
+      capture: {
+        fromName: null,
+        replyTo: [],
+        returnPath: null,
+        authResults: null,
+        listUnsubscribe: null,
+        listUnsubscribePost: false,
+        dkimSignatures: [],
+        listId: null,
+        autoSubmitted: null,
+        precedence: null,
+        hasCalendar: false,
+        attachments: [],
+        attachmentCount: 0,
+        links: [],
+        linkCount: 0,
+        partsKnown: true,
+      },
+    });
   });
 
   test("11: a cut inside a surrogate pair leaves a well-formed name", async () => {
