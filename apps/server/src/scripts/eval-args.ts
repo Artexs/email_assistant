@@ -24,18 +24,22 @@ import {
   judgeVersionIds,
   optionalParts,
   productionClassifierChoice,
+  type StylistVersion,
+  stylistVersionIds,
   versionHasParts,
 } from "../modules/triage";
 import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
+import { stylistArgsValid, STYLE_INJECTION_SET } from "./eval-args-stylist";
 import { parseFlags } from "./lib/parse-flags";
 
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
 // `reply-injection` and `reply-commitment` are the sets of the drafter run (`--drafter`); the classifier run takes
 // neither of them.
 const replySets = ["reply-injection", "reply-commitment"] as const;
-const drafterSets = [...sets, ...replySets] as const;
+// `style-injection` is the set of the stylist run (`--stylist`); no other run takes it.
+const drafterSets = [...sets, ...replySets, STYLE_INJECTION_SET] as const;
 export type ReplySet = (typeof replySets)[number];
 
 // The bare `--sim` command meets the 10 minute exit: 1,417 calls at 240 per minute take about 6 minutes.
@@ -71,12 +75,16 @@ export const evalUsage = [
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   `                    [--judge [--judge-provider ${ids}] [--judge-model <id>] [--judge-rpm <n>]]`,
   "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider sets every role, --model picks the drafter model; the judge model must differ from the drafter model (default judge: the strong tier of the provider); the injection set needs --judge)",
+  `       bun run eval --sim <scenario> --part sent-dev|sent-holdout --stylist [--stylist-prompt ${stylistVersionIds.join("|")} (default: the production prompt)] [--provider …] [--model …] [--reasoning-effort …]`,
+  "                    [--budget-usd 1] [--spend-ledger <file>] [--out <file.md>]   (the style suggestion on the sent mail of the part; writes the report and the style file in evals/results/styles/)",
+  "       bun run eval --set style-injection --stylist [--stylist-prompt …] [--provider …] [--model …] [--reasoning-effort …] [--budget-usd 1] [--spend-ledger <file>] [--out <file.md>]",
+  "                    (the 4 injection cases of the stylist; writes the report and the injection result file in evals/results/styles/)",
 ].join("\n");
 
 export const cliDescriptions = [
   {
     name: "eval",
-    summary: "Runs an eval of the classifier, the drafter or the extractor and prints a report.",
+    summary: "Runs an eval of the classifier, the drafter, the extractor or the stylist and prints a report.",
     risk: "cost",
     needs: ["db", "llm"],
     usage: evalUsage,
@@ -124,6 +132,8 @@ const optionsSchema = z.object({
   suspicious: z.boolean().default(false),
   extractor: z.boolean().default(false),
   drafter: z.boolean().default(false),
+  stylist: z.boolean().default(false),
+  "stylist-prompt": z.enum(stylistVersionIds as [StylistVersion, ...StylistVersion[]]).optional(),
   "prompt-version": z.enum(classifierVersionIds as [ClassifierVersion, ...ClassifierVersion[]]).optional(),
   "prompt-parts": z.string().min(1).optional(),
   "drafter-prompt": z.enum(drafterVersionIds as [DrafterVersion, ...DrafterVersion[]]).optional(),
@@ -167,7 +177,18 @@ const casesOnly = [
 // A sim run takes its set and state file from the corpus, and has no DB.
 // The drafter options belong to `--drafter` only.
 const drafterOnly = ["drafter-prompt", "dump-drafts", "judge-prompt", "style"] as const;
-const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly, ...drafterOnly] as const;
+const stylistOnly = ["stylist", "stylist-prompt"] as const;
+const simExcluded = [
+  "real",
+  "gap",
+  ...gapOnly,
+  "set",
+  "per-category",
+  "state",
+  ...realOnly,
+  ...drafterOnly,
+  ...stylistOnly,
+] as const;
 // The options of `--sim <scenario> --part sent-dev|sent-holdout --extractor`.
 const extractorAllowed = new Set<string>([
   "sim",
@@ -214,6 +235,7 @@ const simOnly = [
   "prompt-version",
   "prompt-parts",
   ...drafterOnly,
+  ...stylistOnly,
 ] as const;
 
 const isSentPart = (value: string): value is SentPart => (sentParts as readonly string[]).includes(value);
@@ -273,6 +295,18 @@ function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): Ev
   };
 }
 
+// `--stylist` runs the style suggestion on `--sim <scenario> --part sent-dev|sent-holdout` or on `--set style-injection`;
+// any other combination, `--judge` and `--drafter` included, is a usage error.
+function parseStylistArgs(data: ParsedData, values: Record<string, unknown>): EvalOptions | undefined {
+  if (!stylistArgsValid(data, values)) return undefined;
+  return {
+    ...data,
+    prompt: productionClassifierChoice(),
+    concurrency: 1,
+    budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
+  };
+}
+
 // `--json <file>` became `--json-out <file>`: name the new flag instead of a bare unknown option.
 const RENAMED_JSON = /^--json(=|$)/;
 
@@ -321,6 +355,8 @@ function parseEvalOptions(args: string[]): EvalOptions | undefined {
       suspicious: { type: "boolean" },
       extractor: { type: "boolean" },
       drafter: { type: "boolean" },
+      stylist: { type: "boolean" },
+      "stylist-prompt": { type: "string" },
       judge: { type: "boolean" },
       "judge-provider": { type: "string" },
       "judge-model": { type: "string" },
@@ -351,8 +387,9 @@ function parseEvalOptions(args: string[]): EvalOptions | undefined {
     return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
   }
   if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
+  if (data.stylist) return parseStylistArgs(data, values);
   if (data.drafter) return parseDrafterArgs(data, values);
-  if ((replySets as readonly string[]).includes(data.set)) return undefined;
+  if ((replySets as readonly string[]).includes(data.set) || data.set === STYLE_INJECTION_SET) return undefined;
   if (data.extractor || data.sentPart !== undefined) {
     // A sent part runs only with --extractor and the other way round; the classifier options mean nothing here.
     if (data.sim === undefined || data.sentPart === undefined || !data.extractor) return undefined;

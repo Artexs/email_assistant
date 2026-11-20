@@ -39,6 +39,7 @@ import { runDrafterEval } from "./lib/eval-drafter";
 import { runExtractorEval } from "./lib/eval-extractor";
 import { evalFailureLine } from "./lib/eval-failure-line";
 import { runSim } from "./lib/eval-sim";
+import { runStylistEval } from "./lib/eval-stylist";
 import { runSuspicious } from "./lib/eval-suspicious";
 
 const cli = createCliOutput("eval");
@@ -112,6 +113,7 @@ function runGap(options: EvalOptions): number {
 async function main(argv: string[]): Promise<number> {
   const options = parseEvalArgs(argv);
   if (options.gap) return runGap(options);
+  if (options.stylist) return runStylistEval(options);
   if (options.drafter) return runDrafterEval(options);
   if (options.extractor) return runExtractorEval(options);
   if (options.suspicious) return runSuspicious(options);

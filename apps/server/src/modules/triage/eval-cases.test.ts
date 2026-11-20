@@ -275,7 +275,8 @@ function oldClassifierInput(c: EvalCase) {
 
 describe("old eval cases", () => {
   test("1 every case file parses and keeps its classifier input", () => {
-    const files = readdirSync(casesDir).filter((file) => file.endsWith(".json"));
+    // The style injection set holds sent texts, not mail cases: its own test parses it (`replies/style-injection.test.ts`).
+    const files = readdirSync(casesDir).filter((file) => file.endsWith(".json") && file !== "style-injection.json");
     expect(files.length).toBeGreaterThan(0);
     let count = 0;
     for (const file of files) {
