@@ -1,25 +1,30 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { SHOTS } from "../src/shots";
 
 // On the real build: one fixture page uses <Shot> (a test fixture, not a real page). Each case runs the docs build into a
-// folder of its own (on the device of the build, not /tmp: Astro renames files into it), so `dist` stays as it was. The fixture file is in `src/content/docs` for the time of the tests and is removed after.
+// folder of its own, so `dist` stays as it was. Other tests scan `src/content/docs` and the source tree at the same time, and a page or
+// a file that appears and goes there fails them. So the fixture page lives in a temp folder outside the repository
+// (`EA_DOCS_EXTRA_PAGES_DIR`, see `src/extra-pages.ts`), and the build output goes into a dot folder (`.dist-shots-test`: the glob
+// scans skip it). The output stays on the device of the build, not /tmp: Astro renames files into it (EXDEV across devices).
 const DOCS = join(import.meta.dir, "..");
 // Ignored by git (`.gitignore`).
-const WORK_ROOT = join(DOCS, "dist-shots-test");
+const WORK_ROOT = join(DOCS, ".dist-shots-test");
 const PUBLIC_SHOTS = join(DOCS, "public/shots");
 const created: string[] = [];
-const FIXTURE = join(DOCS, "src/content/docs/zz-shot-fixture.mdx");
+const SHOT_COMPONENT = join(DOCS, "src/components/Shot.astro");
 // With `DOCS_SHOTS=on` every page with a `<Shot />` line needs its files, also the real pages of the tutorial and the guides, and the
 // Polish fallback of the fixture page needs the Polish ones: a build test that checks one page therefore starts from all 20 files of `SHOTS`.
 // One docs build takes 4 to 15 seconds.
 setDefaultTimeout(60_000);
 let work = "";
+let pages = "";
 
 function fixturePage(shot: string): string {
-  return `---\ntitle: Shot fixture\ndescription: A fixture page for the shot build tests. Never committed.\n---\n\nimport Shot from "../../components/Shot.astro";\n\nText before.\n\n${shot}\n\nText after.\n`;
+  return `---\ntitle: Shot fixture\ndescription: A fixture page for the shot build tests. Never committed.\n---\n\nimport Shot from "${SHOT_COMPONENT}";\n\nText before.\n\n${shot}\n\nText after.\n`;
 }
 
 // A folder with the file of each shot of `SHOTS` except the names in `skip` (empty files: only the existence is checked).
@@ -35,12 +40,19 @@ function build(
   shot: string,
   env: Record<string, string | undefined>
 ): { code: number; log: string; out: string } {
-  writeFileSync(FIXTURE, fixturePage(shot));
+  writeFileSync(join(pages, "zz-shot-fixture.mdx"), fixturePage(shot));
   const out = join(work, `dist-${name}`);
   const run = Bun.spawnSync(["bun", "run", "build", "--outDir", out], {
     cwd: DOCS,
     // `bun test` sets NODE_ENV=test, and the Starlight bundle then differs (the allow list of the public-content check misses its credits).
-    env: { ...process.env, NODE_ENV: "production", DOCS_SHOTS: undefined, EA_DOCS_SHOTS_DIR: undefined, ...env },
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+      DOCS_SHOTS: undefined,
+      EA_DOCS_SHOTS_DIR: undefined,
+      EA_DOCS_EXTRA_PAGES_DIR: pages,
+      ...env,
+    },
     timeout: 100_000,
   });
   return { code: run.exitCode ?? -1, log: `${run.stdout.toString()}${run.stderr.toString()}`, out };
@@ -49,10 +61,14 @@ function build(
 beforeAll(() => {
   mkdirSync(WORK_ROOT, { recursive: true });
   work = mkdtempSync(join(WORK_ROOT, "run-"));
+  pages = mkdtempSync(join(tmpdir(), "ea-docs-shots-pages-"));
 });
 afterAll(() => {
-  rmSync(FIXTURE, { force: true });
   rmSync(WORK_ROOT, { recursive: true, force: true });
+  rmSync(pages, { recursive: true, force: true });
+  // The guard: a run leaves nothing in the repository tree that other tests scan.
+  if (existsSync(WORK_ROOT) || existsSync(join(DOCS, "src/content/docs/zz-shot-fixture.mdx")))
+    throw new Error("shots-build.test.ts left files in the repository tree");
   for (const file of created) rmSync(file, { force: true });
   // The folder goes only when it is empty (a shot run may have filled it).
   try {

@@ -4,7 +4,7 @@ import type { ResponseCreateParamsNonStreaming } from "openai/resources/response
 import type { ReasoningEffort } from "openai/resources/shared";
 
 import type { GenerateFn, GenerateRequest, GenerateResult } from "../client";
-import { DEFAULT_OPENAI_BASE_URL } from "../endpoint";
+import { DEFAULT_OPENAI_BASE_URL, isOpenAiHost } from "../endpoint";
 import { isNetworkError, isRecord, LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 import type { ConfigCode, SoftCode } from "../errors";
 
@@ -111,8 +111,8 @@ export function toOpenAiResult(response: OpenAiResponseLike): GenerateResult {
  * Every option the SDK would read from the env is set here, so a stray variable changes nothing:
  * - `baseURL`: without it the SDK reads `OPENAI_BASE_URL` and skips the config check.
  * - `logLevel`: without it the SDK reads `OPENAI_LOG`; at `debug` it prints request bodies, which hold mail text.
- * - `organization` and `project`: for an own server they are null, so `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID`
- *   never go to a host that is not OpenAI.
+ * - `organization` and `project`: null for every host that is not OpenAI (an own server, DeepSeek), so
+ *   `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` never go to another host.
  * - `adminAPIKey` and `webhookSecret`: null for every endpoint, so `OPENAI_ADMIN_KEY` and `OPENAI_WEBHOOK_SECRET`
  *   stay out of the client (the Responses call uses the bearer key only).
  * - `defaultHeaders`: the SDK adds the lines of `OPENAI_CUSTOM_HEADERS` to every request, also when the option is
@@ -126,8 +126,17 @@ export const openAiClientOptions = (apiKey: string, baseUrl: string, endpoint: L
   adminAPIKey: null,
   webhookSecret: null,
   defaultHeaders: envHeaderNulls(),
-  ...(endpoint === "own" ? { organization: null, project: null } : {}),
+  ...(endpoint === "own" || !isOpenAiBaseUrl(baseUrl) ? { organization: null, project: null } : {}),
 });
+
+/** True when the URL names an OpenAI host. A URL that does not parse is no OpenAI host. */
+function isOpenAiBaseUrl(baseUrl: string): boolean {
+  try {
+    return isOpenAiHost(new URL(baseUrl).hostname);
+  } catch {
+    return false;
+  }
+}
 
 // The header names that the SDK would read from `OPENAI_CUSTOM_HEADERS` (lines `name: value`), each set to null.
 function envHeaderNulls(): Record<string, null> {
@@ -187,17 +196,22 @@ export function createOpenAiGenerate(opts: {
   baseUrl: string;
   endpoint?: LlmEndpointKind;
   client?: OpenAiLike;
+  /** Makes the SDK client from the fixed options; the tests pass a recorder. */
+  newClient?: (options: ReturnType<typeof openAiClientOptions>) => OpenAiLike;
 }): GenerateFn {
-  const client: OpenAiLike = opts.client ?? new OpenAI(openAiClientOptions(opts.apiKey, opts.baseUrl, opts.endpoint));
+  const options = openAiClientOptions(opts.apiKey, opts.baseUrl, opts.endpoint);
+  const client: OpenAiLike = opts.client ?? opts.newClient?.(options) ?? new OpenAI(options);
   // An own server gets no `reasoning` field, also when a caller passes an effort.
   const effort = opts.endpoint === "own" ? null : opts.reasoningEffort;
   return async (req) =>
     toOpenAiResult(await client.responses.create(toResponseParams(req, effort), { signal: req.signal }));
 }
 
-export const openaiProvider: LlmProvider = {
-  label: "OpenAI",
+export const openaiProvider = {
+  envPrefix: "OPENAI" as const,
+  defaults: { timeoutMs: 30000, rpm: 60 },
+  realMail: true,
   // A null base URL only comes from a hand-made table: it takes the default, never the env of the SDK.
   createGenerate: (opts) => createOpenAiGenerate({ ...opts, baseUrl: opts.baseUrl ?? DEFAULT_OPENAI_BASE_URL }),
   classifyError: classifyOpenAiError,
-};
+} satisfies LlmProvider;

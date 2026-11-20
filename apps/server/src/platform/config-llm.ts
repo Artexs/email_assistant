@@ -1,12 +1,12 @@
-import { type LlmRole, llmRoles } from "@ea/core";
+import { type LlmRole, llmRoles, SIM_STACK_NAME, tierModel } from "@ea/core";
 import { z } from "zod";
 
 import { ConfigError, emptyAsUndefined } from "./config-shared";
-import { type LlmProviderId, llmProviderIds, type LlmRoleSettings, type LlmRoleTable } from "./llm";
+import { type LlmProviderId, llmProviderIds, llmProviders, type LlmRoleSettings, type LlmRoleTable } from "./llm";
 import { DEFAULT_OPENAI_BASE_URL, type LlmEndpoint, parseLlmBaseUrl } from "./llm/endpoint";
+import { DEEPSEEK_BASE_URL } from "./llm/providers/deepseek";
 
-// Measured on AI Studio (free tier, 2026-11-04): classifier RPM 15 × 0.8 = 12. The RPD is not known, so the cap stays 300.
-const defaultGeminiRpm = 12;
+// The RPD of the Gemini free tier is not known, so the cap stays 300.
 const defaultLlmDailyCap = 300;
 
 // The judge model when neither `LLM_JUDGE_MODEL` nor `--judge-model` is set: larger than the default drafter
@@ -42,27 +42,47 @@ const roleKeyShape = Object.fromEntries(
   )
 ) as { [K in RoleKey]: (typeof roleKeyFields)[K extends `LLM_${string}_${infer F extends RoleKeyField}` ? F : never] };
 
+const apiKeyField = () => z.preprocess(emptyAsUndefined, z.string().optional());
+const positiveIntField = (fallback: number) => z.coerce.number().int().positive().default(fallback);
+
+type Prefix<P extends LlmProviderId> = (typeof llmProviders)[P]["envPrefix"];
+type ProviderEnvShape = {
+  [P in LlmProviderId as `${Prefix<P>}_API_KEY`]: ReturnType<typeof apiKeyField>;
+} & {
+  [P in LlmProviderId as `${Prefix<P>}_TIMEOUT_MS` | `${Prefix<P>}_RPM`]: ReturnType<typeof positiveIntField>;
+};
+
+// The key, timeout and rate of every registry row: the names come from the row prefix, the defaults from the row.
+const providerEnvShape = Object.fromEntries(
+  llmProviderIds.flatMap((id) => {
+    const { envPrefix, defaults } = llmProviders[id];
+    return [
+      [`${envPrefix}_API_KEY`, apiKeyField()],
+      [`${envPrefix}_TIMEOUT_MS`, positiveIntField(defaults.timeoutMs)],
+      [`${envPrefix}_RPM`, positiveIntField(defaults.rpm)],
+    ];
+  })
+) as ProviderEnvShape;
+
 // The env keys of the LLM providers and roles, and the triage scope. `config.ts` spreads them into the schema.
 export const llmShape = {
   // The classifier's provider, and the provider of every role without LLM_<ROLE>_PROVIDER. A restart applies it.
   LLM_PROVIDER: z.preprocess(emptyAsUndefined, z.enum(llmProviderIds).default("openai")),
-  GEMINI_API_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
-  GEMINI_MODEL_CLASSIFIER: z.preprocess((v) => (v === "" ? undefined : v), z.string().default("gemini-3.5-flash-lite")),
-  GEMINI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
-  GEMINI_RPM: z.coerce.number().int().positive().default(defaultGeminiRpm),
-  // Secret: never print or log it.
-  OPENAI_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
+  // `<P>_API_KEY`, `<P>_TIMEOUT_MS` and `<P>_RPM` of every registry row (secret: never print or log a key).
+  ...providerEnvShape,
   // The key an own server gets, when it needs one. Secret: never print or log it. Empty = the fixed dummy key.
   // An own endpoint never gets OPENAI_API_KEY: that key belongs to OpenAI.
   OPENAI_OWN_API_KEY: z.preprocess(emptyAsUndefined, z.string().optional()),
   OPENAI_MODEL_CLASSIFIER: z.preprocess(emptyAsUndefined, z.string().default("gpt-6-luna")),
-  OPENAI_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
-  OPENAI_RPM: z.coerce.number().int().positive().default(60),
+  GEMINI_MODEL_CLASSIFIER: z.preprocess(emptyAsUndefined, z.string().default("gemini-3.5-flash-lite")),
   OPENAI_REASONING_EFFORT: z.preprocess(emptyAsUndefined, z.enum(openAiReasoningEfforts).default("none")),
   // The endpoint of the openai provider; platform/llm/endpoint checks it. Empty = the default.
   OPENAI_BASE_URL: z.preprocess(emptyAsUndefined, z.string().default(DEFAULT_OPENAI_BASE_URL)),
   // "own" = the URL is a server the operator runs (any host over https). The only value.
   OPENAI_ENDPOINT_KIND: z.preprocess(emptyAsUndefined, z.literal("own").optional()),
+  // The name of this stack. Only the live lab (`SIM_STACK_NAME`, generated mail only) may send mail to a provider
+  // without a sub-processor row. Empty = not set.
+  LAB_STACK: z.preprocess(emptyAsUndefined, z.string().optional()),
   // LLM call attempts per mailbox per America/Los_Angeles day.
   LLM_DAILY_CAP: z.coerce.number().int().positive().default(defaultLlmDailyCap),
   // off = no triage worker; synthetic = only synthetic mail; all = real mail of every active mailbox of an organization that is not suspended.
@@ -101,29 +121,62 @@ function openAiEndpoint(c: LlmConfig): LlmEndpoint {
   return parsed;
 }
 
+/** The key, timeout and rate of one row, read through its prefix. */
+function rowEnv(c: LlmConfig, id: LlmProviderId) {
+  const prefix = llmProviders[id].envPrefix;
+  return {
+    apiKeyName: `${prefix}_API_KEY`,
+    apiKey: c[`${prefix}_API_KEY`],
+    timeoutMs: c[`${prefix}_TIMEOUT_MS`],
+    rpm: c[`${prefix}_RPM`],
+  };
+}
+
 // One block per registry row: the type forces a block for each provider.
 const providerBlocks: Record<LlmProviderId, (config: LlmConfig) => ProviderBlock> = {
   gemini: (c) => ({
-    apiKeyName: "GEMINI_API_KEY",
-    apiKey: c.GEMINI_API_KEY,
+    ...rowEnv(c, "gemini"),
     classifierModel: c.GEMINI_MODEL_CLASSIFIER,
-    timeoutMs: c.GEMINI_TIMEOUT_MS,
-    rpm: c.GEMINI_RPM,
     reasoningEffort: null,
     endpoint: () => null,
   }),
   // An own endpoint never gets the OpenAI key: the row holds the own key or the dummy, so the start needs no
   // OPENAI_API_KEY and the key can reach no other host.
   openai: (c) => ({
+    ...rowEnv(c, "openai"),
     apiKeyName: openAiIsOwn(c) ? "OPENAI_OWN_API_KEY" : "OPENAI_API_KEY",
     apiKey: openAiIsOwn(c) ? (c.OPENAI_OWN_API_KEY ?? OWN_DUMMY_API_KEY) : c.OPENAI_API_KEY,
     classifierModel: c.OPENAI_MODEL_CLASSIFIER,
-    timeoutMs: c.OPENAI_TIMEOUT_MS,
-    rpm: c.OPENAI_RPM,
     reasoningEffort: c.OPENAI_REASONING_EFFORT,
     endpoint: () => openAiEndpoint(c),
   }),
+  // The host is fixed and the key is its own: no OpenAI value reaches it. Tiers replace the model and the effort in
+  // the role-table stage.
+  deepseek: (c) => ({
+    ...rowEnv(c, "deepseek"),
+    classifierModel: tierModel("deepseek", "light"),
+    reasoningEffort: "none",
+    endpoint: () => ({ url: DEEPSEEK_BASE_URL, host: new URL(DEEPSEEK_BASE_URL).hostname, endpoint: "standard" }),
+  }),
 };
+
+// Real mail goes only to a provider with a sub-processor row. A provider without one (`realMail: false`) may get
+// `TRIAGE_LLM_SCOPE=all` only on the live lab stack, which holds generated mail. The message names the key, never a value.
+function checkRealMail(config: LlmConfig, ctx: z.RefinementCtx): void {
+  if (config.TRIAGE_LLM_SCOPE !== "all" || config.LAB_STACK === SIM_STACK_NAME) return;
+  const paths = [
+    { path: "LLM_PROVIDER", provider: config.LLM_PROVIDER },
+    ...keyedRoles.map((role) => ({ path: roleKey(role, "PROVIDER"), provider: config[roleKey(role, "PROVIDER")] })),
+  ];
+  for (const { path, provider } of paths) {
+    if (provider === undefined || llmProviders[provider].realMail) continue;
+    ctx.addIssue({
+      code: "custom",
+      path: [path],
+      message: `${provider} is for dev, tests and evals: no sub-processor row, so TRIAGE_LLM_SCOPE=all is refused outside the sim stack`,
+    });
+  }
+}
 
 // The LLM checks of `configSchema`.
 export function checkLlm(config: LlmConfig, ctx: z.RefinementCtx): void {
@@ -132,6 +185,7 @@ export function checkLlm(config: LlmConfig, ctx: z.RefinementCtx): void {
   if ("error" in endpoint) {
     ctx.addIssue({ code: "custom", path: ["OPENAI_BASE_URL"], message: endpoint.error });
   }
+  checkRealMail(config, ctx);
   const block = providerBlocks[config.LLM_PROVIDER](config);
   if (config.TRIAGE_LLM_SCOPE !== "off" && block.apiKey === undefined) {
     ctx.addIssue({ code: "custom", path: [block.apiKeyName], message: "needed when TRIAGE_LLM_SCOPE is not off" });

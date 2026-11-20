@@ -10,7 +10,7 @@ import ts from "typescript";
 // a pointer and passes; the bare ticket number does not. Strings and code are not read: only comment text.
 const root = resolve(import.meta.dir, "../../..");
 const roots = ["apps", "packages", "scripts", "tools"];
-const skipped = /(^|\/)(node_modules|dist|\.astro|\.f132-logs|test-results|playwright-report)\//;
+const skipped = /(^|\/)(node_modules|dist|\.dist-[a-z]+-test|\.astro|\.f132-logs|test-results|playwright-report)\//;
 
 // A ticket number, a product decision number, a stage number, a review number, and one of the plan letters S, D, P, N, A, Q, T
 // or U with one or two digits. A quarter written with its year is a date, not a code.

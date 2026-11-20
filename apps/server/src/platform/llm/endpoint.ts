@@ -1,5 +1,7 @@
 import type { LlmEndpointKind } from "@ea/core";
 
+import { DEEPSEEK_HOST } from "./providers/deepseek-host";
+
 /** The default endpoint of the `openai` provider. */
 export const DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1";
 
@@ -14,7 +16,7 @@ const STANDARD_HOST = "api.openai.com";
 const EU_HOST = "eu.api.openai.com";
 
 /** The OpenAI domain and its sub-domains: no other host may claim to be OpenAI. */
-const isOpenAiHost = (host: string): boolean => host === "openai.com" || host.endsWith(".openai.com");
+export const isOpenAiHost = (host: string): boolean => host === "openai.com" || host.endsWith(".openai.com");
 
 /** `127.0.0.0/8`, `::1` and `localhost`. The IPv4-mapped IPv6 form is not accepted. */
 function isLoopbackHost(host: string): boolean {
@@ -51,6 +53,13 @@ export function parseLlmBaseUrl(raw: string, ownKind = false): LlmEndpoint | { e
   const isHttps = parsed.protocol === "https:";
   const local = isLoopbackHost(host) || isOneLabelHost(host);
 
+  // The DeepSeek row has its own fixed host and key. No endpoint kind may reach that host through this key: real mail would go to a provider
+  // that has no sub-processor row. The text names the key and holds no value.
+  if (host === DEEPSEEK_HOST || host.endsWith(`.${DEEPSEEK_HOST}`)) {
+    return {
+      error: "OPENAI_BASE_URL must not point at the DeepSeek host; use LLM_PROVIDER=deepseek with DEEPSEEK_API_KEY",
+    };
+  }
   if (isOpenAiHost(host)) {
     if (ownKind) return { error: "OPENAI_ENDPOINT_KIND=own cannot relabel an OpenAI host" };
     if (!isHttps) return { error: "an OpenAI host needs https" };
