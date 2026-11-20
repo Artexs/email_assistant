@@ -1,6 +1,6 @@
 # F108 · Production on the VPS: plan
 
-> **Status — planned, nothing built.** Plan base: f21809c4, refreshed 2026-11-19 ([refresh 1](plan-refresh-1.md)). Sources: epic `E07-platform-and-trust.md` (S6f, decision 14), `E07-discovery-notes.md` §9, §11; `tasks/planned/s6f-hosted-production.md`; `tasks/active/s6-pre-sale.md` (P22, P23, D25, D30, D31). [scouts.md](scouts.md), [questions.md](questions.md), [interfaces.md](interfaces.md).
+> **Status — stages 01–03 landed; tag `v0.4.2` holds them, VPS at `v0.4.1`; next: stage 04.** Plan base: e5c44676, refreshed 2026-11-20 ([refresh 1](plan-refresh-1.md), [refresh 2](plan-refresh-2.md)). Sources: epic `E07-platform-and-trust.md` (S6f, decision 14), `E07-discovery-notes.md` §9, §11; `tasks/planned/s6f-hosted-production.md`; `tasks/active/s6-pre-sale.md` (P22, P23, D25, D30, D31). [scouts.md](scouts.md), [questions.md](questions.md), [interfaces.md](interfaces.md).
 
 ## Input
 
@@ -19,7 +19,7 @@ Owner (S6 plan, 2026-11-12): "**P22** S6f becomes "Production on the home VPS": 
 - **D1 Where the admin keys live.** `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD` move from the VPS `.env` to a new host file `deploy/db.env` (mode 600, git-ignored, example `deploy/db.env.example`). It is the Compose interpolation file; `.env` stays the server's `env_file`. Rejected: an allow-list of about 80 keys (drifts; empty is not unset).
 - **D2 One compose command.** A sourced helper builds the Compose file arguments of every deploy script: `--env-file deploy/db.env` when that file exists, else `--env-file .env` (old layout, local dev). Neither → refuse. Rejected: a path in each script (six copies today).
 - **D3 Service `migrate`** (shape in interfaces.md): server image, `bun run db:migrate`, no `env_file`, only the migrator URL. `release.sh` and `restore.sh` use it. The drill override gives it the drill image, log, restart and ports, not the drill env anchor; `check-logging.sh` allows it in the drill set.
-- **D4 Expand, then contract** (the migration rule, for Compose). Release N holds stages 01–02 (`migrate` exists; the server keeps its migrator URL). The coordinator makes, tags and deploys N and splits the VPS env (stage 04) before stage 05 (contract) is spawned. After that, any release that holds stage 05 is safe, also one of another ticket. Reason: the old `release.sh` runs the next release from memory and migrates through `cli`. Rejected: one release (that step fails); a tag on an older commit (`release.sh` needs a new version commit).
+- **D4 Expand, then contract** (the migration rule, for Compose). Release N (`v0.4.2`, tagged) holds stages 01–03 (`migrate` exists; the server keeps its migrator URL). The coordinator deploys N and splits the VPS env (stage 04) before stage 05 (contract) is spawned. After that, any release that holds stage 05 is safe, also one of another ticket. Reason: the old `release.sh` runs the next release from memory and migrates through `cli`. Rejected: one release (that step fails); a tag on an older commit (`release.sh` needs a new version commit).
 - **D5 Forbidden keys** in `server` and `cli`: `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`, `MIGRATOR_DATABASE_URL`. `DATABASE_URL` (role `app`) stays.
 - **D6 Split tool** `deploy/env-split.sh` moves the D5 lines (the three passwords, required; `MIGRATOR_DATABASE_URL` when present, as `.env.example` has it) to `deploy/db.env`. Lossless (no backup copy, D30); temp file + rename; key names only in output. A second run finishes a half-done split (equal lines in both files). `--undo` moves them back.
 - **D7 Key-name check** `deploy/check-server-env.sh`: key names of `exec -T server env` against D5. From stage 05, `release.sh` verify runs it; `rollback.sh` does not (release N still has the migrator URL).
@@ -60,9 +60,7 @@ Scouts 1–4; review 1 reproductions. Planner read: `server` has `env_file: ../.
 
 ## Proof
 
-```
-mkdir -p /tmp/f108-sNN && bun run lint > /tmp/f108-sNN/lint.log 2>&1 && bun run typecheck > /tmp/f108-sNN/typecheck.log 2>&1 && bun run test:unit:ci > /tmp/f108-sNN/unit.log 2>&1 && bun run test:int:ci > /tmp/f108-sNN/int.log 2>&1 && echo PROOF_OK
-```
+`bun run check:job` as the last step (owner rule 2026-11-20: merge master, lint, typecheck, the tests of the changed files). The final message copies its last line `check:job PASS master=… tip=…`.
 
 ## Owner checkpoints and steps
 
@@ -86,8 +84,8 @@ Opus 5.5 before land: 01, 02, 03, 05 (all touch deploy or secrets; `spec/build.m
 
 ## How to run (coordinator)
 
-1. Move the ticket to `active/` after F107 is in `done/`. Spawn 01; after its land, 02 and 03 (they may run in parallel). Worker stages: `limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --prepare 'bash scripts/limen-prepare.sh' --label "F108-sNN <slug> · F108" "Implement F108 stage NN (spec/features/active/F108-e7-t5-production-on-the-vps/: ticket.md, plan.md, interfaces.md, stages/stage-NN-<slug>.md). Run the Proof after the last commit; claim only what a saved log shows."`
-2. Stage 04 right after 01–03 land: release N (`release:prepare` commit, tag, deploy) and the split. Stage 05 is spawned only after stage 04 recorded `env split ok` (D4).
+1. Done: 01, 02, 03 landed. Worker stage 05 spawns with: `limen spawn --engine pi --provider claude-bridge --model claude-sonnet-5-5 --thinking high --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --prepare 'bash scripts/limen-prepare.sh' --label "F108-sNN <slug> · F108" "Implement F108 stage NN (spec/features/active/F108-e7-t5-production-on-the-vps/: ticket.md, plan.md, interfaces.md, stages/stage-NN-<slug>.md). End with bun run check:job; copy its last line."`
+2. Stage 04 now: deploy the `v0.4.2` tag (after the LLM key cleanup, F141 O1) and the split. Stage 05 is spawned only after stage 04 recorded `env split ok` (D4).
 3. Stage 06 after the first release that holds stage 05; then 07. Drop each job DB after its land. Each stage's `Needs` line names its real input.
 
 ## Planning progress
@@ -97,8 +95,9 @@ Opus 5.5 before land: 01, 02, 03, 05 (all touch deploy or secrets; `spec/build.m
 ## Cold review
 
 `claude-opus-5-5`, thinking high (`[risky]` stages: deploy path, secrets, VPS). [Review 1](plan-review-1.md): FAIL, 2 blocking, 14 notes; all fixed, none rejected. B1 → D4, stage 04. B2 → D5, D6, tests. N2 stage 01; N3 D4; N4, N5, N10 stage 03, 04; N6 D8; N7 D6; N8 V4; N9 D12; N12 seven stages.
-Words: stages 01–07: 694, 565, 694, 698, 691, 675, 624 (refresh 1; plan.md 1468).
+Words: stages 01–07: 694, 565, 694, 698, 687, 678, 624 (refresh 2; plan.md 1473).
 
 ## Log
 
 - 2026-11-19 written at c68ce51e; review 1 fixed. Refreshed at f21809c4: [plan-refresh-1.md](plan-refresh-1.md).
+- 2026-11-20 refreshed at e5c44676 after stages 01–03 and the `v0.4.2` tag: [plan-refresh-2.md](plan-refresh-2.md).
