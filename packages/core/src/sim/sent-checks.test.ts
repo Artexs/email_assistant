@@ -110,3 +110,68 @@ describe("checkSentCase", () => {
     expect(JSON.stringify(issues)).not.toContain("secret-text");
   });
 });
+
+describe("checkSentCase rules", () => {
+  // Words of the English stopword list: a text of `count` words reads as English.
+  const english = (count: number) =>
+    Array.from({ length: count }, (_, i) => ["please", "send", "the", "report", "thanks"][i % 5]).join(" ");
+  const plain = (length: SentSlot["style"]["length"], over: Partial<SentSlot> = {}): SentSlot => ({
+    ...slot,
+    quoted: false,
+    thread: [],
+    style: { length, greeting: "none", signature: false },
+    ...over,
+  });
+  const body = (text: string): SentText => ({ id: slot.id, subject: "Report", body: text });
+
+  test.each([
+    { length: "short", words: 60, ok: true },
+    { length: "short", words: 61, ok: false },
+    { length: "medium", words: 40, ok: true },
+    { length: "medium", words: 200, ok: true },
+    { length: "medium", words: 201, ok: false },
+    { length: "long", words: 150, ok: true },
+  ] as const)("a $length mail of $words words fits: $ok", ({ length, words, ok }) => {
+    expect(codes(plain(length), body(english(words)))).toEqual(ok ? [] : ["length"]);
+  });
+
+  test("words count by any run of spaces, tabs and line breaks", () => {
+    const sixty = Array.from({ length: 60 }, () => "please").join("  \n\t");
+    expect(codes(plain("short"), body(sixty))).toEqual([]);
+    expect(codes(plain("short"), body(`${sixty} the`))).toEqual(["length"]);
+  });
+
+  test("a space or a line break at the start or the end of the mail is no word", () => {
+    expect(codes(plain("short"), body(`${english(60)}\n`))).toEqual([]);
+    expect(codes(plain("short"), body(`  ${english(60)}  `))).toEqual([]);
+  });
+
+  test("a hard case that is no injection needs no planted string", () => {
+    expect(codes(plain("short", { hardCases: ["thanks_only"] }), body(english(20)))).toEqual([]);
+  });
+
+  test("quoted lines, with leading spaces or a carriage return, do not count as words", () => {
+    const own = english(60);
+    expect(codes(plain("short"), body(`${own}\r\n> ${english(50)}\r\n  > ${english(50)}`))).toEqual([]);
+    expect(codes(plain("short"), body(`${own}\n> ${english(50)}\nplease`))).toEqual(["length"]);
+  });
+
+  test("a quoted block ends at a line without a quote mark, also with carriage returns", () => {
+    expect(quotedBlockCount("a\r\n> b\r\n\r\n> c")).toBe(2);
+    expect(quotedBlockCount("> a\n> b")).toBe(1);
+    expect(quotedBlockCount("")).toBe(0);
+  });
+
+  test("every planted string is needed, in any letter case, in the body only", () => {
+    const injection = plain("short", { hardCases: ["injection_quote"] });
+    const text = (planted: string[], over: Partial<SentText> = {}) => ({
+      ...body(`${english(20)}\nCode Alpha-1 and Beta-2`),
+      planted,
+      ...over,
+    });
+    expect(codes(injection, text(["code ALPHA-1", "beta-2"]))).toEqual([]);
+    expect(codes(injection, text(["alpha-1", "gamma-3"]))).toEqual(["planted_missing"]);
+    expect(codes(injection, text([]))).toEqual(["planted_missing"]);
+    expect(codes(injection, text(["gamma-3"], { subject: "gamma-3" }))).toEqual(["planted_missing"]);
+  });
+});
