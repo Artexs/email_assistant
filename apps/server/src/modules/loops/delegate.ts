@@ -3,6 +3,7 @@ import {
   cleanUserText,
   decidePolicy,
   markUntrustedText,
+  normalizeAddress,
   parseToolSwitches,
   planActions,
   sendPayloadFor,
@@ -73,9 +74,9 @@ async function delegable(trx: Transaction<DB>, ctx: TenantContext, email: EmailM
   const triage = await latestTriageResult(trx, ctx, email.id);
   if (triage === undefined || triage.category === "spam") return false;
   if ((await suspiciousReasonsOf(trx, ctx, [email.id])).has(email.id)) return false;
-  const sender = email.from_address?.trim().toLowerCase();
+  const sender = email.from_address == null ? undefined : normalizeAddress(email.from_address);
   if (sender !== undefined && sender !== "") {
-    const own = (await listMailboxes(trx, ctx)).some((mailbox) => mailbox.address.trim().toLowerCase() === sender);
+    const own = (await listMailboxes(trx, ctx)).some((mailbox) => normalizeAddress(mailbox.address) === sender);
     if (own) return false;
   }
   const systemId = SYSTEM_MESSAGE_ID.exec(email.message_id_header ?? "")?.[1];

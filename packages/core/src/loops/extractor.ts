@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { normalizeAddress } from "../contacts/address";
 import { localDateTime } from "../digest/local-time";
 import { cleanUserText } from "../outgoing/user-text";
 import { DAY_MS } from "../time";
@@ -89,11 +90,12 @@ export function sentSkipReason(facts: SentFacts): SentSkipReason | null {
   if (facts.actionId !== null) return "system_draft";
   if (facts.content !== "stored" || facts.bodyText === null || facts.bodyText.trim() === "") return "no_text";
   if (facts.sentAt.getTime() < facts.now.getTime() - SENT_MAX_AGE_DAYS * DAY_MS) return "too_old";
-  const own = new Set(facts.ownAddresses.map((address) => address.toLowerCase()));
+  const own = new Set(facts.ownAddresses.map(normalizeAddress));
   const recipients = [...facts.to, ...facts.cc];
-  if (recipients.every((address) => own.has(address.toLowerCase()))) return "own_only";
+  if (recipients.every((address) => own.has(normalizeAddress(address)))) return "own_only";
   if (recipients.length > SENT_MAX_RECIPIENTS) return "too_many";
   if (facts.listId !== null) return "list";
+  // not an address: the Auto-Submitted header value is a keyword
   if (facts.autoSubmitted !== null && facts.autoSubmitted.trim().toLowerCase() !== "no") return "auto";
   if (facts.hasCalendar) return "calendar";
   return null;
