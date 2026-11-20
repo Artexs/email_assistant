@@ -28,3 +28,6 @@ export function docsUrl(path: string, locale: DocsLocale): string {
   const prefix = locale === "pl" ? "/pl" : "";
   return `${DOCS_ORIGIN}${DOCS_BASE}${prefix}${path}`;
 }
+
+/** The placeholder price of the one plan, in US dollars per mailbox per month. The pricing page and `docs/cost-model.md` both read it. */
+export const PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH = 25;

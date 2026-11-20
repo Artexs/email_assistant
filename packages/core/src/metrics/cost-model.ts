@@ -83,3 +83,31 @@ export function costToRun(mailsPerDay: number, opts: { mailboxesPerHost?: number
     basis: measured ? "measured" : "estimate",
   };
 }
+
+export interface RoundedCostRow {
+  llmUsd: number;
+  hostingUsd: number;
+  backupUsd: number;
+  totalUsd: number;
+  marginUsd: number;
+}
+
+/** Half up at the cent. The small shift keeps a value like 0.355 (stored a hair low) on the side the doc shows. */
+function roundToCent(value: number): number {
+  return Math.round((value + 1e-9) * 100) / 100;
+}
+
+/**
+ * One rounding and margin rule for the pricing page and `docs/cost-model.md`: each value rounds half up to the cent;
+ * the margin is the price minus the rounded total, so total + margin = price.
+ */
+export function roundedCostRow(cost: CostToRun, priceUsd: number): RoundedCostRow {
+  const totalUsd = roundToCent(cost.totalUsd);
+  return {
+    llmUsd: roundToCent(cost.llmUsd),
+    hostingUsd: roundToCent(cost.hostingUsd),
+    backupUsd: roundToCent(cost.backupUsd),
+    totalUsd,
+    marginUsd: roundToCent(priceUsd - totalUsd),
+  };
+}

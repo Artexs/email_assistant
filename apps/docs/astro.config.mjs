@@ -64,6 +64,8 @@ export default defineConfig({
           ],
         },
         { label: "FAQ", items: [{ slug: "faq" }] },
+        // The public pages come after the FAQ: security (its own stage) and then pricing.
+        { slug: "pricing" },
         { label: IN_PLACE_SECTION, items: IN_PLACE_PAGES.filter(inOperate).map((page) => ({ slug: page.id })) },
         ...IN_PLACE_PAGES.filter((page) => !inOperate(page)).map((page) => ({ slug: page.id })),
       ],
