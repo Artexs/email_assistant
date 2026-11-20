@@ -228,9 +228,9 @@ describe("parseCheckMigrationsArgs", () => {
       dir: "x",
       after: "20260101000000",
     });
-    expect(parseCheckMigrationsArgs(["--after", "123"])).toBeNull();
-    expect(parseCheckMigrationsArgs(["extra"])).toBeNull();
-    expect(parseCheckMigrationsArgs(["--dir", ""])).toBeNull();
+    expect(() => parseCheckMigrationsArgs(["--after", "123"])).toThrow("--after needs a 14-digit timestamp");
+    expect(() => parseCheckMigrationsArgs(["extra"])).toThrow("db:check-migrations takes no operand");
+    expect(() => parseCheckMigrationsArgs(["--dir", ""])).toThrow("--dir needs a folder");
   });
 });
 
