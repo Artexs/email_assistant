@@ -3,8 +3,6 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "bun:test";
 
-import { startSource } from "./start/source.test-helper";
-
 const mainPath = join(import.meta.dir, "main.ts");
 
 describe("main", () => {
@@ -38,19 +36,6 @@ describe("main", () => {
     expect(stderr).not.toContain("abc");
   });
 
-  // Source-level pin of the wiring: one delivery, built from the one operator send, serves the `channels.operator`
-  // notices and the `ops.slo` tick (the send is a function when OPERATOR_TELEGRAM_CHAT_ID is set, null when it is unset).
-  test("the ops.slo job and the operator notices share one operator delivery", () => {
-    const source = startSource();
-    expect(source).toMatch(/const operatorSend =\s+operatorChat === null\s+\? null\s+: async/);
-    expect(source.match(/createOperatorDelivery\(/g)).toHaveLength(1);
-    expect(source).toMatch(/createOperatorDelivery\(\{ send: operatorSend, log \}\)/);
-    expect(source).toMatch(
-      /createOperatorNotices\(\{\s+db,\s+now: \(\) => new Date\(\),\s+delivery,\s+locale: config\.OPERATOR_LOCALE,\s+\}\)/
-    );
-    expect(source).toMatch(/scheduler\.add\("ops\.slo", "30 \*\/5 \* \* \* \*",[\s\S]*?delivery,/);
-  });
-
   // The release stamp: the entry point reads EA_RELEASE before it logs, so every JSON line carries it. The job-run
   // half is in `test/integration/job-run-cli.test.ts`.
   test("every JSON line of main.ts carries EA_RELEASE", async () => {
@@ -81,16 +66,5 @@ describe("main", () => {
     expect(exitCode).toBe(1);
     expect(lineOf(stdout, "features_off")?.release).toBe("test-r1");
     expect(lineOf(stderr, "db_role_check_failed")?.release).toBe("test-r1");
-  });
-
-  // The disk and backup-age checks are entries `{kind, run}` of the `ops.slo` check list (not bare functions),
-  // and the job runs that list.
-  test("the ops.slo check list holds the disk and backup-age entries", () => {
-    const source = startSource();
-    expect(source).toContain(`{ kind: "slo_disk", run: () => checkDisk(statfs, slo) }`);
-    expect(source).toMatch(
-      /\{ kind: "slo_backup_age", run: \(now\) => checkBackupAge\(\(path\) => readFile\(path, "utf8"\), now, slo\) \}/
-    );
-    expect(source).toMatch(/runSloTick\(\s*\{ db, checks: sloChecks,/);
   });
 });

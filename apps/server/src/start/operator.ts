@@ -10,6 +10,7 @@ import {
   createOperatorNotices,
   runSloTick,
   type SloCheckEntry,
+  type StatFs,
 } from "../modules/operator";
 import { operatorChatId, sloThresholds, testMailRule } from "../platform/config";
 
@@ -19,8 +20,21 @@ export interface OperatorStart {
   operator: ReturnType<typeof createOperatorNotices>;
 }
 
+export interface OperatorStartDeps {
+  // The disk and backup file reads of the service-level checks.
+  io: { statfs: StatFs; readFile: (path: string) => Promise<string> };
+  createOperatorNotices: typeof createOperatorNotices;
+  runSloTick: typeof runSloTick;
+}
+
+const realDeps: OperatorStartDeps = {
+  io: { statfs, readFile: (path) => readFile(path, "utf8") },
+  createOperatorNotices,
+  runSloTick,
+};
+
 // The operator notices and the service-level alerts. Both deliver through one delivery to the operator chat; the Telegram runtime is read at send time.
-export function startOperator(ctx: StartContext): OperatorStart {
+export function startOperator(ctx: StartContext, deps: OperatorStartDeps = realDeps): OperatorStart {
   const { config, db, log, scheduler, runs, startedAt, late } = ctx;
   // Operator notices: the chat id is private data and never reaches a log line.
   const operatorChat = operatorChatId(config);
@@ -32,7 +46,7 @@ export function startOperator(ctx: StartContext): OperatorStart {
           await late.telegram.sendDirect(operatorChat, text);
         };
   const delivery = createOperatorDelivery({ send: operatorSend, log });
-  const operator = createOperatorNotices({
+  const operator = deps.createOperatorNotices({
     db,
     now: () => new Date(),
     delivery,
@@ -53,13 +67,13 @@ export function startOperator(ctx: StartContext): OperatorStart {
       run: (now) => checkUrgentLatency(db, now, slo, startedAt, testMailRule(config)),
     },
     { kind: "slo_llm_errors", run: (now) => checkLlmErrors(db, now, slo) },
-    { kind: "slo_disk", run: () => checkDisk(statfs, slo) },
+    { kind: "slo_disk", run: () => checkDisk(deps.io.statfs, slo) },
     // null when BACKUP_STATUS_FILE is empty: the check is off and an open alert of this kind stays as it is.
-    { kind: "slo_backup_age", run: (now) => checkBackupAge((path) => readFile(path, "utf8"), now, slo) },
+    { kind: "slo_backup_age", run: (now) => checkBackupAge(deps.io.readFile, now, slo) },
   ];
   // prettier-ignore
   scheduler.add("ops.slo", "30 */5 * * * *", runs.track("ops.slo", () =>
-    runSloTick(
+    deps.runSloTick(
       { db, checks: sloChecks, delivery, cfg: slo, log, locale: config.OPERATOR_LOCALE },
       new Date()
     )
