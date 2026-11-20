@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F145 · One time.ts spelling MINUTE_MS HOUR_MS DAY_MS is used everywhere and a lint rule bans the literals
