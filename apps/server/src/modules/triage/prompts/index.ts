@@ -10,6 +10,7 @@ import * as drafterV1 from "./drafter-v1";
 import * as drafterV2 from "./drafter-v2";
 import * as drafterV3 from "./drafter-v3";
 import * as drafterV4 from "./drafter-v4";
+import * as drafterV5 from "./drafter-v5";
 import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
 import * as judgeV2 from "./judge-v2";
@@ -112,6 +113,12 @@ export const drafterVersions = {
     version: drafterV4.PROMPT_VERSION,
     buildSystem: drafterV4.buildSystemPrompt,
     buildUser: drafterV4.buildUserPrompt,
+  },
+  "drafter-v5": {
+    role: "drafter",
+    version: drafterV5.PROMPT_VERSION,
+    buildSystem: drafterV5.buildSystemPrompt,
+    buildUser: drafterV5.buildUserPrompt,
   },
 } as const satisfies Record<string, DrafterPrompt>;
 export type DrafterVersion = keyof typeof drafterVersions;

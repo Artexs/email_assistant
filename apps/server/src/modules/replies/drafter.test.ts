@@ -8,6 +8,7 @@ import { buildSystemPrompt, buildUserPrompt } from "../triage/prompts/drafter-v1
 import { buildSystemPrompt as buildSystemV2, buildUserPrompt as buildUserV2 } from "../triage/prompts/drafter-v2";
 import { buildSystemPrompt as buildSystemV3, buildUserPrompt as buildUserV3 } from "../triage/prompts/drafter-v3";
 import { buildSystemPrompt as buildSystemV4, buildUserPrompt as buildUserV4 } from "../triage/prompts/drafter-v4";
+import { buildSystemPrompt as buildSystemV5, buildUserPrompt as buildUserV5 } from "../triage/prompts/drafter-v5";
 
 import { DrafterCallError, draftReply } from "./drafter";
 
@@ -534,6 +535,7 @@ describe("the drafter prompt versions after drafter-v1", () => {
     { version: "drafter-v2", buildSystem: buildSystemV2, buildUser: buildUserV2, previous: buildSystemPrompt },
     { version: "drafter-v3", buildSystem: buildSystemV3, buildUser: buildUserV3, previous: buildSystemV2 },
     { version: "drafter-v4", buildSystem: buildSystemV4, buildUser: buildUserV4, previous: buildSystemV3 },
+    { version: "drafter-v5", buildSystem: buildSystemV5, buildUser: buildUserV5, previous: buildSystemV4 },
   ] as const)(
     "draftReply with $version sends its own system text and version, and the user prompt of drafter-v1",
     async ({ version, buildSystem, buildUser, previous }) => {
@@ -640,5 +642,41 @@ describe("the drafter-v4 prompt", () => {
     ]) {
       expect(system).toContain(rule);
     }
+  });
+});
+
+describe("the drafter-v5 prompt", () => {
+  const v5Lines = new Set(buildSystemV5().split("\n"));
+  const v4Lines = buildSystemV4().split("\n");
+  const sectionStart = v4Lines.indexOf("Sentences outside a gap:");
+  const sectionEnd = v4Lines.indexOf("Output fields:");
+  // The section of drafter-v4 that drafter-v5 replaces: its heading up to the blank line before "Output fields:".
+  const v4Section = v4Lines.slice(sectionStart, sectionEnd - 1);
+
+  test("the replaced section of drafter-v4 is the closed list of the sentences outside a gap", () => {
+    expect(v4Section.map((line) => line.slice(0, 40))).toEqual([
+      "Sentences outside a gap:",
+      "- Only these sentences may stand outside",
+      "- The exception: a decision or a fact th",
+      "- The topic names the subject of the que",
+      "- Before you return the JSON, read every",
+    ]);
+  });
+
+  test("it keeps every line of drafter-v4 outside the section on the sentences outside a gap word for word", () => {
+    const kept = [...v4Lines.slice(0, sectionStart), ...v4Lines.slice(sectionEnd - 1)];
+    expect(kept.filter((line) => !v5Lines.has(line))).toEqual([]);
+  });
+
+  test("it drops the closed list and the old re-read rule of drafter-v4", () => {
+    const dropped = [
+      "- Only these sentences may stand outside a gap",
+      "- Before you return the JSON, read every sentence outside a gap again",
+    ];
+    expect([...v5Lines].filter((line) => dropped.some((start) => line.startsWith(start)))).toEqual([]);
+  });
+
+  test("production still drafts with drafter-v4", () => {
+    expect(prompts.drafter.version).toBe("drafter-v4");
   });
 });

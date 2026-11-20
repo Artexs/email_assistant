@@ -32,8 +32,9 @@ const injection = load("injection.json");
 const delegation = load("delegation.json");
 const replyInjection = load("reply-injection.json");
 const replyCommitment = load("reply-commitment.json");
+const replyFacts = load("reply-facts.json");
 const all = [...synthetic, ...injection];
-const everything = [...all, ...delegation, ...replyInjection, ...replyCommitment];
+const everything = [...all, ...delegation, ...replyInjection, ...replyCommitment, ...replyFacts];
 
 // The made-up delegate pool of evals/README.md. A case may use only these entries.
 const delegatePool: Record<string, { name: string; tags: string[] }> = {
