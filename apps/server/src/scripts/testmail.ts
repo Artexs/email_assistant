@@ -1,11 +1,9 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseArgs } from "node:util";
 
 import {
   applyBlindLabels,
   type Batch,
-  BATCH_ID_PATTERN,
   batchCategories,
   batchSchema,
   blindLabelsSchema,
@@ -20,7 +18,6 @@ import {
   sentInWindow,
   validateBatch,
 } from "@ea/core";
-import { z } from "zod";
 
 import {
   acquireSendLock,
@@ -35,66 +32,14 @@ import {
   runSend,
   testmailPaths,
 } from "../modules/testmail";
-import { createCliOutput } from "../platform/cli";
-import { ConfigError, loadTestmailConfig } from "../platform/config";
-import { describeError, HardError } from "../platform/errors";
+import { type CliRawOutput, runCli, type CliSpec } from "../platform/cli";
+import { loadTestmailConfig } from "../platform/config";
+import { HardError } from "../platform/errors";
 
-const cli = createCliOutput("testmail");
-
-const usage = [
-  "usage: bun run testmail:setup",
-  "       bun run testmail:validate --batch <id> [--allow-unlabelled]",
-  "       bun run testmail:blind --batch <id> [--apply <labels.json> --checker <model id>]",
-  "       TEST_MAILBOX_ADDRESS=<address> bun run testmail:send --batch <id> [--limit n] [--interval-sec 30] [--daily-cap 50] [--dry-run]",
-  "       bun run testmail:status --batch <id>",
-  "  Files: evals/testmail/{batches/,personas.json,target.json}, logs and lock in ~/.local/state/ea-testmail/.",
-  "  send refuses every recipient except TEST_MAILBOX_ADDRESS, and TEST_MAILBOX_ADDRESS must equal testAddress in evals/testmail/target.json.",
-  "  Exit codes: 0 done, 1 error or a case needs a fix, 2 run again later.",
-].join("\n");
+import { failureOf } from "./lib/testmail-failure";
+import { cliDescriptions, parseTestmailArgs, type TestmailOptions } from "./testmail-args";
 
 const addressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const batchOption = z.string().regex(BATCH_ID_PATTERN);
-
-const optionSchemas = {
-  setup: z.object({}).strict(),
-  validate: z.object({ batch: batchOption, "allow-unlabelled": z.boolean().default(false) }).strict(),
-  blind: z
-    .object({ batch: batchOption, apply: z.string().min(1).optional(), checker: z.string().min(1).max(80).optional() })
-    .strict()
-    .refine((options) => (options.apply === undefined) === (options.checker === undefined)),
-  send: z
-    .object({
-      batch: batchOption,
-      limit: z.coerce.number().int().min(0).optional(),
-      "interval-sec": z.coerce.number().int().min(5).max(600).default(30),
-      "daily-cap": z.coerce.number().int().min(1).max(95).default(50),
-      "dry-run": z.boolean().default(false),
-    })
-    .strict(),
-  status: z.object({ batch: batchOption }).strict(),
-} as const;
-
-type Command = keyof typeof optionSchemas;
-
-const parseOptionTypes = {
-  batch: { type: "string" },
-  apply: { type: "string" },
-  checker: { type: "string" },
-  limit: { type: "string" },
-  "interval-sec": { type: "string" },
-  "daily-cap": { type: "string" },
-  "allow-unlabelled": { type: "boolean" },
-  "dry-run": { type: "boolean" },
-} as const;
-
-function out(text: string): void {
-  process.stdout.write(`${text}\n`);
-}
-
-function issueLines(error: z.ZodError): string[] {
-  return error.issues.map((issue) => `${issue.path.join(".") || "-"}: ${issue.code}`);
-}
 
 function loadBatch(batchesDir: string, id: string): Batch {
   return readJsonFile(join(batchesDir, `${id}.json`), batchSchema);
@@ -125,7 +70,7 @@ function createClient() {
   return createAgentMailClient({ apiKey: config.AGENTMAIL_API_KEY, baseUrl: config.AGENTMAIL_BASE_URL });
 }
 
-async function runSetup(): Promise<number> {
+async function runSetup(io: CliRawOutput): Promise<number> {
   const paths = testmailPaths();
   const personas = loadPersonas(paths.personasFile);
   const client = createClient();
@@ -144,14 +89,14 @@ async function runSetup(): Promise<number> {
     inbox = await client.getInbox(address);
   }
   if (inbox.email !== address) {
-    cli.fail("inbox address differs from the persona file");
+    io.fail("inbox address differs from the persona file");
     return 1;
   }
-  out(`inbox ${inbox.email} status ${inbox.status ?? "active"} status_until ${inbox.statusUntil ?? "-"}`);
+  io.raw(`inbox ${inbox.email} status ${inbox.status ?? "active"} status_until ${inbox.statusUntil ?? "-"}`);
   return 0;
 }
 
-function runValidate(options: z.infer<(typeof optionSchemas)["validate"]>): number {
+function runValidate(options: TestmailOptions<"validate">, io: CliRawOutput): number {
   const paths = testmailPaths();
   const batch = loadBatch(paths.batchesDir, options.batch);
   const personas = loadPersonas(paths.personasFile);
@@ -161,21 +106,21 @@ function runValidate(options: z.infer<(typeof optionSchemas)["validate"]>): numb
     testAddress: target.testAddress,
     requireBlind: !options["allow-unlabelled"],
   });
-  for (const issue of issues) out(`case ${issue.caseId ?? "-"} ${issue.code} ${issue.detail}`);
+  for (const issue of issues) io.raw(`case ${issue.caseId ?? "-"} ${issue.code} ${issue.detail}`);
   for (const category of batchCategories) {
-    out(`category ${category} ${batch.cases.filter((item) => item.expected.category === category).length}`);
+    io.raw(`category ${category} ${batch.cases.filter((item) => item.expected.category === category).length}`);
   }
-  for (const [persona, count] of countBy(batch.cases, (item) => item.persona)) out(`persona ${persona} ${count}`);
-  out(issues.length === 0 ? "valid" : `invalid (${issues.length} issues)`);
+  for (const [persona, count] of countBy(batch.cases, (item) => item.persona)) io.raw(`persona ${persona} ${count}`);
+  io.raw(issues.length === 0 ? "valid" : `invalid (${issues.length} issues)`);
   return issues.length === 0 ? 0 : 1;
 }
 
-function runBlind(options: z.infer<(typeof optionSchemas)["blind"]>): number {
+function runBlind(options: TestmailOptions<"blind">, io: CliRawOutput): number {
   const paths = testmailPaths();
   const batch = loadBatch(paths.batchesDir, options.batch);
   const personas = loadPersonas(paths.personasFile);
   if (options.apply === undefined || options.checker === undefined) {
-    out(JSON.stringify(blindView(batch, personas), null, 2));
+    io.raw(JSON.stringify(blindView(batch, personas), null, 2));
     return 0;
   }
   const labels = readJsonFile(options.apply, blindLabelsSchema);
@@ -190,10 +135,10 @@ function runBlind(options: z.infer<(typeof optionSchemas)["blind"]>): number {
     if (expected === label.category) agree += 1;
     else disagreements.push(`disagree ${label.id}: expected ${expected}, blind ${label.category}`);
   }
-  out(
+  io.raw(
     `agree ${agree}, disagree ${disagreements.length}, missing ${applied.missingIds.length}, unknown ${applied.unknownIds.length}`
   );
-  for (const line of disagreements) out(line);
+  for (const line of disagreements) io.raw(line);
   return applied.unknownIds.length > 0 ? 1 : 0;
 }
 
@@ -219,7 +164,8 @@ function printDryRun(
   to: string,
   lines: SendLogLine[],
   allLines: SendLogLine[],
-  options: SendOptions
+  options: SendOptions,
+  io: CliRawOutput
 ): void {
   const caseIds = batch.cases.map((item) => item.id);
   const states = caseStates(batch.batch, caseIds, lines);
@@ -247,14 +193,14 @@ function printDryRun(
     limit: options.limit ?? null,
   });
   for (const action of plan.actions) {
-    out(`${action.kind === "send" ? "would send" : "would recover"} ${action.caseId} attempt ${action.attempt}`);
+    io.raw(`${action.kind === "send" ? "would send" : "would recover"} ${action.caseId} attempt ${action.attempt}`);
   }
-  for (const skipped of plan.skipped) out(`skip ${skipped.caseId} ${skipped.reason}`);
+  for (const skipped of plan.skipped) io.raw(`skip ${skipped.caseId} ${skipped.reason}`);
 }
 
-type SendOptions = z.infer<(typeof optionSchemas)["send"]>;
+type SendOptions = TestmailOptions<"send">;
 
-async function runSendCommand(options: SendOptions): Promise<number> {
+async function runSendCommand(options: SendOptions, io: CliRawOutput): Promise<number> {
   const paths = testmailPaths();
   const target = loadRemoteTarget(paths.targetFile);
   const to = guardRecipient(target.testAddress);
@@ -266,8 +212,8 @@ async function runSendCommand(options: SendOptions): Promise<number> {
     requireBlind: true,
   });
   if (issues.length > 0) {
-    for (const issue of issues) out(`case ${issue.caseId ?? "-"} ${issue.code} ${issue.detail}`);
-    out(`invalid (${issues.length} issues)`);
+    for (const issue of issues) io.raw(`case ${issue.caseId ?? "-"} ${issue.code} ${issue.detail}`);
+    io.raw(`invalid (${issues.length} issues)`);
     return 1;
   }
 
@@ -276,7 +222,7 @@ async function runSendCommand(options: SendOptions): Promise<number> {
     const all = readAllSendLogs(paths.runsDir);
     assertLogsReadable(all.badFiles);
     // The hash assumes inbox_id == email (<username>@agentmail.to).
-    printDryRun(batch, address, to, readSendLog(paths.batchLog(options.batch)).lines, all.lines, options);
+    printDryRun(batch, address, to, readSendLog(paths.batchLog(options.batch)).lines, all.lines, options, io);
     return 0;
   }
 
@@ -291,7 +237,7 @@ async function runSendCommand(options: SendOptions): Promise<number> {
       inbox = await client.getInbox(address);
     } catch (error) {
       if (error instanceof AgentMailError && error.status === 404) {
-        cli.fail("inbox not found: run bun run testmail:setup");
+        io.fail("inbox not found: run bun run testmail:setup");
         return 1;
       }
       throw error;
@@ -316,19 +262,19 @@ async function runSendCommand(options: SendOptions): Promise<number> {
         currentDisplayName: inbox.displayName,
       }
     );
-    out(
+    io.raw(
       `sent ${result.sent.length}, recovered ${result.recovered.length}, failed ${result.failed.length}, remaining ${result.remaining.length}`
     );
-    for (const item of result.failed) out(`failed ${item.caseId} ${item.code}`);
-    for (const item of result.remaining) out(`remaining ${item.caseId} ${item.reason}`);
-    if (result.stoppedBy !== null) out(`stopped: ${result.stoppedBy}`);
+    for (const item of result.failed) io.raw(`failed ${item.caseId} ${item.code}`);
+    for (const item of result.remaining) io.raw(`remaining ${item.caseId} ${item.reason}`);
+    if (result.stoppedBy !== null) io.raw(`stopped: ${result.stoppedBy}`);
     return result.exitCode;
   } finally {
     lock.release();
   }
 }
 
-function runStatus(options: z.infer<(typeof optionSchemas)["status"]>): number {
+function runStatus(options: TestmailOptions<"status">, io: CliRawOutput): number {
   const paths = testmailPaths();
   const batch = loadBatch(paths.batchesDir, options.batch);
   const all = readAllSendLogs(paths.runsDir);
@@ -347,9 +293,9 @@ function runStatus(options: z.infer<(typeof optionSchemas)["status"]>): number {
       .filter((line) => line.type === "delivered" && line.batch === batch.batch && line.case === testCase.id)
       .at(-1);
     const suffix = delivered?.type === "delivered" ? ` ${delivered.folder}/${delivered.result}` : "";
-    out(`${testCase.id} ${testCase.expected.category} ${kind}${suffix}`);
+    io.raw(`${testCase.id} ${testCase.expected.category} ${kind}${suffix}`);
   }
-  out(
+  io.raw(
     countBy(stateNames, (name) => name)
       .map(([name, count]) => `${name} ${count}`)
       .join(", ")
@@ -357,45 +303,30 @@ function runStatus(options: z.infer<(typeof optionSchemas)["status"]>): number {
   return 0;
 }
 
-async function main(): Promise<number> {
-  const [command, ...rest] = process.argv.slice(2);
-  if (command === undefined || !Object.hasOwn(optionSchemas, command)) {
-    cli.fail(usage);
-    return 1;
-  }
-  let values;
+// A usage error is thrown by the parse, before any file is read, and `runCli` maps it to exit 2. Every other error is
+// reported here with its safe line: the operator reads the message of a `HardError`, a `ConfigError` or an `AgentMailError`.
+const main: CliSpec["main"] = async (argv, io) => {
+  const args = parseTestmailArgs(argv);
   try {
-    ({ values } = parseArgs({ args: rest, options: parseOptionTypes, strict: true, allowPositionals: false }));
-  } catch {
-    cli.fail(usage);
-    return 1;
+    switch (args.command) {
+      case "setup":
+        return await runSetup(io);
+      case "validate":
+        return runValidate(args.options, io);
+      case "blind":
+        return runBlind(args.options, io);
+      case "send":
+        return await runSendCommand(args.options, io);
+      case "status":
+        return runStatus(args.options, io);
+    }
+  } catch (error) {
+    const failure = failureOf(error);
+    io.fail(failure.text);
+    return failure.code;
   }
-  const parsed = optionSchemas[command as Command].safeParse(values);
-  if (!parsed.success) {
-    cli.fail(issueLines(parsed.error).join("\n"));
-    cli.fail(usage);
-    return 1;
-  }
-  switch (command as Command) {
-    case "setup":
-      return runSetup();
-    case "validate":
-      return runValidate(parsed.data as z.infer<(typeof optionSchemas)["validate"]>);
-    case "blind":
-      return runBlind(parsed.data as z.infer<(typeof optionSchemas)["blind"]>);
-    case "send":
-      return runSendCommand(parsed.data as SendOptions);
-    case "status":
-      return runStatus(parsed.data as z.infer<(typeof optionSchemas)["status"]>);
-  }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    // AgentMailError.message is log-safe: op, status, name and code only.
-    if (error instanceof HardError || error instanceof ConfigError || error instanceof AgentMailError) {
-      cli.fail(error.message);
-    } else cli.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "testmail", descriptions: cliDescriptions, main });
+}
