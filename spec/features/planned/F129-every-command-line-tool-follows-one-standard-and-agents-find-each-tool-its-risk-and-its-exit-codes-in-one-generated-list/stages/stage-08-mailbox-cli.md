@@ -1,6 +1,6 @@
 # F129 stage 08 — The `mailbox-cli` tools
 
-Needs stage 02: `runCli`, `cli-pending.json` group `mailbox-cli`, the standard test. Needs stage 04: `scripts/lib/mailbox-cli.ts`, `lib/mailbox-backfill-gate.ts`. May run next to 05–07 and 09–13.
+Needs stage 01: `runCli`, `exitCodeOf`. Needs stage 02: `cli-pending.json` group `mailbox-cli`, the standard test. Needs stage 04: `scripts/lib/mailbox-cli.ts`, `lib/mailbox-backfill-gate.ts`. May run next to 05–07 and 09–15.
 
 Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md` § Convert a tool.
 
@@ -9,7 +9,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md`
 | Command | Risk | Needs | Notes |
 | --- | --- | --- | --- |
 | `mailbox:seed` | dev | db, greenmail | appends fixtures by IMAP; its refusal of a non-GreenMail host stays |
-| `mailbox:audit` | read | db, imap | |
+| `mailbox:audit` | read | db, imap | lost or duplicate INBOX mail 2 → 1 (`exits[1]`: "lost or duplicate mail found"); the code comes from `modules/mail/audit.ts`, in scope |
 | `mailbox:signals` | read | db, imap | |
 | `mailbox:backfill` | write | db, imap | long run; `exits[4]`: "stopped at its limit; run again to continue", only if it has such a stop today |
 
@@ -25,7 +25,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md`
 ## Step 2 — Convert the four tools
 
 - Follow the recipe. `process.exit` at the end of each entry goes; `runCli` owns the exit.
-- Callers to update: `docs/capabilities/sync.md`, `docs/capabilities/live-lab.md`, `notes/` are history (no edit), `deploy/README.md` backfill section, `apps/server/test/integration/mailbox-oauth-cli.test.ts`, `mail-hosts-configured.test.ts`.
+- Callers to update: `docs/capabilities/sync.md` (the `mailbox:audit` exit 2 line), `docs/capabilities/live-lab.md`, `notes/` are history (no edit), `deploy/README.md` backfill section, `apps/server/test/integration/mailbox-oauth-cli.test.ts`, `mail-hosts-configured.test.ts`.
 
 ## Test
 
@@ -33,7 +33,8 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md`
 2. `mailbox-seed-args`: an unknown flag and a non-number `--count` → `UsageError`; existing bound cases keep their values. Add no new bound (shape only).
 3. `mailbox-signals-args` (no test today): valid input and each invalid input → usage.
 4. Inline parsers of `mailbox:audit` and `mailbox:backfill` move to `mailbox-audit-args.ts` and `mailbox-backfill-args.ts`, each with a unit test (valid case; missing `--org-id`; bad `--since` date → usage).
-5. Integration: the existing `mailbox:backfill` lock test and the seed test pass unchanged, apart from exit 1 → 2 for bad arguments.
+5. `mailbox:audit` on a mailbox with a missing INBOX mail → exit 1 (was 2); its lines unchanged (update the existing audit test).
+6. Integration: the existing `mailbox:backfill` lock test and the seed test pass unchanged, apart from exit 1 → 2 for bad arguments.
 
 ## Out of scope
 

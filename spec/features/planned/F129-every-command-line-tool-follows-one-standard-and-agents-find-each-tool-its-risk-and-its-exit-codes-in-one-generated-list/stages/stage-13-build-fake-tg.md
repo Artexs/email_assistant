@@ -1,6 +1,6 @@
 # F129 stage 13 — Build tools and `fake-tg`
 
-Needs stage 00: `@ea/core` `CliDescription`, `EXIT`, `UsageError`, `renderHelp`. Needs stage 02: `runCli`, `cli-pending.json` group `build`, the standard test and the lint exception for `tools/fake-telegram/src/cli-run.ts`. Needs stage 04: `scripts/lib/module-graph-build.ts`, `lib/api-spec-build.ts`, `lib/check-migrations-rules.ts`. May run next to 05–12.
+Needs stage 00: `@ea/core` `CliDescription`, `EXIT`, `UsageError`, `renderHelp`. Needs stage 01: `runCli`. Needs stage 02: `cli-pending.json` group `build`, the standard test and the lint exception for `tools/fake-telegram/src/cli-run.ts`. Needs stage 04: `scripts/lib/module-graph-build.ts`, `lib/api-spec-build.ts`, `lib/check-migrations-rules.ts`. May run next to 05–12, 14 and 15.
 
 Part of [`../plan.md`](../plan.md). Decisions: D2, D5, D7, D12. Recipe: `docs/cli.md` § Convert a tool.
 
@@ -34,10 +34,12 @@ Part of [`../plan.md`](../plan.md). Decisions: D2, D5, D7, D12. Recipe: `docs/cl
 4. A unit test reads every `tools/fake-telegram/src/*.ts` import specifier: none starts with `apps/` or a relative path that leaves `tools/`.
 5. `fake-tg read --url http://127.0.0.1:1` → exit 3 (existing case if present; else add it).
 
+**Guard check:** add `import "../../../apps/server/src/platform/cli.ts"` to `cli.ts` → test 4 fails; remove it. Name both runs in the final message.
+
 ## Out of scope
 
 Fake server behaviour; per-job ports for `fake-tg serve` (F136 owns the e2e ports).
 
 ## Done when
 
-Steps 1–2 done; the four files are out of `cli-pending.json`; the standard test passes for them; the plan.md Proof with `s13` prints `PROOF_OK`.
+Steps 1–2 done; the four files are out of `cli-pending.json`; the standard test passes for them; the plan.md Proof with `s13` and `&& bun run test:e2e > /tmp/f129-s13/e2e.log 2>&1` before `echo PROOF_OK` prints `PROOF_OK` (`fake-tg serve` is the Playwright Telegram server), under the lock rule `CLAUDE.md` states at HEAD; `deploy/compose.sim.yaml` still starts it with the same command.

@@ -1,6 +1,6 @@
 # F129 stage 11 — Testmail and operations tools
 
-Needs stage 02: `runCli`, `cli-pending.json` group `testmail-ops`, the standard test. Needs stage 04: `scripts/lib/credentials-check-lines.ts`, `lib/ops-alerts-lines.ts`, `lib/release-prepare-lib.ts`. May run next to 05–10, 12 and 13.
+Needs stage 01: `runCli`, `exitCodeOf`. Needs stage 02: `cli-pending.json` group `testmail-ops`, the standard test. Needs stage 04: `scripts/lib/credentials-check-lines.ts`, `lib/ops-alerts-lines.ts`, `lib/release-prepare-lib.ts`. May run next to 05–10 and 12–15.
 
 Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D13 (testmail stays). Recipe: `docs/cli.md` § Convert a tool.
 
@@ -8,7 +8,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D13 (testmail stays). Rec
 
 | Command | Risk | Needs | Exit changes |
 | --- | --- | --- | --- |
-| `testmail:setup` / `validate` / `blind` / `send` | outside | db, agentmail | bad args 1 → 2 |
+| `testmail:setup` / `validate` / `blind` / `send` | outside | db, agentmail | bad args 1 → 2; `send` "not done, no fix needed" 2 → 4 (`exits[4]`; code from `modules/testmail/send.ts`, in scope; `send.test.ts` changes) |
 | `testmail:status` | read | db | |
 | `testmail:target` | outside | db, imap | "nothing sent yet" 2 → 1 |
 | `testmail:remote` | outside | vps, git | "nothing sent yet" 2 → 1; it runs `testmail:target` on the VPS |
@@ -22,7 +22,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D13 (testmail stays). Rec
 ## Step 1 — Convert the tools
 
 - Follow the recipe. `testmail.ts` has five subcommands: five descriptions with `subcommand`. `testmail-target.ts` and `testmail-remote.ts` have `deliver` and `compare`: one description each (one `package.json` name), usage lists both.
-- `credentials:check`: its result line `[credentials-check] credentials ok=<n> failed=<m>` stays byte for byte; `deploy/restore.sh` parses it (and ignores the exit code). `deploy/test/restore.test.ts` stays green.
+- `credentials:check`: its result line `[credentials-check] credentials ok=<n> failed=<m>` and its exit codes for a run stay; `deploy/restore.sh` parses the line and, under `set -euo pipefail`, stops on a non-zero exit. `deploy/test/restore.test.ts` stays green.
 - `release:prepare`: it runs no git command (checklist line 21) — `needs` is `git` only because it reads the working tree; if it reads no git state, use `["none"]`.
 - Callers to update: `docs/release-checklist.md`, `docs/capabilities/operations.md`, `deploy/README.md`, `docs/known-alerts.md`, `notes/` stay (history).
 
@@ -34,6 +34,8 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D13 (testmail stays). Rec
 4. `testmail-target` integration (`testmail-remote.test.ts` or `mail-deliver.test.ts`): `compare` with no send log → exit 1 (was 2).
 5. New `testmail-args.ts` (from the inline parser): each subcommand's valid case; `["send", "--batch", ""]` → usage; `["nope"]` → usage.
 6. `ops-alert-test`: `--kind nope` → usage (exit 2); `--kind` and `--all` together → usage.
+
+**Guard check:** change one character of the `credentials ok=` line → `deploy/test/restore.test.ts` fails; restore. Name both runs in the final message.
 
 ## Out of scope
 

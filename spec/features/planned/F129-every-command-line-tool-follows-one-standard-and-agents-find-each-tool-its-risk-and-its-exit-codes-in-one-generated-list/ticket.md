@@ -34,7 +34,7 @@ Agents check their changes with the repository's command-line tools (`job:run`, 
 
 ## Slices
 
-Fifteen worker stages (00–14), one job each; groups and Needs in `plan.md` § Stages and § How to run. The nine conversion stages (05–13) run next to each other. No migration, no `bun.lock` change.
+Seventeen worker stages (00–16), one job each; groups and Needs in `plan.md` § Stages and § How to run. The eleven conversion stages (05–15) run next to each other. No migration, no `bun.lock` change.
 
 ## Sequenced
 

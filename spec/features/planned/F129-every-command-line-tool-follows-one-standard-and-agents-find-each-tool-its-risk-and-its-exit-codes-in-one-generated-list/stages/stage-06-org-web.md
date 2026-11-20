@@ -1,6 +1,6 @@
 # F129 stage 06 — Organization and web tools
 
-Needs stage 02: `runCli`, `cli-pending.json` group `org`, the standard test. Needs stage 04: `scripts/lib/invite-delivery.ts`, `lib/pick-member.ts`, `lib/org-status-lines.ts`. May run next to 05 and 07–13 (`web:invite` shares `lib/pick-member.ts` with stage 09 only by import; no edit expected there).
+Needs stage 01: `runCli`, `exitCodeOf`. Needs stage 02: `cli-pending.json` group `org`, the standard test. Needs stage 04: `scripts/lib/invite-delivery.ts`, `lib/pick-member.ts`, `lib/org-status-lines.ts`. May run next to 05 and 07–15 (`web:invite` shares `lib/pick-member.ts` with stage 09 only by import; no edit expected there).
 
 Part of [`../plan.md`](../plan.md). Decisions: D5, D7. Recipe: `docs/cli.md` § Convert a tool.
 
@@ -23,6 +23,8 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7. Recipe: `docs/cli.md` § 
 
 - Follow the recipe. Keep every result and error text byte for byte; usage lines may change to the `renderHelp` form.
 - `org:member` and `org:sso`: move `loadConfig` after the parse, so `--help` and a bad flag work with no env.
+- `lib/invite-delivery.ts` (pending in group `org`): its `process.stdout.write` becomes `out.write`; remove it from `cli-pending.json`.
+- `org:status` catches every error in `main` today: return `exitCodeOf(error)` there; a 3 prints `[org-status] unreachable: <describeError>` instead of its `failed:` line (plan rule).
 - Callers to update: `deploy/README.md` (org and SSO sections, line "`org:sso` prints `txt _ea-sso…`" stays true), `docs/capabilities/tenancy-and-plans.md` (`org:member` `error not_member`, exit 1 stays 1), `docs/known-alerts.md`, `apps/web/src/i18n/texts/en-auth.ts` and `pl-auth.ts` if they quote a usage line.
 
 ## Step 2 — Unreachable DB exits 3
@@ -45,4 +47,4 @@ Danger tools (stage 05); any change to service functions.
 
 ## Done when
 
-Steps 1–2 done; the eight files are out of `cli-pending.json`; the standard test passes for them; the plan.md Proof with `s06` prints `PROOF_OK`.
+Steps 1–2 done; the eight files and the helper are out of `cli-pending.json`; the standard test passes for them; the plan.md Proof with `s06` and `&& bun run test:e2e > /tmp/f129-s06/e2e.log 2>&1` before `echo PROOF_OK` prints `PROOF_OK` (Playwright specs spawn `org-flag.ts`), under the lock rule `CLAUDE.md` states at HEAD.

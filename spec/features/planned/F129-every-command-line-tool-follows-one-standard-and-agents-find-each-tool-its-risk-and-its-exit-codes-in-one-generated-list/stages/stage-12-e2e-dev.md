@@ -1,6 +1,6 @@
 # F129 stage 12 — E2e seeds, job DB and job tools
 
-Needs stage 02: `runCli`, `cli-pending.json` group `e2e-dev`, the standard test. Needs stage 03: the names `e2e:job-env`, `e2e:activity`, `e2e:suggestions`, `demo:org-setup`. Needs stage 04: `scripts/lib/e2e-*-rows.ts`. May run next to 05–11 and 13. Build after F136 (parallel Playwright) closes: it owns `e2e-job-env.ts`, `db-worktree.ts` and `scripts/limen-prepare.sh`.
+Needs stage 01: `runCli`, `exitCodeOf`. Needs stage 02: `cli-pending.json` group `e2e-dev`, the standard test. Needs stage 03: the names `e2e:job-env`, `e2e:activity`, `e2e:suggestions`, `demo:org-setup`. Needs stage 04: `scripts/lib/e2e-*-rows.ts`. May run next to 05–11 and 13–15. Build after F136 (parallel Playwright) closes: it owns `e2e-job-env.ts`, `db-worktree.ts` and `scripts/limen-prepare.sh`.
 
 Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md` § Convert a tool.
 
@@ -22,7 +22,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md`
 
 - Follow the recipe. `limen-prepare.sh` runs for every Limen job: its two callers must see the same stdout lines and the same 0 / non-zero split. Run `bash scripts/limen-prepare.sh` in a scratch worktree only if the stage changes a line it reads; else the integration tests are the proof.
 - `e2e:seed` reads env only (no `parseArgs`): give it a strict empty parse, so `--no-such-flag` exits 2; its top-level `process.env` read for the GreenMail host default moves into `main`.
-- `bad_args` refusals of `e2e:activity`, `demo:org-setup` (today exit 1 with `refusing: bad_args`) → exit 2 with the usage line; the `refusing:` lines for a non-e2e database stay exit 1.
+- `demo:org-setup` `refusing: bad_args` (exit 1 today) → exit 2 with the usage line; `e2e:activity` already returns 2. The `refusing:` lines for a non-e2e database stay exit 1.
 - `job:run` needs: the union of what its jobs touch; `exits[1]`: "the job failed for at least one mailbox".
 
 ## Step 2 — Tests
@@ -30,11 +30,13 @@ Part of [`../plan.md`](../plan.md). Decisions: D5, D7, D9. Recipe: `docs/cli.md`
 1. `cli-streams-other.test.ts`: `db:worktree` cases unchanged (already 2 for usage, 1 for refusal).
 2. `db-worktree-drop.test.ts`: unchanged.
 3. `e2e-job-env-cli.test.ts`: unchanged codes; `--help` with no env exits 0 (new case).
-4. `e2e-activity.test.ts`: bad arguments → exit 2 (was 1); non-e2e DB → 1 with `refusing:`.
+4. `e2e-activity.test.ts`: bad arguments → exit 2 (unchanged); non-e2e DB → 1 with `refusing:`.
 5. `demo-org-setup.test.ts`: same split as 4.
 6. `e2e-seed.test.ts`: `--no-such-flag` → 2; a non-e2e `DATABASE_URL` → 1.
 7. `job-run-cli.test.ts`: unchanged lines and codes; unknown job name → 2 if the parser refuses it as an argument.
 8. Playwright: the plan.md Proof chain adds `&& bun run test:e2e > /tmp/f129-s12/e2e.log 2>&1` before `echo PROOF_OK`, under the lock rule `CLAUDE.md` states at HEAD.
+
+**Guard check:** remove the "not an e2e database" refusal from `e2e-seed.ts` → test 6 fails; restore. Name both runs in the final message.
 
 ## Out of scope
 

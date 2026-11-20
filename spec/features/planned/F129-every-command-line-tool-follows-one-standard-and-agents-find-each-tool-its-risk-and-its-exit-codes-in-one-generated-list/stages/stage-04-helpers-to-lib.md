@@ -1,6 +1,6 @@
 # F129 stage 04 — Helpers move to `scripts/lib/`
 
-Needs stage 03: root `package.json` with the four new names and `mailbox-probe.ts` (the merged file). May run next to 00, 01 and 02 (02 writes `scripts/lib/cli-tools.ts`, a new file; a land conflict there is "merge master, re-prove").
+Needs stage 03: root `package.json` with the four new names and `mailbox-probe.ts` (the merged file). May run next to 00 and 01. Stage 02 needs it.
 
 Part of [`../plan.md`](../plan.md). Decisions: D10.
 
@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). Decisions: D10.
 ## Step 2 — Layout test
 
 - **Files:** `apps/server/src/scripts/scripts-layout.test.ts`.
-- **Interface:** it uses `readToolCommands(rootDir)` from `scripts/lib/cli-tools.ts` when stage 02 has landed; before that it reads `package.json` with the same exact-form rule in ten lines, and stage 14 switches it to `readToolCommands`.
+- **Interface:** it reads `package.json` itself (a tool command: first token `bun`, second a `.ts` file under `apps/server/src/scripts/`), in about ten lines; stage 16 switches it to `readToolCommands` of stage 02.
 - **Test:**
   1. Every top-level non-test `.ts` file of `scripts/` is the file of a tool command or `<entry>-args.ts` of one.
   2. Every tool command's file exists.
