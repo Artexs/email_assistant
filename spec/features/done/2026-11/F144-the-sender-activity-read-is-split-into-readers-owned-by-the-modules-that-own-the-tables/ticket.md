@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F144 · The sender activity read is split into readers owned by the modules that own the tables
