@@ -9,11 +9,11 @@ import {
   type SenderHistory,
   type SenderRelation,
 } from "@ea/core";
-import { sql, type Transaction } from "kysely";
+import type { Transaction } from "kysely";
 
-import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
+import type { DB, Db, TenantContext } from "../../platform/db";
 import { listSenderRules } from "../config";
-import { listDelegateAddresses } from "../delegation";
+import { delegationCountsByDelegateAddress, listDelegateAddresses } from "../delegation";
 import {
   incomingCountsBySender,
   ownAddressesOf,
@@ -122,13 +122,6 @@ const emptyActivity = (address: string): SenderActivity => ({
   relation: "new",
 });
 
-const skipped = <T>(): { rows: T[] } => ({ rows: [] });
-
-interface DelegationRow {
-  addr: string;
-  n: number;
-}
-
 // The activity of every address that wrote to the mailbox or that the user wrote to, in the 90 days up to `now`.
 // Set-based: a fixed number of statements for the mailbox, never one per sender. Every statement filters `org_id` and
 // the mailbox. The plain addresses stay in memory: the caller hashes them before it writes (`senderKeyHash`). Own
@@ -175,20 +168,9 @@ export async function readSenderActivity(
   const theirDelays =
     only !== undefined ? [] : await theirReplyDelaysBySender(db, ctx, windowOptions, { maxHours: MAX_DELAY_HOURS });
 
+  // The delegations of the mailbox per delegate address (the delegation module owns the read). A scope skips them.
   const delegations =
-    only !== undefined
-      ? skipped<DelegationRow>()
-      : await sql<DelegationRow>`
-    SELECT ${normalizedAddress("d.email")} AS addr, count(*)::int AS n
-    FROM delegations dn
-    JOIN delegates d ON d.id = dn.delegate_id AND d.org_id = dn.org_id
-    WHERE dn.org_id = ${ctx.orgId}
-      AND dn.mailbox_id = ${mailboxId}
-      AND dn.created_at >= ${since}
-      AND dn.created_at <= ${now}
-      AND d.active
-    GROUP BY ${normalizedAddress("d.email")}
-  `.execute(db);
+    only !== undefined ? [] : await delegationCountsByDelegateAddress(db, ctx, { mailboxId, since, until: now });
 
   const testSenders = new Set(testMail.senders.map(normalizeAddress));
   const byAddress = new Map<string, SenderActivity>();
@@ -260,9 +242,9 @@ export async function readSenderActivity(
     item.replySamplesTheirs = row.samples;
     if (row.samples >= MIN_DELAY_SAMPLES) item.medianTheirReplyHours = row.medianHours;
   }
-  for (const row of delegations.rows) {
-    const item = byAddress.get(row.addr);
-    if (item !== undefined) item.delegationsTo = row.n;
+  for (const row of delegations) {
+    const item = byAddress.get(row.address);
+    if (item !== undefined) item.delegationsTo = row.delegations;
   }
 
   for (const item of byAddress.values()) {

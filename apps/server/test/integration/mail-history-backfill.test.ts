@@ -116,7 +116,7 @@ async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
 async function triagedH4(trx: Transaction<DB>, mailboxId: string): Promise<void> {
   await trx
     .updateTable("emails")
-    .set({ status: "triaged", uid: 99, inbox_uid: 99 })
+    .set({ status: "triaged", uid: 99, source_uid: 99 })
     .where("mailbox_id", "=", mailboxId)
     .where("message_id_header", "=", "<h4@x.test>")
     .execute();
@@ -153,7 +153,7 @@ describe("history purpose: backfillInbox", () => {
       }
       // The mail of before is not touched: every column, including the wrong UID that sync owns.
       expect(JSON.stringify(byId(after, 4))).toBe(JSON.stringify(byId(before, 4)));
-      expect(byId(after, 4)).toMatchObject({ status: "triaged", uid: "99", inbox_uid: "99", skip_reason: null });
+      expect(byId(after, 4)).toMatchObject({ status: "triaged", uid: "99", source_uid: "99", skip_reason: null });
       expect(byId(after, 4).backfilled_at).toBeNull();
       expect(await headerCount(trx, s.mailboxId)).toBe(3);
       expect(await cursorOf(trx, s.mailboxId)).toEqual(cursor);
@@ -183,7 +183,7 @@ describe("history purpose: backfillInbox", () => {
         const s = await syncedMailbox(trx);
         await trx
           .updateTable("emails")
-          .set({ status, uid: 99, inbox_uid: 99, skip_reason: status === "skipped" ? "too_old" : null })
+          .set({ status, uid: 99, source_uid: 99, skip_reason: status === "skipped" ? "too_old" : null })
           .where("mailbox_id", "=", s.mailboxId)
           .where("message_id_header", "=", "<h4@x.test>")
           .execute();
