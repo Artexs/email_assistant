@@ -8,6 +8,7 @@ export * from "./answered-check";
 export * from "./approvals";
 export * from "./attachment-line";
 export * from "./callback";
+export * from "./callback-kinds";
 export * from "./labels";
 export * from "./message";
 export * from "./notices";
