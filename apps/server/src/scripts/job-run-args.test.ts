@@ -12,34 +12,16 @@ describe("parseJobRunArgs", () => {
     expect(parseJobRunArgs(["--name", "channels.notifier"])).toEqual({ name: "channels.notifier", force: false });
   });
 
-  test("parses platform.retention and refuses --force for it", () => {
-    expect(parseJobRunArgs(["--name", "platform.retention"])).toEqual({ name: "platform.retention", force: false });
-    expect(() => parseJobRunArgs(["--name", "platform.retention", "--force"])).toThrow(UsageError);
-  });
-
-  test("parses loops.analyze and refuses --force for it", () => {
-    expect(parseJobRunArgs(["--name", "loops.analyze"])).toEqual({ name: "loops.analyze", force: false });
-    expect(() => parseJobRunArgs(["--name", "loops.analyze", "--force"])).toThrow(UsageError);
-  });
-
-  test("parses loops.match and refuses --force for it", () => {
-    expect(parseJobRunArgs(["--name", "loops.match"])).toEqual({ name: "loops.match", force: false });
-    expect(() => parseJobRunArgs(["--name", "loops.match", "--force"])).toThrow(UsageError);
-  });
-
-  test("parses contacts.refresh and refuses --force for it", () => {
-    expect(parseJobRunArgs(["--name", "contacts.refresh"])).toEqual({ name: "contacts.refresh", force: false });
-    expect(() => parseJobRunArgs(["--name", "contacts.refresh", "--force"])).toThrow(UsageError);
-  });
-
-  test("parses replies.drafter and refuses --force for it", () => {
-    expect(parseJobRunArgs(["--name", "replies.drafter"])).toEqual({ name: "replies.drafter", force: false });
-    expect(() => parseJobRunArgs(["--name", "replies.drafter", "--force"])).toThrow(UsageError);
-  });
-
-  test("parses replies.sweep and refuses --force for it", () => {
-    expect(parseJobRunArgs(["--name", "replies.sweep"])).toEqual({ name: "replies.sweep", force: false });
-    expect(() => parseJobRunArgs(["--name", "replies.sweep", "--force"])).toThrow(UsageError);
+  test.each([
+    "platform.retention",
+    "loops.analyze",
+    "loops.match",
+    "contacts.refresh",
+    "replies.drafter",
+    "replies.sweep",
+  ])("parses %s and refuses --force for it", (name) => {
+    expect(parseJobRunArgs(["--name", name])).toEqual({ name, force: false });
+    expect(() => parseJobRunArgs(["--name", name, "--force"])).toThrow(UsageError);
   });
 
   test("the usage text names every job", () => {
