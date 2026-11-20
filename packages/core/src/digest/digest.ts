@@ -472,7 +472,3 @@ export function renderDigestWithBrief(input: DigestInput, texts: CoreTexts): Ren
     };
   }
 }
-
-export function renderDigest(input: DigestInput, texts: CoreTexts): OutMessage {
-  return renderDigestWithBrief(input, texts).message;
-}

@@ -204,10 +204,6 @@ export function isLogValue(value: unknown): value is string | number | boolean |
   return typeof value === "string" && VALUE_STRING.test(value) && !value.includes("://");
 }
 
-export function isLogFieldName(name: string): name is LogFieldName {
-  return fieldNameSet.has(name);
-}
-
 export function logFieldKind(name: string): LogFieldKind | undefined {
   if (uuidNameSet.has(name)) {
     return "uuid";

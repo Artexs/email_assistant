@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { renderDigest, renderDigestWithBrief, type DigestInput } from "../digest/digest";
+import { renderDigestWithBrief, type DigestInput } from "../digest/digest";
 import { MESSAGE_MAX_CHARS } from "../digest/message";
 import { withoutEscapeRemains } from "../digest/text";
 
@@ -561,7 +561,6 @@ describe("the brief inside the digest", () => {
 
   test("no brief: the digest is the one of today", () => {
     const plain = renderDigestWithBrief(base(), en);
-    expect(plain.message.text).toBe(renderDigest(base(), en).text);
     expect(plain.message.text).toContain("Delegations: 1 waiting for a reply, 1 overdue");
     expect(plain.shown).toEqual({ surfaced: [], stale: [], lineOf: {} });
     // An empty brief adds no header and no blank line.

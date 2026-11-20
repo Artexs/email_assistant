@@ -4,7 +4,13 @@ import { textTables, type CoreTexts } from "../texts";
 import type { Category } from "../triage/categories";
 
 import { isFeedbackCallback, parseCallback } from "./callback";
-import { DIGEST_MAX_LINES, renderDigest, type DigestInput, type DigestItem, type DigestMailbox } from "./digest";
+import {
+  DIGEST_MAX_LINES,
+  renderDigestWithBrief,
+  type DigestInput,
+  type DigestItem,
+  type DigestMailbox,
+} from "./digest";
 import { MESSAGE_MAX_CHARS, type OutMessage } from "./message";
 import { cutText } from "./text";
 import { describeActions, type ActionView } from "./would-do";
@@ -60,13 +66,16 @@ describe("the Draft reply button of a digest row", () => {
 
   test("a draftable row gets ✍️ n with the mail id; a row without the field has none (en and pl)", () => {
     const items = [item(1, "needs_reply", { draftable: true }), item(2, "needs_reply")];
-    const en = renderDigest(input({ counts: { needs_reply: 2 }, items }), textTables.en);
+    const en = renderDigestWithBrief(input({ counts: { needs_reply: 2 }, items }), textTables.en).message;
     const all = en.buttons.flat();
     const draft = all.filter((button) => button.data === `dr:${uuid(1)}`);
     expect(draft).toHaveLength(1);
     expect(draft[0]?.text).toMatch(/^✍️ [12]$/);
     expect(all.some((button) => button.data === `dr:${uuid(2)}`)).toBe(false);
-    const pl = renderDigest(input({ counts: { needs_reply: 1 }, items: [items[0] as DigestItem] }), textTables.pl);
+    const pl = renderDigestWithBrief(
+      input({ counts: { needs_reply: 1 }, items: [items[0] as DigestItem] }),
+      textTables.pl
+    ).message;
     expect(pl.buttons.flat().some((button) => button.data === `dr:${uuid(1)}`)).toBe(true);
   });
 
@@ -75,14 +84,14 @@ describe("the Draft reply button of a digest row", () => {
       item(1, "needs_reply", { draftable: true, delegable: true, undoable: true }),
       item(2, "needs_reply", { draftable: true, delegable: true, undoable: true }),
     ];
-    const message = renderDigest(input({ counts: { needs_reply: 2 }, items }), textTables.en);
+    const message = renderDigestWithBrief(input({ counts: { needs_reply: 2 }, items }), textTables.en).message;
     for (const row of rowData(message)) expect(row.length).toBeLessThanOrEqual(8);
     expect(message.buttons.length).toBe(2);
   });
 
   test("without the field the keyboard is the one of before: two mails share one line", () => {
     const items = [item(1, "needs_reply"), item(2, "needs_reply")];
-    const message = renderDigest(input({ counts: { needs_reply: 2 }, items }), textTables.en);
+    const message = renderDigestWithBrief(input({ counts: { needs_reply: 2 }, items }), textTables.en).message;
     expect(message.buttons).toHaveLength(1);
   });
 });
@@ -93,7 +102,10 @@ describe("suspicious warning", () => {
       item(1, "urgent", { suspicious: ["lookalike_domain", "risky_attachment"] }),
       item(2, "delegation", { suspicious: ["link_mismatch"], wouldDo: "would draft a delegation to Anna" }),
     ];
-    const lines = renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items }), textTables.en).text.split("\n");
+    const lines = renderDigestWithBrief(
+      input({ counts: { urgent: 1, delegation: 1 }, items }),
+      textTables.en
+    ).message.text.split("\n");
     const first = lines.indexOf("💬 AI text 1");
     expect(lines.slice(first, first + 3)).toEqual([
       "💬 AI text 1",
@@ -107,7 +119,10 @@ describe("suspicious warning", () => {
       "→ no draft: suspicious mail",
     ]);
     expect(lines.join("\n")).not.toContain("draft a delegation");
-    const pl = renderDigest(input({ counts: { delegation: 1 }, items: [items[1] as DigestItem] }), textTables.pl).text;
+    const pl = renderDigestWithBrief(
+      input({ counts: { delegation: 1 }, items: [items[1] as DigestItem] }),
+      textTables.pl
+    ).message.text;
     expect(pl).toContain("⚠ Podejrzana wiadomość: link prowadzi gdzie indziej\n→ bez szkicu: podejrzana wiadomość");
   });
 
@@ -117,25 +132,31 @@ describe("suspicious warning", () => {
       hasDraft: true,
       wouldDo: "would draft a delegation to Anna",
     });
-    const text = renderDigest(input({ counts: { delegation: 1 }, items: [flagged] }), textTables.en).text;
+    const text = renderDigestWithBrief(input({ counts: { delegation: 1 }, items: [flagged] }), textTables.en).message
+      .text;
     expect(text).toContain("⚠ Suspicious: link goes elsewhere\n→ would draft a delegation to Anna");
     expect(text).not.toContain("no draft");
   });
 
   test("an item without the field, or with an empty list, renders as before", () => {
     const plain = [item(1, "urgent"), item(2, "delegation")];
-    const before = renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items: plain }), textTables.en);
+    const before = renderDigestWithBrief(
+      input({ counts: { urgent: 1, delegation: 1 }, items: plain }),
+      textTables.en
+    ).message;
     const empty = plain.map((one) => ({ ...one, suspicious: [] }));
-    expect(renderDigest(input({ counts: { urgent: 1, delegation: 1 }, items: empty }), textTables.en)).toEqual(before);
+    expect(
+      renderDigestWithBrief(input({ counts: { urgent: 1, delegation: 1 }, items: empty }), textTables.en).message
+    ).toEqual(before);
     expect(before.text).not.toContain("⚠");
     expect(before.text).not.toContain("no draft");
   });
 
   test("a flagged item of another category keeps its would-do line", () => {
-    const text = renderDigest(
+    const text = renderDigestWithBrief(
       input({ counts: { info: 1 }, items: [item(1, "info", { suspicious: ["auth_fail"] })] }),
       textTables.en
-    ).text;
+    ).message.text;
     expect(text).toContain("⚠ Suspicious: sender check failed\n→ would flag");
   });
 });
@@ -147,17 +168,20 @@ describe("attachment line", () => {
   };
 
   test("an item with attachments shows the line after the subject, before the AI line", () => {
-    const lines = renderDigest(
+    const lines = renderDigestWithBrief(
       input({ counts: { urgent: 1 }, items: [item(1, "urgent", { attachments })] }),
       textTables.en
-    ).text.split("\n");
+    ).message.text.split("\n");
     const first = lines.indexOf("📎 1: faktura.pdf (120 kB)");
     expect(first).toBeGreaterThan(0);
     expect(lines[first + 1]).toBe("💬 AI text 1");
   });
 
   test("an item without the field renders as before", () => {
-    const before = renderDigest(input({ counts: { urgent: 1 }, items: [item(1, "urgent")] }), textTables.en);
+    const before = renderDigestWithBrief(
+      input({ counts: { urgent: 1 }, items: [item(1, "urgent")] }),
+      textTables.en
+    ).message;
     expect(before.text).not.toContain("📎");
   });
 });
@@ -340,7 +364,8 @@ function input(extra: Partial<DigestInput> = {}): DigestInput {
 }
 
 // The old cases render with the English texts; the Polish cases pass `textTables.pl`.
-const render = (digest: DigestInput, texts: CoreTexts = textTables.en): OutMessage => renderDigest(digest, texts);
+const render = (digest: DigestInput, texts: CoreTexts = textTables.en): OutMessage =>
+  renderDigestWithBrief(digest, texts).message;
 
 const blockStarts = (text: string): string[] => text.split("\n").filter((line) => /^\d+\. /.test(line));
 
@@ -406,7 +431,7 @@ describe("replies ready line ", () => {
   });
 });
 
-describe("renderDigest", () => {
+describe("renderDigestWithBrief (no brief)", () => {
   test("empty digest still shows the last sync", () => {
     const message = render(input());
     expect(message.text).toBe("📬 Digest 08:00 · Fri 6 Nov\nNo new mail since 5 Nov 16:00.\n🔄 Last sync 07:55");
@@ -761,7 +786,7 @@ describe("LLM pause footer line", () => {
   });
 });
 
-describe("renderDigest in Polish", () => {
+describe("renderDigestWithBrief in Polish (no brief)", () => {
   const pl = textTables.pl;
   const polish = (extra: Partial<DigestInput> = {}): OutMessage => render(input(extra), pl);
 

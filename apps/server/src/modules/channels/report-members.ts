@@ -1,22 +1,10 @@
-import {
-  membershipRoleSchema,
-  reportMailKinds,
-  userLocaleSchema,
-  type MembershipRole,
-  type ReportMailKind,
-  type UserLocale,
-} from "@ea/core";
+import { membershipRoleSchema, userLocaleSchema, type MembershipRole, type UserLocale } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
 import type { DB, Db } from "../../platform/db";
 
 type DbOrTrx = Db | Transaction<DB>;
-
-// The report kinds that also go by mail. Every other kind goes to Telegram only. The list lives in core,
-// next to the mail renderers of these kinds.
-export const mailReportKinds = reportMailKinds;
-export type MailReportKind = ReportMailKind;
 
 const reportChannelSchema = z.enum(["telegram", "mail", "both"]);
 

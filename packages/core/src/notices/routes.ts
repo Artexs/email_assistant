@@ -69,19 +69,3 @@ export function effectiveRoute(input: EffectiveRouteInput): EffectiveRoute {
   if (!telegram && !push) return { telegram: hasChat, push: hasDevice };
   return { telegram, push };
 }
-
-/** The route of one kind: the group of the kind and the stored choice of that group. */
-export function routeOfKind(input: {
-  routes: NoticeRoutes;
-  kind: NoticeKind;
-  hasChat: boolean;
-  hasDevice: boolean;
-}): EffectiveRoute {
-  const group = noticeGroupOf(input.kind);
-  return effectiveRoute({
-    stored: group === null ? undefined : input.routes[group],
-    hasChat: input.hasChat,
-    hasDevice: input.hasDevice,
-    group,
-  });
-}
