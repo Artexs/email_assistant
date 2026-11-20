@@ -8,7 +8,7 @@ Path shorthand in the tables: `int/` = `apps/server/test/integration/`, `test/` 
 
 Findings that hold for many rows:
 
-- **S8 over-flags int cases.** Of the 79 int rows with S8, almost all are false positives: the test file imports only fixtures (`./fixtures`, `./web-helpers`, `./web-reply-kit`) or spawns a script process, and the fixture or the script imports the production code. S8 is true only for tests of a test helper (`test/fake-oidc.test.ts`, `test/totp.test.ts`).
+- **S8 over-flags int cases.** Of the 79 int rows with S8, 68 are false positives: the test file imports only fixtures (`./fixtures`, `./web-helpers`, `./web-reply-kit`) or spawns a script process, and the fixture or the script imports the production code. S8 is true only for the 8 tests of a test helper (`test/fake-oidc.test.ts`, `test/totp.test.ts`); 3 more scan source text.
 - **Table-driven CLI cases (`unscanned`).** 20 JUnit cases came from loops over a list with no matching scan row (stage 02 join check); they are read as 4 items by file and line.
 - **No e2e case is flagged** (`cases.tsv`: 0 of 225 `e2e` rows have a flag), so § e2e holds no item.
 
@@ -34,7 +34,7 @@ Findings that hold for many rows:
 | 16 | int/channels-digest-brief-sections.test.ts:243 | S8 | KEEP | K6 | - | Same as row 10: Polish form of the usual reply time. Same shape as row 14 but a different section; kept. | 0 | 0.03 |
 | 17 | int/channels-digest-brief-sections.test.ts:256 | S8 | KEEP | K6 | - | Same as row 10: shadow mailbox wording. | 0 | 0.02 |
 | 18 | int/channels-digest-brief-sections.test.ts:281 | S8 | KEEP | K6 | - | Same as row 10: the "+n more" link with and without a double slash. | 0 | 0.03 |
-| 19 | int/e2e-seed.test.ts:91 | S7 | FIX-NEVER-RUNS | F6 | - | `describe.skipIf(e2eAppUrl === "" \|\| e2eMigratorUrl === "")` at `e2e-seed.test.ts:90`. At stage base 1e309703: the `ci` job in `.github/workflows/ci.yml` sets no `E2E_*` key; the `e2e` job sets both URLs (lines 94-95) but runs only `bun run test:e2e` (line 118) = Playwright (`package.json` `test:e2e`), not `bun test`; `scripts/limen-prepare.sh` has no `E2E` key; `test:int` sets no E2E env. The case runs nowhere. Propose: run `bun test apps/server/test/integration/e2e-seed.test.ts` in the `e2e` job before `test:e2e` (the job has the URLs and a migrated e2e DB), or delete. F136 may change this file and `limen-prepare.sh`: its branch `limen/2026-11-19-f136-stage-01-113388e9` is open (Cut stage rule 3 blocks a cut). | 0 | 0.00 |
+| 19 | int/e2e-seed.test.ts:91 | S7 | FIX-NEVER-RUNS | F6 | - | `describe.skipIf(e2eAppUrl === "" \|\| e2eMigratorUrl === "")` at `e2e-seed.test.ts:90`. At stage base 1e309703: the `ci` job in `.github/workflows/ci.yml` sets no `E2E_*` key; the `e2e` job sets both URLs (lines 94-95) but runs only `bun run test:e2e` (line 118) = Playwright (`package.json` `test:e2e`), not `bun test`; `scripts/limen-prepare.sh` has no `E2E` key; `test:int` sets no E2E env. The case runs nowhere. Propose: run `bun test apps/server/test/integration/e2e-seed.test.ts` in the `e2e` job before `test:e2e` (the job has the URLs and a migrated e2e DB), or delete. Re-checked after merging master `4195d1f8` (F136 stages 01 and 02 landed there): `e2e-seed.test.ts`, `ci.yml` and `limen-prepare.sh` are unchanged, so the finding holds; F136 changed only `apps/web/e2e/env.ts`, `apps/docs/e2e/site.ts`, `serve.ts` and the Playwright config. A later F136 stage may still change this file and `limen-prepare.sh` (Cut stage rule 3). | 0 | 0.00 |
 | 20 | int/e2e-seed.test.ts:169 | S7 | FIX-NEVER-RUNS | F6 | - | Same `describe.skipIf` as row 19 (line 90); this case is the second one in the skipped describe. Same fix. | 0 | 0.00 |
 | 21 | int/mail-oauth-login.test.ts:29 | S1 | REWRITE-WEAK | - | - | S1: no `expect`; the case passes when `verifySmtpLogin` does not throw (it returns `Promise<void>`, `modules/mail/imap/smtp.ts:129`). Proposed: `await expect(verifySmtpLogin({...})).resolves.toBeUndefined();` so the assertion is explicit. Not a cut. | 0 | 0.09 |
 | 22 | int/privacy-address-pattern-use.test.ts:16 | S8 | KEEP | K3 | - | S8 true by imports, but the file reads source files, no DB: a static guard that the address pattern runs only through `matchesAddress` and `replaceAddress` (privacy; guards the next change, K2). It could sit in the unit lane (no DB, no IMAP) but it runs in 0.000 s: moving saves nothing. | 0 | 0.00 |
@@ -169,8 +169,129 @@ Findings that hold for many rows:
 
 ## e2e
 
-(in progress)
+Input: the 225 `kind` `e2e` rows of `cases.tsv` (`apps/web/e2e`: 217; `apps/docs/e2e/site.spec.ts`: 8). Static only; `test:e2e` was not run.
+
+- **Items selected: 0.** No e2e row has a flag (S8 is never set for e2e by definition; no S1, S2, S5, S6 or S7 row, no `not-run`). By the Reader method every e2e case is `KEEP (not read)`.
+- **Static check for `DELETE-DUP` (stage rule: a case that checks only what an int or unit test checks).** A script read each case body (from its line to the next case line) and looked for browser calls (`page.`, `goto(`, `getBy`, `locator(`, `context.`). 219 of 225 bodies call the browser directly. I read the other 6: `apps/docs/e2e/site.spec.ts:57` and `:65` (`page` through the helpers `watch`, `open`, `expectNoA11yViolations`), `apps/web/e2e/tests/trust-card.spec.ts:152` (a member's card, `page` through helpers), `newsletters.spec.ts:97` and `suggestions.spec.ts:106` (browser plus request log); all are user paths in the browser (K6, `docs/capabilities/web-panel.md`). `site.spec.ts:49` checks the page list the other cases loop over (K2, a guard of the loop). No e2e case is proposed for a cut.
+- **Base read for the overlap with the parallel-Playwright ticket (F136):** stage base `1e309703`. At that base `apps/web/e2e/env.ts`, `playwright.config.ts`, `apps/docs/e2e/site.ts` and its config had the fixed ports. After this job merged `master` `4195d1f8`, F136 stages 01 and 02 had landed there and changed `apps/web/e2e/env.ts`, `apps/docs/e2e/site.ts`, `apps/docs/e2e/serve.ts` and `apps/docs/e2e/playwright.config.ts` (ports from env, a mail tag). `scripts/limen-prepare.sh`, `.github/workflows/ci.yml` and `e2e-seed.test.ts` did not change (checked with `git diff --stat 1e309703 HEAD`). Keys of those e2e files are re-resolved by Cut stage rule 2.
 
 ## Summary
 
-(in progress)
+| Section | Items selected | In this file (read) | Not read |
+| --- | --- | --- | --- |
+| Integration (`apps/server/test`, `tools/fake-telegram/test`) | 223 | 150 | 73 |
+| e2e (`apps/web/e2e`, `apps/docs/e2e`) | 0 | 0 | 0 |
+
+Items selected = items in this file (150) + not read (73) = 223. The selection is every flagged int case or group (246 flagged rows in `cases.tsv`; the 20 `unscanned` JUnit cases count as 4 items by loop; group B2 belongs to stage 05 because its first key is in `apps/server/src`). The job cap is 150 items (`plan.md` § Reader method); the 73 not read are the `S9` cases with a time between 2.0 s and 2.8 s, slowest first, 171 s of int time in total. They are listed at the end. One continuation reads them.
+
+Rows per action (150 rows; `Lines` and `Time` are sums over the rows; time is the serial time of the cases in `cases.tsv`):
+
+| Action | Rows | Lines | Time (s) |
+| --- | --- | --- | --- |
+| KEEP | 128 | 0 | 242.5 |
+| MOVE-TO-UNIT | 9 | 198 | 36.1 |
+| DELETE-DUP | 4 | 62 | 8.0 |
+| MERGE-TABLE | 3 | 52 | 6.2 |
+| REWRITE-WEAK | 4 | 0 | 0.1 |
+| FIX-NEVER-RUNS | 2 | 0 | 0.0 |
+| DELETE-STALE | 0 | 0 | 0 |
+
+**Time saved in the int suite** by `MOVE-TO-UNIT` and `DELETE-DUP` rows: 44.1 s of the 1,125 s serial int total (3.9 %). 33.1 s of it is one move: the lab bot logic (`lab-bots.test.ts`) to a unit file with an in-memory `LabMailClient`. `MERGE-TABLE` saves lines, not time (the same process spawns remain).
+
+K rules that kept rows: K3 (security, privacy, destructive guards, exactly-once, tenant isolation) 64 rows; K6 (capability pages) 14; K4 1; K5 2; `unsure` 47.
+
+**Contract suites (K4).** No cut is proposed in `imap-contract.test.ts`, `smtp-send.test.ts`, `graph-send.test.ts` or the two modules in `test/contract/`. `imap-contract.test.ts` ran 72 cases in 49.8 s at the data base (stage 02, `timing-summary.md`); splitting the file into several files would shorten parallel runs. That is out of scope here (F124 ticket).
+
+**CLI tests (45 spawning files).** Checked against unit twins: `testmail` (unit: `modules/testmail/send.test.ts`, `lock.test.ts`), `rules` (core `triage/rules.test.ts`), `org:export` (`scripts/org-export-args.test.ts`), `mailbox:settings` urgency (`scripts/mailbox-settings-args.test.ts`), `replies` profile (`scripts/mailbox-profile-args.test.ts`, core `replies/profile.test.ts`), `org:dsr` (`scripts/org-dsr-args.test.ts`), `stats:week` (`scripts/stats-week-args.test.ts`), `mailbox:seed` (`scripts/mailbox-seed-args.test.ts`). Result: 2 `DELETE-DUP` rows from arg-parse twins (rows 125, 126), 1 from the lock twin (row 44), 1 from the core rule twin (row 29). The slowest three of the brief: `mail-seed.test.ts` (rows 95, 110), `mail-check.test.ts` (row 99, real IMAP, no twin possible), `testmail-cli.test.ts` (rows 41, 42: 5 s is the real `--interval-sec` minimum, not work). Not all 45 files were read: only those with a flagged case or one of the 150 slowest cases. The rest are in the not-read list or unflagged (`KEEP (not read)`).
+
+**FIX-NEVER-RUNS.** `e2e-seed.test.ts:90`: runs nowhere (rows 19 and 20, evidence in row 19). `tools/mail-oauth-spike/*.test.ts` is outside this stage's input (stage 04 reads it).
+
+**Proposals that are not row actions** (they change more than one case, so the owner decides):
+
+1. A fake `LabMailClient` (about 40 lines) in `src/modules/lab/` lets `lab-bots.test.ts`, and later `lab-injector.test.ts` and `lab-serve.test.ts`, test their logic as unit tests. The five-method port is `src/modules/lab/mail-client.ts:34`. Rows 96, 98, 114, 130, 143, 144, 145, 150 name it.
+2. The stream tests of the CLIs (`mailbox-cli-streams.test.ts` 44 s, `cli-streams-other.test.ts` 37 s, `testmail-cli.test.ts` streams) spawn a process per line to pin stdout or stderr. A lint rule that every script prints usage and `failed:` through `cli.fail` could replace many spawns; `platform/cli.test.ts` already pins the two streams. Rows 46-48, 86, 87, 104, 122.
+3. Inner reductions of one case (drop a spawn that repeats another case): rows 95, 110, 131. A case cannot be cut in part, so these are KEEP rows with the idea in the evidence.
+
+**Findings about the scan.** (1) S8 on int cases is almost always a false positive: of the 79 S8 int rows, 68 drive production code through fixtures, kits or a spawned script, 3 scan source text (`privacy-address-pattern-use.test.ts`), and 8 test a helper (`test/fake-oidc.test.ts`, `test/totp.test.ts`): only those 8 are true S8. (2) Three files changed after the data base (`cli-streams-other`, `credentials-check`, `mail-sync`): their line keys are stale. (3) 20 `unscanned` JUnit cases come from `test.each` loops that the scan does not see. (4) B2 is read by stage 05, not here.
+
+**Decisions for the owner:** none taken. The proposals above are for G1.
+
+## Not read
+
+73 items, all `S9` (int case of 2 s or more), slowest first, to be read by a continuation. Time in seconds.
+
+| Key | Flags | Time (s) |
+| --- | --- | --- |
+| int/web-invite-cli.test.ts:164 | S9 | 2.80 |
+| int/mail-sync.test.ts:905 | S9 | 2.75 |
+| int/mail-sync.test.ts:704 | S9 | 2.75 |
+| int/lab-reset.test.ts:640 | S9 | 2.72 |
+| int/privacy-dsr-find.test.ts:435 | S9 | 2.72 |
+| int/privacy-dsr-sent.test.ts:341 | S9 | 2.72 |
+| int/privacy-dsr-erase.test.ts:837 | S9 | 2.71 |
+| int/org-export-cli.test.ts:98 | S9 | 2.71 |
+| int/lab-reset.test.ts:704 | S9 | 2.70 |
+| int/org-member.test.ts:595 | S9 | 2.69 |
+| int/credentials-check.test.ts:267 | S9 | 2.61 |
+| int/replies-answered-pass.test.ts:108 | S9 | 2.58 |
+| int/lab-reset.test.ts:619 | S9 | 2.58 |
+| int/privacy-dsr-erase-outbox.test.ts:460 | S9 | 2.58 |
+| ft/e2e.test.ts:31 | S9 | 2.57 |
+| int/privacy-dsr-erase.test.ts:859 | S9 | 2.57 |
+| int/actions-copy-baseline.test.ts:101 | S9 | 2.56 |
+| int/privacy-dsr-find.test.ts:403 | S9 | 2.55 |
+| int/main-start-log.test.ts:112 | S9 | 2.52 |
+| int/actions-copy-check.test.ts:335 | S9 | 2.50 |
+| int/imap-probe-move.test.ts:99 | S9 | 2.49 |
+| int/channels-report-mail-greenmail.test.ts:101 | S9 | 2.47 |
+| int/privacy-dsr-find.test.ts:467 | S9 | 2.45 |
+| int/channels-digest-brief-copies.test.ts:323 | S9 | 2.45 |
+| int/lab-bots.test.ts:483 | S9 | 2.44 |
+| int/lab-injector.test.ts:226 | S9 | 2.44 |
+| int/lab-reset.test.ts:564 | S9 | 2.44 |
+| int/actions-copy-keep.test.ts:93 | S9 | 2.42 |
+| int/org-invite-cli.test.ts:177 | S9 | 2.40 |
+| int/lab-bots.test.ts:634 | S9 | 2.38 |
+| int/mail-sent-cli.test.ts:186 | S9 | 2.38 |
+| int/lab-bots.test.ts:534 | S9 | 2.38 |
+| int/actions-copy-keep.test.ts:172 | S9 | 2.38 |
+| int/cli-streams-other.test.ts:227 | S9 | 2.37 |
+| int/lab-bots.test.ts:581 | S9 | 2.37 |
+| int/privacy-dsr-sender-context.test.ts:420 | S9 | 2.36 |
+| int/replies-cli.test.ts:150 | S9 | 2.33 |
+| int/org-delete-cli.test.ts:120 | S9 | 2.30 |
+| int/replies-answered-pass.test.ts:273 | S9 | 2.29 |
+| int/actions-copy-check.test.ts:275 | S9 | 2.28 |
+| int/actions-copy-keep.test.ts:158 | S9 | 2.27 |
+| int/imap-sync-greenmail.test.ts:32 | S9 | 2.26 |
+| int/lab-serve.test.ts:286 | S9 | 2.25 |
+| int/lab-reset.test.ts:501 | S9 | 2.22 |
+| int/mail-deliver.test.ts:325 | S9 | 2.21 |
+| int/imap-probe-move.test.ts:74 | S9 | 2.21 |
+| int/actions-copy-check.test.ts:231 | S9 | 2.20 |
+| int/mail-folders-cli.test.ts:95 | S9 | 2.20 |
+| int/triage-known-domains.test.ts:508 | S9 | 2.19 |
+| int/lab-bots.test.ts:504 | S9 | 2.19 |
+| int/mail-sync.test.ts:728 | S9 | 2.18 |
+| int/org-cli.test.ts:87 | S9 | 2.17 |
+| int/replies-answered-pass.test.ts:130 | S9 | 2.17 |
+| int/mail-seed.test.ts:289 | S9 | 2.17 |
+| int/mailbox-oauth-cli.test.ts:366 | S9 | 2.16 |
+| int/graph-committer.test.ts:390 | S9 | 2.16 |
+| int/lab-reset.test.ts:510 | S9 | 2.16 |
+| int/replies-answered-pass.test.ts:161 | S9 | 2.16 |
+| int/mailbox-cli-streams.test.ts:546 | S9 | 2.15 |
+| int/replies-answered-pass.test.ts:406 | S9 | 2.14 |
+| int/replies-answered-pass.test.ts:257 | S9 | 2.12 |
+| int/stats-week-cli.test.ts:56 | S9 | 2.12 |
+| int/lab-bots.test.ts:738 | S9 | 2.09 |
+| int/replies-answered-pass.test.ts:315 | S9 | 2.08 |
+| int/imap-probe-move.test.ts:38 | S9 | 2.08 |
+| int/privacy-dsr-sender-context.test.ts:622 | S9 | 2.07 |
+| int/replies-cli.test.ts:90 | S9 | 2.06 |
+| int/privacy-dsr-address-parity.test.ts:238 | S9 | 2.06 |
+| int/replies-answered-pass.test.ts:295 | S9 | 2.05 |
+| int/imap-probe-send.test.ts:185 | S9 | 2.04 |
+| int/replies-answered-pass.test.ts:497 | S9 | 2.04 |
+| int/mailbox-cli-streams.test.ts:473 | S9 | 2.03 |
+| int/privacy-dsr-sender-context.test.ts:589 | S9 | 2.01 |
