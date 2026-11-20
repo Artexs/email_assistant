@@ -40,8 +40,12 @@ describe("parseDigestTimesInput", () => {
 });
 
 describe("dueDigestSlot", () => {
-  test("not yet due", () => {
-    expect(due("2026-11-06T06:59:00Z", "2026-11-05T16:00")).toBeNull();
+  test.each([
+    ["not yet due", "2026-11-06T06:59:00Z", "2026-11-05T16:00"],
+    ["a slot older than 6 hours is skipped", "2026-11-06T14:30:00Z", "2026-11-05T16:00"],
+    ["slots before the link time never count", "2026-11-06T09:00:00Z", "2026-11-06T09:12"],
+  ])("%s", (_name, nowIso, afterKey) => {
+    expect(due(nowIso, afterKey)).toBeNull();
   });
 
   test("due at the slot time, once", () => {
@@ -53,16 +57,8 @@ describe("dueDigestSlot", () => {
     expect(due("2026-11-06T12:00:00Z", "2026-11-05T16:00")).toBe("2026-11-06T08:00");
   });
 
-  test("a slot older than 6 hours is skipped", () => {
-    expect(due("2026-11-06T14:30:00Z", "2026-11-05T16:00")).toBeNull();
-  });
-
   test("the slot of the day before, after midnight", () => {
     expect(due("2026-11-06T23:10:00Z", "2026-11-05T23:30", ["23:30"])).toBe("2026-11-06T23:30");
-  });
-
-  test("slots before the link time never count", () => {
-    expect(due("2026-11-06T09:00:00Z", "2026-11-06T09:12")).toBeNull();
   });
 
   test("no times", () => {

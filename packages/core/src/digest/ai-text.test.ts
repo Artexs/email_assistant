@@ -14,18 +14,12 @@ const base: AiTextInput = {
 };
 
 describe("aiTextFor", () => {
-  test("triage_error", () => {
-    expect(aiTextFor({ ...base, reasonCode: "triage_error" }, textTables.en)).toBe("AI triage failed 3 times.");
-  });
-
-  test("llm_blocked", () => {
-    expect(aiTextFor({ ...base, reasonCode: "llm_blocked" }, textTables.en)).toBe(
-      "The AI safety filter blocked this mail."
-    );
-  });
-
-  test("blocklist", () => {
-    expect(aiTextFor({ ...base, reasonCode: "blocklist" }, textTables.en)).toBe("The sender is on your blocklist.");
+  test.each([
+    ["triage_error", "AI triage failed 3 times."],
+    ["llm_blocked", "The AI safety filter blocked this mail."],
+    ["blocklist", "The sender is on your blocklist."],
+  ])("%s", (reasonCode, text) => {
+    expect(aiTextFor({ ...base, reasonCode }, textTables.en)).toBe(text);
   });
 
   test("below the threshold", () => {

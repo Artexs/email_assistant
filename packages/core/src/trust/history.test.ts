@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { historyOutcome } from "./history";
+import { type HistoryOutcome, historyOutcome } from "./history";
 import { sameKey, type EvidenceKey } from "./key";
 
 describe("historyOutcome", () => {
@@ -17,14 +17,12 @@ describe("historyOutcome", () => {
     expect(result.outcome).toBe("pass");
     expect(result.upper as number).toBeLessThanOrEqual(0.02);
   });
-  test("188 acted-on, none moved is inconclusive", () => {
-    expect(historyOutcome({ acted: 188, moved: 0 }).outcome).toBe("inconclusive");
-  });
-  test("a moved share of 0.03 fails", () => {
-    expect(historyOutcome({ acted: 100, moved: 3 }).outcome).toBe("fail");
-  });
-  test("a moved share of 0.02 is not over 0.02: inconclusive", () => {
-    expect(historyOutcome({ acted: 100, moved: 2 }).outcome).toBe("inconclusive");
+  test.each<[string, { acted: number; moved: number }, HistoryOutcome]>([
+    ["188 acted-on, none moved is inconclusive", { acted: 188, moved: 0 }, "inconclusive"],
+    ["a moved share of 0.03 fails", { acted: 100, moved: 3 }, "fail"],
+    ["a moved share of 0.02 is not over 0.02: inconclusive", { acted: 100, moved: 2 }, "inconclusive"],
+  ])("%s", (_name, counts, outcome) => {
+    expect(historyOutcome(counts).outcome).toBe(outcome);
   });
 });
 
