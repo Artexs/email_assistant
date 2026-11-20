@@ -43,6 +43,7 @@ const notificationAnswer = {
 const llm: LlmClient = {
   modelOf: () => "fake-model",
   endpointOf: () => "standard",
+  providerOf: () => "openai",
   async generate(req) {
     return {
       data: req.schema.parse(notificationAnswer),
@@ -54,6 +55,7 @@ const llm: LlmClient = {
         tokensOut: 20,
         latencyMs: 300,
         endpoint: "standard",
+        provider: "openai" as const,
       },
     };
   },

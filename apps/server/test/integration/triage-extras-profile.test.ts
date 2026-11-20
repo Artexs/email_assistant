@@ -231,6 +231,7 @@ describe("loadClassifierExtras reads the profile for the part profile", () => {
         const llm = {
           modelOf: () => "fake-model",
           endpointOf: () => "standard",
+          providerOf: () => "openai",
           async generate(req) {
             seen.push({ system: req.system, user: req.prompt });
             return {
@@ -250,6 +251,7 @@ describe("loadClassifierExtras reads the profile for the part profile", () => {
                 tokensOut: 20,
                 latencyMs: 300,
                 endpoint: "standard" as const,
+                provider: "openai" as const,
               },
             };
           },

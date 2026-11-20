@@ -87,6 +87,7 @@ describe("generate output", () => {
       tokensOut: 25,
       latencyMs: 0,
       endpoint: "standard",
+      provider: "openai" as const,
     });
   });
 

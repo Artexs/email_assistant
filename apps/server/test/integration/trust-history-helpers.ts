@@ -117,6 +117,7 @@ export async function withHistoryBox(
 export const noLlm: LlmClient = {
   modelOf: () => RUNNING_KEY.model,
   endpointOf: () => "standard",
+  providerOf: () => "openai",
   generate: () => Promise.reject(new Error("the model must not be called")),
 };
 
