@@ -5,6 +5,9 @@ import {
   replySamplesConflictSchema,
   replySamplesQueuedSchema,
   replySamplesViewSchema,
+  styleSuggestionAnswerSchema,
+  styleSuggestionBodySchema,
+  styleSuggestionConflictSchema,
   z,
 } from "@ea/core";
 
@@ -46,6 +49,21 @@ export const replyDocs = {
     body: profileBodySchema,
     ok: { status: 200, schema: profilePreviewSchema },
     errors: [ownerOnly, notFound, { status: 429, codes: ["preview_limit", "preview_busy"] }],
+  }),
+  suggestStyle: apiDoc({
+    operationId: "suggestMailboxStyle",
+    summary:
+      'One suggested writing style from the sent mail of the last 14 days (owner only; the body is `{}`, a key answers 400 `validation`). The text is for the owner to edit and save; nothing is stored but one audit row. 200 gives `{ text, count }` (`count`: the sent mails that the model read); a failed call or a text that fails a check gives 200 `{ kind: "failed", reason }` with `llm_off`, `llm_cap`, `checks`, `output` or `provider`. 409 `sent_off` while sent tracking is off for the mailbox or the organization; 409 `too_few` with the `count` found when fewer than 5 sent mails qualify; 409 `blocked` with `reason` `oauth_mailbox` for an OAuth mailbox. At most 3 runs with a model call a day for each mailbox: then 429 `suggest_limit`; a second run at the same time gives 429 `suggest_busy`. It counts in the daily LLM cap like a tap. 404 while the flag `reply_drafts` or the flag `style_from_sent` is off.',
+    tags,
+    params,
+    body: styleSuggestionBodySchema,
+    ok: { status: 200, schema: styleSuggestionAnswerSchema },
+    errors: [
+      ownerOnly,
+      notFound,
+      { status: 409, codes: ["sent_off", "too_few", "blocked"], schema: styleSuggestionConflictSchema },
+      { status: 429, codes: ["suggest_limit", "suggest_busy"] },
+    ],
   }),
   postSamples: apiDoc({
     operationId: "requestReplySamples",

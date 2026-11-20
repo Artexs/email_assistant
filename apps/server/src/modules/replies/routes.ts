@@ -1,4 +1,4 @@
-import { profileBodySchema, REPLY_SAMPLE_COUNT, type ProfileInput } from "@ea/core";
+import { profileBodySchema, REPLY_SAMPLE_COUNT, styleSuggestionBodySchema, type ProfileInput } from "@ea/core";
 import type { Context } from "hono";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
@@ -6,12 +6,13 @@ import { z } from "zod";
 
 import type { Db } from "../../platform/db";
 import { parseBody, requireOwner, ValidationError, type ApiEnv } from "../../platform/http";
-import { isFeatureOn } from "../tenancy";
+import { getOrgOwner, isFeatureOn } from "../tenancy";
 
 import { replyDocs } from "./api-docs";
 import type { StylePreview } from "./preview";
 import { getProfileView, updateMailboxProfile } from "./profile";
 import { listSamples, sampleReplies, type ReplySampleScope } from "./samples";
+import type { StyleSuggest } from "./style-suggest";
 
 export interface ReplyRouteDeps {
   db: Db;
@@ -19,6 +20,8 @@ export interface ReplyRouteDeps {
   preview: StylePreview | null;
   // The clock and the model scope of the sample drafts. null: no model client runs, so a sample run answers 409 `llm_off`.
   samples?: ReplySampleScope | null;
+  // The writing-style suggestion from the sent mail. Absent or null: no model client runs, so a suggestion answers `failed` / `llm_off`.
+  styleSuggestion?: StyleSuggest | null;
 }
 
 type Ctx = Context<ApiEnv>;
@@ -92,11 +95,56 @@ export function replyRoutes(deps: ReplyRouteDeps): Hono<ApiEnv> {
     }
   });
 
-  // The flag runs before the role: every role gets 404 while `reply_drafts` is off, also for a bad id (the rule of the new routes).
-  const flagFirst: MiddlewareHandler<ApiEnv> = async (c, next) => {
-    if (!(await isFeatureOn(deps.db, c.get("ctx"), "reply_drafts"))) return notFound(c);
-    await next();
+  // The flags run before the role: every role gets 404 while one of them is off, also for a bad id (the rule of the new routes).
+  const flagsFirst = (...flags: ("reply_drafts" | "style_from_sent")[]): MiddlewareHandler<ApiEnv> => {
+    return async (c, next) => {
+      for (const flag of flags) {
+        if (!(await isFeatureOn(deps.db, c.get("ctx"), flag))) return notFound(c);
+      }
+      await next();
+    };
   };
+  const flagFirst = flagsFirst("reply_drafts");
+
+  // One suggested writing style from the sent mail (owner only; hidden while either flag is off). The text goes to the owner to edit:
+  // the server stores none of it. The answers of the service map one to one to the codes of the API doc.
+  app.post(
+    "/mailboxes/:id/profile/style-suggestion",
+    flagsFirst("reply_drafts", "style_from_sent"),
+    requireOwner,
+    replyDocs.suggestStyle,
+    async (c) => {
+      const id = mailboxIdOf(c);
+      if (!id) return notFound(c);
+      await parseBody(c, styleSuggestionBodySchema);
+      if (deps.styleSuggestion === undefined || deps.styleSuggestion === null) {
+        return c.json({ kind: "failed" as const, reason: "llm_off" });
+      }
+      const owner = await getOrgOwner(deps.db, c.get("ctx"));
+      const result = await deps.styleSuggestion(c.get("ctx"), id, {
+        userId: c.get("session").userId,
+        language: owner?.locale ?? null,
+      });
+      switch (result.kind) {
+        case "suggestion":
+          return c.json({ text: result.text, count: result.count });
+        case "failed":
+          return c.json({ kind: "failed" as const, reason: result.reason });
+        case "sent_off":
+          return c.json({ error: "sent_off" as const }, 409);
+        case "too_few":
+          return c.json({ error: "too_few" as const, count: result.count }, 409);
+        case "blocked":
+          return c.json({ error: "blocked" as const, reason: result.reason }, 409);
+        case "limit":
+          return c.json({ error: "suggest_limit" }, 429);
+        case "busy":
+          return c.json({ error: "suggest_busy" }, 429);
+        case "not_found":
+          return notFound(c);
+      }
+    }
+  );
 
   // Sample drafts on recent real mail (owner only; hidden while the flag is off). The POST queues up to three `sample` requests; the
   // GET reads the run of today for the panel to poll. The texts are for the owner's eyes: nothing is saved in Drafts or sent.
