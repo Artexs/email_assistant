@@ -3,6 +3,7 @@
 // Pure code.
 
 import { replaceGaps } from "./gaps";
+import { holdsDateOrTerm, namesReplyDeadline } from "./sentence-shapes";
 
 export interface ReplySentenceCounts {
   /** Sentences with no gap, at least 3 words, and not a fixed thanks. */
@@ -11,7 +12,10 @@ export interface ReplySentenceCounts {
   gapSentences: number;
   /** Sentences of the form "Regarding X: [[gap]]" (or "W sprawie X: [[gap]]"). */
   template: number;
-  /** Counted sentences whose text outside the gaps holds a leaning phrase. */
+  /**
+   * Counted sentences that lean: the text outside the gaps holds a leaning phrase, or a sentence with a gap names the
+   * deadline of this reply or of a decision, or restates a date or term outside its gap.
+   */
   leaning: number;
 }
 
@@ -57,7 +61,12 @@ export function isSkeletonDraft(counts: ReplySentenceCounts): boolean {
 const MARKER = "\uE000";
 const GREETING_MAX_WORDS = 6;
 const PROSE_MIN_WORDS = 3;
-const TEMPLATE = new RegExp(String.raw`^(?:Regarding|W sprawie) .{1,80}: ${MARKER}\.?$`);
+// The topic holds no comma, no colon and no word of an answer: "W sprawie X, moja odpowiedź brzmi: [[gap]]" is a gap
+// sentence with words of its own, not the fixed template.
+const TEMPLATE = new RegExp(
+  String.raw`^(?:Regarding|W sprawie) (?:(?!odpowied|answer|brzmi)[^:,]){1,80}: ${MARKER}\.?$`,
+  "iu"
+);
 const ABBREVIATIONS = new Set([
   "np.",
   "godz.",
@@ -118,14 +127,17 @@ export function classifyReplySentences(body: string): ReplySentenceCounts {
 
   const counts: ReplySentenceCounts = { prose: 0, gapSentences: 0, template: 0, leaning: 0 };
   for (const sentence of lines.flatMap(sentencesOfLine)) {
+    const outside = sentence.replaceAll(MARKER, " ");
+    let leansByShape = false;
     if (sentence.includes(MARKER)) {
       counts[TEMPLATE.test(sentence) ? "template" : "gapSentences"] += 1;
+      leansByShape = namesReplyDeadline(outside) || holdsDateOrTerm(outside);
     } else if (wordCount(sentence) >= PROSE_MIN_WORDS && !FIXED_THANKS.has(sentence.toLowerCase())) {
       counts.prose += 1;
     } else {
       continue;
     }
-    if (LEANING.test(sentence.replaceAll(MARKER, " "))) counts.leaning += 1;
+    if (leansByShape || LEANING.test(outside)) counts.leaning += 1;
   }
   return counts;
 }

@@ -84,6 +84,124 @@ describe("classifyReplySentences", () => {
     if (skeleton !== undefined) expect(isSkeletonDraft(classifyReplySentences(body))).toBe(skeleton);
   });
 
+  // A gap that stands on the deadline of this reply or of a decision, or a date or term restated outside the gap,
+  // leans. An answer to a question the email asks, with no date and no deadline of the reply, does not.
+  test.each<[string, string, ReplySentenceCounts]>([
+    [
+      "a gap on the deadline of the decision leans",
+      "Cześć,\nCo do terminu przekazania decyzji, moja odpowiedź to [[tak lub nie]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a gap on the deadline of the decision, with the date outside, leans once",
+      "Cześć Halina,\nCo do terminu decyzji do środy, moja odpowiedź to [[tak lub nie]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a gap on the reply before the end of the week leans",
+      "Zbigniew,\nCo do odpowiedzi przed końcem tygodnia: [[tak lub nie i termin]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a gap on the deadline of this reply leans, English",
+      "Hi Tom,\nOn the deadline for this reply, my answer is [[yes or no]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a date restated outside the gap leans (tomorrow)",
+      "Dzień dobry,\nW sprawie wysłania aneksu jutro do podpisu, moja odpowiedź brzmi: [[tak lub nie]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a date restated outside the gap leans (a weekday)",
+      "Halina,\nOdpowiedź na propozycję rozmowy w czwartek rano brzmi: [[tak lub nie]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a date restated outside the gap leans (a year)",
+      "Dzień dobry,\nOdpowiedź na pytanie o rozbudowę floty w 2027 roku brzmi: [[tak lub nie]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a date restated outside the gap leans (a month, English)",
+      "Dear Karin Lindqvist,\nThe answer on the March delivery is [[yes or no]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a term restated outside the gap leans (this year)",
+      "Hi Anna,\nOn the budget for this year, my answer is [[keep or change]].",
+      counts(0, 1, 0, 1),
+    ],
+    [
+      "a date inside the gap label does not lean",
+      "Dear Karin Lindqvist,\nThe answer on the call is [[yes or no and Wednesday or Thursday]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "an answer to a question the email asks does not lean, Polish",
+      "Zbigniew,\nOdpowiedź na pytanie o budżet brzmi: [[zostawić lub zmienić]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "an answer to a question the email asks does not lean, English",
+      "Hi Daniel,\nThe answer on the commitment duration is [[duration]].\nMy answer on discussing this by phone is [[yes or no]].",
+      counts(0, 2, 0, 0),
+    ],
+    [
+      "a payment term is no deadline of the reply",
+      "Dzień dobry,\nCo do dłuższego terminu płatności, moja odpowiedź to [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a delivery term with the word answer is no deadline of the reply",
+      "Dzień dobry,\nW sprawie ewentualnego innego terminu dostawy moja odpowiedź to [[alternatywny termin lub brak]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "a date in a sentence with no gap does not lean",
+      "Dear Tom Baker,\nThursday at 10:00 works for me.",
+      counts(1, 0, 0, 0),
+    ],
+    [
+      "a name that starts like a month is no date",
+      "Dzień dobry,\nOdpowiedź na pytanie od Marcina o majątek firmy brzmi: [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+  ])("%s", (_name, body, expected) => {
+    expect(classifyReplySentences(body)).toEqual(expected);
+  });
+
+  // The fixed template is "Regarding X: [[gap]]" with a topic X only; extra words make it a gap sentence.
+  test.each<[string, string, ReplySentenceCounts]>([
+    [
+      "a topic and a gap stay the template, English",
+      "Hi Tom,\nRegarding the budget plan: [[yes or no]].",
+      counts(0, 0, 1, 0),
+    ],
+    [
+      "a topic and a gap stay the template, Polish",
+      "Dzień dobry,\nW sprawie zmiany sposobu fakturowania: [[tak lub nie]].",
+      counts(0, 0, 1, 0),
+    ],
+    [
+      "extra words after a comma make a gap sentence",
+      "Dzień dobry,\nW sprawie zmiany sposobu fakturowania, moja odpowiedź brzmi: [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "extra words with no comma make a gap sentence",
+      "Dzień dobry,\nW sprawie aneksu moja odpowiedź brzmi: [[tak lub nie]].",
+      counts(0, 1, 0, 0),
+    ],
+    [
+      "extra words make a gap sentence, English",
+      "Hi Tom,\nRegarding the budget plan, my answer is: [[yes or no]].",
+      counts(0, 1, 0, 0),
+    ],
+  ])("%s", (_name, body, expected) => {
+    expect(classifyReplySentences(body)).toEqual(expected);
+  });
+
   test("a leaning phrase of every list is found", () => {
     for (const phrase of [...LEANING_PHRASES.en, ...LEANING_PHRASES.pl]) {
       expect(classifyReplySentences(`Hi Tom,\nWe say ${phrase} about it.`).leaning).toBe(1);
