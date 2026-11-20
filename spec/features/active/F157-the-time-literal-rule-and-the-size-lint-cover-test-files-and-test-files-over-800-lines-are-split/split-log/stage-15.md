@@ -19,3 +19,12 @@ Base for the before runs: `73801f3e` (the branch tip before the first history me
 - Setup list: `const db = testDb()` and `afterAll` that destroys it, and the leading comment: repeated in each part. `secrets` (a secret box), `fresh` (a clock with `NOW`), `openReplySends`: helpers file (used by two or more parts). No `mock.module`, no `setSystemTime`, no other hooks.
 - Assertion lines: none.
 - References repointed: `docs/capabilities/drafts-and-send.md` and `docs/capabilities/reply-drafts.md` now name the four parts.
+
+## apps/server/test/integration/replies-sweep.test.ts
+
+- Old: 861 lines. Before run: 32 cases, 0 fail.
+- Parts: `replies-sweep-answered.test.ts` 264 lines (answered; newer mail, moved mail, suspicious mail; `newerMailInThread`; 8 cases), `replies-sweep-policy.test.ts` 359 lines (policy, locks, tenants, limits; tenant isolation of the readers; the cap counts closes; 17 cases), `replies-sweep-moves.test.ts` 249 lines (races with a tap and a claim; moves, junk, spam; a paused mailbox and a Sent row not read yet; 7 cases). Helpers: `replies-sweep-helpers.ts` 38 lines.
+- Proof: `split-proof PASS cases=32`.
+- Setup list: `const db = testDb()`, `afterAll` that destroys it, `let logs` and its `afterEach` that stops it, and the leading comment: repeated in each part (each part sets `logs` in its own cases). `NOW` (alias of `SWEEP_NOW`), `send`, `sweepOf`, `run`: helpers file (used by two or more parts). No `mock.module`, no `setSystemTime`.
+- Assertion lines: none.
+- References repointed: `docs/capabilities/drafts-and-send.md` and `docs/capabilities/reply-drafts.md` now name the three parts.
