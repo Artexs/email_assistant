@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-15
+landed: 2026-11-20
 ---
 
 # F129 · Every command-line tool follows one standard, and agents find each tool, its risk and its exit codes in one generated list
