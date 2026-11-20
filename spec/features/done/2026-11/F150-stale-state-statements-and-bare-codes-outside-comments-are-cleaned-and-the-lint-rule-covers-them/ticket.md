@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F150 · Stale state statements and bare codes outside comments are cleaned and the lint rule covers them
