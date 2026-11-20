@@ -26,7 +26,8 @@ Part of [`../plan.md`](../plan.md).
   - `apps/server/src/platform/outside-services.ts`: two `exempt` reasons name F141 P4 and F118. Write the rule in words (the config refusal; the own Web Push identity).
   - `apps/server/src/modules/replies/drafter-eval-report.ts`: two report lines name PD-083. Name the bar in words (for example "drafter bar"). Do not edit committed reports under `evals/results/`. Update a test that asserts the line.
   - `tools/mail-oauth-spike/rows-*.ts`: the test mail text "Test mail of the F117 spike" becomes a text with no code (for example "Test mail of the mail OAuth spike").
-- **Find more:** a new hit that landed after the plan base gets the same treatment. Use a one-off local search; do not commit a search script (stage 04 owns the scan).
+  - `apps/server/src/modules/actions/repo/notify.ts`: the SQL comment `-- loop rows: open loops stage 10/11` inside a `sql` template (plan D13). Say what the rows are, or drop the comment; the query does not change.
+- **Find every hit, not only new ones:** the list above missed one at the plan base. Before the commit, run a one-off local probe over the whole P1 string and JSON set (TypeScript compiler: string, template part, tagged template and JSX text nodes of non-test sources; JSON string nodes) with `STRING_CODE`, and fix each hit outside `apps/docs` by D4. Do not commit the probe (stage 04 owns the scan). The final message names the probe's hit count before and after.
 - **Test:** each test that asserts a changed string changes with it and passes with `bun test <file>`.
 - **Done when:** the changed tests pass; `check:job` passes.
 - **Out of scope:** `apps/docs/src/flagged-text.ts` (stage 02), `docs/modules.md` (stage 03), letter codes such as `S1` or `P1` in strings (D2: data ids), test files (D3).

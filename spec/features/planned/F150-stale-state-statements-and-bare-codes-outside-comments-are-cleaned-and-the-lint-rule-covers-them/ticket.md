@@ -6,7 +6,7 @@ opened: 2026-11-19
 
 ## Outcome
 
-An agent or a developer who reads the repository finds no statement that contradicts the code: the project guide names the real layout, no "planned" task file describes landed work, and the docs flag guard lists the default-off features that really show text. Ticket and decision codes no longer hide in strings, the module layer file, the public docs pages or the module map; the bare-code scan that today reads only comments also reads those places, so they stay clean.
+An agent or a developer who reads the repository finds no statement that contradicts the code: the project guide names the real layout, no "planned" task file describes landed work, and the docs flag guard lists the default-off features that really show text. Ticket and decision codes no longer hide in strings, the module layer file, the docs site's own pages or the module map; the bare-code scan that today reads only comments also reads those places, and every job's final check runs it, so they stay clean.
 
 ## Scope
 
@@ -18,6 +18,7 @@ An agent or a developer who reads the repository finds no statement that contrad
 ## Out of scope
 
 - Bare codes in `docs/capabilities/`, ADRs, `docs/owner-decisions.md`, tool READMEs, `spec/` and test files (test names belong to the test audit ticket).
+- The operator runbooks that the docs site shows in place (`deploy/README.md`, `docs/release-checklist.md`): their release markers need their own clean-up.
 - The other findings of quality pass 2.
 - New visible text or a changed flag default.
 
@@ -28,6 +29,7 @@ An agent or a developer who reads the repository finds no statement that contrad
 - `NO_VISIBLE_TEXT` holds only flags whose code shows no user text; the docs page scan checks the texts of the others.
 - The bare-code scan reports a ticket code in a non-test source string, a JSON value, a docs site page or `docs/modules.md`.
 - The same scan finds nothing on the branch at the end of the ticket.
+- `bun run check:job` runs the scan on every job and fails on a hit.
 
 ## Sequenced
 

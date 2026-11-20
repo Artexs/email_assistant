@@ -5,7 +5,7 @@ Part of [`../plan.md`](../plan.md). Review before the land (plan § Review).
 
 ## Background
 
-`apps/docs/src/flagged-text.ts` lists the user-visible strings of every default-off flag. `flagged-text.test.ts` fails a docs site page, a public claim or the changelog page that quotes one, because a reader cannot know if the flag is on for them. A flag with no visible text sits in `NO_VISIBLE_TEXT` with a reason. The test T2 demands text or a reason, never both. Nothing checks that a reason is true. At the plan base all five reasons were doubtful (plan § Facts checked).
+`apps/docs/src/flagged-text.ts` lists the visible strings of every default-off flag; `flagged-text.test.ts` fails a docs page, public claim or changelog page that quotes one. A flag with no visible text sits in `NO_VISIBLE_TEXT` with a reason. T2 demands text or a reason, never both. Nothing checks that a reason is true.
 
 ## Step 1 — each flag is in the right list
 
@@ -13,10 +13,11 @@ Part of [`../plan.md`](../plan.md). Review before the land (plan § Review).
 - **Decisions:** D5, P2.
 - **Do,** for each of `delegate_button`, `trust_ladder`, `reply_drafts`, `draft_copy_check`, `web_push`:
   1. Find where the flag gates what a user sees: a web component or island that reads `me.features`, a server notice or digest line that the flag adds, a bot text in `packages/core/src/texts` or `digest`.
-  2. Text found → add one to three keys or literals that only that flag shows. Prefer a title, a switch label or a button. Panel keys go to `FLAGGED_PANEL_KEYS` (English and Polish follow by key). Bot or digest literals go to `FLAGGED_BOT_TEXT`; a literal holds no quote or backslash and must stand in `packages/core/src/texts` or `digest` (existing T2 cases check it). Remove the reason.
+  2. Text found → add one to three keys or literals that only that flag shows. Each entry follows plan D15: a phrase of two or more words (a title or a switch label), never one common word. Run the page scan (`flaggedTextProblems` over the docs pages) with that entry alone; an entry that fails pages which do not quote the UI is replaced by another. Panel keys go to `FLAGGED_PANEL_KEYS` (English and Polish follow by key). Bot or digest literals go to `FLAGGED_BOT_TEXT`; a literal holds no quote or backslash and must stand in `packages/core/src/texts` or `digest` (existing T2 cases check it). Remove the reason.
   3. No such text → keep the reason. Rewrite it in words: which file reads the flag and why no user sees text. No ticket code, no stage number, no "comes later".
-- **Leads, not verified:** `web_push` → the `push_*` panel keys (`en-phone.ts`); `reply_drafts` → `switch_reply_drafts` and the reply panel keys; `delegate_button` → the `dla_*` keys of the delegate dialog; `trust_ladder` → the report page and onboarding keys that only the flag shows (check which `rep_*` keys show with the flag off: those stay out); `draft_copy_check` → the approval view field `copyCheck` and the line it adds in `packages/core/src/digest/approvals.ts`.
-- **Edge:** a key that the panel shows both with the flag on and off is not flagged text: leave it out. A key shared by two flags goes to the flag that gates it.
+- **Leads, not verified:** `web_push` → the `push_*` panel keys (`en-phone.ts`); `reply_drafts` → `switch_reply_drafts` and the reply panel keys; `delegate_button` → `dla_title` ("Delegate this mail"), not `dla_button` ("Delegate" fails 11 pages); `trust_ladder` → the report page and onboarding keys that only the flag shows (check which `rep_*` keys show with the flag off: those stay out); `draft_copy_check` → the approval view field `copyCheck` and the line it adds in `packages/core/src/digest/approvals.ts`.
+- **Edge:** a key that the panel shows both with the flag on and off is not flagged text: leave it out. A text that shows when either of two flags is on goes under each flag (plan D15). Known case: `sendLineEditable` of `packages/core/src/digest/approvals.ts` shows for a reply (`reply_drafts`) or when `copyCheck` is set (`draft_copy_check`).
+- **Other tickets:** the reply drafts docs stage (F115 stage 17) refers to `NO_VISIBLE_TEXT.draft_copy_check`. If this stage moves that flag, say so in the final message, so the coordinator tells F115.
 
 ## Step 2 — the pages pass the stricter scan
 
