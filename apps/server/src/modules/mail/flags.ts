@@ -1,3 +1,4 @@
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -14,8 +15,8 @@ import {
 import { normalizeMessageId } from "./sync-rules";
 
 // The sync job refreshes the IMAP flags of recent mail on its own connection, at most this often per mailbox.
-export const FLAGS_REFRESH_EVERY_MS = 10 * 60_000;
-export const FLAGS_WINDOW_MS = 30 * 24 * 3_600_000;
+export const FLAGS_REFRESH_EVERY_MS = 10 * MINUTE_MS;
+export const FLAGS_WINDOW_MS = 30 * DAY_MS;
 export const FLAGS_RUN_LIMIT = 3_000;
 export const FLAGS_CHUNK = 500;
 
