@@ -5,7 +5,7 @@
 # Usage: bash scripts/e2e-parallel-check.sh --e2e-runs N --docs-runs M --rounds R --out DIR
 #   N, M: 0-4 (not both 0). R: 1-5. DIR: where the run logs go (`<suite>-round-<r>-run-<n>.log`, `prepare-<n>.log`).
 #
-# It makes max(N, M) temp worktrees at HEAD once, prepares each (`limen-prepare.sh`: own DB, own e2e DB, own ports, own mail
+# It makes max(N, M) temp worktrees at HEAD once, in a folder next to the calling worktree, prepares each (`limen-prepare.sh`: own DB, own e2e DB, own ports, own mail
 # tag), builds once per worktree, then runs the R e2e rounds, then the R docs rounds (the two suites never overlap: memory).
 # Each run's peak RSS is the sum over its process tree, sampled every 0.5 s.
 # It CREATES AND DROPS DATABASES on the dev Postgres (`db:worktree`, two per worktree) and makes and removes git worktrees.
@@ -46,7 +46,8 @@ mkdir -p "$out"
 out="$(cd "$out" && pwd -P)"
 
 count=$(( e2e_runs > docs_runs ? e2e_runs : docs_runs ))
-tmp="$(mktemp -d)"
+# Next to the calling worktree, not in /tmp: /tmp is a RAM disk on the owner PC and each worktree holds about 600 MB of node_modules.
+tmp="$(mktemp -d "$(dirname "$caller")/.e2e-parallel-check.XXXXXX")"
 today="$(date +%F)"
 declare -a wt_dirs=() db_names=() wrappers=()
 
