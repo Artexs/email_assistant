@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F152 · The restore drill rerun on the release that carries the TCP wait ends with restore ok at the first run
