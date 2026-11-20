@@ -5,9 +5,8 @@ import type { DB, TenantContext } from "../../../platform/db";
 import type { DbOrTrx } from "./shared";
 
 // The name, the signature and the writing style of one mailbox. Every text is optional: null means "use the fallback".
-// `signature` starts as a copy of `organizations.style_text` (set by the migration that created the table). The copy is a snapshot: a later
-// change of the organization text does not reach it, and a mailbox that was made after the migration has no row.
-// Fallback order (the message builder and the panel read this order): `signature` null or no row → `organizations.style_text` → owner name.
+// The signature lives only here. Fallback order (the message builder and the panel read this order): `signature` null or no row → owner name.
+// A mailbox that was made after the old organization text moved here has no row and signs with the owner name.
 export interface MailboxProfile {
   mailboxId: string;
   displayName: string | null;

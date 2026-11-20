@@ -92,7 +92,7 @@ export async function putDraftCopy(
     ),
     mailbox: { address: home.address, capabilities: { uidplus: true }, folderMap: home.folderMap },
     owner: { displayName: "Owner" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     compose: composeMessage,
     sender: null,
     hooks: noDelegationHooks,

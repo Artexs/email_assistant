@@ -63,7 +63,6 @@ async function reset(page: Page): Promise<void> {
       });
       await page.request.patch(`/api/settings/${mailbox.id}/sent-sync`, { headers, data: { enabled: false } });
     }
-    await page.request.patch("/api/organization", { headers, data: { styleText: null } });
   } catch {
     // Ignored on purpose.
   }
@@ -108,30 +107,6 @@ test("T1b: a name with a character that a header cannot hold is refused with a t
   await expect(nameField(page)).toHaveAttribute("aria-invalid", "true");
   await nameField(page).fill("Anna");
   await expect(card(page).getByRole("alert")).toHaveCount(0);
-});
-
-test("T2: the organization signature is read-only and links to the card of each mailbox", async ({ context, page }) => {
-  await startSession(context, page, "owner");
-  const set = await page.request.patch("/api/organization", {
-    headers: { origin: E2E_BASE_URL },
-    data: { styleText: "E2E old organization text" },
-  });
-  expect(set.ok()).toBe(true);
-  await page.reload();
-  // With no signature of the mailbox, the text in use is the old text of the organization (the fallback).
-  await expect(card(page).getByText(t("rs_in_use", { text: "E2E old organization text" }))).toBeVisible();
-  const signature = page.locator("[data-card=signature]");
-  await expect(signature.locator("[data-old-text]")).toHaveText("E2E old organization text");
-  await expect(signature.getByText(en.rs_org_note)).toBeVisible();
-  await expect(signature.getByRole("textbox")).toHaveCount(0);
-  await expect(signature.getByRole("button")).toHaveCount(0);
-
-  const link = signature.getByRole("link", { name: t("rs_org_link", { address: org().oauth.address }) });
-  await expect(link).toHaveAttribute("href", `/settings?mailbox=${org().oauth.id}#style-card`);
-  await expect(signature.getByRole("link")).toHaveCount(2);
-  await link.click();
-  await expect(page).toHaveURL(new RegExp(`mailbox=${org().oauth.id}`));
-  await expect(card(page)).toBeInViewport();
 });
 
 test("T3: a member sees the card and the switch and cannot change them", async ({ context, page }) => {

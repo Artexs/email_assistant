@@ -114,7 +114,7 @@ describe("GET and PUT /api/mailboxes/:id/profile", () => {
       createdAt: new Date("2026-11-18T10:00:00Z"),
       mailbox: { address: mine.address },
       owner: { displayName: "Owner" },
-      organization: { styleText: null, timezone: "Europe/Warsaw" },
+      organization: { timezone: "Europe/Warsaw" },
       original: {
         fromAddress: "anna@client.test",
         subject: "Spotkanie",
@@ -155,27 +155,22 @@ describe("GET and PUT /api/mailboxes/:id/profile", () => {
     expect(await profileAudits(org.orgId)).toEqual([]);
   });
 
-  test("3. an empty signature stores null; GET gives the org style_text as fallbackSignature", async () => {
-    const { org, app, mine } = await setup();
-    await db
-      .updateTable("organizations")
-      .set({ style_text: "Z poważaniem,\nOrg Style" })
-      .where("id", "=", org.orgId)
-      .execute();
+  test("3. an empty signature stores null; GET gives the owner name as fallbackSignature", async () => {
+    const { app, mine } = await setup();
     const set = await app.request(profileUrl(mine.id), as("owner", put({ signature: CANARY })));
-    expect(await set.json()).toMatchObject({ signature: CANARY, fallbackSignature: "Z poważaniem,\nOrg Style" });
+    expect(await set.json()).toMatchObject({ signature: CANARY, fallbackSignature: "Owner" });
     expect((await storedRow(mine.id))?.signature).toBe(CANARY);
 
     const cleared = await app.request(profileUrl(mine.id), as("owner", put({ signature: "" })));
 
     expect(cleared.status).toBe(200);
-    expect(await cleared.json()).toMatchObject({ signature: null, fallbackSignature: "Z poważaniem,\nOrg Style" });
+    expect(await cleared.json()).toMatchObject({ signature: null, fallbackSignature: "Owner" });
     expect((await storedRow(mine.id))?.signature).toBeNull();
     const get = await app.request(profileUrl(mine.id), as("owner"));
-    expect(await get.json()).toMatchObject({ signature: null, fallbackSignature: "Z poważaniem,\nOrg Style" });
+    expect(await get.json()).toMatchObject({ signature: null, fallbackSignature: "Owner" });
   });
 
-  test("the fallbacks: no row reads null with the owner name; a blank style_text falls to the owner name; a clear of the name falls back too", async () => {
+  test("the fallbacks: no row reads null with the owner name; a clear of the name falls back too", async () => {
     const { app, mine } = await setup();
     const empty = await app.request(profileUrl(mine.id), as("owner"));
     expect(await empty.json()).toEqual({

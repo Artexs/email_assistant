@@ -68,9 +68,6 @@ export const plReply = {
   rs_suggest_limit: "Możesz poprosić o 3 propozycje dziennie. Spróbuj ponownie później.",
   rs_suggest_busy: "Propozycja jest właśnie tworzona. Poczekaj chwilę.",
   rs_suggest_failed: "Tym razem nie udało się przygotować propozycji. Spróbuj ponownie później.",
-  rs_org_note: "Podpisy ustawia się teraz osobno dla każdej skrzynki.",
-  rs_org_old: "Ten dawny tekst organizacji nadal obowiązuje w skrzynce, która nie ma własnego podpisu.",
-  rs_org_link: "Otwórz kartę skrzynki {address}",
   // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Raport",
   rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",

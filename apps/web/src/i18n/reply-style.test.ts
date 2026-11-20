@@ -72,10 +72,6 @@ const PL_TEXTS = {
   rs_suggest_limit: "Możesz poprosić o 3 propozycje dziennie. Spróbuj ponownie później.",
   rs_suggest_busy: "Propozycja jest właśnie tworzona. Poczekaj chwilę.",
   rs_suggest_failed: "Tym razem nie udało się przygotować propozycji. Spróbuj ponownie później.",
-  rs_org_note: "Podpisy ustawia się teraz osobno dla każdej skrzynki.",
-  rs_org_old: "Ten dawny tekst organizacji nadal obowiązuje w skrzynce, która nie ma własnego podpisu.",
-  rs_org_link: "Otwórz kartę skrzynki {address}",
-  sig_title: "Podpis organizacji",
 } as const;
 
 const ownKeys = Object.keys(PL_TEXTS) as (keyof typeof PL_TEXTS)[];
@@ -103,7 +99,7 @@ describe("the texts of the style card (F115 stage 11)", () => {
     expect(en.rs_preview_note).toBe("This is a sample. Nothing was sent.");
   });
 
-  test("the old organization signature keys that the read-only card does not use are gone", () => {
+  test("the keys of the removed organization signature card are gone", () => {
     for (const key of ["sig_help", "sig_label", "sig_saved_toast"]) {
       expect(Object.hasOwn(en, key), key).toBe(false);
       expect(Object.hasOwn(pl, key), key).toBe(false);

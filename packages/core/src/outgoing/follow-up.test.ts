@@ -34,7 +34,7 @@ function input(draft: DraftPayload, refs: string[] = ["<root@x.test>"]): BuildIn
     createdAt: new Date("2026-11-14T08:00:00Z"),
     mailbox: { address: "User@Interia.pl" },
     owner: { displayName: "Artek" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     // The server fills the thread ids from the loop row; the other fields of the mail are not used by a follow-up.
     original: {
       fromAddress: null,

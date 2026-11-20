@@ -23,7 +23,6 @@ import { LoopSettingsCard } from "../components/settings/LoopSettingsCard";
 import { ModeCard } from "../components/settings/ModeCard";
 import { ReplyStyleCard } from "../components/settings/ReplyStyleCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
-import { SignatureCard } from "../components/settings/SignatureCard";
 import { TelegramLockCard } from "../components/settings/TelegramLockCard";
 import { SyncFoldersCard } from "../components/settings/SyncFoldersCard";
 import { TimezoneCard } from "../components/settings/TimezoneCard";
@@ -121,15 +120,7 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   );
 }
 
-function GeneralSection({
-  isOwner,
-  isOwnerRole,
-  mailboxes,
-}: {
-  isOwner: boolean;
-  isOwnerRole: boolean;
-  mailboxes: readonly MailboxView[];
-}) {
+function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRole: boolean }) {
   const { me, reload: reloadMe } = useMe();
   const { data, error, loading, reload, mutate } = useResource(() =>
     api("/api/organization", organizationSettingsSchema)
@@ -157,7 +148,6 @@ function GeneralSection({
     };
     organizationCards = (
       <>
-        <SignatureCard organization={data} mailboxes={mailboxes} />
         <TimezoneCard organization={data} isOwner={isOwner} onSaved={saved} />
         {data.telegramMinimalLocked !== undefined && (
           <TelegramLockCard
@@ -266,7 +256,7 @@ function Settings() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-4">{content}</div>
-      <GeneralSection isOwner={isOwner} isOwnerRole={isOwnerRole} mailboxes={data ?? []} />
+      <GeneralSection isOwner={isOwner} isOwnerRole={isOwnerRole} />
     </div>
   );
 }

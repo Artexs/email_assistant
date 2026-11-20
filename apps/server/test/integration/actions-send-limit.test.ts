@@ -108,7 +108,7 @@ function depsOf(
     folders,
     mailbox: { address: s.address, capabilities: { uidplus: true }, folderMap: s.folderMap },
     owner: { displayName: "Owner" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     compose: composeMessage,
     sender,
     hooks: noDelegationHooks,

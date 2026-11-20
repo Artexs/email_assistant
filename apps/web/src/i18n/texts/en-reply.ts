@@ -64,9 +64,6 @@ export const enReply = {
   rs_suggest_limit: "You can ask for 3 suggestions a day. Try again later.",
   rs_suggest_busy: "A suggestion is being written. Wait a moment.",
   rs_suggest_failed: "No suggestion this time. Try again later.",
-  rs_org_note: "Signatures are set per mailbox now.",
-  rs_org_old: "This old text of the organization still applies to a mailbox that has no signature of its own.",
-  rs_org_link: "Open the card of {address}",
   // The report page ("what I would have done") and the onboarding steps with the flag trust_ladder
   title_report: "Report",
   rep_off: "This page is off for your organization.",

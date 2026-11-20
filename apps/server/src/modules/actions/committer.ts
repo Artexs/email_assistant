@@ -263,7 +263,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
     const owner = memberships.find((member) => member.role === "owner");
     const loaded: TenantFacts = {
       owner: { displayName: owner?.display_name ?? mailbox.address },
-      organization: { styleText: organization.style_text, timezone: organization.timezone },
+      organization: { timezone: organization.timezone },
     };
     facts.set(ctx.orgId, loaded);
     return loaded;
@@ -303,7 +303,7 @@ export function createCommitterJob(deps: CommitterDeps): { run(): Promise<void> 
       },
       // A batch without a draft or a send never reads these two.
       owner: facts?.owner ?? { displayName: mailbox.address },
-      organization: facts?.organization ?? { styleText: null, timezone: "UTC" },
+      organization: facts?.organization ?? { timezone: "UTC" },
       // Read only for a batch that builds a message (the same rule as the owner and the organization).
       profile: facts === null ? null : await mailboxProfileOf(deps.db, ctx, mailboxId),
       compose: deps.compose ?? composeMessage,

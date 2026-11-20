@@ -53,7 +53,7 @@ const counts = (record: Record<string, number>): string =>
         .map((key) => `${key} ${record[key]}`)
         .join(", ");
 
-function styleText(style: NonNullable<DrafterReportHeader["style"]>): string {
+function styleLine(style: NonNullable<DrafterReportHeader["style"]>): string {
   if (style.file === null) return style.key;
   return `${style.key}, file ${style.file}, sample count ${style.sampleCount ?? "n/a"}`;
 }
@@ -70,7 +70,7 @@ function headerLines(h: DrafterReportHeader): string[] {
     `- reasoning effort: ${h.reasoningEffort ?? "default"}`,
     `- prompt version: ${h.promptVersion}`,
     `- judge: ${h.judge === null ? "not run" : `${h.judge.provider} ${h.judge.model}, ${h.judge.promptVersion}, rubric reply`}`,
-    ...(h.style === undefined ? [] : [`- style: ${styleText(h.style)}`]),
+    ...(h.style === undefined ? [] : [`- style: ${styleLine(h.style)}`]),
     `- data: ${h.data}`,
     `- ${h.planned} cases planned, ${h.complete ? "run complete" : `run NOT complete (${h.stoppedReason ?? "stopped"})`}`,
     `- cost: ${usd(h.spentUsd)} of cap ${h.capUsd === null ? "none (own endpoint)" : usd(h.capUsd)}`,

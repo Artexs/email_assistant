@@ -139,7 +139,6 @@ async function run(
     profileFallbacks({
       ownerName: owner?.displayName ?? null,
       address: mailbox.address,
-      orgStyleText: organization.style_text,
     })
   );
   const sources = await listStyleSources(db, ctx, mailboxId, {

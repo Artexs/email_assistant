@@ -26,8 +26,7 @@ import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile } from "./reply-fixtures";
 
 // The name and the signature of a mailbox reach every message of every kind. The committer, the
-// approval view and the panel edit read the profile row of the mailbox; the fallbacks are the signature, the organization
-// style text and the owner name. Every test runs in a transaction that is rolled back.
+// approval view and the panel edit read the profile row of the mailbox; the fallbacks are the signature and the owner name. Every test runs in a transaction that is rolled back.
 const db = testDb();
 
 afterAll(async () => {
@@ -37,7 +36,7 @@ afterAll(async () => {
 const NOW = new Date("2026-11-20T10:00:00Z");
 const CREATED = new Date(NOW.getTime() - HOUR_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
-const STYLE = "Pozdrawiam, Jan";
+const OTHER_SIGNATURE = "Pozdrawiam, Jan";
 
 interface World {
   ctx: TenantContext;
@@ -49,8 +48,8 @@ interface World {
   draftId: string;
 }
 
-// A delegation draft (applied) with its approved send; the organization has the style text of the test.
-async function world(trx: Transaction<DB>, opts: { styleText?: string | null } = {}): Promise<World> {
+// A delegation draft (applied) with its approved send.
+async function world(trx: Transaction<DB>): Promise<World> {
   await pauseOtherMailboxes(trx);
   const box = await createOrgWithMailbox(trx);
   const ctx = { orgId: box.orgId };
@@ -63,11 +62,6 @@ async function world(trx: Transaction<DB>, opts: { styleText?: string | null } =
     .updateTable("mailboxes")
     .set({ folder_map: JSON.stringify({ drafts: "Drafts", sent: "Sent" }) })
     .where("id", "=", box.mailboxId)
-    .execute();
-  await trx
-    .updateTable("organizations")
-    .set({ style_text: opts.styleText === undefined ? null : opts.styleText })
-    .where("id", "=", box.orgId)
     .execute();
   const secret = secrets.encrypt("pw", `mailbox:${box.mailboxId}`);
   await insertCredentials(trx, ctx, {
@@ -138,34 +132,33 @@ describe("the name and the signature of the mailbox in the sent message", () => 
     });
   });
 
-  test("2: no profile row and an organization style text: that text is the signature (no change)", async () => {
+  test("2: no profile row: the owner name is the signature", async () => {
     await withRollback(db, async (trx) => {
-      const w = await world(trx, { styleText: STYLE });
+      const w = await world(trx);
       const raw = await sentRaw(trx, w);
-      expect(raw).toContain(`\r\n\r\n${STYLE}\r\n`);
+      expect(raw).toContain("\r\n\r\nOwner\r\n");
     });
   });
 
-  test("2b: a profile row with a null signature falls back to the organization style text", async () => {
+  test("2b: a profile row with a null signature: the owner name is the signature", async () => {
     await withRollback(db, async (trx) => {
-      const w = await world(trx, { styleText: STYLE });
+      const w = await world(trx);
       await insertMailboxProfile(trx, w.ctx, w.mailboxId, { display_name: "Anna Nowak", signature: null });
       const raw = await sentRaw(trx, w);
-      expect(raw).toContain(`\r\n\r\n${STYLE}\r\n`);
+      expect(raw).toContain("\r\n\r\nOwner\r\n");
     });
   });
 
-  test("3: a profile signature wins over the style text", async () => {
+  test("3: a profile signature is the signature", async () => {
     await withRollback(db, async (trx) => {
-      const w = await world(trx, { styleText: STYLE });
+      const w = await world(trx);
       await insertMailboxProfile(trx, w.ctx, w.mailboxId, { signature: "Anna Nowak, Purchasing" });
       const raw = await sentRaw(trx, w);
       expect(raw).toContain("\r\n\r\nAnna Nowak, Purchasing\r\n");
-      expect(raw).not.toContain(STYLE);
     });
   });
 
-  test("4: no style text and no signature: the owner name signs", async () => {
+  test("4: a profile row with no field set: the owner name signs", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await insertMailboxProfile(trx, w.ctx, w.mailboxId, {});
@@ -176,7 +169,7 @@ describe("the name and the signature of the mailbox in the sent message", () => 
 
   test("5: the profile of another mailbox of the organization does not reach this mailbox", async () => {
     await withRollback(db, async (trx) => {
-      const w = await world(trx, { styleText: STYLE });
+      const w = await world(trx);
       const other = randomUUID();
       await trx
         .insertInto("mailboxes")
@@ -199,7 +192,7 @@ describe("the name and the signature of the mailbox in the sent message", () => 
         .execute();
       await insertMailboxProfile(trx, w.ctx, other, { display_name: "Other Name", signature: "Other signature" });
       const raw = await sentRaw(trx, w);
-      expect(raw).toContain(`\r\n\r\n${STYLE}\r\n`);
+      expect(raw).toContain("\r\n\r\nOwner\r\n");
       expect(raw).not.toContain("Other");
     });
   });
@@ -208,7 +201,7 @@ describe("the name and the signature of the mailbox in the sent message", () => 
 describe("the approval view and the panel edit read the same profile", () => {
   test("6: the card text ends with the profile signature", async () => {
     await withRollback(db, async (trx) => {
-      const w = await world(trx, { styleText: STYLE });
+      const w = await world(trx);
       await insertMailboxProfile(trx, w.ctx, w.mailboxId, { signature: "Anna Nowak" });
       const send = await getSend(trx, w.ctx, w.sendId);
       if (send === undefined) throw new Error("no send");
@@ -219,7 +212,7 @@ describe("the approval view and the panel edit read the same profile", () => {
 
   test("7: an edit that sends the text the card shows is `unchanged`; the same text with another signature is an edit", async () => {
     await withRollback(db, async (trx) => {
-      const w = await world(trx, { styleText: STYLE });
+      const w = await world(trx);
       await insertDefaultSettings(trx, w.ctx, w.mailboxId);
       await updateMailboxSettings(trx, w.ctx, w.mailboxId, {
         mode: "assist",
@@ -245,7 +238,7 @@ describe("the approval view and the panel edit read the same profile", () => {
       expect(await editApproval(deps, w.ctx, w.sendId, { ...input, subject, body: view.body })).toEqual({
         kind: "unchanged",
       });
-      const old = view.body.replace(/Anna Nowak$/, STYLE);
+      const old = view.body.replace(/Anna Nowak$/, OTHER_SIGNATURE);
       expect(await editApproval(deps, w.ctx, w.sendId, { ...input, subject, body: old })).toMatchObject({
         kind: "edited",
       });

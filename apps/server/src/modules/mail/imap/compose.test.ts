@@ -29,7 +29,7 @@ function input(draft: DraftPayload = delegation): BuildInput {
     createdAt: new Date("2026-11-07T08:00:00Z"),
     mailbox: { address: "user@interia.pl" },
     owner: { displayName: "Artek" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     original: {
       fromAddress: "klient@firma.pl",
       subject: "Zażółć gęślą jaźń",

@@ -95,7 +95,7 @@ export async function approvalViewFor(
     createdAt: draftRow.created_at,
     mailbox: { address: mailbox.address },
     owner: { displayName: owner?.display_name ?? mailbox.address },
-    organization: { styleText: organization.style_text, timezone: organization.timezone },
+    organization: { timezone: organization.timezone },
     profile: await mailboxProfileOf(db, ctx, mailbox.id),
     original,
   });

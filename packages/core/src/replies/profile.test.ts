@@ -106,21 +106,17 @@ describe("checkProfileInput (F115 stage 10)", () => {
   });
 });
 
-describe("the fallbacks of the profile (D13)", () => {
-  test("the name falls back to the owner name, then the address; the signature to the style text, then the name", () => {
-    expect(profileFallbacks({ ownerName: "Jan", address: "a@x.test", orgStyleText: "Org text" })).toEqual({
-      name: "Jan",
-      signature: "Org text",
+describe("the fallbacks of the profile", () => {
+  test("the name falls back to the owner name, then the address; the signature to the same text", () => {
+    expect(profileFallbacks({ ownerName: "Wiktor Szalewski", address: "a@x.test" })).toEqual({
+      name: "Wiktor Szalewski",
+      signature: "Wiktor Szalewski",
     });
-    expect(profileFallbacks({ ownerName: "Jan", address: "a@x.test", orgStyleText: "  " })).toEqual({
-      name: "Jan",
-      signature: "Jan",
-    });
-    expect(profileFallbacks({ ownerName: null, address: "a@x.test", orgStyleText: null })).toEqual({
+    expect(profileFallbacks({ ownerName: null, address: "a@x.test" })).toEqual({
       name: "a@x.test",
       signature: "a@x.test",
     });
-    expect(profileFallbacks({ ownerName: " ", address: "a@x.test", orgStyleText: " Org " }).signature).toBe("Org");
+    expect(profileFallbacks({ ownerName: " ", address: "a@x.test" }).signature).toBe("a@x.test");
   });
 
   test("resolveReplyStyle takes the stored text, else the fallback; the style stays null", () => {

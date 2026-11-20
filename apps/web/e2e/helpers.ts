@@ -103,7 +103,7 @@ export async function cleanUpOrg(page: Page): Promise<void> {
         await page.request.delete(`/api/rules/${rule.id}`, { headers });
       }
     }
-    await page.request.patch("/api/organization", { headers, data: { timezone: "Europe/Warsaw", styleText: null } });
+    await page.request.patch("/api/organization", { headers, data: { timezone: "Europe/Warsaw" } });
     await page.request.patch("/api/me/digest-times", { headers, data: { times: [] } });
   } catch {
     // Ignored on purpose.

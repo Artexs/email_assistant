@@ -106,7 +106,6 @@ async function run(
     profileFallbacks({
       ownerName: owner?.displayName ?? null,
       address: mailbox.address,
-      orgStyleText: organization.style_text,
     })
   );
   // The language of the owner; no owner or no locale reads as Polish.

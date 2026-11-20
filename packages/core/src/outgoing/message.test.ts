@@ -35,7 +35,7 @@ function input(draft: DraftPayload, patch: Partial<BuildInput> = {}, mail: Parti
     createdAt,
     mailbox: { address: "User@Interia.pl" },
     owner: { displayName: "Artek" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     original: { ...original, ...mail },
     ...patch,
   };
@@ -162,12 +162,11 @@ describe("buildOutgoingMessage", () => {
     expect(buildOutgoingMessage(input({ ...delegation, language: "en" })).text).toContain("of Fri 6 Nov 10:00");
   });
 
-  test("picks the signature", () => {
-    const sign = (styleText: string | null) =>
-      buildOutgoingMessage(input(delegation, { organization: { styleText, timezone: "Europe/Warsaw" } })).parts.body;
+  test("signs a delegation with the owner name when the profile has no signature, else with the signature", () => {
+    const sign = (signature: string | null) =>
+      buildOutgoingMessage(input(delegation, { profile: { displayName: null, signature } })).parts.body;
     expect(sign(null)).toEndWith("\n\nArtek");
-    expect(sign("  ")).toEndWith("\n\nArtek");
-    expect(sign("Pozdrawiam, Artek")).toEndWith("\n\nPozdrawiam, Artek");
+    expect(sign("Anna")).toEndWith("\n\nAnna");
   });
 
   test("marks links and phones and keeps LLM text on one line", () => {
@@ -263,7 +262,6 @@ describe("buildOutgoingMessage", () => {
 
   describe("the name and the signature of the mailbox (reply drafts)", () => {
     const build = (patch: Partial<BuildInput>) => buildOutgoingMessage(input(delegation, patch));
-    const style = { styleText: "Pozdrawiam, Jan", timezone: "Europe/Warsaw" };
 
     test("the profile name is the From name; no profile or a blank name: the owner name", () => {
       expect(build({ profile: { displayName: "Anna Nowak", signature: null } }).from).toEqual({
@@ -276,13 +274,12 @@ describe("buildOutgoingMessage", () => {
       expect(build({ profile: { displayName: null, signature: null } }).from.name).toBe("Artek");
     });
 
-    test("signature: the profile, else the organization style text, else the owner name", () => {
+    test("signature: the profile, else the owner name", () => {
       const profile = (signature: string | null) => ({ displayName: null, signature });
-      expect(build({ organization: style, profile: profile("Anna") }).parts.body).toEndWith("\n\nAnna");
-      expect(build({ organization: style, profile: profile(null) }).parts.body).toEndWith("\n\nPozdrawiam, Jan");
-      expect(build({ organization: style, profile: null }).parts.body).toEndWith("\n\nPozdrawiam, Jan");
-      expect(build({ organization: style, profile: profile("  ") }).parts.body).toEndWith("\n\nPozdrawiam, Jan");
+      expect(build({ profile: profile("Anna") }).parts.body).toEndWith("\n\nAnna");
       expect(build({ profile: profile(null) }).parts.body).toEndWith("\n\nArtek");
+      expect(build({ profile: null }).parts.body).toEndWith("\n\nArtek");
+      expect(build({ profile: profile("  ") }).parts.body).toEndWith("\n\nArtek");
     });
   });
 

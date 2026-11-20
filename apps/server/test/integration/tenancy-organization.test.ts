@@ -95,68 +95,7 @@ describe("updateOrganizationSettings: timezone", () => {
   });
 });
 
-describe("updateOrganizationSettings: signature", () => {
-  test("sets and clears the text; the audit row holds no text", async () => {
-    await withRollback(db, async (trx) => {
-      const { orgId } = await createOrgWithMailbox(trx);
-      const ctx = { orgId };
-      const set = await updateOrganizationSettings(
-        trx,
-        ctx,
-        { styleText: "Anna Nowak\nCEO" },
-        { actor: ACTOR, now: NOW }
-      );
-      expect(updatedOrg(set).style_text).toBe("Anna Nowak\nCEO");
-      let rows = await auditRows(trx, orgId, "org.style_changed");
-      expect(rows).toHaveLength(1);
-      expect(rows[0]?.data).toEqual({ set: true });
-      expect(JSON.stringify(rows[0]?.data)).not.toContain("Anna");
-
-      const cleared = await updateOrganizationSettings(trx, ctx, { styleText: null }, { actor: ACTOR, now: NOW });
-      expect(updatedOrg(cleared).style_text).toBeNull();
-      rows = await auditRows(trx, orgId, "org.style_changed");
-      expect(rows).toHaveLength(2);
-      expect(rows[1]?.data).toEqual({ set: false });
-
-      await updateOrganizationSettings(trx, ctx, { styleText: null }, { actor: ACTOR, now: NOW });
-      expect(await auditRows(trx, orgId, "org.style_changed")).toHaveLength(2);
-    });
-  });
-});
-
-describe("updateOrganizationSettings: both fields", () => {
-  test("two audit rows for two changes", async () => {
-    await withRollback(db, async (trx) => {
-      const { orgId } = await createOrgWithMailbox(trx);
-      const result = await updateOrganizationSettings(
-        trx,
-        { orgId },
-        { timezone: "Europe/London", styleText: "Anna" },
-        { actor: ACTOR, now: NOW }
-      );
-      const org = updatedOrg(result);
-      expect(org.timezone).toBe("Europe/London");
-      expect(org.style_text).toBe("Anna");
-      expect(await auditRows(trx, orgId, "org.timezone_changed")).toHaveLength(1);
-      expect(await auditRows(trx, orgId, "org.style_changed")).toHaveLength(1);
-    });
-  });
-
-  test("a bad zone with a style text writes nothing", async () => {
-    await withRollback(db, async (trx) => {
-      const { orgId } = await createOrgWithMailbox(trx);
-      const result = await updateOrganizationSettings(
-        trx,
-        { orgId },
-        { timezone: "Mars/Base", styleText: "Anna" },
-        { actor: ACTOR, now: NOW }
-      );
-      expect(result).toEqual({ kind: "bad_timezone" });
-      expect((await orgRow(trx, orgId)).style_text).toBeNull();
-      expect(await auditRows(trx, orgId, "org.style_changed")).toHaveLength(0);
-    });
-  });
-
+describe("updateOrganizationSettings: empty patch", () => {
   test("an empty patch returns the row and writes nothing", async () => {
     await withRollback(db, async (trx) => {
       const { orgId } = await createOrgWithMailbox(trx);
@@ -172,15 +111,9 @@ describe("tenant filter", () => {
     await withRollback(db, async (trx) => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
-      await updateOrganizationSettings(
-        trx,
-        { orgId: b.orgId },
-        { timezone: "Asia/Tokyo", styleText: "B" },
-        { actor: ACTOR, now: NOW }
-      );
+      await updateOrganizationSettings(trx, { orgId: b.orgId }, { timezone: "Asia/Tokyo" }, { actor: ACTOR, now: NOW });
       const rowA = await orgRow(trx, a.orgId);
       expect(rowA.timezone).toBe("Europe/Warsaw");
-      expect(rowA.style_text).toBeNull();
       expect((await orgRow(trx, b.orgId)).timezone).toBe("Asia/Tokyo");
       expect(await auditRows(trx, a.orgId, "org.timezone_changed")).toHaveLength(0);
     });

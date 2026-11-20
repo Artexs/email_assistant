@@ -117,13 +117,12 @@ export async function lockOrganization(trx: Transaction<DB>, ctx: TenantContext)
 export async function updateOrganization(
   trx: Transaction<DB>,
   ctx: TenantContext,
-  patch: { timezone?: string; styleText?: string | null }
+  patch: { timezone?: string }
 ): Promise<OrganizationRow | undefined> {
   return trx
     .updateTable("organizations")
     .set({
       ...(patch.timezone !== undefined ? { timezone: patch.timezone } : {}),
-      ...(patch.styleText !== undefined ? { style_text: patch.styleText } : {}),
     })
     .where("id", "=", ctx.orgId)
     .returningAll()

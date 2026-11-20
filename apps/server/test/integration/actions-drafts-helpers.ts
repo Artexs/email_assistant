@@ -74,7 +74,7 @@ export function depsOf(s: Setup, trx: Db | Transaction<DB>, at: Date = NOW, over
     folders,
     mailbox: { address: s.address, capabilities: { uidplus: true }, folderMap: s.folderMap },
     owner: { displayName: "Owner" },
-    organization: { styleText: null, timezone: "Europe/Warsaw" },
+    organization: { timezone: "Europe/Warsaw" },
     compose: composeMessage,
     sender: null,
     hooks: noDelegationHooks,

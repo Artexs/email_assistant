@@ -85,7 +85,7 @@ export async function editApproval(
             createdAt: oldDraft.created_at,
             mailbox: { address: mailbox.address },
             owner: { displayName: owner?.display_name ?? mailbox.address },
-            organization: { styleText: organization.style_text, timezone: organization.timezone },
+            organization: { timezone: organization.timezone },
             profile: await mailboxProfileOf(trx, ctx, send.mailbox_id),
             original,
           });
