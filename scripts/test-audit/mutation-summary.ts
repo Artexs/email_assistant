@@ -39,7 +39,7 @@ const asNumber = (value: unknown): number => (typeof value === "number" ? value 
 const asString = (value: unknown): string => (typeof value === "string" ? value : "");
 
 // The paths of the report are relative to the work folder (`src/…`); the rows carry the repo path.
-const repoPath = (path: string): string => (path.startsWith(CORE_PREFIX) ? path : `${CORE_PREFIX}${path}`);
+export const repoPath = (path: string): string => (path.startsWith(CORE_PREFIX) ? path : `${CORE_PREFIX}${path}`);
 
 export function readReport(json: unknown): MutationReport {
   const mutants: MutantRow[] = [];
