@@ -19,7 +19,7 @@ Record in the note (step 3) the seed day, the export size in bytes and the run's
 ## Step 2 — docs
 
 - `docs/capabilities/live-lab.md` rule 24.9: shots take the demo source locally through `DEMO_SEED_FILE`; CI and the deploy take it only when the seed is committed at the default path (G2).
-- `docs/release-checklist.md` step "When the demo flow changed": the command with `--seed` of the day-5 export, the flock, the upload line, and "upload only a run whose last log line ends with `demo_source demo: upload candidate`" (a failed run ends `not for upload: run_failed`, a trial seed `not for upload: trial_seed`).
+- `docs/release-checklist.md` step "When the demo flow changed": the command with `--seed` of the day-5 export, the flock, the upload line, and "upload only a run that exited 0 and whose last `[demo-record]` line is `demo_source demo: upload candidate`" (a failed run ends `not for upload: run_failed`, a trial seed `not for upload: trial_seed`).
 - `deploy/README.md` § Docs site: G3 needs an upload candidate; a provisional classifier gate file makes every take `not for upload: gate_provisional` until the owner audit of that file.
 - ADR 0030 § Built (E10b): one line: the demo video records live on the demo seed with a loopback replay of the week's answers.
 

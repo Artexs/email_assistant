@@ -22,14 +22,14 @@ Every `demo:record` run ends with one verdict line, and that line can never say 
 4. Demo source: capture the Playwright run output (keep it streamed to the console too) and run `modelCheck` with `expectedHits` = `plan.history.length + 7` (4 shadow mails, 3 after the tap). Print `demo_llm_checked hits=<n>`, or exit 1 with `demo_llm_unchecked`.
 5. Last: the verdict from the final exit code and the values above, on every exit path (early refusals such as `seed_missing`, and the `demo_record_error` catch). A value the run did not reach counts as not perfect.
 
-The verdict is the last line of the combined log (`> log 2>&1`); if stderr and stdout interleave, make it the last write. It never changes the exit code. A `--setup-only` run (stage 05) makes no video and prints no verdict.
+The verdict is the last `[demo-record]` line of the combined log (`> log 2>&1`); if stderr and stdout interleave, make it the last write of the script. A run that exits 0 ends its log with it. After a failed run, `bun run` adds `error: script "demo:record" exited with code 1`, so read it with `grep -a '\[demo-record\]' <log> | tail -n1`. It never changes the exit code. A `--setup-only` run (stage 05) makes no video and prints no verdict.
 
 Until stage 06 lands, a demo-source run ends `not for upload: run_failed` (correct).
 
 ## Docs
 
 - `live-lab.md` rule 24.10: the verdict line, its reasons, the order of the last lines.
-- `docs/release-checklist.md`: replace "no line `demo_source e2e: not for upload`" with "the last line ends with `demo_source demo: upload candidate`". Stage 07 does the rest.
+- `docs/release-checklist.md`: replace "no line `demo_source e2e: not for upload`" with "upload only a run that exited 0 and whose last `[demo-record]` line is `demo_source demo: upload candidate`". Stage 07 does the rest.
 
 ## Test (`apps/web/e2e/lib/demo/verdict.test.ts`)
 
@@ -57,8 +57,8 @@ Break check: drop the `exitCode` rule; the "P, exit 1" row fails.
 
 ```
 mkdir -p /tmp/f151-s08
-bun run demo:record --seed /tmp/f151-s08/none.json > /tmp/f151-s08/refused.log 2>&1; tail -n1 /tmp/f151-s08/refused.log
-flock /tmp/email-assistant-shared-tests.lock bun run demo:record > /tmp/f151-s08/e2e.log 2>&1; tail -n1 /tmp/f151-s08/e2e.log
+bun run demo:record --seed /tmp/f151-s08/none.json > /tmp/f151-s08/refused.log 2>&1; grep -a '\[demo-record\]' /tmp/f151-s08/refused.log | tail -n1
+flock /tmp/email-assistant-shared-tests.lock bun run demo:record > /tmp/f151-s08/e2e.log 2>&1; grep -a '\[demo-record\]' /tmp/f151-s08/e2e.log | tail -n1
 ```
 
 The first command prints `[demo-record] not for upload: run_failed` (after `seed_missing`). The second prints `[demo-record] not for upload: e2e_source`. Then `bun run check:job`. Quote both last lines.
@@ -66,5 +66,5 @@ The first command prints `[demo-record] not for upload: run_failed` (after `seed
 ## Done when
 
 - Tests 1 and 2 pass.
-- Both Proof logs end with the verdict lines above, and `e2e.log` has no line `demo_source e2e: not for upload`.
+- Both Proof logs have the verdict lines above as their last `[demo-record]` line (`e2e.log` also ends with it), and `e2e.log` has no line `demo_source e2e: not for upload`.
 
