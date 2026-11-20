@@ -897,12 +897,12 @@ Table candidates that the scan did not flag (no row, noted in the evidence): `we
 
 ## Note check
 
-Job base `7180a84a`; master `c3726de2` merged last (no test file or area file changed by that merge).
+Job base `7180a84a`; master `b624c1d6` merged last (a first merge of `c3726de2` changed no file of this area; the second merge brought new and changed `apps/docs` files, e.g. `apps/docs/scripts/workflows.test.ts` and a new `apps/docs/src/demo-video.test.ts`, and no `packages/core` file). The docs keys of the earlier jobs may have moved; the next continuation that reads docs items rescans first. The 150 core keys of this job are unaffected.
 
 - Key rescan at the base (11,997 rows, core 2,117 keys; the 150 keys of this job all resolve): `/tmp/f125-s04c2/rescan.log`.
 - File counts (450 read rows, 210 `not read` rows, 660 in all; the 150 keys of this job are in the read table and not in the `not read` list; the 3 keys in both lists are the `deploy/test/compose-lib.test.ts` cases of the first job; the duplicate read keys are `S11` cases that are also in an `S5` or `S6` group row): `/tmp/f125-s04c2/file-check.log`.
 - Files this branch changes against master (only this review file; no test file, no `bun.lock`, no `.env`): `/tmp/f125-s04c2/own-changes.log`.
-- `bun run typecheck` after the merge, exit 0: `/tmp/f125-s04c2/typecheck.log`.
-- `bun run lint` after the merge, exit 0, 0 errors and 11 warnings: `/tmp/f125-s04c2/lint.log`.
-- `bun run test:unit:ci` after the merge, exit 0, 7,374 pass, 0 fail: `/tmp/f125-s04c2/unit.log`.
+- `bun run typecheck` after the last merge, exit 0: `/tmp/f125-s04c2/typecheck.log`.
+- `bun run lint` after the last merge, exit 0, 0 errors and 11 warnings: `/tmp/f125-s04c2/lint.log`.
+- `bun run test:unit:ci` after the last merge, exit 0, 7,396 pass, 0 fail: `/tmp/f125-s04c2/unit.log`.
 - Exit codes of the three runs: `/tmp/f125-s04c2/status.log`.
