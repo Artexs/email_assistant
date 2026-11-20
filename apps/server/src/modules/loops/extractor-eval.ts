@@ -46,6 +46,7 @@ export function parseExtractorResults(text: string): ExtractorCaseResult[] {
 
 const MIN_LEAK_OVERLAP = 12;
 
+// not an address: the eval text compare folds ask and promise phrases
 const normalize = (text: string): string => text.toLowerCase().replace(/\s+/g, " ").trim();
 
 // A planted string reached a text field when the field holds it, or when the field is a piece of it (at least

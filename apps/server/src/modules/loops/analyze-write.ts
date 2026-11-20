@@ -1,4 +1,4 @@
-import { cleanUserText, defaultDue } from "@ea/core";
+import { cleanUserText, defaultDue, normalizeAddress, storedAddressForm } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
@@ -44,12 +44,19 @@ function askOf(
   row: SentCandidate,
   env: MailboxEnv
 ): { counterpart: string | null; delegate: MailboxEnv["delegates"][number] | undefined } {
-  const to = row.to.map((address) => address.toLowerCase());
-  const delegate = to
-    .map((address) => ({ address, delegate: env.delegates.find((candidate) => candidate.email === address) }))
+  // The match compares by the rule; the counterpart is the stored form (a send recipient), never the rule form.
+  const delegate = row.to
+    .map((address) => ({
+      address,
+      delegate: env.delegates.find((candidate) => normalizeAddress(candidate.email) === normalizeAddress(address)),
+    }))
     .find((match) => match.delegate !== undefined);
-  const first = to[0] ?? row.cc[0]?.toLowerCase() ?? null;
-  return { counterpart: delegate?.address ?? first, delegate: delegate?.delegate };
+  const first = row.to[0] ?? row.cc[0];
+  const counterpart = delegate?.address ?? first;
+  return {
+    counterpart: counterpart === undefined ? null : storedAddressForm(counterpart),
+    delegate: delegate?.delegate,
+  };
 }
 
 // The loops that one answer opens. Every address, the subject and the message ids come from the Sent row, never from
@@ -74,7 +81,8 @@ export function loopsOf(
     waitFromAt: row.sentAt,
     at: env.now,
   };
-  const first = row.to[0]?.toLowerCase() ?? row.cc[0]?.toLowerCase() ?? null;
+  const firstAddress = row.to[0] ?? row.cc[0];
+  const first = firstAddress === undefined ? null : storedAddressForm(firstAddress);
   const loops: NewLoop[] = [];
   if (extraction.expectsReply) {
     // The first To address that an active delegate owns: a hand forward to the delegate.
