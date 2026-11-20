@@ -44,8 +44,7 @@ export const tablesNS: Record<string, ExportTable> = {
   ),
   ops_alerts: secret("host-wide alert state, no organization"),
   org_features: byOrg("org_id", "flag", "enabled", "set_by", "set_at"),
-  organizations: byOrgExcluding(
-    { style_text: "emptied by a migration and no longer read or written; a later migration drops the column" },
+  organizations: byOrg(
     "id",
     "name",
     "timezone",
