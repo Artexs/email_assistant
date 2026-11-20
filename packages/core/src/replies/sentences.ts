@@ -1,0 +1,131 @@
+// Sentence counts of a reply draft: how much is real text, how much is skeleton (a greeting, a fixed thanks, a
+// "Regarding X: [[gap]]" line), and how many sentences lean toward a commitment. A measure only; no check reads it.
+// Pure code.
+
+import { replaceGaps } from "./gaps";
+
+export interface ReplySentenceCounts {
+  /** Sentences with no gap, at least 3 words, and not a fixed thanks. */
+  prose: number;
+  /** Sentences with a gap that are not the "Regarding X: [[gap]]" template. */
+  gapSentences: number;
+  /** Sentences of the form "Regarding X: [[gap]]" (or "W sprawie X: [[gap]]"). */
+  template: number;
+  /** Counted sentences whose text outside the gaps holds a leaning phrase. */
+  leaning: number;
+}
+
+/** Phrases that lean toward a commitment the manager has not made. Matched as whole words, case-insensitive. */
+export const LEANING_PHRASES = {
+  en: [
+    "I would",
+    "I will",
+    "I'll",
+    "we will",
+    "we'll",
+    "my preference",
+    "my position",
+    "I agree",
+    "I accept",
+    "I confirm",
+    "I can confirm",
+    "I keep",
+    "please book",
+  ],
+  pl: [
+    "podtrzymuję",
+    "zgadzam się",
+    "akceptuję",
+    "potwierdzam",
+    "wyślę",
+    "prześlę",
+    "zadzwonię",
+    "odezwę się",
+    "wrócę",
+    "moja preferencja",
+    "moje stanowisko",
+    "proponuję",
+  ],
+} as const satisfies { en: readonly string[]; pl: readonly string[] };
+
+/** True when the draft has no real text: no prose and no sentence that mixes text with a gap. */
+export function isSkeletonDraft(counts: ReplySentenceCounts): boolean {
+  return counts.prose === 0 && counts.gapSentences === 0;
+}
+
+// One private-use character stands for a gap, so a `.` in a label never splits a sentence.
+const MARKER = "\uE000";
+const GREETING_MAX_WORDS = 6;
+const PROSE_MIN_WORDS = 3;
+const TEMPLATE = new RegExp(String.raw`^(?:Regarding|W sprawie) .{1,80}: ${MARKER}\.?$`);
+const ABBREVIATIONS = new Set([
+  "np.",
+  "godz.",
+  "ok.",
+  "tj.",
+  "nr.",
+  "ul.",
+  "dr.",
+  "e.g.",
+  "i.e.",
+  "etc.",
+  "mr.",
+  "ms.",
+  "mrs.",
+]);
+const FIXED_THANKS = new Set(["dziękuję za wiadomość.", "thank you for your email."]);
+const SENTENCE_END = /[.!?](?=\s|$)/g;
+
+const LEANING = new RegExp(
+  [...LEANING_PHRASES.en, ...LEANING_PHRASES.pl]
+    .map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`).replace(/ /g, String.raw`\s+`))
+    .map((phrase) => String.raw`(?<![\p{L}\p{N}])${phrase}(?![\p{L}\p{N}])`)
+    .join("|"),
+  "iu"
+);
+
+function wordCount(text: string): number {
+  return text.split(/\s+/).filter((word) => word !== "").length;
+}
+
+function isGreeting(line: string): boolean {
+  return /[,!]$/.test(line) && wordCount(line) <= GREETING_MAX_WORDS;
+}
+
+/** Splits one line after `.`, `!` or `?` that a space or the end follows, except after an abbreviation. */
+function sentencesOfLine(line: string): string[] {
+  const sentences: string[] = [];
+  let start = 0;
+  for (const match of line.matchAll(SENTENCE_END)) {
+    const end = match.index + 1;
+    const lastWord = line.slice(start, end).split(/\s+/).pop() ?? "";
+    if (ABBREVIATIONS.has(lastWord.toLowerCase())) continue;
+    sentences.push(line.slice(start, end));
+    start = end;
+  }
+  sentences.push(line.slice(start));
+  return sentences.map((sentence) => sentence.trim()).filter((sentence) => sentence !== "");
+}
+
+/** Counts the sentences of a draft by kind. The greeting line is not counted. */
+export function classifyReplySentences(body: string): ReplySentenceCounts {
+  const lines = replaceGaps(body, MARKER)
+    .replaceAll("’", "'")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+  if (lines[0] !== undefined && isGreeting(lines[0])) lines.shift();
+
+  const counts: ReplySentenceCounts = { prose: 0, gapSentences: 0, template: 0, leaning: 0 };
+  for (const sentence of lines.flatMap(sentencesOfLine)) {
+    if (sentence.includes(MARKER)) {
+      counts[TEMPLATE.test(sentence) ? "template" : "gapSentences"] += 1;
+    } else if (wordCount(sentence) >= PROSE_MIN_WORDS && !FIXED_THANKS.has(sentence.toLowerCase())) {
+      counts.prose += 1;
+    } else {
+      continue;
+    }
+    if (LEANING.test(sentence.replaceAll(MARKER, " "))) counts.leaning += 1;
+  }
+  return counts;
+}
