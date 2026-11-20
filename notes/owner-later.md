@@ -39,3 +39,13 @@ Plain list for the owner. Each item says what to do, why, and what waits for it.
 
 - Item 1 (F111 O2): the owner uses LM Studio, not Ollama. `localhost:1234` serves `bielik-11b-v3.1-instruct` and `gemma-3-12b-it`. Done: F111 stage 05 runs on it. No owner step left.
 - Item 3 (F114 U1): the `age` key is on the PC at `~/.config/ea-backup/age-key.txt`. U1 done. U2 (Healthchecks URL) and U3 (operator Telegram group) stay with the owner.
+
+## 5. An old env copy holds values the live env lacks: keep or delete? (F108 stage 06)
+
+- **Why:** an env copy on the VPS holds secrets in plain text. The rule is: no `.env` copy stays on the VPS. Three copies held only lines that the live env holds, and the coordinator deleted them. Two copies hold a value that the live env does not hold, so they stay until you decide.
+- **The two copies** (in `~/email_assistant` on the VPS; key names only, never values):
+  - `.env.bak-f069`: `OPENAI_API_KEY` differs, `WEB_TRUSTED_PROXIES` differs; all other keys equal the live env.
+  - `.env.bak-s5e`: `OPENAI_API_KEY` differs; all other keys equal the live env.
+- **What to do:** if the old OpenAI key is revoked or not needed, tell the coordinator "delete the old env copies". If you want to keep an old value, move it to a place outside the VPS (your password manager) first, then say the same.
+- **Undo:** none after the delete. The live env does not change.
+- **Added:** 2026-11-20.
