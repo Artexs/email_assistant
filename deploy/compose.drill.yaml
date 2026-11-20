@@ -33,6 +33,7 @@ x-drill-server: &drill-server
     WEB_BASE_URL: ""
     GEMINI_API_KEY: ""
     OPENAI_API_KEY: ""
+    DEEPSEEK_API_KEY: ""
     OPENAI_OWN_API_KEY: ""
     # No push key: the drill sends no push (the push sender needs all three `VAPID_*` keys).
     VAPID_PRIVATE_KEY: ""

@@ -44,7 +44,7 @@ The spike of F111 stage 01 sent the real request of the adapter to Ollama 0.40.7
    OPENAI_TIMEOUT_MS=<milliseconds>
    ```
 
-   - `OPENAI_OWN_MODEL` is needed for an own endpoint and read only there. Every role uses it (the light and the strong tier are the same model), so a judged eval run is refused. `OPENAI_MODEL_CLASSIFIER` is removed: a value stops the start.
+   - `OPENAI_OWN_MODEL` is needed for an own endpoint and read only there. Every role uses it (the light and the strong tier are the same model), so a judged eval run is refused. The old per-role model keys are removed: a value stops the start (`deploy/README.md` § LLM provider tiers).
    - `OPENAI_API_KEY` is not needed for an own server. Set `OPENAI_OWN_API_KEY` only if your server wants a key. It is a secret.
    - If the server runs in a container, `127.0.0.1` is the container itself. Use the name of the Ollama container, for example `http://ollama:11434/v1`.
    - For a server on another host, use `https://<host>/v1` and add `OPENAI_ENDPOINT_KIND=own`.

@@ -76,6 +76,7 @@ beforeAll(() => {
       "TELEGRAM_BOT_TOKEN=live-token",
       "GEMINI_API_KEY=live-gemini",
       "OPENAI_API_KEY=live-openai",
+      "DEEPSEEK_API_KEY=live-deepseek",
       "HEARTBEAT_URL=https://hc.invalid/live",
       "SEND_SCOPE=all",
       "POSTGRES_PASSWORD=live-pg",
@@ -157,6 +158,7 @@ describe("deploy/compose.drill.yaml", () => {
         "WEB_BASE_URL",
         "GEMINI_API_KEY",
         "OPENAI_API_KEY",
+        "DEEPSEEK_API_KEY",
         "OPENAI_OWN_API_KEY",
         "VAPID_PRIVATE_KEY",
       ]) {
