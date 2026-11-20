@@ -48,3 +48,23 @@ export const profilePreviewSchema = z.union([
   z.object({ kind: z.literal("failed"), reason: z.string() }),
 ]);
 export type ProfilePreview = z.infer<typeof profilePreviewSchema>;
+
+// `POST /api/mailboxes/:id/profile/style-suggestion`: the body is `{}`; a key is a 400.
+export const styleSuggestionBodySchema = z.strictObject({});
+
+// 200: the suggested text and the number of sent mails that it read, or `failed` with a code (no model client, the daily cap, a text
+// that failed a check, an answer that broke the schema, a provider error). The text is for the owner to edit; the server stores none.
+export const styleSuggestionFailures = ["llm_off", "llm_cap", "checks", "output", "provider"] as const;
+export const styleSuggestionAnswerSchema = z.union([
+  z.strictObject({ text: z.string(), count: z.number().int().nonnegative() }),
+  z.strictObject({ kind: z.literal("failed"), reason: z.enum(styleSuggestionFailures) }),
+]);
+export type StyleSuggestionAnswer = z.infer<typeof styleSuggestionAnswerSchema>;
+
+// 409: sent tracking is off, fewer sent mails than the minimum (with the count found), or an OAuth mailbox.
+export const styleSuggestionConflictSchema = z.union([
+  z.strictObject({ error: z.literal("sent_off") }),
+  z.strictObject({ error: z.literal("too_few"), count: z.number().int().nonnegative() }),
+  z.strictObject({ error: z.literal("blocked"), reason: z.literal("oauth_mailbox") }),
+]);
+export type StyleSuggestionConflict = z.infer<typeof styleSuggestionConflictSchema>;
