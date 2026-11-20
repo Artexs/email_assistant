@@ -1,4 +1,4 @@
-import { costPerMail, type LlmEndpointKind } from "@ea/core";
+import { costPerMail, type LlmEndpointKind, MINUTE_MS } from "@ea/core";
 
 import type { CaseUsage } from "./eval";
 
@@ -15,7 +15,7 @@ export interface EvalBudget {
 }
 
 // The waits between the tries of one soft-failed call: a case, and the judge pass of a case, use the same list.
-export const RETRY_WAITS_MS = [10_000, 20_000, 40_000, 60_000];
+export const RETRY_WAITS_MS = [10_000, 20_000, 40_000, MINUTE_MS];
 
 export const BUDGET_STOP_REASON = "budget cap reached: resume after the cap allows it";
 

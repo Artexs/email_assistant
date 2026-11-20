@@ -1,4 +1,11 @@
-import { type Category, categorySchema, localDateTime, type SenderHistory, type UrgencyProfile } from "@ea/core";
+import {
+  type Category,
+  categorySchema,
+  localDateTime,
+  type SenderHistory,
+  type UrgencyProfile,
+  DAY_MS,
+} from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -47,7 +54,7 @@ export async function readSenderHistory(
     testMail: TestMailRule;
   }
 ): Promise<NonNullable<ClassifierExtras["senderHistory"]> | null> {
-  const since = new Date(input.before.getTime() - SENDER_HISTORY_DAYS * 24 * 3_600_000);
+  const since = new Date(input.before.getTime() - SENDER_HISTORY_DAYS * DAY_MS);
   const { rows } = await sql<{ category: string | null; n: number }>`
     WITH earlier AS (
       SELECT emails.id

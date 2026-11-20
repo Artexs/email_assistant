@@ -21,6 +21,7 @@ import {
   type MembershipRole,
   type OutMessage,
   type UserLocale,
+  DAY_MS,
 } from "@ea/core";
 import { z } from "zod";
 
@@ -55,12 +56,12 @@ import { llmPauseToShow } from "./llm-pause";
 import { lastSentDigestEnd } from "./repo";
 
 export const DIGEST_ITEM_LIMIT = 100;
-export const DIGEST_MAX_PERIOD_MS = 7 * 24 * 3_600_000;
-export const FIRST_DIGEST_LOOKBACK_MS = 24 * 3_600_000;
-export const WAITING_WINDOW_MS = 7 * 24 * 3_600_000;
-const HANDLED_WINDOW_MS = 7 * 24 * 3_600_000;
+export const DIGEST_MAX_PERIOD_MS = 7 * DAY_MS;
+export const FIRST_DIGEST_LOOKBACK_MS = DAY_MS;
+export const WAITING_WINDOW_MS = 7 * DAY_MS;
+const HANDLED_WINDOW_MS = 7 * DAY_MS;
 // The spam review line counts at most one day back, as far as the default range of the Activity page that it links to.
-export const SPAM_REVIEW_MAX_PERIOD_MS = 24 * 3_600_000;
+export const SPAM_REVIEW_MAX_PERIOD_MS = DAY_MS;
 
 const modeSchema = z.enum(mailboxModes);
 

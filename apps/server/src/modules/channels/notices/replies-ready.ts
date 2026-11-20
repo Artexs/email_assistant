@@ -1,4 +1,4 @@
-import { NoticeViewError } from "@ea/core";
+import { NoticeViewError, HOUR_MS } from "@ea/core";
 
 import { listOpenReplySends, markNotified } from "../../actions";
 import { isFeatureOn } from "../../tenancy";
@@ -13,7 +13,7 @@ import { inTransaction, queue, warnSkipped, type Detector, type OrgRun } from ".
 // It counts the open reply sends of the organization that the DB facts do not close (not answered, not suspicious). Quiet hours hold it
 // in the sender, like every notice. An owner whose Telegram consent does not cover reply data gets the count, the panel link and one fixed
 // line, and no Review button (`replyConsentOf`).
-export const REPLIES_READY_GAP_MS = 2 * 3_600_000;
+export const REPLIES_READY_GAP_MS = 2 * HOUR_MS;
 
 async function detectRepliesReady(run: OrgRun): Promise<void> {
   const { db, ctx, owners, now, timeZone } = run;
