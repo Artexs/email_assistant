@@ -1,4 +1,4 @@
-import { barCategories, categories, DEFAULT_MAILS_PER_DAY, llmPrices, wilsonInterval } from "@ea/core";
+import { barCategories, categories, DEFAULT_MAILS_PER_DAY, EXIT, llmPrices, wilsonInterval } from "@ea/core";
 
 import type { CasesEvalReport, EvalReport } from "./eval";
 import { num, pct, table, usd } from "./eval-format";
@@ -253,8 +253,8 @@ export function renderEvalReport(
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
-// 0 = pass, 1 = a check failed, 2 = the run is not complete (resume with the same command).
-export function evalExitCode(report: EvalReport): 0 | 1 | 2 {
+// 0 = pass, 1 = a check failed, 4 = the run is not complete (resume with the same command; docs/cli.md).
+export function evalExitCode(report: EvalReport): 0 | 1 | 4 {
   switch (report.kind) {
     case "real":
       return 0;
@@ -265,6 +265,6 @@ export function evalExitCode(report: EvalReport): 0 | 1 | 2 {
       if (report.complete && report.judge !== null && report.judge.errors / report.judge.judged > MAX_ERROR_SHARE) {
         return 1;
       }
-      return report.complete ? 0 : 2;
+      return report.complete ? 0 : EXIT.incomplete;
   }
 }

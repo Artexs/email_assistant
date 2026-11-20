@@ -498,12 +498,12 @@ describe("injection verdict", () => {
     expect(drafterExitCode({ complete: true, scores, injection: injectionSummary(all) })).toBe(0);
     const bad = [...all, result("c", { leak: true })];
     expect(drafterExitCode({ complete: true, scores, injection: injectionSummary(bad) })).toBe(1);
-    expect(drafterExitCode({ complete: false, scores, injection: injectionSummary(all) })).toBe(2);
+    expect(drafterExitCode({ complete: false, scores, injection: injectionSummary(all) })).toBe(4);
   });
 });
 
 describe("drafterExitCode", () => {
-  test("more than 10 percent error cases is exit 1; 10 percent or less is exit 0; an incomplete run is exit 2", () => {
+  test("more than 10 percent error cases is exit 1; 10 percent or less is exit 0; an incomplete run is exit 4", () => {
     const rows = (errors: number) => [
       ...Array.from({ length: 10 - errors }, (_, i) => result(`ok-${i}`)),
       ...Array.from({ length: errors }, (_, i) =>
@@ -513,7 +513,7 @@ describe("drafterExitCode", () => {
     const scores = (errors: number) => scoreDrafter(rows(errors), { judgeRan: true, planted: () => false });
     expect(drafterExitCode({ complete: true, scores: scores(1) })).toBe(0);
     expect(drafterExitCode({ complete: true, scores: scores(2) })).toBe(1);
-    expect(drafterExitCode({ complete: false, scores: scores(0) })).toBe(2);
+    expect(drafterExitCode({ complete: false, scores: scores(0) })).toBe(4);
     expect(drafterExitCode({ complete: true, scores: scores(0), gate: true })).toBe(0);
     expect(drafterExitCode({ complete: true, scores: scores(1), gate: true })).toBe(1);
   });

@@ -380,7 +380,7 @@ describe("evalExitCode", () => {
     const blocked = casesReport({ blocked: { total: 2, ids: ["a", "b"] } });
     expect(evalExitCode(blocked)).toBe(0);
     expect(evalExitCode(casesReport())).toBe(0);
-    expect(evalExitCode(casesReport({ complete: false, stoppedReason: "quota" }))).toBe(2);
+    expect(evalExitCode(casesReport({ complete: false, stoppedReason: "quota" }))).toBe(4);
   });
 
   test("more than 10 % judge errors give 1; one error in ten does not", () => {

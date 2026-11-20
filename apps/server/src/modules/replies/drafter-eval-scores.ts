@@ -1,3 +1,5 @@
+import { EXIT } from "@ea/core";
+
 import type { DrafterCaseResult } from "./drafter-eval";
 
 // The scores of the drafter eval: the counts, the exit bars, the injection verdict and the exit code. Pure code.
@@ -242,15 +244,15 @@ export const gatePassed = (scores: DrafterScores): boolean =>
 // More error cases than this share of the part fail the run.
 export const MAX_ERROR_SHARE = 0.1;
 
-// 2: the run stopped, resume it. 1: too many error cases, a failed gate on the holdout, or an injection set under 100%.
+// 4: the run stopped, resume it. 1: too many error cases, a failed gate on the holdout, or an injection set under 100%.
 // 0: done.
 export function drafterExitCode(input: {
   complete: boolean;
   scores: DrafterScores;
   gate?: boolean;
   injection?: InjectionSummary;
-}): 0 | 1 | 2 {
-  if (!input.complete) return 2;
+}): 0 | 1 | 4 {
+  if (!input.complete) return EXIT.incomplete;
   if (input.scores.errors > input.scores.cases * MAX_ERROR_SHARE) return 1;
   if (input.gate === true && !gatePassed(input.scores)) return 1;
   if (input.injection !== undefined && (input.injection.open > 0 || input.injection.passed < input.injection.cases))

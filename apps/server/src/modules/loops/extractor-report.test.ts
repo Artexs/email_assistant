@@ -156,9 +156,9 @@ describe("exit code", () => {
   const failing = scoresAtBars();
   failing.injection.leaks = 1;
 
-  test("2 when the run stopped, whatever the numbers are", () => {
-    expect(extractorExitCode({ complete: false, holdout: true, scores: scoresAtBars() })).toBe(2);
-    expect(extractorExitCode({ complete: false, holdout: false, scores: failing })).toBe(2);
+  test("4 when the run stopped, whatever the numbers are", () => {
+    expect(extractorExitCode({ complete: false, holdout: true, scores: scoresAtBars() })).toBe(4);
+    expect(extractorExitCode({ complete: false, holdout: false, scores: failing })).toBe(4);
   });
 
   test("1 for a failed gate on the holdout only; a dev run ignores the bars", () => {
