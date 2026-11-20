@@ -30,7 +30,8 @@ const labels = {
 const rows = costRows();
 ---
 
-<table>
+<!-- Starlight makes a table scroll on a narrow screen. The table holds no link, so it takes focus itself: a keyboard user can scroll it (axe `scrollable-region-focusable`). -->
+<table tabindex="0">
   <caption>{labels.caption}</caption>
   <thead>
     <tr>

@@ -1,12 +1,13 @@
 # Review: `packages/core`, `apps/web`, `apps/docs`, `deploy/test`, `tools` (F125 stage 04)
 
-Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `535e6f76` (branch head after the merge of master at the job start of the first job). Continuation 1 base: `1d4db8b4` (branch head at its start; it equals master then).
+Reader review by `plan.md` § Reader method and § Rules for the classes. Read-only on tests. Base of this review: `535e6f76` (branch head after the merge of master at the job start of the first job). Continuation 1 base: `1d4db8b4` (branch head at its start; it equals master then). Continuation 2 base: `7180a84a` (branch head at its start, after the merge of master by continuation 1).
 
 Notes for the reader:
 
 - **Keys.** Keys are `file:line` at the base above, from a fresh `bun scripts/test-audit/scan-cli.ts` run (`/tmp/f125-s04/rescan/`), not from the committed `cases-static.tsv`. Reason: master changed 9 files of this area after the stage 03 data (`deploy/test/backup`, `compose-drill`, `release-identity`; new `check-server-env`, `compose-lib`, `docs-env-split`, `env-split`; `apps/docs/scripts/workflows`, `shots-build`, new `apps/docs/src/extra-pages`): the committed keys of these files are stale and the committed `groups.tsv` ids (`B`/`T` numbers) differ from the fresh ones. Group ids in this file are the fresh ones; each group row lists all its keys. Times come from `cases.tsv` joined by file and name; a case that is new since stage 02 has no time (0.000). Core keys, `mutation-tests.tsv` and `mutation-survived.tsv` stay valid: no core test file changed after the mutation run (`git diff 4ce3f351 HEAD -- packages/core` shows only `legal/subprocessors.ts`).
 - **Items.** An item is one flagged case, or one B or T group whose first key is in this area, or one core test file with `S10` cases and no other flag. Order: (a) `S1`, `S7`, `not-run`, then `S8` by file and line; (b) `S2`/`S3`/`S4`; (c) B groups; (d) T groups; (e) core `S11` (one item per distinct call-site key), then core `S10` files; (f) `S9`. The area is `packages/core`, `apps/web/src`, `apps/web/integrations`, `apps/docs/src`, `apps/docs/integrations`, `apps/docs/scripts`, `deploy/test`, `tools/fake-telegram/src`, `tools/mail-oauth-spike` (unit only; `apps/web/e2e`, `apps/docs/e2e` and `tools/fake-telegram/test` belong to stage 06). A case that is in a group and has no other flag is read inside its group row only. A case with `S8` and a group flag (`deploy/test/compose-lib.test.ts` 4a, 4c, 4d) is read as its own item and its group stays in the `not read` list.
 - **Continuation 1.** Rescan at `1d4db8b4`: `bun scripts/test-audit/scan-cli.ts --out /tmp/f125-s04c1/rescan` gave 11,983 rows (core 2,108 keys). Against the committed `cases-static.tsv` the fresh core scan has 12 new keys and 1 removed key: `llm-providers.test.ts` (7 new cases), `metrics/m7.test.ts` (2 new keys, 1 removed), `metrics/cost-model.test.ts` (2 new) and `site.test.ts` (1 new). `git diff 4ce3f351 HEAD` on core test files shows only `llm-providers.test.ts` and `m7.test.ts` (the mutation run base), so the mutation data is stale only for those two files; `cost-model.test.ts` changed between the stage 02 scan and the mutation run (commit `035b982f`) and the cause for `site.test.ts` is not checked. All 767 core keys in the first `not read` list resolve in the fresh scan, and the 150 items read here join to the mutation data by case name with 0 mismatches. The new `llm-providers.test.ts` and `m7.test.ts` cases have no mutation data, so no `S10` or `S11` flag can exist for them: they are not items of this stage; the coordinator may order a mutation rerun. Keys in the rows below are the fresh ones.
+- **Continuation 2.** Rescan at `7180a84a`: `bun scripts/test-audit/scan-cli.ts --out /tmp/f125-s04c2/rescan` gave 11,997 rows (core 2,117 keys; log `/tmp/f125-s04c2/rescan.log`). Against the continuation 1 rescan the only change in core is 9 new keys of one new file, `packages/core/src/legal/seven-day.test.ts` (F153 stage 01); it has no mutation data, so it is not an item (the coordinator may order a mutation rerun). All 150 keys read here resolve in the fresh scan, and each joins `cases.tsv` and `mutation-tests.tsv` by key; every one has 0 kills and `in_cover` false, as the `S11` flag says. Keys in the rows below are the fresh ones.
 - **Cap.** The first job read 150 items of 660 (cap 150 per job). Tier (a) alone has 151 items, because it holds 1 `S1` case, 23 `not-run` cases of the spike kit and 127 `S8` cases of `deploy/test`, `apps/docs/scripts`, `apps/web`, `apps/docs/src` and `tools/fake-telegram`; so the first job read only tier (a). No core item was read in it, and the plan's two continuations (450 items for the whole stage) cannot reach the core `S11` and `S10` items: 338 `S11` keys and 133 `S10` files. The coordinator decides whether to raise the cap for a core-only reader job (Decisions for the owner in the final message).
 - **S8 is mostly a false positive in this area.** The flagged cases run a real script, parse a real Compose or workflow file, or test a fake of a test tool, so `S8` is expected (stage 04 rules). Every `S8` row is `KEEP` unless another flag applies. The K rule is named where one applies: K3 for deploy and secret rules, K2 for completeness checks.
 - **Columns.** `Lines` = test lines the action removes (0 for KEEP, REWRITE-WEAK and FIX-NEVER-RUNS). `Time (s)` = JUnit time of the case at the stage 02 run (not time saved).
@@ -15,7 +16,7 @@ Notes for the reader:
 
 ## Core
 
-Continuation job 1 read 150 core items (the 2 `S2` items, the 2 `S5` groups B5 and B6, the 21 `S6` groups T18 to T38, and the first 125 `S11` keys in file order). The first job read none. GAP rows come from `mutation-survived.tsv`.
+Continuation job 1 read 150 core items (the 2 `S2` items, the 2 `S5` groups B5 and B6, the 21 `S6` groups T18 to T38, and the first 125 `S11` keys in file order). The first job read none. Continuation job 2 read 150 more core items: the next 150 `S11` keys in file order, from `packages/core/src/sim/plan-bank.test.ts:157` to `packages/core/src/web/mail-oauth.test.ts:21`; 61 `S11` keys are left, from `packages/core/src/web/me.test.ts:54` on. GAP rows come from `mutation-survived.tsv`.
 
 ### GAP
 
@@ -146,7 +147,7 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | GAP121 | `packages/core/src/triage/suspicious.ts` | `domainOfAddress` | 5 | 254:7 ConditionalExpression → `false` ; 254:7 EqualityOperator → `at <= 0` |
 | GAP122 | `packages/core/src/web/csp.ts` | `parseDirectives` | 5 | 41:10 MethodExpression → `content.split(";").map(part => part.trim())` ; 44:23 ConditionalExpression → `true` |
 
-### Read (150)
+### Read (300)
 
 | Item | Keys | Flags | Action | Rule | Kept key | Evidence | Lines | Time (s) |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -300,161 +301,161 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | `packages/core/src/sim/plan-bank.test.ts:122` | `packages/core/src/sim/plan-bank.test.ts:122` | S11 | KEEP | none | – | `receivedAt` is a weekday in the two bank weeks, local hour 7 to 18. Range checks; zero kills; no twin. | 0 | 0.012 |
 | `packages/core/src/sim/plan-bank.test.ts:136` | `packages/core/src/sim/plan-bank.test.ts:136` | S11 | KEEP | none | – | Another seed gives another urgent dev id set. A `not.toEqual` (weak negative form), but it is the only seed check and a stricter form (an exact set) would pin the random generator. Unsure. | 0 | 0.052 |
 | `packages/core/src/sim/plan-bank.test.ts:146` | `packages/core/src/sim/plan-bank.test.ts:146` | S11 | KEEP | K2 | – | Batches hold at most 25 slots and count from `batch-001` per part; ids sorted. List shape check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:157` | `packages/core/src/sim/plan-bank.test.ts:157` | S11 | KEEP | none | – | Style variety of the holdout hard slots (not the reply-injection ones): more than one length and more than one signature. Bound `> 1` is weak, but an exact count would pin the random generator. Zero kills; no twin. Unsure. | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:163` | `packages/core/src/sim/plan-bank.test.ts:163` | S11 | KEEP | none | – | Slot-level facts of the hard slots: urgent has a source, delegation has a delegate (except missing data), one tag per slot, `urgent_no_keyword` has source `text` and no `contextRef`. The rule-level twin (`hard-cases.test.ts:78`) tests the rule on a draft, not the bank slots. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:179` | `packages/core/src/sim/plan-bank.test.ts:179` | S11 | KEEP | none | – | Every slot history passes `senderHistorySchema`; one persona has one history per part (exact JSON equality). Zero kills; no twin. | 0 | 0.002 |
+| `packages/core/src/sim/plan-bank.test.ts:191` | `packages/core/src/sim/plan-bank.test.ts:191` | S11 | KEEP | none | – | The 4 replaced senders (bounce, `vip_looks_like_spam`) carry the history of the final persona: bounce is a `system` persona with no `List-Id` and exact bulk signals; the lookalike is a vip. Exact values; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:208` | `packages/core/src/sim/plan-bank.test.ts:208` | S11 | KEEP | none | – | History profiles for three persona groups (boss, system, phishing) with count ranges and relation. Ranges, not pins; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-bank.test.ts:227` | `packages/core/src/sim/plan-bank.test.ts:227` | S11 | KEEP | none | – | `batchSlots` sets the part and batch (25 per batch, start index 3) and restores id order. Exact values; the only direct `batchSlots` case; zero kills. | 0 | 0.000 |
+| `packages/core/src/sim/plan-sent.test.ts:32` | `packages/core/src/sim/plan-sent.test.ts:32` | S11 | KEEP | none | – | The sent-mail bank is byte-equal for one seed and differs for the next seed. Determinism of `planSentBank` (a different function from `plan-bank.test.ts:38`); zero kills. | 0 | 0.236 |
+| `packages/core/src/sim/plan-sent.test.ts:54` | `packages/core/src/sim/plan-sent.test.ts:54` | S11 | KEEP | none | – | Polish share is 60% in each part (150 of 250 holdout, 30 of 50 dev, ±1). Exact share; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-sent.test.ts:59` | `packages/core/src/sim/plan-sent.test.ts:59` | S11 | KEEP | none | – | Shares of `expectsReply` (50%), dated promise (25%) and stated due (30%) with exact holdout pins 125, 63 and 38. Zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/sim/plan-sent.test.ts:72` | `packages/core/src/sim/plan-sent.test.ts:72` | S11 | KEEP | none | – | At least 15% of the `expectsReply` slots go to a delegate; no other slot (except `many_recipients`) has a delegate first. Both sides of one rule; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-sent.test.ts:86` | `packages/core/src/sim/plan-sent.test.ts:86` | S11 | KEEP | none | – | `sentAt` is in the scenario week and between 07:00 and 19:00 local; the weekend share is exactly 50 (holdout) and 10 (dev). Zero kills; no twin. | 0 | 0.036 |
+| `packages/core/src/sim/plan-sent.test.ts:100` | `packages/core/src/sim/plan-sent.test.ts:100` | S11 | KEEP | K2 | – | Slot ids are unique across both parts and match the id pattern. List check (K2), same rule as `plan-bank.test.ts:53` for another bank. | 0 | 0.000 |
+| `packages/core/src/sim/plan-sent.test.ts:106` | `packages/core/src/sim/plan-sent.test.ts:106` | S11 | KEEP | K2 | – | Every sent hard-case tag has at least 6 holdout and 1 dev slots. Iterates `sentHardCaseRules` (K2). | 0 | 0.000 |
+| `packages/core/src/sim/plan-sent.test.ts:113` | `packages/core/src/sim/plan-sent.test.ts:113` | S11 | KEEP | none | – | Label rules per tag: `conditional_promise` has no promise; `thanks_only`, `fyi_team`, `reported_speech`, `many_recipients` do not expect a reply; `past_date` and `far_date` expect one with no due; `time_word_due` has a word due. Exact values per tag; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-sent.test.ts:132` | `packages/core/src/sim/plan-sent.test.ts:132` | S11 | KEEP | none | – | Structure per tag: more than 10 recipients, thread present, quoted flag, `other_thread_subject` differs from the brief topic, `fyi_team` has 2 or more recipients. One case holds many tag rules (a failure shows only the first); a `test.each` over tags is possible but changes no coverage. Zero kills; no cut. | 0 | 0.001 |
+| `packages/core/src/sim/plan-sent.test.ts:155` | `packages/core/src/sim/plan-sent.test.ts:155` | S11 | KEEP | none | – | Every due label resolves to a date; a stated past or far date does not. Zero kills; no twin. | 0 | 0.047 |
+| `packages/core/src/sim/plan-sent.test.ts:171` | `packages/core/src/sim/plan-sent.test.ts:171` | S11 | KEEP | none | – | Recipients are scenario persona keys of person groups; the executive is never the sender's recipient. Zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/sim/plan-sent.test.ts:183` | `packages/core/src/sim/plan-sent.test.ts:183` | S11 | KEEP | none | – | A brief never names a label word (`expects_reply`, `expectsReply`, `promiseDue`). Negative regex over every slot; keeps the answer out of the generator input. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:45` | `packages/core/src/sim/plan-week.test.ts:45` | S11 | KEEP | none | – | The default spec gives 830 mails over 7 days (exact per-day totals). Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:51` | `packages/core/src/sim/plan-week.test.ts:51` | S11 | KEEP | none | – | Day mix by largest remainder with a tie by mix order; exact counts for day 1, day 6 and the week. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:68` | `packages/core/src/sim/plan-week.test.ts:68` | S11 | KEEP | none | – | `planWeek` twice gives the same JSON. Determinism of another planner than `plan-bank.test.ts:38`; zero kills. | 0 | 0.028 |
+| `packages/core/src/sim/plan-week.test.ts:95` | `packages/core/src/sim/plan-week.test.ts:95` | S11 | KEEP | none | – | A parent is an earlier mail of the same thread, at least 10 minutes before, at most 5 deep, same topic and same other party. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:113` | `packages/core/src/sim/plan-week.test.ts:113` | S11 | KEEP | none | – | Local date follows the slot id; received minutes are unique; weekday mails off hours stay within 2 per day; weekend hours 8 to 22. Zero kills; no twin. | 0 | 0.021 |
+| `packages/core/src/sim/plan-week.test.ts:130` | `packages/core/src/sim/plan-week.test.ts:130` | S11 | KEEP | none | – | Every delegation slot has a behaviour; behaviour counts equal the shares within rounding. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:151` | `packages/core/src/sim/plan-week.test.ts:151` | S11 | KEEP | none | – | Each weekday has one slot of each phishing tag, two auto-replies and one bounce; weekend slots have no tag; phishing slots are spam from a phishing persona. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:168` | `packages/core/src/sim/plan-week.test.ts:168` | S11 | KEEP | none | – | Batches are in time order and ids are sorted; the batch name has the `batch-NNN` form. Zero kills; no twin. | 0 | 0.001 |
+| `packages/core/src/sim/plan-week.test.ts:182` | `packages/core/src/sim/plan-week.test.ts:182` | S11 | KEEP | none | – | Polish share is 70% of the mixed mail; urgency sources add up to the urgent slots and `text` is half. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:191` | `packages/core/src/sim/plan-week.test.ts:191` | S11 | KEEP | none | – | No brief is longer than 200 characters or holds a category word. Negative regex; same idea as `plan-sent.test.ts:183` for another bank. Zero kills. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:200` | `packages/core/src/sim/plan-week.test.ts:200` | S11 | KEEP | K2 | – | The week history passes its schema, covers 30 days, and every incoming sender address has an entry. Schema and key-list check (K2). | 0 | 0.001 |
+| `packages/core/src/sim/plan-week.test.ts:210` | `packages/core/src/sim/plan-week.test.ts:210` | S11 | KEEP | none | – | A phishing or spammer persona is new with no mail in the history. Exact `[0, "new"]`; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:223` | `packages/core/src/sim/plan-week.test.ts:223` | S11 | KEEP | none | – | The history JSON holds no persona voice text and no display name. Negative check of leaked persona text; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/plan-week.test.ts:231` | `packages/core/src/sim/plan-week.test.ts:231` | S11 | KEEP | none | – | A 30-day boss history is a third of the 90-day ranges, over 20 seeds. Range bounds; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/random.test.ts:6` | `packages/core/src/sim/random.test.ts:6` | S11 | KEEP | none | – | `createRng(97)` gives three fixed values to 6 digits. A pin of the generator that every bank and test fixture depends on; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/random.test.ts:12` | `packages/core/src/sim/random.test.ts:12` | S11 | KEEP | none | – | `shuffle` is repeatable for one seed, leaves the input unchanged and keeps the items. Three properties; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/random.test.ts:30` | `packages/core/src/sim/random.test.ts:30` | S11 | KEEP | none | – | `deriveSeed` gives each label its own stream and is stable for one label and seed. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/random.test.ts:38` | `packages/core/src/sim/random.test.ts:38` | S11 | KEEP | none | – | `largestRemainder` for five share and total pairs with exact counts. Table-like but the expects differ (one checks only the sum); no merge proposed. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/sim/random.test.ts:46` | `packages/core/src/sim/random.test.ts:46` | S11 | KEEP | none | – | `quota` shuffles the items and keeps the counts (6 of `a`, 10 in all). Zero kills; the only `quota` case. | 0 | 0.000 |
+| `packages/core/src/sim/scenario.test.ts:22` | `packages/core/src/sim/scenario.test.ts:22` | S11 | KEEP | none | – | An older scenario file without `voice` and `signature` parses with empty defaults; a bad `tone` is refused. Compatibility pin of stored scenario files; schema check (K2). Zero kills. | 0 | 0.001 |
+| `packages/core/src/sim/sent-hard-cases.test.ts:6` | `packages/core/src/sim/sent-hard-cases.test.ts:6` | S11 | KEEP | K2 | – | The 13 sent hard-case tags are fixed in order; each has labels, a hint within `HINT_MAX` and a unique short id. Registry completeness (K2). | 0 | 0.000 |
+| `packages/core/src/sim/sent-hard-cases.test.ts:45` | `packages/core/src/sim/sent-hard-cases.test.ts:45` | S11 | KEEP | none | – | A hint names no label word. Negative regex over the registry (K2 iteration); same idea as `plan-sent.test.ts:183` for the hint text, not the brief. Zero kills. | 0 | 0.000 |
+| `packages/core/src/sim/sent-slot.test.ts:37` | `packages/core/src/sim/sent-slot.test.ts:37` | S11 | KEEP | K2 | – | An `ask` or `promise` of 81 characters is refused by the slot schema. Schema boundary check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/sent-slot.test.ts:91` | `packages/core/src/sim/sent-slot.test.ts:91` | S11 | KEEP | K3 | – | A blind sent case refuses a `labels` key and a `hardCases` field and has exactly the eight blind keys. The blind set never shows a label (tuning never sees the answers of the holdout set, `.agents/limen/styleguide.md` § Prefer); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/sent-slot.test.ts:99` | `packages/core/src/sim/sent-slot.test.ts:99` | S11 | KEEP | K2 | – | A label date must be a calendar day (`20.11.2026` refused) and the hash must be sha256 hex. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/sim/sent-slot.test.ts:104` | `packages/core/src/sim/sent-slot.test.ts:104` | S11 | KEEP | K2 | – | The sent parts and the incoming parts share no member; `simParts` is fixed. Enum and list check (K2). | 0 | 0.000 |
+| `packages/core/src/site.test.ts:63` | `packages/core/src/site.test.ts:63` | S11 | KEEP | none | – | `PRODUCT_NAME` is `Email Assistant`. A one-line constant pin; zero kills. It is a constant, so a rename needs the test change; the pin guards the name that docs and mail texts show. Unsure. | 0 | 0.000 |
+| `packages/core/src/tenancy.test.ts:6` | `packages/core/src/tenancy.test.ts:6` | S11 | KEEP | K2 | – | `membershipRoleSchema` accepts `owner` and `assistant`. Zod enum check (K2); named in the stage 04 rules as known zero-kill. | 0 | 0.000 |
+| `packages/core/src/tenancy.test.ts:11` | `packages/core/src/tenancy.test.ts:11` | S11 | KEEP | K2 | – | `membershipRoleSchema` refuses `admin` and an empty string. Zod enum check (K2); a role the model does not know must not parse (tenancy, K3 neighbour). | 0 | 0.000 |
+| `packages/core/src/tenancy.test.ts:18` | `packages/core/src/tenancy.test.ts:18` | S11 | KEEP | K2 | – | `userLocaleSchema` accepts `pl` and `en` and refuses `de`. Zod enum check (K2); one case holds both sides. | 0 | 0.000 |
+| `packages/core/src/testmail/batch.test.ts:156` | `packages/core/src/testmail/batch.test.ts:156` | S11 | KEEP | none | – | A batch without `delegatesActive` parses with `false`. Default value of a stored file field; schema check (K2). Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/testmail/batch.test.ts:180` | `packages/core/src/testmail/batch.test.ts:180` | S11 | KEEP | K2 | – | `batchCategories` is the test categories plus `delegation`. List equality (K2). | 0 | 0.000 |
+| `packages/core/src/testmail/batch.test.ts:195` | `packages/core/src/testmail/batch.test.ts:195` | S11 | KEEP | K2 | – | `testmailCategories` equals `classifierCategories`. Cross-list completeness check (K2): a new classifier category must reach the test mail. | 0 | 0.000 |
+| `packages/core/src/testmail/target.test.ts:235` | `packages/core/src/testmail/target.test.ts:235` | S11 | KEEP | K2 | – | `targetInputSchema` refuses an unknown top-level field and a `subject` on a case entry. Strict schema check (K2); the second part keeps mail text out of the target input (K3 neighbour). | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:22` | `packages/core/src/texts/bot.test.ts:22` | S11 | KEEP | none | – | English help equals the old `helpText()` byte for byte; `linked` and `alreadyLinked` end with the help in both locales; three more exact English texts. Wording pins: a text change is a decision. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:37` | `packages/core/src/texts/bot.test.ts:37` | S11 | KEEP | none | – | The Polish help starts with `Polecenia:` and names each of the six commands once. Zero kills; the English side has no twin of the "once" rule. | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:55` | `packages/core/src/texts/bot.test.ts:55` | S11 | KEEP | K2 | – | English menu entries equal the old `BOT_COMMANDS` descriptions (six keys). Fixed-list pin (K2). | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:66` | `packages/core/src/texts/bot.test.ts:66` | S11 | KEEP | none | – | The Polish empty `/review` text names the 30 days (exact string). Wording pin; the English side is not pinned. Zero kills. | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:73` | `packages/core/src/texts/bot.test.ts:73` | S11 | KEEP | K3 | – | Tap answers for a reply with a gap and for the flag off, both locales: each says `Nothing was sent` / `Nic nie wysłano`. Wording pin of a no-send answer (K3 neighbour: no send without approval). | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:86` | `packages/core/src/texts/bot.test.ts:86` | S11 | KEEP | K3 | – | The expired-approval answer says the mail was not sent, no hours, in both locales. No-send wording pin (K3 neighbour); the comment names the 7-day and 48 h windows. | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:209` | `packages/core/src/texts/bot.test.ts:209` | S11 | KEEP | none | – | 13 agreed Polish tap texts for reply drafts (informal `ty`). Pure wording pins with exact strings; zero kills; the English side is covered by `:238` only by length. | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:227` | `packages/core/src/texts/bot.test.ts:227` | S11 | KEEP | K2 | – | Every block reason in `REPLY_BLOCK_REASONS` plus `policy_changed` has a text in both languages that differs between them; three Polish texts are exact. Iterates the reason registry (K2). | 0 | 0.000 |
+| `packages/core/src/texts/bot.test.ts:238` | `packages/core/src/texts/bot.test.ts:238` | S11 | KEEP | K2 | – | No tap text holds `@` or a line break, and each is at most 200 characters. Iterates both text tables (K2); the `@` check keeps addresses out of the answer of a tap (K3 neighbour). | 0 | 0.000 |
+| `packages/core/src/texts/brief.test.ts:45` | `packages/core/src/texts/brief.test.ts:45` | S11 | KEEP | none | – | No Polish brief line holds a word with its diacritic dropped (six ASCII spellings). Negative check over nine lines; zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/texts/index.test.ts:101` | `packages/core/src/texts/index.test.ts:101` | S11 | KEEP | K2 | – | Both locales have the same text keys at every depth. Registry parity (K2). | 0 | 0.001 |
+| `packages/core/src/texts/index.test.ts:139` | `packages/core/src/texts/index.test.ts:139` | S11 | KEEP | K3 | – | The follow-up-removed notice in Polish and English: exact text, no `@`, no line break, under 120 characters. No mail data in a notice text (K3). | 0 | 0.000 |
+| `packages/core/src/time.test.ts:6` | `packages/core/src/time.test.ts:6` | S11 | KEEP | none | – | `HOUR_MS` and `DAY_MS` have the right values. Constant pin; zero kills; the guard at `:32` keeps one definition. | 0 | 0.000 |
+| `packages/core/src/time.test.ts:13` | `packages/core/src/time.test.ts:13` | S11 | KEEP | none | – | `addDays` across month, year and leap-day edges (7 inputs). A table in disguise: a `test.each` of `[date, days, expected]` would save about 4 lines, but the case is not an `S6` group and each line is a distinct edge. No cut. Zero kills. | 0 | 0.000 |
+| `packages/core/src/time.test.ts:23` | `packages/core/src/time.test.ts:23` | S11 | KEEP | none | – | `addDays` by a week, a year and 400 days back (4 inputs). Same shape as `:13`; the two could share one table (about 6 lines). Zero kills; no cut. | 0 | 0.000 |
+| `packages/core/src/time.test.ts:32` | `packages/core/src/time.test.ts:32` | S11 | KEEP | K2 | – | No source file outside `time.ts` defines its own `DAY_MS` or `HOUR_MS`. A scan over `apps`, `packages` and `tools` sources (completeness check, K2); it reads files by glob, so its time cost is real but small. | 0 | 0.049 |
+| `packages/core/src/triage/analysis.test.ts:19` | `packages/core/src/triage/analysis.test.ts:19` | S11 | KEEP | K2 | – | `buildTriageAnalysisSchema` accepts a valid answer and gives category `info`. Positive side of the schema; `:61` parses the same input and checks two other fields, so the two could be one case (about 5 lines). Zero kills; no cut. | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:23` | `packages/core/src/triage/analysis.test.ts:23` | S11 | KEEP | K2 | – | A category outside the allowed list (`spam` removed) is refused. Schema list check (K2). | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:28` | `packages/core/src/triage/analysis.test.ts:28` | S11 | KEEP | K2 | – | `unsure` and `delegation` are refused from the classifier list. Schema list check (K2). | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:33` | `packages/core/src/triage/analysis.test.ts:33` | S11 | KEEP | K2 | – | Confidence 1.2 is refused. Schema boundary (K2). | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:37` | `packages/core/src/triage/analysis.test.ts:37` | S11 | KEEP | K2 | – | A `due_date` in the form `04.11.2026` is refused. Schema format check (K2). | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:41` | `packages/core/src/triage/analysis.test.ts:41` | S11 | KEEP | K3 | – | With delegate ids, `delegate_id` accepts an id and `null` and refuses another id. LLM text is never a recipient: the model can name only a known delegate (K3). | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:48` | `packages/core/src/triage/analysis.test.ts:48` | S11 | KEEP | K3 | – | With no delegate ids, any `delegate_id` is refused and `null` passes. Same rule as `:41` for the empty list (K3); two input classes. | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:53` | `packages/core/src/triage/analysis.test.ts:53` | S11 | KEEP | K2 | – | `task` (300) and `clarification` (200) accept the maximum and refuse one more. Schema boundaries (K2). | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:61` | `packages/core/src/triage/analysis.test.ts:61` | S11 | KEEP | K2 | – | The v1 fields (`due_date`, `language`) still parse. Compatibility pin of a stored answer shape (K2); overlaps `:19` on the input only. | 0 | 0.000 |
+| `packages/core/src/triage/analysis.test.ts:67` | `packages/core/src/triage/analysis.test.ts:67` | S11 | KEEP | K3 | – | The JSON schema sent to the model holds `delegate_id` as `anyOf` the id enum and `null`. The provider schema bounds the model to known delegates (K3). | 0 | 0.000 |
+| `packages/core/src/triage/cost.test.ts:32` | `packages/core/src/triage/cost.test.ts:32` | S11 | KEEP | K2 | – | Every price row has a source and a check date; only an unverified row may have no URL. Iterates `llmPrices` (K2). | 0 | 0.000 |
+| `packages/core/src/triage/cost.test.ts:51` | `packages/core/src/triage/cost.test.ts:51` | S11 | KEEP | none | – | The EU price row of `gpt-6-luna` is unique and marked unverified. A data pin: it must change when the price is verified. Zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/triage/dkim-signature.test.ts:92` | `packages/core/src/triage/dkim-signature.test.ts:92` | S11 | KEEP | K2 | – | `dkimSignaturesSchema` takes the stored shape (and an empty list) and refuses an object, a row without `h`, `null` and nine entries. Schema of a stored field (K2); the DKIM result feeds the spam rules (K3 neighbour). | 0 | 0.000 |
+| `packages/core/src/triage/draft-kinds.test.ts:24` | `packages/core/src/triage/draft-kinds.test.ts:24` | S11 | KEEP | K2 | – | The draft payload union has one member per draft kind. Completeness check (K2); the styleguide names this file as the guard of a new draft kind. | 0 | 0.000 |
+| `packages/core/src/triage/draft-kinds.test.ts:72` | `packages/core/src/triage/draft-kinds.test.ts:72` | S11 | KEEP | K3 | – | A reply draft accepts 10 Cc and refuses 11, two To addresses, no To, `recipients: "everyone"`, a `request_id` and an empty body. Recipient limits of a draft (K3). | 0 | 0.000 |
+| `packages/core/src/triage/draft-kinds.test.ts:94` | `packages/core/src/triage/draft-kinds.test.ts:94` | S11 | KEEP | K2 | – | Each draft kind has a template or a reason for none, never both, and the reason is longer than 20 characters. Completeness check (K2). | 0 | 0.000 |
+| `packages/core/src/triage/eval-case.test.ts:123` | `packages/core/src/triage/eval-case.test.ts:123` | S11 | KEEP | K2 | – | `evalCaseSchema` fills defaults (`cc`, `thread`, `senderRules`, `delegates`) and leaves `expected.delegate` and `draft` unset. Schema defaults (K2). | 0 | 0.000 |
+| `packages/core/src/triage/eval-case.test.ts:133` | `packages/core/src/triage/eval-case.test.ts:133` | S11 | KEEP | K2 | – | Delegates get default tags; `expected` keeps `delegate` and `draft`. Schema round trip (K2). | 0 | 0.000 |
+| `packages/core/src/triage/eval-case.test.ts:149` | `packages/core/src/triage/eval-case.test.ts:149` | S11 | KEEP | K2 | – | A delegate key `Anna`, an empty name and the draft kind `reminder` are refused. Schema checks (K2); three input classes in one case. | 0 | 0.000 |
+| `packages/core/src/triage/eval-case.test.ts:158` | `packages/core/src/triage/eval-case.test.ts:158` | S11 | KEEP | K2 | – | An upper-case case id is refused. Schema check (K2). With `:162` and `:166` it forms a table candidate (`test.each([[label, patch]])`, saves about 6 lines); the scan did not flag it, so no cut row. | 0 | 0.000 |
+| `packages/core/src/triage/eval-case.test.ts:162` | `packages/core/src/triage/eval-case.test.ts:162` | S11 | KEEP | K2 | – | The category `unsure` in `expected` is refused. Schema check (K2); see the table note at `:158`. | 0 | 0.000 |
+| `packages/core/src/triage/eval-case.test.ts:166` | `packages/core/src/triage/eval-case.test.ts:166` | S11 | KEEP | K2 | – | An empty `to` list is refused. Schema check (K2); see the table note at `:158`. | 0 | 0.000 |
+| `packages/core/src/triage/payloads.test.ts:39` | `packages/core/src/triage/payloads.test.ts:39` | S11 | KEEP | K2 | – | A `test.each` of the three draft kinds (delegation, clarification, reminder): each valid payload parses. Iterates the kinds (K2); already a table. | 0 | 0.000 |
+| `packages/core/src/triage/payloads.test.ts:43` | `packages/core/src/triage/payloads.test.ts:43` | S11 | KEEP | K3 | – | A `to` with two addresses is refused in every draft kind. Recipient limit of a draft (K3); the reply-kind twin is `draft-kinds.test.ts:72`, which covers another kind. | 0 | 0.000 |
+| `packages/core/src/triage/payloads.test.ts:49` | `packages/core/src/triage/payloads.test.ts:49` | S11 | KEEP | none | – | `due_date` accepts a date and an empty string and refuses `10.11.2026`; it also pins that `2026-13-01` PASSES (shape check only). Zero kills. The last line pins a weak check on purpose or by accident: `urgency-profile.test.ts:10` refuses `2027-02-30`. Unsure; the coordinator may ask whether the draft schema should check the calendar. | 0 | 0.000 |
+| `packages/core/src/triage/payloads.test.ts:56` | `packages/core/src/triage/payloads.test.ts:56` | S11 | KEEP | K3 | – | A bad address is refused in every draft kind, for each entry of `badAddresses`. Recipient validity of a draft (K3); loops over kinds and inputs. | 0 | 0.000 |
+| `packages/core/src/triage/payloads.test.ts:98` | `packages/core/src/triage/payloads.test.ts:98` | S11 | KEEP | K2 | – | An old payload parses and gets no new key (delegation and clarification). Compatibility pin of stored payloads (K2). | 0 | 0.000 |
+| `packages/core/src/triage/payloads.test.ts:104` | `packages/core/src/triage/payloads.test.ts:104` | S11 | KEEP | K2 | – | Edit fields: `body_text` up to 3000, `subject_text` up to 200, `version` an integer of at least 1; seven refusals and two accepts. Schema boundaries (K2); one case holds nine checks. | 0 | 0.000 |
+| `packages/core/src/triage/planners.test.ts:162` | `packages/core/src/triage/planners.test.ts:162` | S11 | KEEP | K2 | – | `AI_FOLDER_NAMES` has one name for every folder key. Registry completeness (K2). | 0 | 0.000 |
+| `packages/core/src/triage/planners.test.ts:279` | `packages/core/src/triage/planners.test.ts:279` | S11 | KEEP | K2 | – | `MOVE_TARGET_NAMES` is the app folder names plus `INBOX`. Registry equality (K2). | 0 | 0.000 |
+| `packages/core/src/triage/policy.test.ts:180` | `packages/core/src/triage/policy.test.ts:180` | S11 | KEEP | K2 | – | The test loop covers all 32 switch combinations (32 distinct). Guards the loop that drives the policy matrix (K2): the policy tests above it iterate `allSwitchCombinations()`. | 0 | 0.000 |
+| `packages/core/src/triage/quota-day.test.ts:10` | `packages/core/src/triage/quota-day.test.ts:10` | S11 | KEEP | none | – | `QUOTA_TIMEZONE` is `America/Los_Angeles`. A constant pin: the provider quota day follows it; a change is a decision. Zero kills; the quota-day logic has its own cases. | 0 | 0.000 |
+| `packages/core/src/triage/sender-history.test.ts:8` | `packages/core/src/triage/sender-history.test.ts:8` | S11 | KEEP | none | – | `relationOf`: a delegate wins over vip and bulk. One input class (priority); zero kills; no twin. | 0 | 0.000 |
+| `packages/core/src/triage/sender-history.test.ts:12` | `packages/core/src/triage/sender-history.test.ts:12` | S11 | KEEP | none | – | `relationOf`: a vip sender is `vip`. One class; zero kills. Shares the shape of `:8`, `:16` and `:21` (one call, one value), so the four could be one `test.each` (about 12 lines); the scan did not flag them as `S6`. No cut. | 0 | 0.000 |
+| `packages/core/src/triage/sender-history.test.ts:16` | `packages/core/src/triage/sender-history.test.ts:16` | S11 | KEEP | none | – | `relationOf`: bulk needs more than half of the mail (6 is bulk, 5 is not). Boundary of the rule; zero kills. | 0 | 0.000 |
+| `packages/core/src/triage/sender-history.test.ts:21` | `packages/core/src/triage/sender-history.test.ts:21` | S11 | KEEP | none | – | `relationOf`: an answer or a mail to the sender gives `known`, nothing gives `new`. Three inputs; zero kills. | 0 | 0.000 |
+| `packages/core/src/triage/sender-history.test.ts:49` | `packages/core/src/triage/sender-history.test.ts:49` | S11 | KEEP | K2 | – | A valid history parses unchanged and the schema has the 17 fields of the sender context list. Field-list check (K2). | 0 | 0.000 |
+| `packages/core/src/triage/sender-history.test.ts:74` | `packages/core/src/triage/sender-history.test.ts:74` | S11 | KEEP | K3 | – | An extra key (`note: "text"`) is refused, so no text field enters the sender history that goes to the model. No free text in the history (K3); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/triage/settings.test.ts:9` | `packages/core/src/triage/settings.test.ts:9` | S11 | KEEP | K2 | – | `feedbackSources` has exactly the seven values. Enum list pin (K2); it mirrors a database CHECK. | 0 | 0.000 |
+| `packages/core/src/triage/suspicious.test.ts:295` | `packages/core/src/triage/suspicious.test.ts:295` | S11 | KEEP | none | – | `freeMailDomains` holds five common domains (`gmail.com`, `interia.pl`, `wp.pl`, `web.de`, `protonmail.com`). Zero kills. Overlap: `:343` lists 20 domains and also holds `web.de` and `protonmail.com`; `gmail.com`, `interia.pl` and `wp.pl` are only here. No cut: merging the two lists would drop no check but is a table edit of about 5 lines (unsure). | 0 | 0.000 |
+| `packages/core/src/triage/suspicious.test.ts:343` | `packages/core/src/triage/suspicious.test.ts:343` | S11 | KEEP | none | – | `freeMailDomains` holds 20 more Polish and international domains. List pin; zero kills; two of its domains repeat `:295` (`web.de`, `protonmail.com`). | 0 | 0.000 |
+| `packages/core/src/triage/urgency-profile.test.ts:6` | `packages/core/src/triage/urgency-profile.test.ts:6` | S11 | KEEP | K2 | – | An empty object parses to empty `topics` and `deadlines`. Schema default (K2). | 0 | 0.000 |
+| `packages/core/src/triage/urgency-profile.test.ts:10` | `packages/core/src/triage/urgency-profile.test.ts:10` | S11 | KEEP | K2 | – | 21 topics, an 81-character label, the date `2027-02-30` and an extra key are refused. Schema boundaries (K2); the limits keep the stored profile small. | 0 | 0.000 |
+| `packages/core/src/triage/urgency-profile.test.ts:18` | `packages/core/src/triage/urgency-profile.test.ts:18` | S11 | KEEP | K3 | – | A NUL character in a label or a keyword is refused with the code `nul_char` at the exact path; `\u0001` passes. Text safety of user text that reaches the prompt (K3). | 0 | 0.000 |
+| `packages/core/src/triage/urgency-profile.test.ts:29` | `packages/core/src/triage/urgency-profile.test.ts:29` | S11 | KEEP | K2 | – | A label is trimmed and keywords default to `[]`. Schema transform (K2). | 0 | 0.000 |
+| `packages/core/src/trust/evidence.test.ts:155` | `packages/core/src/trust/evidence.test.ts:155` | S11 | KEEP | K2 | – | The loops of the file ran every combination (4 × 2 × 5 × 5 × 4 × 2 cases). Completeness guard of the matrix loop above it (K2); it pins the loop count, not the policy. | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:16` | `packages/core/src/web/activity.test.ts:16` | S11 | KEEP | K2 | – | `activityQuerySchema.parse({})` gives `{}`: every query field is optional. Schema default (K2). | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:32` | `packages/core/src/web/activity.test.ts:32` | S11 | KEEP | K2 | – | `limit` is an integer from 1 to 100 (`50` parses; `0`, `101`, `1.5` fail). Schema boundary (K2); a loop of three refusals. | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:39` | `packages/core/src/web/activity.test.ts:39` | S11 | KEEP | K2 | – | `since` must be an ISO time, `notRated` must be `true`/`false`, an empty `before` fails, and an unknown key passes. Schema check (K2). The last line pins that the query schema is NOT strict (an `extra` key passes), unlike the closed schemas in `approvals.test.ts:48`. | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:50` | `packages/core/src/web/activity.test.ts:50` | S11 | KEEP | K2 | – | `feedbackBodySchema` takes the five label categories only (`unsure`, `delegation` and a bad id fail). Schema list check (K2). | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:87` | `packages/core/src/web/activity.test.ts:87` | S11 | KEEP | K2 | – | `activityItemSchema` parses a full item and returns it unchanged. Round trip of the web contract (K2); the web client parses the same schema. | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:91` | `packages/core/src/web/activity.test.ts:91` | S11 | KEEP | K2 | – | `suspicious` holds known rule codes only and is required. Schema check (K2); the codes are an enum of the suspicious rules. | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:99` | `packages/core/src/web/activity.test.ts:99` | S11 | KEEP | K2 | – | An item with `null` feedback, delegation, from and subject parses unchanged. Schema nullability (K2). | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:104` | `packages/core/src/web/activity.test.ts:104` | S11 | KEEP | K2 | – | `activityRangeMs` has `7d` = 604,800,000 and `24h` = 86,400,000. Fixed-table pin (K2). | 0 | 0.000 |
+| `packages/core/src/web/activity.test.ts:111` | `packages/core/src/web/activity.test.ts:111` | S11 | KEEP | K2 | – | `undoResultSchema` accepts `started` with a count and refuses `not_found`. Schema kind check (K2). | 0 | 0.000 |
+| `packages/core/src/web/approvals.test.ts:42` | `packages/core/src/web/approvals.test.ts:42` | S11 | KEEP | K2 | – | An approval item, list and detail parse (the detail state is `superseded`). Positive round trip of the web contract (K2). | 0 | 0.000 |
+| `packages/core/src/web/approvals.test.ts:48` | `packages/core/src/web/approvals.test.ts:48` | S11 | KEEP | K3 | – | Every approval object is closed: a `payload`, a `bodyText` in the view, a `next` on the list, an `emailId` and a delegate `email` are refused. The web read model never carries the raw payload or mail data (K3); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/web/approvals.test.ts:58` | `packages/core/src/web/approvals.test.ts:58` | S11 | KEEP | K2 | – | A list holds at most `APPROVAL_LIST_MAX` (100) items and a list item has only the states waiting and held. Schema boundary (K2). | 0 | 0.001 |
+| `packages/core/src/web/approvals.test.ts:64` | `packages/core/src/web/approvals.test.ts:64` | S11 | KEEP | K2 | – | A detail may have a `null` view when retention cleared the payload; an item may not. Schema rule tied to retention (K2). | 0 | 0.000 |
+| `packages/core/src/web/approvals.test.ts:70` | `packages/core/src/web/approvals.test.ts:70` | S11 | KEEP | K2 | – | `heldBy` takes four reasons (`scope`, `paused`, `auth_error`, `host_blocked`) and refuses `other`. Enum check (K2). | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:6` | `packages/core/src/web/errors.test.ts:6` | S11 | KEEP | K2 | – | `apiErrorSchema` accepts an error code alone. Schema check (K2); named in the stage 04 rules as a known zero-kill case (6 of 9 in the file). | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:10` | `packages/core/src/web/errors.test.ts:10` | S11 | KEEP | K2 | – | `apiErrorSchema` accepts `details` with path, code and message. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:15` | `packages/core/src/web/errors.test.ts:15` | S11 | KEEP | K2 | – | `apiErrorSchema` refuses an empty object. Schema check (K2). | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:19` | `packages/core/src/web/errors.test.ts:19` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `too_large`. List pin (K2). The cases `:19`, `:33`, `:37`, `:41` are group T38 (read in continuation 1: KEEP, K2); the same table note applies. | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:23` | `packages/core/src/web/errors.test.ts:23` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `host_not_allowed` and `telegram_unreachable`. List pin (K2); next to group T38, not part of it. | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:28` | `packages/core/src/web/errors.test.ts:28` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `rule_limit` directly after `rule_exists`. List and order pin (K2); the order check is the only part not repeated elsewhere. | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:33` | `packages/core/src/web/errors.test.ts:33` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `mailbox_limit`. List pin (K2); in group T38 with `:19`. | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:37` | `packages/core/src/web/errors.test.ts:37` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `org_suspended`. List pin (K2); in group T38 with `:19`. | 0 | 0.000 |
+| `packages/core/src/web/errors.test.ts:41` | `packages/core/src/web/errors.test.ts:41` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `terms_outdated`. List pin (K2); in group T38 with `:19`. | 0 | 0.000 |
+| `packages/core/src/web/loops.test.ts:12` | `packages/core/src/web/loops.test.ts:12` | S11 | KEEP | K2 | – | `loopListQuerySchema`: `kind` is required and one of `waiting`, `promised`, `delegated`. Enum check (K2). | 0 | 0.000 |
+| `packages/core/src/web/loops.test.ts:20` | `packages/core/src/web/loops.test.ts:20` | S11 | KEEP | K2 | – | The filter is `open`, `due` or `closed` (`all` fails); `limit` is 1 to 100 from text (`100` parses; `0`, `101`, `1.5`, `x` fail). Schema boundaries (K2). | 0 | 0.000 |
+| `packages/core/src/web/loops.test.ts:33` | `packages/core/src/web/loops.test.ts:33` | S11 | KEEP | K2 | – | A loop action body takes an empty object only (`{ x: 1 }` fails). Closed-body check (K2). | 0 | 0.000 |
+| `packages/core/src/web/loops.test.ts:38` | `packages/core/src/web/loops.test.ts:38` | S11 | KEEP | K2 | – | The wait body is a whole number of days from 1 to 10 (three accepts, five refusals, an extra key). Schema boundaries (K2). | 0 | 0.000 |
+| `packages/core/src/web/loops.test.ts:44` | `packages/core/src/web/loops.test.ts:44` | S11 | KEEP | K3 | – | The delegate body needs a UUID `delegateId`. The id of a delegate, never a free text or an address, picks the recipient (K3); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/web/loops.test.ts:51` | `packages/core/src/web/loops.test.ts:51` | S11 | KEEP | K2 | – | A `planned` follow-up answer carries `sendId`; `would_draft` carries none. Union shape check (K2); both sides of each member. | 0 | 0.000 |
+| `packages/core/src/web/mailboxes.test.ts:99` | `packages/core/src/web/mailboxes.test.ts:99` | S11 | KEEP | K2 | – | `mailboxViewSchema` parses a view without sync time and mode. Positive schema case (K2). | 0 | 0.000 |
+| `packages/core/src/web/mailboxes.test.ts:103` | `packages/core/src/web/mailboxes.test.ts:103` | S11 | KEEP | K2 | – | An OAuth view with a reason parses; an unknown reason, provider (`yahoo`) and auth method (`token`) fail. Enum checks (K2). | 0 | 0.000 |
+| `packages/core/src/web/mailboxes.test.ts:111` | `packages/core/src/web/mailboxes.test.ts:111` | S11 | KEEP | K2 | – | An unknown status `deleted` is refused. Enum check (K2); one input of the status list. | 0 | 0.000 |
+| `packages/core/src/web/mailboxes.test.ts:124` | `packages/core/src/web/mailboxes.test.ts:124` | S11 | KEEP | K2 | – | `telegramLinkSchema` refuses `not a url`. Schema check (K2); the only refusal case of that schema. | 0 | 0.000 |
+| `packages/core/src/web/mail-oauth.test.ts:7` | `packages/core/src/web/mail-oauth.test.ts:7` | S11 | KEEP | K3 | – | The OAuth start body takes no mailbox id or a UUID and refuses a non-UUID. The id picks which mailbox gets a token (K3); schema check (K2). | 0 | 0.000 |
+| `packages/core/src/web/mail-oauth.test.ts:14` | `packages/core/src/web/mail-oauth.test.ts:14` | S11 | KEEP | K2 | – | The provider param is one of `mailOAuthProviderKeys` (loop) and `yahoo` fails. Iterates the registry (K2). | 0 | 0.000 |
+| `packages/core/src/web/mail-oauth.test.ts:21` | `packages/core/src/web/mail-oauth.test.ts:21` | S11 | KEEP | K2 | – | `apiErrorCodes` lists `feature_off` and `not_configured`. List pin (K2); the same list type as `errors.test.ts:19`, other codes. | 0 | 0.000 |
 
-### Not read (345)
+### Not read (195)
 
 | Item | Keys | Flags |
 | --- | --- | --- |
-| `packages/core/src/sim/plan-bank.test.ts:157` | `packages/core/src/sim/plan-bank.test.ts:157` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:163` | `packages/core/src/sim/plan-bank.test.ts:163` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:179` | `packages/core/src/sim/plan-bank.test.ts:179` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:191` | `packages/core/src/sim/plan-bank.test.ts:191` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:208` | `packages/core/src/sim/plan-bank.test.ts:208` | S11 |
-| `packages/core/src/sim/plan-bank.test.ts:227` | `packages/core/src/sim/plan-bank.test.ts:227` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:32` | `packages/core/src/sim/plan-sent.test.ts:32` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:54` | `packages/core/src/sim/plan-sent.test.ts:54` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:59` | `packages/core/src/sim/plan-sent.test.ts:59` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:72` | `packages/core/src/sim/plan-sent.test.ts:72` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:86` | `packages/core/src/sim/plan-sent.test.ts:86` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:100` | `packages/core/src/sim/plan-sent.test.ts:100` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:106` | `packages/core/src/sim/plan-sent.test.ts:106` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:113` | `packages/core/src/sim/plan-sent.test.ts:113` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:132` | `packages/core/src/sim/plan-sent.test.ts:132` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:155` | `packages/core/src/sim/plan-sent.test.ts:155` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:171` | `packages/core/src/sim/plan-sent.test.ts:171` | S11 |
-| `packages/core/src/sim/plan-sent.test.ts:183` | `packages/core/src/sim/plan-sent.test.ts:183` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:45` | `packages/core/src/sim/plan-week.test.ts:45` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:51` | `packages/core/src/sim/plan-week.test.ts:51` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:68` | `packages/core/src/sim/plan-week.test.ts:68` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:95` | `packages/core/src/sim/plan-week.test.ts:95` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:113` | `packages/core/src/sim/plan-week.test.ts:113` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:130` | `packages/core/src/sim/plan-week.test.ts:130` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:151` | `packages/core/src/sim/plan-week.test.ts:151` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:168` | `packages/core/src/sim/plan-week.test.ts:168` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:182` | `packages/core/src/sim/plan-week.test.ts:182` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:191` | `packages/core/src/sim/plan-week.test.ts:191` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:200` | `packages/core/src/sim/plan-week.test.ts:200` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:210` | `packages/core/src/sim/plan-week.test.ts:210` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:223` | `packages/core/src/sim/plan-week.test.ts:223` | S11 |
-| `packages/core/src/sim/plan-week.test.ts:231` | `packages/core/src/sim/plan-week.test.ts:231` | S11 |
-| `packages/core/src/sim/random.test.ts:6` | `packages/core/src/sim/random.test.ts:6` | S11 |
-| `packages/core/src/sim/random.test.ts:12` | `packages/core/src/sim/random.test.ts:12` | S11 |
-| `packages/core/src/sim/random.test.ts:30` | `packages/core/src/sim/random.test.ts:30` | S11 |
-| `packages/core/src/sim/random.test.ts:38` | `packages/core/src/sim/random.test.ts:38` | S11 |
-| `packages/core/src/sim/random.test.ts:46` | `packages/core/src/sim/random.test.ts:46` | S11 |
-| `packages/core/src/sim/scenario.test.ts:22` | `packages/core/src/sim/scenario.test.ts:22` | S11 |
-| `packages/core/src/sim/sent-hard-cases.test.ts:6` | `packages/core/src/sim/sent-hard-cases.test.ts:6` | S11 |
-| `packages/core/src/sim/sent-hard-cases.test.ts:45` | `packages/core/src/sim/sent-hard-cases.test.ts:45` | S11 |
-| `packages/core/src/sim/sent-slot.test.ts:37` | `packages/core/src/sim/sent-slot.test.ts:37` | S11 |
-| `packages/core/src/sim/sent-slot.test.ts:91` | `packages/core/src/sim/sent-slot.test.ts:91` | S11 |
-| `packages/core/src/sim/sent-slot.test.ts:99` | `packages/core/src/sim/sent-slot.test.ts:99` | S11 |
-| `packages/core/src/sim/sent-slot.test.ts:104` | `packages/core/src/sim/sent-slot.test.ts:104` | S11 |
-| `packages/core/src/site.test.ts:63` | `packages/core/src/site.test.ts:63` | S11 |
-| `packages/core/src/tenancy.test.ts:6` | `packages/core/src/tenancy.test.ts:6` | S11 |
-| `packages/core/src/tenancy.test.ts:11` | `packages/core/src/tenancy.test.ts:11` | S11 |
-| `packages/core/src/tenancy.test.ts:18` | `packages/core/src/tenancy.test.ts:18` | S11 |
-| `packages/core/src/testmail/batch.test.ts:156` | `packages/core/src/testmail/batch.test.ts:156` | S11 |
-| `packages/core/src/testmail/batch.test.ts:180` | `packages/core/src/testmail/batch.test.ts:180` | S11 |
-| `packages/core/src/testmail/batch.test.ts:195` | `packages/core/src/testmail/batch.test.ts:195` | S11 |
-| `packages/core/src/testmail/target.test.ts:235` | `packages/core/src/testmail/target.test.ts:235` | S11 |
-| `packages/core/src/texts/bot.test.ts:22` | `packages/core/src/texts/bot.test.ts:22` | S11 |
-| `packages/core/src/texts/bot.test.ts:37` | `packages/core/src/texts/bot.test.ts:37` | S11 |
-| `packages/core/src/texts/bot.test.ts:55` | `packages/core/src/texts/bot.test.ts:55` | S11 |
-| `packages/core/src/texts/bot.test.ts:66` | `packages/core/src/texts/bot.test.ts:66` | S11 |
-| `packages/core/src/texts/bot.test.ts:73` | `packages/core/src/texts/bot.test.ts:73` | S11 |
-| `packages/core/src/texts/bot.test.ts:86` | `packages/core/src/texts/bot.test.ts:86` | S11 |
-| `packages/core/src/texts/bot.test.ts:209` | `packages/core/src/texts/bot.test.ts:209` | S11 |
-| `packages/core/src/texts/bot.test.ts:227` | `packages/core/src/texts/bot.test.ts:227` | S11 |
-| `packages/core/src/texts/bot.test.ts:238` | `packages/core/src/texts/bot.test.ts:238` | S11 |
-| `packages/core/src/texts/brief.test.ts:45` | `packages/core/src/texts/brief.test.ts:45` | S11 |
-| `packages/core/src/texts/index.test.ts:101` | `packages/core/src/texts/index.test.ts:101` | S11 |
-| `packages/core/src/texts/index.test.ts:139` | `packages/core/src/texts/index.test.ts:139` | S11 |
-| `packages/core/src/time.test.ts:6` | `packages/core/src/time.test.ts:6` | S11 |
-| `packages/core/src/time.test.ts:13` | `packages/core/src/time.test.ts:13` | S11 |
-| `packages/core/src/time.test.ts:23` | `packages/core/src/time.test.ts:23` | S11 |
-| `packages/core/src/time.test.ts:32` | `packages/core/src/time.test.ts:32` | S11 |
-| `packages/core/src/triage/analysis.test.ts:19` | `packages/core/src/triage/analysis.test.ts:19` | S11 |
-| `packages/core/src/triage/analysis.test.ts:23` | `packages/core/src/triage/analysis.test.ts:23` | S11 |
-| `packages/core/src/triage/analysis.test.ts:28` | `packages/core/src/triage/analysis.test.ts:28` | S11 |
-| `packages/core/src/triage/analysis.test.ts:33` | `packages/core/src/triage/analysis.test.ts:33` | S11 |
-| `packages/core/src/triage/analysis.test.ts:37` | `packages/core/src/triage/analysis.test.ts:37` | S11 |
-| `packages/core/src/triage/analysis.test.ts:41` | `packages/core/src/triage/analysis.test.ts:41` | S11 |
-| `packages/core/src/triage/analysis.test.ts:48` | `packages/core/src/triage/analysis.test.ts:48` | S11 |
-| `packages/core/src/triage/analysis.test.ts:53` | `packages/core/src/triage/analysis.test.ts:53` | S11 |
-| `packages/core/src/triage/analysis.test.ts:61` | `packages/core/src/triage/analysis.test.ts:61` | S11 |
-| `packages/core/src/triage/analysis.test.ts:67` | `packages/core/src/triage/analysis.test.ts:67` | S11 |
-| `packages/core/src/triage/cost.test.ts:32` | `packages/core/src/triage/cost.test.ts:32` | S11 |
-| `packages/core/src/triage/cost.test.ts:51` | `packages/core/src/triage/cost.test.ts:51` | S11 |
-| `packages/core/src/triage/dkim-signature.test.ts:92` | `packages/core/src/triage/dkim-signature.test.ts:92` | S11 |
-| `packages/core/src/triage/draft-kinds.test.ts:24` | `packages/core/src/triage/draft-kinds.test.ts:24` | S11 |
-| `packages/core/src/triage/draft-kinds.test.ts:72` | `packages/core/src/triage/draft-kinds.test.ts:72` | S11 |
-| `packages/core/src/triage/draft-kinds.test.ts:94` | `packages/core/src/triage/draft-kinds.test.ts:94` | S11 |
-| `packages/core/src/triage/eval-case.test.ts:123` | `packages/core/src/triage/eval-case.test.ts:123` | S11 |
-| `packages/core/src/triage/eval-case.test.ts:133` | `packages/core/src/triage/eval-case.test.ts:133` | S11 |
-| `packages/core/src/triage/eval-case.test.ts:149` | `packages/core/src/triage/eval-case.test.ts:149` | S11 |
-| `packages/core/src/triage/eval-case.test.ts:158` | `packages/core/src/triage/eval-case.test.ts:158` | S11 |
-| `packages/core/src/triage/eval-case.test.ts:162` | `packages/core/src/triage/eval-case.test.ts:162` | S11 |
-| `packages/core/src/triage/eval-case.test.ts:166` | `packages/core/src/triage/eval-case.test.ts:166` | S11 |
-| `packages/core/src/triage/payloads.test.ts:39` | `packages/core/src/triage/payloads.test.ts:39` | S11 |
-| `packages/core/src/triage/payloads.test.ts:43` | `packages/core/src/triage/payloads.test.ts:43` | S11 |
-| `packages/core/src/triage/payloads.test.ts:49` | `packages/core/src/triage/payloads.test.ts:49` | S11 |
-| `packages/core/src/triage/payloads.test.ts:56` | `packages/core/src/triage/payloads.test.ts:56` | S11 |
-| `packages/core/src/triage/payloads.test.ts:98` | `packages/core/src/triage/payloads.test.ts:98` | S11 |
-| `packages/core/src/triage/payloads.test.ts:104` | `packages/core/src/triage/payloads.test.ts:104` | S11 |
-| `packages/core/src/triage/planners.test.ts:162` | `packages/core/src/triage/planners.test.ts:162` | S11 |
-| `packages/core/src/triage/planners.test.ts:279` | `packages/core/src/triage/planners.test.ts:279` | S11 |
-| `packages/core/src/triage/policy.test.ts:180` | `packages/core/src/triage/policy.test.ts:180` | S11 |
-| `packages/core/src/triage/quota-day.test.ts:10` | `packages/core/src/triage/quota-day.test.ts:10` | S11 |
-| `packages/core/src/triage/sender-history.test.ts:8` | `packages/core/src/triage/sender-history.test.ts:8` | S11 |
-| `packages/core/src/triage/sender-history.test.ts:12` | `packages/core/src/triage/sender-history.test.ts:12` | S11 |
-| `packages/core/src/triage/sender-history.test.ts:16` | `packages/core/src/triage/sender-history.test.ts:16` | S11 |
-| `packages/core/src/triage/sender-history.test.ts:21` | `packages/core/src/triage/sender-history.test.ts:21` | S11 |
-| `packages/core/src/triage/sender-history.test.ts:49` | `packages/core/src/triage/sender-history.test.ts:49` | S11 |
-| `packages/core/src/triage/sender-history.test.ts:74` | `packages/core/src/triage/sender-history.test.ts:74` | S11 |
-| `packages/core/src/triage/settings.test.ts:9` | `packages/core/src/triage/settings.test.ts:9` | S11 |
-| `packages/core/src/triage/suspicious.test.ts:295` | `packages/core/src/triage/suspicious.test.ts:295` | S11 |
-| `packages/core/src/triage/suspicious.test.ts:343` | `packages/core/src/triage/suspicious.test.ts:343` | S11 |
-| `packages/core/src/triage/urgency-profile.test.ts:6` | `packages/core/src/triage/urgency-profile.test.ts:6` | S11 |
-| `packages/core/src/triage/urgency-profile.test.ts:10` | `packages/core/src/triage/urgency-profile.test.ts:10` | S11 |
-| `packages/core/src/triage/urgency-profile.test.ts:18` | `packages/core/src/triage/urgency-profile.test.ts:18` | S11 |
-| `packages/core/src/triage/urgency-profile.test.ts:29` | `packages/core/src/triage/urgency-profile.test.ts:29` | S11 |
-| `packages/core/src/trust/evidence.test.ts:155` | `packages/core/src/trust/evidence.test.ts:155` | S11 |
-| `packages/core/src/web/activity.test.ts:16` | `packages/core/src/web/activity.test.ts:16` | S11 |
-| `packages/core/src/web/activity.test.ts:32` | `packages/core/src/web/activity.test.ts:32` | S11 |
-| `packages/core/src/web/activity.test.ts:39` | `packages/core/src/web/activity.test.ts:39` | S11 |
-| `packages/core/src/web/activity.test.ts:50` | `packages/core/src/web/activity.test.ts:50` | S11 |
-| `packages/core/src/web/activity.test.ts:87` | `packages/core/src/web/activity.test.ts:87` | S11 |
-| `packages/core/src/web/activity.test.ts:91` | `packages/core/src/web/activity.test.ts:91` | S11 |
-| `packages/core/src/web/activity.test.ts:99` | `packages/core/src/web/activity.test.ts:99` | S11 |
-| `packages/core/src/web/activity.test.ts:104` | `packages/core/src/web/activity.test.ts:104` | S11 |
-| `packages/core/src/web/activity.test.ts:111` | `packages/core/src/web/activity.test.ts:111` | S11 |
-| `packages/core/src/web/approvals.test.ts:42` | `packages/core/src/web/approvals.test.ts:42` | S11 |
-| `packages/core/src/web/approvals.test.ts:48` | `packages/core/src/web/approvals.test.ts:48` | S11 |
-| `packages/core/src/web/approvals.test.ts:58` | `packages/core/src/web/approvals.test.ts:58` | S11 |
-| `packages/core/src/web/approvals.test.ts:64` | `packages/core/src/web/approvals.test.ts:64` | S11 |
-| `packages/core/src/web/approvals.test.ts:70` | `packages/core/src/web/approvals.test.ts:70` | S11 |
-| `packages/core/src/web/errors.test.ts:6` | `packages/core/src/web/errors.test.ts:6` | S11 |
-| `packages/core/src/web/errors.test.ts:10` | `packages/core/src/web/errors.test.ts:10` | S11 |
-| `packages/core/src/web/errors.test.ts:15` | `packages/core/src/web/errors.test.ts:15` | S11 |
-| `packages/core/src/web/errors.test.ts:19` | `packages/core/src/web/errors.test.ts:19` | S11 |
-| `packages/core/src/web/errors.test.ts:23` | `packages/core/src/web/errors.test.ts:23` | S11 |
-| `packages/core/src/web/errors.test.ts:28` | `packages/core/src/web/errors.test.ts:28` | S11 |
-| `packages/core/src/web/errors.test.ts:33` | `packages/core/src/web/errors.test.ts:33` | S11 |
-| `packages/core/src/web/errors.test.ts:37` | `packages/core/src/web/errors.test.ts:37` | S11 |
-| `packages/core/src/web/errors.test.ts:41` | `packages/core/src/web/errors.test.ts:41` | S11 |
-| `packages/core/src/web/loops.test.ts:12` | `packages/core/src/web/loops.test.ts:12` | S11 |
-| `packages/core/src/web/loops.test.ts:20` | `packages/core/src/web/loops.test.ts:20` | S11 |
-| `packages/core/src/web/loops.test.ts:33` | `packages/core/src/web/loops.test.ts:33` | S11 |
-| `packages/core/src/web/loops.test.ts:38` | `packages/core/src/web/loops.test.ts:38` | S11 |
-| `packages/core/src/web/loops.test.ts:44` | `packages/core/src/web/loops.test.ts:44` | S11 |
-| `packages/core/src/web/loops.test.ts:51` | `packages/core/src/web/loops.test.ts:51` | S11 |
-| `packages/core/src/web/mail-oauth.test.ts:7` | `packages/core/src/web/mail-oauth.test.ts:7` | S11 |
-| `packages/core/src/web/mail-oauth.test.ts:14` | `packages/core/src/web/mail-oauth.test.ts:14` | S11 |
-| `packages/core/src/web/mail-oauth.test.ts:21` | `packages/core/src/web/mail-oauth.test.ts:21` | S11 |
-| `packages/core/src/web/mailboxes.test.ts:99` | `packages/core/src/web/mailboxes.test.ts:99` | S11 |
-| `packages/core/src/web/mailboxes.test.ts:103` | `packages/core/src/web/mailboxes.test.ts:103` | S11 |
-| `packages/core/src/web/mailboxes.test.ts:111` | `packages/core/src/web/mailboxes.test.ts:111` | S11 |
-| `packages/core/src/web/mailboxes.test.ts:124` | `packages/core/src/web/mailboxes.test.ts:124` | S11 |
 | `packages/core/src/web/me.test.ts:54` | `packages/core/src/web/me.test.ts:54` | S11 |
 | `packages/core/src/web/me.test.ts:58` | `packages/core/src/web/me.test.ts:58` | S11 |
 | `packages/core/src/web/me.test.ts:64` | `packages/core/src/web/me.test.ts:64` | S11 |
@@ -866,13 +867,13 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 ## Summary
 
-- Items selected by § Reader method step 2: 660. Items in this file: 660 (300 read rows + 360 `not read` rows). Read: 300 (150 in the first job, 150 in continuation 1). Not read: 360.
+- Items selected by § Reader method step 2: 660. Items in this file: 660 (450 read rows + 210 `not read` rows). Read: 450 (150 in the first job, 150 in continuation 1, 150 in continuation 2). Not read: 210.
 - GAP rows: 122 (information, not items).
-- Not read, by kind: core 345 (211 `S11` keys, 133 `S10` files, 1 `S9` case), web 3, docs 9, deploy 1, tools 2. The next continuation reads the next 150 in the same order: the 211 core `S11` keys first (file order, from `packages/core/src/sim/plan-bank.test.ts:157` on), then the core `S10` files.
+- Not read, by kind: core 195 (61 `S11` keys, 133 `S10` files, 1 `S9` case), web 3, docs 9, deploy 1, tools 2. The next continuation reads the next 150 in the same order: the 61 core `S11` keys first (file order, from `packages/core/src/web/me.test.ts:54` on), then the 133 core `S10` files (the first 89 of them).
 
 | Section | Read | Not read |
 | --- | --- | --- |
-| Core | 150 | 345 |
+| Core | 300 | 195 |
 | Web | 8 | 3 |
 | Docs | 30 | 9 |
 | Deploy | 72 | 1 |
@@ -880,7 +881,7 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 
 | Action | Rows | Lines | Time of cases (s) |
 | --- | --- | --- | --- |
-| KEEP | 256 | 0 | 6.895 |
+| KEEP | 406 | 0 | 7.322 |
 | DELETE-DUP | 0 | 0 | 0.000 |
 | MERGE-TABLE | 18 | 145 | 0.007 |
 | REWRITE-WEAK | 3 | 0 | 0.003 |
@@ -888,6 +889,20 @@ Functions with 5 or more survived or no-coverage mutants (`mutation-survived.tsv
 | MOVE-TO-UNIT | 0 | 0 | 0.000 |
 | FIX-NEVER-RUNS | 23 | 0 | 0.000 |
 
-KEEP and FIX-NEVER-RUNS by rule: K1 1, K2 83, K3 89, K6 1, none 105. The 18 MERGE-TABLE rows have K1 in 10 rows (they keep every input) and no K rule in 8; the 3 REWRITE-WEAK rows have none.
+KEEP and FIX-NEVER-RUNS by rule: K1 1, K2 163, K3 104, K6 1, none 160. The 18 MERGE-TABLE rows have K1 in 10 rows (they keep every input) and no K rule in 8; the 3 REWRITE-WEAK rows have none.
 
-Core `S11` rows of this job are mostly KEEP by K2 or K3 (registries, schemas, privacy rules) or a plain case with a distinct input class. No `DELETE-DUP` row: that class needs an `S10` case and a named twin, and the `S11` and `S6` items of this job have neither. The `S10` files are the first place where a `DELETE-DUP` can appear.
+Core `S11` rows of the first two continuations are KEEP by K2 or K3 (registries, schemas, privacy and recipient rules) or a plain case with a distinct input class. Continuation 2 read the `sim/`, `testmail/`, `texts/`, `triage/`, `trust/` and `web/` keys: 150 KEEP rows (K2 80, K3 15, none 55), no cut row. No `DELETE-DUP` row exists yet: that class needs an `S10` case and a named twin, and no `S11`, `S6` or `S2` item has one. The `S10` files are the first place where a `DELETE-DUP` can appear.
+
+Table candidates that the scan did not flag (no row, noted in the evidence): `web/errors.test.ts` `:23` and `:28` (two more `apiErrorCodes` pins next to group T38), `triage/eval-case.test.ts` `:158`, `:162`, `:166` (three refusals), `triage/sender-history.test.ts` `:8`, `:12`, `:16`, `:21` (four `relationOf` cases) and `time.test.ts` `:13`, `:23` (`addDays`). Two cases pin a possible weakness: `triage/payloads.test.ts:49` accepts the date `2026-13-01`, and `web/activity.test.ts:39` accepts an unknown query key.
+
+## Note check
+
+Job base `7180a84a`; master `eb1c6094` merged last (earlier merges of `c3726de2` and `b624c1d6` came first; the merges brought new and changed `apps/docs` files, e.g. `apps/docs/scripts/workflows.test.ts` and a new `apps/docs/src/demo-video.test.ts`, and no `packages/core` file). The docs keys of the earlier jobs may have moved; the next continuation that reads docs items rescans first. The 150 core keys of this job are unaffected.
+
+- Key rescan at the base (11,997 rows, core 2,117 keys; the 150 keys of this job all resolve): `/tmp/f125-s04c2/rescan.log`.
+- File counts (450 read rows, 210 `not read` rows, 660 in all; the 150 keys of this job are in the read table and not in the `not read` list; the 3 keys in both lists are the `deploy/test/compose-lib.test.ts` cases of the first job; the duplicate read keys are `S11` cases that are also in an `S5` or `S6` group row): `/tmp/f125-s04c2/file-check.log`.
+- Files this branch changes against master (only this review file; no test file, no `bun.lock`, no `.env`): `/tmp/f125-s04c2/own-changes.log`.
+- `bun run typecheck` after the last merge, exit 0: `/tmp/f125-s04c2/typecheck.log`.
+- `bun run lint` after the last merge, exit 0, 0 errors and 11 warnings: `/tmp/f125-s04c2/lint.log`.
+- `bun run test:unit:ci` after the last merge, exit 0, 7,396 pass, 0 fail: `/tmp/f125-s04c2/unit.log`.
+- Exit codes of the three runs: `/tmp/f125-s04c2/status.log`.

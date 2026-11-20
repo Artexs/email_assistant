@@ -26,7 +26,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F129-every-command-line-tool-follows-one-standard-and-agents-find-each-tool-its-risk-and-its-exit-codes-in-one-generated-list` (🟠 ACTIVE): Every command-line tool follows one standard, and agents find each tool, its risk and its exit codes in one generated list
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F124-the-unit-and-integration-suites-run-in-parallel-and-no-unit-test-waits-for-a-real-multi-second-timeout` (🟠 ACTIVE): The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
-- `F121-e10b-public-pages-and-demo` (🟠 ACTIVE): E10b Public pages and demo
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
@@ -62,6 +61,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F121-e10b-public-pages-and-demo` (🟢 PROVEN): E10b Public pages and demo; landed 2026-11-20
 - `F139-a-restore-into-a-fresh-database-volume-starts-without-the-guard-empty-failure` (🟢 PROVEN): A restore into a fresh database volume starts without the guard-empty failure; landed 2026-11-19
 - `F137-the-data-request-erase-keeps-every-mail-of-another-person-and-no-longer-leaves-mail-behind-when-an-address-has-odd-whitespace-a-dotless-i-or-a-unicode-case-form-the-text-match-misses` (🟢 PROVEN): the data request erase keeps every mail of another person and leaves no mail behind for odd whitespace, a dotless i or a Unicode case form; landed 2026-11-19
 - `F135-the-data-request-erase-finds-mail-of-a-sender-whose-address-has-a-greek-final-sigma-or-a-turkish-dotted-capital-i-the-database-and-the-program-lower-case-it-alike` (🟢 PROVEN): the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike); landed 2026-11-19
@@ -71,8 +71,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F119-e7-t7-identity-b-oidc` (🟢 PROVEN): E7-T7 Identity B (OIDC); landed 2026-11-19
 - `F118-e9b-phone-channel-pwa-push-telegram-detail` (🟢 PROVEN): E9b Phone channel (PWA, push, Telegram detail); landed 2026-11-19
 - `F116-e5b-open-loops` (🟢 PROVEN): E5b Open loops; landed 2026-11-19
-- `F114-e8b-alerts-and-releases-incl-the-restore-drill` (🟢 PROVEN): E8b Alerts and releases (incl. the restore drill); landed 2026-11-19
-- 2026-11: 105 landed. spec/features/done/2026-11/
+- 2026-11: 106 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
