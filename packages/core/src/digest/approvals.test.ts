@@ -1465,6 +1465,22 @@ describe("renderApprovalRequest, the whole card text", () => {
     const quoted = (text: string, cut = false) =>
       card({ quote: { text, cut } }).slice(card({ quote: null }).length - 2);
 
+    test("an empty quote on a card with a body over the limit shows no quote block and no cut note", () => {
+      const lines = card({ body: "b".repeat(4200), quote: { text: "", cut: false } });
+      expect(lines.map((line) => (line.startsWith("bbbb") ? `body of ${line.length} characters` : line))).toEqual([
+        "📤 Send? Delegation to Anna Nowak anna@example.com",
+        EXTERNAL,
+        "Subject: Fwd: Offer",
+        "Due: 2026-03-09",
+        "",
+        "Draft:",
+        "body of 3826 characters",
+        "(draft text cut; the full text is in the draft)",
+        "",
+        SEND_LINE,
+      ]);
+    });
+
     test("the header keeps the bare address; the body shows no link and no address; the note says links are hidden", () => {
       expect(quoted("Od: Jan <jan@firma.pl>\nDW: ola@firma.pl\n\nwww.firma.pl i jan@firma.pl")).toEqual([
         "",
