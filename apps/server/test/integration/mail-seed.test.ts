@@ -334,7 +334,7 @@ describe("auditMailbox per folder", () => {
         .execute();
       const results = await auditMailbox({ db: trx, secrets }, ctx, mailboxId, since);
       expect(results[0]?.counts).toEqual({ mail: 2, stored: 1, missing: 1, duplicates: 0, cross: 0 });
-      expect(auditExitCode(results[0]?.counts)).toBe(2);
+      expect(auditExitCode(results[0]?.counts)).toBe(1);
     });
   });
 });
@@ -377,7 +377,7 @@ describe("mailbox:seed --folder CLI", () => {
 
 describe("mailbox:seed and mailbox:audit CLI", () => {
   // Six CLI processes start one after the other; on a CI runner they take more than the 5 s default.
-  test("seed exits 1 for a wrong or missing test address, and 0 with the right one; audit exits 2, then 0", async () => {
+  test("seed exits 1 for a wrong or missing test address, and 0 with the right one; audit exits 1, then 0; audit with no --since exits 2", async () => {
     const { orgId, userId } = await createOrg(db);
     try {
       const { mailboxId, address, imap } = await connectGreenmail(db, { orgId });
@@ -399,7 +399,7 @@ describe("mailbox:seed and mailbox:audit CLI", () => {
 
       const since = new Date(Date.now() - 3_600_000).toISOString();
       const lost = await run(auditScript, [...args, "--since", since], {});
-      expect(lost.code).toBe(2);
+      expect(lost.code).toBe(1);
       expect(lost.stdout).toContain("inbox=3 stored=0 missing=3 duplicates=0 cross=0");
 
       const provider = await openImapProvider(imap);
@@ -417,7 +417,7 @@ describe("mailbox:seed and mailbox:audit CLI", () => {
       expect(clean.stdout).toContain("inbox=3 stored=3 missing=0 duplicates=0 cross=0");
 
       const bad = await run(auditScript, args, {});
-      expect(bad.code).toBe(1);
+      expect(bad.code).toBe(2);
       expect(bad.stderr).toContain("usage");
     } finally {
       await db.deleteFrom("organizations").where("id", "=", orgId).execute();

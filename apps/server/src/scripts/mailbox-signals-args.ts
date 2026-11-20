@@ -1,15 +1,27 @@
-import { parseArgs } from "node:util";
-
+import { type CliDescription, UsageError } from "@ea/core";
 import { z } from "zod";
 
 import type { MailboxSignals } from "../modules/mail";
 
-export const usage = [
-  "usage: bun run mailbox:signals --org-id <uuid> --mailbox-id <uuid> [--days 30]",
-  "  Read-only. Counts of INBOX mail of the last 1-90 days: IMAP flags, headers of the newest mails, server names.",
-  "  Prints counts and mail server names only: no subject, address or UID.",
-  "  Exit 0: done. Exit 1: usage error or failure.",
-].join("\n");
+import { parseFlags } from "./lib/parse-flags";
+
+export const cliDescriptions = [
+  {
+    name: "mailbox:signals",
+    summary: "Counts the INBOX mail flags, headers and mail server names of the last days.",
+    risk: "read",
+    needs: ["db", "imap"],
+    usage: [
+      "bun run mailbox:signals --org-id <uuid> --mailbox-id <uuid> [--days 30]",
+      "  Read-only. Counts of INBOX mail of the last 1-90 days: IMAP flags, headers of the newest mails, server names.",
+      "  Prints counts and mail server names only: no subject, address or UID.",
+    ].join("\n"),
+    exits: {
+      1: "a failure, or the mail login was refused (the reason code is printed)",
+      3: "the database or the mail server did not answer",
+    },
+  },
+] satisfies readonly CliDescription[];
 
 export interface SignalsOptions {
   orgId: string;
@@ -17,28 +29,27 @@ export interface SignalsOptions {
   days: number;
 }
 
-export function readSignalsOptions(args: string[]): SignalsOptions | undefined {
-  try {
-    const { values } = parseArgs({
-      args,
-      options: { "org-id": { type: "string" }, "mailbox-id": { type: "string" }, days: { type: "string" } },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const mailboxId = values["mailbox-id"];
-    if (orgId === undefined || mailboxId === undefined) return undefined;
-    if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(mailboxId).success) return undefined;
-    const days = z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .pipe(z.number().int().min(1).max(90))
-      .safeParse(values.days ?? "30");
-    if (!days.success) return undefined;
-    return { orgId, mailboxId, days: days.data };
-  } catch {
-    return undefined;
+const argsSchema = z.object({
+  orgId: z.uuid(),
+  mailboxId: z.uuid(),
+  days: z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(90)),
+});
+
+// Throws `UsageError` (or a `parseArgs` error, which `runCli` also maps to exit 2) on any bad argument.
+export function parseMailboxSignalsArgs(argv: string[]): SignalsOptions {
+  const { values } = parseFlags({
+    args: argv,
+    options: { "org-id": { type: "string" }, "mailbox-id": { type: "string" }, days: { type: "string" } },
+  });
+  const parsed = argsSchema.safeParse({
+    orgId: values["org-id"],
+    mailboxId: values["mailbox-id"],
+    days: values.days ?? "30",
+  });
+  if (!parsed.success) {
+    throw new UsageError("--org-id and --mailbox-id are required uuids; --days is an integer from 1 to 90");
   }
+  return parsed.data;
 }
 
 /** One `key value` line per field; the server names as `authserv <name> <count>` lines. */

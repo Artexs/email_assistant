@@ -141,17 +141,12 @@ async function removeOrg(orgId: string, userId: string): Promise<void> {
   await db.deleteFrom("users").where("id", "=", userId).execute();
 }
 
-// The tools of the standard (docs/cli.md) exit 2 on bad arguments; the four old ones still exit 1.
+// The tools of the standard (docs/cli.md) exit 2 on bad arguments.
 describe("usage goes to stderr", () => {
-  for (const [name, code] of [
-    ["mailbox-audit", 1],
-    ["mailbox-backfill", 1],
-    ["mailbox-rescan", 2],
-    ["mailbox-settings", 2],
-  ] as const) {
+  for (const name of ["mailbox-audit", "mailbox-backfill", "mailbox-rescan", "mailbox-settings"] as const) {
     test(name, async () => {
       const result = await run(name, []);
-      expect(result.code).toBe(code);
+      expect(result.code).toBe(2);
       expectOnlyStderr(result, name, "usage");
     });
   }
@@ -173,16 +168,16 @@ describe("mailbox-probe usage goes to stderr", () => {
   });
 });
 
-// A tool of the standard prints `unreachable:` and exits 3 (docs/cli.md); the four old mailbox tools still print `failed:` and exit 1.
+// A tool of the standard prints `unreachable:` and exits 3 (docs/cli.md).
 describe("a database that is down: one line on stderr, nothing to stdout", () => {
   const id = randomUUID();
   const args = ["--org-id", id, "--mailbox-id", id];
   const cases: [string, string[], { stdin?: string; env?: Record<string, string> }, number, string][] = [
-    ["mailbox-audit", [...args, "--since", "2026-11-01T00:00:00Z"], {}, 1, "failed:"],
-    ["mailbox-backfill", args, {}, 1, "failed:"],
+    ["mailbox-audit", [...args, "--since", "2026-11-01T00:00:00Z"], {}, 3, "unreachable:"],
+    ["mailbox-backfill", args, {}, 3, "unreachable:"],
     ["mailbox-check", args, {}, 3, "unreachable:"],
     ["mailbox-rescan", args, {}, 3, "unreachable:"],
-    ["mailbox-seed", args, { env: { TEST_MAILBOX_ADDRESS: "a@localhost" } }, 1, "failed:"],
+    ["mailbox-seed", args, { env: { TEST_MAILBOX_ADDRESS: "a@localhost" } }, 3, "unreachable:"],
     ["mailbox-settings", ["show", ...args], {}, 3, "unreachable:"],
     ["mailbox-profile", args, {}, 3, "unreachable:"],
     ["mailbox-password", args, { stdin: "secret\n" }, 3, "unreachable:"],

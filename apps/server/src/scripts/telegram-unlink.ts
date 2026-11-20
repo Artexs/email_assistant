@@ -1,43 +1,16 @@
-import { parseArgs } from "node:util";
-
-import { z } from "zod";
+import { EXIT } from "@ea/core";
 
 import { unlinkUser } from "../modules/channels";
-import { createCliOutput } from "../platform/cli";
+import { exitCodeOf, runCli, type CliSpec } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-const out = createCliOutput("telegram-unlink");
+import { cliDescriptions, parseTelegramUnlinkArgs } from "./telegram-unlink-args";
 
-const usage = "usage: bun run telegram:unlink --org-id <uuid> --user-id <uuid>";
-
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        "user-id": { type: "string" },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const userId = values["user-id"];
-    if (orgId === undefined || userId === undefined) return undefined;
-    if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(userId).success) return undefined;
-    return { orgId, userId };
-  } catch {
-    return undefined;
-  }
-}
-
-async function main(): Promise<number> {
-  const options = readOptions();
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  // Parse first: a bad argument exits 2 before the config or the DB.
+  const options = parseTelegramUnlinkArgs(argv);
 
   const config = loadConfig();
   const db = createDb(config.DATABASE_URL);
@@ -47,16 +20,12 @@ async function main(): Promise<number> {
     out.print(`unlinked ${count} chat(s) of user ${options.userId}`);
     return 0;
   } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
+    const code = exitCodeOf(error);
+    out.fail(`${code === EXIT.unreachable ? "unreachable" : "failed"}: ${describeError(error)}`);
+    return code;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) await runCli({ prefix: "telegram-unlink", descriptions: cliDescriptions, main });
