@@ -9,7 +9,7 @@ export const STYLE_SCENARIO = "scenario";
 export const STYLE_NONE = "none";
 
 // The style file of the stylist eval (`evals/results/styles/`). Synthetic text only.
-const styleFileSchema = z.object({
+export const styleFileSchema = z.object({
   scenario: z.string(),
   part: z.string(),
   promptVersion: z.string().min(1),
@@ -31,7 +31,7 @@ export class StyleFileError extends Error {}
 
 // The style key of a file is its prompt version and the start of the hash of its text, so two files of one prompt
 // version never share a state file.
-function keyOfFile(promptVersion: string, text: string): string {
+export function keyOfFile(promptVersion: string, text: string): string {
   const hash = createHash("sha256").update(text).digest("hex").slice(0, 8);
   return `${promptVersion.replace(/[^\w.-]/g, "_")}-${hash}`;
 }

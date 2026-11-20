@@ -49,6 +49,7 @@
     "triage:cost": "bun apps/server/src/scripts/triage-cost.ts",
     "triage:label": "bun apps/server/src/scripts/triage-label.ts",
     "eval": "bun apps/server/src/scripts/eval.ts",
+    "eval:style-gate": "bun apps/server/src/scripts/eval-style-gate.ts",
     "sim": "bun apps/server/src/scripts/sim.ts",
     "lab": "bun apps/server/src/scripts/lab.ts",
     "testmail:setup": "bun apps/server/src/scripts/testmail.ts setup",
