@@ -20,7 +20,7 @@ export function startHttp(
   { scopeOfActions }: JobsStart
 ): void {
   const { config, db, log, scheduler, runs, secrets, mailOAuth, late } = ctx;
-  const { gate, scopeOfSends, stylePreview, replySamples } = triage;
+  const { gate, scopeOfSends, stylePreview, styleSuggestion, replySamples } = triage;
   void heartbeat.tick();
 
   const bot = late.telegram;
@@ -34,6 +34,7 @@ export function startHttp(
     mailOAuthLogin: { oauthTokens: mailOAuth.tokens },
     gate,
     stylePreview,
+    styleSuggestion,
     replySamples,
     onAuthMailFailed: (tenant, userId, kind, code) => operator.authMailFailed(tenant, userId, kind, code, new Date()),
   });

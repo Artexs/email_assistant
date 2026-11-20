@@ -27,7 +27,7 @@ import {
 } from "./modules/mail";
 import { operatorRoutes } from "./modules/operator";
 import { privacyRoutes, type PrivacyRouteDeps } from "./modules/privacy";
-import { replyRoutes, type ReplySampleScope, type StylePreview } from "./modules/replies";
+import { replyRoutes, type ReplySampleScope, type StylePreview, type StyleSuggest } from "./modules/replies";
 import { activityRoutes, statsRoutes } from "./modules/reports";
 import { tenancyRoutes, type TenancyRouteDeps } from "./modules/tenancy";
 import { newsletterRoutes, reviewRoutes, triageRoutes } from "./modules/triage";
@@ -65,6 +65,8 @@ export interface WebExtras {
   postOneClick?: (url: URL) => Promise<OneClickResult>;
   /** The style preview of the reply drafts: one drafter call on a fixed sample mail. Absent or null: no model client runs, and a preview answers `failed`. */
   stylePreview?: StylePreview | null;
+  /** The writing-style suggestion from the sent mail. Absent or null: no model client runs, and a suggestion answers `failed` / `llm_off`. */
+  styleSuggestion?: StyleSuggest | null;
   /** The clock and the model scope of the sample drafts of the reply drafts. Absent or null: no model client runs, and a sample run answers 409 `llm_off`. */
   replySamples?: ReplySampleScope | null;
   /** Default: the global `fetch`. The only way out to a push service (the test notice). A test passes a fake that answers on the loopback. */
@@ -135,7 +137,15 @@ export function apiRouters(
     );
     api.route("/", settingsRoutes(settingsRouteDeps(db, now, testMailRule(config), extras.gate)));
     api.route("/", trustRoutes({ settings: settingsDeps(db, now, extras.gate), testMail: testMailRule(config) }));
-    api.route("/", replyRoutes({ db, preview: extras.stylePreview ?? null, samples: extras.replySamples ?? null }));
+    api.route(
+      "/",
+      replyRoutes({
+        db,
+        preview: extras.stylePreview ?? null,
+        samples: extras.replySamples ?? null,
+        styleSuggestion: extras.styleSuggestion ?? null,
+      })
+    );
     api.route("/", rulesRoutes({ db, now }));
     api.route("/", suggestionRoutes({ db, now, testMail: testMailRule(config) }));
     api.route("/", activityRoutes({ db, now, sender: { db, credentialsKey: config.CREDENTIALS_KEY } }));
