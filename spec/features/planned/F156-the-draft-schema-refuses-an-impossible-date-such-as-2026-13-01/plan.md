@@ -76,7 +76,7 @@ Move the ticket to `active/`, then spawn stage 01 with the board's worker flags 
 
 - Scouts: 0. The job task says "Do not use limen wait or any tool that waits for another job", so I read the code myself (the ticket is small).
 - [written] ticket.md (`## Sequenced`, `## Slices` added), plan.md, stages/stage-01-calendar-due-date.md, questions.md.
-- Word counts (`wc -w`, before the commit): plan.md 1,196; stage 01 667; ticket.md 199; questions.md 174.
+- Word counts (`wc -w`, before the commit): plan.md 1,207; stage 01 667; ticket.md 199; questions.md 174.
 
 ## Cold review
 
