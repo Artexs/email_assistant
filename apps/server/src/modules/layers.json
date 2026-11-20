@@ -56,6 +56,6 @@
       "file": "scripts/e2e-seed.ts",
       "why": "E2E test seed: writes a mailbox, its credentials and its inbox folder with the mail repository."
     },
-    { "file": "scripts/e2e-activity-rows.ts", "why": "E2E test seed: writes an inbox folder with the mail repository." }
+    { "file": "scripts/lib/e2e-activity-rows.ts", "why": "E2E test seed: writes an inbox folder with the mail repository." }
   ]
 }

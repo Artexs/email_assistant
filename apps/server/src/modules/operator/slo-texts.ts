@@ -1,4 +1,4 @@
-import type { SloKind } from "@ea/core";
+import { MINUTE_MS, type SloKind } from "@ea/core";
 
 // The text of one operator alert, in English or Polish (`OPERATOR_LOCALE`). Plain text for Telegram.
 // It holds numbers, UUIDs of mailboxes, mails or organizations, the kind code and the runbook path. It never holds a
@@ -8,7 +8,6 @@ export type AlertLocale = "en" | "pl";
 export type AlertTextPhase = "open" | "repeat" | "resolved" | "test";
 
 const MAX_SHOWN_IDS = 5;
-const MINUTE_MS = 60_000;
 
 export interface SloTextInput {
   kind: SloKind;

@@ -14,10 +14,10 @@ import { readSlots, writeJson } from "../platform/sim-files";
 
 import { type ClassifierDeps, runClassifier } from "./eval";
 import { parseEvalArgs } from "./eval-args";
-import { evalFailureLine } from "./eval-failure-line";
-import { JUDGE_SAME_MODEL } from "./eval-judge-setup";
-import { runSim, type SimDeps } from "./eval-sim";
-import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
+import { evalFailureLine } from "./lib/eval-failure-line";
+import { JUDGE_SAME_MODEL } from "./lib/eval-judge-setup";
+import { runSim, type SimDeps } from "./lib/eval-sim";
+import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./lib/sim-fixtures.test-helper";
 
 // `bun run eval` and `eval --sim` print through createCliOutput: `print` to stdout, `fail` to stderr. Each test reads
 // the two streams apart: console.log is stdout, console.error is stderr. The fake client makes no real call.
