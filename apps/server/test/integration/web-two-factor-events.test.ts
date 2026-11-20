@@ -370,3 +370,8 @@ describe("two-factor events", () => {
     }
   });
 });
+
+// The last test of the file: it checks every console line of the run above.
+describe("secrets", () => {
+  test("events: no console line holds a secret, a code or otpauth", kit.expectNoSecretInConsole);
+});

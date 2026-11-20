@@ -290,3 +290,8 @@ describe("F128: a code for turn off and new codes", () => {
     for (const secret of [code, user.secret, ...user.codes]) expect(text).not.toContain(secret);
   });
 });
+
+// The last test of the file: it checks every console line of the run above.
+describe("secrets", () => {
+  test("codes: no console line holds a secret, a code or otpauth", kit.expectNoSecretInConsole);
+});

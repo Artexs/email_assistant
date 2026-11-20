@@ -9,7 +9,7 @@ import { createLockoutStore } from "../../src/platform/auth-lockout";
 import type { Db } from "../../src/platform/db";
 import { setLogLevel } from "../../src/platform/log";
 import { auditWebEvent, termsAcceptedHandler } from "../../src/web";
-import { secretOfUri, totpCode } from "../totp";
+import { holdsToken, secretOfUri, totpCode } from "../totp";
 
 import { resetBody } from "./web-helpers";
 
@@ -394,6 +394,18 @@ export function makeWebTwoFactorKit(db: Db) {
     return { secret, codes };
   }
 
+  // The last case of each web-two-factor part: no console line of the part holds a secret, a code or otpauth.
+  const expectNoSecretInConsole = (): void => {
+    const lines = [...spies.log.mock.calls, ...spies.warn.mock.calls, ...spies.error.mock.calls].map((call) =>
+      call.map((part: unknown) => (part instanceof Error ? `${part.message}\n${part.stack}` : String(part))).join(" ")
+    );
+    expect(secrets.length).toBeGreaterThan(20);
+    for (const line of lines) {
+      expect(holdsToken(line, "otpauth")).toBe(false);
+      for (const secret of secrets) expect(holdsToken(line, secret)).toBe(false);
+    }
+  };
+
   return {
     handle,
     lockHandle,
@@ -401,6 +413,7 @@ export function makeWebTwoFactorKit(db: Db) {
     auth,
     secrets,
     spies,
+    expectNoSecretInConsole,
     silenceConsole,
     cleanup,
     close,
