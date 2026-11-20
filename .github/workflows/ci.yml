@@ -113,6 +113,12 @@ jobs:
           psql "postgresql://postgres:postgres@localhost:5432/email_assistant" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE email_assistant_e2e'
           psql "postgresql://postgres:postgres@localhost:5432/email_assistant_e2e" -v ON_ERROR_STOP=1 -c 'GRANT CONNECT ON DATABASE email_assistant_e2e TO migrator, app' -c 'REVOKE CREATE ON SCHEMA public FROM PUBLIC' -c 'GRANT USAGE, CREATE ON SCHEMA public TO migrator' -c 'GRANT USAGE ON SCHEMA public TO app'
       - run: bun run db:migrate
+      # The seed cases skip in the ci job (no e2e URLs there, so test:int skips them); here they must run, and a skip fails the step.
+      - name: Run the e2e seed cases and fail on a skip
+        run: |
+          log=$(mktemp)
+          bun test apps/server/test/integration/e2e-seed.test.ts 2>&1 | tee "$log"
+          if grep -Eq '^ *[0-9]+ skip' "$log"; then echo "e2e seed cases were skipped"; exit 1; fi
       - run: bun run web:build
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
