@@ -266,8 +266,8 @@ export const dataCategories: readonly DataCategory[] = [
     id: "mailbox-profile",
     label: { en: "Mailbox writing profile", pl: "Profil pisania skrzynki" },
     purpose: {
-      en: "The name, the signature and the writing style that you set for a mailbox, used in the drafts that the AI writes",
-      pl: "Imię i nazwisko, podpis i styl pisania ustawione dla skrzynki, używane w szkicach pisanych przez AI",
+      en: "The name, the signature and the writing style that you set for a mailbox, used in the drafts that the AI writes or in a style suggestion from your sent mail that an owner saved",
+      pl: "Imię i nazwisko, podpis i styl pisania ustawione dla skrzynki, używane w szkicach pisanych przez AI lub w sugestii stylu z Twojej wysłanej poczty, którą zapisał właściciel",
     },
     columns: ["mailbox_profiles.*"],
     // A signature can name a colleague or a contact: the DSR address map covers these columns (`address-map.ts`).
