@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F157 · The time-literal rule and the size lint cover test files, and test files over 800 lines are split

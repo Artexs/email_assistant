@@ -92,5 +92,6 @@ Round 1 (`claude-sonnet-5-5`; no `[risky]` stage): FAIL, 4 blocking ([`plan-revi
 
 ## Log
 
+- 2026-11-20, stage 20: test-code files over 800 lines: 0 (one late file, 808 lines, was split; 197 files are over 400 and warn). Sum of `cases=` over the 38 `split-proof PASS` lines in `split-log/`: 1901. `bun run lint` over the repo: 0 errors, 220 `max-lines` warnings. `check:job PASS master=1faca8f9c6 tip=5c0289d6e0 full=0`.
 - 2026-11-20, repair at f4c2a1bc: review findings B1–B4, N1–N3 and N5–N8 fixed (map: `plan-repair-1.md`); N4 not taken.
 - 2026-11-20 at ea317d34: plan written.

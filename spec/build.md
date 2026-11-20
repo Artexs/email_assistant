@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F157-the-time-literal-rule-and-the-size-lint-cover-test-files-and-test-files-over-800-lines-are-split` (🟠 ACTIVE): The time-literal rule and the size lint cover test files, and test files over 800 lines are split
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
@@ -55,13 +54,13 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F160-core-mutation-gaps-left-by-the-full-run-one-replies-schema-case-and-six-functions-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): Core mutation gaps left by the full run (one replies schema case and six functions) get tests that fail when the code breaks; landed 2026-11-20
 - `F159-the-english-approval-text-says-1-time-an-empty-quote-shows-no-cut-note-and-the-dead-code-the-mutation-run-found-in-the-approval-card-is-removed` (🟢 PROVEN): The English approval text says "1 time", and an empty quote shows no false cut note; landed 2026-11-20
 - `F158-tmp-never-fills-up-from-job-caches-because-a-periodic-cleanup-removes-stale-cache-files` (🟢 PROVEN): /tmp never fills up from job caches because a periodic cleanup removes stale cache files; landed 2026-11-20
+- `F157-the-time-literal-rule-and-the-size-lint-cover-test-files-and-test-files-over-800-lines-are-split` (🟢 PROVEN): The time-literal rule and the size lint cover test files, and test files over 800 lines are split; landed 2026-11-20
 - `F156-the-draft-schema-refuses-an-impossible-date-such-as-2026-13-01` (🟢 PROVEN): The draft schema refuses an impossible date such as 2026-13-01; landed 2026-11-20
 - `F155-the-source-text-regexes-in-main-test-ts-and-composition-test-ts-are-replaced-by-behaviour-tests` (🟢 PROVEN): The source-text regexes in main.test.ts and composition.test.ts are replaced by behaviour tests; landed 2026-11-20
 - `F154-the-core-functions-with-5-or-more-surviving-mutants-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): The core functions with 5 or more surviving mutants get tests that fail when the code breaks; landed 2026-11-20
 - `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
 - `F150-stale-state-statements-and-bare-codes-outside-comments-are-cleaned-and-the-lint-rule-covers-them` (🟢 PROVEN): Stale state statements and bare codes outside comments are cleaned and the lint rule covers them; landed 2026-11-20
-- `F149-telegram-callbacks-dispatch-through-a-family-registry` (🟢 PROVEN): Telegram callbacks dispatch through a family registry; landed 2026-11-20
-- 2026-11: 129 landed. spec/features/done/2026-11/
+- 2026-11: 130 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 

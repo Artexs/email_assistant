@@ -6,7 +6,7 @@ import { MINUTE_MS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { ESLint } from "eslint";
 
-// The size rule of `eslint.config.js` (docs/code-patterns.md § Size and shape): a non-test source file over 400 lines
+// The size rule of `eslint.config.js` (docs/code-patterns.md § Size and shape): a source file over 400 lines
 // warns (`max-lines`), over 800 lines fails (`size/max-lines-hard`). Both count every line, as `wc -l` does.
 const repoRoot = path.resolve(import.meta.dir, "../../..");
 const eslint = new ESLint({ cwd: repoRoot });
@@ -97,17 +97,32 @@ describe("size rule", () => {
   );
 
   test(
-    "a test file of 801 lines: no size message",
+    "a test file of 801 lines: one warning and one error",
     async () => {
-      expect(await sizeMessages("apps/server/src/__size-fixture.test.ts", linesText(801))).toEqual([]);
+      expect(await sizeMessages("apps/server/src/__size-fixture.test.ts", linesText(801))).toEqual([warning, failure]);
     },
     TIMEOUT
   );
 
   test(
-    "a file under apps/server/test of 801 lines: no size message",
+    "a file under apps/server/test of 801 lines: one warning and one error",
     async () => {
-      expect(await sizeMessages("apps/server/test/integration/__size-fixture.ts", linesText(801))).toEqual([]);
+      expect(await sizeMessages("apps/server/test/integration/__size-fixture.ts", linesText(801))).toEqual([
+        warning,
+        failure,
+      ]);
+    },
+    TIMEOUT
+  );
+
+  test(
+    "an e2e spec of 801 lines gives a warning and an error; a test helper of 401 lines gives a warning",
+    async () => {
+      expect(await sizeMessages("apps/web/e2e/tests/__size-fixture.spec.ts", linesText(801))).toEqual([
+        warning,
+        failure,
+      ]);
+      expect(await sizeMessages("packages/core/src/__size-fixture.test-helper.ts", linesText(401))).toEqual([warning]);
     },
     TIMEOUT
   );
@@ -156,7 +171,6 @@ describe("size exceptions", () => {
     const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: repoRoot, encoding: "utf8" })
       .split("\0")
       .filter((file) => /\.(ts|tsx|astro|js|mjs)$/.test(file))
-      .filter((file) => !/\.test\.tsx?$|\.spec\.ts$|\.test-helper\.ts$/.test(file))
       .filter((file) => existsSync(path.join(repoRoot, file)))
       // This file names the rules in its own text.
       .filter((file) => file !== "apps/server/src/file-size.test.ts");
