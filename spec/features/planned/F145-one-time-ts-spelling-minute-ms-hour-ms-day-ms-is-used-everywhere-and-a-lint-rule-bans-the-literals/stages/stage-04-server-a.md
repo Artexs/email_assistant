@@ -1,6 +1,6 @@
-# F145 stage 03 — Rewrite server: channels, triage, actions, operator, reports
+# F145 stage 04 — Rewrite server: channels, triage, actions, operator, reports
 
-Needs stage 01: `MINUTE_MS` in `packages/core/src/time.ts` and the `ea/no-time-literals` warnings. May run next to 02 and 04 (no shared file).
+Needs stage 01: `MINUTE_MS` in `packages/core/src/time.ts` and the `ea/no-time-literals` warnings. Needs stage 02: `time-rewrite-check` (its Proof runs it). May run next to 03 and 05 (no shared file).
 
 Part of [`../plan.md`](../plan.md).
 
@@ -26,14 +26,14 @@ Every `ea/no-time-literals` warning under `apps/server/src/modules/{channels,tri
 
 ## Final message
 
-A table `file · old → new` for every changed expression, each D8 disable with its reason, and the `reference.test.ts` regex change.
+The `time-rewrite-check` output (it is in the Proof log), a table `file · old → new` for every changed expression, each D8 disable with its reason, and the `reference.test.ts` regex change.
 
 ## Done when
 
 - No `ea/no-time-literals` warning in the area.
 - No value changed (review).
-- The Proof of `plan.md` for stage 03 prints `PROOF_OK`.
+- The Proof of `plan.md` for stage 04 prints `PROOF_OK`.
 
 ## Out of scope
 
-Test files except the D11 regex; moving the operator alert texts to core (F147); file splits (F143); other modules (stage 04).
+Test files except the D11 regex; moving the operator alert texts to core (F147); file splits (F143); other modules (stage 05).

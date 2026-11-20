@@ -12,7 +12,7 @@ Every minute, hour and day in the product code is written with `MINUTE_MS`, `HOU
 
 - `MINUTE_MS` joins `HOUR_MS` and `DAY_MS` in `packages/core/src/time.ts`.
 - A local ESLint rule `ea/no-time-literals`, with tests that lint virtual files through the real config.
-- Non-test source under `apps/*/src`, `packages/*/src` and `tools/*/src`: about 156 lines in 98 files at the plan base.
+- Non-test source under `apps/*/src`, `packages/*/src` and `tools/*/src`: about 150 lines in about 100 files at the plan base.
 - The six local `MINUTE_MS` copies and the `MINUTE`/`HOUR`/`DAY` copies in product code and seed scripts go.
 - One rule line in `docs/code-patterns.md` and the styleguide.
 
@@ -26,12 +26,12 @@ Every minute, hour and day in the product code is written with `MINUTE_MS`, `HOU
 
 - `bun run lint` exits 0 at error severity for `ea/no-time-literals`.
 - `apps/server/src/platform/time-lint.test.ts` passes. It fails when the rule is removed from `eslint.config.js`.
-- `packages/core/src/time.ts` is the only non-test file that defines `MINUTE_MS`, `HOUR_MS` or `DAY_MS`.
-- The stage reviews compare each rewritten expression with the old one and find equal values.
+- In the rule scope (non-test source, plan D3), `packages/core/src/time.ts` is the only file that defines `MINUTE_MS`, `HOUR_MS` or `DAY_MS`.
+- The value check of the rewrite stages exits 0: each rewritten expression has the old value.
 
 ## Slices
 
-Five stages. 01 first; 02, 03 and 04 run in parallel; 05 last. No migration, no `bun.lock` change, no owner checkpoint. Detail: `plan.md` § How to run.
+Six stages. 01 (the rule) and 02 (a value check for the rewrites) run in parallel; then 03, 04 and 05 (the rewrites) run in parallel; 06 last. No migration, no `bun.lock` change, no owner checkpoint. Detail: `plan.md` § How to run.
 
 ## Sequenced
 
