@@ -6,6 +6,7 @@ import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { MINUTE_MS } from "@ea/core";
 
 // The approvals organization of the project (see `e2e-approvals-rows.ts`): a waiting send to Anna Nowak (the `waiting` send), a send that
 // the owner approved and SEND_SCOPE=self holds (Piotr Lis is not on the list of the e2e server), a second waiting send (`edit`) and a
@@ -397,7 +398,7 @@ test("S13-T7: the keyboard alone opens a draft, edits it, saves and approves it"
   await expect(approve).toBeVisible();
   await expect(detail).toContainText("keyboard");
   // Approve is off while the committer makes the mailbox copy of the new version; the page turns it on by itself.
-  await expect(approve).toBeEnabled({ timeout: 60_000 });
+  await expect(approve).toBeEnabled({ timeout: MINUTE_MS });
   await tabTo(page, approve);
   await page.keyboard.press("Enter");
   const result = statusOf(page, /^Approved/);
@@ -495,7 +496,7 @@ test("S13-T3: edit the subject and the body, see version 2, approve it and see i
 
   // The new version has no copy in the mailbox yet: Approve is off until the committer made it, and the page finds that out by itself
   // (no reload here).
-  await expect(detail.getByRole("button", { name: en.appr_approve })).toBeEnabled({ timeout: 60_000 });
+  await expect(detail.getByRole("button", { name: en.appr_approve })).toBeEnabled({ timeout: MINUTE_MS });
   await detail.getByRole("button", { name: en.appr_approve }).click();
   await expect(page.getByText(en.appr_done_sending)).toBeVisible();
   await expect(statusOf(page, en.appr_done_sending)).toBeFocused();

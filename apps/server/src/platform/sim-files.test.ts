@@ -4,6 +4,7 @@ import { join } from "node:path";
 import {
   blindBatchFileSchema,
   miniScenario,
+  MINUTE_MS,
   planBank,
   type CaseText,
   type SimPart,
@@ -441,21 +442,25 @@ async function frozen(): Promise<MiniCorpus> {
 }
 
 describe("freeze", () => {
-  test("6 status says not frozen before freeze and v1 pending after it", async () => {
-    const c = await complete();
-    expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: not frozen");
-    const result = await sim(c, "freeze", "mini", ...freezeArgs);
-    expect(result.code).toBe(0);
-    const manifest = readManifest(c.dir);
-    expect(manifest?.audit).toEqual({
-      status: "pending",
-      list: "audit/v1-list.md",
-      verdicts: "audit/v1-verdicts.json",
-      wrong: 0,
-    });
-    expect(manifest?.frozenAt).toBe("2026-11-14");
-    expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: v1 audit pending (0 wrong)");
-  }, 60_000); // this test starts CLI processes; the 5 s default fails under load
+  test(
+    "6 status says not frozen before freeze and v1 pending after it",
+    async () => {
+      const c = await complete();
+      expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: not frozen");
+      const result = await sim(c, "freeze", "mini", ...freezeArgs);
+      expect(result.code).toBe(0);
+      const manifest = readManifest(c.dir);
+      expect(manifest?.audit).toEqual({
+        status: "pending",
+        list: "audit/v1-list.md",
+        verdicts: "audit/v1-verdicts.json",
+        wrong: 0,
+      });
+      expect(manifest?.frozenAt).toBe("2026-11-14");
+      expect((await sim(c, "status", "mini")).stdout.split("\n")[0]).toBe("manifest: v1 audit pending (0 wrong)");
+    },
+    MINUTE_MS
+  ); // this test starts CLI processes; the 5 s default fails under load
 
   test("freeze with the CLI floors prints codes and counts and writes no manifest; a second freeze is refused", async () => {
     const c = await complete();

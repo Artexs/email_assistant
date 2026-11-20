@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { SHOTS } from "../src/shots";
+import { MINUTE_MS } from "@ea/core";
 
 // On the real build: one fixture page uses <Shot> (a test fixture, not a real page). Each case runs the docs build into a
 // folder of its own, so `dist` stays as it was. Other tests scan `src/content/docs` and the source tree at the same time, and a page or
@@ -19,7 +20,7 @@ const SHOT_COMPONENT = join(DOCS, "src/components/Shot.astro");
 // With `DOCS_SHOTS=on` every page with a `<Shot />` line needs its files, also the real pages of the tutorial and the guides, and the
 // Polish fallback of the fixture page needs the Polish ones: a build test that checks one page therefore starts from all 20 files of `SHOTS`.
 // One docs build takes 4 to 15 seconds.
-setDefaultTimeout(60_000);
+setDefaultTimeout(MINUTE_MS);
 let work = "";
 let pages = "";
 

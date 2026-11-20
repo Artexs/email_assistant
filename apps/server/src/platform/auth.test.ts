@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { APIError } from "better-auth/api";
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 
@@ -130,11 +131,11 @@ describe("onAuthError", () => {
 describe("createAddressLimiter", () => {
   test("allows max requests per window per key, then again after the window", () => {
     let at = new Date("2026-11-12T10:00:00Z");
-    const limiter = createAddressLimiter({ max: 3, windowMs: 3_600_000, now: () => at });
+    const limiter = createAddressLimiter({ max: 3, windowMs: HOUR_MS, now: () => at });
     expect([1, 2, 3].map(() => limiter.take("a"))).toEqual([true, true, true]);
     expect(limiter.take("a")).toBe(false);
     expect(limiter.take("b")).toBe(true);
-    at = new Date(at.getTime() + 61 * 60_000);
+    at = new Date(at.getTime() + 61 * MINUTE_MS);
     expect(limiter.take("a")).toBe(true);
   });
 

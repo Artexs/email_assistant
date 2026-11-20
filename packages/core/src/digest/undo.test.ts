@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
+import { DAY_MS, HOUR_MS } from "../time";
+
 import { isUndoable, UNDO_WINDOW_MS } from "./undo";
 import type { ActionView } from "./would-do";
 
 const NOW = new Date("2026-11-07T12:00:00Z");
-const HOUR = 3_600_000;
 
 function view(id: string, over: Partial<ActionView> = {}): ActionView {
   return {
@@ -14,7 +15,7 @@ function view(id: string, over: Partial<ActionView> = {}): ActionView {
     folder: "ai_info",
     reverse: false,
     reversesActionId: null,
-    appliedAt: new Date(NOW.getTime() - HOUR),
+    appliedAt: new Date(NOW.getTime() - HOUR_MS),
     kind: null,
     delegateId: null,
     ...over,
@@ -42,7 +43,7 @@ describe("isUndoable", () => {
   });
 
   test("applied 8 days ago is false; the window edge is true", () => {
-    expect(isUndoable([view("a", { appliedAt: new Date(NOW.getTime() - 8 * 24 * HOUR) })], NOW)).toBe(false);
+    expect(isUndoable([view("a", { appliedAt: new Date(NOW.getTime() - 8 * DAY_MS) })], NOW)).toBe(false);
     expect(isUndoable([view("a", { appliedAt: new Date(NOW.getTime() - UNDO_WINDOW_MS) })], NOW)).toBe(true);
   });
 

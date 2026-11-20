@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import { renderDigestWithBrief, type DigestInput } from "../digest/digest";
 import { MESSAGE_MAX_CHARS } from "../digest/message";
 import { withoutEscapeRemains } from "../digest/text";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../time";
 
 import {
   BRIEF_SECTION_LINES,
@@ -17,11 +18,9 @@ import {
 } from "./brief";
 import {
   briefInput,
-  DAY,
   digestInput,
   digestMailbox,
   digestItem,
-  HOUR,
   loop,
   mail,
   NOW,
@@ -49,10 +48,10 @@ const delegation = (n: number, over: Partial<BriefDelegation> = {}): BriefDelega
 function fullInput(over: Partial<BriefInput> = {}): BriefInput {
   return briefInput({
     urgent: part([
-      mail(1, { receivedAt: new Date(NOW.getTime() - 2 * HOUR) }),
-      mail(2, { receivedAt: new Date(NOW.getTime() - 30 * 60_000) }),
+      mail(1, { receivedAt: new Date(NOW.getTime() - 2 * HOUR_MS) }),
+      mail(2, { receivedAt: new Date(NOW.getTime() - 30 * MINUTE_MS) }),
     ]),
-    reply: part([1, 2, 3, 4, 5, 6, 7].map((n) => mail(10 + n, { receivedAt: new Date(NOW.getTime() - n * DAY) }))),
+    reply: part([1, 2, 3, 4, 5, 6, 7].map((n) => mail(10 + n, { receivedAt: new Date(NOW.getTime() - n * DAY_MS) }))),
     waitingLoops: part([
       loop(1, { counterpart: "anna@example.test", subject: "Offer for Q1" }),
       loop(2, { kind: "delegated", counterpart: "marta@example.test", dueAt: new Date("2026-11-14T09:00:00Z") }),
@@ -94,7 +93,7 @@ describe("loopSections and renderBrief (T1)", () => {
   });
 
   test("a section holds at most 5 lines and counts the rest from the total the reader gave", () => {
-    const rows = [1, 2, 3, 4, 5, 6].map((n) => loop(n, { dueAt: new Date(NOW.getTime() - n * DAY) }));
+    const rows = [1, 2, 3, 4, 5, 6].map((n) => loop(n, { dueAt: new Date(NOW.getTime() - n * DAY_MS) }));
     const sections = loopSections(briefInput({ waitingLoops: part(rows, 9) }));
     expect(sections.waiting.lines).toHaveLength(BRIEF_SECTION_LINES);
     expect(sections.waiting.more).toBe(4);
@@ -123,14 +122,14 @@ describe("the lines (T2, Polish and English)", () => {
         mail(1, {
           from: "Jan Kowalski <jan@firma.test>",
           subject: "Pilna zmiana terminu",
-          receivedAt: new Date(NOW.getTime() - 2 * HOUR),
+          receivedAt: new Date(NOW.getTime() - 2 * HOUR_MS),
         }),
       ]),
       reply: part([
         mail(3, {
           from: "Jan Kowalski <jan@firma.test>",
           subject: "Oferta Q1",
-          receivedAt: new Date(NOW.getTime() - 3 * DAY),
+          receivedAt: new Date(NOW.getTime() - 3 * DAY_MS),
         }),
       ]),
       waitingLoops: part([
@@ -211,7 +210,7 @@ describe("the lines (T2, Polish and English)", () => {
         briefInput({
           waitingLoops: part([
             loop(1, { counterpart: null, text: "potwierdzić termin", subject: "Temat" }),
-            loop(2, { counterpart: null, text: null, subject: null, dueAt: new Date(NOW.getTime() - DAY) }),
+            loop(2, { counterpart: null, text: null, subject: null, dueAt: new Date(NOW.getTime() - DAY_MS) }),
           ]),
           promised: part([loop(3, { kind: "promised", counterpart: null, text: null, subject: null })]),
         })
@@ -377,13 +376,13 @@ describe("the usual reply time of the contact", () => {
 
 describe("the 4096 cut (T3)", () => {
   const rows = Array.from({ length: 5 }, (_, i) =>
-    loop(i + 1, { text: `waiting ${i}`, dueAt: new Date(NOW.getTime() - (10 - i) * DAY) })
+    loop(i + 1, { text: `waiting ${i}`, dueAt: new Date(NOW.getTime() - (10 - i) * DAY_MS) })
   );
   const sectionsInput = briefInput({
     waitingLoops: part(rows),
     promised: part([
-      loop(10, { kind: "promised", text: "first promise", dueAt: new Date(NOW.getTime() - 3 * DAY) }),
-      loop(11, { kind: "promised", text: "last promise", dueAt: new Date(NOW.getTime() - 1 * DAY) }),
+      loop(10, { kind: "promised", text: "first promise", dueAt: new Date(NOW.getTime() - 3 * DAY_MS) }),
+      loop(11, { kind: "promised", text: "last promise", dueAt: new Date(NOW.getTime() - DAY_MS) }),
     ]),
   });
   const normal = [1, 2, 3].map((n) => digestItem(n, "needs_reply", { subject: `Normal row ${n}` }));

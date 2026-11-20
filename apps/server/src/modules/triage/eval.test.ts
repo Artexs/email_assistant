@@ -3,12 +3,14 @@ import { resolve } from "node:path";
 
 import {
   delegateIdOf,
-  type EvalCase,
   EVAL_RECEIVED_AT,
   evalCaseSchema,
+  HOUR_MS,
+  MINUTE_MS,
+  selectCases,
+  type EvalCase,
   type LlmEndpointKind,
   type LlmRole,
-  selectCases,
 } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { z } from "zod";
@@ -213,8 +215,8 @@ describe("runEval", () => {
     expect(input.receivedAt).toEqual(EVAL_RECEIVED_AT);
     expect(input.bodyText).toBe("Body");
     expect(input.thread[0]?.from).toBe("anna@firma.test");
-    expect(input.thread[0]?.receivedAt.getTime()).toBe(EVAL_RECEIVED_AT.getTime() - 2 * 3_600_000);
-    expect(input.thread[1]?.receivedAt.getTime()).toBe(EVAL_RECEIVED_AT.getTime() - 3_600_000);
+    expect(input.thread[0]?.receivedAt.getTime()).toBe(EVAL_RECEIVED_AT.getTime() - 2 * HOUR_MS);
+    expect(input.thread[1]?.receivedAt.getTime()).toBe(EVAL_RECEIVED_AT.getTime() - HOUR_MS);
     expect(input.thread[0]?.bodyExcerpt).toHaveLength(500);
     expect(input.thread[1]?.bodyExcerpt).toBe("short");
   });
@@ -253,7 +255,7 @@ describe("runEval", () => {
     const { llm, calls } = fakeLlm([soft()]);
     const report = await runEval(h.deps(llm), { ...opts, cases: [makeCase()] });
     expect(calls).toHaveLength(5);
-    expect(h.waits).toEqual([10_000, 20_000, 40_000, 60_000]);
+    expect(h.waits).toEqual([10_000, 20_000, 40_000, MINUTE_MS]);
     expect(report.errors).toBe(1);
     expect(report.errorCodes).toEqual({ http_503: 1 });
     expect(report.cases[0]?.errorCode).toBe("http_503");

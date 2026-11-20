@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { z } from "zod";
 
@@ -36,7 +37,7 @@ function client(generate: GenerateFn, extra: { timeoutMs?: number; rpm?: number 
   return createFixedLlmClient(generate, {
     model: MODEL,
     timeoutMs: extra.timeoutMs ?? 1000,
-    rpm: extra.rpm ?? 60_000,
+    rpm: extra.rpm ?? MINUTE_MS,
     now: clock.now,
     sleep: clock.sleep,
   });

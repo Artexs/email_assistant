@@ -300,16 +300,18 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["error", ...cliProcessSelectors] },
   },
   {
-    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module; tests stay out until the test audit cuts them.
+    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Test code is in too (the same list the size rule skips).
     // Later local rules join tools/eslint-rules/index.js; a block registers the one `ea` object (a second object fails).
-    files: ["{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}"],
+    files: [
+      "{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}",
+      "**/*.{test.{ts,tsx},spec.ts,test-helper.ts}",
+      "{apps/server/test,apps/*/e2e,tools/*/test,deploy/test}/**",
+    ],
     ignores: [
       "packages/core/src/time.ts",
-      "**/*.test.{ts,tsx}",
-      "**/*.spec.ts",
-      "**/*.test-helper.ts",
-      "**/test/**",
-      "**/e2e/**",
+      "packages/core/src/time.test.ts", // it pins the three values
+      "apps/server/test/**", // these two folders still hold time literals; their fixes remove both lines
+      "tools/*/test/**",
     ],
     plugins: { ea },
     rules: { "ea/no-time-literals": "error" },

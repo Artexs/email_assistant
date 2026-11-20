@@ -9,6 +9,7 @@ import {
   uuid as briefUuid,
 } from "../loops/brief-fixtures.test-helper";
 import { textTables, type CoreTexts } from "../texts";
+import { MINUTE_MS } from "../time";
 import type { Category } from "../triage/categories";
 
 import { parseCallback } from "./callback";
@@ -1210,14 +1211,13 @@ describe("the header of a digest", () => {
 });
 
 describe("the minimal facts of a digest", () => {
-  const MINUTES = 60_000;
   const problems = (box: Partial<DigestMailbox>): number =>
     digestMinimalFacts(input({ mailboxes: [{ ...mailbox, ...box }] })).mailboxProblems;
 
   test.each([
     {
       name: "an active mailbox that synced exactly 30 minutes ago",
-      box: { lastSyncedAt: new Date(now.getTime() - 30 * MINUTES) },
+      box: { lastSyncedAt: new Date(now.getTime() - 30 * MINUTE_MS) },
       count: 0,
     },
     { name: "a paused mailbox that synced a minute ago", box: { status: "paused" as const }, count: 1 },
@@ -1244,8 +1244,8 @@ describe("a mailbox that synced exactly 30 minutes ago", () => {
       render(input({ mailboxes: [{ ...mailbox, lastSyncedAt: new Date(now.getTime() - ago) }] })).text.split(
         "\n"
       )[2] as string;
-    expect(line(30 * 60_000)).toBe("🔄 Last sync 07:30");
-    expect(line(30 * 60_000 + 1)).toBe("⚠️ Last sync 07:29 (late)");
+    expect(line(30 * MINUTE_MS)).toBe("🔄 Last sync 07:30");
+    expect(line(30 * MINUTE_MS + 1)).toBe("⚠️ Last sync 07:29 (late)");
   });
 });
 

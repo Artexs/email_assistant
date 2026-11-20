@@ -1,13 +1,12 @@
 import type { DigestInput, DigestItem, DigestMailbox } from "../digest/digest";
 import { textTables } from "../texts";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../time";
 
 import type { BriefInput, BriefLoop, BriefMail } from "./brief";
 
 // Fri 2026-11-20 08:00 in Warsaw (UTC+1).
 export const NOW = new Date("2026-11-20T07:00:00Z");
 export const ZONE = "Europe/Warsaw";
-export const HOUR = 3_600_000;
-export const DAY = 24 * HOUR;
 
 export const uuid = (n: number): string => `0190a1b2-c3d4-7e5f-8a9b-${n.toString(16).padStart(12, "0")}`;
 
@@ -15,7 +14,7 @@ export const mail = (n: number, over: Partial<BriefMail> = {}): BriefMail => ({
   emailId: uuid(n),
   from: `Jan Kowalski ${n} <jan${n}@firma.test>`,
   subject: `Oferta Q${n}`,
-  receivedAt: new Date(NOW.getTime() - n * DAY),
+  receivedAt: new Date(NOW.getTime() - n * DAY_MS),
   ...over,
 });
 
@@ -58,7 +57,7 @@ export const digestMailbox: DigestMailbox = {
   id: "m1",
   address: "boss@firma.test",
   status: "active",
-  lastSyncedAt: new Date(NOW.getTime() - 5 * 60_000),
+  lastSyncedAt: new Date(NOW.getTime() - 5 * MINUTE_MS),
   statusChangedAt: new Date("2026-11-01T00:00:00Z"),
   mode: "assist",
 };
@@ -69,7 +68,7 @@ export function digestItem(n: number, category: DigestItem["category"], over: Pa
     category,
     from: `Ann${n} <ann${n}@firma.test>`,
     subject: `Subject ${n}`,
-    receivedAt: new Date(NOW.getTime() - n * 60_000),
+    receivedAt: new Date(NOW.getTime() - n * MINUTE_MS),
     synthetic: false,
     folderTag: null,
     aiText: null,
@@ -85,7 +84,7 @@ export function digestInput(over: Partial<DigestInput> = {}): DigestInput {
     now: NOW,
     timeZone: ZONE,
     slot: { date: "2026-11-20", time: "08:00", late: false },
-    periodStart: new Date(NOW.getTime() - 16 * HOUR),
+    periodStart: new Date(NOW.getTime() - 16 * HOUR_MS),
     mailboxes: [digestMailbox],
     counts: {},
     items: [],

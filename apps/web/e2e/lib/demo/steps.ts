@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 // The demo script: eight steps in the order of the public pages and demo plan, with the caption of each in both languages.
 // The cue times come from the recording (the demo record command); this file holds the text and the planned length only.
 // A caption names no person, address or host. Each step has a live flag and a caption for each source. On the e2e source a step that is
@@ -160,9 +161,9 @@ export interface DemoCue {
 
 // 12345 ms → 00:00:12.345
 function vttTime(ms: number): string {
-  const hours = Math.floor(ms / 3_600_000);
-  const minutes = Math.floor((ms % 3_600_000) / 60_000);
-  const seconds = Math.floor((ms % 60_000) / 1000);
+  const hours = Math.floor(ms / HOUR_MS);
+  const minutes = Math.floor((ms % HOUR_MS) / MINUTE_MS);
+  const seconds = Math.floor((ms % MINUTE_MS) / 1000);
   const pad = (value: number, width: number) => String(value).padStart(width, "0");
   return `${pad(hours, 2)}:${pad(minutes, 2)}:${pad(seconds, 2)}.${pad(ms % 1000, 3)}`;
 }

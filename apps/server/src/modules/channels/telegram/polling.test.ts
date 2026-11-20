@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { botCommandNames, textTables } from "@ea/core";
+import { botCommandNames, MINUTE_MS, textTables } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { Bot } from "grammy";
 
@@ -165,10 +165,10 @@ describe("startPolling", () => {
     await until(() => calls.filter((c) => c.method === "getUpdates").length >= 3);
     await polling.stop();
 
-    expect(sleeps).toEqual([60_000, 120_000]);
+    expect(sleeps).toEqual([MINUTE_MS, 2 * MINUTE_MS]);
     // `wait_ms` is the wait in milliseconds; the description of Telegram (it holds the token here) is not logged.
     expect(eventsOf("telegram_polling_conflict")).toEqual([
-      { level: "error", fields: { wait_ms: 60_000 } },
+      { level: "error", fields: { wait_ms: MINUTE_MS } },
       { level: "error", fields: { wait_ms: 120_000 } },
     ]);
     expectNoMarker();
@@ -196,7 +196,7 @@ describe("startPolling", () => {
     await until(() => calls.filter((c) => c.method === "getUpdates").length >= 4);
     await polling.stop();
 
-    expect(sleeps).toEqual([60_000, 60_000]);
+    expect(sleeps).toEqual([MINUTE_MS, MINUTE_MS]);
   });
 
   test("stops at once on a 401", async () => {
@@ -268,7 +268,7 @@ describe("startPolling", () => {
     await polling.stop();
 
     expect(eventsOf("telegram_polling_failed")).toEqual([
-      { level: "error", fields: { error: "GrammyError", error_code: 404, method: "getMe", wait_ms: 60_000 } },
+      { level: "error", fields: { error: "GrammyError", error_code: 404, method: "getMe", wait_ms: MINUTE_MS } },
     ]);
     expectNoMarker();
   });
@@ -288,7 +288,7 @@ describe("startPolling", () => {
     await polling.stop();
 
     expect(eventsOf("telegram_polling_failed")).toEqual([
-      { level: "error", fields: { error: "Error", wait_ms: 60_000 } },
+      { level: "error", fields: { error: "Error", wait_ms: MINUTE_MS } },
     ]);
     expectNoMarker();
   });

@@ -8,6 +8,7 @@ import { expectNoA11yViolations } from "../a11y";
 import { e2eEnv, E2E_BASE_URL, E2E_TELEGRAM_URL, repoRoot } from "../env";
 import { cleanUpOrg, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { MINUTE_MS } from "@ea/core";
 
 // The Telegram detail choice (the link step and the linked card), the owner's lock and the notice routes. The flags `telegram_minimal`
 // and `web_push` are on for the seed organization only while a test needs them. The server keeps its real routes and its real store.
@@ -91,7 +92,7 @@ test("flag off: no choice in the link step, no lock card, no route card, and no 
 test("flag on: minimal is preselected, full needs the tick, the linked card shows and changes the level", async ({
   page,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(MINUTE_MS);
   setFlag("telegram_minimal", true);
   await page.goto("/mailboxes");
   const section = page.locator("[data-section=telegram-detail]");
@@ -157,7 +158,7 @@ test("the owner locks minimal: the member sees the state, full is disabled in th
   page,
   browser,
 }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(MINUTE_MS);
   setFlag("telegram_minimal", true);
   await page.goto("/settings");
   const card = page.locator("[data-card=telegram-lock]");
@@ -207,7 +208,7 @@ test("the owner locks minimal: the member sees the state, full is disabled in th
 });
 
 test("web_push on: the member sets Urgent to Phone; the patch holds that key only", async ({ browser }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(MINUTE_MS);
   setFlag("web_push", true);
   const member = await asMember(browser);
   try {

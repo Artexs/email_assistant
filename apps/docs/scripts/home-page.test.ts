@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { DOCS_BASE, PRODUCT_NAME } from "@ea/core";
+import { DOCS_BASE, MINUTE_MS, PRODUCT_NAME } from "@ea/core";
 
 import { publicClaims } from "../src/security/claims";
 import { frontMatterValue } from "./stale";
@@ -10,7 +10,7 @@ import { frontMatterValue } from "./stale";
 // The docs build runs into a folder of its own, so `dist` stays as it was (as in `security-page.test.ts`).
 const DOCS = join(import.meta.dir, "..");
 const WORK_ROOT = join(DOCS, ".dist-home-test");
-setDefaultTimeout(60_000);
+setDefaultTimeout(MINUTE_MS);
 
 let out = "";
 const page = (path: string): string => readFileSync(join(out, path, "index.html"), "utf8");
