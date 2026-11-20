@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-20
 ---
 
 # F108 · E7-T5 Production on the VPS
