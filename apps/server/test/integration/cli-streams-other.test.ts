@@ -140,7 +140,7 @@ describe("db-worktree streams", () => {
   test("a bad name: `bad name` and the usage on stderr, exit 2", async () => {
     const result = await run("db-worktree", ["Bad_Name"]);
     expect(result.code).toBe(2);
-    expectOnlyStderr(result, "db-worktree", "bad name\nusage: bun run db:worktree");
+    expectOnlyStderr(result, "db-worktree", "bad name\n[db-worktree] usage: bun run db:worktree");
   });
 
   test("the base database: refused on stderr, exit 1", async () => {
@@ -479,9 +479,9 @@ describe("triage-label streams", () => {
 });
 
 describe("eval streams", () => {
-  test("a bad option: the usage on stderr, exit 1", async () => {
+  test("a bad option: the usage on stderr, exit 2", async () => {
     const result = await run("eval", ["--no-such-flag"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "eval", "usage: ");
   });
 

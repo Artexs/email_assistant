@@ -84,6 +84,18 @@ describe("e2e-job-env", () => {
     expect(result.stderr).toContain("no free e2e port block");
   });
 
+  test("--help with no env exits 0 and prints the usage on stdout", async () => {
+    const proc = Bun.spawn(["bun", "--no-env-file", script, "--help"], {
+      cwd: first,
+      env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const [code, stdout] = await Promise.all([proc.exited, new Response(proc.stdout).text()]);
+    expect(code).toBe(0);
+    expect(stdout).toContain("usage: bun run e2e:job-env --job-name <date>-<hash>");
+  });
+
   test("a bad argument exits 2", async () => {
     expect((await run(first, [])).code).toBe(2);
     expect((await run(first, ["--job-name"])).code).toBe(2);

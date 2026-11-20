@@ -2,9 +2,29 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { UsageError } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { docsTestPort, e2ePorts, loadRepoDotEnv, portFromEnv } from "./e2e-job-env-args";
+import { docsTestPort, e2ePorts, loadRepoDotEnv, parseE2eJobEnvArgs, portFromEnv } from "./e2e-job-env-args";
+
+describe("parseE2eJobEnvArgs", () => {
+  test("parses the job name", () => {
+    expect(parseE2eJobEnvArgs(["--job-name", "2026-11-19-1ac5ae68"])).toEqual({ jobName: "2026-11-19-1ac5ae68" });
+  });
+
+  test.each([[[]], [["--job-name", ""]]])("refuses the arguments %j with a usage error", (argv) => {
+    expect(() => parseE2eJobEnvArgs(argv)).toThrow(new UsageError("--job-name is needed"));
+  });
+
+  test.each([[["--job-name"]], [["--job-name", "x", "extra"]], [["--no-such-flag"]]])(
+    "refuses the arguments %j with a parseArgs usage error",
+    (argv) => {
+      expect(() => parseE2eJobEnvArgs(argv)).toThrow(
+        expect.objectContaining({ code: expect.stringMatching(/^ERR_PARSE_ARGS_/) })
+      );
+    }
+  );
+});
 
 describe("portFromEnv", () => {
   test("unset or empty gives the fallback", () => {

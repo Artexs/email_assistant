@@ -1,23 +1,21 @@
+import { UsageError } from "@ea/core";
 import { Client } from "pg";
 import { z } from "zod";
 
-import { createCliOutput } from "../platform/cli";
-import { describeError } from "../platform/errors";
+import { type CliRawOutput, type CliSpec, runCli } from "../platform/cli";
 
 import {
   adminUrl,
   hasWorktreeMark,
   isLoopbackHost,
+  cliDescriptions,
   parseDbWorktreeArgs,
   sameServer,
   siblingDatabaseName,
-  usage,
   withDatabase,
   worktreeDatabaseName,
   worktreeDbComment,
 } from "./db-worktree-args";
-
-const out = createCliOutput("db-worktree");
 
 const envSchema = z.object({
   MIGRATOR_DATABASE_URL: z.string().min(1),
@@ -27,7 +25,6 @@ const envSchema = z.object({
 
 const exitDone = 0;
 const exitFailure = 1;
-const exitUsage = 2;
 
 function sqlState(error: unknown): string | undefined {
   const code = typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
@@ -61,7 +58,7 @@ function quoted(database: string): string {
 const refusal = (database: string): string =>
   `database ${database} exists but ${worktreeDbComment} did not create it: refusing`;
 
-async function createDatabase(adminPostgresUrl: string, database: string): Promise<boolean> {
+async function createDatabase(out: CliRawOutput, adminPostgresUrl: string, database: string): Promise<boolean> {
   return withClient(adminPostgresUrl, async (client) => {
     let mark = await markOf(client, database);
     let created = false;
@@ -104,7 +101,7 @@ async function migrate(migratorUrl: string): Promise<boolean> {
   return (await child.exited) === 0;
 }
 
-async function dropOne(client: Client, database: string): Promise<number> {
+async function dropOne(out: CliRawOutput, client: Client, database: string): Promise<number> {
   const mark = await markOf(client, database);
   if (!mark.exists) {
     out.print(`no database ${database}`);
@@ -134,20 +131,25 @@ async function dropOne(client: Client, database: string): Promise<number> {
 
 // `bun test --parallel` makes one database per test worker, `<name>_w<n>` (`apps/server/test/worker-db.ts`). A drop of the
 // base database drops them too, each with its own mark check. The name holds only [a-z0-9_] (`worktreeDatabaseName`).
-async function dropWithWorkers(client: Client, database: string): Promise<number> {
+async function dropWithWorkers(out: CliRawOutput, client: Client, database: string): Promise<number> {
   const workers = await client.query<{ datname: string }>(
     "SELECT datname FROM pg_database WHERE datname ~ $1 ORDER BY datname",
     [`^${database}_w[0-9]+$`]
   );
-  let code = await dropOne(client, database);
-  for (const worker of workers.rows) code = Math.max(code, await dropOne(client, worker.datname));
+  let code = await dropOne(out, client, database);
+  for (const worker of workers.rows) code = Math.max(code, await dropOne(out, client, worker.datname));
   return code;
 }
 
 // A drop covers the base database and its e2e sibling (`<name>-e2e`, made by prepare for the Playwright suites). The
 // marks of both are read first: a database that the script did not create stops the whole command, with nothing dropped.
 // A missing sibling prints nothing. The sibling goes first; an in-use error on either one stops the command.
-async function dropDatabase(adminPostgresUrl: string, database: string, sibling: string | null): Promise<number> {
+async function dropDatabase(
+  out: CliRawOutput,
+  adminPostgresUrl: string,
+  database: string,
+  sibling: string | null
+): Promise<number> {
   return withClient(adminPostgresUrl, async (client) => {
     for (const name of sibling === null ? [database] : [database, sibling]) {
       const mark = await markOf(client, name);
@@ -157,61 +159,51 @@ async function dropDatabase(adminPostgresUrl: string, database: string, sibling:
       }
     }
     if (sibling !== null && (await markOf(client, sibling)).exists) {
-      const code = await dropWithWorkers(client, sibling);
+      const code = await dropWithWorkers(out, client, sibling);
       if (code !== exitDone) return code;
     }
-    return dropWithWorkers(client, database);
+    return dropWithWorkers(out, client, database);
   });
 }
 
 // Creates or drops an own database on the dev Postgres for one worktree. It runs as `postgres`, so it
 // touches only a database that it marked itself and only on a loopback host.
-async function main(): Promise<number> {
-  const args = parseDbWorktreeArgs(process.argv.slice(2));
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseDbWorktreeArgs(argv);
   const env = envSchema.safeParse(process.env);
-  if (args === null || !env.success) {
-    if (args !== null && !env.success) {
-      out.fail(`env check failed: ${env.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
-    }
-    out.fail(usage);
-    return exitUsage;
+  if (!env.success) {
+    throw new UsageError(`env check failed: ${env.error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
   }
   const { MIGRATOR_DATABASE_URL, DATABASE_URL, POSTGRES_PASSWORD } = env.data;
   const database = worktreeDatabaseName(args.name);
-  if (database === null) {
-    out.fail(`bad name\n${usage}`);
-    return exitUsage;
-  }
-  try {
-    const protectedNames = [DATABASE_URL, MIGRATOR_DATABASE_URL].map((url) => new URL(url).pathname.slice(1));
-    if (protectedNames.includes(database)) {
-      out.fail(`${database} is a base database: refusing`);
-      return exitFailure;
-    }
-    if (
-      !isLoopbackHost(DATABASE_URL) ||
-      !isLoopbackHost(MIGRATOR_DATABASE_URL) ||
-      !sameServer(DATABASE_URL, MIGRATOR_DATABASE_URL)
-    ) {
-      out.fail("DATABASE_URL and MIGRATOR_DATABASE_URL must point at the same loopback server: refusing");
-      return exitFailure;
-    }
-    const adminPostgresUrl = adminUrl(MIGRATOR_DATABASE_URL, POSTGRES_PASSWORD);
-    if (args.drop) return await dropDatabase(adminPostgresUrl, database, siblingDatabaseName(args.name));
-    if (!(await createDatabase(adminPostgresUrl, database))) return exitFailure;
-    await grantSchema(withDatabase(adminPostgresUrl, database));
-    const migratorUrl = withDatabase(MIGRATOR_DATABASE_URL, database);
-    if (!(await migrate(migratorUrl))) {
-      out.fail("db:migrate failed");
-      return exitFailure;
-    }
-    process.stdout.write(`DATABASE_URL=${withDatabase(DATABASE_URL, database)}\n`);
-    process.stdout.write(`MIGRATOR_DATABASE_URL=${migratorUrl}\n`);
-    return exitDone;
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
+  if (database === null) throw new UsageError("bad name");
+  const protectedNames = [DATABASE_URL, MIGRATOR_DATABASE_URL].map((url) => new URL(url).pathname.slice(1));
+  if (protectedNames.includes(database)) {
+    out.fail(`${database} is a base database: refusing`);
     return exitFailure;
   }
-}
+  if (
+    !isLoopbackHost(DATABASE_URL) ||
+    !isLoopbackHost(MIGRATOR_DATABASE_URL) ||
+    !sameServer(DATABASE_URL, MIGRATOR_DATABASE_URL)
+  ) {
+    out.fail("DATABASE_URL and MIGRATOR_DATABASE_URL must point at the same loopback server: refusing");
+    return exitFailure;
+  }
+  const adminPostgresUrl = adminUrl(MIGRATOR_DATABASE_URL, POSTGRES_PASSWORD);
+  if (args.drop) return await dropDatabase(out, adminPostgresUrl, database, siblingDatabaseName(args.name));
+  if (!(await createDatabase(out, adminPostgresUrl, database))) return exitFailure;
+  await grantSchema(withDatabase(adminPostgresUrl, database));
+  const migratorUrl = withDatabase(MIGRATOR_DATABASE_URL, database);
+  if (!(await migrate(migratorUrl))) {
+    out.fail("db:migrate failed");
+    return exitFailure;
+  }
+  out.write(`DATABASE_URL=${withDatabase(DATABASE_URL, database)}\n`);
+  out.write(`MIGRATOR_DATABASE_URL=${migratorUrl}\n`);
+  return exitDone;
+};
 
-process.exit(await main());
+if (import.meta.main) {
+  await runCli({ prefix: "db-worktree", descriptions: cliDescriptions, main });
+}

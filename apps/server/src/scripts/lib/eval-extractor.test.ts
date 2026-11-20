@@ -237,7 +237,7 @@ describe("runExtractorEval", () => {
     expect(lines.some((line) => line.includes("no gate file: --limit is set"))).toBe(true);
   });
 
-  test("T4 --budget-usd 0.001 stops with exit 2 after the first call, spends into the ledger and resumes", async () => {
+  test("T4 --budget-usd 0.001 stops with exit 4 after the first call, spends into the ledger and resumes", async () => {
     await setup(false);
     // One call costs 6,000 in and 20 out = $0.00061. A second call would pass the cap of $0.001.
     const first = await run({
@@ -245,7 +245,7 @@ describe("runExtractorEval", () => {
       args: ["--budget-usd", "0.001"],
       client: fakeClient("sent-dev", { tokensIn: 6000 }),
     });
-    expect(first.code).toBe(2);
+    expect(first.code).toBe(4);
     expect(first.calls).toHaveLength(1);
     expect(first.report).toContain("not complete");
     expect(first.gateFiles).toEqual([]);
@@ -283,11 +283,11 @@ describe("runExtractorEval", () => {
     expect(lines.some((line) => line.includes("more than 10%"))).toBe(true);
   });
 
-  test("three errors in a row stop the run with exit 2", async () => {
+  test("three errors in a row stop the run with exit 4", async () => {
     await setup(false);
     const ids = readSentSlots((corpus as SentCorpus).dir, "sent-dev").map((slot) => slot.id);
     const r = await run({ part: "sent-dev", client: fakeClient("sent-dev", { failIds: new Set(ids) }) });
-    expect(r.code).toBe(2);
+    expect(r.code).toBe(4);
     expect(r.calls).toHaveLength(3);
   });
 

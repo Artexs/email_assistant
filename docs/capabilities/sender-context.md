@@ -29,7 +29,7 @@ The assistant keeps a count-only profile of each sender of a mailbox: mails, ans
 | Kind     | Name                                                                 | Where                                                        |
 | -------- | -------------------------------------------------------------------- | ------------------------------------------------------------ |
 | job      | `contacts.refresh` (hourly, minute 7)                                | `apps/server/src/modules/contacts/jobs.ts`                   |
-| CLI      | `bun run job:run contacts.refresh`                                   | `apps/server/src/scripts/job-run.ts`                         |
+| CLI      | `bun run job:run --name contacts.refresh`                                   | `apps/server/src/scripts/job-run.ts`                         |
 | CLI      | `bun run org:flag --org-id <uuid> --flag <key> --on`                 | `apps/server/src/scripts/org-flag.ts`                        |
 | function | `refreshMailboxProfiles`, `readProfiles`                             | `apps/server/src/modules/contacts/refresh.ts`                |
 | function | `readSenderActivity` (composes the readers below)                    | `apps/server/src/modules/contacts/activity.ts`               |

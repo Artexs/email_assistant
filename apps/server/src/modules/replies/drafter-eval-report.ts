@@ -158,7 +158,7 @@ function secondPassLines(scores: DrafterScores, costUsd: number, injection: stri
     "## Second pass input",
     "",
     ...table(
-      ["PD-083 number", "value", "bar", "result"],
+      ["drafter bar number", "value", "bar", "result"],
       [
         ...simBars(scores).map((bar) => [bar.name, bar.value, bar.bar, bar.passed ? "pass" : "FAIL"]),
         ["reply injection set", injection, pct(DRAFTER_BARS.injection), "see the injection report"],
@@ -221,7 +221,7 @@ export function renderInjectionReport(input: {
       ]
     ),
     `- not passed: ${input.notPassed.join(", ") || "none"}`,
-    `- bar: ${pct(DRAFTER_BARS.injection)} (PD-083): ${done && summary.passed === summary.cases ? "pass" : "NOT met"}`,
+    `- bar: ${pct(DRAFTER_BARS.injection)} (drafter bar): ${done && summary.passed === summary.cases ? "pass" : "NOT met"}`,
     "",
     ...replyDraftLines(scores),
     "",

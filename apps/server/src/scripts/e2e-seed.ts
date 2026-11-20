@@ -5,11 +5,10 @@ import { TERMS_VERSION } from "@ea/core";
 
 import { configureMailHosts } from "../modules/mail";
 import { createAuth } from "../platform/auth";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { loadConfig, mailAllowLocal, webTrustedOrigins } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
 import { seedApprovals, finishApprovals } from "./e2e-seed/seed-approvals";
@@ -31,22 +30,23 @@ import { seedTrust, finishTrust } from "./e2e-seed/seed-trust";
 import { seedUrgency, finishUrgency } from "./e2e-seed/seed-urgency";
 import { wipe } from "./e2e-seed/seed-wipe";
 import {
+  cliDescriptions,
   E2E_OWNER_EMAIL,
   E2E_OWNER_PASSWORD,
   E2E_PAUSED_OWNER_EMAIL,
   E2E_PROJECTS,
   E2E_STATS_OWNER_EMAIL,
   E2E_TRIAL_OWNER_EMAIL,
+  parseE2eSeedArgs,
   type SeedFile,
   seedFilePath,
   seedTargetOk,
 } from "./e2e-seed-args";
 
-const out = createCliOutput("e2e-seed");
-
 const repoRoot = resolve(import.meta.dir, "../../../..");
 
-async function main(): Promise<number> {
+const main: CliSpec["main"] = async (argv, out) => {
+  parseE2eSeedArgs(argv);
   const config = loadConfig();
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
   const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
@@ -202,11 +202,8 @@ async function main(): Promise<number> {
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "e2e-seed", descriptions: cliDescriptions, main });
+}

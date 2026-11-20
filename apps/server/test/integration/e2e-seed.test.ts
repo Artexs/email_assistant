@@ -31,8 +31,8 @@ function withDatabase(url: string, name: string): string {
   return parsed.toString();
 }
 
-async function runSeed(env: Record<string, string>) {
-  const proc = Bun.spawn(["bun", script], {
+async function runSeed(env: Record<string, string>, args: string[] = []) {
+  const proc = Bun.spawn(["bun", script, ...args], {
     cwd: repoRoot,
     env: { ...process.env, WEB_BASE_URL: "http://127.0.0.1:8080", WEB_AUTH_SECRET: "x".repeat(40), ...env },
     stdout: "pipe",
@@ -57,6 +57,14 @@ async function e2eOrgCount(): Promise<number> {
 
 describe("e2e seed guards", () => {
   const appUrl = process.env.DATABASE_URL ?? "";
+
+  test("an unknown flag exits 2 with the usage line and touches nothing", async () => {
+    const before = await e2eOrgCount();
+    const result = await runSeed({ DATABASE_URL: appUrl, MIGRATOR_DATABASE_URL: appUrl }, ["--no-such-flag"]);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain("[e2e-seed] usage: bun run e2e:seed");
+    expect(await e2eOrgCount()).toBe(before);
+  });
 
   test("refuses the test database and touches nothing", async () => {
     const before = await e2eOrgCount();

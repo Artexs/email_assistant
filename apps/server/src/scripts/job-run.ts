@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 
+import { EXIT } from "@ea/core";
+
 import {
   actionsScope,
   committerDeps,
@@ -17,7 +19,7 @@ import { delegationHooks } from "../modules/delegation";
 import { createLoopChaserJob, createLoopJobs, createLoopMatchJob } from "../modules/loops";
 import { configureMailHosts } from "../modules/mail";
 import { createReplyJobs, createReplySweep } from "../modules/replies";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, exitCodeOf, runCli } from "../platform/cli";
 import { llmRoleTable, loadConfig, mailAllowLocal, sendLimits, testMailRule } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
@@ -26,17 +28,11 @@ import { createLlmClient } from "../platform/llm";
 import { setLogRelease, withLogContext } from "../platform/log";
 import { createRetentionJob } from "../retention";
 
-import { parseJobRunArgs, usage } from "./job-run-args";
-
-const out = createCliOutput("job-run");
+import { cliDescriptions, parseJobRunArgs } from "./job-run-args";
 
 // Runs one job once with the deps of `main.ts`. For dev and ops checks; it logs ids and counts only, like the server.
-async function main(): Promise<number> {
-  const args = parseJobRunArgs(process.argv.slice(2));
-  if (args === null) {
-    out.fail(usage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseJobRunArgs(argv);
   const config = loadConfig();
   setLogRelease(config.EA_RELEASE);
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
@@ -179,12 +175,19 @@ async function main(): Promise<number> {
       out.print(`${args.name}: ran once`);
       return 0;
     } catch (error) {
-      out.fail(`${args.name} failed: ${describeError(error)}`);
-      return 1;
+      const code = exitCodeOf(error);
+      out.fail(
+        code === EXIT.unreachable
+          ? `unreachable: ${args.name}: ${describeError(error)}`
+          : `${args.name} failed: ${describeError(error)}`
+      );
+      return code;
     } finally {
       await db.destroy().catch(() => undefined);
     }
   });
-}
+};
 
-process.exit(await main());
+if (import.meta.main) {
+  await runCli({ prefix: "job-run", descriptions: cliDescriptions, main });
+}

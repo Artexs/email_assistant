@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { LlmEndpointKind } from "@ea/core";
+import { EXIT, type LlmEndpointKind } from "@ea/core";
 import { z } from "zod";
 
 import type { ExtractorScores, Group, MissIds } from "./extractor-eval";
@@ -60,9 +60,9 @@ export const gatePassed = (scores: ExtractorScores): boolean => barChecks(scores
 // More error cases than this share of the part fail the run.
 export const MAX_ERROR_SHARE = 0.1;
 
-// 2: the run stopped, resume it. 1: too many error cases, or a failed gate on the holdout. 0: done.
-export function extractorExitCode(input: { complete: boolean; holdout: boolean; scores: ExtractorScores }): 0 | 1 | 2 {
-  if (!input.complete) return 2;
+// 4: the run stopped, resume it. 1: too many error cases, or a failed gate on the holdout. 0: done.
+export function extractorExitCode(input: { complete: boolean; holdout: boolean; scores: ExtractorScores }): 0 | 1 | 4 {
+  if (!input.complete) return EXIT.incomplete;
   if (input.scores.errors > input.scores.cases * MAX_ERROR_SHARE) return 1;
   if (input.holdout && !gatePassed(input.scores)) return 1;
   return 0;

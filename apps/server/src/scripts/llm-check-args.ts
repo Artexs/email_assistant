@@ -1,11 +1,26 @@
-import { parseArgs } from "node:util";
-
-import { isLlmRole, type LlmRole, llmRoles } from "@ea/core";
+import { type CliDescription, isLlmRole, type LlmRole, llmRoles, UsageError } from "@ea/core";
 import { z } from "zod";
 
 import { type LlmCall, type LlmProviderId, llmProviderIds } from "../platform/llm";
 
-export const usage = `usage: bun run llm:check [--role ${llmRoles.join("|")}|all] [--provider ${llmProviderIds.join("|")}] [--delegates]`;
+import { parseFlags } from "./lib/parse-flags";
+
+export const usage = `bun run llm:check [--role ${llmRoles.join("|")}|all] [--provider ${llmProviderIds.join("|")}] [--delegates]`;
+
+export const cliDescriptions = [
+  {
+    name: "llm:check",
+    summary: "Sends one small test call per role to the LLM provider and prints the latency and the token counts.",
+    risk: "cost",
+    needs: ["llm"],
+    usage,
+    exits: {
+      1: "a key or an own-endpoint model is missing, or a call failed",
+      3: "the LLM provider did not answer in time or was overloaded",
+    },
+    outputNote: "role, provider, model, endpoint host, latency and token counts; never a key or model text",
+  },
+] satisfies readonly CliDescription[];
 
 export interface LlmCheckArgs {
   /** `all` checks the four roles in one run. */
@@ -14,31 +29,25 @@ export interface LlmCheckArgs {
   delegates: boolean;
 }
 
-// null on any bad argument. --delegates belongs to the classifier's triage check only (not to `--role all`).
-export function parseLlmCheckArgs(argv: string[]): LlmCheckArgs | null {
-  let values;
-  try {
-    ({ values } = parseArgs({
-      args: argv,
-      options: { role: { type: "string" }, provider: { type: "string" }, delegates: { type: "boolean" } },
-      strict: true,
-      allowPositionals: false,
-    }));
-  } catch {
-    return null;
-  }
+// Throws `UsageError` on any bad argument. --delegates belongs to the classifier's triage check only (not to `--role all`).
+export function parseLlmCheckArgs(argv: string[]): LlmCheckArgs {
+  const { values } = parseFlags({
+    args: argv,
+    options: { role: { type: "string" }, provider: { type: "string" }, delegates: { type: "boolean" } },
+    allowPositionals: false,
+  });
 
   const role = values.role ?? "classifier";
-  if (role !== "all" && !isLlmRole(role)) return null;
+  if (role !== "all" && !isLlmRole(role)) throw new UsageError("--role is not a known role");
 
   let provider: LlmProviderId | undefined;
   if (values.provider !== undefined) {
     provider = llmProviderIds.find((candidate) => candidate === values.provider);
-    if (provider === undefined) return null;
+    if (provider === undefined) throw new UsageError("--provider is not a known provider");
   }
 
   const delegates = values.delegates === true;
-  if (delegates && role !== "classifier") return null;
+  if (delegates && role !== "classifier") throw new UsageError("--delegates needs --role classifier");
   return { role, provider, delegates };
 }
 

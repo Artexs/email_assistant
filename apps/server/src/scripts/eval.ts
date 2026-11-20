@@ -20,12 +20,20 @@ import {
   renderGap,
   runEval,
 } from "../modules/triage";
-import { createCliOutput } from "../platform/cli";
-import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides, testMailRule } from "../platform/config";
+import { createCliOutput, runCli } from "../platform/cli";
+import {
+  type Config,
+  ConfigError,
+  llmRoleTable,
+  runFlagError,
+  runFlagExitCode,
+  runOverrides,
+  testMailRule,
+} from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable } from "../platform/llm";
 
-import { type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
+import { cliDescriptions, type EvalOptions, evalUsage, parseEvalArgs } from "./eval-args";
 import { loadEvalConfig } from "./lib/eval-config";
 import { runDrafterEval } from "./lib/eval-drafter";
 import { runExtractorEval } from "./lib/eval-extractor";
@@ -39,7 +47,7 @@ const casesDir = resolve(import.meta.dir, "../../../../evals/cases");
 const runsDir = resolve(import.meta.dir, "../../../../evals/.runs");
 
 function out(text: string): void {
-  process.stdout.write(`${text}\n`);
+  cli.write(`${text}\n`);
 }
 
 function loadCases(file: string): EvalCase[] {
@@ -68,7 +76,8 @@ export async function runReal(options: EvalOptions, orgId: string, mailboxId: st
     out(markdown);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
     // Counts only: no mail id, no address, no text.
-    if (options.json !== undefined) writeFileSync(options.json, `${JSON.stringify(realCounts(report), null, 2)}\n`);
+    if (options.jsonOut !== undefined)
+      writeFileSync(options.jsonOut, `${JSON.stringify(realCounts(report), null, 2)}\n`);
     return evalExitCode(report);
   } finally {
     await db.destroy();
@@ -99,12 +108,9 @@ function runGap(options: EvalOptions): number {
   }
 }
 
-async function main(): Promise<number> {
-  const options = parseEvalArgs(process.argv.slice(2));
-  if (!options) {
-    cli.fail(evalUsage);
-    return 1;
-  }
+// `runCli` prints the help, the usage error and the uncaught error; the output of a run goes through `cli`.
+async function main(argv: string[]): Promise<number> {
+  const options = parseEvalArgs(argv);
   if (options.gap) return runGap(options);
   if (options.drafter) return runDrafterEval(options);
   if (options.extractor) return runExtractorEval(options);
@@ -138,8 +144,8 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
     cli.fail(runFlagError(error));
-    cli.fail(evalUsage);
-    return 1;
+    cli.fail(`usage: ${evalUsage}`);
+    return runFlagExitCode(error);
   }
   const row = table.roles.classifier;
   const keys = table.providers[row.provider];
@@ -221,10 +227,5 @@ export async function runClassifier(options: EvalOptions, deps: ClassifierDeps =
 
 // A test imports `runClassifier` without running the CLI.
 if (import.meta.main) {
-  main()
-    .then((code) => process.exit(code))
-    .catch((error) => {
-      cli.fail(`failed: ${error instanceof Error ? error.name : "unknown error"}`);
-      process.exit(1);
-    });
+  await runCli({ prefix: "eval", descriptions: cliDescriptions, main });
 }

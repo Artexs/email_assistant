@@ -1,5 +1,37 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
+import { parseArgs } from "node:util";
+
+import { type CliDescription, UsageError } from "@ea/core";
+
+export const cliDescriptions = [
+  {
+    name: "e2e:job-env",
+    summary: "Prints the e2e ports and the mail tag for one job, from a free block of three ports.",
+    risk: "dev",
+    needs: ["none"],
+    usage: [
+      "bun run e2e:job-env --job-name <date>-<hash>",
+      "  Prints E2E_PORT, E2E_TELEGRAM_PORT, DOCS_TEST_PORT and E2E_MAIL_TAG for one job: a free block of three ports",
+      "  (not named by another worktree's .env, and free to bind on 127.0.0.1) and the job hash. It takes no lock:",
+      "  the caller holds one around this call and the write of the .env.",
+    ].join("\n"),
+    exits: { 1: "no free e2e port block" },
+  },
+] satisfies readonly CliDescription[];
+
+// Throws `UsageError` (or a `parseArgs` error, which `runCli` also maps to exit 2) on any bad argument.
+export function parseE2eJobEnvArgs(argv: string[]): { jobName: string } {
+  const { values } = parseArgs({
+    args: argv,
+    options: { "job-name": { type: "string" } },
+    allowPositionals: false,
+    strict: true,
+  });
+  const jobName = values["job-name"];
+  if (jobName === undefined || jobName === "") throw new UsageError("--job-name is needed");
+  return { jobName };
+}
 
 // The port contract of the Playwright suites. One pure place parses the keys, so the panel suite, the docs suite,
 // the job prepare script and their tests share one rule. Unset or empty keeps the fixed port of a main checkout and CI.

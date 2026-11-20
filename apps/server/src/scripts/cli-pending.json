@@ -1,22 +1,4 @@
 {
-  "eval": [
-    "apps/server/src/scripts/eval.ts",
-    "apps/server/src/scripts/lib/eval-drafter.ts",
-    "apps/server/src/scripts/lib/eval-extractor.ts",
-    "apps/server/src/scripts/lib/eval-sim.ts",
-    "apps/server/src/scripts/lib/eval-suspicious.ts",
-    "apps/server/src/scripts/llm-check.ts",
-    "apps/server/src/scripts/sim.ts"
-  ],
-  "e2e-dev": [
-    "apps/server/src/scripts/db-worktree.ts",
-    "apps/server/src/scripts/demo-org-setup.ts",
-    "apps/server/src/scripts/e2e-activity.ts",
-    "apps/server/src/scripts/e2e-job-env.ts",
-    "apps/server/src/scripts/e2e-seed.ts",
-    "apps/server/src/scripts/e2e-suggestions.ts",
-    "apps/server/src/scripts/job-run.ts"
-  ],
   "build": [
     "apps/server/src/scripts/api-spec.ts",
     "apps/server/src/scripts/check-migrations.ts",

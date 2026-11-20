@@ -122,6 +122,22 @@ describe("e2e activity rows", () => {
     expect(await new Response(proc.stderr).text()).toContain("refusing");
   });
 
+  test("(5b) bad arguments exit 2 with the usage line, before any database is read", async () => {
+    for (const args of [[], ["--mailbox-id", "not-a-uuid"], ["--mailbox-id", randomUUID(), "extra"]]) {
+      const proc = Bun.spawn(["bun", script, ...args], {
+        cwd: repoRoot,
+        env: process.env,
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      const code = await proc.exited;
+      expect(code).toBe(2);
+      expect(await new Response(proc.stderr).text()).toContain(
+        "[e2e-activity] usage: bun run e2e:activity --mailbox-id <uuid>"
+      );
+    }
+  });
+
   test("(6) the seeded profiles give the sender line of the panel, under the key of the run", async () => {
     await withRollback(db, async (trx) => {
       const s = await createOrgWithMailbox(trx);
