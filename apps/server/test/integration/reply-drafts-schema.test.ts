@@ -6,15 +6,15 @@ import { noticeKinds } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
-import { createDb, type DB } from "../../src/platform/db";
+import type { DB } from "../../src/platform/db";
 import { checkMigrationSql } from "../../src/scripts/lib/check-migrations-rules";
 
 import { createOrgWithMailbox, insertAction, insertTestEmail } from "./fixtures";
 import { testDb, withRollback } from "./helpers";
 import { insertMailboxProfile, insertReplyRequest } from "./reply-fixtures";
 
-// The migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the copy of the style text,
-// the three notice kinds). The connection is the `app` role; the Down and Up sections run as the owner.
+// The migration `20261117130001_reply_drafts.sql` (tables, constraints, RLS, the three notice kinds). The connection is
+// the `app` role. The Down and Up sections no longer run here: the Up part reads a column that a later migration dropped.
 const db = testDb();
 afterAll(async () => {
   await db.destroy();
@@ -29,8 +29,7 @@ const RLS = "42501";
 
 const migrations = join(import.meta.dir, "../../../../db/migrations");
 const file = readFileSync(join(migrations, "20261117130001_reply_drafts.sql"), "utf8");
-const [upPart = "", downPart = ""] = file.split("-- migrate:down");
-const up = upPart.replace("-- migrate:up", "");
+const [upPart = ""] = file.split("-- migrate:down");
 
 function sqlState(error: unknown): string | undefined {
   return typeof error === "object" && error !== null && "code" in error ? String(error.code) : undefined;
@@ -355,113 +354,6 @@ describe("outbox: the kinds replies_ready, reply_prompt and reply_result", () =>
       // The older kinds are not changed: the mail kinds still need a mail, the others still need none.
       await expectSqlState(trx, () => insertRow(trx, o, "approval"), CHECK);
       await insertRow(trx, o, "loop_consent");
-    });
-  });
-});
-
-describe("the style text copy and the Down and Up sections", () => {
-  async function withOwner(run: (trx: Trx) => Promise<void>): Promise<void> {
-    const url = process.env.MIGRATOR_DATABASE_URL;
-    if (!url) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the Down and Up sections");
-    const owner = createDb(url);
-    try {
-      await withRollback(owner, run);
-    } finally {
-      await owner.destroy();
-    }
-  }
-
-  const setStyle = (trx: Trx, orgId: string, styleText: string | null) =>
-    trx.updateTable("organizations").set({ style_text: styleText }).where("id", "=", orgId).execute();
-
-  const profileOf = (trx: Trx, mailboxId: string) =>
-    trx.selectFrom("mailbox_profiles").selectAll().where("mailbox_id", "=", mailboxId).executeTakeFirst();
-
-  test("13: Down then Up gives each mailbox the style text as signature: '' and null give null, a long text is cut to 1000", async () => {
-    await withOwner(async (trx) => {
-      const jan = await createOrgWithMailbox(trx);
-      const empty = await createOrgWithMailbox(trx);
-      const none = await createOrgWithMailbox(trx);
-      const long = await createOrgWithMailbox(trx);
-      await setStyle(trx, jan.orgId, "Jan");
-      await setStyle(trx, empty.orgId, "");
-      await setStyle(trx, none.orgId, null);
-      await setStyle(trx, long.orgId, "x".repeat(1200));
-      await sql.raw(downPart).execute(trx);
-      await sql.raw(up).execute(trx);
-      for (const [o, signature] of [
-        [jan, "Jan"],
-        [empty, null],
-        [none, null],
-        [long, "x".repeat(1000)],
-      ] as const) {
-        const profile = await profileOf(trx, o.mailboxId);
-        expect(profile?.signature).toBe(signature);
-        expect(profile?.org_id).toBe(o.orgId);
-        expect(profile?.display_name).toBeNull();
-        expect(profile?.writing_style).toBeNull();
-      }
-      // The organization text stays (a later step drops it).
-      const org = await trx
-        .selectFrom("organizations")
-        .select("style_text")
-        .where("id", "=", jan.orgId)
-        .executeTakeFirstOrThrow();
-      expect(org.style_text).toBe("Jan");
-    });
-  });
-
-  test("14: Down deletes the rows of the new kinds, keeps the others, drops the tables and keeps the thread index; Up works again", async () => {
-    await withOwner(async (trx) => {
-      const o = await createOrgWithMailbox(trx);
-      const emailId = await mailOf(trx, o);
-      const row = (kind: string, withMail: boolean) =>
-        trx
-          .insertInto("outbox")
-          .values({
-            org_id: o.orgId,
-            user_id: o.userId,
-            kind,
-            dedup_key: `test:${randomUUID()}`,
-            next_attempt_at: new Date("2026-11-20T10:00:00Z"),
-            created_at: new Date("2026-11-20T10:00:00Z"),
-            ...(withMail ? { email_id: emailId } : {}),
-          })
-          .execute();
-      await row("replies_ready", false);
-      await row("reply_prompt", true);
-      await row("reply_result", true);
-      await row("approval", true);
-      await row("loop_consent", false);
-      expect(downPart).toContain("DELETE FROM outbox WHERE kind IN ('replies_ready', 'reply_prompt', 'reply_result')");
-      await sql.raw(downPart).execute(trx);
-      const kinds = await trx
-        .selectFrom("outbox")
-        .select("kind")
-        .where("org_id", "=", o.orgId)
-        .orderBy("kind")
-        .execute();
-      expect(kinds.map((k) => k.kind)).toEqual(["approval", "loop_consent"]);
-      const tables = await sql<{ n: number }>`
-        select count(*)::int as n from pg_tables
-        where schemaname = 'public' and tablename in ('reply_requests', 'mailbox_profiles')`.execute(trx);
-      expect(tables.rows[0]?.n).toBe(0);
-      const index = await sql<{ n: number }>`
-        select count(*)::int as n from pg_indexes where indexname = 'emails_thread_received_idx'`.execute(trx);
-      expect(index.rows[0]?.n).toBe(1);
-      await expectSqlState(trx, () => row("replies_ready", false), CHECK);
-      const mailKindCheck = () =>
-        sql<{ def: string }>`
-          select pg_get_constraintdef(oid) as def from pg_constraint where conname = 'outbox_email_kind_check'`.execute(
-          trx
-        );
-      expect((await mailKindCheck()).rows[0]?.def).not.toContain("reply_prompt");
-      await sql.raw(up).execute(trx);
-      expect((await mailKindCheck()).rows[0]?.def).toContain("reply_prompt");
-      await row("replies_ready", false);
-      const again = await sql<{ n: number }>`
-        select count(*)::int as n from pg_indexes where indexname = 'emails_thread_received_idx'`.execute(trx);
-      expect(again.rows[0]?.n).toBe(1);
     });
   });
 });

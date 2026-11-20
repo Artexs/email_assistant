@@ -283,10 +283,6 @@ export const NOT_PERSONAL: Readonly<Record<string, string>> = Object.fromEntries
     ["organizations.name", "organizations.timezone", "organizations.plan"],
     "name and codes of our own customer"
   ),
-  ...reasons(
-    ["organizations.style_text"],
-    "emptied by a migration and no longer read or written; a later migration drops the column"
-  ),
   ...reasons(["sender_rules.kind"], "closed list of codes"),
   ...reasons(
     ["sso_providers.provider_id", "sso_providers.domain_proof", "sso_providers.saml_config"],

@@ -50,7 +50,7 @@ export const tenancyDocs = {
   }),
   patchOrganization: apiDoc({
     operationId: "patchOrganization",
-    summary: "Change the time zone or the signature style of the organization (owner only).",
+    summary: "Change the time zone of the organization (owner only).",
     tags,
     body: organizationPatchSchema,
     ok: { status: 200, schema: organizationViewSchema },
