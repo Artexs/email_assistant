@@ -1,12 +1,13 @@
 import { format } from "node:util";
 
-import { describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, jest, spyOn, test } from "bun:test";
 import type { ImapFlow } from "imapflow";
 
 import { HardError, SoftError } from "../../../platform/errors";
 import { MailAuthError } from "../port";
 
 import {
+  CLOSE_LOGOUT_TIMEOUT_MS,
   createImapMailProvider,
   imapFlowOptions,
   isLoopbackHost,
@@ -382,5 +383,28 @@ describe("logConnectionError", () => {
     expect(linesOf(new Error("MARKER-ADDR@x.test"))).toEqual(["[mail] imap_connection_error code=unknown"]);
     const odd = Object.assign(new Error("x"), { code: "MARKER-ADDR@x.test" });
     expect(linesOf(odd)).toEqual(["[mail] imap_connection_error dropped_fields=1"]);
+  });
+});
+
+describe("bounded close", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  test("a LOGOUT that never returns ends with client.close() exactly at the timeout", async () => {
+    jest.useFakeTimers();
+    let closed = 0;
+    const client = {
+      logout: () => new Promise<void>(() => undefined),
+      close: () => void (closed += 1),
+    };
+    const provider = createImapMailProvider(client as never, { bodyLimitBytes: 1, forceCopyMove: false });
+    const done = provider.close();
+    jest.advanceTimersByTime(CLOSE_LOGOUT_TIMEOUT_MS - 1);
+    await Promise.resolve();
+    expect(closed).toBe(0);
+    jest.advanceTimersByTime(1);
+    await done;
+    expect(closed).toBe(1);
   });
 });
