@@ -8,7 +8,7 @@ import { describe, expect, test } from "bun:test";
 // inodes of /tmp (a tmpfs) and test jobs then failed with `EDQUOT`.
 
 const here = import.meta.dir;
-const srcRoot = resolve(here, "..");
+const srcRoot = resolve(here, "../..");
 
 const helpers = [
   { module: "sim-fixtures.test-helper", makers: ["createMiniCorpus", "completeCorpus"], remover: "removeAllCorpora" },
