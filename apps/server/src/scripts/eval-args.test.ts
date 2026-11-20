@@ -1,3 +1,4 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { productionClassifierChoice } from "../modules/triage";
@@ -8,19 +9,19 @@ const org = "11111111-1111-4111-8111-111111111111";
 
 describe("parseEvalArgs", () => {
   test("--sim with --real, --set or --per-category is a usage error", () => {
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--real"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--set", "all"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--per-category", "3"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--org-id", org])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--real"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--set", "all"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--per-category", "3"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--org-id", org])).toThrow(UsageError);
   });
 
   test("--state with --sim is a usage error: the corpus fixes the state file", () => {
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--state", "x.jsonl"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--state", "x.jsonl"])).toThrow(UsageError);
   });
 
   test("--sim needs --part dev|holdout|week", () => {
-    expect(parseEvalArgs(["--sim", "lab-01"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "other"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "other"])).toThrow(UsageError);
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "week"])).toMatchObject({ sim: "lab-01", part: "week" });
   });
 
@@ -44,9 +45,9 @@ describe("parseEvalArgs", () => {
   });
 
   test("a sim-only option without --sim is a usage error", () => {
-    expect(parseEvalArgs(["--part", "dev"])).toBeUndefined();
-    expect(parseEvalArgs(["--rpm", "100"])).toBeUndefined();
-    expect(parseEvalArgs(["--fresh-lock"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--part", "dev"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--rpm", "100"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--fresh-lock"])).toThrow(UsageError);
   });
 
   test("--judge and its overrides belong to a sim run, and the overrides need --judge", () => {
@@ -55,34 +56,52 @@ describe("parseEvalArgs", () => {
       parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-provider", "gemini", "--judge-model", "m"])
     ).toMatchObject({ judge: true, "judge-provider": "gemini", "judge-model": "m" });
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev"])).toMatchObject({ judge: false });
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-model", "m"])).toBeUndefined();
-    expect(parseEvalArgs(["--judge"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-model", "m"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--judge"])).toThrow(UsageError);
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-rpm", "6"])).toMatchObject({
       "judge-rpm": 6,
     });
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-rpm", "6"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge-rpm", "6"])).toThrow(UsageError);
   });
 
   test("the real mode keeps its rules", () => {
     expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org])).toMatchObject({ real: true });
-    expect(parseEvalArgs(["--real", "--org-id", org])).toBeUndefined();
-    expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--set", "all"])).toBeUndefined();
-    expect(parseEvalArgs(["--org-id", org])).toBeUndefined();
+    expect(() => parseEvalArgs(["--real", "--org-id", org])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--set", "all"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--org-id", org])).toThrow(UsageError);
   });
 
-  test("--real takes --json; --gap takes two files and --out only", () => {
-    expect(parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--json", "c.json"])).toMatchObject({
-      json: "c.json",
+  test("--real takes --json-out <file>", () => {
+    expect(parseEvalArgs(["--real", "--json-out", "/tmp/x.json", "--org-id", org, "--mailbox-id", org])).toMatchObject({
+      jsonOut: "/tmp/x.json",
     });
-    expect(parseEvalArgs(["--json", "c.json"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--json-out", "c.json"])).toThrow(UsageError);
+  });
+
+  test("the old --json is a usage error that names --json-out", () => {
+    const args = ["--real", "--org-id", org, "--mailbox-id", org, "--json", "/tmp/x.json"];
+    expect(() => parseEvalArgs(args)).toThrow(UsageError);
+    expect(() => parseEvalArgs(args)).toThrow("--json-out");
+  });
+
+  test("an unknown flag is a usage error", () => {
+    expect(() => parseEvalArgs(["--no-such-flag"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--no-such-flag"])).toThrow(UsageError);
+  });
+
+  test("--gap takes two files and --out only", () => {
     expect(parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--out", "r.md"])).toMatchObject({
       gap: true,
     });
-    expect(parseEvalArgs(["--gap", "--sim-json", "g.json"])).toBeUndefined();
-    expect(parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--model", "m"])).toBeUndefined();
-    expect(parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--judge"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--sim-json", "g.json"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim-json", "g.json"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--gap", "--sim-json", "g.json"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--model", "m"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs(["--gap", "--sim-json", "g.json", "--real-json", "c.json", "--judge"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--sim-json", "g.json"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim-json", "g.json"])).toThrow(UsageError);
   });
 });
 
@@ -90,20 +109,28 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
   const sim = ["--sim", "lab-01", "--part", "dev"];
 
   test("6. v2 with --prompt-parts is a usage error; an unknown or empty part is a usage error", () => {
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v2", "--prompt-parts", "urgency"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v2", "--prompt-parts", "none"])).toBeUndefined();
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v2", "--prompt-parts", "urgency"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v2", "--prompt-parts", "none"])).toThrow(
+      UsageError
+    );
     // Without --prompt-version the production pointer (v2 today) decides.
-    expect(parseEvalArgs([...sim, "--prompt-parts", "urgency"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--prompt-parts", "foo"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "foo"])).toBeUndefined();
-    expect(
-      parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "urgency,foo"])
-    ).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", ""])).toBeUndefined();
-    expect(
+    expect(() => parseEvalArgs([...sim, "--prompt-parts", "urgency"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--prompt-parts", "foo"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "foo"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "urgency,foo"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", ""])).toThrow(
+      UsageError
+    );
+    expect(() =>
       parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "none,urgency"])
-    ).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v9"])).toBeUndefined();
+    ).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v9"])).toThrow(UsageError);
   });
 
   test("v4 takes the part profile (sorted with the others); v3 refuses it", () => {
@@ -114,8 +141,12 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
       version: "classifier-v4",
       parts: [],
     });
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "profile"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--prompt-version", "classifier-v4", "--prompt-parts", "foo"])).toBeUndefined();
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v3", "--prompt-parts", "profile"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs([...sim, "--prompt-version", "classifier-v4", "--prompt-parts", "foo"])).toThrow(
+      UsageError
+    );
   });
 
   test("6. v3 without --prompt-parts while the pointer is v2 gives the parts none", () => {
@@ -141,20 +172,20 @@ describe("--prompt-version and --prompt-parts (F109 stage 08)", () => {
   });
 
   test("the flags belong to a sim run, not to the old, real, gap or suspicious mode", () => {
-    expect(parseEvalArgs(["--prompt-version", "classifier-v3"])).toBeUndefined();
-    expect(parseEvalArgs(["--prompt-parts", "none"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--suspicious", "--prompt-version", "classifier-v3"])).toBeUndefined();
-    expect(
+    expect(() => parseEvalArgs(["--prompt-version", "classifier-v3"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--prompt-parts", "none"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--suspicious", "--prompt-version", "classifier-v3"])).toThrow(UsageError);
+    expect(() =>
       parseEvalArgs(["--real", "--org-id", org, "--mailbox-id", org, "--prompt-version", "classifier-v3"])
-    ).toBeUndefined();
+    ).toThrow(UsageError);
   });
 
   // The escalation cascade is gone, so its flags are unknown options.
   test("--escalate and the --escalation-* flags are a usage error", () => {
     const sim = ["--sim", "lab-01", "--part", "dev"];
-    expect(parseEvalArgs([...sim, "--escalate"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toBeUndefined();
+    expect(() => parseEvalArgs([...sim, "--escalate"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--escalation-model", "gpt-6.1-terra"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--escalation-reasoning-effort", "none"])).toThrow(UsageError);
   });
 
   // Both flags are pinned to the production prompt when v3 is the pointer.
@@ -187,15 +218,15 @@ describe("--extractor", () => {
   const base = ["--sim", "lab-01", "--part", "sent-dev", "--extractor"];
 
   test("T5 a sent part without --extractor is a usage error, also the holdout", () => {
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-holdout"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "sent-holdout"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev"])).toThrow(UsageError);
   });
 
   test("--extractor needs --sim and a sent part", () => {
-    expect(parseEvalArgs(["--extractor"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--extractor"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--extractor"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "holdout", "--extractor"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--extractor"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--extractor"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--extractor"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "holdout", "--extractor"])).toThrow(UsageError);
   });
 
   test("a sent part with --extractor parses to sentPart; the cap and rates default as in a sim run", () => {
@@ -230,14 +261,14 @@ describe("--extractor", () => {
       ["--set", "all"],
       ["--state", "x.jsonl"],
     ]) {
-      expect(parseEvalArgs([...base, ...extra])).toBeUndefined();
+      expect(() => parseEvalArgs([...base, ...extra])).toThrow(UsageError);
     }
   });
 
   test("the old modes refuse --extractor and a sent part", () => {
-    expect(parseEvalArgs(["--extractor", "--real", "--org-id", org, "--mailbox-id", org])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev", "--suspicious"])).toBeUndefined();
-    expect(parseEvalArgs(["--gap", "--extractor", "--sim-json", "a", "--real-json", "b"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--extractor", "--real", "--org-id", org, "--mailbox-id", org])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev", "--suspicious"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--gap", "--extractor", "--sim-json", "a", "--real-json", "b"])).toThrow(UsageError);
   });
 });
 
@@ -271,34 +302,36 @@ describe("--drafter", () => {
     }
     expect(parseEvalArgs(sim)).toMatchObject({ drafter: true, judge: false, budgetUsd: 1 });
     for (const part of ["sent-dev", "sent-holdout"]) {
-      expect(parseEvalArgs(["--sim", "lab-01", "--part", part, "--drafter"])).toBeUndefined();
+      expect(() => parseEvalArgs(["--sim", "lab-01", "--part", part, "--drafter"])).toThrow(UsageError);
     }
   });
 
   test("the old sets with the judge, and the injection set without --drafter, are usage errors", () => {
-    expect(parseEvalArgs(["--set", "all", "--judge"])).toBeUndefined();
-    expect(parseEvalArgs(["--set", "reply-injection"])).toBeUndefined();
-    expect(parseEvalArgs(["--set", "reply-injection", "--judge"])).toBeUndefined();
-    expect(parseEvalArgs(["--set", "all", "--drafter", "--judge"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--set", "all", "--judge"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--set", "reply-injection"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--set", "reply-injection", "--judge"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--set", "all", "--drafter", "--judge"])).toThrow(UsageError);
     // The injection set is a gate: it always needs the judge.
-    expect(parseEvalArgs(["--set", "reply-injection", "--drafter"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--set", "reply-injection", "--drafter"])).toThrow(UsageError);
   });
 
   test("--drafter and --extractor, or any other mode, is a usage error", () => {
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev", "--drafter", "--extractor"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--extractor"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--suspicious"])).toBeUndefined();
-    expect(parseEvalArgs([...set, "--extractor"])).toBeUndefined();
-    expect(parseEvalArgs(["--drafter", "--real", "--org-id", org, "--mailbox-id", org])).toBeUndefined();
-    expect(parseEvalArgs(["--drafter", "--gap", "--sim-json", "a", "--real-json", "b"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "sent-dev", "--drafter", "--extractor"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs([...sim, "--extractor"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--suspicious"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...set, "--extractor"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--drafter", "--real", "--org-id", org, "--mailbox-id", org])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--drafter", "--gap", "--sim-json", "a", "--real-json", "b"])).toThrow(UsageError);
   });
 
   test("--drafter needs exactly one source and refuses the classifier options", () => {
-    expect(parseEvalArgs(["--drafter"])).toBeUndefined();
-    expect(parseEvalArgs(["--drafter", "--judge"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--set", "reply-injection"])).toBeUndefined();
-    expect(parseEvalArgs([...set, "--sim", "lab-01", "--part", "dev"])).toBeUndefined();
-    expect(parseEvalArgs([...set, "--part", "dev"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--drafter"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--drafter", "--judge"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--set", "reply-injection"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...set, "--sim", "lab-01", "--part", "dev"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...set, "--part", "dev"])).toThrow(UsageError);
     for (const extra of [
       ["--prompt-version", "classifier-v2"],
       ["--prompt-parts", "none"],
@@ -307,32 +340,34 @@ describe("--drafter", () => {
       ["--state", "x.jsonl"],
       ["--per-category", "2"],
     ]) {
-      expect(parseEvalArgs([...sim, ...extra])).toBeUndefined();
+      expect(() => parseEvalArgs([...sim, ...extra])).toThrow(UsageError);
     }
   });
 
   test("the judge options need --judge", () => {
-    expect(parseEvalArgs([...sim, "--judge-provider", "gemini"])).toBeUndefined();
+    expect(() => parseEvalArgs([...sim, "--judge-provider", "gemini"])).toThrow(UsageError);
     expect(parseEvalArgs([...sim, "--judge", "--judge-provider", "gemini"])).toBeDefined();
   });
 
   test("--drafter-prompt takes a known drafter version; other modes refuse it", () => {
     expect(parseEvalArgs([...sim, "--drafter-prompt", "drafter-v1"])).toMatchObject({ "drafter-prompt": "drafter-v1" });
     expect(parseEvalArgs([...set, "--drafter-prompt", "drafter-v1"])).toBeDefined();
-    expect(parseEvalArgs([...sim, "--drafter-prompt", "drafter-v0"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--drafter-prompt", "drafter-v1"])).toBeUndefined();
-    expect(parseEvalArgs(["--drafter-prompt", "drafter-v1"])).toBeUndefined();
+    expect(() => parseEvalArgs([...sim, "--drafter-prompt", "drafter-v0"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--drafter-prompt", "drafter-v1"])).toThrow(
+      UsageError
+    );
+    expect(() => parseEvalArgs(["--drafter-prompt", "drafter-v1"])).toThrow(UsageError);
   });
 
   test("--judge-prompt takes a known judge version and needs --judge; the classifier run refuses it", () => {
     expect(parseEvalArgs([...sim, "--judge", "--judge-prompt", "judge-v1"])).toMatchObject({
       "judge-prompt": "judge-v1",
     });
-    expect(parseEvalArgs([...sim, "--judge-prompt", "judge-v2"])).toBeUndefined();
-    expect(parseEvalArgs([...sim, "--judge", "--judge-prompt", "judge-v9"])).toBeUndefined();
-    expect(
-      parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-prompt", "judge-v1"])
-    ).toBeUndefined();
+    expect(() => parseEvalArgs([...sim, "--judge-prompt", "judge-v2"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...sim, "--judge", "--judge-prompt", "judge-v9"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--judge", "--judge-prompt", "judge-v1"])).toThrow(
+      UsageError
+    );
   });
 
   test("--dump-drafts runs only on the dev and week parts: never on the holdout or the injection set", () => {
@@ -340,11 +375,11 @@ describe("--drafter", () => {
     expect(parseEvalArgs(["--sim", "lab-01", "--part", "week", "--drafter", "--dump-drafts", "d.jsonl"])).toMatchObject(
       { part: "week", "dump-drafts": "d.jsonl" }
     );
-    expect(
+    expect(() =>
       parseEvalArgs(["--sim", "lab-01", "--part", "holdout", "--drafter", "--dump-drafts", "d.jsonl"])
-    ).toBeUndefined();
-    expect(parseEvalArgs([...set, "--dump-drafts", "d.jsonl"])).toBeUndefined();
-    expect(parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--dump-drafts", "d.jsonl"])).toBeUndefined();
+    ).toThrow(UsageError);
+    expect(() => parseEvalArgs([...set, "--dump-drafts", "d.jsonl"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--dump-drafts", "d.jsonl"])).toThrow(UsageError);
   });
 
   test("--set reply-commitment is a drafter set with the judge; it alone of the two sets may dump drafts", () => {
@@ -352,8 +387,8 @@ describe("--drafter", () => {
     expect(parseEvalArgs(commitment)).toMatchObject({ set: "reply-commitment", drafter: true, judge: true });
     expect(parseEvalArgs([...commitment, "--dump-drafts", "d.jsonl"])).toMatchObject({ "dump-drafts": "d.jsonl" });
     // No judge, a corpus part, or the classifier run: usage errors.
-    expect(parseEvalArgs(["--set", "reply-commitment", "--drafter"])).toBeUndefined();
-    expect(parseEvalArgs([...commitment, "--sim", "lab-01", "--part", "dev"])).toBeUndefined();
-    expect(parseEvalArgs(["--set", "reply-commitment"])).toBeUndefined();
+    expect(() => parseEvalArgs(["--set", "reply-commitment", "--drafter"])).toThrow(UsageError);
+    expect(() => parseEvalArgs([...commitment, "--sim", "lab-01", "--part", "dev"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--set", "reply-commitment"])).toThrow(UsageError);
   });
 });

@@ -1,12 +1,20 @@
-import { classifierCategories, llmRoles } from "@ea/core";
+import { classifierCategories, EXIT, llmRoles } from "@ea/core";
 
 import { type ClassifierDelegate, type ClassifierEmail, classifyEmail } from "../modules/triage";
-import { type CliOutput, createCliOutput } from "../platform/cli";
-import { type Config, ConfigError, llmRoleTable, loadConfig, runFlagError, runOverrides } from "../platform/config";
+import { type CliOutput, exitCodeOf, runCli } from "../platform/cli";
+import {
+  type Config,
+  ConfigError,
+  llmRoleTable,
+  loadConfig,
+  runFlagError,
+  runFlagExitCode,
+  runOverrides,
+} from "../platform/config";
 import { describeError } from "../platform/errors";
 import { createLlmClient, llmEndpointFields, type LlmUsage, type ProviderRegistry } from "../platform/llm";
 
-import { greetingCall, type LlmCheckArgs, parseLlmCheckArgs, usage } from "./llm-check-args";
+import { cliDescriptions, greetingCall, type LlmCheckArgs, parseLlmCheckArgs, usage } from "./llm-check-args";
 
 // Made-up mail: example.com addresses, no real data.
 const SAMPLE_EMAIL: ClassifierEmail = {
@@ -38,7 +46,8 @@ export interface LlmCheckDeps {
   out: CliOutput;
 }
 
-// The checks of one run. Returns the exit code: 0 all calls answered, 1 a bad flag, a missing key or a failed call.
+// The checks of one run. Returns the exit code: 0 all calls answered, 1 a missing key or a failed call, 2 a flag the provider
+// does not take, 3 the provider did not answer (timeout, 429, 503).
 // Every key is checked before the first call. A line holds no key and no model text.
 export async function runLlmCheck(deps: LlmCheckDeps): Promise<number> {
   const { config, args, out } = deps;
@@ -50,8 +59,8 @@ export async function runLlmCheck(deps: LlmCheckDeps): Promise<number> {
     } catch (error) {
       if (!(error instanceof ConfigError)) throw error;
       out.fail(runFlagError(error));
-      out.fail(usage);
-      return 1;
+      out.fail(`usage: ${usage}`);
+      return runFlagExitCode(error);
     }
 
     const missing = [...new Set(roles.map((role) => table.providers[table.roles[role].provider]))].filter(
@@ -100,18 +109,14 @@ export async function runLlmCheck(deps: LlmCheckDeps): Promise<number> {
     }
     return 0;
   } catch (error) {
-    out.fail(`check failed: ${describeError(error)}`);
-    return 1;
+    const code = exitCodeOf(error);
+    out.fail(`${code === EXIT.unreachable ? "unreachable" : "check failed"}: ${describeError(error)}`);
+    return code;
   }
 }
 
-async function main(): Promise<number> {
-  const out = createCliOutput("llm-check");
-  const args = parseLlmCheckArgs(process.argv.slice(2));
-  if (args === null) {
-    out.fail(usage);
-    return 1;
-  }
+async function main(argv: string[], out: CliOutput): Promise<number> {
+  const args = parseLlmCheckArgs(argv);
   let config: Config;
   try {
     config = loadConfig();
@@ -125,5 +130,5 @@ async function main(): Promise<number> {
 
 // `import.meta.main`: a test imports `runLlmCheck` without running the script.
 if (import.meta.main) {
-  process.exit(await main());
+  await runCli({ prefix: "llm-check", descriptions: cliDescriptions, main });
 }

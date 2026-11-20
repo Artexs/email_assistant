@@ -1,6 +1,14 @@
 import { parseArgs } from "node:util";
 
-import { llmEffortLevels, type SentPart, sentParts, type SimPart, simParts } from "@ea/core";
+import {
+  type CliDescription,
+  llmEffortLevels,
+  type SentPart,
+  sentParts,
+  type SimPart,
+  simParts,
+  UsageError,
+} from "@ea/core";
 import { z } from "zod";
 
 import {
@@ -21,6 +29,8 @@ import {
 import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
+import { parseFlags } from "./lib/parse-flags";
+
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
 // `reply-injection` and `reply-commitment` are the sets of the drafter run (`--drafter`); the classifier run takes
 // neither of them.
@@ -35,11 +45,11 @@ export const SIM_DEFAULT_RPM = 240;
 const ids = llmProviderIds.join("|");
 
 export const evalUsage = [
-  `usage: bun run eval [--provider ${ids}] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|delegation|all] [--bar 0.98] [--min-kept 30]`,
+  `bun run eval [--provider ${ids}] [--model <id>] [--reasoning-effort <value>] [--set synthetic|injection|delegation|all] [--bar 0.98] [--min-kept 30]`,
   "                    [--retries 4] [--limit n] [--per-category n] [--state <file.jsonl>] [--fresh]",
   "                    [--out <file.md>]",
   "       bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>] [--bar 0.98] [--min-kept 30]",
-  "                    [--json <file>] [--out <file.md>]",
+  "                    [--json-out <file>] [--out <file.md>]",
   "       bun run eval --gap --sim-json <gate file> --real-json <file> [--out <file.md>]",
   "       bun run eval --sim <scenario> --part dev|holdout|week [--provider …] [--model …] [--reasoning-effort …]",
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1]`,
@@ -63,6 +73,22 @@ export const evalUsage = [
   "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider sets every role, --model picks the drafter model; the judge model must differ from the drafter model (default judge: the strong tier of the provider); the injection set needs --judge)",
 ].join("\n");
 
+export const cliDescriptions = [
+  {
+    name: "eval",
+    summary: "Runs an eval of the classifier, the drafter or the extractor and prints a report.",
+    risk: "cost",
+    needs: ["db", "llm"],
+    usage: evalUsage,
+    exits: {
+      1: "a check or a gate failed, a key or a price is missing, or a run has too many error cases",
+      3: "the database or the LLM provider did not answer",
+      4: "stopped at the budget cap or the error limit; run the same command again",
+    },
+    outputNote: "counts and category names only; a holdout run prints no case id",
+  },
+] satisfies readonly CliDescription[];
+
 const optionsSchema = z.object({
   provider: z.enum(llmProviderIds).optional(),
   model: z.string().min(1).optional(),
@@ -78,7 +104,7 @@ const optionsSchema = z.object({
   out: z.string().min(1).optional(),
   real: z.boolean().default(false),
   synthetic: z.boolean().default(false),
-  json: z.string().min(1).optional(),
+  "json-out": z.string().min(1).optional(),
   gap: z.boolean().default(false),
   "sim-json": z.string().min(1).optional(),
   "real-json": z.string().min(1).optional(),
@@ -109,7 +135,9 @@ const optionsSchema = z.object({
   "judge-rpm": z.coerce.number().positive().optional(),
 });
 
-export type EvalOptions = Omit<z.infer<typeof optionsSchema>, "part"> & {
+export type EvalOptions = Omit<z.infer<typeof optionsSchema>, "part" | "json-out"> & {
+  // `--json-out <file>`: the counts of a `--real` run.
+  jsonOut?: string;
   // The part of the incoming bank. Undefined in an extractor run.
   part?: SimPart;
   // The part of the sent bank. Set only in an extractor run.
@@ -122,7 +150,7 @@ export type EvalOptions = Omit<z.infer<typeof optionsSchema>, "part"> & {
 };
 
 // --real reads labels from the DB and takes no case-run options; the case run takes no DB options.
-const realOnly = ["org-id", "mailbox-id", "synthetic", "json"] as const;
+const realOnly = ["org-id", "mailbox-id", "synthetic", "json-out"] as const;
 // --gap reads two files: no DB, no LLM, no case-run option. Only --out stays.
 const gapOnly = ["sim-json", "real-json"] as const;
 const casesOnly = [
@@ -212,7 +240,11 @@ export function resolvePrompt(
   return parts === undefined ? undefined : { version: chosen, parts };
 }
 
-type ParsedData = Omit<z.infer<typeof optionsSchema>, "part"> & { part?: SimPart; sentPart?: SentPart };
+type ParsedData = Omit<z.infer<typeof optionsSchema>, "part" | "json-out"> & {
+  jsonOut?: string;
+  part?: SimPart;
+  sentPart?: SentPart;
+};
 
 // `--drafter` runs the reply drafter on `--sim <scenario> --part dev|holdout|week` or on `--set reply-injection` or
 // `--set reply-commitment`; any other combination is a usage error. The two sets have no corpus and always need the judge.
@@ -240,121 +272,129 @@ function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): Ev
   };
 }
 
-// Undefined means a usage error.
-export function parseEvalArgs(args: string[]): EvalOptions | undefined {
-  try {
-    const { values } = parseArgs({
-      args,
-      options: {
-        provider: { type: "string" },
-        model: { type: "string" },
-        "reasoning-effort": { type: "string" },
-        set: { type: "string" },
-        bar: { type: "string" },
-        "min-kept": { type: "string" },
-        retries: { type: "string" },
-        limit: { type: "string" },
-        "per-category": { type: "string" },
-        state: { type: "string" },
-        fresh: { type: "boolean" },
-        out: { type: "string" },
-        real: { type: "boolean" },
-        synthetic: { type: "boolean" },
-        json: { type: "string" },
-        gap: { type: "boolean" },
-        "sim-json": { type: "string" },
-        "real-json": { type: "string" },
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-        sim: { type: "string" },
-        part: { type: "string" },
-        concurrency: { type: "string" },
-        rpm: { type: "string" },
-        "budget-usd": { type: "string" },
-        "spend-ledger": { type: "string" },
-        "fresh-lock": { type: "boolean" },
-        suspicious: { type: "boolean" },
-        extractor: { type: "boolean" },
-        drafter: { type: "boolean" },
-        judge: { type: "boolean" },
-        "judge-provider": { type: "string" },
-        "judge-model": { type: "string" },
-        "judge-rpm": { type: "string" },
-        "prompt-version": { type: "string" },
-        "prompt-parts": { type: "string" },
-        "drafter-prompt": { type: "string" },
-        "dump-drafts": { type: "string" },
-        "judge-prompt": { type: "string" },
-      },
-      strict: true,
-    });
-    const parsed = optionsSchema.safeParse(values);
-    if (!parsed.success) return undefined;
-    const rawPart = parsed.data.part;
-    const sentPart = rawPart !== undefined && isSentPart(rawPart) ? rawPart : undefined;
-    const data = {
-      ...parsed.data,
-      part: sentPart === undefined ? (rawPart as SimPart | undefined) : undefined,
-      sentPart,
-    };
-    if (data.gap) {
-      const allowed = new Set<string>(["gap", "out", ...gapOnly]);
-      if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
-      if (data["sim-json"] === undefined || data["real-json"] === undefined) return undefined;
-      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
-    }
-    if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
-    if (data.drafter) return parseDrafterArgs(data, values);
-    if ((replySets as readonly string[]).includes(data.set)) return undefined;
-    if (data.extractor || data.sentPart !== undefined) {
-      // A sent part runs only with --extractor and the other way round; the classifier options mean nothing here.
-      if (data.sim === undefined || data.sentPart === undefined || !data.extractor) return undefined;
-      if (Object.keys(values).some((key) => !extractorAllowed.has(key))) return undefined;
-      return {
-        ...data,
-        prompt: productionClassifierChoice(),
-        concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
-        rpm: data.rpm ?? SIM_DEFAULT_RPM,
-        budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
-      };
-    }
-    if (data.suspicious) {
-      // The rules need no provider, model, judge or spend option: any other option is a usage error.
-      const allowed = new Set<string>(["sim", "part", "suspicious", "out"]);
-      if (data.sim === undefined || data.part === undefined) return undefined;
-      if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
-      return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
-    }
-    if (data.sim !== undefined) {
-      if (data.part === undefined) return undefined;
-      if (simExcluded.some((key) => values[key] !== undefined)) return undefined;
-      // The judge overrides mean nothing without the judge.
-      if (
-        !data.judge &&
-        (data["judge-provider"] !== undefined || data["judge-model"] !== undefined || data["judge-rpm"] !== undefined)
-      ) {
-        return undefined;
-      }
-      const prompt = resolvePrompt(data["prompt-version"], data["prompt-parts"]);
-      if (prompt === undefined) return undefined;
-      return {
-        ...data,
-        prompt,
-        concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
-        rpm: data.rpm ?? SIM_DEFAULT_RPM,
-        budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
-      };
-    }
-    if (simOnly.some((key) => values[key] !== undefined)) return undefined;
-    const wrong = data.real
-      ? casesOnly.some((key) => values[key] !== undefined) ||
-        data["org-id"] === undefined ||
-        data["mailbox-id"] === undefined
-      : realOnly.some((key) => values[key] !== undefined);
-    return wrong
-      ? undefined
-      : { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
-  } catch {
-    return undefined;
+// `--json <file>` became `--json-out <file>`: name the new flag instead of a bare unknown option.
+const RENAMED_JSON = /^--json(=|$)/;
+
+// Throws `UsageError` for an unknown flag, a bad value or a combination of options that no mode takes.
+export function parseEvalArgs(args: string[]): EvalOptions {
+  if (args.slice(0, args.includes("--") ? args.indexOf("--") : args.length).some((arg) => RENAMED_JSON.test(arg))) {
+    throw new UsageError("--json is now --json-out <file>");
   }
+  const options = parseEvalOptions(args);
+  if (options === undefined) throw new UsageError("bad value or conflicting options");
+  return options;
+}
+
+// Undefined means a usage error.
+function parseEvalOptions(args: string[]): EvalOptions | undefined {
+  const { values } = parseFlags({
+    args,
+    options: {
+      provider: { type: "string" },
+      model: { type: "string" },
+      "reasoning-effort": { type: "string" },
+      set: { type: "string" },
+      bar: { type: "string" },
+      "min-kept": { type: "string" },
+      retries: { type: "string" },
+      limit: { type: "string" },
+      "per-category": { type: "string" },
+      state: { type: "string" },
+      fresh: { type: "boolean" },
+      out: { type: "string" },
+      real: { type: "boolean" },
+      synthetic: { type: "boolean" },
+      "json-out": { type: "string" },
+      gap: { type: "boolean" },
+      "sim-json": { type: "string" },
+      "real-json": { type: "string" },
+      "org-id": { type: "string" },
+      "mailbox-id": { type: "string" },
+      sim: { type: "string" },
+      part: { type: "string" },
+      concurrency: { type: "string" },
+      rpm: { type: "string" },
+      "budget-usd": { type: "string" },
+      "spend-ledger": { type: "string" },
+      "fresh-lock": { type: "boolean" },
+      suspicious: { type: "boolean" },
+      extractor: { type: "boolean" },
+      drafter: { type: "boolean" },
+      judge: { type: "boolean" },
+      "judge-provider": { type: "string" },
+      "judge-model": { type: "string" },
+      "judge-rpm": { type: "string" },
+      "prompt-version": { type: "string" },
+      "prompt-parts": { type: "string" },
+      "drafter-prompt": { type: "string" },
+      "dump-drafts": { type: "string" },
+      "judge-prompt": { type: "string" },
+    },
+  });
+  const parsed = optionsSchema.safeParse(values);
+  if (!parsed.success) return undefined;
+  const { "json-out": jsonOut, ...rest } = parsed.data;
+  const rawPart = rest.part;
+  const sentPart = rawPart !== undefined && isSentPart(rawPart) ? rawPart : undefined;
+  const data = {
+    ...rest,
+    ...(jsonOut === undefined ? {} : { jsonOut }),
+    part: sentPart === undefined ? (rawPart as SimPart | undefined) : undefined,
+    sentPart,
+  };
+  if (data.gap) {
+    const allowed = new Set<string>(["gap", "out", ...gapOnly]);
+    if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
+    if (data["sim-json"] === undefined || data["real-json"] === undefined) return undefined;
+    return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
+  }
+  if (gapOnly.some((key) => values[key] !== undefined)) return undefined;
+  if (data.drafter) return parseDrafterArgs(data, values);
+  if ((replySets as readonly string[]).includes(data.set)) return undefined;
+  if (data.extractor || data.sentPart !== undefined) {
+    // A sent part runs only with --extractor and the other way round; the classifier options mean nothing here.
+    if (data.sim === undefined || data.sentPart === undefined || !data.extractor) return undefined;
+    if (Object.keys(values).some((key) => !extractorAllowed.has(key))) return undefined;
+    return {
+      ...data,
+      prompt: productionClassifierChoice(),
+      concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
+      rpm: data.rpm ?? SIM_DEFAULT_RPM,
+      budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
+    };
+  }
+  if (data.suspicious) {
+    // The rules need no provider, model, judge or spend option: any other option is a usage error.
+    const allowed = new Set<string>(["sim", "part", "suspicious", "out"]);
+    if (data.sim === undefined || data.part === undefined) return undefined;
+    if (Object.keys(values).some((key) => !allowed.has(key))) return undefined;
+    return { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
+  }
+  if (data.sim !== undefined) {
+    if (data.part === undefined) return undefined;
+    if (simExcluded.some((key) => values[key] !== undefined)) return undefined;
+    // The judge overrides mean nothing without the judge.
+    if (
+      !data.judge &&
+      (data["judge-provider"] !== undefined || data["judge-model"] !== undefined || data["judge-rpm"] !== undefined)
+    ) {
+      return undefined;
+    }
+    const prompt = resolvePrompt(data["prompt-version"], data["prompt-parts"]);
+    if (prompt === undefined) return undefined;
+    return {
+      ...data,
+      prompt,
+      concurrency: data.concurrency ?? SIM_DEFAULT_CONCURRENCY,
+      rpm: data.rpm ?? SIM_DEFAULT_RPM,
+      budgetUsd: data["budget-usd"] ?? RUN_CAP_USD,
+    };
+  }
+  if (simOnly.some((key) => values[key] !== undefined)) return undefined;
+  const wrong = data.real
+    ? casesOnly.some((key) => values[key] !== undefined) ||
+      data["org-id"] === undefined ||
+      data["mailbox-id"] === undefined
+    : realOnly.some((key) => values[key] !== undefined);
+  return wrong ? undefined : { ...data, concurrency: 1, budgetUsd: RUN_CAP_USD, prompt: productionClassifierChoice() };
 }

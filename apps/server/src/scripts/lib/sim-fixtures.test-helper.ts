@@ -2,7 +2,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { miniPlanSpec, miniScenario, simParts, type CaseText, type Scenario, type Slot } from "@ea/core";
+import { miniPlanSpec, miniScenario, simParts, type CaseText, type Scenario, type Slot, UsageError } from "@ea/core";
 
 import { describeError } from "../../platform/errors";
 import { listBatches, readSlots, writeJson } from "../../platform/sim-files";
@@ -61,9 +61,7 @@ export async function createMiniCorpus(options: { plan?: boolean } = {}): Promis
   writeJson(join(dir, "scenario.json"), miniScenario);
   writeJson(join(dir, "plan-spec.json"), miniPlanSpec);
   if (options.plan === true) {
-    const cmd = parseSimArgs(["plan", miniScenario.id, "--root", root]);
-    if (cmd === undefined) throw new Error("bad plan arguments");
-    const result = await runSim(cmd);
+    const result = await runSim(parseSimArgs(["plan", miniScenario.id, "--root", root]));
     if (result.code !== 0) throw new Error("plan failed");
   }
   return corpusAt(root);
@@ -80,13 +78,12 @@ export function runSimCli(args: string[]): { code: number; stdout: string; stder
 // Runs the same steps as sim.ts in this process. A child process costs about 0.4 s of Bun start-up per call,
 // and a test that runs the script a dozen times then needs about 4 s, near the 5 s default under load.
 export async function runSimInProcess(args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
-  const cmd = parseSimArgs(args);
-  if (cmd === undefined) return { code: 1, stdout: "", stderr: `${usage}\n` };
   try {
-    const result = await runSim(cmd);
+    const result = await runSim(parseSimArgs(args));
     const stdout = result.lines.length > 0 ? `${result.lines.join("\n")}\n` : "";
     return { code: result.code, stdout, stderr: "" };
   } catch (error) {
+    if (error instanceof UsageError) return { code: 2, stdout: "", stderr: `${error.message}\nusage: ${usage}\n` };
     return { code: 1, stdout: "", stderr: `sim failed: ${describeError(error)}\n` };
   }
 }

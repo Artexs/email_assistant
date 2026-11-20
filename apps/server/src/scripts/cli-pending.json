@@ -24,15 +24,6 @@
     "apps/server/src/scripts/rules.ts",
     "apps/server/src/scripts/trust-history-check.ts"
   ],
-  "eval": [
-    "apps/server/src/scripts/eval.ts",
-    "apps/server/src/scripts/lib/eval-drafter.ts",
-    "apps/server/src/scripts/lib/eval-extractor.ts",
-    "apps/server/src/scripts/lib/eval-sim.ts",
-    "apps/server/src/scripts/lib/eval-suspicious.ts",
-    "apps/server/src/scripts/llm-check.ts",
-    "apps/server/src/scripts/sim.ts"
-  ],
   "testmail-ops": [
     "apps/server/src/scripts/credentials-check.ts",
     "apps/server/src/scripts/ops-alert-test.ts",

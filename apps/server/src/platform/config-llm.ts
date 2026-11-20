@@ -1,4 +1,4 @@
-import { type LlmRole, llmRoleModels, llmRoles, providerEffort, SIM_STACK_NAME, tierModel } from "@ea/core";
+import { EXIT, type LlmRole, llmRoleModels, llmRoles, providerEffort, SIM_STACK_NAME, tierModel } from "@ea/core";
 import { z } from "zod";
 
 import { ConfigError, emptyAsUndefined } from "./config-shared";
@@ -199,6 +199,11 @@ export function runFlagError(error: ConfigError): string {
     .find((key) => error.keys.includes(key ?? ""));
   if (ownModelKey) return `${ownModelKey} is missing: an own endpoint needs its model`;
   return `config error: ${error.keys.join(", ")}`;
+}
+
+/** The exit code of a run-flag `ConfigError` (docs/cli.md): a flag the provider does not take is bad arguments (2); a missing key or model is a failed run (1). */
+export function runFlagExitCode(error: ConfigError): typeof EXIT.failed | typeof EXIT.usage {
+  return error.keys.includes("reasoningEffort") ? EXIT.usage : EXIT.failed;
 }
 
 /**

@@ -32,7 +32,14 @@ import {
   runPool,
 } from "../../modules/triage";
 import { createCliOutput } from "../../platform/cli";
-import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides } from "../../platform/config";
+import {
+  type Config,
+  ConfigError,
+  llmRoleTable,
+  runFlagError,
+  runFlagExitCode,
+  runOverrides,
+} from "../../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -145,8 +152,8 @@ function dumpLine(result: DrafterCaseResult, c: EvalCase | undefined, draft: str
 // `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection|reply-commitment --drafter
 // --judge`: the reply drafter on every needs_reply case (the label, not a prediction: the drafter is measured alone),
 // graded by the judge.
-// Exit 0: done (and the gate or the injection bar passed); 1: a usage or setup error, a failed gate, an injection set under
-// 100% or over 10% error cases; 2: the run stopped (cap or errors), resume it.
+// Exit 0: done (and the gate or the injection bar passed); 1: a setup error, a failed gate, an injection set under
+// 100% or over 10% error cases; 2: a run flag the provider does not take; 4: the run stopped (cap or errors), resume it.
 export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliDeps = {}): Promise<number> {
   const config = deps.config ?? loadEvalConfig();
   if (config === null) return 1;
@@ -165,8 +172,8 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
     cli.fail(runFlagError(error));
-    cli.fail(evalUsage);
-    return 1;
+    cli.fail(`usage: ${evalUsage}`);
+    return runFlagExitCode(error);
   }
   const row = table.roles.drafter;
   const keys = table.providers[row.provider];
@@ -390,7 +397,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
             summary: injection,
             notPassed: results.filter((r) => injectionVerdict(r) !== true).map((r) => r.id),
           });
-    process.stdout.write(`${markdown}\n`);
+    cli.write(`${markdown}\n`);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
 
     // The gate file comes from a full, judged holdout run only.
