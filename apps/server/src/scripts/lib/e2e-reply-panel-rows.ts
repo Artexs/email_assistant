@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { type DraftPayload, MINUTE_MS, sendPayloadFor } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
@@ -13,7 +13,6 @@ export interface ReplyPanelSeedResult {
   mailIds: Record<"gap" | "clean" | "flagged", string>;
 }
 
-const MINUTE = 60_000;
 const FIRST_UID = 920_001;
 
 interface MailPlan {
@@ -36,7 +35,7 @@ async function seedMail(
   index: number,
   now: Date
 ): Promise<string> {
-  const receivedAt = new Date(now.getTime() - (index + 2) * 10 * MINUTE);
+  const receivedAt = new Date(now.getTime() - (index + 2) * 10 * MINUTE_MS);
   const [emailId] = await insertMails(trx, ctx, mailboxId, [
     {
       uid: FIRST_UID + index,
@@ -98,7 +97,7 @@ async function seedReplySend(
     recipients: "from",
     ...(version > 1 ? { version } : {}),
   };
-  const at = new Date(now.getTime() - 5 * MINUTE);
+  const at = new Date(now.getTime() - 5 * MINUTE_MS);
   const draftId = await insertAction(trx, ctx, {
     emailId,
     type: "create_draft",

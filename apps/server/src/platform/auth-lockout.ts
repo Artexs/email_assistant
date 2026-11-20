@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { sql } from "kysely";
 
 import type { AuthDeps } from "./auth";
@@ -9,8 +10,8 @@ const log = createLog("auth");
 
 // A fixed window. The 10th failure inside 15 minutes locks the user for 15 minutes.
 export const LOCKOUT_MAX_FAILURES = 10;
-export const LOCKOUT_WINDOW_MS = 15 * 60_000;
-export const LOCKOUT_MS = 15 * 60_000;
+export const LOCKOUT_WINDOW_MS = 15 * MINUTE_MS;
+export const LOCKOUT_MS = 15 * MINUTE_MS;
 export const LOCKOUT_MAILS_PER_DAY = 3;
 
 export interface LockoutStore {

@@ -1,4 +1,4 @@
-import type { LlmEndpointKind, LlmRole, PromptVersion } from "@ea/core";
+import { type LlmEndpointKind, type LlmRole, MINUTE_MS, type PromptVersion } from "@ea/core";
 import { z } from "zod";
 
 import { createLog } from "../log";
@@ -51,7 +51,7 @@ function parseOutput<T>(result: GenerateResult, schema: z.ZodType<T>, model: str
 export function createRateLimiter(opts: { rpm: number; now: () => number; sleep: (ms: number) => Promise<void> }): {
   acquire(): Promise<void>;
 } {
-  const gapMs = 60_000 / opts.rpm;
+  const gapMs = MINUTE_MS / opts.rpm;
   let nextStart = Number.NEGATIVE_INFINITY;
 
   return {
