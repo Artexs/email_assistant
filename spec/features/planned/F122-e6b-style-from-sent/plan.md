@@ -21,19 +21,19 @@ Owner words, word for word:
 
 ### Design decisions
 
-- **D1 Role.** New LLM role `stylist`, tier `light`, effort `low`, prompt `stylist-v1` in the triage prompt registry. Rejected: a second prompt under role `drafter` (the registry holds one production prompt per role; the cap and the eval need their own role).
-- **D2 Sync call.** One synchronous call in a route, as Preview does (`createStylePreview`). Nothing is queued or stored. Rejected: a request table (PD-080: only the saved text stays).
-- **D3 Sources.** Rows of `sent_emails` of the mailbox: `origin = user`, `content = stored`, `body_text` not null, `internal_date` in the last 14 days, `auto_submitted` null or `no`, `list_id` null, `precedence` not `bulk`/`list`/`junk`, `has_calendar` false; newest 100. Under the `synthetic` LLM scope only test mail counts (the rule that the open-loop analysis and `replySampleScope` apply). Only the body goes to the model: no subject, address, date or id.
-- **D4 Cut.** Pure core `cutQuotedReply` cuts each text at the first reply header (en, pl, our `quoteReply` forms, "Original message" lines, an `From:`/`Od:` header block), drops `>` lines, cuts at a `-- ` line and removes the stored signature text. Each sample ≤ 1,500 characters, all samples ≤ 60,000. A text that is empty after the cut does not count.
+- **D1 Role.** New LLM role `stylist` (`light`, effort `low`), prompt `stylist-v1` in the triage registry. Rejected: a second prompt under `drafter` (one production prompt per role).
+- **D2 Sync call.** One synchronous call in a route, as Preview (`createStylePreview`). Nothing is queued or stored. Rejected: a request table (PD-080).
+- **D3 Sources.** Rows of `sent_emails` of the mailbox: `origin = user`, `content = stored`, `body_text` not null, `internal_date` in the last 14 days, `auto_submitted` null or `no`, `list_id` null, `precedence` not `bulk`/`list`/`junk`, `has_calendar` false; newest 100. Under the `synthetic` scope only test mail counts (the open-loop rule). Only the body goes to the model: no subject, address, date or id.
+- **D4 Cut.** Core `cutQuotedReply` cuts at the first reply header, drops `>` lines, cuts at `-- ` and removes the stored signature. Samples ≤ 1,500 characters each, ≤ 60,000 in all; an empty one does not count.
 - **D5 Minimum** (default). Fewer than 5 samples after the cut → `too_few` with the count; no call.
 - **D6 Prompt.** Samples go in one data block with a random id (untrusted text). Output schema `{ style: string }`. The text describes form of address, greeting, sign-off habit, length, tone and language use, in the language of the tapping user (pl/en). It holds no name, address, phone, link, number, quote or topic.
 - **D7 Checks.** `checkStyleSuggestion` (core) runs on every answer, with no allowed list (the drafter's `allowedOf` later trusts the writing style, so the suggestion must be clean). Codes in `interfaces.md`. One retry with the failure codes, then `failed` / `checks`. The output must also pass `checkProfileInput` for `writingStyle`.
-- **D8 Gates.** Route needs: owner; org flags `reply_drafts` and `style_from_sent` (404 while either is off, flag before role, as Preview); flag `sent_sync` and the mailbox switch "Track my sent mail" on (else 409 `sent_off`); a password IMAP mailbox (else 409 `blocked` `oauth_mailbox`, F115 D19); a provider with a sub-processor row (`realMail`, else `failed` / `llm_off`).
+- **D8 Gates.** Flags `reply_drafts` and `style_from_sent` (404, before the role); owner; flag `sent_sync` and the switch "Track my sent mail" (409 `sent_off`); a password IMAP mailbox (409 `blocked` `oauth_mailbox`); a provider with a sub-processor row (`realMail`, else `failed` / `llm_off`).
 - **D9 Limits.** At most 3 suggestion runs per mailbox per quota day (count of `mailbox.style_suggested` audit rows; a retry is one run), then 429 `suggest_limit`; one run per mailbox at a time, then 429 `suggest_busy`. The calls count in `LLM_DAILY_CAP` as a tap (`capVerdict` trigger `tap`): at 100% → `failed` / `llm_cap`.
 - **D10 Switch-off wins.** After the call the service reads the switch again; if it is off now, the answer is `sent_off` and the text is dropped.
 - **D11 Records.** One `llm.call` row per attempt (role `stylist`, no `email_id`). One audit row `mailbox.style_suggested` per run (`mailbox_id`, `count`, `outcome`; never text). Log events `style_suggested`, `style_suggest_failed` (`mailbox_id`, `count`, `error_code`).
 - **D12 Panel.** The style card shows "Suggest my style from my sent mail" for an owner while both flags are on. The answer shows in a box with "Use this text" (replaces the writing-style field) and "Discard"; nothing is saved until Save. With the switch off the button is off and a line says why.
-- **D13 Contract, two releases.** Stage 04: a data migration copies `style_text` into `mailbox_profiles.signature` where the signature is null (a missing profile row is created), and the code stops every read and write of the column (fallback chain becomes signature → owner name). `PATCH /api/organization` refuses `styleText` (400). Stage 05, in a later release: drop the column with `-- contract: v<release of 04>`; privacy maps and export lose it. Rejected: one release (`release.sh` migrates before the image swap; the old image would read a dropped column).
+- **D13 Contract, two releases.** Stage 04: a data migration copies `style_text` into each null profile signature (a missing row is created); no code reads or writes the column (fallback: signature → owner name); `PATCH /api/organization` refuses `styleText` (400). Stage 05, a later release: drop it with `-- contract:`; maps lose it. Rejected: one release (`release.sh` migrates before the swap).
 - **D14 New mailbox** (default). After stage 04 a new mailbox has no signature until the owner writes one (owner name fallback).
 - **D15 Gate.** A paired run on the reply holdout: config A no writing style, config B the `stylist-v1` text made from `sent-holdout`. Judge `judge-v4` = `judge-v3` plus score `style_match` (0–2) against the reference style (scenario `executive.voice`). Bars in stage 08. Gate file `evals/results/gate/stylist-<version>-<model>-<effort>-lab-01-v1.json`.
 - **D16 Spend.** Total ≤ $1.00 for stage 08, ledger lines checked; each run `--budget-usd` as stage 08 says.
@@ -41,12 +41,12 @@ Owner words, word for word:
 
 ## Facts checked (ead9ec4d3)
 
-- **F1** `sent_emails.body_text` holds the full text (≤ 100,000 characters, `sent-texts.ts`); no quote cut at store time. Retention clears it after `data_retention_days`. Cascade with the mailbox; the switch off deletes the rows. (scout 1, read again)
+- **F1** `sent_emails.body_text` is the full text; no quote cut at store time; retention and switch-off clear it. (scout 1, read)
 - **F2** ADR 0029 decision 7 already names the E6b call. (read)
-- **F3** `prompts` holds one entry per role; `llmRoles` = classifier, judge, drafter, extractor; no DB CHECK on the role. (scout 4)
+- **F3** `prompts` holds one entry per role; no DB CHECK on the role. (scout 4)
 - **F4** `drafter-v4`: "The greeting follows the email, also when the writing style says otherwise." (read)
 - **F5** `judgeReplyDraft` sends no persona or style; `tone_fits` is "fits a short message from a manager's assistant". (read)
-- **F6** The drafter eval takes `writingStyle` from `executive.voice`; no override flag. Sent bank: `sent-dev` 50 and `sent-holdout` 250 mails of one persona. (scout 3, read)
+- **F6** The drafter eval takes `writingStyle` from `executive.voice`; no override. Sent bank: `sent-dev` 50, `sent-holdout` 250 mails, one persona. (scout 3, read)
 - **F7** Holdout cost with judge: $0.4329 for 260 cases (`tuning-4.md`).
 - **F8** `release.sh` runs `migrate` before the swap; `db:check-migrations` needs `-- contract:` for a drop. (read)
 - **F9** `allowedOf` in the drafter allows strings of the writing style. (scout 2)
@@ -96,14 +96,13 @@ The last line of `bun run check:job` (`check:job PASS master=… tip=…`), afte
 
 ## How to run (coordinator)
 
-- Worker `claude-sonnet-5-5`, `--prepare 'bash scripts/limen-prepare.sh'`; ticket in `active/`.
-- Start every stage whose Needs are met. 04 and 05 hold the only migrations: never next to another migration in build.
-- 08 spends real money (≤ $1.00); the worker stops at the cap.
+- Worker `claude-sonnet-5-5`, `--prepare 'bash scripts/limen-prepare.sh'`; ticket in `active/`. Start every stage whose Needs are met; 04 and 05 never next to another migration. 08 spends ≤ $1.00.
 
 ## Planning progress
 
-- Scouts: 4 (`scouts.md`).
+- Scouts: 4 (`scouts.md`); every packet had `Verified` lines; F2, F4, F5, F8 read again by the planner.
 - [written] plan, interfaces, questions, stages 01–08.
+- Words (`wc -w`): plan 1494; stages 01 693, 02 697, 03 584, 04 583, 05 373, 06 645, 07 697, 08 621.
 
 ## Cold review
 
