@@ -1,9 +1,10 @@
 ---
 // The one plan. The price is the constant of `@ea/core`.
+import type { UserLocale } from "@ea/core";
 import { placeholderPrice } from "../pricing";
 
 interface Props {
-  lang?: "en" | "pl";
+  lang?: UserLocale;
 }
 
 const { lang = "en" } = Astro.props;

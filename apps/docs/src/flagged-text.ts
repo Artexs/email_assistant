@@ -1,7 +1,7 @@
 // The user-visible strings of every default-off feature flag: a page under `src/content/docs` must not hold one,
 // because a reader cannot know whether their organization has the flag on. `flagged-text.test.ts` scans the pages.
 // The in-place operator sources are out of scope (operator text). A stage that meets a new flagged string adds it here.
-import { featureFlags, type FeatureKey } from "@ea/core";
+import { featureFlags, type FeatureKey, type UserLocale } from "@ea/core";
 import { en, type TextKey } from "@ea/web/i18n/en";
 import { pl } from "@ea/web/i18n/pl";
 
@@ -139,7 +139,7 @@ const UI_TEXT_TAG = /<UiText\s+k=(?:"([^"]+)"|'([^']+)')\s*\/>/g;
 
 // The page text that a reader could see: each `<UiText k="key" />` becomes the English and the Polish panel text of the key.
 export function expandUiText(source: string): string {
-  const panel = { en, pl } as Record<"en" | "pl", Record<string, string>>;
+  const panel = { en, pl } as Record<UserLocale, Record<string, string>>;
   return source.replace(UI_TEXT_TAG, (_tag, double: string | undefined, single: string | undefined) => {
     const key = double ?? single ?? "";
     return ` ${panel.en[key] ?? ""} ${panel.pl[key] ?? ""} `;

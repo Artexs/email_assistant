@@ -1,7 +1,8 @@
+import { userLocales } from "@ea/core/web";
 import { describe, expect, test } from "bun:test";
 
 import { checkLegalSource, findPlaceholders, headingCount, readLegalSource, strayLegalFiles } from "./legal-checks";
-import { isAllowedPlaceholder, legalDocs, legalLangs } from "./legal";
+import { isAllowedPlaceholder, legalDocs } from "./legal";
 
 describe("findPlaceholders", () => {
   test("6. finds each escaped placeholder, in order", () => {
@@ -41,7 +42,7 @@ describe("the six legal sources", () => {
     expect(strayLegalFiles()).toEqual([]);
   });
 
-  for (const lang of legalLangs)
+  for (const lang of userLocales)
     for (const doc of legalDocs)
       test(`${lang}/${doc}.md passes the source check`, () => {
         expect(checkLegalSource(readLegalSource(lang, doc))).toEqual([]);
