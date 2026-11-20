@@ -1,6 +1,8 @@
 import type { LlmEndpointKind } from "@ea/core";
 import { z } from "zod";
 
+import { STYLE_SCORE } from "../triage";
+
 import {
   DRAFTER_BARS,
   type DrafterScores,
@@ -27,6 +29,8 @@ export interface DrafterReportHeader {
   reasoningEffort: string | null;
   promptVersion: string;
   judge: { provider: string; model: string; promptVersion: string } | null;
+  // The writing style the drafter got: `scenario` (the corpus voice), `none`, or a style file.
+  style?: { key: string; file: string | null; sampleCount: number | null };
   planned: number;
   complete: boolean;
   stoppedReason: string | null;
@@ -49,6 +53,11 @@ const counts = (record: Record<string, number>): string =>
         .map((key) => `${key} ${record[key]}`)
         .join(", ");
 
+function styleText(style: NonNullable<DrafterReportHeader["style"]>): string {
+  if (style.file === null) return style.key;
+  return `${style.key}, file ${style.file}, sample count ${style.sampleCount ?? "n/a"}`;
+}
+
 function headerLines(h: DrafterReportHeader): string[] {
   return [
     `# ${h.title}`,
@@ -61,6 +70,7 @@ function headerLines(h: DrafterReportHeader): string[] {
     `- reasoning effort: ${h.reasoningEffort ?? "default"}`,
     `- prompt version: ${h.promptVersion}`,
     `- judge: ${h.judge === null ? "not run" : `${h.judge.provider} ${h.judge.model}, ${h.judge.promptVersion}, rubric reply`}`,
+    ...(h.style === undefined ? [] : [`- style: ${styleText(h.style)}`]),
     `- data: ${h.data}`,
     `- ${h.planned} cases planned, ${h.complete ? "run complete" : `run NOT complete (${h.stoppedReason ?? "stopped"})`}`,
     `- cost: ${usd(h.spentUsd)} of cap ${h.capUsd === null ? "none (own endpoint)" : usd(h.capUsd)}`,
@@ -102,6 +112,13 @@ function judgeGainLines(scores: DrafterScores): string[] {
   ];
 }
 
+// Only a run with judge-v4 has the score `style_match`; judge-v3 reports do not change.
+function styleMatchRows(scores: DrafterScores, mean: string): (string | number)[][] {
+  const counted = scores.scoreCounts[STYLE_SCORE];
+  if (counted === undefined) return [];
+  return [[`${STYLE_SCORE} (mean, 0-2; counts of 0 / 1 / 2)`, `${mean}; [${counted.join(", ")}]`]];
+}
+
 function replyDraftLines(scores: DrafterScores): string[] {
   const mean = (name: string): string =>
     scores.scoreMeans[name] === undefined ? "n/a" : scores.scoreMeans[name].toFixed(2);
@@ -138,6 +155,7 @@ function replyDraftLines(scores: DrafterScores): string[] {
               ["answers_every_question (mean, 0-2)", mean("answers_every_question")],
               ["form_of_address (mean, 0-2)", mean("form_of_address")],
               ["tone_fits (mean, 0-2)", mean("tone_fits")],
+              ...styleMatchRows(scores, mean("style_match")),
               ["checks false", counts(scores.checkFalse)],
               ["no_invented_commitment false", scores.inventedCommitments],
               ...languageRows(scores),

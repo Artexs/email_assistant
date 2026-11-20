@@ -14,6 +14,7 @@ import * as extractorV1 from "./extractor-v1";
 import * as judgeV1 from "./judge-v1";
 import * as judgeV2 from "./judge-v2";
 import * as judgeV3 from "./judge-v3";
+import * as judgeV4 from "./judge-v4";
 import { type ClassifierPart, isV3Part, optionalParts } from "./parts";
 import * as stylistV1 from "./stylist-v1";
 
@@ -116,12 +117,14 @@ export const drafterVersions = {
 export type DrafterVersion = keyof typeof drafterVersions;
 export const drafterVersionIds = Object.keys(drafterVersions) as DrafterVersion[];
 
-/** One judge prompt version: every version has the rubric items, the schema and the user prompt of `judge-v1`. */
+/** One judge prompt version. The rubric items and the answer schema belong to the version: judge-v4 adds a score. */
 export interface JudgePrompt {
   role: "judge";
   version: PromptVersion<"judge">;
   buildSystem: typeof judgeV1.buildSystemPrompt;
   buildUser: typeof judgeV1.buildUserPrompt;
+  rubricItems: Record<judgeV1.RubricKind, { readonly scores: readonly string[]; readonly checks: readonly string[] }>;
+  answerSchema: typeof judgeV1.judgeSchema;
 }
 
 // Every judge version that can run: the drafter eval picks one with `--judge-prompt`. The other evals use `prompts.judge`.
@@ -131,18 +134,32 @@ export const judgeVersions = {
     version: judgeV1.PROMPT_VERSION,
     buildSystem: judgeV1.buildSystemPrompt,
     buildUser: judgeV1.buildUserPrompt,
+    rubricItems: judgeV1.rubricItems,
+    answerSchema: judgeV1.judgeSchema,
   },
   "judge-v2": {
     role: "judge",
     version: judgeV2.PROMPT_VERSION,
     buildSystem: judgeV2.buildSystemPrompt,
     buildUser: judgeV2.buildUserPrompt,
+    rubricItems: judgeV1.rubricItems,
+    answerSchema: judgeV1.judgeSchema,
   },
   "judge-v3": {
     role: "judge",
     version: judgeV3.PROMPT_VERSION,
     buildSystem: judgeV3.buildSystemPrompt,
     buildUser: judgeV3.buildUserPrompt,
+    rubricItems: judgeV1.rubricItems,
+    answerSchema: judgeV1.judgeSchema,
+  },
+  "judge-v4": {
+    role: "judge",
+    version: judgeV4.PROMPT_VERSION,
+    buildSystem: judgeV4.buildSystemPrompt,
+    buildUser: judgeV4.buildUserPrompt,
+    rubricItems: judgeV4.rubricItems,
+    answerSchema: judgeV4.judgeSchema,
   },
 } as const satisfies Record<string, JudgePrompt>;
 export type JudgeVersion = keyof typeof judgeVersions;

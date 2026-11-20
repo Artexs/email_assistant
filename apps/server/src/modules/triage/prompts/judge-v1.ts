@@ -58,13 +58,13 @@ Return only JSON that matches the schema. Give no other text.`;
 }
 
 // The marker sequences of the data blocks must not occur inside the text.
-function neutralize(text: string): string {
+export function neutralize(text: string): string {
   let out = markUntrustedText(text);
   while (/<<<|>>>/.test(out)) out = out.replace(/<<<|>>>/g, "");
   return out;
 }
 
-function block(label: string, nonce: string, lines: string[]): string {
+export function block(label: string, nonce: string, lines: string[]): string {
   return [`<<<UNTRUSTED ${label} ${nonce}>>>`, ...lines, `<<<END_UNTRUSTED ${label} ${nonce}>>>`].join("\n");
 }
 
@@ -82,6 +82,8 @@ export function buildUserPrompt(input: {
   lang: "pl" | "en" | "de";
   expectedPoints?: readonly string[];
   mustNot?: readonly string[];
+  // The reference writing style of the manager. Only judge-v4 shows it; judge-v1 to judge-v3 ignore it.
+  referenceStyle?: string;
   nonce: string;
 }): string {
   const reply = input.kind === "reply";

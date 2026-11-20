@@ -50,7 +50,7 @@ export function providerMatches(text: string): string[] {
 }
 
 const SKIPPED_SEGMENTS = new Set(["test", "e2e", "fixtures", "node_modules", "__snapshots__"]);
-const SKIPPED_FILE = /(\.test\.tsx?|^testing\.ts|^fixtures\.ts)$/;
+const SKIPPED_FILE = /(\.test\.tsx?|\.test-helper\.tsx?|^testing\.ts|^fixtures\.ts)$/;
 
 /** Test code, fixtures and test helpers are not scanned. */
 export function isScannedPath(path: string): boolean {
@@ -111,6 +111,26 @@ describe("provider scan", () => {
   test("a model id in an unlisted file fails", () => {
     const { unlisted } = findProblems({ "apps/server/src/modules/triage/new.ts": 'const m = "gpt-6-luna";' }, {});
     expect(unlisted).toEqual(["apps/server/src/modules/triage/new.ts line 1: model id: gpt-6"]);
+  });
+
+  test.each([
+    ["apps/server/src/modules/triage/eval.test-helper.ts", false],
+    ["apps/server/src/platform/config.test-helper.ts", false],
+    ["apps/server/src/modules/triage/eval.ts", true],
+    ["apps/server/src/modules/triage/test-helper.ts", true],
+  ])("scan path %s: scanned is %p", (path, scanned) => {
+    expect(isScannedPath(path)).toBe(scanned);
+  });
+
+  test("a production file next to a test helper still fails on a model id", () => {
+    const files = {
+      "apps/server/src/modules/triage/eval.test-helper.ts": 'const m = "gemini-3";',
+      "apps/server/src/modules/triage/eval.ts": 'const m = "gemini-3";',
+    };
+    const scanned = Object.fromEntries(Object.entries(files).filter(([path]) => isScannedPath(path)));
+    expect(findProblems(scanned, {}).unlisted).toEqual([
+      "apps/server/src/modules/triage/eval.ts line 1: model id: gemini-3",
+    ]);
   });
 
   test("a registry file may name a provider", () => {

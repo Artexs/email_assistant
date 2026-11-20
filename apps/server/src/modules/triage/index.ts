@@ -102,6 +102,7 @@ export { evalExitCode, renderEvalReport } from "./eval-report";
 export { judgeReplyDraft } from "./eval-judge";
 export type { ReplyJudge } from "./eval-judge";
 export { judgeDraft, judgePassed } from "./judge";
+export { STYLE_SCORE } from "./prompts/judge-v4";
 export type { JudgeResult } from "./judge";
 export {
   buildGateFile,
