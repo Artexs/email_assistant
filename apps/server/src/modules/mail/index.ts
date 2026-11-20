@@ -200,8 +200,15 @@ export {
   updateEmailLocation,
   upsertMailboxProfile,
   writeEmailFlags,
+  incomingCountsBySender,
+  ownAddressesOf,
+  senderWindow,
 } from "./repo";
 export type {
+  IncomingCounts,
+  SenderScope,
+  SenderWindow,
+  SenderWindowOptions,
   EmailFlagsRow,
   EmailHeadersRow,
   HistoryCandidate,
