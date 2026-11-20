@@ -405,7 +405,7 @@ describe("runDrafterEval on a corpus part", () => {
     expect(stdout).not.toContain("Case ids (dev only)");
     expect(stdout).toContain("## Second pass input");
     const files = readdirSync(join(tmp, "gate"));
-    expect(files).toEqual(["drafter-drafter-v1-gpt-6-luna-low-mini-v1.json"]);
+    expect(files).toEqual(["drafter-drafter-v4-gpt-6-luna-low-mini-v1.json"]);
     const gate = drafterGateFileSchema.parse(JSON.parse(readFileSync(join(tmp, "gate", files[0] as string), "utf8")));
     expect(gate).toMatchObject({ role: "drafter", part: "holdout", model: MODEL, errors: 0, passed: true });
     expect(gate.numbers.drafts).toBe(result.needsReply.length);

@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test";
 import { type GenerateFn, type GenerateRequest, type LlmClient, LlmSoftError } from "../../platform/llm";
 import { createFixedLlmClient } from "../../platform/llm/testing";
 import { drafterVersions, prompts } from "../triage";
-import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "../triage/prompts/drafter-v1";
+import { buildSystemPrompt, buildUserPrompt } from "../triage/prompts/drafter-v1";
 import { buildSystemPrompt as buildSystemV2, buildUserPrompt as buildUserV2 } from "../triage/prompts/drafter-v2";
 import { buildSystemPrompt as buildSystemV3, buildUserPrompt as buildUserV3 } from "../triage/prompts/drafter-v3";
 import { buildSystemPrompt as buildSystemV4, buildUserPrompt as buildUserV4 } from "../triage/prompts/drafter-v4";
@@ -63,14 +63,14 @@ describe("draftReply", () => {
     expect(out.attempts).toHaveLength(1);
     expect(out.attempts[0]?.outcome).toBe("ok");
     expect(out.attempts[0]?.usage?.role).toBe("drafter");
-    expect(out.attempts[0]?.usage?.promptVersion).toBe(PROMPT_VERSION);
+    expect(out.attempts[0]?.usage?.promptVersion).toBe("drafter-v4");
     expect(out.attempts[0]?.usage?.model).toBe("fake-drafter");
     expect(requests).toHaveLength(1);
   });
 
-  test("the prompt registry holds drafter-v1 for the drafter role", () => {
+  test("the prompt registry holds drafter-v4 for the drafter role", () => {
     expect(prompts.drafter.role).toBe("drafter");
-    expect(prompts.drafter.version).toBe("drafter-v1");
+    expect(prompts.drafter.version).toBe("drafter-v4");
   });
 
   test("the gaps come from the body, not from the answer", async () => {
@@ -295,7 +295,7 @@ describe("draftReply", () => {
         model: "fake-drafter",
         endpoint: "standard",
         role: "drafter",
-        promptVersion: "drafter-v1",
+        promptVersion: "drafter-v4",
         tokensIn: 100,
         tokensOut: 20,
       },

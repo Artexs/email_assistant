@@ -158,7 +158,7 @@ export const prompts = {
     buildSystem: classifierV2.buildSystemPrompt,
     buildUser: classifierV2.buildUserPrompt,
   },
-  drafter: drafterVersions["drafter-v1"],
+  drafter: drafterVersions["drafter-v4"],
   extractor: {
     role: "extractor",
     version: extractorV1.PROMPT_VERSION,

@@ -153,7 +153,7 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
     expect(rows[0]).toMatchObject({
       email_id: null,
       reason_code: "ok",
-      data: { mailbox_id: mine, role: "drafter", prompt_version: "drafter-v1" },
+      data: { mailbox_id: mine, role: "drafter", prompt_version: "drafter-v4" },
     });
     // Nothing is saved: no profile row, no request, no draft.
     const counts = await Promise.all(
@@ -245,7 +245,7 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
           actor: "system",
           event: "llm.call",
           reason_code: "ok",
-          data: JSON.stringify({ mailbox_id: mine, role: "drafter", prompt_version: "drafter-v1" }),
+          data: JSON.stringify({ mailbox_id: mine, role: "drafter", prompt_version: "drafter-v4" }),
           created_at: yesterday,
         })
         .execute();
@@ -273,7 +273,7 @@ describe("POST /api/mailboxes/:id/profile/preview", () => {
           actor: "system",
           event: "llm.call",
           reason_code: "ok",
-          data: JSON.stringify({ mailbox_id: mine, role: "drafter", prompt_version: "drafter-v1" }),
+          data: JSON.stringify({ mailbox_id: mine, role: "drafter", prompt_version: "drafter-v4" }),
         })
         .execute();
     }
