@@ -1,24 +1,17 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { createCliOutput } from "../platform/cli";
-import { describeError } from "../platform/errors";
+import { runCli, type CliSpec } from "../platform/cli";
 
-import { apiSpecUsage, buildSpecText, parseApiSpecArgs, REPO_ROOT, SPEC_FILE } from "./lib/api-spec-build";
-
-const out = createCliOutput("api-spec");
+import { cliDescriptions, parseApiSpecArgs } from "./api-spec-args";
+import { buildSpecText, REPO_ROOT, SPEC_FILE } from "./lib/api-spec-build";
 
 const exitClean = 0;
 const exitDrift = 1;
-const exitUsage = 2;
 
 /** Writes `docs/api/openapi.json`, or with `--check` exits 1 `openapi_drift` when the file differs from the app. */
-async function main(): Promise<number> {
-  const args = parseApiSpecArgs(process.argv.slice(2));
-  if (args === null) {
-    out.fail(apiSpecUsage);
-    return exitUsage;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseApiSpecArgs(argv);
   const path = join(REPO_ROOT, SPEC_FILE);
   const text = await buildSpecText();
   if (args.check) {
@@ -39,11 +32,8 @@ async function main(): Promise<number> {
   writeFileSync(path, text);
   out.print(`wrote ${SPEC_FILE}`);
   return exitClean;
-}
+};
 
-try {
-  process.exit(await main());
-} catch (error) {
-  out.fail(`failed: ${describeError(error)}`);
-  process.exit(exitUsage);
+if (import.meta.main) {
+  await runCli({ prefix: "api-spec", descriptions: cliDescriptions, main });
 }

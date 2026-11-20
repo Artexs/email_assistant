@@ -4,6 +4,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { Bot } from "grammy";
 
 import { runCli, type CliIo } from "./cli";
+import { cliDescriptions } from "./cli-args";
+import { runToolCliCode } from "./cli-run";
 import { startFakeTelegram, type FakeTelegram } from "./server";
 import { FAKE_TOKEN } from "./state";
 
@@ -32,7 +34,13 @@ async function run(args: string[], url: string) {
   const out: string[] = [];
   const err: string[] = [];
   const io: CliIo = { out: (l) => out.push(l), err: (l) => err.push(l), env: {} };
-  const code = await runCli([...args, "--url", url], io);
+  const code = await runToolCliCode({
+    prefix: "fake-tg",
+    descriptions: cliDescriptions,
+    main: runCli,
+    argv: [...args, "--url", url],
+    io,
+  });
   return { code, out: out.join("\n"), err: err.join("\n") };
 }
 
@@ -67,6 +75,20 @@ describe("fake-tg cli", () => {
     expect((await run(["bogus"], url)).code).toBe(2);
     expect((await run(["wait", "("], url)).code).toBe(2);
     expect((await run(["read"], "http://127.0.0.1:1")).code).toBe(3);
+  });
+
+  test("--help prints the summary and exits 0 with no server", async () => {
+    const result = await run(["--help"], "http://127.0.0.1:1");
+    expect(result.code).toBe(0);
+    expect(result.out).toContain(cliDescriptions[0].summary);
+    expect(result.out).toContain("risk: dev · needs: none");
+  });
+
+  test("a usage error prints the message and the usage and exits 2", async () => {
+    const result = await run(["bogus"], "http://127.0.0.1:1");
+    expect(result.code).toBe(2);
+    expect(result.err).toContain('fake-tg: unknown command "bogus"');
+    expect(result.err).toContain("usage: bun run fake-tg <command> [options]");
   });
 
   test("read exits 1 when the chat does not exist", async () => {
