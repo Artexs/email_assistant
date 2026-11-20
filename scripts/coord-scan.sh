@@ -87,6 +87,14 @@ for dir in spec/features/planned/F*/; do
   list_stages "$dir" "$ticket"
 done
 
+echo "== land checks (scripts/land-check.sh; PASS with master unchanged → limen land; FAIL → continue the job):"
+bash scripts/land-check.sh --status
+
+echo "== CI on master, last 3 runs (read only; never wait for a run):"
+timeout 20 gh run list --branch master --workflow CI --limit 3 \
+  --json status,conclusion,headSha,createdAt \
+  -q '.[] | "  \(.status) \(.conclusion // "-") \(.headSha[0:10]) \(.createdAt)"' 2>/dev/null || echo "  gh run list failed or took over 20 s"
+
 echo "== planned tickets without stages (needs plan unless PARKED; 'plan after' from ## Sequenced):"
 for d in spec/features/planned/F*/; do
   [ -d "$d/stages" ] && continue

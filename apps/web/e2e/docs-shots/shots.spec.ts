@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { devices, expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 import {
@@ -12,8 +14,9 @@ import { en } from "../../src/i18n/en";
 import { pl } from "../../src/i18n/pl";
 import { E2E_BASE_URL } from "../env";
 import { signIn } from "../helpers";
+import { shotSource } from "../lib/shot-source";
 import { readSeed } from "../seed";
-import { SHOTS_DIR } from "./shots-dir";
+import { DEMO_OWNER_FILE, SHOTS_DIR } from "./shots-dir";
 
 // ADR 0030 point 4: every screenshot of the docs site, made from the e2e seed only (synthetic data, `x.test` and
 // `e2e.test` addresses). The run signs in as the owner of the seed's main organization, never as an owner of a flagged spec organization
@@ -69,7 +72,11 @@ async function pageText(page: Page): Promise<string> {
 }
 
 test.beforeAll(async ({ browser }) => {
-  owner = readSeed().owner;
+  // The e2e seed's owner, or the owner of the demo organization that the setup imported.
+  owner =
+    shotSource().kind === "demo"
+      ? (JSON.parse(readFileSync(DEMO_OWNER_FILE, "utf8")) as { owner: typeof owner }).owner
+      : readSeed().owner;
   const context = await browser.newContext({
     baseURL: E2E_BASE_URL,
     viewport: { ...SHOT_DESKTOP_SIZE },
@@ -77,7 +84,9 @@ test.beforeAll(async ({ browser }) => {
   });
   const page = await context.newPage();
   await signIn(page, owner.email, owner.password);
-  await expect(page).toHaveURL(/\/onboarding$/);
+  // The e2e organization starts on the onboarding page; the demo organization has a mailbox, so it lands elsewhere.
+  if (shotSource().kind === "e2e") await expect(page).toHaveURL(/\/onboarding$/);
+  else await expect(page).not.toHaveURL(/\/login/);
   // The enabled list of the organization must be empty, so it holds no `docs_links` and no other flag.
   expect(shotFeaturesProblem(await features(page))).toBeNull();
   state = await context.storageState();

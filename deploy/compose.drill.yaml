@@ -57,6 +57,15 @@ services:
     <<: *drill-server
     ports: !reset []
 
+  # Same image, restart, log and port rules as `server` and `cli`, written on the service. Not the `<<` anchor: it carries
+  # `env_file: drill.env` and the forced channel env, which `migrate` does not need. Its migrator password comes from the
+  # interpolation file (drill.env), as in the live file.
+  migrate:
+    image: ea-drill-server
+    restart: "no"
+    logging: *logging-local
+    ports: !reset []
+
 # `!override` replaces the live subnet; a plain list would append a second one.
 networks:
   default:

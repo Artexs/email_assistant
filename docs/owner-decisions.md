@@ -735,3 +735,36 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: plan defaults Q1–Q4 of F136; the coordinator took them.
 - Undo: add a run cap in stage 05 or keep the lock rule; both are small edits.
 - Source: `spec/features/active/F136-*/questions.md`.
+
+### 2026-11-19 · F138 dropped: Gemini stays as an optional provider, off by default · scope · new
+
+- Decision: the owner chose to keep Gemini in the code, selectable in `.env` (`LLM_PROVIDER=gemini`), with `openai` as the default. The stage 02 job that removed the Gemini provider was stopped; its commit `d6a82966` stays on its branch and did not land. Stage 01 (judge on OpenAI) stays. The model tier map (`light`, `strong`) for all providers moves to F141, which no longer waits for F138.
+- Why: owner request in chat, 2026-11-19.
+- Undo: reopen F138 from `spec/features/dropped/2026-11/` and land the stage 02 branch after a refresh.
+- Source: `spec/features/dropped/2026-11/F138-*/outcome.md`.
+
+### 2026-11-19 · F141: one provider for the whole application, chosen by `LLM_PROVIDER` · scope · new
+
+- Decision: every role (classifier, drafter, extractor, judge) uses the one provider that `LLM_PROVIDER` names; roles pick a tier (`light`, `strong`), the provider row maps tiers to models. The per-role provider and model env keys go; an old key in `.env` fails config by name. Gemini and OpenAI stay; DeepSeek is added. This ticket replaces the dropped OpenAI-only ticket (F138).
+- Why: owner request in chat, 2026-11-19.
+- Undo: keep the per-role keys in the plan; the tier map works with them too.
+- Source: `spec/features/planned/F141-*/ticket.md`.
+
+
+### 2026-11-20 · F115 stage 02: judge-v3 replaces judge-v2 as the eval judge · rule-exception · new
+
+- Decision: `prompts.judge` is now judge-v3, which sees the older thread mail. judge-v2 flagged a draft that quoted a term from the thread (3 of 5 runs); judge-v3 did not (0 of 4). The change is eval only.
+- Undo: set `judge: judgeVersions["judge-v2"]` in `apps/server/src/modules/triage/prompts/index.ts` and change the registry test in `judge.test.ts`.
+- Source: `spec/features/active/F115-e6a-reply-drafts/tuning-1.md` § drafter-v3.
+
+### 2026-11-20 · F115 stage 02: the blind holdout was used a second time · rule-exception · new
+
+- Decision: one blind run of drafter-v3 on the holdout. It failed: 1 invented commitment (bar 0) and injection 13/14. Production stays on drafter-v1. A third use of the holdout needs the owner, or a new corpus version.
+- Source: `evals/results/gate/drafter-drafter-v3-gpt-6-luna-low-lab-01-v1.json`.
+
+### 2026-11-20 · F141 plan defaults: drafter fixed in code; DeepSeek refused with all-scope triage except the lab stack · privacy · new
+
+- Decision: (Q8) the drafter is fixed in code at tier light, effort low; a different F115 gate result is a one-line edit of `llmRoleModels` (this overrides the PD-072 "drafter model is config" wording). (Q9) ticket acceptance item 5 reads "zero outside the registry and a named exception list". (Q10) config refuses `LLM_PROVIDER=deepseek` with `TRIAGE_LLM_SCOPE=all`, except when `LAB_STACK=ea-sim`. (Q11) a removed key with a value stops the start; the coordinator cleans the dev `.env`, the VPS `.env` is an owner step. (Q3) `OPENAI_OWN_MODEL` replaces `OPENAI_MODEL_CLASSIFIER` for an own endpoint. (Q4) DeepSeek prices use the peak rates.
+- Why: plan defaults, taken by the coordinator after the cold review.
+- Undo: edit the question and the stage; none ships before stage 04.
+- Source: `spec/features/active/F141-*/questions.md`.

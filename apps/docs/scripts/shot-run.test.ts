@@ -61,7 +61,9 @@ describe("the shot spec", () => {
   };
 
   test("it signs in as the owner of the seed's main organization, never as a flagged spec owner", () => {
-    expect(spec).toContain("owner = readSeed().owner;");
+    // The e2e source reads the seed's owner; the demo source reads the owner of the imported demo organization (`.demo-owner.json`).
+    expect(spec).toContain(": readSeed().owner;");
+    expect(spec).toContain("DEMO_OWNER_FILE");
     expect(spec).toContain("signIn(page, owner.email, owner.password)");
     for (const other of [
       "twoFactorOwners",
