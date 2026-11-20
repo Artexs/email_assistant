@@ -24,7 +24,7 @@ The pure parts of the suggestion: the quote cut, the samples, the name tokens, t
 - **Goal:** `stylistOutputSchema` and `checkStyleSuggestion` with the codes of `interfaces.md`.
 - **Decisions:** D7. Reuse the detectors of `checkReplyBody` (export them from `checks.ts` if they are private) with no allowed list. Code points for length. `copied_text`: 8 words in a row, words compared in lower case with punctuation removed.
 - **Test:**
-  1. "Short, polite sentences. Greets by first name. Signs off with 'Pozdrawiam'." with `names: ["karin"]`, language `en` → ok. (Polish words inside quotes do not flip the language count; if they do, use a sample with no Polish word and record the limit.)
+  1. "Short, polite sentences. Greets people by the first name. Ends with a short thanks." with `names: ["karin"]`, language `en` → ok.
   2. Same text plus "Writes to Karin often." → `name`.
   3. "Uses the number +48 600 100 200." → `phone`; "See https://x.pl" → `link`; "a@b.pl" → `address`; "PL61109010140000071219812874" → `account_number`.
   4. "> quoted line" → `quote_line`.
