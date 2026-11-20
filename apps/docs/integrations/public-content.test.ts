@@ -41,6 +41,7 @@ describe("checkPublicContent", () => {
     ["icon.svg", `<svg><image href="x"/><script>document.cookie</script></svg>`, "R6"],
     ["site.webmanifest", `{"name":"Superhuman"}`, "R7"],
     ["robots.txt", `<form action="/x">`, "R5"],
+    ["demo/demo.en.vtt", "WEBVTT\n\n00:00.000 --> 00:01.000\nWrite to jan@firma.pl", "R2"],
   ])("T12 %s is checked", (file, text, rule) => {
     put("index.html", "<p>x</p>");
     put(file, text);
