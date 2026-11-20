@@ -55,7 +55,7 @@ export const enReply = {
   // The writing style suggested from the sent mail of the owner
   rs_suggest_button: "Suggest my style from my sent mail",
   rs_suggest_note:
-    "Sends up to 100 sent mails of this mailbox from the last 14 days to the AI provider, once. Only the text you save is kept.",
+    "Sends up to 100 sent mails of this mailbox from the last 14 days to the AI provider, in at most two calls. Only the text you save is kept.",
   rs_suggest_running: "The assistant is reading your sent mail…",
   rs_suggest_use: "Use this text",
   rs_suggest_discard: "Discard",

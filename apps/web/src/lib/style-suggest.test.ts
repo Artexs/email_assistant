@@ -105,7 +105,7 @@ describe("the answer of the style suggestion route", () => {
     const fixed: Partial<Record<TextKey, string>> = {
       rs_suggest_button: "Suggest my style from my sent mail",
       rs_suggest_note:
-        "Sends up to 100 sent mails of this mailbox from the last 14 days to the AI provider, once. Only the text you save is kept.",
+        "Sends up to 100 sent mails of this mailbox from the last 14 days to the AI provider, in at most two calls. Only the text you save is kept.",
       rs_suggest_use: "Use this text",
       rs_suggest_discard: "Discard",
       rs_suggest_too_few: "Not enough sent mail yet ({count} of 5). Try again after you send more mail.",

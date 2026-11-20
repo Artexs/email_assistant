@@ -171,6 +171,15 @@ function styleSlice(lang: "en" | "pl"): string {
   return page.slice(from, to);
 }
 
+/** The bullet of the DPIA section "Is the data needed?" that quotes the en button label. */
+function dpiaStyleBullet(): string {
+  const label = new RegExp(`rs_suggest_button: "([^"]+)"`).exec(read("apps/web/src/i18n/texts/en-reply.ts"))?.[1];
+  if (label === undefined) throw new Error("no rs_suggest_button text in en");
+  const bullet = dpia.split("\n").find((line) => line.startsWith("  - ") && line.includes(label));
+  if (bullet === undefined) throw new Error("the DPIA has no bullet that quotes the style button");
+  return bullet;
+}
+
 describe("style suggestion", () => {
   test.each([
     { name: "per-mail character cap of the style input", actual: STYLE_SAMPLE_MAX_CHARS, expected: 1500 },
@@ -220,6 +229,17 @@ describe("style suggestion", () => {
     expect(input).toContain(styleCaps.total.en);
     expect(input).toContain(prompts.stylist.version);
     expect(claimLine("C272")).toContain(styleCaps.answer.en);
+  });
+
+  test("the DPIA bullet of the style call names the per-mail cap, the total cap and the age limit", () => {
+    const bullet = dpiaStyleBullet();
+    expect(bullet).toContain(styleCaps.sample.en);
+    expect(bullet).toContain(styleCaps.total.en);
+    expect(bullet).toContain(styleWindow.en);
+  });
+
+  test("the claim of the DPIA text of the style call names the total cap", () => {
+    expect(claimLine("C273")).toContain(styleCaps.total.en);
   });
 
   test.each(["openai", "gemini"])("the %s sub-processor row names the style caps in both languages", (id) => {
