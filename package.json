@@ -98,6 +98,7 @@
     "sim:check": "bun apps/server/src/scripts/sim-compose-check.ts",
     "lab:env-check": "bun apps/server/src/scripts/lab-env-check.ts",
     "db:migrate": "dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema --wait migrate",
+    "db:migrate:e2e": "dbmate -e E2E_MIGRATOR_DATABASE_URL --no-dump-schema --wait migrate",
     "db:worktree": "bun apps/server/src/scripts/db-worktree.ts",
     "db:rollback": "dbmate -e MIGRATOR_DATABASE_URL --no-dump-schema rollback",
     "api:spec": "bun apps/server/src/scripts/api-spec.ts",
