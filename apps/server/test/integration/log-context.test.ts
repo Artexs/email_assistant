@@ -94,6 +94,7 @@ describe("log context", () => {
           batchSize: 5,
           testMail: NO_TEST_SENDERS,
           dailyCap: 1000,
+          junkDailyCap: 1000,
           now: () => new Date("2026-11-20T10:00:00Z"),
         });
 

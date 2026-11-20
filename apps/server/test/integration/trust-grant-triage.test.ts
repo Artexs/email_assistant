@@ -97,6 +97,7 @@ async function moveStatus(trx: Transaction<DB>, s: Awaited<ReturnType<typeof set
     batchSize: 5,
     testMail: NO_TEST_SENDERS,
     dailyCap: 1000,
+    junkDailyCap: 1000,
     now: () => NOW,
   }).run();
   const actions = await listActionsForEmail(trx, s.ctx, s.emailId);

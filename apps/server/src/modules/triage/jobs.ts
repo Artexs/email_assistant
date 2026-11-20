@@ -42,6 +42,7 @@ export interface TriageJobDeps {
   testMail: TestMailRule;
   batchSize: number;
   dailyCap: number;
+  junkDailyCap: number;
   // The key of the running classifier: `auto` granted under another key moves no mail Never read from env here.
   runningKey: EvidenceKey;
   // `MAIL_TRUSTED_AUTHSERV_IDS` (lower case): authserv-ids that the suspicious-mail rules trust besides the IMAP host of the mailbox.
@@ -61,6 +62,8 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
   const warnedNoOrganization = new Set<string>();
   // The quota day (ISO start) for which a mailbox already got the cap warning.
   const warnedCap = new Map<string, string>();
+  // The same for the junk folder limit.
+  const warnedJunkCap = new Map<string, string>();
   const triage = deps.triageOne ?? triageOne;
 
   return {
@@ -171,6 +174,19 @@ export function createTriageJob(deps: TriageJobDeps): { run(): Promise<void> } {
                   });
                 }
                 deps.onCapReached?.(ctx, mailboxId, outcome.dayStart);
+                continue;
+              }
+              // The junk limit holds junk folder mail only: other mail of this batch still runs. No operator notice.
+              if (outcome.kind === "junk_capped") {
+                const dayStart = outcome.dayStart.toISOString();
+                if (warnedJunkCap.get(mailboxId) !== dayStart) {
+                  warnedJunkCap.set(mailboxId, dayStart);
+                  mailboxLog.warn("llm_junk_daily_cap_reached", {
+                    count: deps.junkDailyCap,
+                    day_start: dayStart,
+                    until: outcome.until.toISOString(),
+                  });
+                }
                 continue;
               }
               if (outcome.kind === "settings_changed") {

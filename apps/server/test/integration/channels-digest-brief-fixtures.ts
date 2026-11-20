@@ -1,4 +1,4 @@
-import { HOUR_MS } from "@ea/core";
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import type { Insertable, Transaction } from "kysely";
 
 import { scheduleDigests } from "../../src/modules/channels";

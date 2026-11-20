@@ -2,7 +2,7 @@
 // Drafts folder, the test edits that copy like a mail client does, and the committer runs again.
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { buildOutgoingMessage, draftPayloadSchema, DAY_MS } from "@ea/core";
+import { buildOutgoingMessage, draftPayloadSchema, DAY_MS, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 import MailComposer from "nodemailer/lib/mail-composer";
 

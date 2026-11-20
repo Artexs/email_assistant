@@ -1002,6 +1002,14 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Fix:** No action needed. The mail goes back to `pending` and waits until the next quota day. If it fires too early, check failed `llm.call` rows (503 retries count) and read `notes/2026-11-05-gemini-free-tier-triage.md`. Change `LLM_DAILY_CAP` only with the real RPD.
 - **Status:** won't fix (expected behaviour)
 
+### `llm_junk_daily_cap_reached` (fields `org_id`, `mailbox_id`, `count`, `day_start`, `until`)
+
+- **First seen:** 2026-11-20
+- **Source:** `apps/server/src/modules/triage/jobs.ts`, `[triage]` worker. One warning per mailbox and quota day, per process (a restart logs it again). `count` is `LLM_JUNK_DAILY_CAP`; `day_start` is the start of the quota day (America/Los_Angeles) and `until` the time when the junk mail waits until (both ISO times). No operator notice goes with it.
+- **Cause:** The mailbox used `LLM_JUNK_DAILY_CAP` LLM call attempts (`audit_log` event `llm.call`, failed calls too) for mail from its junk folder since the start of the Pacific day. A spam wave in the junk folder is the usual cause.
+- **Fix:** No action needed. The junk mail goes back to `pending` and waits until the next quota day; other mail keeps running under `LLM_DAILY_CAP` (junk calls count there too). A mail from another folder is never held by this limit. Raise `LLM_JUNK_DAILY_CAP` only if real junk mail must be sorted faster and the shared cap has room.
+- **Status:** won't fix (expected behaviour)
+
 ### `llm_paused` (fields `code`, `wait_ms`, `until`)
 
 - **First seen:** 2026-11-05

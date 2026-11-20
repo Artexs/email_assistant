@@ -100,7 +100,7 @@ describe("the provider in llm.call rows", () => {
         model: MODEL,
       });
       await triageOne(
-        { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+        { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, junkDailyCap: 1000, now: () => now },
         ctx,
         mailbox,
         email
@@ -129,7 +129,7 @@ describe("the provider in llm.call rows", () => {
         { provider: "deepseek", model: MODEL }
       );
       await triageOne(
-        { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, now: () => now },
+        { db: trx, llm, pause, testMail: NO_TEST_SENDERS, dailyCap: 1000, junkDailyCap: 1000, now: () => now },
         ctx,
         mailbox,
         email
