@@ -1,12 +1,13 @@
 import {
   approvalConflictSchema,
+  MINUTE_MS,
   rejectReasonBodySchema,
   textTables,
   type ApprovalApproveAnswer,
   type ApprovalClosedState,
-  type ApprovalEditClosedCode,
   type ApprovalConflict,
   type ApprovalDetail,
+  type ApprovalEditClosedCode,
   type ApprovalItem,
 } from "@ea/core/web";
 
@@ -71,7 +72,7 @@ export interface DurationText {
 
 // The time until a deadline, rounded so the page never promises more time than is left: minutes below an hour, hours below 48 h, then days.
 export function durationText(ms: number): DurationText {
-  const minutes = Math.max(1, Math.ceil(ms / 60_000));
+  const minutes = Math.max(1, Math.ceil(ms / MINUTE_MS));
   if (minutes < 60) return { key: "appr_dur_min", n: minutes };
   const hours = Math.floor(minutes / 60);
   if (hours < 48) return { key: "appr_dur_hour", n: hours };

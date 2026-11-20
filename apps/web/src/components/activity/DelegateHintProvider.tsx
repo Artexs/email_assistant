@@ -1,4 +1,4 @@
-import type { MailboxView } from "@ea/core/web";
+import { MINUTE_MS, type MailboxView } from "@ea/core/web";
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 import { delegateHintWanted, loadDelegateHint, type DelegateHint } from "../../lib/delegate-action";
@@ -27,7 +27,7 @@ export function DelegateHintProvider({ mailboxes, children }: DelegateHintProvid
   const assistKey = mailboxes === null ? null : mailboxes.map((mailbox) => `${mailbox.id}:${mailbox.mode}`).join(",");
   const { data, reload } = useResource(
     async () => (wanted && mailboxes !== null ? loadDelegateHint(mailboxes) : null),
-    { pollMs: 60_000 }
+    { pollMs: MINUTE_MS }
   );
   // The list arrived or a mode changed: read the hint again (the first load ran before the list).
   useEffect(() => {
