@@ -5,6 +5,7 @@ import type { HydratedOIDCConfig, SSOUserResolution, SSOUserResolutionInput } fr
 import { MINUTE_MS, type SsoIdentity, type SsoRefusal, type SsoResolution } from "@ea/core";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 
+import type { AuthHookPart } from "./auth-hooks";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
 import { dnsLookupAll, isLocalAddress, type LookupAll } from "./net-address";
@@ -350,4 +351,17 @@ export function buildOidcConfig(
     scopes: ["openid", "email", "profile"],
     allowIdpInitiated: false,
   });
+}
+
+// The check of the SSO sign-in body (`before`).
+export function hooksOf(): AuthHookPart[] {
+  return [
+    {
+      name: "sso-body",
+      async before(ctx) {
+        if (ctx.path === SSO_SIGN_IN_PATH) rejectUnknownSsoBodyKeys(ctx.body);
+        return undefined;
+      },
+    },
+  ];
 }
