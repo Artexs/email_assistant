@@ -930,8 +930,10 @@ export function databaseNameOf(url: string): string | null {
   }
 }
 
+// A seed database: `*_e2e` (the panel e2e run) or `*_demo` (the demo recording, `apps/web/e2e/demo/`). Both are throw-away databases
+// that a script made for this use; the demo recording rebuilds its own at each run.
 export function isE2eDatabaseName(name: string | null): boolean {
-  return name !== null && /^[A-Za-z0-9_]+_e2e$/.test(name);
+  return name !== null && /^[A-Za-z0-9_]+_(e2e|demo)$/.test(name);
 }
 
 export function seedTargetOk(

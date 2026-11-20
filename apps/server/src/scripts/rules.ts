@@ -2,7 +2,7 @@ import { parseArgs } from "node:util";
 
 import {
   isValidSenderPattern,
-  normalizeSenderPattern,
+  storedAddressForm,
   SENDER_RULE_LIMIT,
   senderRuleKinds,
   type SenderRuleKind,
@@ -56,7 +56,7 @@ function readOptions(): Options | undefined {
     if (positionals[0] === "add") {
       const kind = z.enum(senderRuleKinds).safeParse(values.kind);
       if (!kind.success || values.pattern === undefined) return undefined;
-      const pattern = normalizeSenderPattern(values.pattern);
+      const pattern = storedAddressForm(values.pattern);
       if (!isValidSenderPattern(pattern)) return undefined;
       return { command: "add", orgId, mailboxId: mailboxId ?? null, pattern, kind: kind.data };
     }

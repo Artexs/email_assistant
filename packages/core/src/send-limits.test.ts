@@ -34,6 +34,16 @@ const held = (limit: SendLimitKind, until: string): SendLimitResult => ({
   until: new Date(until),
 });
 
+describe("checkSendLimits, the one address rule (F142)", () => {
+  test("01-T1 guard: one recipient in three Greek spellings fills the recipient window", () => {
+    const now = new Date("2026-11-03T12:00:00Z");
+    const at = (minutes: number, to: string) => ({ startedAt: new Date(now.getTime() - minutes * MIN), to: [to] });
+    const recent = [...[5, 10, 15, 20].map((m) => at(m, "νίκος@example.gr")), at(25, "ΝΊΚΟΣ@example.gr")];
+    const result = checkSendLimits({ now, recent, to: ["νίκοσ@example.gr"], limits: DEFAULT_SEND_LIMITS });
+    expect(result.kind === "held" && result.limit).toBe("recipient_day");
+  });
+});
+
 describe("checkSendLimits", () => {
   test("1: 19 sends in the hour pass", () => {
     expect(check(range(-59, 19))).toEqual({ kind: "ok" });

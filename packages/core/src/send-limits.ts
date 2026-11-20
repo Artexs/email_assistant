@@ -1,4 +1,5 @@
 // Send limits: a pure rule. No I/O and no Date.now(): the caller passes `now`.
+import { normalizeAddress } from "./contacts/address";
 import { DAY_MS, HOUR_MS } from "./time";
 
 export const sendLimitKinds = ["mailbox_hour", "mailbox_day", "recipient_day"] as const;
@@ -28,8 +29,6 @@ export interface RecentSend {
 }
 
 export type SendLimitResult = { kind: "ok" } | { kind: "held"; limit: SendLimitKind; until: Date };
-
-const normalizeAddress = (address: string): string => address.trim().toLowerCase();
 
 /**
  * The time at which a window with `cap` sends lets one more through, or null when it is not full.
