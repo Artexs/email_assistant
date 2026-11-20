@@ -7,6 +7,7 @@ import { judgeDraft, judgePassed } from "./judge";
 import { judgeVersions, prompts, rolesWithoutPrompt } from "./prompts";
 import { buildSystemPrompt as buildSystemV1, buildUserPrompt } from "./prompts/judge-v1";
 import { buildSystemPrompt as buildSystemV2, buildUserPrompt as buildUserV2 } from "./prompts/judge-v2";
+import { buildSystemPrompt as buildSystemV3, buildUserPrompt as buildUserV3 } from "./prompts/judge-v3";
 
 const delegationAnswer = {
   facts_kept: 2,
@@ -43,9 +44,10 @@ function fake(answer: unknown): { llm: ReturnType<typeof createFixedLlmClient>; 
 }
 
 describe("judge prompt registry", () => {
-  test("the judge has a prompt entry at judge-v2 and is not in rolesWithoutPrompt", () => {
-    expect(prompts.judge.version).toBe("judge-v2");
-    expect(prompts.judge).toBe(judgeVersions["judge-v2"]);
+  test("the judge has a prompt entry at judge-v3 and is not in rolesWithoutPrompt", () => {
+    expect(prompts.judge.version).toBe("judge-v3");
+    expect(prompts.judge).toBe(judgeVersions["judge-v3"]);
+    expect(judgeVersions["judge-v2"].version).toBe("judge-v2");
     expect(judgeVersions["judge-v1"].version).toBe("judge-v1");
     expect(Object.hasOwn(rolesWithoutPrompt, "judge")).toBe(false);
   });
@@ -66,6 +68,35 @@ describe("judge-v2", () => {
     expect(v2).toContain("A question that the draft neither answers nor holds as a gap is not answered.");
     expect(v2).toContain("A gap is no commitment.");
     expect(v2).toContain("promise of a later action");
+  });
+});
+
+describe("judge-v3", () => {
+  const thread = [{ from: "Old Sender <old@partner.test>", body: "OLDER-TERM 21 dni\nsecond line" }];
+
+  test("the system text is that of judge-v2 plus the thread rule, for both rubrics", () => {
+    for (const kind of ["reply", "delegation"] as const) {
+      const v3 = buildSystemV3(kind);
+      for (const line of buildSystemV2(kind).split("\n")) expect(v3).toContain(line);
+      expect(v3).toContain("A fact, a date, an amount or a term in the older mail is held by the mail.");
+    }
+  });
+
+  test("the user prompt quotes the older mail below the mail, inside the mail block, as the drafter reads it", () => {
+    const text = buildUserV3({ ...delegationInput, kind: "reply", thread });
+    const mailBlock = text.slice(text.indexOf("<<<UNTRUSTED MAIL"), text.indexOf("<<<END_UNTRUSTED MAIL"));
+    expect(mailBlock).toContain("MAIL-BODY");
+    expect(mailBlock).toContain("> Old Sender <[address]> wrote:");
+    expect(mailBlock).not.toContain("old@partner.test");
+    expect(mailBlock).toContain("> OLDER-TERM 21 dni\n> second line");
+    expect(mailBlock.indexOf("MAIL-BODY")).toBeLessThan(mailBlock.indexOf("OLDER-TERM"));
+  });
+
+  test("with no thread it is the judge-v1 prompt; judge-v1 and judge-v2 never show the thread", () => {
+    expect(buildUserV3({ ...delegationInput, thread: [] })).toBe(buildUserPrompt(delegationInput));
+    expect(buildUserV3(delegationInput)).toBe(buildUserPrompt(delegationInput));
+    expect(buildUserV2({ ...delegationInput, thread })).toBe(buildUserPrompt(delegationInput));
+    expect(buildUserV2({ ...delegationInput, thread })).not.toContain("OLDER-TERM");
   });
 });
 
@@ -128,7 +159,7 @@ describe("judgeDraft", () => {
     await judgeDraft(llm as never, delegationInput, { model: "judge-model" });
     await judgeDraft(llm as never, delegationInput, { prompt: judgeVersions["judge-v1"] });
     expect(calls).toEqual([
-      expect.objectContaining({ role: "judge", promptVersion: "judge-v2", model: "judge-model" }),
+      expect.objectContaining({ role: "judge", promptVersion: "judge-v3", model: "judge-model" }),
       expect.objectContaining({ role: "judge", promptVersion: "judge-v1" }),
     ]);
   });

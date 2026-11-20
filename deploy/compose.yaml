@@ -81,6 +81,22 @@ services:
     environment:
       LOG_FORMAT: text
 
+  # Runs the migrations: `$C run --rm -T migrate`. It alone holds the migrator URL (spec/features/active/F108-e7-t5-production-on-the-vps); `server` and `cli` still carry it until
+  # the contract release. No env file, no port, no volume, no healthcheck. Its output goes to your terminal and to the `local` log.
+  migrate:
+    image: ea-server
+    pull_policy: never
+    profiles: [cli]
+    logging: *logging-local
+    restart: "no"
+    environment:
+      MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
+      LOG_FORMAT: text
+    command: ["bun", "run", "db:migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+
   # Log store (ADR 0024 point 5), tailnet only. Start it with `--profile ops`; without the profile nothing changes.
   victorialogs:
     image: victoriametrics/victoria-logs:v1.54.0

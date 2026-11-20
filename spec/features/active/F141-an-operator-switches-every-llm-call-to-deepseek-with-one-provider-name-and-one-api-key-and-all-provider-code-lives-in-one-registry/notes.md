@@ -18,3 +18,9 @@
 ## Not covered elsewhere
 
 - Dropped: F072 (automatic provider fallback), F076 (Vertex AI EU), F023 (Gemini billing alert). Closed: F111 (own model endpoint; leftovers in F140). Owner-later item 2 (a DeepSeek key for the F115 run) was voided by F138 and is replaced by this ticket.
+
+## Verified 2026-11-19 (owner's dev machine, `bun run llm:check`)
+
+- The DeepSeek API at `https://api.deepseek.com` accepts the Responses API with `text.format: json_schema` (models `deepseek-flash`, `deepseek-v4-pro`). The current OpenAI adapter works unchanged: classifier greeting, triage and delegates checks passed; drafter, extractor and judge greeting passed. This corrects the "no Responses API" guess above; a separate chat-completions adapter is likely not needed.
+- Dev stopgap in the owner's `.env` (not a design): `OPENAI_ENDPOINT_KIND=own`, `OPENAI_BASE_URL=https://api.deepseek.com`, `OPENAI_OWN_API_KEY`, `OPENAI_MODEL_CLASSIFIER=deepseek-flash`, `LLM_JUDGE_PROVIDER=openai`, `LLM_JUDGE_MODEL=deepseek-v4-pro`. Costs read $0 (no price rows for an own endpoint). This ticket replaces it with the `deepseek` row and tiers; the plan removes the stopgap lines from `.env`.
+- Owner, 2026-11-19: model tiers (`light`, `strong`) per provider, so a switch is the provider name plus its key.

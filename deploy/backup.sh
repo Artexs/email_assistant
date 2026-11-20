@@ -118,6 +118,11 @@ for tool in age rclone; do
 done
 
 read -ra compose_cmd <<<"$COMPOSE"
+# The Compose file flags come from the helper, here (after the lock and the exit trap): a host with neither env file
+# writes `failed` (the backup alert fires), a run that lost the lock never reaches this line.
+# shellcheck source=deploy/compose-lib.sh
+source deploy/compose-lib.sh
+ea_compose_init
 umask 077
 mkdir -p "$BACKUP_DIR"
 
@@ -126,7 +131,7 @@ part="$BACKUP_DIR/$name.part"
 final="$BACKUP_DIR/$name"
 # On any failure the exit trap removes the unfinished file, so no .dump.age is left behind
 
-"${compose_cmd[@]}" -f deploy/compose.yaml --env-file .env exec -T db \
+"${compose_cmd[@]}" "${EA_COMPOSE_FILES[@]}" exec -T db \
   pg_dump -U postgres -d email_assistant -Fc |
   {
     # age writes ~200 bytes for empty input, so check the dump magic before encryption

@@ -2,8 +2,10 @@
 import starlight from "@astrojs/starlight";
 import { DOCS_BASE, DOCS_ORIGIN, PRODUCT_NAME } from "@ea/core";
 import { defineConfig } from "astro/config";
+import claimCheck from "./integrations/claim-check";
 import cspFinalize from "./integrations/csp-finalize";
 import inPlaceCheck from "./integrations/in-place-check";
+import imageCheck from "./integrations/image-check";
 import linkCheck from "./integrations/link-check";
 import publicContent from "./integrations/public-content";
 import shots from "./integrations/shots";
@@ -74,6 +76,10 @@ export default defineConfig({
     // After the CSP and public checks: the in-place pages are built and listed, then every same-site link resolves.
     inPlaceCheck(),
     linkCheck(),
+    // Every claim of the security page has a ledger row and a proof file that exists.
+    claimCheck(),
+    // After the link check: every image source is a file of the shots folder or of the site (`image_outside <src>`).
+    imageCheck(),
     // Where the screenshot files are, and the log line `shots: on|off`.
     shots(),
   ],

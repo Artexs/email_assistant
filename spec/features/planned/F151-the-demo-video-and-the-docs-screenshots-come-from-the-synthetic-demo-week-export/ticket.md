@@ -27,3 +27,5 @@ The demo video and the docs screenshots come from the synthetic demo-week export
 <!-- Optional decisions or open questions; no progress log. -->
 
 Detail: after C1 (F121 demo week export at `~/.local/share/email-assistant/demo/demo-seed-day5.json`), the F121 stage 09 spike is done for the demo source (its column in `apps/web/e2e/demo/README.md`), `DEMO_STEPS` live flags and captions are fixed for it, and `bun run demo:record --seed <C1 file>` logs `demo_source demo` and writes an MP4 of 100–130 s with en and pl captions. Owner gates G2 (commit the seed) and G3 (upload, pin `DEMO_VIDEO_SHA256`) of F121 move here; default: prepare, do not publish. Build after: F121 stages 07, 10, 11 landed and the C1 export exists. Drops the `f121_demo` DB (C3) when it closes.
+
+From F121 stage 09 (answer 2026-11-20): the e2e-seed spike left steps 2 (shadow days), 3 (report) and 5 (urgent mail + Telegram notice) not live because the e2e servers run with TRIAGE_LLM_SCOPE=off. This ticket redoes the spike on the C1 demo seed (real triage on the sim stack) and makes them live or says why not.

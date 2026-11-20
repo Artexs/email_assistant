@@ -174,6 +174,8 @@ export async function judgeReplyDraft(
       {
         kind: "reply",
         mail: { subject: c.subject, body: c.body },
+        // judge-v3 quotes the thread below the mail, as the drafter reads it; judge-v1 and judge-v2 ignore it.
+        thread: c.thread.map((older) => ({ from: older.from, body: older.body })),
         draft,
         lang: c.lang,
         ...(c.sim?.expectedPoints === undefined ? {} : { expectedPoints: c.sim.expectedPoints }),
