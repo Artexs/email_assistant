@@ -1,53 +1,53 @@
-# F164 stage 02 — The reply-facts set
+# F164 stage 03 — The reply-facts set
 
-Needs stage 01: `classifyReplySentences`.
+Needs stage 02: the `sentences` field and the place in `runDrafterCase` where it is filled.
 Part of [`../plan.md`](../plan.md). Decisions: P1, D3.
 
 ## Step 1 — the set file and its loader
 
-- **Goal:** a dev-only set where the instruction line gives the facts.
-- **Files:** a new `evals/cases/reply-facts.json`; the reply-set loader of the drafter eval (`scripts/lib/eval-drafter-source.ts`); the eval args; `evals/README.md`.
+- **Files:** a new `evals/cases/reply-facts.json`; the reply-set loader (`scripts/lib/eval-drafter-source.ts`); the eval args; `evals/README.md`.
 - **Interface:**
-  - Case schema `replyFactsCaseSchema = evalCaseSchema.extend({ instruction: string, mustHold: string[] })`, in the eval source module (not in `@ea/core`: only the eval reads it).
-  - `--set reply-facts --drafter` loads it with the fixed persona of the other reply sets; the state key and ledger label are `reply-facts`; the report title says "reply facts set (dev only)".
-  - The drafter input of a case takes `instruction` from the case when the case has one; every corpus case keeps `null`.
-  - `--dump-drafts` works with `--set reply-facts`.
-  - `--judge` is allowed but optional; the report then says "the judge does not see the instruction line: its invented-commitment count is no bar on this set".
-- **Content (the worker writes it, synthetic, never from holdout):** 12 cases, `sim.part` `dev`, ids `rfct-01` … `rfct-12`, 6 `pl` and 6 `en`, each a `needs_reply` mail with 1 to 3 questions:
-  - 8 cases: the line answers every question (for example "Tak, czwartek 10:00 pasuje, umowę podpiszę w piątek").
-  - 2 cases: the line answers one of two questions; the other stays a gap.
-  - 2 cases: the line is in the other language than the mail (the draft keeps the mail language).
-  - Each line is one line of 1 to 300 characters, holds no address, link, phone or account number, and no text that asks the drafter to break a rule.
-  - `mustHold`: 1 to 3 short tokens of the line that the draft must contain (a day, a time, a number, a name, a yes/no word in the draft language). For the other-language cases only language-free tokens (numbers, times, names).
+  - `replyFactsCaseSchema = evalCaseSchema.extend({ instruction: string, mustHold: string[][] })` in the eval source module. Each inner list holds the accepted forms of one fact; any one form counts (for example `["piątek", "piątku"]`).
+  - `--set reply-facts --drafter` loads it with the fixed persona of the other reply sets; state key and ledger label `reply-facts`; report title "reply facts set (dev only)". `--dump-drafts` works with it.
+  - The drafter input of a case takes `instruction` from the case when it has one; every corpus case keeps `null`.
+  - `--judge` is optional; then the report says its invented-commitment count is no bar here (the judge does not see the instruction).
+- **Content (the worker writes it; synthetic, never from holdout):** 12 cases `rfct-01` … `rfct-12`, `sim.part` `dev`, 6 `pl` and 6 `en`, each a `needs_reply` mail with 1 to 3 questions:
+  - 8 cases: the line answers every question (for example "Tak, czwartek 10:00 pasuje, umowę podpiszę w piątek");
+  - 2 cases: the line answers one of two questions; the other stays a gap;
+  - 2 cases: the line is in the other language (the draft keeps the mail's).
+  - Each line: 1 to 300 characters, no address, link, phone or account number, nothing that asks to break a rule.
+  - `mustHold`: 1 to 3 facts per case. In a same-language case each form is a word or number of the line, or an inflected form of one. In an other-language case only numbers, times and names (a person or company name of the line).
+- **Frozen** after this stage: a later stage that finds a bad case asks; it never edits the file.
 - **Test:**
-  1. The file parses; 12 cases; 6 per language; ids unique; every `instruction` one line of at most 300 characters; every `mustHold` token is in its instruction (for the same-language cases) or is a digit or name token (other-language cases).
-  2. `--set reply-facts` parses; `--set reply-fact` answers exit 2 with the usage line.
-  3. A drafter input of a facts case holds its instruction line; a corpus case input holds `null` (a fake source).
-- **Check:** `bun test` on the changed test files.
-- **Done when:** tests 1–3 pass.
+  1. The file parses; 12 cases; 6 per language; ids unique; each `instruction` one line of at most 300 characters; each other-language form is digits, a time or a capitalised name of its line.
+  2. `--set reply-facts` parses; `--set reply-fact` exits 2 with the usage line.
+  3. A drafter input of a facts case holds its instruction line; a corpus case input holds `null`.
+- **Check:** `bun test` on the changed tests.
 
-## Step 2 — the facts verdict
+## Step 2 — the facts code, at run time
 
-- **Goal:** the run fails when a draft does not use the facts as full text.
-- **Interface:** a pure `factsVerdict(results, cases) → { passed: boolean; failures: { id: string; code: FactsFailure }[] }` next to `injectionVerdict`. `FactsFailure` = `no_draft` | `checks` | `no_prose` | `missing_fact` | `planted`.
-  - `no_draft`: the outcome is not `draft`.
-  - `checks`: the draft failed its code checks after the retry.
-  - `no_prose`: `classifyReplySentences(body).prose === 0`.
-  - `missing_fact`: a `mustHold` token is not in the body outside the gaps (case-insensitive, whole token).
-  - `planted`: a planted string of the case is in the body.
-  The first failing code in that order is the case's code. `passed` is true only when every case has none.
-- **Exit:** a `reply-facts` run with `passed: false` exits 1, as a failed injection set does. The report lists each failing id with its code, never the draft text.
-- **Test (`test.each`, fake results):**
-  1. body "Dzień dobry,\nCzwartek 10:00 mi pasuje." with `mustHold` ["czwartek", "10:00"] → no failure.
-  2. same body, `mustHold` ["piątek"] → `missing_fact`.
-  3. "Dzień dobry,\nW sprawie terminu: [[czwartek 10:00]]." with ["czwartek"] → `no_prose` (the token sits in a gap only).
-  4. outcome `no_draft` → `no_draft`.
-  5. code checks failed and no prose → `checks` (order).
-  6. 12 results, one `missing_fact` → `passed: false`, one failure.
-- **Check:** `bun test` on the verdict test file; break the gap removal once and see case 3 fail.
-- **Done when:** cases 1–6 pass.
-- **Out of scope:** a real run (stage 04); a judge change.
+- **Interface:**
+  - `type FactsCode = "ok" | "no_draft" | "checks" | "no_prose" | "missing_fact" | "planted"`.
+  - `runDrafterCase` stores a text-free `facts: FactsCode` for a case with `mustHold`, next to `sentences`. First match wins:
+    1. `checks`: outcome `failed` with reasonCode `checks`;
+    2. `no_draft`: any other outcome than `draft` (`no_draft`, `failed` with another reason, `skipped`, `error`);
+    3. `planted`: `leak` is true;
+    4. `no_prose`: `sentences.prose === 0`;
+    5. `missing_fact`: for some fact, no form is in the body outside the gaps (case-insensitive, whole word);
+    6. else `ok`.
+  - `factsVerdict(results) → { passed: boolean; failures: { id: string; code: FactsCode | "not_measured" }[] }` reads only stored fields; no `facts` field is `not_measured`; `passed` only when all are `ok`.
+- **Exit:** a `reply-facts` run with `passed: false` exits 1. The report lists each failing id with its code, never text.
+- **Test (`test.each`):**
+  1. body "Dzień dobry,\nCzwartek 10:00 mi pasuje." with facts `[["czwartek"], ["10:00"]]` → `ok`.
+  2. same body, `[["piątek", "piątku"]]` → `missing_fact`.
+  3. "Dzień dobry,\nW sprawie terminu: [[czwartek 10:00]]." with `[["czwartek"]]` → `no_prose`.
+  4. "Dzień dobry,\nDziękuję za szybką odpowiedź.\nW sprawie terminu: [[czwartek]]." with `[["czwartek"]]` → `missing_fact` (prose exists; the fact is only in a gap).
+  5. outcome `failed`, reasonCode `checks` → `checks`; outcome `failed`, reasonCode `output` → `no_draft`; outcome `no_draft` → `no_draft`.
+  6. "Dzień dobry,\nUmowę podpiszę w piątku." with `[["piątek", "piątku"]]` → `ok`.
+  7. 12 results, one `missing_fact`, one without the field → `passed: false`, two failures (`missing_fact`, `not_measured`).
+- **Check:** `bun test` on the verdict test file; break the gap removal once and see case 4 fail.
+- **Done when:** cases 1–7 and step 1's tests pass.
 
 ## Done when (stage)
 
-Both steps done; `evals/README.md` lists the set and its bars. Proof: the last line of `bun run check:job`.
+Both steps done; `evals/README.md` lists the set, its bars and the freeze. Proof: the last line of `bun run check:job`.

@@ -1,5 +1,8 @@
 ---
-touches: [apps/server/src/modules/triage/prompts, evals, docs/capabilities/reply-drafts.md]
+touches:
+  - apps/server/src/modules/triage/prompts
+  - evals
+  - docs/capabilities/reply-drafts.md
 opened: 2026-11-20
 ---
 # F164 · The reply drafter writes real sentences so the style gate can pass
