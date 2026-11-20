@@ -117,7 +117,7 @@ Triage turns a stored mail with status `pending` into a category, a short reason
 | route    | `POST /api/feedback`                                                                                                                  | `apps/server/src/modules/triage/routes.ts`             |
 | route    | `POST /api/actions/undo`                                                                                                              | `apps/server/src/modules/triage/routes.ts`             |
 | route    | `GET /api/review/sample` and `POST /api/review/label` (flag `panel_review`)                                                           | `apps/server/src/modules/triage/review-routes.ts`      |
-| Telegram | callbacks `fr:`, `fc:`, `fe:`, `fx:`, `fu:` (feedback and Undo buttons), `vr:`, `vc:`, `ve:`, `vx:` (review buttons, source `review`) | `apps/server/src/modules/channels/callbacks.ts`        |
+| Telegram | callbacks `fr:`, `fc:`, `fe:`, `fx:`, `fu:` (feedback and Undo buttons), `vr:`, `vc:`, `ve:`, `vx:` (review buttons, source `review`) | `apps/server/src/modules/channels/feedback-taps.ts`        |
 | Telegram | callbacks `ay:` and `an:` (Yes and No of the answered check, behind `answered_check`)                                                 | `apps/server/src/modules/channels/answered-taps.ts`    |
 | CLI      | `bun run triage:label`                                                                                                                | `apps/server/src/scripts/triage-label.ts`              |
 | CLI      | `bun run triage:cost`                                                                                                                 | `apps/server/src/scripts/triage-cost.ts`               |
