@@ -1,4 +1,4 @@
-import { contactWaitDays, normalizeSenderAddress, usualReplyDays } from "@ea/core";
+import { contactWaitDays, normalizeAddress, usualReplyDays } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import { senderKeyHash } from "../../platform/crypto";
@@ -30,7 +30,7 @@ export async function contactWaitFor(
   counterpart: string
 ): Promise<ContactWait | null> {
   if (!(await senderFlags(deps.db, ctx)).contactWait) return null;
-  const hash = senderKeyHash(deps.credentialsKey, ctx.orgId, normalizeSenderAddress(counterpart));
+  const hash = senderKeyHash(deps.credentialsKey, ctx.orgId, normalizeAddress(counterpart));
   const { rows } = await sql<WaitRow>`
     SELECT median_their_reply_hours, reply_samples_theirs
     FROM sender_profiles

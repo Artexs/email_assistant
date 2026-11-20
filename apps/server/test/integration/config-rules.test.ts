@@ -54,6 +54,29 @@ async function expectFailure(trx: Transaction<DB>, name: string, run: () => Prom
   await sql`rollback to savepoint ${sql.id(name)}`.execute(trx);
 }
 
+describe("addSenderRule, the one address rule (F142)", () => {
+  test("01-T6 guard: a pattern that folds to an existing one in the same scope and kind is refused", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      const first = await addSenderRule(trx, a.ctx, {
+        mailboxId: null,
+        pattern: "İlker@Example.com",
+        kind: "whitelist",
+        actor: "test",
+        now: NOW,
+      });
+      expect(first.kind).toBe("added");
+      const same = { mailboxId: null, pattern: "ilker@example.com", actor: "test", now: NOW };
+      expect((await addSenderRule(trx, a.ctx, { ...same, kind: "whitelist" })).kind).toBe("exists");
+      expect((await addSenderRule(trx, a.ctx, { ...same, kind: "blocklist" })).kind).toBe("added");
+      expect((await addSenderRule(trx, a.ctx, { ...same, mailboxId: a.mailboxId, kind: "whitelist" })).kind).toBe(
+        "added"
+      );
+      expect(await ruleCount(trx, a.ctx.orgId)).toBe(3);
+    });
+  });
+});
+
 describe("addSenderRule", () => {
   test("adds a normalized rule with an audit row that holds no pattern", async () => {
     await withRollback(db, async (trx) => {

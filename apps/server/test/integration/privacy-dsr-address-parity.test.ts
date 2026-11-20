@@ -6,12 +6,12 @@ import {
   addressCasedCodePoints,
   ADDRESS_RULE_PROBES,
   ADDRESS_TRIM_CHARS,
-  normalizeSenderAddress,
+  normalizeAddress,
 } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
-import { divergentCodePoints, normalizedAddress, refreshMailboxProfiles } from "../../src/modules/contacts";
+import { refreshMailboxProfiles } from "../../src/modules/contacts";
 import {
   addressRegex,
   addressRuleConflicts,
@@ -23,12 +23,13 @@ import {
   normalizeDsrAddress,
 } from "../../src/modules/privacy";
 import { resetRuleCheckCache } from "../../src/modules/privacy/rule-check";
+import { divergentCodePoints, normalizedAddress } from "../../src/platform/db";
 
 import { KEY, newOrg, NO_TEST, NOW } from "./contacts-fixtures";
 import { seedSenderActivity } from "./fixtures";
 import { testDb } from "./helpers";
 
-// The SQL form of the address rule (`normalizedAddress`) and the program form (`normalizeSenderAddress`) agree on the
+// The SQL form of the address rule (`normalizedAddress`) and the program form (`normalizeAddress`) agree on the
 // whitespace ends and on every letter that a real address holds. This test runs on the test database, so it proves the
 // rule for that database build only: the C library and its Unicode version decide how `lower()` treats new letters.
 const db = testDb();
@@ -62,7 +63,7 @@ describe("the SQL form and the program form of the address rule", () => {
     const differences = result.rows
       .map((row) => {
         const probe = ADDRESS_RULE_PROBES[Number(row.n) - 1] as string;
-        return { probe: hex(probe), js: normalizeSenderAddress(probe), db: row.db };
+        return { probe: hex(probe), js: normalizeAddress(probe), db: row.db };
       })
       .filter((row) => row.js !== row.db)
       .map((row) => ({ ...row, js: hex(row.js), db: hex(row.db) }));
@@ -110,7 +111,7 @@ describe("the SQL form and the program form of the address rule", () => {
     `.execute(db);
     expect(result.rows.map((row) => row.db)).toEqual(framed.map(() => "anna@x.test"));
     // The program form agrees.
-    expect(framed.map((text) => normalizeSenderAddress(text))).toEqual(framed.map(() => "anna@x.test"));
+    expect(framed.map((text) => normalizeAddress(text))).toEqual(framed.map(() => "anna@x.test"));
   });
 
   test("the full-range check sees a break: with the default btrim it lists every trim code point but the space", async () => {
@@ -237,7 +238,7 @@ describe("the text pattern and the equality match", () => {
   // of the image `postgres:17`) is left out: the run-time check, not the pattern, handles it.
   test("every case form of every cased letter: the same answer as the equality match", async () => {
     const divergent = new Set((await divergentCodePoints(db)).map(({ cp }) => cp));
-    const targets = [...new Set(addressCasedCodePoints().map((cp) => normalizeSenderAddress(String.fromCodePoint(cp))))]
+    const targets = [...new Set(addressCasedCodePoints().map((cp) => normalizeAddress(String.fromCodePoint(cp))))]
       .filter((target) => [...target].length === 1 && !divergent.has(target.codePointAt(0) as number))
       .sort();
     expect(targets.length).toBeGreaterThan(1400);
