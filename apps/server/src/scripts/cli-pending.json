@@ -10,12 +10,6 @@
     "apps/server/src/scripts/org-status.ts",
     "apps/server/src/scripts/web-invite.ts"
   ],
-  "mailbox-cli": [
-    "apps/server/src/scripts/mailbox-audit.ts",
-    "apps/server/src/scripts/mailbox-backfill.ts",
-    "apps/server/src/scripts/mailbox-seed.ts",
-    "apps/server/src/scripts/mailbox-signals.ts"
-  ],
   "delegation": [
     "apps/server/src/scripts/delegates.ts",
     "apps/server/src/scripts/delegations.ts",

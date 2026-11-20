@@ -1,50 +1,13 @@
-import { format, parseArgs } from "node:util";
-
-import { z } from "zod";
-
 import { auditExitCode, auditMailbox } from "../modules/mail";
+import { runCli, type CliSpec } from "../platform/cli";
 
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
-
-const usage = [
-  "usage: bun run mailbox:audit --org-id <uuid> --mailbox-id <uuid> --since <ISO time>",
-  "  Read-only. Run it right after a sync: mail from the last sync interval (MAIL_SYNC_EVERY_MIN, default 2 minutes) can show as missing.",
-  "  Checks INBOX and every other enabled synced folder. cross = mail that has a row in another synced folder (not lost).",
-  "  Exit 0: no difference in INBOX. Exit 2: lost or duplicate INBOX mail. Exit 1: error. cross never changes the code.",
-].join("\n");
-
-function readOptions(argv: string[]) {
-  try {
-    const { values } = parseArgs({
-      args: argv,
-      options: {
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-        since: { type: "string" },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const mailboxId = values["mailbox-id"];
-    const sinceText = values.since;
-    if (orgId === undefined || mailboxId === undefined || sinceText === undefined) return undefined;
-    if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(mailboxId).success) return undefined;
-    const since = new Date(sinceText);
-    if (Number.isNaN(since.getTime())) return undefined;
-    return { orgId, mailboxId, since };
-  } catch {
-    return undefined;
-  }
-}
+import { type CliDeps, oauthReasonLine, withMailboxDeps } from "./lib/mailbox-cli";
+import { reportFailure } from "./lib/mailbox-failure";
+import { cliDescriptions, type MailboxAuditArgs, parseMailboxAuditArgs } from "./mailbox-audit-args";
 
 // Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
-export async function run(argv: string[], deps: CliDeps): Promise<number> {
+export async function run(options: MailboxAuditArgs, deps: CliDeps): Promise<number> {
   const { out } = deps;
-  const options = readOptions(argv);
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
   try {
     const results = await auditMailbox(deps, { orgId: options.orgId }, options.mailboxId, options.since);
     for (const { key, counts } of results) {
@@ -62,11 +25,25 @@ export async function run(argv: string[], deps: CliDeps): Promise<number> {
     }
     return auditExitCode(results.find((result) => result.key === "inbox")?.counts);
   } catch (error) {
-    out.fail(oauthReasonLine(error) ?? `failed: ${error instanceof Error ? error.message : format(error)}`);
-    return 1;
+    const reason = oauthReasonLine(error);
+    if (reason !== null) {
+      out.fail(reason);
+      return 1;
+    }
+    return reportFailure(out, error, "message");
   }
 }
 
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB. Any later error gets one line and its code.
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseMailboxAuditArgs(argv);
+  try {
+    return await withMailboxDeps(out, (deps) => run(options, deps));
+  } catch (error) {
+    return reportFailure(out, error, "message");
+  }
+};
+
 if (import.meta.main) {
-  process.exit(await runMailboxCli("mailbox-audit", run));
+  await runCli({ prefix: "mailbox-audit", descriptions: cliDescriptions, main });
 }

@@ -1,20 +1,15 @@
-import { format } from "node:util";
-
 import { selectCases } from "@ea/core";
 
 import { seedMailbox, type SeedMessage } from "../modules/mail";
+import { runCli, type CliSpec } from "../platform/cli";
 
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
-import { loadCases, readSeedOptions, toSeedMessage, usage } from "./mailbox-seed-args";
+import { type CliDeps, oauthReasonLine, withMailboxDeps } from "./lib/mailbox-cli";
+import { reportFailure } from "./lib/mailbox-failure";
+import { cliDescriptions, loadCases, parseMailboxSeedArgs, type SeedOptions, toSeedMessage } from "./mailbox-seed-args";
 
 // Returns the exit code. `main` builds the production deps; a test calls `run` with its own.
-export async function run(argv: string[], deps: CliDeps): Promise<number> {
+export async function run(options: SeedOptions, deps: CliDeps): Promise<number> {
   const { out } = deps;
-  const options = readSeedOptions(argv);
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
   try {
     // `seedMailbox` checks the guards (test mailbox, real provider needs --from-owner) before any connection.
     let messages: SeedMessage[] | undefined;
@@ -36,11 +31,25 @@ export async function run(argv: string[], deps: CliDeps): Promise<number> {
     out.print(`appended ${appended}`);
     return 0;
   } catch (error) {
-    out.fail(oauthReasonLine(error) ?? `failed: ${error instanceof Error ? error.message : format(error)}`);
-    return 1;
+    const reason = oauthReasonLine(error);
+    if (reason !== null) {
+      out.fail(reason);
+      return 1;
+    }
+    return reportFailure(out, error, "message");
   }
 }
 
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB. Any later error gets one line and its code.
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseMailboxSeedArgs(argv);
+  try {
+    return await withMailboxDeps(out, (deps) => run(options, deps));
+  } catch (error) {
+    return reportFailure(out, error, "message");
+  }
+};
+
 if (import.meta.main) {
-  process.exit(await runMailboxCli("mailbox-seed", run));
+  await runCli({ prefix: "mailbox-seed", descriptions: cliDescriptions, main });
 }
