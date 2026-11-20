@@ -2,18 +2,14 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail, type EvalCase, evalCaseSchema } from "@ea/core";
-import { z } from "zod";
+import { costPerMail, type EvalCase } from "@ea/core";
 
 import {
-  buildDrafterGateFile,
   type DrafterCaseResult,
-  type DrafterPersona,
   drafterExitCode,
   type DrafterReportHeader,
   injectionSummary,
   injectionVerdict,
-  INJECTION_PERSONA,
   needsRerun,
   parseDrafterResults,
   renderInjectionReport,
@@ -26,7 +22,6 @@ import {
   drafterVersions,
   evalStateFileName,
   firstEstimateUsd,
-  gateFileName,
   judgeVersions,
   prompts,
   runPool,
@@ -52,20 +47,18 @@ import {
   runCap,
 } from "../../platform/eval-ledger";
 import { createLlmClient, LlmConfigError, llmEndpointFields, type LlmRoleTable } from "../../platform/llm";
-import { corpusDir, readScenario } from "../../platform/sim-files";
 import { type EvalOptions, evalUsage } from "../eval-args";
 
 import { loadEvalConfig } from "./eval-config";
+import { gateCheck, writeDrafterGate } from "./eval-drafter-gate";
+import { dumpLine, loadSource, type Source } from "./eval-drafter-source";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
-import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
+import { HOLDOUT_NEEDS_FREEZE } from "./eval-sim-load";
 
 const cli = createCliOutput("eval");
 
-const simRoot = resolve(import.meta.dir, "../../../../../evals/sim");
 const runsDir = resolve(import.meta.dir, "../../../../../evals/.runs");
 const gateDir = resolve(import.meta.dir, "../../../../../evals/results/gate");
-const injectionFile = resolve(import.meta.dir, "../../../../../evals/cases/reply-injection.json");
-const commitmentFile = resolve(import.meta.dir, "../../../../../evals/cases/reply-commitment.json");
 
 const STOP_AFTER_ERRORS = 3;
 const ERROR_STOP_REASON = "errors in a row (quota, overload or bad answers), resume later";
@@ -81,72 +74,6 @@ export interface DrafterEvalCliDeps {
   gateDir?: string;
   injectionFile?: string;
   commitmentFile?: string;
-}
-
-interface Source {
-  cases: EvalCase[];
-  persona: DrafterPersona;
-  // The name of the data in the state file name, the report and the ledger label.
-  key: string;
-  data: string;
-  scenario?: string;
-  version?: string;
-  manifestSha?: string | null;
-}
-
-// The needs_reply cases of an incoming part, with the persona of the corpus executive; or one reply set (injection, or
-// the dev-only commitment traps) with a fixed persona.
-async function loadSource(options: EvalOptions, deps: DrafterEvalCliDeps): Promise<Source> {
-  if (options.sim === undefined) {
-    const commitment = options.set === "reply-commitment";
-    const file = commitment ? (deps.commitmentFile ?? commitmentFile) : (deps.injectionFile ?? injectionFile);
-    const cases = z.array(evalCaseSchema).parse(JSON.parse(readFileSync(file, "utf8")));
-    return {
-      cases,
-      persona: INJECTION_PERSONA,
-      key: commitment ? "reply-commitment" : "reply-injection",
-      data: `${commitment ? "reply commitment set (dev only)" : "reply injection set"}, ${cases.length} cases`,
-    };
-  }
-  const scenario = options.sim;
-  const part = options.part as NonNullable<EvalOptions["part"]>;
-  const root = deps.root ?? simRoot;
-  const loaded = await loadSimCases({ root, scenario, part, requireManifest: part === "holdout" });
-  const { executive } = readScenario(corpusDir(scenario, root));
-  return {
-    cases: loaded.cases,
-    persona: {
-      displayName: executive.displayName,
-      signature: executive.signature,
-      writingStyle: executive.voice,
-      timeZone: executive.timeZone,
-    },
-    key: `sim-${scenario}-v${loaded.version}-${part}`,
-    data: `corpus ${scenario} v${loaded.version} part ${part}, manifest ${loaded.manifestSha?.slice(0, 12) ?? "none (not frozen)"}, owner audit ${loaded.audit}`,
-    scenario,
-    version: loaded.version,
-    manifestSha: loaded.manifestSha,
-  };
-}
-
-// One line of `--dump-drafts`: the dev or week case, its draft and its grade. Both parts are made-up tuning data; the
-// holdout never gets here.
-function dumpLine(result: DrafterCaseResult, c: EvalCase | undefined, draft: string | undefined) {
-  return {
-    id: result.id,
-    lang: c?.lang,
-    from: c?.from,
-    subject: c?.subject,
-    body: c?.body,
-    thread: c?.thread,
-    expectedPoints: c?.sim?.expectedPoints ?? [],
-    mustNot: c?.sim?.mustNot ?? [],
-    outcome: result.outcome,
-    reasonCode: result.reasonCode,
-    failures: result.failures,
-    draft: draft ?? null,
-    judge: result.judge,
-  };
 }
 
 // `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection|reply-commitment --drafter
@@ -400,38 +327,25 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     cli.write(`${markdown}\n`);
     if (options.out !== undefined) writeFileSync(options.out, markdown);
 
-    // The gate file comes from a full, judged holdout run only.
+    const gateRun = gateCheck({
+      source,
+      holdout,
+      limited: options.limit !== undefined,
+      complete,
+      judged: judgeRow !== undefined,
+    });
     let gate = false;
-    if (options.sim === undefined) {
-      cli.print(`no gate file: the ${source.key} set is not a holdout`);
-    } else if (!holdout) {
-      cli.print("no gate file: part is not holdout");
-    } else if (options.limit !== undefined) {
-      cli.print("no gate file: --limit is set");
-    } else if (!complete || judgeRow === undefined || source.scenario === undefined || !source.manifestSha) {
-      cli.print("no gate file: the run is not complete or has no judge");
-    } else {
-      const name = gateFileName({
-        role: "drafter",
+    if ("skip" in gateRun) {
+      cli.print(gateRun.skip);
+    } else if (header.judge !== null) {
+      const written = writeDrafterGate({
+        source: gateRun.source,
+        scores,
+        header: { ...header, judge: header.judge },
         endpoint,
-        promptVersion: drafterPrompt.version,
-        model: row.model,
-        reasoningEffort: row.reasoningEffort,
-        scenario: source.scenario,
-        version: source.version as string,
+        dir: deps.gateDir ?? gateDir,
       });
-      const file = buildDrafterGateFile(scores, {
-        scenario: source.scenario,
-        version: source.version as string,
-        manifestSha: source.manifestSha,
-        header,
-        judge: header.judge as NonNullable<DrafterReportHeader["judge"]>,
-        now: new Date(),
-      });
-      const target = deps.gateDir ?? gateDir;
-      mkdirSync(target, { recursive: true });
-      writeFileSync(resolve(target, name), `${JSON.stringify(file, null, 2)}\n`);
-      cli.print(`gate file: evals/results/gate/${name} passed=${file.passed}`);
+      cli.print(`gate file: evals/results/gate/${written.name} passed=${written.passed}`);
       gate = true;
     }
 
