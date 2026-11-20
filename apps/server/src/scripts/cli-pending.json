@@ -4,12 +4,5 @@
     "apps/server/src/scripts/check-migrations.ts",
     "apps/server/src/scripts/module-graph.ts",
     "tools/fake-telegram/src/cli.ts"
-  ],
-  "lab": [
-    "apps/server/src/scripts/lab-env-check.ts",
-    "apps/server/src/scripts/lab.ts",
-    "apps/server/src/scripts/sim-compose-check.ts",
-    "apps/server/src/scripts/triage-cost.ts",
-    "apps/server/src/scripts/triage-label.ts"
   ]
 }
