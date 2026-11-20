@@ -16,6 +16,7 @@
     "test:int": "EA_TEST_WORKER_DB=1 bun test --parallel=4 --timeout=30000 apps/server/test tools/fake-telegram/test",
     "test:unit:ci": "bash scripts/ci-bun.sh run test:unit",
     "test:unit:changed": "bash scripts/test-unit-changed.sh",
+    "check:job": "bash scripts/check-job.sh",
     "test:int:ci": "bash scripts/ci-bun.sh run test:int",
     "lint": "bash scripts/lint.sh",
     "lint:full": "bash scripts/lint.sh --full",
