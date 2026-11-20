@@ -26,12 +26,12 @@ The six cases (names at HEAD; the audit line numbers drifted):
 
 - **D1** Each new case lives next to the code it checks. C1 and C3 go to a new `apps/server/src/start/operator.test.ts`. C4–C6 stay in `composition.test.ts`. C2 splits: the `main.ts` half stays in `main.test.ts`; the job-run half goes to `apps/server/test/integration/job-run-cli.test.ts`. The old cases are deleted. Rejected: keep all in `main.test.ts` (that file tests the process).
 - **D2** C2 runs the real entry points and reads their JSON log lines. Reason: a unit test of a shared helper does not fail when an entry point stops calling it. Rejected: a new `initLogging(config)` helper (audit proposal).
-- **D3** The job-run half of C2 runs `--name platform.retention`. Reason: job-run writes no JSON line before the DB answers, and retention always writes `retention_done`. The int suite already runs retention (`retention-job.test.ts`). Rejected: a unit spawn with an unreachable DB (no JSON line).
-- **D4** C4 and C5 get one exported deps builder in each script: `jobRunCommitterDeps(config: Config, db: Db): CommitterDeps` in `scripts/job-run.ts`, and `checkCopyOpenDeps(config: Config, db: Db): OpenDeps` in `scripts/reply-check-copy.ts`. The script's `main` uses the builder's result unchanged. Reason: the callers-list case in `composition.test.ts` ("no other file builds a sync job or committer deps…") stays true with no edit. Rejected: builders in `composition.ts` (changes that list).
+- **D3** The job-run half of C2 runs `--name platform.retention`. Reason: job-run writes no JSON line before the DB answers, and retention always writes `retention_done`. The spawned job commits retention deletes over every organization of the worker DB at wall-clock time; this is safe, because each int worker has its own DB and runs its files one after the other (`test/worker-db.ts`), and `job-run-cli.test.ts` already commits real jobs. (`retention-job.test.ts` runs retention only in a rolled-back transaction.) Rejected: a unit spawn with an unreachable DB (no JSON line).
+- **D4** C4 and C5 get one exported deps builder in each script: `jobRunCommitterDeps(config: Config, db: Db): CommitterDeps` in `scripts/job-run.ts`, and `checkCopyDeps(config: Config, db: Db, open = openMailboxProvider)` in `scripts/reply-check-copy.ts`; it returns the whole `checkDraftCopy` deps, opener included. The script's `main` passes the builder's result unchanged. The C5 test calls the real opener with a spy `open`, so it sees the deps the opener passes (review B1). Reason: the callers-list case in `composition.test.ts` ("no other file builds a sync job or committer deps…") stays true with no edit. Rejected: builders in `composition.ts` (changes that list).
 - **D5** C6 needs no new code: `settingsRouteDeps(...)` returns `settings`, and its `gate` must be the gate passed in.
-- **D6** C1 and C3 get one pure builder in `start/operator.ts`: `operatorWiring(ctx: StartContext, io?: OperatorIo)` returns `{ delivery, notices, sloTick }`. `notices` is the `OperatorNoticeDeps` that `createOperatorNotices` gets; `sloTick` is the `SloTickDeps` that the `ops.slo` tick gets; `delivery` is the one `OperatorDelivery` of F147 stage 04. `OperatorIo` is `{ statfs; readFile }`, default the `node:fs/promises` functions. `startOperator` calls it and keeps the `scheduler.add(...)`, `runs.track(...)` calls and the start log line. Reason: `start/jobs.test.ts` reads those call texts. Rejected: test-only parameters for `createOperatorNotices` and `runSloTick`; `mock.module` (it leaks across files in one Bun process).
+- **D6** C1 and C3 test the root (review B1, option a). `startOperator(ctx, deps?: OperatorStartDeps)` takes `{ io, createOperatorNotices, runSloTick }`, default the real ones. The test gives a fake `ctx.scheduler`, runs both recorded functions, and checks that the deps of both spies hold the same `delivery` (F147 stage 04 name: `createOperatorDelivery`). `startOperator` keeps its `scheduler.add(...)`, `runs.track(...)` calls and start log line, because `start/jobs.test.ts` reads those texts. Rejected: a separate `operatorWiring` builder (the first draft: no case saw the hop from the root to the builder); `mock.module` (it leaks across files in one Bun process).
 - **D7** Shared means the same object: `toBe`. One case also delivers a text through it to a fake `late.telegram`.
-- **D8** Every new case is broken once: the worker removes its wiring line, runs `bun test <file>`, sees the failure and restores the line. The final message lists each case and the line removed.
+- **D8** Every new case is broken once: the worker removes or bypasses its wiring at the root (not only inside a helper), runs `bun test <file>`, sees the failure and restores the line. The final message lists each case and the line removed.
 - **D9** Each new case reads no source file: no `readFileSync`, `startSource`, `callOf` or `Bun.file` on a `.ts` file. Unused imports go (`main.test.ts` loses `startSource` and `readFileSync`). The `startSource` helper and `read`/`callOf` stay: other cases use them.
 - **D10** No capability page changes (P2: no behaviour change).
 
@@ -39,7 +39,8 @@ The six cases (names at HEAD; the audit line numbers drifted):
 
 - A spawned `main.ts` loads `.env` from its working folder: the test runs it in `tmpdir()` with an env built from scratch (D2).
 - Without an operator chat, the delivery has no send and counts as delivered: case 2.3 checks this.
-- The telegram runtime is set after the operator start (`late.telegram`): the builder must read it at send time, not at build time (case 2.2 sets it after the build).
+- The telegram runtime is set after the operator start (`late.telegram`): the send must read it at send time (case 2.2 sets it after `startOperator` returns).
+- A chat id needs `TELEGRAM_BOT_TOKEN` (config rule): stage 02 sets both.
 
 ## Facts checked (2026-11-20, HEAD a5399ff1)
 
@@ -87,8 +88,18 @@ Move the ticket to `active/` and commit. Spawn stage 01 now; spawn stage 02 when
 
 - Scouts: 0. The job task forbade any tool that waits for another job; the planner read the code itself.
 - [written] ticket.md § Slices, § Sequenced; plan.md; stage 01; stage 02; questions.md.
-- Word counts (`wc -w`, before the review): ticket.md 277, plan.md 1181, stage 01 506, stage 02 547.
+- Word counts (`wc -w`, after the review fixes): see § Cold review.
 
 ## Cold review
 
-Model: `claude-opus-5-5` at `high`, because stage 02 moves the wiring of the operator send (sending to people, a risk area of `spec/build.md` TRACK). The job task forbade any tool that waits for another job, so the planner started the review detached and did not wait for it. Review job: `2026-11-20-f155-plan-review-1c257442` (on this branch, at commit `363e0264`). `plan-review-1.md` does not exist yet: the coordinator files the review's final message there and continues this job to fix the findings (one round).
+Model: `claude-opus-5-5` at `high`, because stage 02 moves the wiring of the operator send (sending to people, a risk area of `spec/build.md` TRACK). The job task forbade any tool that waits for another job, so the planner started the review detached and did not wait for it. Review job: `2026-11-20-f155-plan-review-1c257442` (on this branch, at commit `363e0264`). Verdict FAIL, filed whole as `plan-review-1.md`. Fixes (owner instruction 2026-11-20):
+
+- B1: option (a). Stage 02 calls `startOperator` with a fake scheduler and checks one shared delivery across both scheduled functions (D6). Stage 01 tests the real copy-check opener through `checkCopyDeps` (D4).
+- N1: stage 02 sets `TELEGRAM_BOT_TOKEN` with every chat id; a config refusal is a question.
+- N2: stage 02 deletes the F147 stage 04 test 4 pin in whichever file it lives.
+- N3: the name is `createOperatorDelivery` (F147 stage 04), not `deliverOperatorText` (F147 plan D6). The F147 plan must use one name; reported to the coordinator.
+- N4: D3 cites the right facts.
+- N5: stage 02 case 6 break is "the entry ignores `io.readFile`".
+- N6–N9: no change.
+
+Word counts after the fixes: see the final message of the fix job.

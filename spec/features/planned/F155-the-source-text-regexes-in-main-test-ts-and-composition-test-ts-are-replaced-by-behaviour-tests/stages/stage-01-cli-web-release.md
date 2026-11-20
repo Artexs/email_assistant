@@ -8,7 +8,7 @@ Replaces cases C2, C4, C5 and C6 of `plan.md` § Input. Decisions: P2, D1–D5, 
 ## Step 1 — two deps builders (D4)
 
 - `scripts/job-run.ts`: export `jobRunCommitterDeps(config: Config, db: Db): CommitterDeps`. It builds the secret box, the token store (`mailOAuthRuntime(config, db, secrets).tokens`), the scopes and the send limits exactly as the `actions.committer` branch does now. That branch passes the result to `createCommitterJob` unchanged.
-- `scripts/reply-check-copy.ts`: export `checkCopyOpenDeps(config: Config, db: Db): OpenDeps` = `{ db, secrets, openProvider: openImapProvider, oauthTokens }`. The opener closure passes that object as the first argument of `openMailboxProvider`, unchanged.
+- `scripts/reply-check-copy.ts`: export `checkCopyDeps(config: Config, db: Db, open = openMailboxProvider)`. It returns the whole first argument of `checkDraftCopy`: `{ db, openProvider }`. Its `openProvider(ctx, mailboxId)` calls `open({ db, secrets, openProvider: openImapProvider, oauthTokens }, ctx, mailboxId)` and returns `.provider`. `main` passes the result to `checkDraftCopy` unchanged, with no opener of its own. The `open` parameter is for the test only.
 - Both scripts keep `if (import.meta.main)`, so a test import runs no CLI.
 
 ## Step 2 — the three composition cases (C4, C5, C6)
@@ -16,7 +16,7 @@ Replaces cases C2, C4, C5 and C6 of `plan.md` § Input. Decisions: P2, D1–D5, 
 In `composition.test.ts`, replace the three old cases by these. Use the file's `configWith({})`; the DB is `{} as never`.
 
 1. `jobRunCommitterDeps(configWith({}), {} as never).oauthTokens`: `typeof … .accessToken` is `"function"`. Break: drop the `oauthTokens` field from the builder.
-2. `checkCopyOpenDeps(configWith({}), {} as never)`: `typeof oauthTokens?.accessToken` is `"function"`, and `openProvider` is (`toBe`) `openImapProvider`. Break: drop `oauthTokens`.
+2. `deps = checkCopyDeps(configWith({}), {} as never, spy)`, where `spy` records its first argument and returns `{ provider: P }` (cast; `P` a fixed object). `await deps.openProvider({ orgId: "org-1" }, "mb-1")` is (`toBe`) `P`. The recorded deps have `typeof oauthTokens?.accessToken` `"function"` and `openProvider` (`toBe`) `openImapProvider`; the spy got `"mb-1"`. Break: drop `oauthTokens` from the object the opener passes.
 3. `gate = gateEvidenceOf(configWith({}), { quiet: true })`; `settingsRouteDeps({} as never, () => AT, testMailRule(configWith({})), gate).settings.gate` is (`toBe`) `gate`. Break: call `settingsDeps(db, now)` without the gate in `settingsRouteDeps`.
 
 Keep each case name close to the old one (the wiring it guards). Delete the old three cases.
