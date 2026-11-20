@@ -86,7 +86,7 @@ async function insertMail(
     sourceFolder?: string;
     fakeUid: number;
     rowUid: number;
-    inboxUid?: number | null;
+    uidInInbox?: number | null;
     movedAt?: Date | null;
     actions: { type: "save_summary" | "flag" | "mark_read"; status: string }[];
   }
@@ -102,7 +102,7 @@ async function insertMail(
     folder,
     sourceFolder: opts.sourceFolder,
     uid: opts.rowUid,
-    sourceUid: opts.inboxUid,
+    sourceUid: opts.uidInInbox,
     contentHash: hash,
     movedAt: opts.movedAt,
     actions: opts.actions,
@@ -218,13 +218,13 @@ describe("applyAction", () => {
       expect(await flagsAt(s, "INBOX", 7)).toEqual(["\\Flagged"]);
       const email = await emailState(trx, mail.emailId);
       expect(Number(email.uid)).toBe(7);
-      expect(Number(email.inbox_uid)).toBe(7);
+      expect(Number(email.source_uid)).toBe(7);
       expect((await actionState(trx, mail.actionIds[0] as string)).provider_result).toEqual({ uid: 7 });
       await auditRows(trx, s);
     });
   });
 
-  test("(13) a changed UID: inbox_uid follows only when the mail sits in its source folder", async () => {
+  test("(13) a changed UID: source_uid follows only when the mail sits in its source folder", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const inSource = deliverAt(s, "Oferty", 7);
@@ -239,7 +239,7 @@ describe("applyAction", () => {
       expect(await applyAction(depsAt(s, trx), s.ctx, first as ClaimedAction, s.fake)).toEqual({ kind: "applied" });
       const sourceRow = await emailState(trx, sourceMail.emailId);
       expect(Number(sourceRow.uid)).toBe(7);
-      expect(Number(sourceRow.inbox_uid)).toBe(7);
+      expect(Number(sourceRow.source_uid)).toBe(7);
 
       const moved = deliverAt(s, "AI/Info", 7);
       const movedMail = await insertMail(trx, s, {
@@ -247,7 +247,7 @@ describe("applyAction", () => {
         sourceFolder: "INBOX",
         fakeUid: moved,
         rowUid: 5,
-        inboxUid: 3,
+        uidInInbox: 3,
         movedAt: RECEIVED,
         actions: [{ type: "flag", status: "ready" }],
       });
@@ -256,7 +256,7 @@ describe("applyAction", () => {
       expect(await applyAction(depsAt(s, trx), s.ctx, second as ClaimedAction, s.fake)).toEqual({ kind: "applied" });
       const movedRow = await emailState(trx, movedMail.emailId);
       expect(Number(movedRow.uid)).toBe(7);
-      expect(Number(movedRow.inbox_uid)).toBe(3);
+      expect(Number(movedRow.source_uid)).toBe(3);
 
       const back = deliverAt(s, "INBOX", 9);
       const backMail = await insertMail(trx, s, {
@@ -264,7 +264,7 @@ describe("applyAction", () => {
         sourceFolder: "Wiadomości-śmieci",
         fakeUid: back,
         rowUid: 5,
-        inboxUid: 3,
+        uidInInbox: 3,
         actions: [{ type: "flag", status: "ready" }],
       });
       const [third] = await claim(trx, s);
@@ -272,11 +272,11 @@ describe("applyAction", () => {
       expect(await applyAction(depsAt(s, trx), s.ctx, third as ClaimedAction, s.fake)).toEqual({ kind: "applied" });
       const backRow = await emailState(trx, backMail.emailId);
       expect(Number(backRow.uid)).toBe(9);
-      expect(Number(backRow.inbox_uid)).toBe(3);
+      expect(Number(backRow.source_uid)).toBe(3);
     });
   });
 
-  test("a reverse flag of a moved mail keeps inbox_uid and moved_at when the folder UID changes", async () => {
+  test("a reverse flag of a moved mail keeps source_uid and moved_at when the folder UID changes", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const movedAt = new Date(NOW.getTime() - 30 * 60_000);
@@ -286,7 +286,7 @@ describe("applyAction", () => {
         folder: "AI/Info",
         fakeUid: uid,
         rowUid: 5,
-        inboxUid: 3,
+        uidInInbox: 3,
         movedAt,
         actions: [{ type: "flag", status: "applied" }],
       });
@@ -302,7 +302,7 @@ describe("applyAction", () => {
       expect(await applyAction(depsAt(s, trx), s.ctx, action as ClaimedAction, s.fake)).toEqual({ kind: "applied" });
       const email = await emailState(trx, mail.emailId);
       expect(Number(email.uid)).toBe(7);
-      expect(Number(email.inbox_uid)).toBe(3);
+      expect(Number(email.source_uid)).toBe(3);
       expect(email.moved_at?.getTime()).toBe(movedAt.getTime());
       expect(await flagsAt(s, "AI/Info", uid)).toEqual([]);
       await auditRows(trx, s);
