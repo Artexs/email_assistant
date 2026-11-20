@@ -6,9 +6,19 @@ import { senderHistorySchema } from "../triage/sender-history";
 import { defaultWeekSpec, miniScenario } from "./fixtures";
 import { hardCaseRules } from "./hard-cases";
 import { senderHistoryFor } from "./history-gen";
-import { batchSlots, planBank } from "./plan-bank";
+import {
+  batchSlots,
+  buildSlot,
+  personaOf as envPersonaOf,
+  planBank,
+  type ContextState,
+  type Env,
+  type GroupDraws,
+  type Planned,
+} from "./plan-bank";
 import type { PlanSpec } from "./plan-spec";
 import { createRng } from "./random";
+import type { Scenario } from "./scenario";
 import { slotSchema, valueCategories, type Slot } from "./slot";
 
 const spec: PlanSpec = {
@@ -230,5 +240,115 @@ describe("batchSlots", () => {
     expect(batched[0]?.batch).toBe("batch-003");
     expect(batched[25]?.batch).toBe("batch-004");
     expect(batched.map((s) => s.id)).toEqual(bank.holdout.map((s) => s.id));
+  });
+});
+
+describe("buildSlot", () => {
+  const AT = "2026-11-16T09:00:00.000Z";
+  const envOf = (scenario: Scenario = miniScenario): Env => ({
+    scenario,
+    spec,
+    part: "dev",
+    persons: new Map(scenario.personas.map((p) => [p.key, p])),
+  });
+  const draws = (over: Partial<GroupDraws> = {}): GroupDraws => ({
+    langs: ["pl"],
+    lengths: ["short"],
+    formats: ["plain"],
+    signatures: [true],
+    threads: [false],
+    sources: [undefined],
+    ...over,
+  });
+  const build = (
+    plan: Planned,
+    over: { draws?: Partial<GroupDraws>; seed?: number; context?: ContextState; scenario?: Scenario } = {}
+  ) =>
+    buildSlot(
+      envOf(over.scenario),
+      plan,
+      0,
+      draws(over.draws),
+      createRng(over.seed ?? 1),
+      over.context ?? { next: 0 },
+      AT
+    );
+  const swapTo = (key: string): NonNullable<Planned["rule"]> => ({
+    id: "bounce",
+    short: "bnc",
+    categories: ["info"],
+    kind: "synthetic",
+    replyInjection: false,
+    apply: (slot) => ({ ...slot, persona: key }),
+  });
+  const withProfile = (profile: Partial<Scenario["urgency"]["profile"]>, vip = ["prezes"]): Scenario => ({
+    ...miniScenario,
+    urgency: { vip, profile: { ...miniScenario.urgency.profile, ...profile } },
+  });
+
+  test("a vip urgent slot with no VIP persona in the scenario stops with a message", () => {
+    expect(() =>
+      build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["vip"] }, scenario: withProfile({}, []) })
+    ).toThrow("the scenario has no VIP persona for the vip urgency source");
+  });
+
+  test("a profile with deadlines and no topic gives deadlines only", () => {
+    const scenario = withProfile({ topics: [] });
+    const context = { next: 0 };
+    const refs = [0, 1].map(
+      () =>
+        build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["context"] }, scenario, context })
+          .contextRef
+    );
+    expect(refs).toEqual([
+      { kind: "deadline", index: 0 },
+      { kind: "deadline", index: 0 },
+    ]);
+  });
+
+  test("a profile with no topic and no deadline stops with a message", () => {
+    expect(() =>
+      build(
+        { id: "b-urg-0001", category: "urgent" },
+        { draws: { sources: ["context"] }, scenario: withProfile({ topics: [], deadlines: [] }) }
+      )
+    ).toThrow("the urgency profile has no topic or deadline");
+  });
+
+  test.each([
+    ["prezes", true, "formal"],
+    ["anna", false, "informal"],
+  ])(
+    "a rule that replaces the sender by %s: the signature is %s and the greeting follows the new sender",
+    (key, signature, greeting) => {
+      const slot = build({ id: "h-bnc-01", category: "info", persona: "kasia", rule: swapTo(key) }, { seed: 4 });
+      expect([slot.persona, slot.hardCases, slot.style.signature, slot.style.greeting]).toEqual([
+        key,
+        ["bounce"],
+        signature,
+        greeting,
+      ]);
+    }
+  );
+
+  test("a persona key that is not in the scenario stops with its key", () => {
+    expect(() => envPersonaOf(envOf(), "nobody")).toThrow("unknown persona: nobody");
+  });
+
+  test("a category whose group has no persona in the scenario stops with the group", () => {
+    const personas = miniScenario.personas.filter((p) => !["marketing", "spammer", "phishing"].includes(p.group));
+    expect(() => build({ id: "b-spa-0001", category: "spam" }, { scenario: { ...miniScenario, personas } })).toThrow(
+      "scenario has no persona of group spammer"
+    );
+  });
+
+  test("a sender who is in no topic starts a thread with the executive, never with a made-up persona", () => {
+    const topics = miniScenario.topics.filter((t) => !t.personas.includes("kasia"));
+    const plan = { id: "b-inf-0001", category: "info", persona: "kasia", topic: "faktury" } as const;
+    const first = [1, 2, 3, 4, 5, 6, 7, 8].map(
+      (seed) =>
+        build(plan, { draws: { threads: [true] }, seed, scenario: { ...miniScenario, topics } }).thread[0]?.persona
+    );
+    expect(first).toEqual(Array(8).fill("szef"));
   });
 });
