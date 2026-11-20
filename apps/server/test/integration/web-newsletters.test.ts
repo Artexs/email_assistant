@@ -1,4 +1,4 @@
-import { newsletterListSchema, type NewsletterList } from "@ea/core";
+import { newsletterListSchema, type NewsletterList, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
@@ -54,7 +54,7 @@ describe("GET /api/newsletters/:mailboxId", () => {
         senderLower: "one@c.example",
         fromName: "One News",
         count: 2,
-        latestAt: new Date(NOW.getTime() - 5 * 3_600_000).toISOString(),
+        latestAt: new Date(NOW.getTime() - 5 * HOUR_MS).toISOString(),
         method: "one_click",
         request: null,
       },
@@ -62,7 +62,7 @@ describe("GET /api/newsletters/:mailboxId", () => {
         senderLower: "link@c.example",
         fromName: null,
         count: 1,
-        latestAt: new Date(NOW.getTime() - 2 * 3_600_000).toISOString(),
+        latestAt: new Date(NOW.getTime() - 2 * HOUR_MS).toISOString(),
         method: "link",
         request: null,
         linkUrl: "https://u.c.example/unsub?id=1",
@@ -164,13 +164,13 @@ describe("GET /api/newsletters/:mailboxId", () => {
     const byId = new Map((await listOf()).senders.map((s) => [s.senderLower, s.request]));
     expect(byId.get("a@c.example")).toEqual({
       status: "requested",
-      at: new Date(NOW.getTime() - 2 * 3_600_000).toISOString(),
+      at: new Date(NOW.getTime() - 2 * HOUR_MS).toISOString(),
       code: null,
     });
     // The code of the request shows too (a short token, never a URL).
     expect(byId.get("b@c.example")).toEqual({
       status: "done",
-      at: new Date(NOW.getTime() - 3_600_000).toISOString(),
+      at: new Date(NOW.getTime() - HOUR_MS).toISOString(),
       code: "done",
     });
     expect(byId.get("c@c.example")).toBeNull();

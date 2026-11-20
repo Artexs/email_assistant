@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 
-import { pushPayloadSchema, pushStateSchema, pushSubscriptionAnswerSchema, pushTestAnswerSchema } from "@ea/core";
+import {
+  pushPayloadSchema,
+  pushStateSchema,
+  pushSubscriptionAnswerSchema,
+  pushTestAnswerSchema,
+  MINUTE_MS,
+} from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -566,7 +572,7 @@ describe("POST /api/me/push/test", () => {
     const other = await app().request("/api/me/push/test", as(assistant, { method: "POST", body: {} }));
     expect(other.status).toBe(200);
 
-    clock.now = new Date(clock.now.getTime() + 61 * 60_000);
+    clock.now = new Date(clock.now.getTime() + 61 * MINUTE_MS);
     const later = await app().request("/api/me/push/test", as(owner, { method: "POST", body: {} }));
     expect(later.status).toBe(200);
     expect(await auditOf("push.test_sent")).toHaveLength(PUSH_TEST_LIMIT + 2);

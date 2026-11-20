@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import type { SenderRule, SuspiciousReason } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -37,8 +38,7 @@ afterEach(() => {
 });
 
 const now = new Date("2026-11-18T10:00:00Z");
-const DAY = 24 * 3_600_000;
-const ago = (days: number): Date => new Date(now.getTime() - days * DAY);
+const ago = (days: number): Date => new Date(now.getTime() - days * DAY_MS);
 
 const vip: SenderRule[] = [{ kind: "vip", pattern: "ceo@acmecorp.pl" }];
 
@@ -78,7 +78,7 @@ async function triaged(
   const id = await insertTestEmail(trx, s.ctx, s.mailboxId, {
     from_address: from,
     status: "triaged",
-    received_at: new Date(now.getTime() - 60_000),
+    received_at: new Date(now.getTime() - MINUTE_MS),
   });
   if (headers.replyTo !== undefined || headers.links !== undefined) {
     await trx

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertMailbox } from "../../src/modules/mail/repo";
@@ -15,7 +16,7 @@ afterAll(async () => {
 });
 
 const now = new Date("2026-11-05T12:00:00Z");
-const day = 24 * 3_600_000;
+const day = DAY_MS;
 const since = new Date(now.getTime() - 30 * day);
 
 function tooOld(daysAgo: number, overrides?: Record<string, unknown>) {

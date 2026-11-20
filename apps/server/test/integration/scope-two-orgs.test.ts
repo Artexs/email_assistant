@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { HOUR_MS, MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -48,10 +49,8 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
-const MINUTE = 60_000;
 const NOW = new Date("2026-11-12T10:00:00Z");
-const RECEIVED = new Date(NOW.getTime() - HOUR);
+const RECEIVED = new Date(NOW.getTime() - HOUR_MS);
 const GATE_FORCED = { decision: "skipped", precision: null, kept: 0, forced: true } as const;
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -309,7 +308,7 @@ describe("two organizations under scope all (D2)", () => {
 
       expect(opener.calls).not.toContain(b.address);
       expect(statusOf(await actionsOf(trx, mailB), "move")).toBe("logged");
-      expect(await b.fake.searchSinceIn("AI/Info", new Date(NOW.getTime() - 2 * 24 * HOUR))).toEqual([]);
+      expect(await b.fake.searchSinceIn("AI/Info", new Date(NOW.getTime() - 2 * DAY_MS))).toEqual([]);
     });
   });
 
@@ -355,7 +354,7 @@ describe("two organizations under scope all (D2)", () => {
       await committer(trx, opener, smtpOpener()).run();
 
       expect(statusOf(await actionsOf(trx, mailB), "move")).toBe("applied");
-      const since = new Date(NOW.getTime() - 2 * 24 * HOUR);
+      const since = new Date(NOW.getTime() - 2 * DAY_MS);
       expect(await b.fake.searchSinceIn("AI/Info", since)).toHaveLength(1);
       expect(await b.fake.searchSinceIn("INBOX", since)).toHaveLength(0);
       // Organization A stays in shadow: its mail stays in the INBOX and no connection opens for it.
@@ -375,8 +374,8 @@ describe("two organizations under scope all (D2)", () => {
       const recipientB = `delegate-b-${randomUUID()}@x.test`;
       const pairOf = (box: Box, to: string) =>
         insertDraftAndSend(trx, box.ctx, box.mailboxId, {
-          createdAt: new Date(NOW.getTime() - 30 * MINUTE),
-          notifiedAt: new Date(NOW.getTime() - 20 * MINUTE),
+          createdAt: new Date(NOW.getTime() - 30 * MINUTE_MS),
+          notifiedAt: new Date(NOW.getTime() - 20 * MINUTE_MS),
           draftStatus: "applied",
           draftProviderResult: { uid: 1, folder: "Drafts" },
           sendStatus: "awaiting_approval",
@@ -398,7 +397,7 @@ describe("two organizations under scope all (D2)", () => {
         { db: trx, hooks: noDelegationHooks, approvalHooks: noApprovalHooks, uidplus: async () => true },
         b.ctx,
         pairB.sendId,
-        { userId: b.userId, via: "telegram", now: new Date(NOW.getTime() + MINUTE) }
+        { userId: b.userId, via: "telegram", now: new Date(NOW.getTime() + MINUTE_MS) }
       );
       expect(approved).toEqual({ kind: "approved" });
       await committer(trx, opener, smtp).run();

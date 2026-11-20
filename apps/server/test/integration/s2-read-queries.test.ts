@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -25,9 +26,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-06T10:00:00Z");
-const MIN = 60_000;
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const at = (offset: number) => new Date(T.getTime() + offset);
 
 async function statusRow(trx: Transaction<DB>, mailboxId: string) {
@@ -45,14 +43,14 @@ describe("setMailboxStatus and changeMailboxStatus", () => {
       const ctx = { orgId: a.orgId };
       await setMailboxStatus(trx, ctx, a.mailboxId, "auth_error", T);
       expect((await statusRow(trx, a.mailboxId)).status_changed_at).toEqual(T);
-      await setMailboxStatus(trx, ctx, a.mailboxId, "auth_error", at(HOUR));
+      await setMailboxStatus(trx, ctx, a.mailboxId, "auth_error", at(HOUR_MS));
       expect((await statusRow(trx, a.mailboxId)).status_changed_at).toEqual(T);
-      await setMailboxStatus(trx, ctx, a.mailboxId, "active", at(2 * HOUR));
-      expect((await statusRow(trx, a.mailboxId)).status_changed_at).toEqual(at(2 * HOUR));
+      await setMailboxStatus(trx, ctx, a.mailboxId, "active", at(2 * HOUR_MS));
+      expect((await statusRow(trx, a.mailboxId)).status_changed_at).toEqual(at(2 * HOUR_MS));
       await setMailboxStatus(trx, ctx, a.mailboxId, "paused");
       const row = await statusRow(trx, a.mailboxId);
       expect(row.status).toBe("paused");
-      expect(row.status_changed_at).not.toEqual(at(2 * HOUR));
+      expect(row.status_changed_at).not.toEqual(at(2 * HOUR_MS));
     });
   });
 
@@ -64,10 +62,10 @@ describe("setMailboxStatus and changeMailboxStatus", () => {
       const pause = { from: "active", to: "paused", at: T } as const;
       expect(await changeMailboxStatus(trx, ctx, a.mailboxId, pause)).toBe(true);
       expect(await changeMailboxStatus(trx, ctx, a.mailboxId, pause)).toBe(false);
-      expect(await changeMailboxStatus(trx, ctx, a.mailboxId, { from: "paused", to: "active", at: at(HOUR) })).toBe(
+      expect(await changeMailboxStatus(trx, ctx, a.mailboxId, { from: "paused", to: "active", at: at(HOUR_MS) })).toBe(
         true
       );
-      expect((await statusRow(trx, a.mailboxId)).status_changed_at).toEqual(at(HOUR));
+      expect((await statusRow(trx, a.mailboxId)).status_changed_at).toEqual(at(HOUR_MS));
 
       await setMailboxStatus(trx, ctx, a.mailboxId, "auth_error", T);
       expect(await changeMailboxStatus(trx, ctx, a.mailboxId, pause)).toBe(false);
@@ -99,7 +97,7 @@ describe("listMailboxes and countWaiting", () => {
       });
       await trx
         .updateTable("mailboxes")
-        .set({ created_at: at(HOUR) })
+        .set({ created_at: at(HOUR_MS) })
         .where("id", "=", second)
         .execute();
       await trx.updateTable("mailboxes").set({ created_at: T }).where("id", "=", a.mailboxId).execute();
@@ -117,19 +115,19 @@ describe("listMailboxes and countWaiting", () => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      const since = at(-DAY);
-      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-HOUR) });
+      const since = at(-DAY_MS);
+      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-HOUR_MS) });
       await insertTestEmail(trx, ctx, a.mailboxId, { status: "processing", received_at: since });
-      await insertTestEmail(trx, ctx, a.mailboxId, { status: "triaged", received_at: at(-HOUR) });
-      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-DAY - MIN) });
-      await insertTestEmail(trx, { orgId: b.orgId }, b.mailboxId, { status: "pending", received_at: at(-HOUR) });
+      await insertTestEmail(trx, ctx, a.mailboxId, { status: "triaged", received_at: at(-HOUR_MS) });
+      await insertTestEmail(trx, ctx, a.mailboxId, { status: "pending", received_at: at(-DAY_MS - MINUTE_MS) });
+      await insertTestEmail(trx, { orgId: b.orgId }, b.mailboxId, { status: "pending", received_at: at(-HOUR_MS) });
       expect(await countWaiting(trx, ctx, { receivedSince: since })).toBe(2);
     });
   });
 });
 
 describe("triage reads", () => {
-  const range = { after: at(-HOUR), until: T };
+  const range = { after: at(-HOUR_MS), until: T };
 
   async function seed(trx: Transaction<DB>) {
     const a = await createOrgWithMailbox(trx);
@@ -137,8 +135,8 @@ describe("triage reads", () => {
     const ctx = { orgId: a.orgId };
     const info = await insertTriaged(trx, ctx, a.mailboxId, {
       category: "info",
-      createdAt: at(-10 * MIN),
-      receivedAt: at(-30 * MIN),
+      createdAt: at(-10 * MINUTE_MS),
+      receivedAt: at(-30 * MINUTE_MS),
       subject: "Info old",
       from: "i@x.test",
       messageId: "<i@x.test>",
@@ -147,23 +145,23 @@ describe("triage reads", () => {
     });
     const infoNew = await insertTriaged(trx, ctx, a.mailboxId, {
       category: "info",
-      createdAt: at(-10 * MIN),
-      receivedAt: at(-20 * MIN),
+      createdAt: at(-10 * MINUTE_MS),
+      receivedAt: at(-20 * MINUTE_MS),
     });
     const urgent = await insertTriaged(trx, ctx, a.mailboxId, {
       category: "urgent",
-      createdAt: at(-5 * MIN),
-      receivedAt: at(-50 * MIN),
+      createdAt: at(-5 * MINUTE_MS),
+      receivedAt: at(-50 * MINUTE_MS),
       fields: { model_category: "nonsense" },
     });
     const reply = await insertTriaged(trx, ctx, a.mailboxId, { category: "needs_reply", createdAt: T });
     const atAfter = await insertTriaged(trx, ctx, a.mailboxId, { category: "spam", createdAt: range.after });
-    const old = await insertTriaged(trx, ctx, a.mailboxId, { category: "urgent", createdAt: at(-2 * DAY) });
+    const old = await insertTriaged(trx, ctx, a.mailboxId, { category: "urgent", createdAt: at(-2 * DAY_MS) });
     // Two results for one e-mail: only the newer one counts.
     const twice = await insertTriaged(trx, ctx, a.mailboxId, {
       category: "notification",
-      createdAt: at(-40 * MIN),
-      receivedAt: at(-45 * MIN),
+      createdAt: at(-40 * MINUTE_MS),
+      receivedAt: at(-45 * MINUTE_MS),
     });
     await trx
       .insertInto("triage_results")
@@ -173,10 +171,10 @@ describe("triage reads", () => {
         category: "unsure",
         confidence: 0.5,
         reason_code: "question",
-        created_at: at(-20 * MIN),
+        created_at: at(-20 * MINUTE_MS),
       })
       .execute();
-    await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, { category: "urgent", createdAt: at(-10 * MIN) });
+    await insertTriaged(trx, { orgId: b.orgId }, b.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
     return { a, ctx, info, infoNew, urgent, reply, atAfter, old, twice };
   }
 
@@ -196,8 +194,8 @@ describe("triage reads", () => {
         from_address: "i@x.test",
         message_id_header: "<i@x.test>",
       });
-      expect(info?.triaged_at).toEqual(at(-10 * MIN));
-      expect(info?.received_at).toEqual(at(-30 * MIN));
+      expect(info?.triaged_at).toEqual(at(-10 * MINUTE_MS));
+      expect(info?.received_at).toEqual(at(-30 * MINUTE_MS));
       expect(rows.find((row) => row.email_id === s.urgent)?.model_category).toBeNull();
 
       const filtered = await listTriagedBetween(trx, s.ctx, range, { limit: 50, categories: ["info", "urgent"] });
@@ -250,7 +248,7 @@ describe("listActionsForEmails and countEventsBetween", () => {
         .execute();
       await trx
         .updateTable("actions")
-        .set({ created_at: at(MIN) })
+        .set({ created_at: at(MINUTE_MS) })
         .where("email_id", "=", e1)
         .where("type", "=", "move")
         .execute();
@@ -271,13 +269,13 @@ describe("listActionsForEmails and countEventsBetween", () => {
       const a = await createOrgWithMailbox(trx);
       const b = await createOrgWithMailbox(trx);
       const ctx = { orgId: a.orgId };
-      const range = { after: at(-HOUR), until: T };
+      const range = { after: at(-HOUR_MS), until: T };
       const event = "email.skipped";
-      for (const when of [at(-30 * MIN), T, range.after, at(-2 * HOUR), at(MIN)]) {
+      for (const when of [at(-30 * MINUTE_MS), T, range.after, at(-2 * HOUR_MS), at(MINUTE_MS)]) {
         await recordAudit(trx, ctx, { actor: "system", event, at: when });
       }
-      await recordAudit(trx, ctx, { actor: "system", event: "email.triaged", at: at(-30 * MIN) });
-      await recordAudit(trx, { orgId: b.orgId }, { actor: "system", event, at: at(-30 * MIN) });
+      await recordAudit(trx, ctx, { actor: "system", event: "email.triaged", at: at(-30 * MINUTE_MS) });
+      await recordAudit(trx, { orgId: b.orgId }, { actor: "system", event, at: at(-30 * MINUTE_MS) });
       expect(await countEventsBetween(trx, ctx, event, range)).toBe(2);
     });
   });

@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -257,7 +258,7 @@ describe("triage repository", () => {
         source: "cli",
         userId: null,
       });
-      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const since = new Date(Date.now() - HOUR_MS);
 
       // Another org's context with org A's mailbox id reads nothing.
       expect(
@@ -353,7 +354,7 @@ describe("triage repository", () => {
       await insertTriageResult(trx, a.ctx, resultRow(kinds.syntheticUpper, { tokensIn: 102 }));
       await insertTriageResult(trx, a.ctx, resultRow(kinds.nullId, { tokensIn: 103 }));
       await insertTriageResult(trx, a.ctx, resultRow(kinds.real, { tokensIn: 104 }));
-      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const since = new Date(Date.now() - HOUR_MS);
 
       const real = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(real.map((r) => r.tokens_in).sort()).toEqual([103, 104]);
@@ -471,7 +472,7 @@ describe("triage repository", () => {
       await withRollback(db, async (trx) => {
         const { a: tenant } = await createTwoTenants(trx);
         const { a, b, c } = await insertSenderKinds(trx, tenant, false);
-        const since = new Date(Date.now() - 60 * 60 * 1000);
+        const since = new Date(Date.now() - HOUR_MS);
         const unlabeled = async (mail: "real" | "synthetic", testMail: { senders: readonly string[] }) =>
           sortedIds(
             (await listUnlabeled(trx, tenant.ctx, tenant.mailboxId, { limit: 10, mail, testMail })).map(
@@ -596,7 +597,7 @@ describe("triage repository", () => {
       await setResultCreatedAt(trx, kept, 10);
       await setResultCreatedAt(trx, noModel, 10);
       await setResultCreatedAt(trx, tooOld, 120);
-      const since = new Date(Date.now() - 60 * 60 * 1000);
+      const since = new Date(Date.now() - HOUR_MS);
 
       const rows = await listUsageSince(trx, a.ctx, a.mailboxId, since, { mail: "real", testMail: NO_TEST_SENDERS });
       expect(rows).toHaveLength(1);
@@ -636,7 +637,7 @@ describe("listTriagedBetween reads the rule (F110 stage 16)", () => {
       const make = (fields: Record<string, unknown>, minutes: number) =>
         insertTriaged(trx, a.ctx, a.mailboxId, {
           category: "info",
-          createdAt: new Date(at.getTime() + minutes * 60_000),
+          createdAt: new Date(at.getTime() + minutes * MINUTE_MS),
           fields,
         });
       const vip = await make({ rule: "vip" }, 1);
@@ -645,13 +646,13 @@ describe("listTriagedBetween reads the rule (F110 stage 16)", () => {
       const nonString = await make({ rule: 5 }, 4);
       await insertTriaged(trx, b.ctx, b.mailboxId, {
         category: "info",
-        createdAt: new Date(at.getTime() + 60_000),
+        createdAt: new Date(at.getTime() + MINUTE_MS),
         fields: { rule: "vip" },
       });
       const rows = await listTriagedBetween(
         trx,
         a.ctx,
-        { after: new Date(at.getTime() - 1), until: new Date(at.getTime() + 3_600_000) },
+        { after: new Date(at.getTime() - 1), until: new Date(at.getTime() + HOUR_MS) },
         { limit: 10 }
       );
       const ruleOf = (id: string) => rows.find((row) => row.email_id === id)?.rule;

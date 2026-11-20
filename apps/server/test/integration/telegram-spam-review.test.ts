@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Update } from "grammy/types";
 
@@ -20,7 +21,6 @@ afterAll(async () => {
 
 // The Telegram runtime hands WEB_BASE_URL to the /digest command, so its spam review line links to the panel.
 const T0 = new Date("2026-11-06T10:00:00Z");
-const MINUTE = 60_000;
 const CHAT_ID = 987654321012;
 const TOKEN = "123456:SPAMREVIEWTOKENaaaaaaaaaaaaaaaaaaaaaaaa";
 
@@ -84,12 +84,12 @@ async function digestReply(webBaseUrl: string | undefined): Promise<string> {
       await insertDefaultSettings(trx, ctx, mailboxId);
       await trx.updateTable("mailbox_settings").set({ mode: "assist" }).where("mailbox_id", "=", mailboxId).execute();
       await setOrgFeature(trx, ctx, { flag: "spam_review_line", enabled: true, actor: "cli", now: T0 });
-      await markSynced(trx, ctx, mailboxId, new Date(T0.getTime() - 5 * MINUTE));
+      await markSynced(trx, ctx, mailboxId, new Date(T0.getTime() - 5 * MINUTE_MS));
       await setDigestTimes(trx, ctx, userId, ["08:00"]);
       const { token } = await createLinkToken(trx, ctx, userId, T0);
       await insertTriagedWithActions(trx, ctx, mailboxId, {
         category: "spam",
-        createdAt: new Date(T0.getTime() + MINUTE),
+        createdAt: new Date(T0.getTime() + MINUTE_MS),
         actions: [{ type: "move", status: "applied", payload: { folder: "ai_spam" } }],
       });
       let clock = T0;
@@ -97,7 +97,7 @@ async function digestReply(webBaseUrl: string | undefined): Promise<string> {
         db: trx,
         token: TOKEN,
         now: () => clock,
-        startedAt: new Date(T0.getTime() - 60 * MINUTE),
+        startedAt: new Date(T0.getTime() - HOUR_MS),
         llmDailyCap: 300,
         triageScope: "synthetic",
         actionsScope: { kind: "off" },
@@ -116,7 +116,7 @@ async function digestReply(webBaseUrl: string | undefined): Promise<string> {
       try {
         fake.push(messageUpdate({ updateId: 1, chatId: CHAT_ID, text: `/start ${token}` }));
         await waitForTexts(fake.texts, 1);
-        clock = new Date(T0.getTime() + 2 * MINUTE);
+        clock = new Date(T0.getTime() + 2 * MINUTE_MS);
         fake.push(messageUpdate({ updateId: 2, chatId: CHAT_ID, text: "/digest" }));
         reply = (await waitForTexts(fake.texts, 2))[1] ?? "";
       } finally {

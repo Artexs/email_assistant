@@ -320,10 +320,12 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 ## Tests
 
 - `apps/server/test/integration/actions-drafts.test.ts`
-- `apps/server/test/integration/actions-send.test.ts`
+- `apps/server/test/integration/actions-send-outcomes.test.ts`, `actions-send-guards.test.ts`, `actions-send-recovery.test.ts`, `actions-send-chain.test.ts` (the send, its retries, its recovery and the whole chain; the shared setup is in `actions-send-helpers.ts`)
 - `apps/server/test/integration/actions-approvals.test.ts`
 - `apps/server/test/integration/actions-edit.test.ts`
-- `apps/server/test/integration/channels-card-sync.test.ts`
+- `apps/server/test/integration/channels-card-sync-decisions.test.ts`
+- `apps/server/test/integration/channels-card-sync-hooks.test.ts`
+- `apps/server/test/integration/channels-card-sync-probes.test.ts`
 - `apps/server/test/integration/channels-card-edits.test.ts`
 - `apps/server/test/integration/approval-edit-schema.test.ts`
 - `apps/server/test/integration/web-approvals.test.ts`, `web-approvals-write.test.ts`, `web-approvals-races.test.ts` (the panel routes and their races)

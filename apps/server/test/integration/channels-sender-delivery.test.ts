@@ -1,0 +1,358 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
+import { afterAll, describe, expect, test } from "bun:test";
+
+import { ChannelError } from "../../src/modules/channels";
+import { insertDigest } from "../../src/modules/reports";
+
+import {
+  captureLogs,
+  T,
+  SECRET,
+  at,
+  SECOND,
+  allLines,
+  expectEvent,
+  tenant,
+  addRow,
+  rowState,
+  senderFor,
+} from "./channels-sender-helpers";
+import { addMember, isolateChannels, suspendOrg } from "./fixtures";
+import { testDb, withRollback } from "./helpers";
+
+const db = testDb();
+
+afterAll(async () => {
+  await db.destroy();
+});
+
+captureLogs();
+
+describe("outbox sender", () => {
+  test("sends an urgent row once to the chat of the member", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(1);
+      expect(s.channel.sent[0]?.chatId).toBe(t.chatId);
+      expect(s.channel.sent[0]?.message.text).toContain(SECRET);
+      expect(s.channel.sent[0]?.message.buttons[0]?.[0]?.text).toBe("✅ Right");
+      const row = await rowState(trx, id);
+      expect(row.status).toBe("sent");
+      expect(Number(row.external_message_id)).toBe(1000);
+      expect(allLines().some((line) => line.includes(SECRET))).toBe(false);
+      await s.run(at(MINUTE_MS));
+      expect(s.channel.sent).toHaveLength(1);
+    });
+  });
+
+  test("a suspended organization's rows wait, approval rows too; the active one is sent in the same run", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await tenant(trx);
+      const b = await tenant(trx);
+      const rowA = await addRow(trx, a);
+      const waiting = [
+        await addRow(trx, b),
+        await addRow(trx, b, { kind: "approval" }),
+        await addRow(trx, b, { kind: "approval_set" }),
+      ];
+      // A row that a crashed run left in `sending` is not taken back either.
+      const stale = await addRow(trx, b);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", locked_at: at(-HOUR_MS) })
+        .where("id", "=", stale)
+        .execute();
+      await suspendOrg(trx, b.ctx.orgId);
+
+      const s = senderFor(trx);
+      await s.run(T);
+
+      expect(s.channel.sent).toHaveLength(1);
+      expect(s.channel.sent[0]?.chatId).toBe(a.chatId);
+      expect((await rowState(trx, rowA)).status).toBe("sent");
+      for (const id of waiting) {
+        expect(await rowState(trx, id)).toMatchObject({ status: "pending", locked_at: null, attempts: 0 });
+      }
+      expect(await rowState(trx, stale)).toMatchObject({ status: "sending", locked_at: at(-HOUR_MS) });
+    });
+  });
+
+  test("a digest row marks its digest as sent", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const digestId = await insertDigest(trx, t.ctx, {
+        userId: t.userId,
+        slotKey: "2026-11-06T08:00",
+        periodStart: at(-8 * HOUR_MS),
+        periodEnd: T,
+      });
+      if (!digestId) throw new Error("no digest");
+      const id = await addRow(trx, t, { kind: "digest", digestId });
+      const s = senderFor(trx);
+      await s.run(T);
+      expect((await rowState(trx, id)).status).toBe("sent");
+      const digest = await trx
+        .selectFrom("digests")
+        .select("sent_at")
+        .where("id", "=", digestId)
+        .executeTakeFirstOrThrow();
+      expect(digest.sent_at?.toISOString()).toBe(T.toISOString());
+    });
+  });
+
+  test("a notice waits for the end of the quiet hours; a digest goes out", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const night = new Date("2026-11-06T21:30:00Z");
+      const urgent = await addRow(trx, t, { kind: "urgent" });
+      const digestId = await insertDigest(trx, t.ctx, {
+        userId: t.userId,
+        slotKey: "2026-11-06T22:00",
+        periodStart: T,
+        periodEnd: night,
+      });
+      if (!digestId) throw new Error("no digest");
+      const digest = await addRow(trx, t, { kind: "digest", digestId });
+      const s = senderFor(trx);
+      await s.run(night);
+      const urgentRow = await rowState(trx, urgent);
+      expect(urgentRow.status).toBe("pending");
+      expect(urgentRow.next_attempt_at.toISOString()).toBe("2026-11-07T06:00:00.000Z");
+      expect(urgentRow.attempts).toBe(0);
+      expect((await rowState(trx, digest)).status).toBe("sent");
+      expect(s.channel.sent).toHaveLength(1);
+    });
+  });
+
+  test("rate_limited pauses the sender and releases all claimed rows", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const ids = [
+        await addRow(trx, t, { createdAt: at(-3 * SECOND) }),
+        await addRow(trx, t, { createdAt: at(-2 * SECOND) }),
+        await addRow(trx, t, { createdAt: at(-1 * SECOND) }),
+      ];
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("rate_limited", "telegram_429", 7000), 1);
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(0);
+      for (const id of ids) {
+        const row = await rowState(trx, id);
+        expect(row.status).toBe("pending");
+        expect(row.attempts).toBe(0);
+        expect(row.next_attempt_at.toISOString()).toBe(at(7 * SECOND).toISOString());
+      }
+      // The fixed `now` makes the wait exact: the old text printed seconds, the event holds milliseconds.
+      expectEvent("outbox_rate_limited", "warn", { outbox_id: ids[0], wait_ms: 7000 });
+      const due = await addRow(trx, t, { nextAttemptAt: at(1 * SECOND) });
+      await s.run(at(1 * SECOND));
+      expect(s.channel.sent).toHaveLength(0);
+      expect((await rowState(trx, due)).status).toBe("pending");
+      await s.run(at(8 * SECOND));
+      await s.run(at(8 * SECOND));
+      expect(s.channel.sent).toHaveLength(4);
+    });
+  });
+
+  test("soft errors back off", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("soft", "telegram_502"));
+      await s.run(T);
+      let row = await rowState(trx, id);
+      expect(row.status).toBe("pending");
+      expect(row.attempts).toBe(1);
+      expect(row.next_attempt_at.toISOString()).toBe(at(30 * SECOND).toISOString());
+      await s.run(at(31 * SECOND));
+      row = await rowState(trx, id);
+      expect(row.attempts).toBe(2);
+      expect(row.next_attempt_at.toISOString()).toBe(at(91 * SECOND).toISOString());
+      expect(s.channel.sent).toHaveLength(0);
+    });
+  });
+
+  test("config error pauses for 10 minutes and logs once", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("config", "telegram_401"), 1);
+      await s.run(T);
+      const due = await addRow(trx, t, { nextAttemptAt: at(5 * MINUTE_MS) });
+      await s.run(at(5 * MINUTE_MS));
+      expect(s.channel.sent).toHaveLength(0);
+      expect((await rowState(trx, due)).status).toBe("pending");
+      expectEvent("outbox_token_rejected", "error", { outbox_id: id });
+      expect((await rowState(trx, id)).attempts).toBe(0);
+      await s.run(at(11 * MINUTE_MS));
+      expect(s.channel.sent).toHaveLength(2);
+      expect((await rowState(trx, id)).status).toBe("sent");
+    });
+  });
+
+  test("blocked fails the row and the run goes on", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const first = await addRow(trx, t, { createdAt: at(-2 * SECOND) });
+      const second = await addRow(trx, t, { createdAt: at(-1 * SECOND) });
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("blocked", "telegram_403"), 1);
+      await s.run(T);
+      const row = await rowState(trx, first);
+      expect(row.status).toBe("failed");
+      expect(row.error_code).toBe("blocked");
+      expect((await rowState(trx, second)).status).toBe("sent");
+    });
+  });
+
+  test("bad_request fails the row", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("bad_request", "telegram_400"), 1);
+      await s.run(T);
+      const row = await rowState(trx, id);
+      expect(row.status).toBe("failed");
+      expect(row.error_code).toBe("bad_request");
+    });
+  });
+
+  test("other errors count and fail the row at the fifth", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const last = await addRow(trx, t);
+      await trx.updateTable("outbox").set({ attempts: 4 }).where("id", "=", last).execute();
+      const s = senderFor(trx);
+      s.channel.failWith(new ChannelError("other", "telegram_418"), 1);
+      await s.run(T);
+      const failed = await rowState(trx, last);
+      expect(failed.status).toBe("failed");
+      expect(failed.error_code).toBe("too_many_errors");
+
+      const fresh = await addRow(trx, t);
+      s.channel.failWith(new ChannelError("other", "telegram_418"), 1);
+      await s.run(T);
+      const row = await rowState(trx, fresh);
+      expect(row.status).toBe("pending");
+      expect(row.attempts).toBe(1);
+    });
+  });
+
+  test("a row older than 24 hours expires", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t, { createdAt: at(-25 * HOUR_MS) });
+      const s = senderFor(trx);
+      await s.run(T);
+      const row = await rowState(trx, id);
+      expect(row.status).toBe("failed");
+      expect(row.error_code).toBe("expired");
+      expect(s.channel.sent).toHaveLength(0);
+    });
+  });
+
+  test("a member without a chat link fails with no_chat", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const other = await addMember(trx, t.ctx.orgId);
+      const id = await addRow(trx, t, { userId: other });
+      const s = senderFor(trx);
+      await s.run(T);
+      const row = await rowState(trx, id);
+      expect(row.status).toBe("failed");
+      expect(row.error_code).toBe("no_chat");
+    });
+  });
+
+  test("a member gets at most 3 messages per run", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const ids: string[] = [];
+      for (let i = 0; i < 5; i += 1) ids.push(await addRow(trx, t, { createdAt: at((i - 10) * SECOND) }));
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(3);
+      for (const id of ids.slice(3)) {
+        const row = await rowState(trx, id);
+        expect(row.status).toBe("pending");
+        expect(row.attempts).toBe(0);
+      }
+      await s.run(T);
+      expect(s.channel.sent).toHaveLength(5);
+    });
+  });
+
+  test("a stale sending row is sent again with a warning", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const id = await addRow(trx, t);
+      await trx
+        .updateTable("outbox")
+        .set({ status: "sending", locked_at: at(-6 * MINUTE_MS) })
+        .where("id", "=", id)
+        .execute();
+      const s = senderFor(trx);
+      await s.run(T);
+      expect((await rowState(trx, id)).status).toBe("sent");
+      expectEvent("outbox_resent_after_stale", "warn", { outbox_id: id });
+    });
+  });
+
+  test("rows of two organizations go to their own chats", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const a = await tenant(trx);
+      const b = await tenant(trx);
+      await addRow(trx, a);
+      await addRow(trx, b);
+      const s = senderFor(trx);
+      await s.run(T);
+      expect(s.channel.sent.map((item) => item.chatId).sort()).toEqual([a.chatId, b.chatId].sort());
+    });
+  });
+
+  test("a lost claim after the send gives a warning and the run goes on", async () => {
+    await withRollback(db, async (trx) => {
+      await isolateChannels(trx);
+      const t = await tenant(trx);
+      const first = await addRow(trx, t, { createdAt: at(-2 * SECOND) });
+      const second = await addRow(trx, t, { createdAt: at(-1 * SECOND) });
+      const s = senderFor(trx);
+      let calls = 0;
+      s.channel.onSend = async () => {
+        calls += 1;
+        if (calls === 1) {
+          await trx
+            .updateTable("outbox")
+            .set({ locked_at: at(1 * SECOND) })
+            .where("id", "=", first)
+            .execute();
+        }
+      };
+      await s.run(T);
+      expectEvent("outbox_claim_lost", "warn", { outbox_id: first });
+      expect((await rowState(trx, first)).status).toBe("sending");
+      expect((await rowState(trx, second)).status).toBe("sent");
+    });
+  });
+});

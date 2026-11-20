@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { insertDefaultSettings } from "../../src/modules/config";
@@ -107,7 +108,7 @@ describe("triage logs", () => {
         // Each run moves the clock past the longest pause and the retry wait.
         for (let run = 0; run < 8 && calls < steps.length; run += 1) {
           await triage.run();
-          clock.at = new Date(clock.at.getTime() + 70 * 60_000);
+          clock.at = new Date(clock.at.getTime() + 70 * MINUTE_MS);
         }
 
         expect(calls).toBe(4);

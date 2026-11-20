@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { barCategories, noGoBodySchema, settingsChangeSchema, settingsViewSchema } from "@ea/core";
+import { barCategories, noGoBodySchema, settingsChangeSchema, settingsViewSchema, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 
 import { insertDefaultSettings, settingsRoutes } from "../../src/modules/config";
@@ -281,7 +281,7 @@ describe("PATCH mode and switches", () => {
     const mail = await db.transaction().execute((trx) =>
       insertTriagedWithActions(trx, ctx, m1, {
         category: "info",
-        createdAt: new Date(NOW.getTime() - 3_600_000),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
         actions: [{ type: "move", status: "ready" }],
       })
     );
@@ -301,7 +301,7 @@ describe("PATCH mode and switches", () => {
     const flag = await db.transaction().execute((trx) =>
       insertTriagedWithActions(trx, ctx, m1, {
         category: "info",
-        createdAt: new Date(NOW.getTime() - 3_600_000),
+        createdAt: new Date(NOW.getTime() - HOUR_MS),
         uid: 2,
         actions: [{ type: "flag", status: "ready" }],
       })
@@ -430,8 +430,6 @@ describe("PATCH sync-folders", () => {
   });
 });
 
-const DAY = 24 * 3_600_000;
-
 async function setFlag(orgId: string, enabled: boolean): Promise<void> {
   await upsertOrgFeature(db, { orgId }, { flag: "sent_sync", enabled, setBy: "test", setAt: NOW });
 }
@@ -449,7 +447,7 @@ async function putSent(
   ageDays: number,
   origin: "user" | "system" = "user"
 ): Promise<void> {
-  const at = new Date(NOW.getTime() - ageDays * DAY);
+  const at = new Date(NOW.getTime() - ageDays * DAY_MS);
   await insertRows({ orgId }, [
     {
       mailboxId,
@@ -607,7 +605,7 @@ describe("sentSync in the view and PATCH sent-sync", () => {
     await putSent(org.orgId, m1, 3, 0, "system");
     const view = await sentView(app, m1);
     expect(view?.storedCount).toBe(2);
-    expect(view?.lastSentAt).toBe(new Date(NOW.getTime() - DAY).toISOString());
+    expect(view?.lastSentAt).toBe(new Date(NOW.getTime() - DAY_MS).toISOString());
     const change = settingsChangeSchema.parse(await json(await patchSent(app, m1, false)));
     expect(change.settings.sentSync).toMatchObject({ enabled: false, storedCount: 0 });
     expect(await sentRows(org.orgId, m1)).toBe(0);

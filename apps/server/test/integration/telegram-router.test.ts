@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { textTables, type OutMessage } from "@ea/core";
+import { textTables, type OutMessage, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { BotError, GrammyError, HttpError } from "grammy";
 import type { Transaction } from "kysely";
@@ -250,7 +250,7 @@ describe("telegram router", () => {
         trx,
         { orgId: linked.orgId },
         linked.userId,
-        new Date(T.getTime() - 16 * 60_000)
+        new Date(T.getTime() - 16 * MINUTE_MS)
       );
       await send(linked.chatId, `/start ${token}`);
       expect(calls).toHaveLength(1);
@@ -263,7 +263,7 @@ describe("telegram router", () => {
       const { calls, send } = setup(trx);
       const { orgId, userId } = await createOrgWithMailbox(trx);
       const chatId = randomChatId();
-      const { token } = await createLinkToken(trx, { orgId }, userId, new Date(T.getTime() - 16 * 60_000));
+      const { token } = await createLinkToken(trx, { orgId }, userId, new Date(T.getTime() - 16 * MINUTE_MS));
       await send(chatId, `/start ${token}`);
       expect(calls).toHaveLength(1);
       expect(calls[0]?.payload.text).toBe(textTables.en.bot.linkExpired);

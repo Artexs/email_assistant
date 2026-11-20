@@ -1,5 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import { symmetricDecrypt } from "better-auth/crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
@@ -531,7 +532,7 @@ describe("two-factor events", () => {
     // The device of jar A is still trusted before the second enrolment.
     const rows = await trustRows(user.userId);
     expect(rows).toHaveLength(1);
-    const days = ((rows[0]?.expires_at.getTime() ?? 0) - Date.now()) / 86_400_000;
+    const days = ((rows[0]?.expires_at.getTime() ?? 0) - Date.now()) / DAY_MS;
     expect(days).toBeGreaterThan(29);
     expect(days).toBeLessThan(31);
 
@@ -966,8 +967,8 @@ describe("F128: a code for turn off and new codes", () => {
     const lockedUntil = row.rows[0]?.locked_until;
     expect(row.rows[0]?.failed_verification_count).toBe(10);
     const wait = (lockedUntil?.getTime() ?? 0) - Date.now();
-    expect(wait).toBeGreaterThan(14 * 60_000);
-    expect(wait).toBeLessThanOrEqual(15 * 60_000);
+    expect(wait).toBeGreaterThan(14 * MINUTE_MS);
+    expect(wait).toBeLessThanOrEqual(15 * MINUTE_MS);
     const locks = await auditRows(user.orgId, "web.two_factor_locked");
     expect(locks).toHaveLength(1);
     expect(locks[0]?.data).toEqual({ via: "web", locked_until: lockedUntil?.toISOString() });

@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { getUserRequest, replyVersionFacts } from "../../src/modules/replies";
@@ -241,8 +242,8 @@ describe("GET /api/replies/requests/:id", () => {
   test("7. superseded names the open reply of the thread of the same mailbox, not one of another mailbox with the same thread key", async () => {
     const w = await kit.setup();
     const thread = "<thread-shared@x.test>";
-    const lost = await kit.mailOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - 3_600_000) });
-    const newer = await kit.draftOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - 60_000) });
+    const lost = await kit.mailOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - HOUR_MS) });
+    const newer = await kit.draftOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - MINUTE_MS) });
     // The same thread key in a second mailbox of the organization, with its own open reply.
     const otherMailbox = await kit.addMailbox(w.box.ctx.orgId);
     const sameThread = await kit.draftOf(
@@ -271,8 +272,8 @@ describe("GET /api/replies/requests/:id", () => {
   test("7b. superseded with no open reply in the thread answers sendId null; a closed reply is not named", async () => {
     const w = await kit.setup();
     const thread = "<thread-closed@x.test>";
-    const lost = await kit.mailOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - 3_600_000) });
-    const newer = await kit.draftOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - 60_000) });
+    const lost = await kit.mailOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - HOUR_MS) });
+    const newer = await kit.draftOf(w.box, { threadKey: thread, receivedAt: new Date(NOW.getTime() - MINUTE_MS) });
     const request = await db
       .insertInto("reply_requests")
       .values({

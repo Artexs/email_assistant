@@ -1,3 +1,4 @@
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -14,7 +15,7 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-20T12:00:00Z");
-const SINCE = new Date(NOW.getTime() - 30 * 24 * 60 * 60 * 1000);
+const SINCE = new Date(NOW.getTime() - 30 * DAY_MS);
 const TEST_SENDER = "t@agentmail.test";
 const RULE = { senders: [TEST_SENDER] };
 
@@ -162,7 +163,7 @@ describe("listReviewSample", () => {
           confidence: 0.8,
           reason_code: "llm",
           fields: "{}",
-          created_at: new Date(Date.now() + 60_000),
+          created_at: new Date(Date.now() + MINUTE_MS),
         })
         .execute();
       const rows = await sample(trx, a, "s1");

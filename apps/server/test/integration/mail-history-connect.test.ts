@@ -20,7 +20,7 @@ import { testDb } from "./helpers";
 import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 // The history check at connect (web, CLI). Committed rows, two connections where a rule says "once". The OAuth connect is in
-// mail-oauth-connect.test.ts. No real mailbox: the login is the in-memory fake.
+// mail-oauth-connect-flow.test.ts. No real mailbox: the login is the in-memory fake.
 const db = testDb();
 const ownerUrl = process.env.MIGRATOR_DATABASE_URL;
 if (!ownerUrl) throw new Error("MIGRATOR_DATABASE_URL is missing: the owner role runs the race tests");

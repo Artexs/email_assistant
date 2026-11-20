@@ -6,6 +6,7 @@ import {
   type EvidenceKey,
   type GateEvidenceDeps,
   type GlobalEvidence,
+  MINUTE_MS,
 } from "@ea/core";
 import { sql } from "kysely";
 
@@ -144,7 +145,7 @@ export async function addMove(conn: Db, box: TripBox, move: Move): Promise<strin
   return conn.transaction().execute(async (trx) => {
     const { emailId } = await insertTriagedWithActions(trx, box, box.mailboxId, {
       category: move.category,
-      createdAt: at(move.createdAt ?? new Date(appliedAt.getTime() - 60_000).toISOString()),
+      createdAt: at(move.createdAt ?? new Date(appliedAt.getTime() - MINUTE_MS).toISOString()),
       ...(move.from === undefined ? {} : { from: move.from }),
       actions: [
         {

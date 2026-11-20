@@ -5,6 +5,7 @@ import {
   approvalConflictSchema,
   approvalEditAnswerSchema,
   approvalRejectAnswerSchema,
+  HOUR_MS,
 } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
@@ -13,7 +14,7 @@ import { setOrgFeature } from "../../src/modules/tenancy";
 
 import { insertDelegation } from "./fixtures";
 import { testDb } from "./helpers";
-import { approvalKit, bodyOf, HOUR, NOW, post, ROUTES } from "./web-approvals-kit";
+import { approvalKit, bodyOf, NOW, post, ROUTES } from "./web-approvals-kit";
 import { TEST_ORIGIN } from "./web-helpers";
 
 // Approvals write API: approve, reject and edit from the panel. Owner only; the rules of the service; the Telegram cards follow.
@@ -99,7 +100,7 @@ describe("POST /api/approvals/:id/approve, /reject, /edit", () => {
 
   test("T6. a send that waited 49 hours: 409 closed, state expired; the send expires and each owner's card gets the expired edit", async () => {
     const s = await setup();
-    const id = await addSend(s, { notifiedAt: new Date(NOW.getTime() - 49 * HOUR) });
+    const id = await addSend(s, { notifiedAt: new Date(NOW.getTime() - 49 * HOUR_MS) });
     const res = await s.app.request(`/api/approvals/${id}/approve`, post("owner", "approve"));
     expect(res.status).toBe(409);
     expect(approvalConflictSchema.parse(await res.json())).toEqual({ error: "closed", state: "expired" });

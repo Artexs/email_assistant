@@ -1,4 +1,4 @@
-import { weekRange } from "@ea/core";
+import { weekRange, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -38,7 +38,6 @@ afterAll(async () => {
 
 // The answered check of /review: the candidate reader, the answer service, the page block and the taps.
 const T = new Date("2026-11-20T12:00:00Z");
-const DAY = 24 * 3_600_000;
 const TEST_SENDER = "agent@test-sender.test";
 const testMail = { senders: [TEST_SENDER] };
 const OFF = { answer: "This button is off now." };
@@ -57,7 +56,7 @@ const mail = (
 ) =>
   insertTriaged(trx, { orgId: org.orgId }, org.mailboxId, {
     category: opts.category ?? "info",
-    createdAt: new Date(T.getTime() - (opts.ageMs ?? 3_600_000)),
+    createdAt: new Date(T.getTime() - (opts.ageMs ?? HOUR_MS)),
     subject,
     from: opts.from ?? "ann@firma.test",
   });
@@ -100,7 +99,7 @@ async function setup(trx: Transaction<DB>) {
     userId: a.userId,
     role: "owner",
     chatId: 7,
-    linkedAt: new Date(T.getTime() - 30 * DAY),
+    linkedAt: new Date(T.getTime() - 30 * DAY_MS),
     locale: "en",
   };
   return { a, b, link };
@@ -147,8 +146,8 @@ describe("the answered check", () => {
   test("1. candidates: answered, quiet category, no label, no answer, real, recent, own organization, oldest first", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await setup(trx);
-      const old = await answeredMail(trx, a, "OLD-INFO", { category: "info", ageMs: 3 * DAY });
-      const spam = await answeredMail(trx, a, "NEW-SPAM", { category: "spam", ageMs: DAY });
+      const old = await answeredMail(trx, a, "OLD-INFO", { category: "info", ageMs: 3 * DAY_MS });
+      const spam = await answeredMail(trx, a, "NEW-SPAM", { category: "spam", ageMs: DAY_MS });
       await answeredMail(trx, a, "NEEDS-REPLY", { category: "needs_reply" });
       const labelled = await answeredMail(trx, a, "LABELLED");
       await trx
@@ -168,7 +167,7 @@ describe("the answered check", () => {
         .set({ answered_check: "no", answered_check_at: T })
         .where("email_id", "=", answered)
         .execute();
-      await answeredMail(trx, a, "TOO-OLD", { ageMs: 20 * DAY });
+      await answeredMail(trx, a, "TOO-OLD", { ageMs: 20 * DAY_MS });
       await answeredMail(trx, a, "TEST-SENDER", { from: TEST_SENDER });
       await answeredMail(trx, b, "OTHER-ORG");
 
@@ -271,8 +270,8 @@ describe("the answered check", () => {
     await withRollback(db, async (trx) => {
       const { a, link } = await setup(trx);
       await flagsOn(trx, a.orgId, ["review_command"]);
-      await answeredMail(trx, a, "ANSWERED-ONE", { ageMs: 2 * DAY });
-      await answeredMail(trx, a, "ANSWERED-TWO", { category: "notification", ageMs: DAY });
+      await answeredMail(trx, a, "ANSWERED-ONE", { ageMs: 2 * DAY_MS });
+      await answeredMail(trx, a, "ANSWERED-TWO", { category: "notification", ageMs: DAY_MS });
       const plain = await reviewMessage(commandDeps(trx), link);
       expect(plain.text).not.toContain("You replied to");
       expect(plain.buttons.flat().some((button) => /^a[yn]:/.test(button.data))).toBe(false);

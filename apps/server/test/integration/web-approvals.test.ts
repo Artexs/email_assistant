@@ -1,6 +1,14 @@
 import { randomUUID } from "node:crypto";
 
-import { APPROVAL_QUOTE_MAX, approvalDetailSchema, approvalListSchema, meSchema, type ApprovalDetail } from "@ea/core";
+import {
+  APPROVAL_QUOTE_MAX,
+  approvalDetailSchema,
+  approvalListSchema,
+  meSchema,
+  type ApprovalDetail,
+  MINUTE_MS,
+  HOUR_MS,
+} from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { editApproval, getSend, noApprovalHooks, noDelegationHooks, type SendScope } from "../../src/modules/actions";
@@ -18,7 +26,6 @@ import { as, noBackupCodes, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from 
 
 const db = testDb();
 const NOW = new Date("2026-11-20T12:00:00Z");
-const HOUR = 3_600_000;
 const at = (offsetMin: number) => new Date(Date.UTC(2026, 10, 20, 8, offsetMin));
 
 const orgs: WebOrg[] = [];
@@ -179,13 +186,13 @@ describe("GET /api/approvals and GET /api/approvals/:id", () => {
     // A send that a run holds is in flight: not listed. A stale lock does not count.
     await db
       .updateTable("actions")
-      .set({ locked_at: new Date(NOW.getTime() - HOUR) })
+      .set({ locked_at: new Date(NOW.getTime() - HOUR_MS) })
       .where("id", "=", c)
       .execute();
     expect((await list(s)).body.items).toHaveLength(1);
     await db
       .updateTable("actions")
-      .set({ locked_at: new Date(NOW.getTime() - 60_000) })
+      .set({ locked_at: new Date(NOW.getTime() - MINUTE_MS) })
       .where("id", "=", c)
       .execute();
     expect((await list(s)).body.items).toEqual([]);
@@ -336,8 +343,8 @@ describe("GET /api/approvals and GET /api/approvals/:id", () => {
     const rejected = await make("rejected");
     const failed = await make("failed");
     const expired = await make("expired");
-    const sendingApproved = await make("approved", { lockedAt: new Date(NOW.getTime() - 60_000) });
-    const heldApproved = await make("approved", { lockedAt: new Date(NOW.getTime() - HOUR) });
+    const sendingApproved = await make("approved", { lockedAt: new Date(NOW.getTime() - MINUTE_MS) });
+    const heldApproved = await make("approved", { lockedAt: new Date(NOW.getTime() - HOUR_MS) });
     const state = async (id: string) => (await detail(s, id)).state;
     expect(await state(applying)).toBe("sending");
     expect(await state(sent)).toBe("sent");
@@ -388,7 +395,7 @@ describe("GET /api/approvals and GET /api/approvals/:id", () => {
     const s = await setup();
     await db.transaction().execute(async (trx) => {
       for (let i = 0; i < 102; i += 1) {
-        await insertDraftAndSend(trx, s.ctx, s.mailboxId, { createdAt: new Date(NOW.getTime() - i * 60_000) });
+        await insertDraftAndSend(trx, s.ctx, s.mailboxId, { createdAt: new Date(NOW.getTime() - i * MINUTE_MS) });
       }
     });
     const items = (await list(s)).body.items;

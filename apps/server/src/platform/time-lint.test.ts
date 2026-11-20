@@ -112,7 +112,7 @@ describe("no-time-literals: units and copies", () => {
 describe("no-time-literals: scope", () => {
   const text = "const a = 60_000;";
   test(
-    "the time module and its test are out; tests, specs, test helpers and e2e files are in; two integration folders are still out",
+    "the time module and its test are out; tests, specs, test helpers, e2e files and the server and tool test folders are in",
     async () => {
       const cases: [string[], number[]][] = [
         [["packages/core/src/time.ts", "packages/core/src/time.test.ts"], []],
@@ -124,10 +124,12 @@ describe("no-time-literals: scope", () => {
             "apps/web/e2e/x.ts",
             "apps/docs/scripts/x.test.ts",
             "deploy/test/x.ts",
+            "apps/server/test/integration/x.ts",
+            "apps/server/test/integration/x.test.ts",
+            "tools/fake-telegram/test/x.test.ts",
           ],
           [2],
         ],
-        [["apps/server/test/integration/x.ts", "tools/fake-telegram/test/x.test.ts"], []],
       ];
       for (const [files, severities] of cases) {
         for (const file of files) {
