@@ -29,3 +29,16 @@ describe("safeNextPath", () => {
     expect(safeNextPath(input)).toBe(expected);
   });
 });
+
+describe("safeNextPath edges", () => {
+  test.each([
+    ["/x\u0007", "/"],
+    ["/x\u001f", "/"],
+    ["/x\u007f", "/"],
+    ["/loginx", "/"],
+    ["/setup/x", "/"],
+    ["//x.invalid/a", "/"],
+  ])("%j -> %j", (input, expected) => {
+    expect(safeNextPath(input)).toBe(expected);
+  });
+});
