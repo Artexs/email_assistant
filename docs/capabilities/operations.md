@@ -64,7 +64,7 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 
 | Kind     | Name                                                                                                                       | Where                                               |
 | -------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| job      | `ops.slo` (`30 */5 * * * *`)                                                                                               | `apps/server/src/main.ts`                           |
+| job      | `ops.slo` (`30 */5 * * * *`)                                                                                               | `apps/server/src/start/operator.ts`                 |
 | function | `runSloTick`                                                                                                               | `apps/server/src/modules/operator/slo-job.ts`       |
 | function | `checkSyncLag`, `checkUrgentLatency`, `checkLlmErrors`, `checkDisk`, `checkBackupAge`                                      | `apps/server/src/modules/operator/slo-checks.ts`    |
 | function | `sloAlertText`                                                                                                             | `apps/server/src/modules/operator/slo-texts.ts`     |

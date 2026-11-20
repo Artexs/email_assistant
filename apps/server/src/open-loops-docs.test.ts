@@ -4,6 +4,8 @@ import path from "node:path";
 import { featureFlags } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
+import { startSource } from "./start/source.test-helper";
+
 // The open-loops page and the architecture jobs table must name what the code has: every flag of the open loops and every job
 // `loops.*` that `main.ts` schedules. A new loop flag or job that nobody wrote down fails here.
 const ROOT = path.resolve(import.meta.dir, "../../..");
@@ -16,9 +18,7 @@ const decisions = read("docs/decisions/README.md");
 const e5bFlags = Object.entries(featureFlags)
   .filter(([, flag]) => flag.epic === "E5b")
   .map(([name]) => name);
-const loopJobs = [...read("apps/server/src/main.ts").matchAll(/scheduler\.add\("(loops\.[a-z]+)"/g)].map(
-  (match) => match[1] ?? ""
-);
+const loopJobs = [...startSource().matchAll(/scheduler\.add\("(loops\.[a-z]+)"/g)].map((match) => match[1] ?? "");
 
 describe("the open-loops docs name the code", () => {
   test("the code has the flags and jobs that the checks below read", () => {
