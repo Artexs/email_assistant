@@ -16,6 +16,8 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F151-the-demo-video-and-the-docs-screenshots-come-from-the-synthetic-demo-week-export` (🟠 ACTIVE): The demo video and the docs screenshots come from the synthetic demo-week export
+- `F122-e6b-style-from-sent` (🟠 ACTIVE): An owner gets a writing style suggested from their own sent mail
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
 - `F062-drop-mailbox-cursor-columns` (🟠 ACTIVE): The moved-mail columns have neutral names and the old INBOX cursor copy is gone
