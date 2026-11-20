@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { DAY_MS } from "../time";
+
 import {
   activityItemSchema,
   type ActivityItem,
@@ -103,7 +105,7 @@ describe("activityItemSchema", () => {
 
   test("range table in ms", () => {
     expect(activityRangeMs["7d"]).toBe(604800000);
-    expect(activityRangeMs["24h"]).toBe(86400000);
+    expect(activityRangeMs["24h"]).toBe(DAY_MS);
   });
 });
 

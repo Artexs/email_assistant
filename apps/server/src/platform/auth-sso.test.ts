@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import { describe, expect, spyOn, test } from "bun:test";
 
 import { isAllowedAuthPath } from "./auth";
@@ -79,7 +80,6 @@ describe("isAllowedSsoPath", () => {
 
 describe("ssoSessionData", () => {
   const now = new Date("2026-11-20T10:00:00.000Z");
-  const HOUR_MS = 3_600_000;
 
   test("an SSO session lasts 12 h (43200 s)", () => {
     expect(SSO_SESSION_SECONDS).toBe(43_200);

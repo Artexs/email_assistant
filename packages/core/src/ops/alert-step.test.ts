@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
 
+import { HOUR_MS } from "../time";
+
 import { nextAlertStep, type AlertState, type AlertStep } from "./alert-step";
 import type { SloCheck } from "./kinds";
 
 const NOW = new Date("2026-11-20T10:00:00Z");
-const REPEAT_MS = 6 * 3_600_000;
+const REPEAT_MS = 6 * HOUR_MS;
 
 const check = (state: SloCheck["state"]): SloCheck => ({ kind: "slo_disk", state, facts: { free_gb: 2 } });
 const sent = (lastSentAt: string): AlertState => ({

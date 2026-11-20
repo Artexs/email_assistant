@@ -5,6 +5,7 @@ import { describe, expect, test } from "bun:test";
 
 import { localDateTime } from "../digest/local-time";
 import { resolveDue, type DueRef } from "../loops/dates";
+import { DAY_MS } from "../time";
 
 import { miniScenario, miniSentPlanSpec } from "./fixtures";
 import { personGroups } from "./plan-bank";
@@ -85,11 +86,11 @@ describe("planSentBank", () => {
 
   test("T6 sentAt is inside the scenario week, 20% on the weekend, between 07:00 and 19:00 local", () => {
     const { weekStart } = scenario.calendar;
-    const end = Date.parse(`${weekStart}T00:00:00Z`) + 8 * 86_400_000;
+    const end = Date.parse(`${weekStart}T00:00:00Z`) + 8 * DAY_MS;
     for (const slot of holdout) {
       const local = localDateTime(new Date(slot.sentAt), timeZone);
       expect(Date.parse(`${local.date}T00:00:00Z`)).toBeGreaterThanOrEqual(Date.parse(`${weekStart}T00:00:00Z`));
-      expect(Date.parse(`${local.date}T00:00:00Z`)).toBeLessThan(end - 86_400_000);
+      expect(Date.parse(`${local.date}T00:00:00Z`)).toBeLessThan(end - DAY_MS);
       expect(local.time >= "07:00" && local.time < "19:00").toBe(true);
     }
     const weekend = (s: SentSlot) => [0, 6].includes(localDateTime(new Date(s.sentAt), timeZone).weekday);

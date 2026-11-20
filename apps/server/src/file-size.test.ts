@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import { MINUTE_MS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { ESLint } from "eslint";
 
@@ -9,7 +10,7 @@ import { ESLint } from "eslint";
 // warns (`max-lines`), over 800 lines fails (`size/max-lines-hard`). Both count every line, as `wc -l` does.
 const repoRoot = path.resolve(import.meta.dir, "../../..");
 const eslint = new ESLint({ cwd: repoRoot });
-const TIMEOUT = 60_000;
+const TIMEOUT = MINUTE_MS;
 
 const SOFT = "max-lines";
 const HARD = "size/max-lines-hard";

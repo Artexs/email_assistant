@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import type { FolderMessageMeta, MessageMeta } from "./port";
@@ -677,8 +678,8 @@ describe("decideBelowCursorCopy", () => {
         movePendingAt: new Date(NOW.getTime() - ageMs),
       }),
     ];
-    expect(decide(withMarker(3_600_000))).toEqual({ kind: "move_in_flight", emailId: "r2" });
-    expect(decide(withMarker(25 * 3_600_000))).toEqual({ kind: "store", dedupKey: `${BASE}#3` });
+    expect(decide(withMarker(HOUR_MS))).toEqual({ kind: "move_in_flight", emailId: "r2" });
+    expect(decide(withMarker(25 * HOUR_MS))).toEqual({ kind: "store", dedupKey: `${BASE}#3` });
   });
 
   test("1.4 another row at the hit uid in any folder is held; the moved row itself is not", () => {
@@ -704,7 +705,7 @@ describe("decideBelowCursorCopy", () => {
       key: `${BASE}#2`,
       folder: "Oferty",
       uid: 10,
-      movePendingAt: new Date(NOW.getTime() - 3_600_000),
+      movePendingAt: new Date(NOW.getTime() - HOUR_MS),
     });
     expect(decide([r1, r2])).toEqual({ kind: "move_in_flight", emailId: "r2" });
   });

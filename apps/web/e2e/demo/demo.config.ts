@@ -9,6 +9,7 @@ import type { DemoRunPlan } from "../lib/demo/run-plan";
 import { assertLoopbackLlm, demoServerEnv, demoTestTimeoutMs } from "../lib/demo/server-env";
 import { shotSource } from "../lib/shot-source";
 import { e2eLaunchOptions, e2eWebServers } from "../servers";
+import { MINUTE_MS } from "@ea/core";
 
 // The recording run of the demo video: `bun run demo:record` starts it (the command rebuilds the demo database first, then runs ffmpeg on
 // the result). The servers, the seed and the env are those of the panel e2e run (`servers.ts`, `env.ts`) with one change: the database is the
@@ -57,7 +58,7 @@ export default defineConfig({
   testDir: ".",
   testMatch: "*.spec.ts",
   globalSetup: "./global-setup.ts",
-  timeout: demoSource ? demoTestTimeoutMs() : 10 * 60_000,
+  timeout: demoSource ? demoTestTimeoutMs() : 10 * MINUTE_MS,
   expect: { timeout: 20_000 },
   retries: 0,
   // One recording, one page: the steps run in order.

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { MINUTE_MS } from "@ea/core";
 import { Glob } from "bun";
 import { describe, expect, test } from "bun:test";
 import ts from "typescript";
@@ -186,16 +187,20 @@ describe("comments, strings, JSON and docs carry no bare ticket or decision code
     expect(bareCodes(file, text)).toHaveLength(count);
   });
 
-  test("no scanned file holds one", () => {
-    const hits: string[] = [];
-    const files: string[] = [];
-    for (const dir of roots) files.push(...sourceFiles(dir));
-    files.push(...new Glob("apps/docs/src/content/**/*.{md,mdx}").scanSync({ cwd: root }), "docs/modules.md");
-    for (const file of files) {
-      if (skipped.test(file)) continue;
-      hits.push(...bareCodes(file, readFileSync(resolve(root, file), "utf8")));
-    }
-    expect(hits).toEqual([]);
-    // The scan reads every source file; on a loaded machine it needs more than the default 5 s.
-  }, 60_000);
+  test(
+    "no scanned file holds one",
+    () => {
+      const hits: string[] = [];
+      const files: string[] = [];
+      for (const dir of roots) files.push(...sourceFiles(dir));
+      files.push(...new Glob("apps/docs/src/content/**/*.{md,mdx}").scanSync({ cwd: root }), "docs/modules.md");
+      for (const file of files) {
+        if (skipped.test(file)) continue;
+        hits.push(...bareCodes(file, readFileSync(resolve(root, file), "utf8")));
+      }
+      expect(hits).toEqual([]);
+      // The scan reads every source file; on a loaded machine it needs more than the default 5 s.
+    },
+    MINUTE_MS
+  );
 });

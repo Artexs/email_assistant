@@ -5,6 +5,7 @@ import {
   applyHardRules,
   EVAL_RECEIVED_AT,
   evalCaseSchema,
+  HOUR_MS,
   miniScenario,
   selectCases,
   slotSchema,
@@ -266,7 +267,7 @@ function oldClassifierInput(c: EvalCase) {
     thread: c.thread.map((t, i) => ({
       from: splitAddress(t.from).address,
       subject: t.subject,
-      receivedAt: new Date(EVAL_RECEIVED_AT.getTime() - (n - i) * 3_600_000),
+      receivedAt: new Date(EVAL_RECEIVED_AT.getTime() - (n - i) * HOUR_MS),
       bodyExcerpt: t.body.slice(0, 500),
     })),
   };

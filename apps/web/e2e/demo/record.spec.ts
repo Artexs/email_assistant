@@ -16,6 +16,7 @@ import { botBody, urgentNotice } from "../lib/demo/notice";
 import { DEMO_VIDEO_SIZE, DEMO_VIEWPORT } from "../lib/demo/record-args";
 import { shotSource } from "../lib/shot-source";
 import { readSeed } from "../seed";
+import { MINUTE_MS } from "@ea/core";
 
 // The recording of the demo video (the public pages and demo ticket). One page records the whole video: the steps of `DEMO_STEPS` run in
 // order, each as one owner of the e2e seed (README.md, the spike table), and the page switches between the panel and the read-only view
@@ -209,7 +210,7 @@ test("the demo recording follows the eight steps of the script", async ({ browse
     await expect(page.getByText(en.appr_edit_saved.replace("{n}", "2"))).toBeVisible();
     // The new version has no copy in the mailbox yet: Approve is off until the committer made it (it runs every 15 seconds).
     const approve = detail.getByRole("button", { name: en.appr_approve });
-    await expect(approve).toBeEnabled({ timeout: 60_000 });
+    await expect(approve).toBeEnabled({ timeout: MINUTE_MS });
     await approve.click();
     await expect(page.getByText(en.appr_done_sending)).toBeVisible();
   });

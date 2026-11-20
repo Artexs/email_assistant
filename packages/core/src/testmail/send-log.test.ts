@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
+import { DAY_MS } from "../time";
+
 import {
   caseLabel,
   caseStates,
@@ -204,19 +206,18 @@ describe("caseStates, exact states", () => {
 
 describe("sentInWindow", () => {
   const now = new Date("2026-11-08T12:00:00Z");
-  const day = 24 * 3_600_000;
 
   test("counts only sends inside the window", () => {
-    expect(sentInWindow([sent(1, "2026-11-07T12:00:01Z")], now, day)).toBe(1);
-    expect(sentInWindow([sent(1, "2026-11-07T11:59:59Z")], now, day)).toBe(0);
+    expect(sentInWindow([sent(1, "2026-11-07T12:00:01Z")], now, DAY_MS)).toBe(1);
+    expect(sentInWindow([sent(1, "2026-11-07T11:59:59Z")], now, DAY_MS)).toBe(0);
   });
 
   test("a send exactly at the start of the window is outside it", () => {
-    expect(sentInWindow([sent(1, "2026-11-07T12:00:00Z")], now, day)).toBe(0);
+    expect(sentInWindow([sent(1, "2026-11-07T12:00:00Z")], now, DAY_MS)).toBe(0);
   });
 
   test("ignores label recoveries and other types", () => {
-    expect(sentInWindow([sent(1, "2026-11-08T11:00:00Z", "label"), intent(1), delivered], now, day)).toBe(0);
+    expect(sentInWindow([sent(1, "2026-11-08T11:00:00Z", "label"), intent(1), delivered], now, DAY_MS)).toBe(0);
   });
 });
 

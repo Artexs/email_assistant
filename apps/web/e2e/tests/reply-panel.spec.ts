@@ -5,6 +5,7 @@ import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { MINUTE_MS } from "@ea/core";
 
 // The reply kind on the approvals page and the Draft reply button of the activity rows. The seed gives each project an organization with
 // five waiting reply drafts and two mails with no draft (`e2e-reply-panel-rows.ts`). The model is off in the e2e server, so the two routes
@@ -355,7 +356,7 @@ test("T11: Edit fills the gap, version 2 has no gap and approves", async ({ cont
 
   // Approve turns on when the committer made the copy; SEND_SCOPE=self holds a send to this address, so the page says so.
   await expect(detailOf(page).getByRole("button", { name: en.appr_approve, exact: true })).toBeEnabled({
-    timeout: 60_000,
+    timeout: MINUTE_MS,
   });
   await detailOf(page).getByRole("button", { name: en.appr_approve, exact: true }).click();
   await expect(page.getByText(en.appr_done_held.replace("{reason}", en.appr_held_scope))).toBeVisible();

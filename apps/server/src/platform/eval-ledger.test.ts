@@ -2,6 +2,7 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "n
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { HOUR_MS } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { acquireStateLock, appendLedgerLine, defaultLedgerPath, ledgerLine, monthSpend, runCap } from "./eval-ledger";
@@ -70,7 +71,7 @@ describe("acquireStateLock", () => {
 
   test("a lock older than 6 h is taken over only with fresh", () => {
     const state = join(dir, "old.jsonl");
-    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 7 * 3_600_000).toISOString()}\n`);
+    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 7 * HOUR_MS).toISOString()}\n`);
     expect(() => acquireStateLock(state, now, { fresh: false })).toThrow(`${state}.lock`);
     const release = acquireStateLock(state, now, { fresh: true });
     expect(() => acquireStateLock(state, now, { fresh: true })).toThrow(`${state}.lock`);
@@ -79,7 +80,7 @@ describe("acquireStateLock", () => {
 
   test("a takeover leaves no parked lock behind and the new lock holds the new time", () => {
     const state = join(dir, "taken.jsonl");
-    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 7 * 3_600_000).toISOString()}\n`);
+    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 7 * HOUR_MS).toISOString()}\n`);
     const release = acquireStateLock(state, now, { fresh: true });
     expect(readFileSync(`${state}.lock`, "utf8").trim()).toBe(now.toISOString());
     expect(readdirSync(dir).filter((name) => name.includes(".stale-"))).toEqual([]);
@@ -90,11 +91,11 @@ describe("acquireStateLock", () => {
   test("a parked lock that proves fresh again is linked back, the run is refused, no parked file stays", () => {
     const state = join(dir, "race.jsonl");
     const lockPath = `${state}.lock`;
-    const stale = new Date(now.getTime() - 7 * 3_600_000).toISOString();
+    const stale = new Date(now.getTime() - 7 * HOUR_MS).toISOString();
     writeFileSync(lockPath, `${stale}\n`);
     // The race cannot be timed in a test, so the clock moves back between the two staleness checks (before the
     // rename and after it): the parked file then looks fresh, as if another run had just replaced the stale lock.
-    const readings = [now.getTime(), now.getTime() - 8 * 3_600_000];
+    const readings = [now.getTime(), now.getTime() - 8 * HOUR_MS];
     const clock = new (class extends Date {
       override getTime(): number {
         return readings.shift() ?? super.getTime();
@@ -116,7 +117,7 @@ describe("acquireStateLock", () => {
 
   test("a lock younger than 6 h is never taken over", () => {
     const state = join(dir, "young.jsonl");
-    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - 3_600_000).toISOString()}\n`);
+    writeFileSync(`${state}.lock`, `${new Date(now.getTime() - HOUR_MS).toISOString()}\n`);
     expect(() => acquireStateLock(state, now, { fresh: true })).toThrow(`${state}.lock`);
   });
 });

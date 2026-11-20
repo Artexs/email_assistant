@@ -4,27 +4,30 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  APPROVAL_QUOTE_CHARS,
+  barCategories,
+  categories,
   CHASER_SET_LIMIT,
+  DAY_MS,
   DEFAULT_SEND_LIMITS,
   DEFAULT_THRESHOLD,
   DELEGATION_REMINDER_LIMIT,
   DIGEST_LATE_MS,
   DIGEST_MAX_LINES,
+  evidenceKeySchema,
   featureFlags,
   GATE_BAR,
   GATE_MIN_KEPT,
+  HOUR_MS,
   MAX_DIGEST_TIMES,
   MESSAGE_MAX_CHARS,
+  MINUTE_MS,
+  PROFILE_SIGNATURE_MAX,
   QUIET_HOURS,
   SENDER_RULE_LIMIT,
-  PROFILE_SIGNATURE_MAX,
   toolSwitchNames,
-  UNDO_WINDOW_MS,
-  APPROVAL_QUOTE_CHARS,
-  barCategories,
-  categories,
-  evidenceKeySchema,
   type FeatureKey,
+  UNDO_WINDOW_MS,
 } from "@ea/core";
 
 import { apiGroups, apiOperations, loadApiSpec, successAnswers } from "./api-reference";
@@ -81,9 +84,9 @@ function front(source: string): { capabilities: string[] } {
   return { capabilities };
 }
 
-const hours = (ms: number): string => `${ms / 3_600_000} hours`;
-const minutes = (ms: number): string => `${ms / 60_000} minutes`;
-const days = (ms: number): string => `${ms / 86_400_000} days`;
+const hours = (ms: number): string => `${ms / HOUR_MS} hours`;
+const minutes = (ms: number): string => `${ms / MINUTE_MS} minutes`;
+const days = (ms: number): string => `${ms / DAY_MS} days`;
 
 // A command that a default-off flag gates stays off the page. A flag that defaults on moves the command to the page.
 const COMMAND_FLAGS: Record<string, FeatureKey> = { review: "review_command" };
@@ -430,7 +433,7 @@ describe("reference/autonomy-evidence", () => {
       `${barCategories.length}`,
       `${DEFAULT_THRESHOLD}`,
       `${Object.keys(evidenceKeySchema.shape).length}`,
-      `${UNDO_WINDOW_MS / 86_400_000}`,
+      `${UNDO_WINDOW_MS / DAY_MS}`,
     ]);
     const stated = facts.flatMap((fact) => fact.text.match(/\d+(?:\.\d+)?/g) ?? []);
     expect(stated.filter((number) => !allowed.has(number))).toEqual([]);

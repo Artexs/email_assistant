@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { type Callback, encodeCallback, parseCallback } from "../../digest/callback";
 import { localDateTime } from "../../digest/local-time";
+import { HOUR_MS, MINUTE_MS } from "../../time";
 
 import {
   cardsOf,
@@ -320,7 +321,7 @@ describe("executiveTapAt", () => {
     expect(executiveTapAt(cardAt, 42)).toBe(executiveTapAt(cardAt, 42));
     const delays = new Set<number>();
     for (let seed = 0; seed < 100; seed += 1) {
-      const delay = (new Date(executiveTapAt(cardAt, seed)).getTime() - new Date(cardAt).getTime()) / 60_000;
+      const delay = (new Date(executiveTapAt(cardAt, seed)).getTime() - new Date(cardAt).getTime()) / MINUTE_MS;
       expect(delay).toBeGreaterThanOrEqual(5);
       expect(delay).toBeLessThanOrEqual(90);
       delays.add(Math.round(delay));
@@ -337,8 +338,8 @@ describe("executiveTapAt", () => {
     // 2027-06-14 is a Monday, UTC+2: 05:00 UTC is 07:00 Warsaw, so the start is 08:00 Warsaw = 06:00 UTC.
     const tap = new Date(executiveTapAt("2027-06-14T05:00:00Z", 3)).getTime();
     const start = new Date("2027-06-14T06:00:00Z").getTime();
-    expect(tap - start).toBeGreaterThanOrEqual(5 * 60_000);
-    expect(tap - start).toBeLessThanOrEqual(90 * 60_000);
+    expect(tap - start).toBeGreaterThanOrEqual(5 * MINUTE_MS);
+    expect(tap - start).toBeLessThanOrEqual(90 * MINUTE_MS);
   });
 
   test("the longest gap between two windows is 23 h", () => {
@@ -346,7 +347,7 @@ describe("executiveTapAt", () => {
     const cardAt = new Date("2026-11-28T10:00:00Z").getTime();
     for (let seed = 0; seed < 200; seed += 1) {
       const wait = new Date(executiveTapAt("2026-11-28T10:00:00Z", seed)).getTime() - cardAt;
-      expect(wait).toBeLessThanOrEqual(24.5 * 3_600_000);
+      expect(wait).toBeLessThanOrEqual(24.5 * HOUR_MS);
     }
   });
 
@@ -357,8 +358,8 @@ describe("executiveTapAt", () => {
   test("a card at the first minute of the hours starts from that minute", () => {
     // 2026-11-23 08:00 Warsaw is 07:00 UTC: the tap is 5 to 90 minutes after the card, on the same day.
     const delay = new Date(executiveTapAt("2026-11-23T07:00:00Z", 1)).getTime() - Date.parse("2026-11-23T07:00:00Z");
-    expect(delay).toBeGreaterThanOrEqual(5 * 60_000);
-    expect(delay).toBeLessThanOrEqual(90 * 60_000);
+    expect(delay).toBeGreaterThanOrEqual(5 * MINUTE_MS);
+    expect(delay).toBeLessThanOrEqual(90 * MINUTE_MS);
   });
 });
 

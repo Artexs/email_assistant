@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { localDateTime } from "../digest/local-time";
+import { DAY_MS } from "../time";
 import { senderHistorySchema } from "../triage/sender-history";
 
 import { defaultWeekSpec, miniScenario } from "./fixtures";
@@ -136,7 +137,7 @@ describe("planBank", () => {
       expect([1, 2, 3, 4, 5]).toContain(local.weekday);
       const day = Date.parse(`${local.date}T00:00:00Z`);
       expect(day).toBeGreaterThanOrEqual(start);
-      expect(day).toBeLessThanOrEqual(start + 13 * 86_400_000);
+      expect(day).toBeLessThanOrEqual(start + 13 * DAY_MS);
       const hour = Number(local.time.slice(0, 2));
       expect(hour).toBeGreaterThanOrEqual(7);
       expect(hour).toBeLessThanOrEqual(18);

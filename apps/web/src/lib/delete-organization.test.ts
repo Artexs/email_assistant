@@ -16,6 +16,7 @@ import {
   type DeleteDeps,
   type DeleteFormAction,
 } from "./delete-organization";
+import { MINUTE_MS } from "@ea/core";
 
 const NOW = 1_800_000_000_000;
 
@@ -280,7 +281,7 @@ describe("takeDeletedNotice (test 5)", () => {
   });
 
   test("N2: a stale, future or bad marker shows nothing and goes", () => {
-    for (const marker of [String(NOW - DELETING_MAX_AGE_MS - 1), String(NOW + 60_000), "soon"]) {
+    for (const marker of [String(NOW - DELETING_MAX_AGE_MS - 1), String(NOW + MINUTE_MS), "soon"]) {
       const store = memoryStore({ [DELETING_KEY]: marker });
       expect(takeDeletedNotice("?next=/", store, NOW)).toBeNull();
       expect(store.data.size).toBe(0);

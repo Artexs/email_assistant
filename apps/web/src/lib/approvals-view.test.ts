@@ -6,7 +6,7 @@ import {
   heldBys,
   type ApprovalDetail,
 } from "@ea/core/web";
-import { draftKinds } from "@ea/core";
+import { DAY_MS, draftKinds, HOUR_MS, MINUTE_MS } from "@ea/core";
 
 import { en } from "../i18n/en";
 import { setLocaleForTest, t } from "../i18n";
@@ -224,10 +224,10 @@ describe("small helpers", () => {
   test("durationText rounds down for hours and days and never shows 0", () => {
     expect(durationText(-5)).toEqual({ key: "appr_dur_min", n: 1 });
     expect(durationText(30_000)).toEqual({ key: "appr_dur_min", n: 1 });
-    expect(durationText(59 * 60_000)).toEqual({ key: "appr_dur_min", n: 59 });
-    expect(durationText(60 * 60_000)).toEqual({ key: "appr_dur_hour", n: 1 });
-    expect(durationText(47.9 * 3_600_000)).toEqual({ key: "appr_dur_hour", n: 47 });
-    expect(durationText(48 * 3_600_000)).toEqual({ key: "appr_dur_day", n: 2 });
-    expect(durationText(7 * 24 * 3_600_000)).toEqual({ key: "appr_dur_day", n: 7 });
+    expect(durationText(59 * MINUTE_MS)).toEqual({ key: "appr_dur_min", n: 59 });
+    expect(durationText(HOUR_MS)).toEqual({ key: "appr_dur_hour", n: 1 });
+    expect(durationText(47.9 * HOUR_MS)).toEqual({ key: "appr_dur_hour", n: 47 });
+    expect(durationText(2 * DAY_MS)).toEqual({ key: "appr_dur_day", n: 2 });
+    expect(durationText(7 * DAY_MS)).toEqual({ key: "appr_dur_day", n: 7 });
   });
 });
