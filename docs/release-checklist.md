@@ -18,7 +18,7 @@ Every VPS deploy is a release: a tagged version (a patch version is fine). Do th
    git tag -a v<x.y.z> -m "v<x.y.z>"
    git push origin v<x.y.z>
    ```
-   `release:prepare` runs no git command. It refuses a version that is not greater than the current one and an empty `[Unreleased]`.
+   `release:prepare` runs no git command. It refuses (exit 1, no file changed) a version that is not greater than the current one and an empty `[Unreleased]`; a version that is not `x.y.z` exits 2.
 9. **Deploy on the VPS:** `deploy/release.sh v<x.y.z>`. The last output line is `release ok v<x.y.z> previous <old>`. Any other end is a failed release: go to step 11.
 10. **Watch for 30 minutes.** No new `error` event in the log store (`docs/capabilities/logs.md`). `bun run ops:alerts` shows no open alert. Sync lines keep coming.
 11. **On trouble:** `deploy/rollback.sh`. It needs no rebuild and never changes the database. Then fix forward in a new patch release. A rollback to a build older than the push sender (`v0.2.x`) needs the steps of `deploy/README.md` § Phone notices and Telegram detail → Roll back (step 5) first: that build fails its outbox claim on a push row.

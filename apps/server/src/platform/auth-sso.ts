@@ -5,6 +5,7 @@ import type { HydratedOIDCConfig, SSOUserResolution, SSOUserResolutionInput } fr
 import { MINUTE_MS, type SsoIdentity, type SsoRefusal, type SsoResolution } from "@ea/core";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 
+import type { AuthHookPart } from "./auth-hooks";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
 import { dnsLookupAll, isLocalAddress, type LookupAll } from "./net-address";
@@ -52,7 +53,7 @@ function startOf(value: unknown): Date | null {
   return at !== null && !Number.isNaN(at.getTime()) ? at : null;
 }
 
-// What the session hook of `platform/auth.ts` adds to a new session row.
+// What the session hook of `platform/auth-database-hooks.ts` adds to a new session row.
 // `path` is the route template (`/sso/callback/:providerId`), so the match is by prefix, never by the concrete path.
 // `current` is the session of the request, if the endpoint has one (TOTP turn-on, `/change-password`): a session made from an
 // SSO session keeps its method and its start, because Better Auth copies the fields but sets the defaults after them.
@@ -216,7 +217,7 @@ function ssoAuditPlugin(deps: SsoDeps, pending: Map<string, PendingLogin>) {
   };
 }
 
-// Plugin order in `platform/auth.ts`: `twoFactorPlugin()`, `...ssoPlugins(...)`, `signInAuditPlugin(report)` last.
+// Plugin order in `platform/auth-hooks.ts`: `twoFactorPlugin()`, `...ssoPlugins(...)`, `signInAuditPlugin(report)` last.
 export function ssoPlugins(deps: SsoDeps) {
   const pending = new Map<string, PendingLogin>();
   return [ssoPlugin(deps, pending), ssoAuditPlugin(deps, pending)] as const;
@@ -350,4 +351,17 @@ export function buildOidcConfig(
     scopes: ["openid", "email", "profile"],
     allowIdpInitiated: false,
   });
+}
+
+// The check of the SSO sign-in body (`before`).
+export function hooksOf(): AuthHookPart[] {
+  return [
+    {
+      name: "sso-body",
+      async before(ctx) {
+        if (ctx.path === SSO_SIGN_IN_PATH) rejectUnknownSsoBodyKeys(ctx.body);
+        return undefined;
+      },
+    },
+  ];
 }

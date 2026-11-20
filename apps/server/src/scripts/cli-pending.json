@@ -5,15 +5,6 @@
     "apps/server/src/scripts/mailbox-seed.ts",
     "apps/server/src/scripts/mailbox-signals.ts"
   ],
-  "testmail-ops": [
-    "apps/server/src/scripts/credentials-check.ts",
-    "apps/server/src/scripts/ops-alert-test.ts",
-    "apps/server/src/scripts/ops-alerts.ts",
-    "apps/server/src/scripts/release-prepare.ts",
-    "apps/server/src/scripts/testmail-remote.ts",
-    "apps/server/src/scripts/testmail-target.ts",
-    "apps/server/src/scripts/testmail.ts"
-  ],
   "e2e-dev": [
     "apps/server/src/scripts/db-worktree.ts",
     "apps/server/src/scripts/demo-org-setup.ts",
