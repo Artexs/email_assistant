@@ -285,4 +285,72 @@ describe("buildOutgoingMessage", () => {
       expect(build({ profile: profile(null) }).parts.body).toEndWith("\n\nArtek");
     });
   });
+
+  describe("what each kind of draft carries", () => {
+    const reminder = {
+      kind: "reminder",
+      delegate_id: DELEGATE,
+      delegate_name: "Jan",
+      to: ["jan@firma.pl"],
+      task: "Przygotuj ofertę",
+      due_date: "",
+      language: "pl",
+      delegation_id: DELEGATE,
+      reminder: 1,
+      thread: { in_reply_to: "<sent@interia.pl>", references: ["<orig@firma.pl>", "<sent@interia.pl>"] },
+    } satisfies DraftPayload;
+    const clarification = {
+      kind: "clarification",
+      to: ["klient@firma.pl"],
+      question: "Jaki termin?",
+      language: "en",
+    } satisfies DraftPayload;
+
+    test("a draft with no recipient is refused", () => {
+      expect(() => buildOutgoingMessage(input({ ...delegation, to: [] as unknown as string[] }))).toThrow(
+        /^draft has no recipient$/
+      );
+    });
+
+    test("a reminder with an empty due date has no due line; with a date it has one", () => {
+      expect(buildOutgoingMessage(input(reminder)).parts.body).toBe(
+        "Dzień dobry,\n\nprzypominam o zadaniu: Przygotuj ofertę\nProszę o krótką informację o stanie prac.\n\nArtek"
+      );
+      expect(buildOutgoingMessage(input({ ...reminder, due_date: "2026-11-10" })).parts.body).toBe(
+        "Dzień dobry,\n\nprzypominam o zadaniu: Przygotuj ofertę\nTermin minął: 2026-11-10.\nProszę o krótką informację o stanie prac.\n\nArtek"
+      );
+    });
+
+    test("a delegation or a clarification has an empty Cc", () => {
+      expect(buildOutgoingMessage(input(delegation)).cc).toEqual([]);
+      expect(buildOutgoingMessage(input(clarification)).cc).toEqual([]);
+    });
+
+    test("a delegation and a clarification keep every id of the chain; only a reply or a follow-up cuts it to 20", () => {
+      const references = Array.from({ length: 25 }, (_, i) => `<r${i}@x>`);
+      for (const draft of [delegation, clarification]) {
+        const message = buildOutgoingMessage(input(draft, {}, { references, messageId: "<a@x>" }));
+        expect(message.references).toEqual([...references, "<a@x>"]);
+      }
+    });
+
+    test("the References drop an empty id and a missing message id, and list each id once", () => {
+      const message = buildOutgoingMessage(
+        input(delegation, {}, { references: ["<a@x>", "", "<a@x>", "<b@y>", "<b@y>"], messageId: null })
+      );
+      expect(message.references).toEqual(["<a@x>", "<b@y>"]);
+      const withId = buildOutgoingMessage(
+        input(delegation, {}, { references: ["<a@x>", "", "<b@y>"], messageId: "<a@x>" })
+      );
+      expect(withId.references).toEqual(["<a@x>", "<b@y>"]);
+    });
+
+    test("the name and the signature of a profile lose their outer spaces", () => {
+      const message = buildOutgoingMessage(
+        input(delegation, { profile: { displayName: "  Anna Nowak ", signature: "\n Anna \n" } })
+      );
+      expect(message.from.name).toBe("Anna Nowak");
+      expect(message.parts.body).toEndWith("jest poniżej.\n\nAnna");
+    });
+  });
 });

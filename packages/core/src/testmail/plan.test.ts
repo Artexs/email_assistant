@@ -133,3 +133,24 @@ describe("planSends", () => {
     ]);
   });
 });
+
+describe("planSends, exact plans", () => {
+  test("a case with no state in the map is due", () => {
+    const plan = planSends({
+      batch,
+      states: new Map(),
+      hashes: new Map(),
+      now,
+      sentInLast24h: 0,
+      dailyCap: 50,
+      limit: null,
+    });
+    expect(plan).toEqual({
+      actions: [
+        { kind: "send", caseId: "a", attempt: 1, key: `ea-${batchId}-a-a1`, reuse: false },
+        { kind: "send", caseId: "c", attempt: 1, key: `ea-${batchId}-c-a1`, reuse: false },
+      ],
+      skipped: [{ caseId: "b", reason: "waiting_parent" }],
+    });
+  });
+});
