@@ -169,6 +169,7 @@ describe("comments, strings, JSON and docs carry no bare ticket or decision code
     ["a JSX text", "a.tsx", "const e = <p>Added in F120</p>;", 1],
     ["a tagged template", "a.ts", "const q = sql`SELECT 1 -- open loops stage 10/11`;", 1],
     ["a test file", "a.test.ts", 'const x = "F115 stage 09";', 0],
+    ["a comment in a test file", "a.test.ts", "// the rule of D12\nconst x = 1;", 1],
     ["a tsx test file", "a.test.tsx", 'const x = "F115 stage 09";', 0],
     ["a test helper", "a.test-helper.ts", 'const x = "F115 stage 09";', 0],
     ["a file in a test folder", "test/a.ts", 'const x = "F115 stage 09";', 0],
