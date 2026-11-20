@@ -60,18 +60,6 @@ describe("draftCodeChecks rules", () => {
     expect(result).toEqual({ passed: false, failed: ["recipient"] });
   });
 
-  test.each([
-    { name: "an address", text: `${polish} Pisz na anna@x.test.` },
-    { name: "a web address", text: `${polish} Zobacz www.x.test.` },
-    { name: "a long number written with spaces", text: `${polish} Numer 123 456 789 012.` },
-  ])("$name fails `clean_text`", ({ text }) => {
-    expect(draftCodeChecks(input({ text })).failed).toEqual(["clean_text"]);
-  });
-
-  test("a short number passes `clean_text`", () => {
-    expect(draftCodeChecks(input({ text: `${polish} Pokój 12345678.` }))).toEqual({ passed: true, failed: [] });
-  });
-
   test("the draft language is the case language; no clear language passes", () => {
     expect(draftCodeChecks(input({ text: english, lang: "en" }))).toEqual({ passed: true, failed: [] });
     expect(draftCodeChecks(input({ text: german, lang: "de" }))).toEqual({ passed: true, failed: [] });

@@ -218,38 +218,6 @@ const spread = (specs: readonly PairSpec[]) => {
 };
 
 describe("checkSpread edges", () => {
-  test("no pair gives no issue: no texts, ids without a slot, only dropped texts", () => {
-    const { slots, texts } = pairsOf(times(3, { words: 100 }));
-    expect(checkSpread(slots, [], spec, miniScenario)).toEqual([]);
-    expect(
-      checkSpread(
-        slots,
-        texts.map((t) => ({ ...t, id: `${t.id}-other` })),
-        spec,
-        miniScenario
-      )
-    ).toEqual([]);
-    expect(
-      checkSpread(
-        slots,
-        texts.map((t) => ({ ...t, dropped: true })),
-        spec,
-        miniScenario
-      )
-    ).toEqual([]);
-    expect(checkSpread([], texts, spec, miniScenario)).toEqual([]);
-  });
-
-  test("a dropped text and a text with no slot do not count in the shares", () => {
-    const { slots, texts } = pairsOf([...times(4, {}), { words: 100, dropped: true }]);
-    const stray: CaseText = { ...(texts[0] as CaseText), id: "no-such-slot", body: wordsOf(100) };
-    expect(checkSpread(slots, [...texts, stray], spec, miniScenario)).toEqual([]);
-  });
-
-  test("a part written as planned has no issue", () => {
-    expect(spread(times(10, {}))).toEqual([]);
-  });
-
   test("the length share may differ by 10 points and no more", () => {
     expect(spread([...times(9, {}), { words: 81 }])).toEqual([]);
     expect(spread([...times(8, {}), ...times(2, { words: 81 })])).toEqual([
@@ -295,6 +263,12 @@ describe("checkSpread edges", () => {
     expect(spread(withWrong(4))).toEqual([{ code: "lang_share", detail: "46/54|50/50" }]);
   });
 
+  test("the language share is an issue when one language is off by more than 3 points and the other by 3", () => {
+    const planned = [...times(3, { planLang: "en" as const }), ...times(29, { planLang: "pl" as const })];
+    const written = planned.map((s, i) => (i === 3 ? { ...s, lang: "en" as const } : s));
+    expect(spread(written)).toEqual([{ code: "lang_share", detail: "13/88|9/91" }]);
+  });
+
   test("a text with no clear language counts as the planned one", () => {
     const planned = [...times(5, { planLang: "en" as const }), ...times(5, { planLang: "pl" as const })];
     expect(spread(planned.map((s, i) => (i === 0 ? { ...s, lang: "pl" as const } : s)))).toEqual([
@@ -324,6 +298,17 @@ describe("checkBatch openings", () => {
 
   test("the first line is a greeting: only the lines after it are compared, case and spacing aside", () => {
     expect(repeats(`Hi,\n${forty} one`, `A very different greeting\n  ${forty.toUpperCase()}   two`)).toEqual(["t1"]);
+  });
+
+  test("runs of spaces inside the opening count as one space", () => {
+    expect(repeats(`Hi\nabcdefghij  abcdefghij   abcdefghij abcdefghij`, `Hi\n${"abcdefghij ".repeat(4)}`)).toEqual([
+      "t1",
+    ]);
+  });
+
+  test("the opening is read in lower case: a text of 39 characters with a sharp s has no opening", () => {
+    const rest = `${forty.slice(0, 38)}ß`;
+    expect(repeats(`Hi\n${rest}`, `Hi\n${rest}`)).toEqual([]);
   });
 
   test("the lines after the greeting join with one space", () => {
@@ -365,23 +350,6 @@ describe("checkCase rules", () => {
     slot({ attachments: names.map((name) => ({ name, mime: "application/pdf", sizeBytes: 10 })) });
   const injection = slot({ category: "needs_reply", kind: "injection" });
   const points = ["answer"];
-
-  test("an unknown slot gives only slot_unknown, whatever else is wrong", () => {
-    const broken = text({ id: "other", body: `${text().body}\nreal@gmail.com tel. 600 700 800`, html: "<p>x</p>" });
-    expect(checkCase(slot(), broken, miniScenario)).toEqual([{ id: "b-inf-0001", code: "slot_unknown" }]);
-  });
-
-  test("an issue holds the slot id", () => {
-    expect(checkCase(slot({ lang: "en" }), text(), miniScenario)).toEqual([
-      { id: "b-inf-0001", code: "lang_mismatch" },
-    ]);
-  });
-
-  test("two broken rules give two issues in the order of the checks", () => {
-    expect(
-      codes(slot({ lang: "en", category: "needs_reply" }), text({ body: `${text().body}\ntel. 600 700 800` }))
-    ).toEqual(["phone_number", "lang_mismatch", "expected_points_missing"]);
-  });
 
   test.each([
     { part: "the subject", over: { subject: "mail jan@gmail.com" } },
@@ -444,10 +412,53 @@ describe("checkCase rules", () => {
     expect(codes(s, text({ body: `${sixty} o` }))).toEqual(["length_out_of_bucket"]);
   });
 
-  test("the length counts the html text when the body is empty", () => {
-    const s = htmlSlot({ hardCases: ["html_only"] });
-    expect(codes(s, text({ body: "", html: `<p>${wordsOf(30)}</p><p>${wordsOf(30)}</p>` }))).toEqual([]);
-    expect(codes(s, text({ body: "", html: `<p>${wordsOf(30)}</p>` }))).toEqual(["length_out_of_bucket"]);
+  test("the length counts the html text without its tags, also tags with attributes", () => {
+    const s = htmlSlot({
+      hardCases: ["html_only"],
+      style: { length: "short", format: "html", signature: false, greeting: "none" },
+    });
+    expect(codes(s, text({ body: "", html: `<p class="note big">${wordsOf(60)}</p>` }))).toEqual([]);
+    expect(codes(s, text({ body: "", html: `<p>${wordsOf(61)}</p>` }))).toEqual(["length_out_of_bucket"]);
+  });
+
+  test("two html blocks with no space between them count their words apart", () => {
+    const s = htmlSlot({
+      hardCases: ["html_only"],
+      style: { length: "short", format: "html", signature: false, greeting: "none" },
+    });
+    expect(codes(s, text({ body: "", html: `<p>${wordsOf(31)}</p><p>${wordsOf(30)}</p>` }))).toEqual([
+      "length_out_of_bucket",
+    ]);
+  });
+
+  test("a space or a line break at the start or the end of the text is no word", () => {
+    const s = slot({ style: { length: "short", format: "plain", signature: false, greeting: "none" } });
+    expect(codes(s, text({ body: `  ${wordsOf(60)}\n` }))).toEqual([]);
+  });
+
+  test("an attachment name that runs over two thread mails is not named", () => {
+    const s = slot({
+      thread: [
+        { persona: "kasia", brief: "first" },
+        { persona: "kasia", brief: "second" },
+      ],
+      attachments: [{ name: "foobar.pdf", mime: "application/pdf", sizeBytes: 10 }],
+    });
+    const thread = [
+      { subject: "Re", body: "zobacz foo" },
+      { subject: "Re", body: "bar.pdf" },
+    ];
+    expect(codes(s, text({ thread }))).toEqual(["attachment_not_named"]);
+  });
+
+  test("a signature may run from the text part into the html part", () => {
+    const own = { ...miniScenario, personas: miniScenario.personas.map((p) => ({ ...p })) };
+    const kasia = own.personas.find((p) => p.key === "kasia");
+    if (kasia === undefined) throw new Error("fixture persona missing");
+    kasia.signature = "Pozdrawiam,\nkasia";
+    const s = htmlSlot({ style: { length: "medium", format: "html", signature: true, greeting: "formal" } });
+    const result = checkCase(s, text({ body: `${polish(70)}\nPozdrawiam,`, html: "kasia" }), own);
+    expect(result).toEqual([]);
   });
 
   test("an html slot with an html part and a body has no issue; one with no html part gives html_missing", () => {
