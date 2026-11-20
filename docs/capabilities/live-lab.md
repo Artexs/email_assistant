@@ -206,6 +206,6 @@ ADR 0021 (simulator stack: namespace, env guard, outbound guards, deploy is a re
 - `apps/server/test/integration/lab-demo-seed-export.test.ts` (fixture org; table specs, export, day cut, tenant), `apps/server/test/integration/lab-demo-seed-import.test.ts` (import, guards, replace) and `apps/server/test/integration/lab-demo-seed-refusals.test.ts` (refused imports, rollback, second org)
 - `apps/server/test/integration/lab-reset.test.ts` (test orgs in the job DB, random GreenMail addresses; the guards, the other org, crashes)
 - `tools/fake-telegram/test/lab-client.test.ts`
-- `tools/fake-telegram/test/lab-executive.test.ts`
+- `tools/fake-telegram/test/lab-executive-approvals.test.ts` (approval and reminder cards), `tools/fake-telegram/test/lab-executive-digest.test.ts` (the Undo press of a digest card; `lookupCard`) and `tools/fake-telegram/test/lab-executive-guards.test.ts` (cards the driver must not press)
 - `apps/server/test/integration/lab-bots.test.ts`
 - `packages/core/src/sim/live/bot.test.ts`

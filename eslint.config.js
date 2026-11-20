@@ -209,17 +209,9 @@ const mailSdkImports = {
 const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
 // File size (docs/code-patterns.md § Size and shape). The core `max-lines` rule warns over 400 lines; the same rule under the
-// name `size/max-lines-hard` fails over 800. Both count every line, as `wc -l` does. Test code is outside the rule.
+// name `size/max-lines-hard` fails over 800. Both count every line, as `wc -l` does. Test code is under the rule too.
 const sizePlugin = { rules: { "max-lines-hard": builtinRules.get("max-lines") } };
 const sizeFiles = ["**/*.{ts,tsx,astro,js,mjs}"];
-const sizeIgnores = [
-  "**/*.test.{ts,tsx}",
-  "**/*.spec.ts",
-  "**/*.test-helper.ts",
-  "apps/server/test/**",
-  "apps/*/e2e/**",
-  "tools/*/test/**",
-];
 const sizeOptions = (max) => ({ max, skipBlankLines: false, skipComments: false });
 
 // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
@@ -300,7 +292,7 @@ export default tseslint.config(
     rules: { "no-restricted-syntax": ["error", ...cliProcessSelectors] },
   },
   {
-    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Test code is in too (the same list the size rule skips).
+    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Test code is in too.
     // Later local rules join tools/eslint-rules/index.js; a block registers the one `ea` object (a second object fails).
     files: [
       "{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}",
@@ -385,7 +377,6 @@ export default tseslint.config(
   },
   {
     files: sizeFiles,
-    ignores: sizeIgnores,
     plugins: { size: sizePlugin },
     rules: { "max-lines": ["warn", sizeOptions(400)], "size/max-lines-hard": ["error", sizeOptions(800)] },
   },
