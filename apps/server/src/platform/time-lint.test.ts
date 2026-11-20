@@ -24,14 +24,14 @@ async function expectEach(snippets: string[], expected: number[], file = fixture
 }
 
 describe("no-time-literals: literals and chains report", () => {
-  test("a lone minute literal", () => expectEach(["const a = 60_000;"], [1]), TIMEOUT);
+  test("a lone minute literal", () => expectEach(["const a = 60_000;"], [2]), TIMEOUT);
   test(
     "any spelling of the minute",
-    () => expectEach(["const a = 60000;", "const a = 6e4;", "const a = -60_000;"], [1]),
+    () => expectEach(["const a = 60000;", "const a = 6e4;", "const a = -60_000;"], [2]),
     TIMEOUT
   );
-  test("an hour and a day literal", () => expectEach(["const a = 3_600_000;", "const a = 86_400_000;"], [1]), TIMEOUT);
-  test("a chain reports once", () => expectEach(["const a = 24 * 60 * 60 * 1000;"], [1]), TIMEOUT);
+  test("an hour and a day literal", () => expectEach(["const a = 3_600_000;", "const a = 86_400_000;"], [2]), TIMEOUT);
+  test("a chain reports once", () => expectEach(["const a = 24 * 60 * 60 * 1000;"], [2]), TIMEOUT);
   test(
     "order, parentheses and casts do not hide a chain",
     () =>
@@ -42,23 +42,23 @@ describe("no-time-literals: literals and chains report", () => {
           "const a = 60 * (60 * 1000);",
           "const a = (60 as number) * 1000;",
         ],
-        [1]
+        [2]
       ),
     TIMEOUT
   );
   test(
     "an identifier in the chain or a division",
-    () => expectEach(["const a = d * 60 * 1000;", "const a = d / 60_000;"], [1]),
+    () => expectEach(["const a = d * 60 * 1000;", "const a = d / 60_000;"], [2]),
     TIMEOUT
   );
   test(
     "a literal inside a chain adds no second report",
-    () => expectEach(["const a = 7 * 24 * 3_600_000;"], [1]),
+    () => expectEach(["const a = 7 * 24 * 3_600_000;"], [2]),
     TIMEOUT
   );
   test(
     "a fraction does not hide a minute",
-    () => expectEach(["const a = 1.5 * 60_000;", "const a = 1.5 * 60 * 1000;"], [1]),
+    () => expectEach(["const a = 1.5 * 60_000;", "const a = 1.5 * 60 * 1000;"], [2]),
     TIMEOUT
   );
 });
@@ -98,13 +98,13 @@ describe("no-time-literals: units and copies", () => {
           "const a = 48 * HOUR_MS;",
           "const a = d * 24 * HOUR_MS;",
         ],
-        [1]
+        [2]
       ),
     TIMEOUT
   );
   test(
     "a local copy of a unit name",
-    () => expectEach(["const HOUR = 60;", "export const DAY_MS = 1;", "class A { MINUTE_MS = 1; }"], [1]),
+    () => expectEach(["const HOUR = 60;", "export const DAY_MS = 1;", "class A { MINUTE_MS = 1; }"], [2]),
     TIMEOUT
   );
 });
@@ -137,7 +137,7 @@ describe("no-time-literals: scope", () => {
         "apps/docs/src/__f.ts",
         "tools/fake-telegram/src/__f.ts",
       ]) {
-        expect({ file, severities: await timeSeverities(text, file) }).toEqual({ file, severities: [1] });
+        expect({ file, severities: await timeSeverities(text, file) }).toEqual({ file, severities: [2] });
       }
     },
     TIMEOUT
