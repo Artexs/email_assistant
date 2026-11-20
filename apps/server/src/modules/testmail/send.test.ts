@@ -238,7 +238,7 @@ describe("runSend", () => {
     const result = await run();
     expect(sleeps).toEqual([1000, 2000, 4000]);
     expect(result.stoppedBy).toBe("rate_limit");
-    expect(result.exitCode).toBe(2);
+    expect(result.exitCode).toBe(4);
     expect(result.remaining[0]).toEqual({ caseId: "a", reason: "open" });
     expect(fake.sent).toHaveLength(0);
   });
@@ -274,7 +274,7 @@ describe("runSend", () => {
     const result = await run({ sentInLast24h: 49, dailyCap: 50 });
     expect(result.sent).toEqual(["a"]);
     expect(result.stoppedBy).toBe("cap");
-    expect(result.exitCode).toBe(2);
+    expect(result.exitCode).toBe(4);
   });
 
   test("13: the display name changes only when the persona changes", async () => {

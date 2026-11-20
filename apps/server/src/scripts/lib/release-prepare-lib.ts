@@ -1,8 +1,6 @@
 /** Pure parts of `bun run release:prepare <x.y.z>`: version rules, the changelog move, the package.json stamp. */
 
-export const releasePrepareUsage = "usage: bun run release:prepare <x.y.z> [--date YYYY-MM-DD] [--root <folder>]";
-
-const versionPattern = /^(\d+)\.(\d+)\.(\d+)$/;
+export const versionPattern = /^(\d+)\.(\d+)\.(\d+)$/;
 const unreleasedHeading = "## [Unreleased]";
 
 export type PrepareResult = { ok: true; changelog: string; packageJson: string } | { ok: false; reason: string };

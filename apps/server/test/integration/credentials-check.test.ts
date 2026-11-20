@@ -288,7 +288,7 @@ describe("bun run credentials:check", () => {
     }
   });
 
-  test("an argument is refused with the usage and exit 1", async () => {
+  test("an argument is refused with the usage and exit 2", async () => {
     const proc = Bun.spawn(["bun", "--no-env-file", script, "extra"], {
       cwd: repoRoot,
       env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", ...scriptEnv() },
@@ -300,7 +300,7 @@ describe("bun run credentials:check", () => {
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
     ]);
-    expect(code).toBe(1);
+    expect(code).toBe(2);
     expect(stdout).toBe("");
     expect(stderr).toContain("usage: bun run credentials:check");
   });
