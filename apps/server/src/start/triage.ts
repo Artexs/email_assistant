@@ -95,6 +95,7 @@ export async function startTriage(ctx: StartContext, { operator }: OperatorStart
       testMail: testMailRule(config),
       batchSize: 5,
       dailyCap: config.LLM_DAILY_CAP,
+      junkDailyCap: config.LLM_JUNK_DAILY_CAP,
       runningKey: gate.runningKey,
       trustedAuthservIds: mailTrustedAuthservIds(config),
       now: () => new Date(),

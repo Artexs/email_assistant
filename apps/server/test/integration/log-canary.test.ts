@@ -283,6 +283,7 @@ describe("log canary", () => {
           batchSize: 5,
           testMail: NO_TEST_SENDERS,
           dailyCap: 1000,
+          junkDailyCap: 1000,
           now: () => clock,
         });
         for (let tick = 0; tick < 8 && calls < steps.length; tick += 1) {

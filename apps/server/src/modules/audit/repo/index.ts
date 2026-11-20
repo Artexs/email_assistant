@@ -16,6 +16,7 @@ export {
   HISTORY_CHECK_KEY,
   countHistoryLlmCallsSince,
   countLlmCallOutcomesSince,
+  countLlmCallsOfFolderSince,
   countLlmCallsSince,
   countMaillessCallsSince,
   recordLlmCall,
