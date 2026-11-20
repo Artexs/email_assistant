@@ -15,7 +15,15 @@ import { sql, type Transaction } from "kysely";
 import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
 import { listSenderRules } from "../config";
 import { listDelegateAddresses } from "../delegation";
-import { incomingCountsBySender, ownAddressesOf, senderWindow, type SenderScope, type TestMailRule } from "../mail";
+import {
+  incomingCountsBySender,
+  ownAddressesOf,
+  repliedBySentBySender,
+  senderWindow,
+  sentCountsByRecipient,
+  type SenderScope,
+  type TestMailRule,
+} from "../mail";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -81,17 +89,6 @@ export interface ReadActivityOptions {
   only?: ActivityScope;
 }
 
-const escapeLike = (value: string): string => value.replace(/[\\%_]/g, "\\$&");
-
-// The SQL condition of a scope on an address expression; empty without a scope. A domain scope is a prefilter (host equals the
-// domain or ends with `.domain`); the exact registrable domain is checked on the rows afterwards.
-function scopeCondition(only: ActivityScope | undefined, address: ReturnType<typeof normalizedAddress>) {
-  if (only === undefined) return sql``;
-  if ("address" in only) return sql`AND ${address} = ${only.address}`;
-  const domain = escapeLike(only.domain);
-  return sql`AND (${address} LIKE ${`%@${domain}`} OR ${address} LIKE ${`%.${domain}`})`;
-}
-
 const hostOf = (address: string): string => address.slice(address.lastIndexOf("@") + 1);
 
 // `Auto-Submitted` other than `no` marks an automatic mail (RFC 3834). The column is a trusted literal.
@@ -143,17 +140,6 @@ interface FeedbackRow {
 }
 
 const skipped = <T>(): { rows: T[] } => ({ rows: [] });
-
-interface RepliedRow {
-  addr: string;
-  n: number;
-}
-
-interface SentRow {
-  addr: string;
-  n: number;
-  last_at: Date;
-}
 
 interface DelayRow {
   addr: string;
@@ -240,20 +226,12 @@ export async function readSenderActivity(
   `.execute(db);
 
   // The user's own mail (not system sends, not automatic replies) to each address in To or Cc, once per mail.
-  const sent = await sql<SentRow>`
-    SELECT ${normalizedAddress("a.addr")} AS addr, count(DISTINCT s.id)::int AS n, max(s.internal_date) AS last_at
-    FROM sent_emails s
-    CROSS JOIN LATERAL unnest(s.to_addresses || s.cc_addresses) AS a(addr)
-    WHERE s.org_id = ${ctx.orgId}
-      AND s.mailbox_id = ${mailboxId}
-      AND s.origin = 'user'
-      AND s.internal_date >= ${since}
-      AND s.internal_date <= ${now}
-      AND ${notAutomatic("s.auto_submitted")}
-      AND a.addr LIKE '%@%'
-      ${scopeCondition(only, normalizedAddress("a.addr"))}
-    GROUP BY ${normalizedAddress("a.addr")}
-  `.execute(db);
+  const sent = await sentCountsByRecipient(db, ctx, {
+    mailboxId,
+    since,
+    until: now,
+    ...(only === undefined ? {} : { only }),
+  });
 
   // The user's delay is the first Sent reply after the mail whose `parent_message_id` is the Message-ID of the mail; it goes
   // to the sender (or has no stored recipient). A delay of 0 or less (clock skew) is no sample.
@@ -289,22 +267,7 @@ export async function readSenderActivity(
 
   // The mails that the user answered with a Sent reply, whoever the reply went to (a reply goes to the Reply-To address, not
   // always to the sender). The profile counts `answered` from the IMAP flag only; this count is for the suggestion rules.
-  const replied = await sql<RepliedRow>`
-    WITH win AS (${win})
-    SELECT w.address AS addr, count(*)::int AS n
-    FROM win w
-    WHERE w.message_id_header IS NOT NULL AND EXISTS (
-      SELECT 1 FROM sent_emails s
-      WHERE s.org_id = ${ctx.orgId}
-        AND s.mailbox_id = ${mailboxId}
-        AND s.origin = 'user'
-        AND s.parent_message_id = w.message_id_header
-        AND s.sent_at > w.received_at
-        AND s.sent_at >= ${since}
-        AND ${notAutomatic("s.auto_submitted")}
-    )
-    GROUP BY w.address
-  `.execute(db);
+  const replied = await repliedBySentBySender(db, ctx, windowOptions);
 
   // Their delay is the time from a Sent mail to the incoming mail that names its Message-ID in In-Reply-To (a whole id, as
   // `replyMatch`; `<id>` tokens when there are any, else bare words). One sample per incoming mail: the newest Sent mail it names.
@@ -407,15 +370,15 @@ export async function readSenderActivity(
     } else if (row.kind === "moved_back") item.movedBack = row.n;
     else if (row.kind === "rescued") item.rescued90 = row.n;
   }
-  for (const row of sent.rows) {
-    const item = entry(row.addr);
+  for (const row of sent) {
+    const item = entry(row.address);
     if (item === null) continue;
-    item.userMailsTo = row.n;
-    item.lastUserMailAt = row.last_at;
+    item.userMailsTo = row.mails;
+    item.lastUserMailAt = row.lastAt;
   }
-  for (const row of replied.rows) {
-    const item = byAddress.get(row.addr);
-    if (item !== undefined) item.repliedBySent90 = row.n;
+  for (const row of replied) {
+    const item = byAddress.get(row.address);
+    if (item !== undefined) item.repliedBySent90 = row.mails;
   }
   for (const row of userDelays.rows) {
     const item = byAddress.get(row.addr);

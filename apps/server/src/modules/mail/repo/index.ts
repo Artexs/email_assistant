@@ -179,3 +179,4 @@ export {
   type SenderWindow,
   type SenderWindowOptions,
 } from "./sender-activity";
+export { repliedBySentBySender, sentCountsByRecipient, type SentCount, type SentCountsOptions } from "./sender-replies";
