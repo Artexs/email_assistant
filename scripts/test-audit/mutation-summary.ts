@@ -52,7 +52,9 @@ export function readReport(json: unknown): MutationReport {
     for (const raw of entry.mutants) {
       if (!isRecord(raw)) continue;
       const start = isRecord(raw.location) && isRecord(raw.location.start) ? raw.location.start : {};
-      const killedBy = Array.isArray(raw.killedBy) ? raw.killedBy.filter((id): id is string => typeof id === "string") : [];
+      const killedBy = Array.isArray(raw.killedBy)
+        ? raw.killedBy.filter((id): id is string => typeof id === "string")
+        : [];
       mutants.push({
         file: repoPath(path),
         line: asNumber(start.line),
@@ -254,7 +256,11 @@ export function filesTsv(scores: FileScore[]): string {
 }
 
 const byPlace = (a: MutantRow, b: MutantRow): number =>
-  a.file === b.file ? a.line - b.line || a.column - b.column || (a.mutator < b.mutator ? -1 : 1) : a.file < b.file ? -1 : 1;
+  a.file === b.file
+    ? a.line - b.line || a.column - b.column || (a.mutator < b.mutator ? -1 : 1)
+    : a.file < b.file
+      ? -1
+      : 1;
 
 export function survivedTsv(mutants: MutantRow[]): string {
   return table(
@@ -325,7 +331,10 @@ export interface Difference {
 
 // Two runs on one commit: mutants compare by (file, line, column, mutator, replacement); a mutant that is in
 // one run only is a difference too.
-export function compareRuns(first: MutantRow[], second: MutantRow[]): { first: number; second: number; differences: Difference[] } {
+export function compareRuns(
+  first: MutantRow[],
+  second: MutantRow[]
+): { first: number; second: number; differences: Difference[] } {
   const place = (m: MutantRow): string => `${m.file}:${m.line}:${m.column} ${m.mutator} ${m.replacement}`;
   const left = new Map<string, string>();
   const right = new Map<string, string>();
@@ -343,7 +352,8 @@ export function compareRuns(first: MutantRow[], second: MutantRow[]): { first: n
 function arg(name: string): string {
   const at = process.argv.indexOf(name);
   const value = at === -1 ? undefined : process.argv[at + 1];
-  if (value === undefined) throw new Error(`usage: mutation-summary.ts --in <mutation.json> --data <dir> (missing ${name})`);
+  if (value === undefined)
+    throw new Error(`usage: mutation-summary.ts --in <mutation.json> --data <dir> (missing ${name})`);
   return value;
 }
 
@@ -351,8 +361,13 @@ if (import.meta.main && process.argv.includes("--compare")) {
   const at = process.argv.indexOf("--compare");
   const [one, two] = [process.argv[at + 1], process.argv[at + 2]];
   if (one === undefined || two === undefined) throw new Error("usage: mutation-summary.ts --compare <a.json> <b.json>");
-  const result = compareRuns(readReport(await Bun.file(one).json()).mutants, readReport(await Bun.file(two).json()).mutants);
-  process.stdout.write(`mutants ${result.first} and ${result.second}; status differences ${result.differences.length}\n`);
+  const result = compareRuns(
+    readReport(await Bun.file(one).json()).mutants,
+    readReport(await Bun.file(two).json()).mutants
+  );
+  process.stdout.write(
+    `mutants ${result.first} and ${result.second}; status differences ${result.differences.length}\n`
+  );
   for (const item of result.differences) process.stdout.write(`${item.mutant}\t${item.first} -> ${item.second}\n`);
 } else if (import.meta.main) {
   const report = readReport(await Bun.file(arg("--in")).json());

@@ -25,11 +25,17 @@ const testEntry = (id: string, name: string, line: number) => ({ id, name, locat
 
 const report = {
   files: {
-    "src/a.ts": { mutants: [mutant("m1", "Killed", ["t1"]), mutant("m2", "Killed", ["t1", "t2"]), mutant("m3", "Survived")] },
+    "src/a.ts": {
+      mutants: [mutant("m1", "Killed", ["t1"]), mutant("m2", "Killed", ["t1", "t2"]), mutant("m3", "Survived")],
+    },
   },
   testFiles: {
     "src/a.test.ts": {
-      tests: [testEntry("t1", "src/a.test.ts > a > one", 5), testEntry("t2", "src/a.test.ts > a > two", 9), testEntry("t3", "src/a.test.ts > a > three", 13)],
+      tests: [
+        testEntry("t1", "src/a.test.ts > a > one", 5),
+        testEntry("t2", "src/a.test.ts > a > two", 9),
+        testEntry("t3", "src/a.test.ts > a > three", 13),
+      ],
     },
   },
 };
@@ -46,7 +52,10 @@ describe("caseKills", () => {
   });
 
   test("2 a Survived mutant has no killedBy and counts in no kill set", () => {
-    const withBy = { files: { "src/a.ts": { mutants: [mutant("m3", "Survived", ["t3"])] } }, testFiles: report.testFiles };
+    const withBy = {
+      files: { "src/a.ts": { mutants: [mutant("m3", "Survived", ["t3"])] } },
+      testFiles: report.testFiles,
+    };
     const kills = caseKills(readReport(withBy));
     expect(kills.map((k) => k.kills)).toEqual([0, 0, 0]);
     expect(readReport(report).mutants[2]?.killedBy).toEqual([]);
@@ -86,8 +95,21 @@ describe("joinKey", () => {
     const out = testsTsv(caseKills(readReport(report)), rows);
     expect(out.unjoined).toBe(2);
     const lines = out.tsv.split("\n");
-    expect(lines[1]).toBe(["packages/core/src/a.test.ts:4", "packages/core/src/a.test.ts", 5, "src/a.test.ts > a > one", 2, 1, true, ""].join("\t"));
-    expect(lines[3]).toBe(["unjoined", "packages/core/src/a.test.ts", 13, "src/a.test.ts > a > three", 0, 0, false, "S11"].join("\t"));
+    expect(lines[1]).toBe(
+      [
+        "packages/core/src/a.test.ts:4",
+        "packages/core/src/a.test.ts",
+        5,
+        "src/a.test.ts > a > one",
+        2,
+        1,
+        true,
+        "",
+      ].join("\t")
+    );
+    expect(lines[3]).toBe(
+      ["unjoined", "packages/core/src/a.test.ts", 13, "src/a.test.ts > a > three", 0, 0, false, "S11"].join("\t")
+    );
     expect(lines[2]?.endsWith("\tS10")).toBe(true);
   });
 });
@@ -95,10 +117,22 @@ describe("joinKey", () => {
 describe("files and survived", () => {
   test("6 the file score counts killed and timeout over killed, timeout, survived and no coverage", () => {
     const mutants = readReport({
-      files: { "src/a.ts": { mutants: [mutant("1", "Killed", ["t1"]), mutant("2", "Timeout"), mutant("3", "Survived"), mutant("4", "NoCoverage"), mutant("5", "RuntimeError")] } },
+      files: {
+        "src/a.ts": {
+          mutants: [
+            mutant("1", "Killed", ["t1"]),
+            mutant("2", "Timeout"),
+            mutant("3", "Survived"),
+            mutant("4", "NoCoverage"),
+            mutant("5", "RuntimeError"),
+          ],
+        },
+      },
     }).mutants;
     const [score] = fileScores(mutants);
-    expect([score?.mutants, score?.killed, score?.timeout, score?.survived, score?.noCoverage, score?.errors]).toEqual([5, 1, 1, 1, 1, 1]);
+    expect([score?.mutants, score?.killed, score?.timeout, score?.survived, score?.noCoverage, score?.errors]).toEqual([
+      5, 1, 1, 1, 1, 1,
+    ]);
     expect(score?.score).toBe(50);
     expect(survivedTsv(mutants).trimEnd().split("\n")).toHaveLength(3);
   });
@@ -106,11 +140,26 @@ describe("files and survived", () => {
 
 describe("compareRuns", () => {
   test("7 the same mutants with one flipped status and one missing mutant give two differences", () => {
-    const one = readReport({ files: { "src/a.ts": { mutants: [mutant("1", "Killed", ["t1"], 1), mutant("2", "Timeout", undefined, 2), mutant("3", "Survived", undefined, 3)] } } }).mutants;
-    const two = readReport({ files: { "src/a.ts": { mutants: [mutant("1", "Killed", ["t1"], 1), mutant("2", "Killed", ["t1"], 2)] } } }).mutants;
+    const one = readReport({
+      files: {
+        "src/a.ts": {
+          mutants: [
+            mutant("1", "Killed", ["t1"], 1),
+            mutant("2", "Timeout", undefined, 2),
+            mutant("3", "Survived", undefined, 3),
+          ],
+        },
+      },
+    }).mutants;
+    const two = readReport({
+      files: { "src/a.ts": { mutants: [mutant("1", "Killed", ["t1"], 1), mutant("2", "Killed", ["t1"], 2)] } },
+    }).mutants;
     const result = compareRuns(one, two);
     expect([result.first, result.second]).toEqual([3, 2]);
-    expect(result.differences.map((d) => [d.first, d.second])).toEqual([["Timeout", "Killed"], ["Survived", "absent"]]);
+    expect(result.differences.map((d) => [d.first, d.second])).toEqual([
+      ["Timeout", "Killed"],
+      ["Survived", "absent"],
+    ]);
     expect(compareRuns(one, one).differences).toEqual([]);
   });
 });
