@@ -207,3 +207,107 @@ describe("compareSemver", () => {
     expect(() => compareSemver("Unreleased", "1.0.0")).toThrow();
   });
 });
+
+describe("parseChangelog edge cases", () => {
+  const RELEASE = "## [0.1.0] - 2026-11-20\n### For users\n";
+
+  test("the error carries its name, its code and the line in the message", () => {
+    let caught: unknown;
+    try {
+      parseChangelog("# C\n## [0.2] - 2026-12-01\n");
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toBeInstanceOf(ChangelogError);
+    expect((caught as ChangelogError).name).toBe("ChangelogError");
+    expect((caught as ChangelogError).message).toBe("changelog_heading (line 2)");
+    expect((caught as ChangelogError).line).toBe(2);
+  });
+
+  test.each([
+    ["month 00", "2026-00-15"],
+    ["day 00", "2026-01-00"],
+  ])("a date with %s is changelog_date", (_name, date) => {
+    expect(problem(`## [0.1.0] - ${date}\n`)).toEqual({ message: "changelog_date", line: 1 });
+  });
+
+  test.each(["2026-01-01", "2026-01-31"])("the date %s is valid", (date) => {
+    expect(parseChangelog(`## [0.1.0] - ${date}\n`)[0]?.date).toBe(date);
+  });
+
+  test("a last item with no trailing newline is an error, not a silent drop", () => {
+    expect(problem(`${RELEASE}- en: A.`)).toEqual({ message: "changelog_for_users_item", line: 3 });
+  });
+
+  test("a blank line between the en line and the pl line breaks the item", () => {
+    expect(problem(`${RELEASE}- en: A.\n\n  pl: a.\n`)).toEqual({ message: "changelog_for_users_item", line: 3 });
+  });
+
+  test("an open item at the next release heading is an error at the item line, before the heading is read", () => {
+    expect(problem(`${RELEASE}- en: A.\n## [bad]\n`)).toEqual({ message: "changelog_for_users_item", line: 3 });
+  });
+
+  test("an open item at another group heading is not paired with a later pl line", () => {
+    expect(problem(`${RELEASE}- en: A.\n### Added\n### For users\n  pl: a.\n`)).toEqual({
+      message: "changelog_for_users_item",
+      line: 3,
+    });
+  });
+
+  test("a second Unreleased after a release below the first Unreleased is changelog_duplicate", () => {
+    expect(problem("## [Unreleased]\n## [0.1.0] - 2026-11-20\n## [Unreleased]\n")).toEqual({
+      message: "changelog_duplicate",
+      line: 3,
+    });
+  });
+
+  test.each([
+    [
+      "a version above the last release",
+      "## [0.3.0] - 2026-12-03\n## [0.2.0] - 2026-12-02\n## [0.2.5] - 2026-12-01\n",
+      "changelog_order",
+    ],
+    [
+      "the last release again",
+      "## [0.3.0] - 2026-12-03\n## [0.2.0] - 2026-12-02\n## [0.2.0] - 2026-12-01\n",
+      "changelog_duplicate",
+    ],
+  ])("three releases: %s is checked against the last one", (_name, text, message) => {
+    expect(problem(text)).toEqual({ message, line: 3 });
+  });
+
+  test("For users lines before the first release heading are not read", () => {
+    expect(parseChangelog("### For users\n- en: A.\n  pl: a.\n## [0.1.0] - 2026-11-20\n")).toEqual([
+      { version: "0.1.0", date: "2026-11-20", forUsers: [] },
+    ]);
+  });
+
+  test("an indented comment line, a trailing space on the group heading and trailing spaces on an item are trimmed", () => {
+    const text = "## [0.1.0] - 2026-11-20\n### For users  \n  <!-- note -->\n- en: A.  \n  pl: a.  \n   \n";
+    expect(parseChangelog(text)[0]?.forUsers).toEqual([{ en: "A.", pl: "a." }]);
+  });
+
+  test("a carriage return inside an item line is not dropped: the line is no item", () => {
+    const text = "## [0.1.0] - 2026-11-20\n### For users\n- en: A\rB.\n  pl: a.\n";
+    expect(problem(text)).toEqual({ message: "changelog_for_users_item", line: 3 });
+  });
+});
+
+describe("compareSemver errors", () => {
+  function message(a: string, b: string): string {
+    try {
+      compareSemver(a, b);
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+    return "no error";
+  }
+
+  test.each([
+    ["1.2", "1.2.3", 'compare_semver "1.2"'],
+    ["1.2.3", "1.2.3-rc.1", 'compare_semver "1.2.3-rc.1"'],
+    ["01.2.3", "1.2.3", 'compare_semver "01.2.3"'],
+  ])("%s against %s throws with the bad version in the message", (a, b, expected) => {
+    expect(message(a, b)).toBe(expected);
+  });
+});

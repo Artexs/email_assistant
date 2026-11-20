@@ -120,4 +120,18 @@ describe("hard-case registry", () => {
       expect(a.sizeBytes).toBeLessThanOrEqual(2_000_000);
     }
   });
+
+  test.each([
+    [
+      7,
+      [
+        { persona: "client-a", brief: "the first message of the exchange" },
+        { persona: "szef", brief: "the executive's earlier answer" },
+      ],
+    ],
+  ])("reply_needed_thread with seed %i builds the short thread and the exact brief", (seed, thread) => {
+    const out = ruleOf("reply_needed_thread").apply(base, { scenario: miniScenario, rng: createRng(seed) });
+    expect(out.thread).toEqual(thread);
+    expect(out.brief).toBe("a new message in a running exchange that waits for the executive's answer");
+  });
 });

@@ -386,3 +386,69 @@ describe("onmicrosoft.com is a shared hosting suffix", () => {
     expect(registrableDomainShared("evil2.onmicrosoft.com")).not.toBe(registrableDomainShared("evil1.onmicrosoft.com"));
   });
 });
+
+describe("isLookalike: one edit apart", () => {
+  test.each([
+    ["an inserted letter", "amazoon.com", true],
+    ["a deleted letter", "amazn.com", true],
+    ["two substituted letters", "anazom.com", false],
+    ["a length difference of 2", "amazonnn.com", false],
+    ["the same label under another TLD", "amazon.net", false],
+    ["an insertion with a different tail", "amaxonn.com", false],
+    ["a swap with a different first letter", "xaazon.com", false],
+    ["a swap with a different second letter", "mxazon.com", false],
+    ["a swap with a different tail", "maxxon.com", false],
+  ])("%s: %s", (_name, sender, expected) => {
+    expect(isLookalike(sender, ["amazon.com"])).toBe(expected);
+  });
+
+  test.each([
+    ["4 letters on both sides are too short", "abcf.com", "abcd.com", false],
+    ["5 letters on both sides are compared", "abcdf.com", "abcde.com", true],
+    ["a 4 letter sender against a 5 letter known domain", "abcd.com", "abcde.com", false],
+    ["a 5 letter sender against a 4 letter known domain", "abcde.com", "abcd.com", false],
+  ])("%s", (_name, sender, known, expected) => {
+    expect(isLookalike(sender, [known])).toBe(expected);
+  });
+
+  test("a sender on the known list is not flagged against another known domain", () => {
+    expect(isLookalike("amazon.com", ["amazon.com", "amazom.com"])).toBe(false);
+  });
+
+  test.each([
+    ["vv looks like w", "vvikipedia.org", "wikipedia.org"],
+    ["a hyphen is dropped", "ab-c.com", "abc.com"],
+    ["i looks like l", "abil.com", "abll.com"],
+  ])("a skeleton match: %s", (_name, sender, known) => {
+    expect(isLookalike(sender, [known])).toBe(true);
+  });
+});
+
+describe("registrableDomain: punycode labels", () => {
+  test.each([
+    ["xn--bcher-kva.example", "bücher.example"],
+    ["xn--mnchen-3ya.de", "münchen.de"],
+    ["xn--fiqs8s.example", "中国.example"],
+    ["xn--80ak6aa92e.com", "аррӏе.com"],
+    ["XN--BCHER-KVA.example", "bücher.example"],
+    ["xn--wgv71a119e.example", "日本語.example"],
+    ["xn--18j882kc2f.example", "げ射故.example"],
+    ["xn--p2a0dt811f.example", "쀞ѣѿ.example"],
+    ["xn--38jz46v.example", "膺ご.example"],
+    ["xn--aaaaa-rh7tj3a.example", "aaaaa늄댎.example"],
+    ["xn--dn32g.example", "\u{10ffff}.example"],
+  ])("%s decodes to %s", (host, expected) => {
+    expect(registrableDomain(host)).toBe(expected);
+  });
+
+  test.each([
+    ["a character outside the base-36 digits", "xn--bcher-kv!.example"],
+    ["a character after z in the digit table", "xn--bcher-{a.example"],
+    ["an overflow", "xn--99999999999999.example"],
+    ["a non-ASCII character before the last hyphen", "xn--é-a.example"],
+    ["the first non-ASCII code point before the last hyphen", "xn--\u0080-a.example"],
+    ["a hyphen at the start of the encoded part", "xn---kva.example"],
+  ])("invalid input keeps the label: %s", (_name, host) => {
+    expect(registrableDomain(host)).toBe(host);
+  });
+});
