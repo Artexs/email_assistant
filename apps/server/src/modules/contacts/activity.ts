@@ -1,5 +1,4 @@
 import {
-  categorySchema,
   DAY_MS,
   isNoreplyAddress,
   matchSender,
@@ -24,6 +23,7 @@ import {
   type SenderScope,
   type TestMailRule,
 } from "../mail";
+import { newestFeedbackBySender, newestResultsBySender } from "../triage";
 
 type DbOrTrx = Db | Transaction<DB>;
 type BulkSignal = SenderHistory["bulkSignals"][number];
@@ -125,20 +125,6 @@ const emptyActivity = (address: string): SenderActivity => ({
   relation: "new",
 });
 
-interface CategoryRow {
-  addr: string;
-  category: string;
-  n: number;
-  suspicious: number;
-}
-
-interface FeedbackRow {
-  addr: string;
-  kind: "correction" | "moved_back" | "rescued";
-  category: string | null;
-  n: number;
-}
-
 const skipped = <T>(): { rows: T[] } => ({ rows: [] });
 
 interface DelayRow {
@@ -167,63 +153,18 @@ export async function readSenderActivity(
   const since30 = new Date(now.getTime() - 30 * DAY_MS);
   const before7 = new Date(now.getTime() - 7 * DAY_MS);
 
-  // The incoming mails of the window: the mail module owns the select; the statements below embed it as the CTE `win`.
+  // The incoming mails of the window: the mail module owns the select; the Sent statements below embed it as the CTE `win`.
   const windowOptions = { mailboxId, since, until: now, testMail, ...(only === undefined ? {} : { only }) };
   const win = senderWindow(db, ctx, windowOptions);
-  // The newest triage result and the newest feedback row of each mail of the window. One `DISTINCT ON` pass over the mailbox
-  // (a hash join with the window), not one index probe per mail: the plan does not depend on the table statistics.
-  const newestResult = sql`
-    SELECT DISTINCT ON (tr.email_id) tr.email_id, tr.category, cardinality(tr.suspicious_reasons) > 0 AS suspicious
-    FROM triage_results tr
-    JOIN win ON win.id = tr.email_id
-    WHERE tr.org_id = ${ctx.orgId}
-    ORDER BY tr.email_id, tr.created_at DESC, tr.id DESC
-  `;
-  const newestFeedback = sql`
-    SELECT DISTINCT ON (tf.email_id) tf.email_id, tf.verdict, tf.true_category, tf.source
-    FROM triage_feedback tf
-    JOIN win ON win.id = tf.email_id
-    WHERE tf.org_id = ${ctx.orgId}
-    ORDER BY tf.email_id, tf.created_at DESC, tf.id DESC
-  `;
-
   const own = await ownAddressesOf(db, ctx, mailboxId, { maxAliases: MAX_ALIASES });
   const rules = await listSenderRules(db, ctx, mailboxId);
   const delegateEmails = new Set((await listDelegateAddresses(db, ctx, { activeOnly: true })).map(normalizeAddress));
 
   const mails = await incomingCountsBySender(db, ctx, { ...windowOptions, since30, unseenBefore: before7 });
 
-  const categories = await sql<CategoryRow>`
-    WITH win AS (${win}), nt AS (${newestResult})
-    SELECT w.address AS addr, nt.category, count(*)::int AS n, (count(*) FILTER (WHERE nt.suspicious))::int AS suspicious
-    FROM win w
-    JOIN nt ON nt.email_id = w.id
-    GROUP BY w.address, nt.category
-  `.execute(db);
-
+  const categories = await newestResultsBySender(db, ctx, windowOptions);
   // The newest feedback of each mail and the newest triage category: one correction per mail (a later mark replaces an earlier).
-  const feedback = await sql<FeedbackRow>`
-    WITH win AS (${win}), nt AS (${newestResult}), nf AS (${newestFeedback}), fb AS (
-      SELECT w.address AS addr, nf.verdict, nf.true_category, nf.source, nt.category AS category
-      FROM win w
-      JOIN nf ON nf.email_id = w.id
-      LEFT JOIN nt ON nt.email_id = w.id
-    )
-    SELECT addr, 'correction' AS kind, true_category AS category, count(*)::int AS n
-    FROM fb WHERE verdict = 'wrong' AND true_category IS NOT NULL
-    GROUP BY addr, true_category
-    UNION ALL
-    SELECT addr, 'moved_back' AS kind, NULL AS category, count(*)::int AS n
-    FROM fb WHERE source = 'imap_move'
-    GROUP BY addr
-    UNION ALL
-    SELECT addr, 'rescued' AS kind, NULL AS category, count(*)::int AS n
-    FROM fb
-    WHERE category IN ('spam', 'notification')
-      AND (source = 'imap_move'
-        OR (verdict = 'wrong' AND true_category IS NOT NULL AND true_category NOT IN ('spam', 'notification')))
-    GROUP BY addr
-  `.execute(db);
+  const feedback = await newestFeedbackBySender(db, ctx, windowOptions);
 
   // The user's own mail (not system sends, not automatic replies) to each address in To or Cc, once per mail.
   const sent = await sentCountsByRecipient(db, ctx, {
@@ -354,21 +295,20 @@ export async function readSenderActivity(
       ...(row.autoSubmitted ? (["auto_submitted"] as const) : []),
     ];
   }
-  for (const row of categories.rows) {
-    const item = byAddress.get(row.addr);
+  for (const row of categories) {
+    const item = byAddress.get(row.address);
     if (item === undefined) continue;
-    item.byCategory[categorySchema.parse(row.category)] = row.n;
+    item.byCategory[row.category] = row.mails;
     item.suspicious90 += row.suspicious;
   }
-  for (const row of feedback.rows) {
-    const item = byAddress.get(row.addr);
+  for (const row of feedback) {
+    const item = byAddress.get(row.address);
     if (item === undefined) continue;
     if (row.kind === "correction" && row.category !== null) {
-      const category = categorySchema.parse(row.category);
-      item.corrections[category] = row.n;
-      if (category === "spam") item.correctedToSpam90 = row.n;
-    } else if (row.kind === "moved_back") item.movedBack = row.n;
-    else if (row.kind === "rescued") item.rescued90 = row.n;
+      item.corrections[row.category] = row.mails;
+      if (row.category === "spam") item.correctedToSpam90 = row.mails;
+    } else if (row.kind === "moved_back") item.movedBack = row.mails;
+    else if (row.kind === "rescued") item.rescued90 = row.mails;
   }
   for (const row of sent) {
     const item = entry(row.address);
