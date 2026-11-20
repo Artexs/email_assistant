@@ -126,6 +126,23 @@ describe("the thread rule", () => {
     });
   });
 
+  test("04-T5: a padded, capital Greek address of the loop restarts the wait", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const thread = "<thread-t5@x.test>";
+      const loop = await insertLoopRow(trx, org.ctx, org.mailboxId, {
+        thread_key: thread,
+        to_addresses: ["νίκος@example.gr"],
+        counterpart: "νίκος@example.gr",
+        wait_from_at: new Date("2026-11-16T10:00:00Z"),
+      });
+      const row = await sentMail(trx, org, { threadKey: thread, to: [" ΝΊΚΟΣ@example.gr"], sentAt: WED });
+      const out = await run(trx, org);
+      expect(out.restarted).toBe(1);
+      expect((await loopRow(trx, loop)).last_sent_email_id).toBe(row);
+    });
+  });
+
   test("the thread rule runs before the skip filters: a headers_only mail still restarts the wait", async () => {
     await withRollback(db, async (trx) => {
       const org = await loopsOrg(trx);
@@ -276,6 +293,21 @@ describe("the promise rule", () => {
       await run(trx, org);
       expect(await loopRow(trx, promise)).toMatchObject({ status: "closed", close_reason: "later_reply" });
       expect(await analysisOf(trx, row)).toMatchObject({ skip_reason: "no_text" });
+    });
+  });
+
+  test("04-T4: a later mail to the rule form of the counterpart closes the promise", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const promise = await insertLoopRow(trx, org.ctx, org.mailboxId, {
+        kind: "promised",
+        counterpart: "νίκος@example.gr",
+        wait_from_at: new Date("2026-11-02T09:00:00Z"),
+      });
+      await sentMail(trx, org, { to: ["νίκοσ@example.gr"], sentAt: new Date("2026-11-03T10:00:00Z") });
+      const out = await run(trx, org, fakeExtractor(), new Date("2026-11-04T11:00:00Z"));
+      expect(out.promisesClosed).toBe(1);
+      expect(await loopRow(trx, promise)).toMatchObject({ status: "closed", close_reason: "later_reply" });
     });
   });
 

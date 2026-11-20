@@ -1,7 +1,7 @@
-import { defaultDue, sentSkipReason } from "@ea/core";
-import { sql, type Transaction } from "kysely";
+import { defaultDue, normalizeAddress, sentSkipReason } from "@ea/core";
+import type { Transaction } from "kysely";
 
-import type { DB, TenantContext } from "../../platform/db";
+import { normalizedAddress, type DB, type TenantContext } from "../../platform/db";
 import { hasOpenDelegationInThread } from "../delegation";
 import { getSentSyncState, lockSentSyncState } from "../mail";
 
@@ -16,12 +16,12 @@ import { closeLoop, lockLoop, restartLoop, type DbOrTrx } from "./repo";
 // What a run knows about one mailbox. Read once per run.
 export interface MailboxEnv {
   mailboxId: string;
-  // The addresses of every mailbox of the organization, lower case.
+  // The addresses of every mailbox of the organization, as stored; compares fold them with the one rule.
   ownAddresses: readonly string[];
   timeZone: string;
   // `mailbox_settings.loop_wait_days`.
   waitDays: number;
-  // The active delegates of the organization: the address is lower case.
+  // The active delegates of the organization: the address is as stored.
   delegates: readonly { id: string; email: string }[];
   now: Date;
 }
@@ -33,8 +33,6 @@ export type RulesOutcome =
   | { kind: "call"; promisesClosed: number }
   // "Track my sent mail" is off: nothing is written.
   | { kind: "off" };
-
-export const lowerAll = (addresses: readonly string[]): string[] => addresses.map((address) => address.toLowerCase());
 
 // Runs `run` in a transaction, or in the one the caller holds (a test).
 export function inTransaction<T>(db: DbOrTrx, run: (trx: Transaction<DB>) => Promise<T>): Promise<T> {
@@ -65,7 +63,7 @@ async function promisesTo(
     .where("kind", "=", "promised")
     .where("status", "=", "open")
     .where("wait_from_at", "<", before)
-    .where(sql<string>`lower(counterpart)`, "in", [...addresses])
+    .where(normalizedAddress("counterpart"), "in", [...addresses])
     .orderBy("id")
     .execute();
   return rows.map((row) => row.id);
@@ -78,7 +76,7 @@ async function closePromises(
   env: MailboxEnv,
   row: SentCandidate
 ): Promise<number> {
-  const ids = await promisesTo(trx, ctx, env.mailboxId, lowerAll([...row.to, ...row.cc]), row.sentAt);
+  const ids = await promisesTo(trx, ctx, env.mailboxId, [...row.to, ...row.cc].map(normalizeAddress), row.sentAt);
   let closed = 0;
   for (const loopId of ids) {
     const loop = await lockLoop(trx, ctx, loopId);
@@ -96,11 +94,13 @@ async function restartWaits(
   env: MailboxEnv,
   row: SentCandidate
 ): Promise<number> {
-  const recipients = new Set(lowerAll([...row.to, ...row.cc]));
+  const recipients = new Set([...row.to, ...row.cc].map(normalizeAddress));
   const candidates = (await openLoopsByThread(trx, ctx, env.mailboxId, [row.threadKey]))
     .filter((loop) => loop.kind === "waiting" || loop.kind === "delegated")
     .filter((loop) => loop.wait_from_at < row.sentAt)
-    .filter((loop) => lowerAll([...loop.to_addresses, ...loop.cc_addresses]).some((address) => recipients.has(address)))
+    .filter((loop) =>
+      [...loop.to_addresses, ...loop.cc_addresses].map(normalizeAddress).some((address) => recipients.has(address))
+    )
     .map((loop) => loop.id)
     .sort();
   const dueAt = defaultDue(row.sentAt, Math.max(env.waitDays, FOLLOW_UP_MIN_WAIT_DAYS), env.timeZone);

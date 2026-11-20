@@ -1,3 +1,4 @@
+import { storedAddressForm } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -210,6 +211,33 @@ describe("a hand forward to a delegate", () => {
         delegate_id: delegateId,
         counterpart: "dana@team.test",
       });
+    });
+  });
+
+  test("04-T2: a delegate stored from İlker@Example.com owns a Sent ask to ilker@example.com", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      const delegateId = await insertDelegate(trx, org.ctx, { email: storedAddressForm("İlker@Example.com") });
+      await sentMail(trx, org, { to: ["boss@example.test", "ilker@example.com"] });
+      await run(trx, org, ASK);
+      expect((await loopsOf(trx, org))[0]).toMatchObject({
+        kind: "delegated",
+        delegate_id: delegateId,
+        counterpart: "ilker@example.com",
+      });
+    });
+  });
+
+  test("04-T3: the counterpart is the stored form (trim, lower case), never the rule form", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await loopsOrg(trx);
+      await sentMail(trx, org, { to: ["Ann@Example.com"] });
+      await run(trx, org, ASK);
+      await sentMail(trx, org, { to: ["ΝΊΚΟΣ@example.gr"] });
+      await run(trx, org, ASK);
+      const counterparts = (await loopsOf(trx, org)).map((loop) => loop.counterpart).sort();
+      // The rule form of the Greek address ends in σ; the stored form keeps the word-final ς.
+      expect(counterparts).toEqual(["ann@example.com", "νίκος@example.gr"]);
     });
   });
 
