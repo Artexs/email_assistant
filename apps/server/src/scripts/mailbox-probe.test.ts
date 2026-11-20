@@ -22,7 +22,9 @@ function listen(): { port: number; connections: () => number } {
       open() {
         count += 1;
       },
-      data() {},
+      data() {
+        // The listener never answers: a probe that connects only waits.
+      },
     },
   });
   return { port: server.port, connections: () => count };

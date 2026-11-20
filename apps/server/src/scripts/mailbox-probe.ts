@@ -12,6 +12,7 @@ import {
 } from "../modules/mail";
 import { createCliOutput } from "../platform/cli";
 import { mailAllowLocalFromEnv } from "../platform/config";
+
 import {
   parseMailboxProbeArgs,
   probeSubOf,
