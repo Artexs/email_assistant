@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-20
 ---
 
 # F122 · An owner gets a writing style suggested from their own sent mail
