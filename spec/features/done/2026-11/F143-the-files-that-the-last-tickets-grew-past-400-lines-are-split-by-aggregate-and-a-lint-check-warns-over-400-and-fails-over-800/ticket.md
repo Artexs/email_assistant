@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F143 · The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
