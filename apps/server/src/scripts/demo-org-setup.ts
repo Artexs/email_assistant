@@ -6,18 +6,18 @@
 // the import run before anything is written. The owner is made without a password; the password goes in through the reset path
 // of the auth module with the current terms version, the way `e2e-seed.ts` sets the password of its users. No SQL here.
 import { mkdirSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 
 import { TERMS_VERSION } from "@ea/core";
 
 import { importDemo, parseDemoSeed, readSeedFile } from "../modules/lab";
 import { createAuth } from "../platform/auth";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb, type Db } from "../platform/db";
-import { describeError } from "../platform/errors";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
+import { cliDescriptions, parseDemoOrgSetupArgs } from "./demo-org-setup-args";
 import { seedTargetOk } from "./e2e-seed-args";
 
 // An address that is not an e2e seed user (the e2e wipe deletes those), on a `.test` host (the import scan accepts it).
@@ -110,27 +110,8 @@ export function writeDemoOwnerFile(path: string, result: SetupDemoOrgResult, pas
   return file;
 }
 
-const out = createCliOutput("demo-org-setup");
-
-// `--seed <file>` and `--out <file>` (where the owner's sign-in is written for the shot spec). Anything else is a refusal.
-export function parseArgs(argv: readonly string[]): { seed: string; out: string } | string {
-  const values: Record<string, string> = {};
-  for (let at = 0; at < argv.length; at += 2) {
-    const key = argv[at];
-    const value = argv[at + 1];
-    if ((key !== "--seed" && key !== "--out") || value === undefined || value === "") return `bad_args ${key ?? ""}`;
-    values[key] = value;
-  }
-  if (values["--seed"] === undefined || values["--out"] === undefined) return "bad_args: --seed and --out are needed";
-  return { seed: resolve(values["--seed"]), out: resolve(values["--out"]) };
-}
-
-async function main(): Promise<number> {
-  const args = parseArgs(process.argv.slice(2));
-  if (typeof args === "string") {
-    out.fail(`refusing: ${args}`);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseDemoOrgSetupArgs(argv);
   const config = loadConfig();
   // The same database guard as the e2e seed: only a database named `*_e2e` takes a demo organization with a known password.
   const target = seedTargetOk(config.DATABASE_URL, process.env.MIGRATOR_DATABASE_URL ?? "");
@@ -148,13 +129,8 @@ async function main(): Promise<number> {
   } finally {
     await db.destroy();
   }
-}
+};
 
 if (import.meta.main) {
-  main()
-    .then((code) => process.exit(code))
-    .catch((error) => {
-      out.fail(`failed: ${describeError(error)}`);
-      process.exit(1);
-    });
+  await runCli({ prefix: "demo-org-setup", descriptions: cliDescriptions, main });
 }

@@ -1,3 +1,4 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import {
@@ -18,11 +19,16 @@ describe("parseDbWorktreeArgs", () => {
     expect(parseDbWorktreeArgs(["abc", "--drop"])).toEqual({ name: "abc", drop: true });
   });
 
-  test("rejects a bad argument list", () => {
-    expect(parseDbWorktreeArgs([])).toBeNull();
-    expect(parseDbWorktreeArgs(["a", "b"])).toBeNull();
-    expect(parseDbWorktreeArgs(["abc", "--force"])).toBeNull();
-    expect(parseDbWorktreeArgs(["--drop"])).toBeNull();
+  test.each([
+    [[], "a name is needed"],
+    [["--drop"], "a name is needed"],
+    [["a", "b"], "one name only"],
+  ])("refuses the arguments %j with a usage error", (argv, message) => {
+    expect(() => parseDbWorktreeArgs(argv)).toThrow(new UsageError(message));
+  });
+
+  test("an unknown flag is a parseArgs usage error", () => {
+    expect(() => parseDbWorktreeArgs(["abc", "--force"])).toThrow(/Unknown option '--force'/);
   });
 });
 

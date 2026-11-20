@@ -150,12 +150,16 @@ describe("demo-org-setup command", () => {
     expect(result.stderr).toContain("refusing: DATABASE_URL is not an e2e database");
     expect(await counts()).toEqual({ orgs: 0, users: 0 });
   });
-  test("missing or unknown arguments are refused", async () => {
-    for (const args of [[], ["--seed", "x.json"], ["--seed", "x.json", "--out", "y.json", "--other", "z"]]) {
-      const result = await runCommand(args);
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain("refusing: bad_args");
-    }
+  test.each([
+    [[], "--seed is needed"],
+    [["--seed", "x.json"], "--out is needed"],
+    [["--seed", "x.json", "--out", "y.json", "--other", "z"], "Unknown option '--other'"],
+  ])("the arguments %j are a usage error: exit 2, the usage line, nothing imported", async (args, message) => {
+    const result = await runCommand(args);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(`[demo-org-setup] ${message}`);
+    expect(result.stderr).toContain("[demo-org-setup] usage: bun run demo:org-setup --seed <file> --out <file>");
+    expect(await counts()).toEqual({ orgs: 0, users: 0 });
   });
 });
 

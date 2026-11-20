@@ -1,28 +1,16 @@
 import { Client } from "pg";
 
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { senderKeyHash } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
+import { cliDescriptions, parseE2eActivityArgs } from "./e2e-activity-args";
 import { seedTargetOk } from "./e2e-seed-args";
 import { seedActivityProfiles, seedActivityRows } from "./lib/e2e-activity-rows";
 
-const out = createCliOutput("e2e-activity");
-
-function mailboxIdArg(argv: string[]): string | null {
-  const index = argv.indexOf("--mailbox-id");
-  const value = index === -1 ? undefined : argv[index + 1];
-  return value === undefined || value === "" ? null : value;
-}
-
-async function main(): Promise<number> {
-  const mailboxId = mailboxIdArg(process.argv.slice(2));
-  if (mailboxId === null) {
-    process.stderr.write("usage: bun apps/server/src/scripts/e2e-activity.ts --mailbox-id <uuid>\n");
-    return 2;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const { mailboxId } = parseE2eActivityArgs(argv);
   const config = loadConfig();
   const migratorUrl = process.env.MIGRATOR_DATABASE_URL ?? "";
   const target = seedTargetOk(config.DATABASE_URL, migratorUrl);
@@ -63,11 +51,8 @@ async function main(): Promise<number> {
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "e2e-activity", descriptions: cliDescriptions, main });
+}

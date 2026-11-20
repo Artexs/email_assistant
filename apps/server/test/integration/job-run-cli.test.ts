@@ -44,6 +44,15 @@ describe("job:run CLI", () => {
     expect(result.stderr).not.toContain("ran once");
   });
 
+  test("an unknown job name exits 2 with the usage line and runs nothing", async () => {
+    const result = await runJob(["--name", "no.such.job"]);
+
+    expect(result.code).toBe(2);
+    expect(result.stdout).toBe("");
+    expect(result.stderr).toContain("[job-run] --name is a job name");
+    expect(result.stderr).toContain("[job-run] usage: bun run job:run --name actions.expiry|");
+  });
+
   // The chaser branch. The alias line comes after the run; a mailbox that fails gives exit 1.
   test("loops.chaser and its alias print the counts line; only the alias prints the alias line, after the run", async () => {
     const plain = await runJob(["--name", "loops.chaser"]);

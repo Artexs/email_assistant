@@ -1,3 +1,27 @@
+import { parseArgs } from "node:util";
+
+import type { CliDescription } from "@ea/core";
+
+export const cliDescriptions = [
+  {
+    name: "e2e:seed",
+    summary: "Wipes the e2e database and seeds the organizations and users of the Playwright suites.",
+    risk: "dev",
+    needs: ["db"],
+    usage: [
+      "bun run e2e:seed",
+      "  Takes no arguments. Reads DATABASE_URL and MIGRATOR_DATABASE_URL: both must name an e2e database (the name ends in _e2e).",
+      "  Writes apps/web/e2e/.seed.json for the specs.",
+    ].join("\n"),
+    exits: { 1: 'failed, or refused: "DATABASE_URL is not an e2e database"' },
+  },
+] satisfies readonly CliDescription[];
+
+// The seed takes no argument: any flag or word is a usage error (`parseArgs` throws, `runCli` maps it to exit 2).
+export function parseE2eSeedArgs(argv: string[]): void {
+  parseArgs({ args: argv, options: {}, allowPositionals: false, strict: true });
+}
+
 export {
   E2E_ASSISTANT_EMAILS,
   E2E_DELETE_ASSISTANT_EMAILS,

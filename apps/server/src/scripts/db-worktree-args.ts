@@ -1,33 +1,41 @@
 import { parseArgs } from "node:util";
 
-export const usage = [
-  "usage: bun run db:worktree <name> [--drop]",
-  "  name: lower-case letters, digits, _ and - (the first one a letter or digit); - becomes _.",
-  "  Creates the database email_assistant_<name> on the dev Postgres, with grants and migrations,",
-  "  and prints DATABASE_URL and MIGRATOR_DATABASE_URL for it. --drop removes it, its -e2e sibling and its test worker databases <name>_w<n>.",
-  "  Exit 0: done. Exit 1: failure or refusal. Exit 2: usage or env error.",
-].join("\n");
+import { type CliDescription, UsageError } from "@ea/core";
+
+export const cliDescriptions = [
+  {
+    name: "db:worktree",
+    summary: "Creates or drops an own database for one worktree on the dev Postgres.",
+    risk: "dev",
+    needs: ["db"],
+    usage: [
+      "bun run db:worktree <name> [--drop]",
+      "  name: lower-case letters, digits, _ and - (the first one a letter or digit); - becomes _.",
+      "  Creates the database email_assistant_<name> on the dev Postgres, with grants and migrations,",
+      "  and prints DATABASE_URL and MIGRATOR_DATABASE_URL for it. --drop removes it, its -e2e sibling and its test worker databases <name>_w<n>.",
+      "  Needs DATABASE_URL, MIGRATOR_DATABASE_URL and POSTGRES_PASSWORD (a missing key exits 2).",
+    ].join("\n"),
+    exits: { 1: "failed, or refused: a base database, a non-loopback server or a database it did not create" },
+  },
+] satisfies readonly CliDescription[];
 
 export interface DbWorktreeArgs {
   name: string;
   drop: boolean;
 }
 
-// Returns null on any bad argument; the script prints the usage.
-export function parseDbWorktreeArgs(argv: string[]): DbWorktreeArgs | null {
-  try {
-    const { values, positionals } = parseArgs({
-      args: argv,
-      options: { drop: { type: "boolean" } },
-      allowPositionals: true,
-      strict: true,
-    });
-    const [name] = positionals;
-    if (positionals.length !== 1 || name === undefined) return null;
-    return { name, drop: values.drop === true };
-  } catch {
-    return null;
-  }
+// Throws `UsageError` (or a `parseArgs` error, which `runCli` also maps to exit 2) on any bad argument.
+export function parseDbWorktreeArgs(argv: string[]): DbWorktreeArgs {
+  const { values, positionals } = parseArgs({
+    args: argv,
+    options: { drop: { type: "boolean" } },
+    allowPositionals: true,
+    strict: true,
+  });
+  const [name] = positionals;
+  if (name === undefined) throw new UsageError("a name is needed");
+  if (positionals.length !== 1) throw new UsageError("one name only");
+  return { name, drop: values.drop === true };
 }
 
 const databasePrefix = "email_assistant_";

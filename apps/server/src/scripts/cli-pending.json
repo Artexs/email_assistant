@@ -31,15 +31,6 @@
     "apps/server/src/scripts/testmail-target.ts",
     "apps/server/src/scripts/testmail.ts"
   ],
-  "e2e-dev": [
-    "apps/server/src/scripts/db-worktree.ts",
-    "apps/server/src/scripts/demo-org-setup.ts",
-    "apps/server/src/scripts/e2e-activity.ts",
-    "apps/server/src/scripts/e2e-job-env.ts",
-    "apps/server/src/scripts/e2e-seed.ts",
-    "apps/server/src/scripts/e2e-suggestions.ts",
-    "apps/server/src/scripts/job-run.ts"
-  ],
   "build": [
     "apps/server/src/scripts/api-spec.ts",
     "apps/server/src/scripts/check-migrations.ts",

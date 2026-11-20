@@ -1,6 +1,9 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { jobNames, parseJobRunArgs, usage } from "./job-run-args";
+import { cliDescriptions, jobNames, parseJobRunArgs } from "./job-run-args";
+
+const usage = cliDescriptions[0]?.usage ?? "";
 
 describe("parseJobRunArgs", () => {
   test("parses a job name", () => {
@@ -11,32 +14,32 @@ describe("parseJobRunArgs", () => {
 
   test("parses platform.retention and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "platform.retention"])).toEqual({ name: "platform.retention", force: false });
-    expect(parseJobRunArgs(["--name", "platform.retention", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "platform.retention", "--force"])).toThrow(UsageError);
   });
 
   test("parses loops.analyze and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "loops.analyze"])).toEqual({ name: "loops.analyze", force: false });
-    expect(parseJobRunArgs(["--name", "loops.analyze", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "loops.analyze", "--force"])).toThrow(UsageError);
   });
 
   test("parses loops.match and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "loops.match"])).toEqual({ name: "loops.match", force: false });
-    expect(parseJobRunArgs(["--name", "loops.match", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "loops.match", "--force"])).toThrow(UsageError);
   });
 
   test("parses contacts.refresh and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "contacts.refresh"])).toEqual({ name: "contacts.refresh", force: false });
-    expect(parseJobRunArgs(["--name", "contacts.refresh", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "contacts.refresh", "--force"])).toThrow(UsageError);
   });
 
   test("parses replies.drafter and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "replies.drafter"])).toEqual({ name: "replies.drafter", force: false });
-    expect(parseJobRunArgs(["--name", "replies.drafter", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "replies.drafter", "--force"])).toThrow(UsageError);
   });
 
   test("parses replies.sweep and refuses --force for it", () => {
     expect(parseJobRunArgs(["--name", "replies.sweep"])).toEqual({ name: "replies.sweep", force: false });
-    expect(parseJobRunArgs(["--name", "replies.sweep", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "replies.sweep", "--force"])).toThrow(UsageError);
   });
 
   test("the usage text names every job", () => {
@@ -44,9 +47,9 @@ describe("parseJobRunArgs", () => {
   });
 
   test("rejects an unknown or missing name", () => {
-    expect(parseJobRunArgs(["--name", "nope"])).toBeNull();
-    expect(parseJobRunArgs([])).toBeNull();
-    expect(parseJobRunArgs(["--name"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "nope"])).toThrow(UsageError);
+    expect(() => parseJobRunArgs([])).toThrow(UsageError);
+    expect(() => parseJobRunArgs(["--name"])).toThrow(/argument missing/);
   });
 
   test("--force is for the chaser (loops.chaser and its alias delegation.chaser) only", () => {
@@ -56,7 +59,7 @@ describe("parseJobRunArgs", () => {
       force: true,
     });
     expect(parseJobRunArgs(["--name", "loops.chaser"])).toEqual({ name: "loops.chaser", force: false });
-    expect(parseJobRunArgs(["--name", "actions.expiry", "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "actions.expiry", "--force"])).toThrow(UsageError);
   });
 
   // The name is compared as a whole string: a quoted, encoded or look-alike form is a usage error, not a job.
@@ -76,8 +79,8 @@ describe("parseJobRunArgs", () => {
     ["loops.chaser,delegation.chaser", "two names"],
     ["loops.chase", "prefix"],
   ])("refuses the name %j (%s)", (name) => {
-    expect(parseJobRunArgs(["--name", name])).toBeNull();
-    expect(parseJobRunArgs(["--name", name, "--force"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", name])).toThrow(UsageError);
+    expect(() => parseJobRunArgs(["--name", name, "--force"])).toThrow(UsageError);
   });
 
   test("refuses a second name, a stray word and the equals form with a space", () => {
@@ -85,9 +88,9 @@ describe("parseJobRunArgs", () => {
       name: "actions.expiry",
       force: false,
     });
-    expect(parseJobRunArgs(["--name", "loops.chaser", "now"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "loops.chaser", "now"])).toThrow(UsageError);
     expect(parseJobRunArgs(["--name=loops.chaser"])).toEqual({ name: "loops.chaser", force: false });
-    expect(parseJobRunArgs(["--name= loops.chaser"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name= loops.chaser"])).toThrow(UsageError);
     expect(parseJobRunArgs(["--force", "--name", "loops.chaser", "--force"])).toEqual({
       name: "loops.chaser",
       force: true,
@@ -95,6 +98,6 @@ describe("parseJobRunArgs", () => {
   });
 
   test("rejects an unknown flag", () => {
-    expect(parseJobRunArgs(["--name", "actions.expiry", "--now"])).toBeNull();
+    expect(() => parseJobRunArgs(["--name", "actions.expiry", "--now"])).toThrow(/Unknown option .--now./);
   });
 });

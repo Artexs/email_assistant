@@ -6,8 +6,9 @@ import { createSecretBox } from "../../platform/crypto";
 import { type Db } from "../../platform/db";
 import { assertTaggedMailbox, mailTagFromEnv } from "../e2e-seed-args";
 
-// The GreenMail of the dev stack (the same host that the Playwright config uses).
-const GREENMAIL_HOST = process.env.TEST_IMAP_HOST ?? "127.0.0.1";
+// The GreenMail of the dev stack (the same host that the Playwright config uses). Read at the call, not at load: the standard
+// requires that a tool's modules read no env on import.
+const greenMailHost = (): string => process.env.TEST_IMAP_HOST ?? "127.0.0.1";
 export const ASSIST_SWITCHES = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: false };
 
 // A mailbox on the GreenMail of the dev stack, in assist mode with the draft switch on, as the approvals and the reminders need it (an
@@ -21,13 +22,14 @@ export async function seedAssistMailbox(
   opts: { oauthProvider?: "microsoft" | "google" } = {}
 ): Promise<string> {
   assertTaggedMailbox(address, mailTagFromEnv(process.env));
+  const host = greenMailHost();
   const mailboxId = randomUUID();
   await insertMailbox(db, ctx, {
     id: mailboxId,
     address,
-    imapHost: GREENMAIL_HOST,
+    imapHost: host,
     imapPort: 3143,
-    smtpHost: GREENMAIL_HOST,
+    smtpHost: host,
     smtpPort: 3025,
     capabilities: { move: true, uidplus: true, idle: false, condstore: false, specialUse: false, keywords: false },
     folderMap: { drafts: "Drafts" },

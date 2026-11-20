@@ -883,7 +883,7 @@ Capability page: `docs/capabilities/sender-context.md` (rules, limits, tests). T
 
 One flag at a time, one pilot organization first: `$C run --rm cli bun run org:flag --org-id <uuid> --flag <key> --on` (`--off` turns it off). The order:
 
-1. `sender_context`. The job `contacts.refresh` runs hourly at minute 7. To run it now: `$C run --rm cli bun run job:run contacts.refresh`. Wait one day. Check: `bash deploy/logs.sh --since 24h --event contacts_refresh_done` shows one line for each mailbox and hour with a small `duration_ms`, and `bash deploy/logs.sh --since 24h --event contacts_refresh_mailbox_failed` shows no line. The sender line in Activity and Approvals shows now.
+1. `sender_context`. The job `contacts.refresh` runs hourly at minute 7. To run it now: `$C run --rm cli bun run job:run --name contacts.refresh`. Wait one day. Check: `bash deploy/logs.sh --since 24h --event contacts_refresh_done` shows one line for each mailbox and hour with a small `duration_ms`, and `bash deploy/logs.sh --since 24h --event contacts_refresh_mailbox_failed` shows no line. The sender line in Activity and Approvals shows now.
 2. `contact_wait`. New open loops get the wait of their contact. Old loops keep their date.
 3. `sender_suggestions` last, on the word of the owner (it is the visible part). A blocklist suggestion needs `sent_sync` (current Sent coverage). The Rules page shows the Suggestions card and the weekly report gets one line.
 
