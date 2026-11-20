@@ -13,7 +13,9 @@ function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) return entry.name === "prompts" ? [] : sourceFiles(path);
-    return entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts") ? [path] : [];
+    return entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts") && !entry.name.endsWith(".test-helper.ts")
+      ? [path]
+      : [];
   });
 }
 
