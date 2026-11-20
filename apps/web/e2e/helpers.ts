@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { en } from "../src/i18n/en";
+import { mailTagFromEnv, taggedAddress } from "../../server/src/scripts/e2e-seed-args";
 import { E2E_BASE_URL, e2eEnv, GREENMAIL, repoRoot } from "./env";
 
 // Every test gets its own client address, so the login rate limit (3 per 10 s per address) counts per test.
@@ -74,9 +75,10 @@ export function consoleErrors(page: Page): string[] {
   return collected;
 }
 
-// The address of the mailbox a spec connects: one per project, so the two never meet.
+// The address of the mailbox a spec connects: one per project, so the two never meet. The run tag (`E2E_MAIL_TAG`) keeps two runs
+// on the shared GreenMail apart; the seed reads the same variable.
 export function mailboxAddress(project: string): string {
-  return `e2e-${project}@e2e.test`;
+  return taggedAddress(`e2e-${project}@e2e.test`, mailTagFromEnv(process.env));
 }
 
 // Removes what a spec made, through the API with the page's cookies: unlink, every mailbox, every rule, then the organization and digest settings. Errors are ignored:

@@ -315,6 +315,7 @@ describe("bun run credentials:check", () => {
       mkdirSync(stubs);
       mkdirSync(join(root, "deploy"));
       copyFileSync(resolve(repoRoot, "deploy/restore.sh"), join(root, "deploy/restore.sh"));
+      copyFileSync(resolve(repoRoot, "deploy/compose-lib.sh"), join(root, "deploy/compose-lib.sh"));
       writeFileSync(join(root, ".env"), "POSTGRES_PASSWORD=unused\n");
       const dockerStub = join(stubs, "docker");
       writeFileSync(

@@ -45,6 +45,55 @@ function mapKeys(): Set<string> {
   return keys;
 }
 
+// Every key of `ACTION_EDGES`, sorted, as written from the map before the runtime guard landed.
+// Changing the used edges of the product changes this list on purpose.
+const PINNED_EDGE_KEYS: readonly string[] = [
+  "expireReadyDraft create_draft: ready -> expired",
+  "expireReadyOriginals flag: ready -> expired",
+  "expireReadyOriginals mark_read: ready -> expired",
+  "expireReadyOriginals move: ready -> expired",
+  "expireStaleReady flag: ready -> expired",
+  "expireStaleReady mark_read: ready -> expired",
+  "expireStaleReady move: ready -> expired",
+  "finishAction create_draft: applying -> applied",
+  "finishAction create_draft: applying -> expired",
+  "finishAction create_draft: applying -> failed",
+  "finishAction create_draft: ready -> applied",
+  "finishAction create_draft: ready -> expired",
+  "finishAction create_draft: ready -> failed",
+  "finishAction flag: ready -> applied",
+  "finishAction flag: ready -> failed",
+  "finishAction mark_read: ready -> applied",
+  "finishAction mark_read: ready -> failed",
+  "finishAction move: ready -> applied",
+  "finishAction move: ready -> failed",
+  "finishAction save_summary: ready -> applied",
+  "finishAction send: applying -> applied",
+  "finishAction send: applying -> failed",
+  "finishAction send: approved -> expired",
+  "finishAction send: approved -> failed",
+  "markApplying create_draft: ready -> applying",
+  "markApplying send: approved -> applying",
+  "markUndone create_draft: applied -> undone",
+  "markUndone flag: applied -> undone",
+  "markUndone mark_read: applied -> undone",
+  "markUndone move: applied -> undone",
+  "releaseAction create_draft: applying -> applying",
+  "releaseAction create_draft: applying -> ready",
+  "releaseAction create_draft: ready -> ready",
+  "releaseAction flag: ready -> ready",
+  "releaseAction mark_read: ready -> ready",
+  "releaseAction move: ready -> ready",
+  "releaseAction send: applying -> applying",
+  "releaseAction send: applying -> approved",
+  "releaseAction send: approved -> approved",
+  "setApproved send: awaiting_approval -> approved",
+  "setExpired send: approved -> expired",
+  "setExpired send: awaiting_approval -> expired",
+  "setRejected send: approved -> rejected",
+  "setRejected send: awaiting_approval -> rejected",
+];
+
 describe("transitions map", () => {
   test("(a) every status in an edge, entry, latent edge or guard is a known status", () => {
     const used: string[] = [];
@@ -107,6 +156,14 @@ describe("transitions map", () => {
     const map = mapKeys();
     expect([...guards].filter((k) => !map.has(k)).sort()).toEqual([]);
     expect([...map].filter((k) => !guards.has(k)).sort()).toEqual([]);
+  });
+
+  test("(f) the keys of ACTION_EDGES equal the pinned list (writer type: from -> to)", () => {
+    const keys: string[] = [];
+    for (const edge of ACTION_EDGES) {
+      for (const type of edge.types) keys.push(key(edge.writer, type, edge.from, edge.to));
+    }
+    expect(keys.sort()).toEqual([...PINNED_EDGE_KEYS]);
   });
 
   test("(f) no latent edge repeats an edge that callers use", () => {

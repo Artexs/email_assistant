@@ -93,7 +93,7 @@ describe("release.sh steps", () => {
       "git checkout --detach v0.1.1",
       `EA_RELEASE=v0.1.1 ${COMPOSE} build server`,
       "docker tag ea-server:latest ea-server:v0.1.1",
-      `${COMPOSE} run --rm -T cli bun run db:migrate`,
+      `${COMPOSE} run --rm -T migrate`,
       `${COMPOSE} up -d --no-build --wait`,
       `${COMPOSE} exec -T server printenv EA_RELEASE`,
     ].map((text) => indexOfCall(calls, text));
@@ -107,6 +107,14 @@ describe("release.sh steps", () => {
       pending: "",
     });
     expect(readdirSync(join(h.root, "deploy", "release-state"))).toEqual(["state"]);
+  });
+
+  test("9. the migrate step runs the migrate service, and no call runs db:migrate in cli", () => {
+    h.writeState({ current: "v0.1.0", current_commit: "commit-v0.1.0", previous: "", previous_commit: "" });
+    expect(h.run("release.sh", ["v0.1.1"]).code).toBe(0);
+    const calls = h.calls();
+    expect(calls.some((line) => line.endsWith(" run --rm -T migrate"))).toBe(true);
+    expect(calls.some((line) => line.includes("cli bun run db:migrate"))).toBe(false);
   });
 
   test("every state write goes through a temp file and mv", () => {
@@ -227,7 +235,7 @@ describe("release.sh steps", () => {
 
   test("a failed migrate stops before `up`, keeps pending and never tries a rollback of the schema", () => {
     h.writeState(stateV010);
-    h.setSwitch("docker-fail", "db:migrate");
+    h.setSwitch("docker-fail", "run --rm -T migrate");
     const result = h.run("release.sh", ["v0.1.1"]);
     expect(result.code).toBe(1);
     expect(result.output).toContain("release failed at migrate; roll back with deploy/rollback.sh");

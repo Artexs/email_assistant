@@ -5,7 +5,12 @@ import type { TenantContext } from "../../../platform/db";
 import { emailIdOf } from "../anchor";
 
 import { CLAIM_MAX_AGE_MS } from "./claims";
+import { statusGuard, writerGuard } from "./guard";
 import { actionTypeSchema, type DbOrTrx } from "./shared";
+
+// The guard rows, resolved at load: an unknown row throws at import.
+const EXPIRE_STALE_GUARD = writerGuard("expireStaleReady", "default");
+const EXPIRE_ORIGINALS_GUARD = writerGuard("expireReadyOriginals", "default");
 
 // The caller writes the `action.expired` audit rows.
 export async function expireStaleReady(
@@ -18,9 +23,8 @@ export async function expireStaleReady(
     .updateTable("actions")
     .set({ status: "expired", status_reason: "stale", updated_at: opts.now })
     .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "ready")
+    .where((eb) => statusGuard(eb, EXPIRE_STALE_GUARD))
     .where("reverses_action_id", "is", null)
-    .where("type", "in", [...MAILBOX_ACTION_TYPES])
     .where("created_at", "<", new Date(opts.now.getTime() - CLAIM_MAX_AGE_MS))
     .where((eb) => eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]))
     .where("email_id", "in", (eb) =>
@@ -66,7 +70,7 @@ export async function expireReadyOriginals(
     .updateTable("actions")
     .set({ status: "expired", status_reason: opts.reason, updated_at: opts.now })
     .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "ready")
+    .where((eb) => statusGuard(eb, EXPIRE_ORIGINALS_GUARD))
     .where("reverses_action_id", "is", null)
     .where("type", "in", [...filter.types])
     .where((eb) => eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]))

@@ -7,7 +7,10 @@ STATE_DIR=deploy/release-state
 STATE_FILE="$STATE_DIR/state"
 IMAGE=ea-server
 HEALTH_URL=http://127.0.0.1:8080/health
-COMPOSE_CMD=(docker compose -f deploy/compose.yaml --env-file .env)
+# shellcheck source=deploy/compose-lib.sh
+source deploy/compose-lib.sh
+ea_compose_init || exit 2
+COMPOSE_CMD=("${EA_COMPOSE[@]}")
 
 # rclone for backup.sh lives in ~/bin on the VPS (deploy/README.md § Backups); cron puts it first, so do the same.
 [[ -d "$HOME/bin" ]] && PATH="$HOME/bin:$PATH"
