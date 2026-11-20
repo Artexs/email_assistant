@@ -565,7 +565,7 @@ describe("restore.sh waits for the final database server (step db-ready)", () =>
     expect(sleepCalls()).toEqual(["sleep 1", "sleep 1", "sleep 1"]);
   });
 
-  test("F139-2. a new-host restore waits the same way, with 3 pauses, after up", () => {
+  test("a new-host restore waits the same way, with 3 pauses, after up", () => {
     setSwitch("init-probes", "3\n");
     const result = run(["--target", "new-host", "--stdin"], { stdin: DUMP });
     expect(result.output).not.toContain("restore failed at");
