@@ -69,7 +69,7 @@ export {
   mailKindFilter,
   markEmailRelocated,
   markEmailReturned,
-  setUndoPending,
+  setMovePending,
   updateEmailLocation,
   updateEmailUid,
   type EmailMeta,
@@ -170,3 +170,14 @@ export {
 export { mailboxProfileOf, upsertMailboxProfile, type MailboxProfile, type MailboxProfileFields } from "./profiles";
 export { replyFactsOf, type MailReplyFacts } from "./reply-facts";
 export { newerMailInThread } from "./thread";
+export {
+  incomingCountsBySender,
+  ownAddressesOf,
+  senderWindow,
+  type IncomingCounts,
+  type SenderScope,
+  type SenderWindow,
+  type SenderWindowOptions,
+} from "./sender-activity";
+export { theirReplyDelaysBySender, userReplyDelaysBySender, type ReplyDelays } from "./sender-delays";
+export { repliedBySentBySender, sentCountsByRecipient, type SentCount, type SentCountsOptions } from "./sender-replies";

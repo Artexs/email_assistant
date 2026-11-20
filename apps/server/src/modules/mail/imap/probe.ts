@@ -1,4 +1,5 @@
 // Write probes for `mailbox:check --probe` only (a test account): they change the mailbox.
+import { MINUTE_MS } from "@ea/core";
 import type { ImapFlow, SearchObject } from "imapflow";
 
 import { HardError, SoftError } from "../../../platform/errors";
@@ -9,7 +10,7 @@ import { sendProbeToSelf, type SmtpConnectOptions } from "./smtp";
 
 const PROBE_HEADER = "X-EA-Probe";
 const DEFAULT_POLL_MS = 5000;
-const DEFAULT_TIMEOUT_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = MINUTE_MS;
 
 function probeSubject(probeId: string): string {
   return `EA probe ${probeId}`;

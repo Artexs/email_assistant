@@ -1,5 +1,6 @@
 import { includeIgnoreFile } from "@eslint/compat";
 import eslint from "@eslint/js";
+import { builtinRules } from "eslint/use-at-your-own-risk";
 import eslintPluginAstro from "eslint-plugin-astro";
 import eslintPluginImport from "eslint-plugin-import";
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
@@ -12,6 +13,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import tseslint from "typescript-eslint";
+
+import ea from "./tools/eslint-rules/index.js";
 
 // File path setup
 const __filename = fileURLToPath(import.meta.url);
@@ -205,6 +208,24 @@ const mailSdkImports = {
 // Flat config: a later block replaces the rule options, so each file group lists all its patterns.
 const restrictImports = (patterns) => ({ "no-restricted-imports": ["error", { patterns }] });
 
+// File size (docs/code-patterns.md § Size and shape). The core `max-lines` rule warns over 400 lines; the same rule under the
+// name `size/max-lines-hard` fails over 800. Both count every line, as `wc -l` does. Test code is outside the rule.
+const sizePlugin = { rules: { "max-lines-hard": builtinRules.get("max-lines") } };
+const sizeFiles = ["**/*.{ts,tsx,astro,js,mjs}"];
+const sizeIgnores = [
+  "**/*.test.{ts,tsx}",
+  "**/*.spec.ts",
+  "**/*.test-helper.ts",
+  "apps/server/test/**",
+  "apps/*/e2e/**",
+  "tools/*/test/**",
+];
+const sizeOptions = (max) => ({ max, skipBlankLines: false, skipComments: false });
+// Temporary exceptions (the plan of spec/features/active/F143-*, decision "Temporary exceptions"): `size-exceptions.json` lists the
+// files over 800 lines that a later stage splits. The stage that splits a file deletes its entry; the stage that deletes the last
+// entry deletes the JSON file, this read and the exceptions block below.
+const sizeExceptions = JSON.parse(readFileSync(path.resolve(__dirname, "size-exceptions.json"), "utf8"));
+
 // Log lines are events (ADR 0024, docs/code-patterns.md § Logs). This is the only no-restricted-syntax rule for
 // server files: flat config replaces the options of a rule, so a second block with this rule would drop these selectors.
 // A log call is `log.info(...)`, `mailboxLog.info(...)`, a member logger (`this.log.info(...)`, `deps.mailboxLog.info(...)`)
@@ -226,6 +247,22 @@ const logEventSelectors = [
   {
     selector: `${logCall} > ObjectExpression MemberExpression[property.name="message"]`,
     message: `${logEventMessage} Never error.message: use ...errorFields(error).`,
+  },
+];
+
+// CLI standard (docs/cli.md): a tool returns its exit code to `runCli` and prints through `createCliOutput`. The two exit sites and the
+// files of `cli-pending.json` (tools not converted yet; the list shrinks per stage) are outside the rule.
+const cliPending = Object.values(
+  JSON.parse(readFileSync(path.resolve(__dirname, serverSrc, "scripts/cli-pending.json"), "utf8"))
+).flat();
+const cliExitMessage = "Exit and raw output: runCli and createCliOutput (docs/cli.md).";
+// `no-restricted-properties` matches only a bare identifier as the object, so it cannot see `process.stdout.write`: selectors do.
+const cliProcessSelectors = [
+  { selector: 'MemberExpression[object.name="process"][property.name="exit"]', message: cliExitMessage },
+  {
+    selector:
+      'MemberExpression[object.object.name="process"][object.property.name=/^(stdout|stderr)$/][property.name="write"]',
+    message: cliExitMessage,
   },
 ];
 
@@ -257,6 +294,33 @@ export default tseslint.config(
     files: ["apps/server/src/**/*.ts"],
     ignores: ["**/*.test.ts"],
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors], "no-console": "error" },
+  },
+  {
+    files: [`${serverSrc}/scripts/**/*.ts`],
+    ignores: ["**/*.test.ts", ...cliPending],
+    // Flat config replaces the options of a rule: the server scripts keep the log-line selectors.
+    rules: { "no-restricted-syntax": ["error", ...logEventSelectors, ...cliProcessSelectors] },
+  },
+  {
+    files: ["tools/*/src/**/*.ts"],
+    ignores: ["**/*.test.ts", "tools/fake-telegram/src/cli-run.ts", ...cliPending],
+    rules: { "no-restricted-syntax": ["error", ...cliProcessSelectors] },
+  },
+  {
+    // One time spelling: MINUTE_MS, HOUR_MS and DAY_MS from the core time module. Warn while the rewrites land;
+    // tests stay out until the test audit cuts them. The local plugin `ea` is registered here once: later local
+    // rules join tools/eslint-rules/index.js (a second `ea` plugin object makes flat config fail).
+    files: ["{apps,packages,tools}/*/src/**/*.{ts,tsx,js,mjs}"],
+    ignores: [
+      "packages/core/src/time.ts",
+      "**/*.test.{ts,tsx}",
+      "**/*.spec.ts",
+      "**/*.test-helper.ts",
+      "**/test/**",
+      "**/e2e/**",
+    ],
+    plugins: { ea },
+    rules: { "ea/no-time-literals": "error" },
   },
   {
     files: ["apps/server/src/**/*.ts", "packages/**/*.ts"],
@@ -315,6 +379,16 @@ export default tseslint.config(
     rules: {
       "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true, allowedStrings: ["·", "—", "/"] }],
     },
+  },
+  {
+    files: sizeFiles,
+    ignores: sizeIgnores,
+    plugins: { size: sizePlugin },
+    rules: { "max-lines": ["warn", sizeOptions(400)], "size/max-lines-hard": ["error", sizeOptions(800)] },
+  },
+  {
+    files: sizeExceptions.map(({ file }) => file),
+    rules: { "size/max-lines-hard": "off" },
   },
   {
     files: ["apps/web/src/env.d.ts"],

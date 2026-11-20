@@ -1,6 +1,7 @@
 // The one place for the time constants and the calendar-day shift. Pure: no clock, no Node module (the web imports it).
 
-export const HOUR_MS = 3_600_000;
+export const MINUTE_MS = 60_000;
+export const HOUR_MS = 60 * MINUTE_MS;
 export const DAY_MS = 24 * HOUR_MS;
 
 /** A YYYY-MM-DD date moved by `days` calendar days (negative moves back), computed on UTC days. */

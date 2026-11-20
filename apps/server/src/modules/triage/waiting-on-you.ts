@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -36,7 +37,7 @@ export async function listWaitingOnYou(
   opts: { now: Date; limit: number }
 ): Promise<{ rows: WaitingOnYouRow[]; total: number }> {
   if (mailboxIds.length === 0) return { rows: [], total: 0 };
-  const since = new Date(opts.now.getTime() - WAITING_ON_YOU_DAYS * 24 * 3_600_000);
+  const since = new Date(opts.now.getTime() - WAITING_ON_YOU_DAYS * DAY_MS);
   const where = sql`
     FROM emails e
     JOIN LATERAL (

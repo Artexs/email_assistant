@@ -9,7 +9,7 @@ import { loadConfig, testMailRule } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { groupUsage, modelReportLines } from "./triage-cost-report";
+import { groupUsage, modelReportLines } from "./lib/triage-cost-report";
 
 const cli = createCliOutput("triage-cost");
 

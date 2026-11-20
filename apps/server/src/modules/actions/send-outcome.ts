@@ -1,3 +1,5 @@
+import { MINUTE_MS } from "@ea/core";
+
 import { MailAuthError, SmtpSendError, type AuthErrorReason } from "../mail";
 
 import { authErrorOutcome } from "./apply-shared";
@@ -8,7 +10,7 @@ export const SEND_HARD_TRIES = HARD_ERROR_TRIES;
 // `provider_result.cap` of a send that the soft-retry cap ended; the result notice reads it.
 export const SOFT_CAP_MARK = "soft_retry";
 // The notifier treats an older `pending` Sent copy as failed.
-export const SENT_COPY_PENDING_MAX_AGE_MS = 10 * 60_000;
+export const SENT_COPY_PENDING_MAX_AGE_MS = 10 * MINUTE_MS;
 
 export type SendOutcome =
   | { kind: "auth_error"; reason?: AuthErrorReason }

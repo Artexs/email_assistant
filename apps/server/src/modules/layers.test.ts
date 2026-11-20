@@ -13,7 +13,7 @@ import {
   loadLayers,
   readModuleGraph,
   renderGraphMarkdown,
-} from "../scripts/module-graph-build";
+} from "../scripts/lib/module-graph-build";
 
 const paths = graphPaths(path.resolve(import.meta.dir, "../../../.."));
 const layers = loadLayers(paths.layersFile);

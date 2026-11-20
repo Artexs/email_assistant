@@ -17,7 +17,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 
-import type { BotReplyPlan, LiveRunPlan } from "@ea/core";
+import { type BotReplyPlan, type LiveRunPlan, MINUTE_MS } from "@ea/core";
 
 import { MONTH_CAP_USD, monthOf, monthSpend, readLedger, runCap } from "../../platform/eval-ledger";
 
@@ -67,7 +67,7 @@ export type LabState = ReturnType<typeof createLabState>;
 
 const RUN_ID = /^[a-z0-9-]{1,40}$/;
 // A lock whose run folder never appeared (a crash between the lock and the run file) is taken over after this time.
-const ORPHAN_LOCK_MS = 60_000;
+const ORPHAN_LOCK_MS = MINUTE_MS;
 
 function errorCode(error: unknown): string | undefined {
   return (error as NodeJS.ErrnoException).code;

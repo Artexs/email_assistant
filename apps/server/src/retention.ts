@@ -27,11 +27,11 @@ const log = createLog("retention");
 
 // Every text of the §7 list goes after this period, except the mail body (the organization's `data_retention_days`).
 export const RETENTION_TEXT_DAYS = 90;
-export const LINK_TOKEN_GRACE_MS = 24 * HOUR_MS;
+export const LINK_TOKEN_GRACE_MS = DAY_MS;
 // An OAuth sign-in state row goes this long after it expired.
 export const OAUTH_STATE_GRACE_MS = HOUR_MS;
 // A reset or invite token row goes this long after it expired.
-export const VERIFICATION_GRACE_MS = 24 * HOUR_MS;
+export const VERIFICATION_GRACE_MS = DAY_MS;
 // A sender profile goes this long after the newest date it holds (data category `sender-context`).
 export const PROFILE_RETENTION_DAYS = 365;
 // An ended rule suggestion goes this long after its end; an open one that nobody answered ends as `expired` after the second period.

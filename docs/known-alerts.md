@@ -299,7 +299,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `lockout_failed`, `terms_record_failed` (before F089: `web: lockout: <label>`; `terms_record_failed` before F103: `web: terms record failed for user <id>: <label>`)
 
 - **First seen:** 2026-11-13 (S6b, F082 stages 5 and 7; not seen live)
-- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler in `web.ts`): the password was set, but the terms row was not written. `web.ts` writes the same event code and fields.
+- **Source:** `apps/server/src/platform/auth.ts`. Level `error`. `lockout_failed` comes from the sign-in `after` hook (the failure count or the lock write failed). `terms_record_failed` (field `user_id`) comes from the reset path (`onPasswordReset` and the handler `termsAcceptedHandler` in `web-audit.ts`): the password was set, but the terms row was not written. `web-audit.ts` writes the same event code and fields.
 - **Cause:** a database error. The sign-in itself is not changed: the user gets the normal answer. A failed lock write means that failed sign-ins are not counted. A failed terms write means the user sees the terms dialog at the next sign-in.
 - **Fix:** read the `error` field (the old form: `<label>`) and check the database. No manual repair: the user accepts the terms in the dialog.
 - **Status:** investigating (per case)
@@ -461,8 +461,8 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/platform/auth.ts` (the default `sendResetPassword`, level `info`, field `user_id`).
-- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP. With the auth-mail sender off, the `/api/auth/*` allow-list answers 404 for that path. With the sender on (S6b), `webDeps` passes its own `sendResetPassword`. The CLIs (`web:invite`, `org:invite`) pass their own callback in `scripts/invite-delivery.ts` and print the link, so they log no line.
-- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/invite-delivery.ts`, `scripts/e2e-seed.ts`).
+- **Cause:** A `request-password-reset` reached a `createAuth` instance that has no own `sendResetPassword`. It cannot happen over HTTP. With the auth-mail sender off, the `/api/auth/*` allow-list answers 404 for that path. With the sender on (S6b), `webDeps` passes its own `sendResetPassword`. The CLIs (`web:invite`, `org:invite`) pass their own callback in `scripts/lib/invite-delivery.ts` and print the link, so they log no line.
+- **Fix:** Investigate: a line means a code path changed or a new `createAuth` caller exists. Check who builds the auth instance without `sendResetPassword` (`webDeps` in `web.ts`, `scripts/lib/invite-delivery.ts`, `scripts/e2e-seed.ts`).
 - **Status:** investigating
 
 ### `operator_notice_unsent`, `operator_notice_send_failed` and `operator_notice_failed` (field `kind=auth_mail_failed`)
@@ -548,7 +548,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `web_no_organization` (field `user_id`; before F103: `web: no organization for user <id>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `warn`).
+- **Source:** `apps/server/src/web-audit.ts` (`auditWebEvent`, level `warn`).
 - **Cause:** A user with no membership signed in or set a password. There is no organization for the audit row `web.login`, `web.password_set` or `web.password_changed`. The login itself succeeded.
 - **Fix:** Give the user a membership: `bun run org:create` makes an owner; any other user needs an invitation (S5b). Until then that user's `/api/me` answers 403 `no_organization` and the shell shows "Your account is not in any organization. Ask the owner for an invitation."
 - **Status:** investigating
@@ -556,7 +556,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 ### `web_audit_failed` (fields `kind`, `error`; before F103: `web: audit <kind> failed: <label>`)
 
 - **First seen:** 2026-11-09 (S5a code; not seen live)
-- **Source:** `apps/server/src/web.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set`, `password_changed`, `login_locked`, `sessions_revoked` or `other_sessions_revoked`.
+- **Source:** `apps/server/src/web-audit.ts` (`auditWebEvent`, level `error`). `<kind>` is `login`, `password_set`, `password_changed`, `login_locked`, `sessions_revoked` or `other_sessions_revoked`.
 - **Cause:** The audit row of a login or a password change was not written: a database error in `recordAudit` or in the membership query. The login itself succeeded, because the composer catches every `onEvent` error.
 - **Fix:** Read the `error` field and check the DB (connection, migration state, the `audit_log` rows). One row is missing for that event; the next login writes its own.
 - **Status:** investigating
@@ -566,7 +566,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-09 (S5a code; not seen live)
 - **Source:** `apps/server/src/platform/auth.ts` (`report`, level `error`; fields `kind`, `error`).
 - **Cause:** The injected `onEvent` of an auth event rejected. `auditWebEvent` catches its own errors, so this line means the composition root supplies another `onEvent`, or that function changed. The login or the password change itself succeeded.
-- **Fix:** Check the `onEvent` wiring in `apps/server/src/web.ts`. `auditWebEvent` must return without a throw; an audit miss must never fail a login.
+- **Fix:** Check the `onEvent` wiring in `apps/server/src/web-audit.ts`. `auditWebEvent` must return without a throw; an audit miss must never fail a login.
 - **Status:** investigating
 
 ### `process_uncaught_exception` and `process_unhandled_rejection` (fields `error`, `error_code`)

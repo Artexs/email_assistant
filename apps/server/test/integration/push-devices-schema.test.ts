@@ -7,7 +7,7 @@ import { sql, type Transaction } from "kysely";
 
 import { insertMembership } from "../../src/modules/tenancy/repo";
 import { createDb, type DB } from "../../src/platform/db";
-import { checkMigrationSql } from "../../src/scripts/check-migrations-rules";
+import { checkMigrationSql } from "../../src/scripts/lib/check-migrations-rules";
 
 import { addMember, createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";

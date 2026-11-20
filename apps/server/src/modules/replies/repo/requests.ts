@@ -1,4 +1,4 @@
-import { replyRequestStatuses, type ReplyTrigger } from "@ea/core";
+import { MINUTE_MS, replyRequestStatuses, type ReplyTrigger } from "@ea/core";
 import { sql, type Selectable, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../../platform/db";
@@ -17,7 +17,7 @@ export function triggerOf(row: Pick<ReplyRequestRow, "trigger">): ReplyTrigger {
 export type ReplyRequestEnd = "done" | "no_draft" | "failed" | "cancelled" | "superseded";
 
 // A `drafting` row whose claim is older than this is taken back (the worker that held it died). The claim is `locked_at`.
-export const REPLY_CLAIM_STALE_MS = 5 * 60_000;
+export const REPLY_CLAIM_STALE_MS = 5 * MINUTE_MS;
 
 export interface NewReplyRequest {
   mailboxId: string;

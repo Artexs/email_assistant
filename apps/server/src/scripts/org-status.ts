@@ -7,7 +7,7 @@ import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { orgStatusLines } from "./org-status-lines";
+import { orgStatusLines } from "./lib/org-status-lines";
 
 const out = createCliOutput("org-status");
 

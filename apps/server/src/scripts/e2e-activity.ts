@@ -6,8 +6,8 @@ import { senderKeyHash } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { seedActivityProfiles, seedActivityRows } from "./e2e-activity-rows";
 import { seedTargetOk } from "./e2e-seed-args";
+import { seedActivityProfiles, seedActivityRows } from "./lib/e2e-activity-rows";
 
 const out = createCliOutput("e2e-activity");
 

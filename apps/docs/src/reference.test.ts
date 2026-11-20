@@ -182,7 +182,7 @@ function limitRows(): LimitRow[] {
     { label: "Reminders for one delegation", value: `${DELEGATION_REMINDER_LIMIT}`, capability: "delegation" },
     {
       label: "Age of mail that the system sorts",
-      value: `${numberInSource("apps/server/src/modules/triage/service.ts", /const MAX_AGE_MS = (\d+) \* 24 \* 3_600_000;/)} days`,
+      value: `${numberInSource("apps/server/src/modules/triage/service.ts", /const MAX_AGE_MS = (\d+) \* DAY_MS;/)} days`,
       capability: "triage",
     },
     { label: "Life of a planned change", value: hours(CLAIM_MAX_AGE_MS), capability: "actions-and-undo" },
@@ -324,7 +324,7 @@ describe("explanation pages", () => {
     const sorted = readPage("explanation/how-a-mail-is-sorted");
     expect(sorted).toContain(`The start limit is ${DEFAULT_THRESHOLD}`);
     expect(sorted).toContain(
-      `${numberInSource("apps/server/src/modules/triage/service.ts", /const MAX_AGE_MS = (\d+) \* 24 \* 3_600_000;/)} days`
+      `${numberInSource("apps/server/src/modules/triage/service.ts", /const MAX_AGE_MS = (\d+) \* DAY_MS;/)} days`
     );
     expect(HARD_ERROR_TRIES).toBe(3);
     expect(sorted).toContain("fails three times");

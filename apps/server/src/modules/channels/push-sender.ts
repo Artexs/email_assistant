@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import { noticeGroupOf, pushPayloadSchema, renderNotice } from "@ea/core";
+import { noticeGroupOf, pushPayloadSchema, renderNotice, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { CryptoKeyVersionError, type SecretBox } from "../../platform/crypto";
@@ -35,7 +35,7 @@ import { backoff, CONFIG_PAUSE_MS, MAX_OTHER_ERRORS, OUTBOX_MAX_AGE_MS, SENDER_S
 const log = createLog("channels");
 
 // A row that waits for the flag `web_push` is looked at again after this time, with no attempt counted.
-export const PUSH_FLAG_WAIT_MS = 15 * 60_000;
+export const PUSH_FLAG_WAIT_MS = 15 * MINUTE_MS;
 /** The life of a row and of a message at the push service. A message gets what is left of it: `PUSH_TTL_SECONDS` minus the row age. */
 export const PUSH_TTL_SECONDS = 86_400;
 const DEFAULT_BATCH_SIZE = 20;

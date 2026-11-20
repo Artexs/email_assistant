@@ -35,6 +35,11 @@
       "to": "delegation",
       "why": "The profile pass reads the active delegate addresses (relation delegate) and the delegations of a sender."
     },
+    {
+      "from": "contacts",
+      "to": "triage",
+      "why": "The profile pass reads the newest triage result and feedback counts per sender."
+    },
     { "from": "loops", "to": "actions", "why": "Loops plan and close follow-up sends." },
     { "from": "loops", "to": "delegation", "why": "Loops run the delegation chaser step and read delegates." },
     {
@@ -56,6 +61,9 @@
       "file": "scripts/e2e-seed.ts",
       "why": "E2E test seed: writes a mailbox, its credentials and its inbox folder with the mail repository."
     },
-    { "file": "scripts/e2e-activity-rows.ts", "why": "E2E test seed: writes an inbox folder with the mail repository." }
+    {
+      "file": "scripts/lib/e2e-activity-rows.ts",
+      "why": "E2E test seed: writes an inbox folder with the mail repository."
+    }
   ]
 }

@@ -1,6 +1,7 @@
+import { normalizeAddress } from "@ea/core";
 import { sql } from "kysely";
 
-import type { TenantContext } from "../../platform/db";
+import { normalizedAddress, type TenantContext } from "../../platform/db";
 import { createLog } from "../../platform/log";
 import { listMailboxes } from "../mail";
 
@@ -45,29 +46,29 @@ export const emptyMatchResult = (): MatchResult => ({
 // The aliases that one mailbox read at most. A user has a few; the newest come first.
 const MAX_ALIASES = 100;
 
-// Every From address seen in the Sent rows of the mailbox, lower case: the user wrote from it, so a mail from it is not a
+// Every From address seen in the Sent rows of the mailbox, in the rule form (`normalizeAddress`): the user wrote from it, so a mail from it is not a
 // reply (an alias that is not a mailbox address). A wrong entry can only hide a reply, never close a loop.
 async function sentFromAddressesOf(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<string[]> {
   const { rows } = await sql<{ address: string }>`
-    SELECT lower(from_address) AS address
+    SELECT ${normalizedAddress("from_address")} AS address
     FROM sent_emails
     WHERE org_id = ${ctx.orgId} AND mailbox_id = ${mailboxId} AND from_address IS NOT NULL AND from_address <> ''
-    GROUP BY lower(from_address)
-    ORDER BY max(sent_at) DESC, lower(from_address)
+    GROUP BY ${normalizedAddress("from_address")}
+    ORDER BY max(sent_at) DESC, ${normalizedAddress("from_address")}
     LIMIT ${MAX_ALIASES}
   `.execute(db);
   return rows.map((row) => row.address.trim());
 }
 
 // The own addresses of one mailbox, in two parts: every mailbox address of the organization, and the From addresses of the
-// Sent rows of this mailbox (aliases). Lower case.
+// Sent rows of this mailbox (aliases). Rule form.
 export interface OwnAddressSets {
   mailboxes: string[];
   aliases: string[];
 }
 
 export async function ownAddressSetsOf(db: DbOrTrx, ctx: TenantContext, mailboxId: string): Promise<OwnAddressSets> {
-  const mailboxes = (await listMailboxes(db, ctx)).map((mailbox) => mailbox.address.toLowerCase());
+  const mailboxes = (await listMailboxes(db, ctx)).map((mailbox) => normalizeAddress(mailbox.address));
   return { mailboxes, aliases: await sentFromAddressesOf(db, ctx, mailboxId) };
 }
 
@@ -80,7 +81,7 @@ export function ownAddressesFor(
 ): string[] {
   const people = new Set(
     [...loop.to_addresses, ...loop.cc_addresses, ...(loop.counterpart === null ? [] : [loop.counterpart])].map(
-      (address) => address.trim().toLowerCase()
+      normalizeAddress
     )
   );
   return [...new Set([...sets.mailboxes, ...sets.aliases.filter((alias) => !people.has(alias))])];

@@ -26,6 +26,7 @@ export {
   countOpenDelegations,
   findOpenDelegationOfEmail,
   countPendingReminderSends,
+  delegationCountsByDelegateAddress,
   findDelegationBySendAction,
   findOpenDelegationByMessageIds,
   getDelegate,
@@ -54,6 +55,8 @@ export {
 export { listDelegationDueRows, listDelegationOutcomes, type DelegationOutcomeRow } from "./metrics-repo";
 export type {
   DelegateRow,
+  DelegationCount,
+  DelegationCountOptions,
   DelegationSource,
   DelegationPageCursor,
   DelegationPageRow,

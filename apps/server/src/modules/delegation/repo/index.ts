@@ -1,4 +1,5 @@
 export {
+  findDelegateIdByAddress,
   getDelegate,
   insertDelegate,
   listDelegateAddresses,
@@ -51,3 +52,8 @@ export {
   type DelegationPageRow,
   type LatestDelegationRow,
 } from "./delegations-read";
+export {
+  delegationCountsByDelegateAddress,
+  type DelegationCount,
+  type DelegationCountOptions,
+} from "./sender-activity";

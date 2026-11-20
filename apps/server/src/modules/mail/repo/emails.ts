@@ -34,12 +34,12 @@ export type InsertableEmail = NewEmail & { status?: "skipped" };
 export async function insertEmail(db: DbOrTrx, ctx: TenantContext, row: InsertableEmail): Promise<boolean> {
   const result = await db
     .insertInto("emails")
-    .values({ ...row, inbox_uid: row.uid, org_id: ctx.orgId })
+    .values({ ...row, source_uid: row.uid, org_id: ctx.orgId })
     .onConflict((oc) => oc.columns(["mailbox_id", "dedup_key"]).doNothing())
     .executeTakeFirst();
   return (result.numInsertedOrUpdatedRows ?? 0n) > 0n;
 }
-// `inbox_uid` (the UID in `source_folder`) changes only when the row sits in its source folder.
+// `source_uid` (the UID in `source_folder`) changes only when the row sits in its source folder.
 // Only while the row is still in `opts.folder`, the folder of the decision: a move in between keeps its UID.
 export async function updateEmailUid(
   db: DbOrTrx,
@@ -50,7 +50,7 @@ export async function updateEmailUid(
 ): Promise<boolean> {
   const result = await db
     .updateTable("emails")
-    .set(opts.isSource === false ? { uid } : { uid, inbox_uid: uid })
+    .set(opts.isSource === false ? { uid } : { uid, source_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .where("folder", "=", opts.folder)
@@ -69,7 +69,7 @@ export async function markEmailReturned(
 ): Promise<boolean> {
   let query = db
     .updateTable("emails")
-    .set({ returned_at: at, folder: opts.folder, source_folder: opts.folder, uid, inbox_uid: uid })
+    .set({ returned_at: at, folder: opts.folder, source_folder: opts.folder, uid, source_uid: uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .whereRef("folder", "<>", "source_folder");
@@ -88,7 +88,7 @@ export async function markEmailRelocated(
 ): Promise<boolean> {
   let query = db
     .updateTable("emails")
-    .set({ folder: change.to, source_folder: change.to, uid: change.uid, inbox_uid: change.uid })
+    .set({ folder: change.to, source_folder: change.to, uid: change.uid, source_uid: change.uid })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .whereRef("folder", "=", "source_folder")
@@ -127,7 +127,7 @@ export async function clearReturned(trx: DbOrTrx, ctx: TenantContext, emailId: s
   return result.numUpdatedRows > 0n;
 }
 // `at` marks a reverse move in flight (the sync stores no INBOX copy of the mail); `null` clears it.
-export async function setUndoPending(
+export async function setMovePending(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
@@ -135,7 +135,7 @@ export async function setUndoPending(
 ): Promise<boolean> {
   const result = await db
     .updateTable("emails")
-    .set({ undo_pending_at: at })
+    .set({ move_pending_at: at })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)
     .executeTakeFirst();
@@ -205,21 +205,21 @@ export async function getEmailMeta(db: DbOrTrx, ctx: TenantContext, emailId: str
     .where("id", "=", emailId)
     .executeTakeFirst();
 }
-// `undefined` keeps the column. `sourceUid` writes `inbox_uid` (the UID in `source_folder`). `movedAt: null` clears `moved_at` (the mail is back in its source folder). `undoPendingAt: null` clears the undo-pending flag. Never touches `status` or `returned_at`.
+// `undefined` keeps the column. `sourceUid` writes `source_uid` (the UID in `source_folder`). `movedAt: null` clears `moved_at` (the mail is back in its source folder). `movePendingAt: null` clears the move-pending stamp. Never touches `status` or `returned_at`.
 export async function updateEmailLocation(
   db: DbOrTrx,
   ctx: TenantContext,
   emailId: string,
-  next: { folder: string; uid: number; sourceUid?: number; movedAt?: Date | null; undoPendingAt?: null }
+  next: { folder: string; uid: number; sourceUid?: number; movedAt?: Date | null; movePendingAt?: null }
 ): Promise<boolean> {
   const result = await db
     .updateTable("emails")
     .set({
       folder: next.folder,
       uid: next.uid,
-      ...(next.sourceUid === undefined ? {} : { inbox_uid: next.sourceUid }),
+      ...(next.sourceUid === undefined ? {} : { source_uid: next.sourceUid }),
       ...(next.movedAt === undefined ? {} : { moved_at: next.movedAt }),
-      ...(next.undoPendingAt === undefined ? {} : { undo_pending_at: null }),
+      ...(next.movePendingAt === undefined ? {} : { move_pending_at: null }),
     })
     .where("org_id", "=", ctx.orgId)
     .where("id", "=", emailId)

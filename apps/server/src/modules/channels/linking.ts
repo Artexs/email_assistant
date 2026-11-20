@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -16,11 +17,11 @@ import {
   useLinkToken,
 } from "./repo";
 
-export const LINK_TOKEN_TTL_MS = 15 * 60_000;
+export const LINK_TOKEN_TTL_MS = 15 * MINUTE_MS;
 // 32 random bytes as base64url: 43 characters, the alphabet that a Telegram deep link allows.
 export const LINK_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
-const OLD_TOKEN_AGE_MS = 24 * 60 * 60_000;
+const OLD_TOKEN_AGE_MS = DAY_MS;
 
 export type ConsumeResult =
   | { kind: "linked"; orgId: string; userId: string }

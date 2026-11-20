@@ -1,4 +1,4 @@
-import { orgNameMatches, type Me } from "@ea/core/web";
+import { MINUTE_MS, orgNameMatches, type Me } from "@ea/core/web";
 import { z } from "zod";
 
 import { deleteError, type DeleteError } from "./errors";
@@ -11,7 +11,7 @@ export const DELETED_MAILBOXES_KEY = "ea.deleted_mailboxes";
 // /login before the 200 arrives (the list is then never written): the marker alone makes the login page show the
 // notice. It holds the time as milliseconds, so a marker that a closed tab left behind goes stale.
 export const DELETING_KEY = "ea.deleting";
-export const DELETING_MAX_AGE_MS = 2 * 60 * 1000;
+export const DELETING_MAX_AGE_MS = 2 * MINUTE_MS;
 
 // Owners only, with the flag `org_delete` on. The server checks both again.
 export function canDeleteOrganization(me: Pick<Me, "role" | "features">): boolean {

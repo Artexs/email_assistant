@@ -1,4 +1,4 @@
-import { nextQuotaDayStart, QUOTA_TIMEZONE, quotaDayStart } from "@ea/core";
+import { MINUTE_MS, nextQuotaDayStart, QUOTA_TIMEZONE, quotaDayStart } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
@@ -24,8 +24,8 @@ const log = createLog("loops");
 // The model call of a mailbox stops at this share of the daily cap of the mailbox, so triage keeps the rest.
 const CAP_SHARE_NUM = 4;
 const CAP_SHARE_DEN = 5;
-const CAP_RETRY_AFTER_DAY_MS = 5 * 60_000;
-const RETRY_STEP_MS = 5 * 60_000;
+const CAP_RETRY_AFTER_DAY_MS = 5 * MINUTE_MS;
+const RETRY_STEP_MS = 5 * MINUTE_MS;
 // The tries of one mail: a schema failure or a hard error counts one; the third ends it.
 export const MAX_ATTEMPTS = 3;
 export const DEFAULT_LIMIT = 20;

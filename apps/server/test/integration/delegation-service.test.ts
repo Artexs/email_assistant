@@ -140,6 +140,61 @@ describe("addDelegate / setDelegateState", () => {
     });
   });
 
+  // The stored address is the lower case form that reminders go to; the one address rule is a compare key only.
+  test("02-T1, 02-T3: a dotted I delegate is kept once; the stored form is the lower case form", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      expect(await addDelegate(trx, s.ctx, { ...base, email: "İlker@Example.com" })).toMatchObject({ kind: "added" });
+      // pin: `i` + U+0307, not the rule form `ilker@example.com`
+      expect((await listDelegates(trx, s.ctx)).map((row) => row.email)).toEqual(["i\u0307lker@example.com"]);
+      // guard: the pre-check refuses the rule-form duplicate
+      expect(await addDelegate(trx, s.ctx, { ...base, email: "ilker@example.com" })).toEqual({ kind: "exists" });
+      expect(await addDelegate(trx, s.ctx, { ...base, email: " İLKER@example.com " })).toEqual({ kind: "exists" });
+      expect(await listDelegates(trx, s.ctx)).toHaveLength(1);
+      expect(await auditRows(trx, s.ctx, "delegate.added")).toHaveLength(1);
+    });
+  });
+
+  test("02-T2, 02-T4: a Greek delegate is kept once; the stored form keeps the final sigma", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      expect(await addDelegate(trx, s.ctx, { ...base, email: "ΝΊΚΟΣ@example.gr" })).toMatchObject({ kind: "added" });
+      // pin: the capital sigma lowers to the final sigma; the rule form `νίκοσ` is never stored
+      expect((await listDelegates(trx, s.ctx)).map((row) => row.email)).toEqual(["νίκος@example.gr"]);
+      // guard: the pre-check refuses the plain sigma spelling
+      expect(await addDelegate(trx, s.ctx, { ...base, email: "νίκοσ@example.gr" })).toEqual({ kind: "exists" });
+      expect(await listDelegates(trx, s.ctx)).toHaveLength(1);
+    });
+  });
+
+  test("a disabled delegate still holds its address", async () => {
+    await withRollback(db, async (trx) => {
+      const s = await setup(trx);
+      await insertDelegate(trx, s.ctx, { email: "anna@x.test", active: false });
+      expect(await addDelegate(trx, s.ctx, { ...base, email: "ANNA@x.test" })).toEqual({ kind: "exists" });
+    });
+  });
+
+  test("02-T5: a mailbox address is refused by the one address rule", async () => {
+    await withRollback(db, async (trx) => {
+      const org = await createOrgWithMailbox(trx, { address: "İlker@Example.com" });
+      const ctx = { orgId: org.orgId };
+      // guard: the base code compares two lower case folds and adds it
+      expect(await addDelegate(trx, ctx, { ...base, email: "ilker@example.com" })).toEqual({ kind: "mailbox_address" });
+      expect(await listDelegates(trx, ctx)).toEqual([]);
+    });
+  });
+
+  test("02-T6: the same address in two organizations is two delegates", async () => {
+    await withRollback(db, async (trx) => {
+      const a = await setup(trx);
+      const b = await setup(trx);
+      await insertDelegate(trx, a.ctx, { email: "a@example.com" });
+      // pin: the duplicate check filters by organization
+      expect(await addDelegate(trx, b.ctx, { ...base, email: "a@example.com" })).toMatchObject({ kind: "added" });
+    });
+  });
+
   test("setDelegateState", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);

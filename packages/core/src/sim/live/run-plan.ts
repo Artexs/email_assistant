@@ -1,4 +1,5 @@
 import { localDateTime, localToInstant, nextLocalDate } from "../../digest/local-time";
+import { MINUTE_MS } from "../../time";
 import type { Scenario } from "../scenario";
 import type { Slot } from "../slot";
 
@@ -47,7 +48,7 @@ function warsawOffsetMinutes(at: Date): number {
     Number(local.time.slice(0, 2)),
     Number(local.time.slice(3, 5))
   );
-  return (asUtc - at.getTime()) / 60_000;
+  return (asUtc - at.getTime()) / MINUTE_MS;
 }
 
 function midnight(date: string): Date {

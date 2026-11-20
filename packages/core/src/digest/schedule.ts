@@ -1,11 +1,13 @@
 // Pure rules for "which digest is due now". Slot keys are local wall-clock strings
 // `YYYY-MM-DDTHH:MM`, so a daylight-saving change gives no double and no lost digest.
+import { HOUR_MS, MINUTE_MS } from "../time";
+
 import { localDateTime, localKey, localToInstant, nextLocalDate } from "./local-time";
 
-export const DIGEST_LATE_MS = 6 * 3_600_000;
+export const DIGEST_LATE_MS = 6 * HOUR_MS;
 export const MAX_DIGEST_TIMES = 6;
 
-const LATE_SLOT_MS = 10 * 60_000;
+const LATE_SLOT_MS = 10 * MINUTE_MS;
 export const DIGEST_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export interface DigestSlot {

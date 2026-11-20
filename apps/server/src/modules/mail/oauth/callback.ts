@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { z } from "zod";
 
 import type { SecretBox } from "../../../platform/crypto";
@@ -69,7 +70,7 @@ export interface CallbackInput {
 // AADSTS numbers that mean "consent is missing" (`CONSENT_AADSTS`).
 const CONSENT_NUMBERS: readonly string[] = ["90094", "90095", "65001"];
 /** An ID token may be up to 5 minutes past its `exp` (clock skew). */
-const EXP_SKEW_MS = 5 * 60_000;
+const EXP_SKEW_MS = 5 * MINUTE_MS;
 // The same rule as `addressSchema` of @ea/core (not exported there): the HTML5 pattern and at most 254 characters.
 const ADDRESS = z.email({ pattern: z.regexes.html5Email }).max(254);
 const GUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;

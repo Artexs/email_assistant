@@ -174,18 +174,18 @@ describe("undo: the reverse rows", () => {
       expect(audit).toHaveLength(2);
       expect(audit.every((row) => row.actor === s.userId && row.email_id === mail.emailId)).toBe(true);
       expect(audit[0]?.data).toMatchObject({ original_action_id: audit[0]?.action_id });
-      expect((await emailState(trx, mail.emailId)).undo_pending_at?.getTime()).toBe(NOW.getTime());
+      expect((await emailState(trx, mail.emailId)).move_pending_at?.getTime()).toBe(NOW.getTime());
     });
   });
 
-  test("(1b) a flag-only Undo sets no undo_pending_at", async () => {
+  test("(1b) a flag-only Undo sets no move_pending_at", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       const mail = await insertMail(trx, s, [{ type: "flag", status: "applied" }]);
 
       expect(await undo(trx, s.ctx, mail.emailId, opts(s))).toEqual({ kind: "started", created: 1 });
 
-      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+      expect((await emailState(trx, mail.emailId)).move_pending_at).toBeNull();
     });
   });
 
@@ -286,7 +286,7 @@ describe("undo: the reverse rows", () => {
 
       expect(await reverseRows(trx, s)).toHaveLength(0);
       expect(await auditRows(trx, s, "action.undo_requested")).toHaveLength(0);
-      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+      expect((await emailState(trx, mail.emailId)).move_pending_at).toBeNull();
     });
   });
 
@@ -389,7 +389,7 @@ describe("undo with the committer", () => {
       const reverses = await reverseRows(trx, s);
       expect(reverses.map((row) => row.status)).toEqual(["applied", "applied", "applied"]);
       const email = await emailState(trx, mail.emailId);
-      expect(email).toMatchObject({ folder: INBOX, moved_at: null, undo_pending_at: null });
+      expect(email).toMatchObject({ folder: INBOX, moved_at: null, move_pending_at: null });
       const applied = (await auditRows(trx, s, "action.applied")).filter((row) => {
         const data = row.data as { reverse?: boolean };
         return data.reverse === true;
@@ -421,12 +421,12 @@ describe("undo with the committer", () => {
 describe("undo: a reverse move in flight (D22)", () => {
   // The mail sits in AI/Info (a webmail move keeps the UID); the cursor is past the INBOX UID.
   async function movedMail(trx: Transaction<DB>, s: Setup) {
-    const inboxUid = s.fake.deliver(
+    const uidInInbox = s.fake.deliver(
       INBOX,
       { messageId: MESSAGE_ID, from: "sender@x.test", to: [s.address], subject: "s", date: RECEIVED },
       { internalDate: RECEIVED }
     );
-    const infoUid = s.fake.userMove(INBOX, inboxUid, "AI/Info");
+    const infoUid = s.fake.userMove(INBOX, uidInInbox, "AI/Info");
     const meta = await s.fake.fetchMetaIn("AI/Info", infoUid);
     const mail = await insertTriagedWithActions(trx, s.ctx, s.mailboxId, {
       category: "info",
@@ -436,7 +436,7 @@ describe("undo: a reverse move in flight (D22)", () => {
       messageId: MESSAGE_ID,
       folder: "AI/Info",
       uid: infoUid,
-      inboxUid,
+      sourceUid: uidInInbox,
       contentHash: contentHash(meta as NonNullable<typeof meta>),
       movedAt: APPLIED,
       actions: [{ type: "move", status: "applied", payload: { folder: "ai_info" }, appliedAt: APPLIED }],
@@ -447,10 +447,10 @@ describe("undo: a reverse move in flight (D22)", () => {
         s.ctx,
         s.mailboxId,
         { uidValidity: null, lastUid: null },
-        { uidValidity: 7, lastUid: inboxUid }
+        { uidValidity: 7, lastUid: uidInInbox }
       )
     ).toBe(true);
-    return { ...mail, inboxUid };
+    return { ...mail, uidInInbox };
   }
 
   function claim(trx: Transaction<DB>, s: Setup, at: Date): Promise<ClaimedAction[]> {
@@ -514,17 +514,17 @@ describe("undo: a reverse move in flight (D22)", () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]?.dedup_key.includes("#2")).toBe(false);
       expect(await actionState(trx, mail.actionIds[0] as string)).toMatchObject({ status: "undone" });
-      expect(await emailState(trx, mail.emailId)).toMatchObject({ folder: INBOX, undo_pending_at: null });
+      expect(await emailState(trx, mail.emailId)).toMatchObject({ folder: INBOX, move_pending_at: null });
     });
   });
 
-  test("(11) an undo_pending_at older than 1 day gives the old rule (#2)", async () => {
+  test("(11) an move_pending_at older than 1 day gives the old rule (#2)", async () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx, { ...INTERIA, uidValidity: 7 });
       const mail = await stoppedReverse(trx, s);
       await trx
         .updateTable("emails")
-        .set({ undo_pending_at: new Date(NOW.getTime() - 25 * HOUR) })
+        .set({ move_pending_at: new Date(NOW.getTime() - 25 * HOUR) })
         .where("id", "=", mail.emailId)
         .execute();
 
@@ -549,7 +549,7 @@ describe("undo: a reverse move in flight (D22)", () => {
         reason: "mail_not_found",
       });
 
-      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+      expect((await emailState(trx, mail.emailId)).move_pending_at).toBeNull();
     });
   });
 
@@ -569,7 +569,7 @@ describe("undo: a reverse move in flight (D22)", () => {
 
       expect(outcomes.at(-1)).toEqual({ kind: "failed", reason: "hard_error" });
       expect(await reverseRows(trx, s)).toMatchObject([{ status: "failed", status_reason: "hard_error" }]);
-      expect((await emailState(trx, mail.emailId)).undo_pending_at).toBeNull();
+      expect((await emailState(trx, mail.emailId)).move_pending_at).toBeNull();
     });
   });
 });

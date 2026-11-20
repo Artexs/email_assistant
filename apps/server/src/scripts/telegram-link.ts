@@ -8,7 +8,7 @@ import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { HardError } from "../platform/errors";
 
-import { pickMemberId } from "./pick-member";
+import { pickMemberId } from "./lib/pick-member";
 
 const out = createCliOutput("telegram-link");
 

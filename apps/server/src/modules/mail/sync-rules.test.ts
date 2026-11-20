@@ -531,10 +531,10 @@ describe("matchReturned", () => {
     flags: [],
     ...overrides,
   });
-  const movedRow = (id: string, inboxUid: number, overrides: Partial<MovedRow> = {}): MovedRow => ({
+  const movedRow = (id: string, sourceUid: number, overrides: Partial<MovedRow> = {}): MovedRow => ({
     id,
     uid: 3,
-    inbox_uid: inboxUid,
+    source_uid: sourceUid,
     folder: "AI/Info",
     source_folder: "INBOX",
     message_id_header: "<a1@example.test>",
@@ -545,11 +545,11 @@ describe("matchReturned", () => {
     ...overrides,
   });
 
-  test("a meta at the inbox_uid of a row with the same identity is a hit", () => {
+  test("a meta at the source_uid of a row with the same identity is a hit", () => {
     expect(matchReturned([withFlags({ uid: 10 })], [movedRow("e1", 10)])).toEqual([{ emailId: "e1", uid: 10 }]);
   });
 
-  test("a meta at the folder uid of a row (inbox_uid differs) with the same identity is a hit", () => {
+  test("a meta at the folder uid of a row (source_uid differs) with the same identity is a hit", () => {
     expect(matchReturned([withFlags({ uid: 4 })], [movedRow("e1", 1, { uid: 4 })])).toEqual([
       { emailId: "e1", uid: 4 },
     ]);
@@ -574,7 +574,7 @@ describe("matchReturned", () => {
     expect(matchReturned([other], [movedRow("e1", 1, { uid: 4 })])).toEqual([]);
   });
 
-  test("one meta matching several rows prefers the row whose inbox_uid is the meta uid", () => {
+  test("one meta matching several rows prefers the row whose source_uid is the meta uid", () => {
     const rows = [movedRow("e1", 1, { uid: 9 }), movedRow("e2", 9, { uid: 3 })];
     expect(matchReturned([withFlags({ uid: 9 })], rows)).toEqual([{ emailId: "e2", uid: 9 }]);
   });
@@ -605,7 +605,7 @@ describe("matchMoved", () => {
     content_hash: contentHash(meta()),
     from_address: "boss@example.test",
     received_at: new Date("2026-11-03T10:05:00Z"),
-    undo_pending_at: null,
+    move_pending_at: null,
     ...overrides,
   });
 

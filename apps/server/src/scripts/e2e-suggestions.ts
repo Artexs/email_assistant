@@ -6,7 +6,7 @@ import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
 import { seedTargetOk } from "./e2e-seed-args";
-import { seedSuggestionRows } from "./e2e-suggestion-rows";
+import { seedSuggestionRows } from "./lib/e2e-suggestion-rows";
 
 const out = createCliOutput("e2e-suggestions");
 

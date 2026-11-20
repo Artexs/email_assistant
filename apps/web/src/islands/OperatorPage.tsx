@@ -1,4 +1,4 @@
-import { operatorNoticesSchema, operatorOrgDetailSchema, operatorOrgListSchema } from "@ea/core/web";
+import { MINUTE_MS, operatorNoticesSchema, operatorOrgDetailSchema, operatorOrgListSchema } from "@ea/core/web";
 import { useState, type ReactNode } from "react";
 
 import { AppShell } from "../components/shell/AppShell";
@@ -14,7 +14,7 @@ import { useNow } from "../lib/use-now";
 import { useReloadOn } from "../lib/use-reload-on";
 import { useResource } from "../lib/use-resource";
 
-const POLL_MS = 60_000;
+const POLL_MS = MINUTE_MS;
 
 function isNotFound(error: unknown): boolean {
   return error instanceof ApiError && error.status === 404;

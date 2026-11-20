@@ -57,6 +57,7 @@ flowchart BT
   contacts --> delegation
   contacts --> mail
   contacts --> tenancy
+  contacts --> triage
   delegation --> actions
   delegation --> audit
   delegation --> config

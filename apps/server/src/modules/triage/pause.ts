@@ -1,3 +1,5 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
+
 import { createLog } from "../../platform/log";
 
 const log = createLog("triage");
@@ -17,8 +19,8 @@ export interface LlmPause {
 }
 
 export function createLlmPause(opts: { baseMs?: number; maxMs?: number } = {}): LlmPause {
-  const baseMs = opts.baseMs ?? 5 * 60_000;
-  const maxMs = opts.maxMs ?? 60 * 60_000;
+  const baseMs = opts.baseMs ?? 5 * MINUTE_MS;
+  const maxMs = opts.maxMs ?? HOUR_MS;
   let trips = 0;
   let until: Date | null = null;
   let since: Date | null = null;

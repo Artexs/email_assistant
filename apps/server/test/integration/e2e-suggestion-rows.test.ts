@@ -3,7 +3,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { insertSenderRule } from "../../src/modules/config/repo";
 import { upsertOrgFeature } from "../../src/modules/tenancy";
 import { E2E_SUGGESTIONS } from "../../src/scripts/e2e-seed-args";
-import { seedSuggestionRows } from "../../src/scripts/e2e-suggestion-rows";
+import { seedSuggestionRows } from "../../src/scripts/lib/e2e-suggestion-rows";
 
 import { KEY, NOW, openOf, refresh, rowsOf, suggestOrg, summary } from "./contacts-fixtures";
 import { testDb, withRollback } from "./helpers";

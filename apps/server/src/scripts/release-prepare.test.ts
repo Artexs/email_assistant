@@ -4,8 +4,8 @@ import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
+import { isGreaterVersion } from "./lib/release-prepare-lib";
 import { parseReleasePrepareArgs } from "./release-prepare-args";
-import { isGreaterVersion } from "./release-prepare-lib";
 
 const script = join(import.meta.dir, "release-prepare.ts");
 let work = "";

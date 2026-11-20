@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 
-import { llmRoles } from "@ea/core";
+import { llmRoles, MINUTE_MS } from "@ea/core";
 
 import { gateEvidenceOf, settingsDeps } from "../composition";
 import {
@@ -39,7 +39,7 @@ import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
 import { parseLabArgs, usage } from "./lab-args";
-import { runLabCommand } from "./lab-run";
+import { runLabCommand } from "./lib/lab-run";
 
 const cli = createCliOutput("lab");
 
@@ -49,7 +49,7 @@ const RESULTS_DIR = resolve(import.meta.dir, "../../../../evals/results");
 // The lab runs no judge: its model is not a cost of a live run.
 const LAB_ROLES = llmRoles.filter((role) => role !== "judge");
 // Seed waits this long for the server to link the fake chat after `/start`.
-const LINK_TIMEOUT_MS = 60_000;
+const LINK_TIMEOUT_MS = MINUTE_MS;
 const LINK_POLL_MS = 1000;
 
 // Resolves after `ms`, or at once when the signal aborts.

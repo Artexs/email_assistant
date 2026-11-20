@@ -1,4 +1,12 @@
-import { ADDRESS_PATTERN, DELEGATE_NAME_MAX, DELEGATE_TAG_MAX, DELEGATE_TAGS_MAX, localToInstant } from "@ea/core";
+import {
+  ADDRESS_PATTERN,
+  DELEGATE_NAME_MAX,
+  DELEGATE_TAG_MAX,
+  DELEGATE_TAGS_MAX,
+  localToInstant,
+  normalizeAddress,
+  storedAddressForm,
+} from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -8,6 +16,7 @@ import { listMailboxes, mailboxHasUidplus, normalizeMessageId } from "../mail";
 
 import {
   bumpReminder,
+  findDelegateIdByAddress,
   findOpenDelegationByMessageIds,
   getDelegate,
   getDelegation,
@@ -41,6 +50,7 @@ function inTransaction<T>(db: DbOrTrx, run: (trx: Transaction<DB>) => Promise<T>
 }
 
 function normalizeTags(tags: readonly string[]): string[] | null {
+  // not an address: a competence tag is free text
   const result = [...new Set(tags.map((tag) => tag.trim().toLowerCase()))];
   if (
     result.length > DELEGATE_TAGS_MAX ||
@@ -55,7 +65,8 @@ function cleanName(raw: string): string | null {
   return name === "" || Array.from(name).length > DELEGATE_NAME_MAX ? null : name;
 }
 
-// A delegate's address is never a mailbox address of the organization (modules §3.3).
+// A delegate's address is never a mailbox address of the organization (modules §3.3). The stored address is the lower case
+// form that reminders go to; the one address rule is a compare key only.
 export async function addDelegate(
   db: DbOrTrx,
   ctx: TenantContext,
@@ -63,13 +74,16 @@ export async function addDelegate(
 ): Promise<AddDelegateResult> {
   const name = cleanName(input.name);
   if (name === null) return { kind: "invalid", field: "name" };
-  const email = input.email.trim().toLowerCase();
+  const email = storedAddressForm(input.email);
   if (!ADDRESS_PATTERN.test(email)) return { kind: "invalid", field: "email" };
   const tags = normalizeTags(input.tags);
   if (tags === null) return { kind: "invalid", field: "tags" };
   const mailboxes = await listMailboxes(db, ctx);
-  if (mailboxes.some((mailbox) => mailbox.address.toLowerCase() === email)) return { kind: "mailbox_address" };
+  if (mailboxes.some((mailbox) => normalizeAddress(mailbox.address) === normalizeAddress(email)))
+    return { kind: "mailbox_address" };
   return inTransaction(db, async (trx): Promise<AddDelegateResult> => {
+    // One person once, by the one rule, in any status. The unique index still guards two adds of the same form at once.
+    if ((await findDelegateIdByAddress(trx, ctx, email)) !== undefined) return { kind: "exists" };
     const id = await insertDelegate(trx, ctx, { name, email, tags });
     if (id === null) return { kind: "exists" };
     await recordAudit(trx, ctx, {

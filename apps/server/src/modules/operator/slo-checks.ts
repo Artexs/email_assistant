@@ -6,6 +6,8 @@ import {
   type SloCheck,
   type SloKind,
   type SloThresholds,
+  DAY_MS,
+  MINUTE_MS,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
@@ -33,12 +35,11 @@ export interface SloReading {
 
 export const MAX_IDS = 5;
 // After a start the sync and the notices have not run yet: sync lag and urgent give no verdict for this long.
-export const SLO_START_GRACE_MS = 10 * 60_000;
+export const SLO_START_GRACE_MS = 10 * MINUTE_MS;
 // The urgent check looks at mail of the last 24 h, as the urgent detector does.
-export const SLO_URGENT_LOOKBACK_MS = 24 * 3_600_000;
+export const SLO_URGENT_LOOKBACK_MS = DAY_MS;
 // A late notice that went out stops counting this long after it was sent.
-export const SLO_URGENT_LATE_MEMORY_MS = 3_600_000;
-const MINUTE_MS = 60_000;
+export const SLO_URGENT_LATE_MEMORY_MS = HOUR_MS;
 
 function shownIds(ids: Iterable<string>): string[] {
   return [...ids].sort().slice(0, MAX_IDS);

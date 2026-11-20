@@ -11,7 +11,7 @@ import {
   locateKeyOf,
   locateMessage,
   MailAuthError,
-  setUndoPending,
+  setMovePending,
   updateEmailLocation,
   type FolderMessageMeta,
   type MailProvider,
@@ -42,7 +42,7 @@ const FLAG_OF_TYPE: Record<string, string> = { flag: "\\Flagged", mark_read: "\\
 // A reverse move or a rescue (forward target `inbox`) that ends (applied or failed) clears the in-flight flag of the mail.
 async function clearMovePending(trx: Transaction<DB>, ctx: TenantContext, action: ClaimedAction): Promise<void> {
   if (action.type === "move" && (action.reverses_action_id !== null || action.payload.folder === "inbox")) {
-    await setUndoPending(trx, ctx, emailIdOf(action), null);
+    await setMovePending(trx, ctx, emailIdOf(action), null);
   }
 }
 
@@ -269,10 +269,10 @@ async function applyMove(
     return mapProviderError(deps, ctx, action, error);
   }
   // The sync must not store an INBOX copy of the mail while the rescue runs. Idempotent: each try sets it again.
-  if (rescue) await setUndoPending(deps.db, ctx, email.id, deps.now());
+  if (rescue) await setMovePending(deps.db, ctx, email.id, deps.now());
   // When the sync marked the mail returned, `from` is the source folder too and the ensure only locates (rule 1).
   const from = email.folder;
-  const hints = { fromUid: email.uid, toUid: reverseOf === null ? email.uid : email.inbox_uid };
+  const hints = { fromUid: email.uid, toUid: reverseOf === null ? email.uid : email.source_uid };
   const byAppend = (to === INBOX && email.source_folder !== INBOX) || deps.appendFolders.has(to);
   const keyOf = { exceptEmailId: email.id, messageId: email.message_id_header, contentHash: email.content_hash };
   const exclude = {
@@ -310,7 +310,7 @@ async function applyMove(
       folder: to,
       uid,
       ...(to === email.source_folder ? { sourceUid: uid, movedAt: null } : { movedAt: now }),
-      ...(reverseOf === null && !rescue ? {} : { undoPendingAt: null }),
+      ...(reverseOf === null && !rescue ? {} : { movePendingAt: null }),
     });
     await recordAudit(trx, ctx, {
       emailId: email.id,

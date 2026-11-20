@@ -14,7 +14,7 @@ import { join } from "node:path";
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 
-import { credentialsLine } from "../../apps/server/src/scripts/credentials-check-lines";
+import { credentialsLine } from "../../apps/server/src/scripts/lib/credentials-check-lines";
 
 // F114 stage 07: `deploy/restore.sh` in a temp copy of the repo layout, with recording stubs (`docker`, `age`, `openssl`) first
 // on PATH. No real Docker, no real data. The `docker` stub records one line per call, with the number of stdin bytes it read, so a

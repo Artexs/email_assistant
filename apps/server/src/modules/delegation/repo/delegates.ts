@@ -1,6 +1,7 @@
+import { normalizeAddress } from "@ea/core";
 import type { Transaction } from "kysely";
 
-import type { DB, TenantContext } from "../../../platform/db";
+import { normalizedAddress, type DB, type TenantContext } from "../../../platform/db";
 
 import type { DbOrTrx } from "./shared";
 
@@ -13,6 +14,25 @@ export interface DelegateRow {
   created_at: Date;
   updated_at: Date;
 }
+// The delegate of the organization whose address is the same person by the one address rule (`normalizeAddress`), in any
+// status. The stored form keeps today's lower case; both sides fold here.
+export async function findDelegateIdByAddress(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  address: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("delegates")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where(normalizedAddress("email"), "=", normalizeAddress(address))
+    .orderBy("created_at")
+    .orderBy("id")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.id;
+}
+
 // null = the email exists in this organization (the unique index on org_id and email).
 export async function insertDelegate(
   db: DbOrTrx,

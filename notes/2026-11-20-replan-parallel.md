@@ -284,3 +284,7 @@ Applied in this session (commits on `master`, 2026-11-20):
 6. Notes committed: the audit, the cause note, the two 2026-11-14 notes, this file. `notes/decision-docs/2026-11-09-next-task.html` deleted (an old generated view).
 
 Not done by this session (coordinator): `docs/owner-decisions.md` entries for the 15 answers (only the coordinator writes it); the planner round 1 spawns; `limen continue` of the F124 job; the quality pass; the local C1 `.env` edit. Entries to add, one per line, status `ok`: rule 2026-11-19 ended; one OpenAI key kept (P6 accepted); spend order and ≤ $10.3; F124 refresh skipped (rule exception); F122 gate as a ship stage; F121 docs hold accepted; 20-draft check on the plan default; F136 and F129 unparked; F111 closed with F140 parked; F055 and F060 dropped; F037 and F047 closed; production checks never block (new rule); F141 created.
+
+## 2026-11-20 red CI: tests that read the real clock
+- `channels-loop-taps-answers.test.ts` "Done on an overdue delegation" built its mail with `new Date()` while the digest ran at the fixed 2026-11-20T07:00Z. After 07:00Z real time the mail left the digest window, so the test failed on every commit (CI red from `dd782fca`; it also failed on the old green `b0863fc3` when run late). Fixed in `821e4ce2` (fixed `createdAt`).
+- Follow-up (no ticket yet): 82 integration files use `new Date()`. Audit the ones that run against a fixed fake clock (digest, windows, retention, overdue). A ticket or a lint rule can follow; F125 stage 07 can name it in its report.

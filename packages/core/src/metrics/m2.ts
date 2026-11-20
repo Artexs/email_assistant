@@ -1,9 +1,10 @@
 // M2: open loops on time, for delegations. A loop is on time when it closes or surfaces by one working day after its due time.
+import { DAY_MS } from "../time";
 import { type LoopKind, M2_KINDS, type M2Kind } from "../web/stats";
 
 import { addWorkingDays } from "./week";
 
-export const DELEGATION_DEFAULT_DUE_MS = 3 * 24 * 3_600_000;
+export const DELEGATION_DEFAULT_DUE_MS = 3 * DAY_MS;
 
 export interface DelegationDueRow {
   id: string;

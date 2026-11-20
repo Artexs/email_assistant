@@ -667,6 +667,6 @@ describe("the production path has no way to reach a local host", () => {
           call: expect.stringMatching(/\{\s*lookup: dnsLookupAll[^}]*\}/),
         });
     }
-    expect(callers.sort()).toEqual(["web.ts"]);
+    expect(callers.sort()).toEqual(["web-routers.ts"]);
   });
 });

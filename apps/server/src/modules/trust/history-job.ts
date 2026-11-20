@@ -2,7 +2,7 @@
 // `classifying` → `done`. Steps are idempotent (mail dedup, one item per mail), a claim holds a lock, and a step error costs one
 // attempt. Only the classify step calls the model (`history-classify.ts`); a run stops starting organizations after its time budget.
 // Logs carry the check id, the mailbox id, a status and a code: never a mail value, an address or a token.
-import type { EvidenceKey, GateIndex } from "@ea/core";
+import { DAY_MS, type EvidenceKey, type GateIndex, MINUTE_MS } from "@ea/core";
 
 import type { SecretBox } from "../../platform/crypto";
 import type { Db, TenantContext } from "../../platform/db";
@@ -50,11 +50,11 @@ import type { NoResultReason } from "./repo";
 const log = createLog("trust");
 
 /** The classify step starts at the latest this long after the backfill, also when some flags are still unknown. */
-export const HISTORY_FLAGS_WAIT_MS = 20 * 60_000;
+export const HISTORY_FLAGS_WAIT_MS = 20 * MINUTE_MS;
 /** After this many moved-cursor retries of one check the next one counts one attempt, so a check cannot stay open for ever. */
 export const HISTORY_CURSOR_RETRIES = 20;
 /** A wait for the flags, and a retry after a moved cursor, run again after this. */
-export const HISTORY_FLAGS_POLL_MS = 60_000;
+export const HISTORY_FLAGS_POLL_MS = MINUTE_MS;
 
 export interface HistoryJobDeps {
   db: Db;
@@ -161,7 +161,7 @@ async function backfillStep(deps: HistoryJobDeps, ctx: TenantContext, check: Cla
   if (
     !(await markBackfilled(deps.db, ctx, check, {
       at: doneAt,
-      windowStart: new Date(readAt.getTime() - HISTORY_WINDOW_DAYS * 86_400_000),
+      windowStart: new Date(readAt.getTime() - HISTORY_WINDOW_DAYS * DAY_MS),
       key: deps.runningKey,
     }))
   )

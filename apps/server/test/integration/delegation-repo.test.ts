@@ -2,6 +2,7 @@ import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
 import {
+  addDelegate,
   bumpReminder,
   countOpenDelegations,
   countPendingReminderSends,
@@ -284,6 +285,79 @@ describe("delegations", () => {
       expect(done.id).toBeString();
       expect(await findOpenDelegationByMessageIds(trx, ctxA, a.mailboxId, ["<d1>"], "first@x.test")).toBeUndefined();
       expect(await findOpenDelegationByMessageIds(trx, ctxA, b.mailboxId, ["<m1>"], "first@x.test")).toBeUndefined();
+    });
+  });
+
+  test("findOpenDelegationByMessageIds: an applied send of another organization never matches (the org_id of the action join)", async () => {
+    await withRollback(db, async (trx) => {
+      const { a, b, ctxA, ctxB } = await twoOrgs(trx);
+      const delegateId = await fixtureDelegate(trx, ctxA, { email: "iso@x.test" });
+      const d = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status: "sent", sentMessageId: "<own>" });
+      const emailB = await insertTestEmail(trx, ctxB, b.mailboxId);
+      await insertAction(trx, ctxB, emailB, {
+        type: "send",
+        status: "applied",
+        approvedAt: now,
+        payload: { kind: "reminder", delegation_id: d.id, reminder: 1 },
+        outgoingMessageId: "<foreign>",
+      });
+
+      expect(await findOpenDelegationByMessageIds(trx, ctxA, a.mailboxId, ["<foreign>"], "iso@x.test")).toBeUndefined();
+      expect(await findOpenDelegationByMessageIds(trx, ctxA, a.mailboxId, ["<own>"], "iso@x.test")).toEqual({
+        id: d.id,
+        delegateId,
+      });
+    });
+  });
+
+  async function replyFixture(trx: Transaction<DB>, email: string, sentMessageId: string, viaAdd: boolean) {
+    const { a, ctxA } = await twoOrgs(trx);
+    let delegateId: string;
+    if (viaAdd) {
+      const added = await addDelegate(trx, ctxA, {
+        name: "Typed",
+        email,
+        tags: [],
+        actor: "cli",
+        via: "cli",
+        now,
+      });
+      if (added.kind !== "added") throw new Error("the delegate was not added");
+      delegateId = added.id;
+    } else {
+      // an address typed with a plain sigma: the row is inserted as it is
+      delegateId = await fixtureDelegate(trx, ctxA, { email });
+    }
+    const delegation = await makeDelegation(trx, ctxA, a.mailboxId, delegateId, { status: "sent", sentMessageId });
+    const find = (from: string) => findOpenDelegationByMessageIds(trx, ctxA, a.mailboxId, [sentMessageId], from);
+    return { find, expected: { id: delegation.id, delegateId } };
+  }
+
+  test("02-T7: a reply from a dotted I delegate is found whatever the case form of the From", async () => {
+    await withRollback(db, async (trx) => {
+      const { find, expected } = await replyFixture(trx, "İlker@Example.com", "<m1@example.com>", true);
+      // guard: the stored form holds `i` + U+0307, the From does not
+      expect(await find("ilker@example.com")).toEqual(expected);
+      expect(await find("İLKER@example.com")).toEqual(expected);
+      // pin: another address finds nothing
+      expect(await find("other@example.com")).toBeUndefined();
+    });
+  });
+
+  test("02-T8: a reply from a Greek delegate is found when the row holds a plain sigma", async () => {
+    await withRollback(db, async (trx) => {
+      const { find, expected } = await replyFixture(trx, "νίκοσ@example.gr", "<m2@example.gr>", false);
+      // guard: JavaScript lower case of the capital sigma From gives the final sigma
+      expect(await find("ΝΊΚΟΣ@example.gr")).toEqual(expected);
+      expect(await find("other@example.gr")).toBeUndefined();
+    });
+  });
+
+  test("02-T8 pin: a reply from a delegate added through addDelegate with capital letters is found", async () => {
+    await withRollback(db, async (trx) => {
+      const { find, expected } = await replyFixture(trx, "ΝΊΚΟΣ@example.gr", "<m3@example.gr>", true);
+      expect(await find("ΝΊΚΟΣ@example.gr")).toEqual(expected);
+      expect(await find("νίκοσ@example.gr")).toEqual(expected);
     });
   });
 

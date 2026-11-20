@@ -34,3 +34,9 @@ export {
   type TriagedItemRow,
   type UsageRow,
 } from "./reads";
+export {
+  newestFeedbackBySender,
+  newestResultsBySender,
+  type NewestFeedbackCount,
+  type NewestResultCount,
+} from "./sender-activity";

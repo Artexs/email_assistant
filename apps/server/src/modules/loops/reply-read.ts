@@ -1,7 +1,7 @@
-import { DAY_MS, type ReplyMail, replyMatch, SUBJECT_MATCH_DAYS } from "@ea/core";
+import { addressLowerForms, DAY_MS, normalizeAddress, type ReplyMail, replyMatch, SUBJECT_MATCH_DAYS } from "@ea/core";
 import { sql } from "kysely";
 
-import type { TenantContext } from "../../platform/db";
+import { normalizedAddress, type TenantContext } from "../../platform/db";
 
 import type { DbOrTrx, LoopRow } from "./repo";
 
@@ -35,10 +35,11 @@ export async function replyCandidates(
   loop: ReplyLoopFacts,
   ownAddresses: readonly string[]
 ): Promise<ReplyCandidate[]> {
-  const recipients = [...loop.to_addresses, ...loop.cc_addresses].map((address) => address.trim().toLowerCase());
+  const recipients = [...loop.to_addresses, ...loop.cc_addresses].map(normalizeAddress);
+  const lowerForms = [...new Set(recipients.flatMap(addressLowerForms))];
   const id = bareId(loop.message_id);
   const subjectUntil = new Date(loop.wait_from_at.getTime() + SUBJECT_MATCH_DAYS * DAY_MS);
-  const own = ownAddresses.map((address) => address.trim().toLowerCase());
+  const own = ownAddresses.map(normalizeAddress);
   const base = () => {
     let query = db
       .selectFrom("emails as e")
@@ -69,7 +70,8 @@ export async function replyCandidates(
           ORDER BY tr.created_at DESC, tr.id DESC LIMIT 1
         ) t WHERE t.category = 'spam'
       )`);
-    if (own.length > 0) query = query.where("e.from_address_lower", "not in", own);
+    if (own.length > 0)
+      query = query.where(sql<boolean>`${normalizedAddress("e.from_address")} not in (${sql.join(own)})`);
     return query.orderBy("e.received_at").orderBy("e.id").limit(MAX_CANDIDATES);
   };
   const byThread = base().where((eb) =>
@@ -86,7 +88,7 @@ export async function replyCandidates(
   const byRecipient =
     recipients.length === 0
       ? undefined
-      : base().where("e.from_address_lower", "in", recipients).where("e.received_at", "<=", subjectUntil);
+      : base().where("e.from_address_lower", "in", lowerForms).where("e.received_at", "<=", subjectUntil);
   const [threadRows, recipientRows] = await Promise.all([
     byThread.execute(),
     byRecipient === undefined ? Promise.resolve([]) : byRecipient.execute(),

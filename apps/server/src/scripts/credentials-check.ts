@@ -5,7 +5,7 @@ import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { credentialsLine } from "./credentials-check-lines";
+import { credentialsLine } from "./lib/credentials-check-lines";
 
 // Does the CREDENTIALS_KEY of this environment open every stored mailbox secret? `deploy/restore.sh` runs it before the server starts.
 // The one result line `credentials ok=<n> failed=<m>` holds counts only: no secret, key, password, address, id or error text.

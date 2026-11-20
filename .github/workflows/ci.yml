@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: 24
       - run: bun install --frozen-lockfile
-      - run: bun run lint
+      - run: bun run lint:full
       - run: bun run typecheck
       # A migration after the cutoff with a contract statement needs a `-- contract: v<x.y.z>` line (docs/code-patterns.md § Migrations).
       - run: bun run db:check-migrations

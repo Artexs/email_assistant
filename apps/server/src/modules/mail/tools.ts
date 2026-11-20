@@ -323,7 +323,7 @@ export async function backfillMailbox(
   mailboxId: string,
   opts: { days: number; now: Date; purpose?: BackfillPurpose }
 ): Promise<SyncResult | HistoryBackfillOutcome> {
-  const since = new Date(opts.now.getTime() - opts.days * 24 * 3_600_000);
+  const since = new Date(opts.now.getTime() - opts.days * DAY_MS);
   if (opts.purpose === "history") return backfillHistory(deps, ctx, mailboxId, since, opts.now);
   const provider = await openToolProvider(deps, ctx, mailboxId);
   try {

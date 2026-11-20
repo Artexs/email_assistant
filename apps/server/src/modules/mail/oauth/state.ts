@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { sql } from "kysely";
 
 import type { SecretBox } from "../../../platform/crypto";
@@ -17,7 +18,7 @@ import type { MailOAuthProvider } from "./providers";
 
 const log = createLog("mail");
 
-export const OAUTH_STATE_TTL_MS = 10 * 60_000;
+export const OAUTH_STATE_TTL_MS = 10 * MINUTE_MS;
 /** At most this many live rows for one user in one organization: a new start deletes the oldest beyond `cap - 1` first. */
 export const OAUTH_STATE_CAP = 5;
 

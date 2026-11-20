@@ -1,4 +1,5 @@
 import { localDateTime, localToInstant, nextLocalDate } from "../../digest/local-time";
+import { MINUTE_MS } from "../../time";
 import { createRng } from "../random";
 import type { SimLang } from "../scenario";
 import type { Slot } from "../slot";
@@ -8,7 +9,6 @@ import { addDays, isoWeekday } from "./calendar-days";
 // The pure rules of a delegate bot: when and what a delegate answers to a delegation mail. The server module
 // `lab/bots` reads the mail and sends; this file holds no clock, no file and no random source of its own.
 const ZONE = "Europe/Warsaw";
-const MINUTE_MS = 60_000;
 const WORK_START = "08:00";
 const WORK_END = "18:00";
 const OTHER_ADDRESS_DOMAIN = "poczta-prywatna.test";

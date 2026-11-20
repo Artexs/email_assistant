@@ -1,5 +1,6 @@
 import { parseArgs } from "node:util";
 
+import { DAY_MS } from "@ea/core";
 import { z } from "zod";
 
 import { isOwnMailOf } from "../composition";
@@ -7,8 +8,8 @@ import { backfillMailbox, CursorMovedError } from "../modules/mail";
 import { requeueBackfillWindow } from "../modules/triage";
 import { describeError } from "../platform/errors";
 
-import { backfillRefusal } from "./mailbox-backfill-gate";
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
+import { backfillRefusal } from "./lib/mailbox-backfill-gate";
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
 
 const usage = [
   "usage: bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 30]",
@@ -72,7 +73,7 @@ export async function run(argv: string[], deps: CliDeps): Promise<number> {
     out.print(
       `backfill ${options.mailboxId}: fetched ${result.fetched}, stored ${result.stored}, uid updated ${result.uidUpdated}, returned ${result.returned}`
     );
-    const since = new Date(now.getTime() - options.days * 24 * 60 * 60 * 1000);
+    const since = new Date(now.getTime() - options.days * DAY_MS);
     const requeued = await requeueBackfillWindow(db, { orgId: options.orgId }, options.mailboxId, { since, now });
     out.print(`re-queued ${requeued}`);
     return 0;

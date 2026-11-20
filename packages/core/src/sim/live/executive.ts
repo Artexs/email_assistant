@@ -1,5 +1,6 @@
 import { type Callback, parseCallback } from "../../digest/callback";
 import { localDateTime, localToInstant } from "../../digest/local-time";
+import { MINUTE_MS } from "../../time";
 import type { Category } from "../../triage/categories";
 import { createRng } from "../random";
 
@@ -9,7 +10,6 @@ import { addDays, isoWeekday } from "./calendar-days";
 // Pure: the driver reads the fake Telegram and the slot truth, and calls these functions. The executive only
 // approves, rejects (with a reason) and undoes. It never relabels and never edits a draft.
 const ZONE = "Europe/Warsaw";
-const MINUTE_MS = 60_000;
 const MIN_DELAY_MIN = 5;
 const MAX_DELAY_MIN = 90;
 
@@ -121,7 +121,7 @@ export function executiveTapAt(cardAt: string, seed: number): string {
   const at = new Date(cardAt);
   if (Number.isNaN(at.getTime())) throw new Error("executiveTapAt needs an ISO instant");
   const rng = createRng(seed);
-  const delayMs = MIN_DELAY_MIN * MINUTE_MS + rng.int((MAX_DELAY_MIN - MIN_DELAY_MIN) * 60 * 1000 + 1);
+  const delayMs = MIN_DELAY_MIN * MINUTE_MS + rng.int((MAX_DELAY_MIN - MIN_DELAY_MIN) * MINUTE_MS + 1);
   return new Date(startPoint(at).getTime() + delayMs).toISOString();
 }
 

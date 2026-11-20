@@ -1,3 +1,4 @@
+import { HOUR_MS, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -5,8 +6,8 @@ import type { DB, Db, TenantContext } from "../../platform/db";
 import { auditEvents, listAuditEvents } from "./repo";
 
 // A soft pause starts at 5 min (triage/pause.ts); a config pause doubles up to 60 min and a spent quota stays spent.
-export const SOFT_PAUSE_MAX_AGE_MS = 10 * 60_000;
-export const CONFIG_PAUSE_MAX_AGE_MS = 2 * 3_600_000;
+export const SOFT_PAUSE_MAX_AGE_MS = 10 * MINUTE_MS;
+export const CONFIG_PAUSE_MAX_AGE_MS = 2 * HOUR_MS;
 // At most 200 rows are read: on a very long run `since` can be later than the real start.
 const ROW_LIMIT = 200;
 

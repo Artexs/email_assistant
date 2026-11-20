@@ -819,7 +819,7 @@ describe("the Undo of a move into a sort folder (U11)", () => {
       folder: "AI/Info",
       sourceFolder: OFFERS,
       uid: infoUid,
-      inboxUid: offersUid,
+      sourceUid: offersUid,
       contentHash: contentHash(meta as NonNullable<typeof meta>),
       movedAt: RECEIVED,
       actions: [{ type: "move", status: "applied", payload: { folder: "ai_info" }, appliedAt: RECEIVED }],
@@ -851,9 +851,9 @@ describe("the Undo of a move into a sort folder (U11)", () => {
         const inOffers = await box.fake.searchSinceIn(OFFERS, new Date(RECEIVED.getTime() - 86_400_000));
         expect(inOffers).toHaveLength(1);
         const email = await emailState(trx, mail.emailId);
-        expect(email).toMatchObject({ folder: OFFERS, source_folder: OFFERS, moved_at: null, undo_pending_at: null });
+        expect(email).toMatchObject({ folder: OFFERS, source_folder: OFFERS, moved_at: null, move_pending_at: null });
         expect(Number(email.uid)).toBe(inOffers[0] as number);
-        expect(Number(email.inbox_uid)).toBe(inOffers[0] as number);
+        expect(Number(email.source_uid)).toBe(inOffers[0] as number);
         expect(await actionState(trx, reverseId)).toMatchObject({
           status: "applied",
           provider_result: { by_append: true },
@@ -935,8 +935,8 @@ describe("the Undo of a move into a sort folder (U11)", () => {
         date: RECEIVED,
       };
       const junkUid = box.fake.deliver(JUNK, message, { internalDate: RECEIVED });
-      const inboxUid = box.fake.userMove(JUNK, junkUid, "INBOX");
-      const meta = await box.fake.fetchMetaIn("INBOX", inboxUid);
+      const uidInInbox = box.fake.userMove(JUNK, junkUid, "INBOX");
+      const meta = await box.fake.fetchMetaIn("INBOX", uidInInbox);
       const mail = await insertTriagedWithActions(trx, ctx, box.mailboxId, {
         category: "info",
         createdAt: RECEIVED,
@@ -945,8 +945,8 @@ describe("the Undo of a move into a sort folder (U11)", () => {
         messageId: "<u11-rescue@x.test>",
         folder: "INBOX",
         sourceFolder: JUNK,
-        uid: inboxUid,
-        inboxUid,
+        uid: uidInInbox,
+        sourceUid: uidInInbox,
         contentHash: contentHash(meta as NonNullable<typeof meta>),
         movedAt: RECEIVED,
         actions: [{ type: "move", status: "applied", payload: { folder: "inbox" }, appliedAt: RECEIVED }],

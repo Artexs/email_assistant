@@ -11,7 +11,7 @@ import {
   readModuleGraph,
   renderGraphJson,
   renderGraphMarkdown,
-} from "./module-graph-build";
+} from "./lib/module-graph-build";
 
 const out = createCliOutput("module-graph");
 

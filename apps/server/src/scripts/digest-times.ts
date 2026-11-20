@@ -9,7 +9,7 @@ import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError } from "../platform/errors";
 
-import { pickMemberId } from "./pick-member";
+import { pickMemberId } from "./lib/pick-member";
 
 const out = createCliOutput("digest-times");
 

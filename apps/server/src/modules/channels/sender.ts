@@ -1,4 +1,4 @@
-import { renderNotice, type NoticeDetail, type OutMessage } from "@ea/core";
+import { renderNotice, type NoticeDetail, type OutMessage, DAY_MS, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db } from "../../platform/db";
@@ -23,11 +23,11 @@ import { isAskedForKey } from "./review-keys";
 
 const log = createLog("channels");
 
-export const SENDER_STALE_MS = 5 * 60_000;
-export const OUTBOX_MAX_AGE_MS = 24 * 3_600_000;
+export const SENDER_STALE_MS = 5 * MINUTE_MS;
+export const OUTBOX_MAX_AGE_MS = DAY_MS;
 export const SOFT_BACKOFF_START_MS = 30_000;
-export const SOFT_BACKOFF_MAX_MS = 15 * 60_000;
-export const CONFIG_PAUSE_MS = 10 * 60_000;
+export const SOFT_BACKOFF_MAX_MS = 15 * MINUTE_MS;
+export const CONFIG_PAUSE_MS = 10 * MINUTE_MS;
 export const MAX_OTHER_ERRORS = 5;
 
 const DEFAULT_BATCH_SIZE = 20;

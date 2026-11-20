@@ -58,7 +58,7 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 | page     | the reply item, Redraft, Reply all                                                                     | `apps/web/src/components/approvals/ReplyControls.tsx` |
 | page     | the style card samples                                                                                 | `apps/web/src/components/settings/ReplySamples.tsx`   |
 | CLI      | `bun run mailbox:profile`, `bun run reply:check-copy`, `bun run job:run`                               | `apps/server/src/scripts/mailbox-profile.ts`          |
-| eval     | `bun run eval --sim lab-01 --part dev --drafter`, `--set reply-injection --drafter`                    | `apps/server/src/scripts/eval-drafter.ts`             |
+| eval     | `bun run eval --sim lab-01 --part dev --drafter`, `--set reply-injection --drafter`                    | `apps/server/src/scripts/lib/eval-drafter.ts`             |
 
 ## Data
 

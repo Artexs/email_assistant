@@ -1,8 +1,10 @@
+import { DAY_MS } from "@ea/core";
+
 import { signalsOfMailbox } from "../modules/mail";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
-import { type CliDeps, oauthReasonLine, runMailboxCli } from "./mailbox-cli";
+import { type CliDeps, oauthReasonLine, runMailboxCli } from "./lib/mailbox-cli";
 import { readSignalsOptions, signalsLines, usage } from "./mailbox-signals-args";
 
 const log = createLog("mailbox-signals");
@@ -16,7 +18,7 @@ export async function run(argv: string[], deps: CliDeps): Promise<number> {
     return 1;
   }
   try {
-    const since = new Date(Date.now() - options.days * 24 * 3_600_000);
+    const since = new Date(Date.now() - options.days * DAY_MS);
     const signals = await signalsOfMailbox(deps, { orgId: options.orgId }, options.mailboxId, since);
     // The figures are for the operator, not log lines.
     out.raw(signalsLines(signals).join("\n"));

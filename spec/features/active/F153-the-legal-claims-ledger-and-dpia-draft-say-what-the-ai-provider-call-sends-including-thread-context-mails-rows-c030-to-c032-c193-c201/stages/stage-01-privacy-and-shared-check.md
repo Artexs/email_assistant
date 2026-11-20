@@ -26,7 +26,7 @@ Writes for 02 and 03: `sevenDayLimitProblems` (`@ea/core`); rows C261, C262 (pla
 ## Step 3 — the legal version
 
 - File: `packages/core/src/web/terms.ts`. Decision: P3.
-- Append one `TERMS_HISTORY` entry: version = UTC date of the commit (`-2`, `-3` … when that date has one), digest of `legalTextsDigest(legalTextParts())`, comment `AI provider: thread context, history check`. Recompute after `git merge master` if master moved a legal text.
+- Append one `TERMS_HISTORY` entry: version = UTC date of the commit (`.2`, `.3` … (`nextLegalVersion`, F148) when that date has one), digest of `legalTextsDigest(legalTextParts())`, comment `AI provider: thread context, history check`. Recompute after `git merge master` if master moved a legal text.
 - Check: `bun test apps/web/src/lib/legal-version.test.ts`.
 
 ## Step 4 — ledger rows and the tests of the papers

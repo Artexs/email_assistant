@@ -8,8 +8,8 @@ import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
 import { describeError, HardError } from "../platform/errors";
 
-import { deliverInvite } from "./invite-delivery";
-import { pickMemberId } from "./pick-member";
+import { deliverInvite } from "./lib/invite-delivery";
+import { pickMemberId } from "./lib/pick-member";
 
 const out = createCliOutput("web-invite");
 

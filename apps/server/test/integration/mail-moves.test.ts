@@ -105,17 +105,17 @@ async function stored(
   fake: FakeMailProvider,
   folder: string,
   uid: number,
-  row: { folder: string; source_folder: string; moved_at?: Date; undo_pending_at?: Date }
+  row: { folder: string; source_folder: string; moved_at?: Date; move_pending_at?: Date }
 ): Promise<string> {
   const meta = await fake.fetchMetaIn(folder, uid);
   if (meta === null) throw new Error("the fake holds no such mail");
   return insertTestEmail(trx, { orgId: box.orgId }, box.mailboxId, {
     uid,
-    inbox_uid: uid,
+    source_uid: uid,
     folder: row.folder,
     source_folder: row.source_folder,
     moved_at: row.moved_at ?? null,
-    undo_pending_at: row.undo_pending_at ?? null,
+    move_pending_at: row.move_pending_at ?? null,
     message_id_header: meta.messageId,
     content_hash: contentHash(meta),
     from_address: meta.from,
@@ -138,10 +138,10 @@ async function targetOf(
 async function rowOf(trx: Trx, id: string) {
   const row = await trx
     .selectFrom("emails")
-    .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+    .select(["folder", "source_folder", "uid", "source_uid", "returned_at"])
     .where("id", "=", id)
     .executeTakeFirstOrThrow();
-  return { ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) };
+  return { ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) };
 }
 
 const depsOf = (trx: Trx, provider: MailProvider, chunkSize?: number) => ({
@@ -162,7 +162,7 @@ interface Interia {
 // Mail 1 was delivered into INBOX and stored there; the user then moved it into Oferty (the UID stays).
 async function movedIntoOffers(
   trx: Trx,
-  opts: { offersLastUid?: (uid: number) => number | null; offersEnabled?: boolean; undoPendingAt?: Date } = {}
+  opts: { offersLastUid?: (uid: number) => number | null; offersEnabled?: boolean; movePendingAt?: Date } = {}
 ): Promise<Interia> {
   const box = await newBox(trx);
   const fake = interiaFake();
@@ -170,7 +170,7 @@ async function movedIntoOffers(
   const id = await stored(trx, box, fake, "INBOX", uid, {
     folder: "INBOX",
     source_folder: "INBOX",
-    ...(opts.undoPendingAt === undefined ? {} : { undo_pending_at: opts.undoPendingAt }),
+    ...(opts.movePendingAt === undefined ? {} : { move_pending_at: opts.movePendingAt }),
   });
   const target = await targetOf(fake, id, "INBOX", uid, "INBOX");
   expect(fake.userMove("INBOX", uid, OFFERS)).toBe(uid);
@@ -201,7 +201,7 @@ describe("findUserMoves", () => {
         folder: OFFERS,
         source_folder: OFFERS,
         uid: s.uid,
-        inbox_uid: s.uid,
+        source_uid: s.uid,
         returned_at: null,
       });
     });
@@ -220,7 +220,7 @@ describe("findUserMoves", () => {
 
       const result = await findUserMoves(depsOf(trx, fake), { orgId: box.orgId }, box.mailboxId, [target]);
       expect(result).toEqual({ checked: 1, returned: 0, relocated: 1, retry: 0 });
-      expect(await rowOf(trx, id)).toMatchObject({ folder: "INBOX", source_folder: "INBOX", uid, inbox_uid: uid });
+      expect(await rowOf(trx, id)).toMatchObject({ folder: "INBOX", source_folder: "INBOX", uid, source_uid: uid });
     });
   });
 
@@ -242,7 +242,7 @@ describe("findUserMoves", () => {
       const result = await findUserMoves(depsOf(trx, fake), { orgId: box.orgId }, box.mailboxId, [target]);
       expect(result).toEqual({ checked: 1, returned: 1, relocated: 0, retry: 0 });
       const row = await rowOf(trx, id);
-      expect(row).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid, inbox_uid: uid });
+      expect(row).toMatchObject({ folder: OFFERS, source_folder: OFFERS, uid, source_uid: uid });
       expect(row.returned_at).toEqual(NOW);
     });
   });
@@ -297,7 +297,7 @@ describe("findUserMoves", () => {
 
   test("3.6 a fresh move marker skips the row; an old marker does not", async () => {
     await withRollback(db, async (trx) => {
-      const s = await movedIntoOffers(trx, { undoPendingAt: ago(1) });
+      const s = await movedIntoOffers(trx, { movePendingAt: ago(1) });
       const deps = depsOf(trx, s.fake);
       const ctx = { orgId: s.box.orgId };
 
@@ -307,7 +307,7 @@ describe("findUserMoves", () => {
 
       await trx
         .updateTable("emails")
-        .set({ undo_pending_at: ago(25) })
+        .set({ move_pending_at: ago(25) })
         .where("id", "=", s.id)
         .execute();
       const old = await findUserMoves(deps, ctx, s.box.mailboxId, [s.target]);
@@ -489,7 +489,7 @@ describe("findUserMoves", () => {
             folder: "INBOX",
             source_folder: "INBOX",
             uid,
-            inbox_uid: uid,
+            source_uid: uid,
             returned_at: null,
           });
         });
@@ -532,7 +532,7 @@ describe("findUserMoves", () => {
         folder: "AI/Info",
         source_folder: "INBOX",
         uid,
-        inbox_uid: uid,
+        source_uid: uid,
         returned_at: null,
       });
     });

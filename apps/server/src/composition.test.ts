@@ -44,10 +44,7 @@ describe("the history job is wired in main.ts", () => {
   });
 
   test("the shutdown waits for its run", () => {
-    const start = main.indexOf("Promise.allSettled([");
-    expect(start).toBeGreaterThan(-1);
-    expect(main.slice(start, main.indexOf("])", start))).toContain("historyRun");
-    expect(main).toContain("historyRun = history.run();");
+    expect(main).toContain('runs.track("trust.history", () => history.run())');
   });
 });
 
@@ -77,10 +74,7 @@ describe("the sender profile job is wired in main.ts", () => {
   });
 
   test("the shutdown waits for its run", () => {
-    const start = main.indexOf("Promise.allSettled([");
-    expect(start).toBeGreaterThan(-1);
-    expect(main.slice(start, main.indexOf("])", start))).toContain("contactsRefreshRun");
-    expect(main).toContain("contactsRefreshRun = contactsRefresh.run()");
+    expect(main).toContain('runs.track("contacts.refresh", () => contactsRefresh.run()');
   });
 });
 
@@ -143,10 +137,8 @@ describe("the push sender is wired in main.ts (F118 stage 08)", () => {
 
   test("it is scheduled every 15 seconds, once, only with the VAPID keys, outside the Telegram block, and the shutdown waits for its run", () => {
     expect(main.split('scheduler.add("channels.push", "*/15 * * * * *"')).toHaveLength(2);
-    expect(main).toContain("pushRun = pushSender.run();");
+    expect(main).toContain('runs.track("channels.push", () => pushSender.run())');
     expect(main).toContain("const pushKeys = pushConfigOf(config);");
-    const start = main.indexOf("Promise.allSettled([");
-    expect(main.slice(start, main.indexOf("])", start))).toContain("pushRun");
     // A push-only member needs no bot: the job sits before `if (config.TELEGRAM_BOT_TOKEN === undefined) {`.
     const telegramBlock = main.indexOf("if (config.TELEGRAM_BOT_TOKEN === undefined) {");
     expect(main.indexOf('scheduler.add("channels.push"')).toBeLessThan(telegramBlock);
@@ -167,9 +159,7 @@ describe("the report mail sender is wired in main.ts (F110 stage 20)", () => {
 
   test("it is scheduled every 15 seconds, once, outside the Telegram block, and the shutdown waits for its run", () => {
     expect(main.split('scheduler.add("channels.report_mail", "*/15 * * * * *"')).toHaveLength(2);
-    expect(main).toContain("reportMailRun = reportMail.run();");
-    const start = main.indexOf("Promise.allSettled([");
-    expect(main.slice(start, main.indexOf("])", start))).toContain("reportMailRun");
+    expect(main).toContain('runs.track("channels.report_mail", () => reportMail.run())');
     // Not inside `if (config.TELEGRAM_BOT_TOKEN === undefined) { ... } else { ... }`: a mail-only member needs no bot.
     const telegramBlock = main.indexOf("if (config.TELEGRAM_BOT_TOKEN === undefined) {");
     expect(main.indexOf('scheduler.add("channels.report_mail"')).toBeLessThan(telegramBlock);
@@ -199,9 +189,7 @@ describe("the tripwire job is wired in main.ts", () => {
 
   test("it gets the settings deps with the gate evidence of the running classifier, and the shutdown waits for its run", () => {
     expect(callOf(main, "createTripwireJob")).toContain("settingsDeps(db, () => new Date(), gate)");
-    const start = main.indexOf("Promise.allSettled([");
-    expect(main.slice(start, main.indexOf("])", start))).toContain("tripwireRun");
-    expect(main).toContain("tripwireRun = tripwire.run();");
+    expect(main).toContain('runs.track("trust.tripwire", () => tripwire.run())');
   });
 });
 
@@ -246,7 +234,7 @@ describe("the token store is wired into every composition root", () => {
 
   test("the history check is queued at every connect path: web form, OAuth callback and mailbox:connect", () => {
     const hook = "onConnected: queueHistoryCheckOnConnect(db)";
-    const web = read("web.ts");
+    const web = read("web-routers.ts");
     expect(web.split(hook)).toHaveLength(3);
     expect(callOf(web, "mailRoutes")).toContain(hook);
     expect(callOf(web, "mailOAuthCallbackRoutes")).toContain(hook);
@@ -294,7 +282,7 @@ describe("the sent switch hooks are wired into every caller of setSentSync", () 
         callers.push(file);
         expect(callOf(text.slice(call.index), "setSentSync"), file).toContain("sentSwitchHooks");
       }
-      expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web.ts"]);
+      expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web-route-deps.ts"]);
       // The hook closes the loops (`onSentOff`) and then clears the follow-up cards (`clearLoopCards`), in one transaction.
       const wiring = read("composition.ts");
       expect(wiring).toContain("await onSentOff(trx, ctx, input);");
@@ -455,11 +443,11 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
   });
 
   test("the web passes the gate to the one settings deps builder", () => {
-    expect(callOf(read("web.ts"), "settingsDeps")).toContain("gate");
+    expect(callOf(read("web-route-deps.ts"), "settingsDeps")).toContain("gate");
   });
 
   test("the web mounts the trust routes with the settings deps of the same gate and the test mail rule", () => {
-    const call = callOf(read("web.ts"), "trustRoutes");
+    const call = callOf(read("web-routers.ts"), "trustRoutes");
     expect(call).toContain("settingsDeps(db, now, extras.gate)");
     expect(call).toContain("testMail: testMailRule(config)");
   });

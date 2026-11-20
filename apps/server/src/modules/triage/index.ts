@@ -41,6 +41,8 @@ export {
   listTriagedBetween,
   listUnlabeled,
   listUsageSince,
+  newestFeedbackBySender,
+  newestResultsBySender,
 } from "./repo";
 export type {
   ActivityRow,
@@ -51,6 +53,8 @@ export type {
   LatestTriageResult,
   StoredResultRow,
   MailKind,
+  NewestFeedbackCount,
+  NewestResultCount,
   TriageResultInput,
   TriagedItemRow,
   UnlabeledResult,

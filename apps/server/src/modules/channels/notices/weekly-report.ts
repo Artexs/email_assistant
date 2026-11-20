@@ -1,4 +1,12 @@
-import { lastFinishedWeek, localDateTime, localToInstant, panelUrlSchema, parseDigestTimes } from "@ea/core";
+import {
+  lastFinishedWeek,
+  localDateTime,
+  localToInstant,
+  panelUrlSchema,
+  parseDigestTimes,
+  DAY_MS,
+  MINUTE_MS,
+} from "@ea/core";
 
 import { countOpenSuggestionsOfOrg } from "../../contacts";
 import { weekStats } from "../../reports";
@@ -12,8 +20,8 @@ import { queue, warnSkipped, type Detector, type OrgRun } from "./run";
 
 export const WEEKLY_DEFAULT_TIME = "08:00";
 export const WEEKLY_EARLIEST_TIME = "07:00";
-export const WEEKLY_RETRY_MS = 15 * 60_000;
-const ANSWERED_WAITING_MS = 14 * 24 * 3_600_000;
+export const WEEKLY_RETRY_MS = 15 * MINUTE_MS;
+const ANSWERED_WAITING_MS = 14 * DAY_MS;
 
 /** The member's slot: the first digest time ≥ 07:00 on that Monday, else 08:00 (local). */
 export function weeklySlot(digestTimes: readonly string[]): string {

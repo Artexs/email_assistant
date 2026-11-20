@@ -34,6 +34,7 @@ import {
   markSynced,
   setFolderMapEntry,
   setMailboxStatus,
+  setMovePending,
   updateCursor,
   updateEmailLocation,
   updateEmailUid,
@@ -82,9 +83,9 @@ function newEmail(mailboxId: string, overrides: Partial<NewEmail> = {}): NewEmai
   };
 }
 
-async function inboxUidOf(trx: Transaction<DB>, emailId: string) {
-  const row = await trx.selectFrom("emails").select("inbox_uid").where("id", "=", emailId).executeTakeFirstOrThrow();
-  return row.inbox_uid;
+async function sourceUidOf(trx: Transaction<DB>, emailId: string) {
+  const row = await trx.selectFrom("emails").select("source_uid").where("id", "=", emailId).executeTakeFirstOrThrow();
+  return row.source_uid;
 }
 
 async function emailRow(trx: Transaction<DB>, mailboxId: string, dedupKey: string) {
@@ -421,16 +422,33 @@ describe("mail repository: emails", () => {
     });
   });
 
-  test("insertEmail sets inbox_uid to uid", async () => {
+  test("insertEmail sets source_uid to uid", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await createTwoTenants(trx);
       await insertEmail(trx, a.ctx, newEmail(a.mailboxId, { uid: 7 }));
       const row = await trx
         .selectFrom("emails")
-        .select(["uid", "inbox_uid"])
+        .select(["uid", "source_uid"])
         .where("mailbox_id", "=", a.mailboxId)
         .executeTakeFirstOrThrow();
-      expect({ uid: Number(row.uid), inboxUid: Number(row.inbox_uid) }).toEqual({ uid: 7, inboxUid: 7 });
+      expect({ uid: Number(row.uid), sourceUid: Number(row.source_uid) }).toEqual({ uid: 7, sourceUid: 7 });
+    });
+  });
+
+  test("setMovePending writes move_pending_at, and null clears it", async () => {
+    await withRollback(db, async (trx) => {
+      const { a } = await createTwoTenants(trx);
+      await insertEmail(trx, a.ctx, newEmail(a.mailboxId));
+      const { id } = await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1");
+      const stamp = new Date("2026-11-20T10:00:00Z");
+      const read = () =>
+        trx.selectFrom("emails").select("move_pending_at").where("id", "=", id).executeTakeFirstOrThrow();
+
+      await setMovePending(trx, a.ctx, id, stamp);
+      expect(await read()).toEqual({ move_pending_at: stamp });
+
+      await setMovePending(trx, a.ctx, id, null);
+      expect(await read()).toEqual({ move_pending_at: null });
     });
   });
 
@@ -472,7 +490,7 @@ describe("mail repository: emails", () => {
     });
   });
 
-  test("listRecentlyMoved filters by org, mailbox, folder, inbox_uid and window, newest moved_at first, and limits", async () => {
+  test("listRecentlyMoved filters by org, mailbox, folder, source_uid and window, newest moved_at first, and limits", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await createTwoTenants(trx);
       const at = (hour: number) => new Date(Date.UTC(2026, 10, 3, hour));
@@ -498,7 +516,7 @@ describe("mail repository: emails", () => {
       await add(b, 7, { folder: "AI/Info" }, at(11)); // other tenant
       await trx
         .updateTable("emails")
-        .set({ inbox_uid: null })
+        .set({ source_uid: null })
         .where("mailbox_id", "=", a.mailboxId)
         .where("dedup_key", "=", "mid:<3@x.test>:h")
         .execute();
@@ -510,7 +528,7 @@ describe("mail repository: emails", () => {
         limit: 10,
       });
       expect(all.map((row) => row.uid)).toEqual([2, 1, 8]);
-      expect(all[0]).toMatchObject({ folder: "AI/Info", inbox_uid: 2, moved_at: at(10) });
+      expect(all[0]).toMatchObject({ folder: "AI/Info", source_uid: 2, moved_at: at(10) });
       const limited = await listRecentlyMoved(trx, a.ctx, a.mailboxId, {
         sourceFolder: "INBOX",
         movedAfter: at(6),
@@ -573,7 +591,7 @@ describe("mail repository: emails", () => {
 
       await updateEmailUid(trx, a.ctx, id, 50, { folder: "INBOX" });
       expect(Number((await emailRow(trx, a.mailboxId, "mid:<1@x.test>:hash-1")).uid)).toBe(50);
-      expect(Number(await inboxUidOf(trx, id))).toBe(50);
+      expect(Number(await sourceUidOf(trx, id))).toBe(50);
     });
   });
 
@@ -612,7 +630,7 @@ describe("mail repository: emails", () => {
         returnedAt: at,
         status: "pending",
       });
-      expect(Number(await inboxUidOf(trx, id))).toBe(60);
+      expect(Number(await sourceUidOf(trx, id))).toBe(60);
 
       // The guard is always on: a row with folder = source_folder stays as it is.
       const later = new Date("2026-11-03T14:00:00Z");
@@ -632,14 +650,14 @@ describe("mail repository: emails", () => {
       expect(await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty" })).toBe(true);
       const row = await trx
         .selectFrom("emails")
-        .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+        .select(["folder", "source_folder", "uid", "source_uid", "returned_at"])
         .where("id", "=", id)
         .executeTakeFirstOrThrow();
-      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+      expect({ ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) }).toEqual({
         folder: "Oferty",
         source_folder: "Oferty",
         uid: 60,
-        inbox_uid: 60,
+        source_uid: 60,
         returned_at: at,
       });
     });
@@ -654,7 +672,7 @@ describe("mail repository: emails", () => {
       const read = () =>
         trx
           .selectFrom("emails")
-          .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+          .select(["folder", "source_folder", "uid", "source_uid", "returned_at"])
           .where("id", "=", id)
           .executeTakeFirstOrThrow();
 
@@ -669,11 +687,11 @@ describe("mail repository: emails", () => {
 
       expect(await markEmailRelocated(trx, a.ctx, id, change)).toBe(true);
       row = await read();
-      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+      expect({ ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) }).toEqual({
         folder: "Oferty",
         source_folder: "Oferty",
         uid: 80,
-        inbox_uid: 80,
+        source_uid: 80,
         returned_at: null,
       });
     });
@@ -697,7 +715,7 @@ describe("mail repository: emails", () => {
       const read = () =>
         trx
           .selectFrom("emails")
-          .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+          .select(["folder", "source_folder", "uid", "source_uid", "returned_at"])
           .where("id", "=", id)
           .executeTakeFirstOrThrow();
 
@@ -724,11 +742,11 @@ describe("mail repository: emails", () => {
         await markEmailReturned(trx, a.ctx, id, 60, at, { folder: "Oferty", from: { folder: "AI/Info", uid: 1 } })
       ).toBe(true);
       row = await read();
-      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+      expect({ ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) }).toEqual({
         folder: "Oferty",
         source_folder: "Oferty",
         uid: 60,
-        inbox_uid: 60,
+        source_uid: 60,
         returned_at: at,
       });
     });
@@ -747,14 +765,14 @@ describe("mail repository: emails", () => {
       expect(await markEmailRelocated(trx, a.ctx, id, { ...change, fromUid: 1 })).toBe(true);
       const row = await trx
         .selectFrom("emails")
-        .select(["folder", "source_folder", "uid", "inbox_uid", "returned_at"])
+        .select(["folder", "source_folder", "uid", "source_uid", "returned_at"])
         .where("id", "=", id)
         .executeTakeFirstOrThrow();
-      expect({ ...row, uid: Number(row.uid), inbox_uid: Number(row.inbox_uid) }).toEqual({
+      expect({ ...row, uid: Number(row.uid), source_uid: Number(row.source_uid) }).toEqual({
         folder: "Oferty",
         source_folder: "Oferty",
         uid: 80,
-        inbox_uid: 80,
+        source_uid: 80,
         returned_at: null,
       });
     });
@@ -797,7 +815,7 @@ describe("mail repository: listMoveCandidates", () => {
           content_hash: "hash-1",
           from_address: "sender@x.test",
           received_at: new Date("2026-11-03T10:00:00Z"),
-          undo_pending_at: null,
+          move_pending_at: null,
         },
         {
           id: idA2,
@@ -808,7 +826,7 @@ describe("mail repository: listMoveCandidates", () => {
           content_hash: "hash-2",
           from_address: null,
           received_at: new Date("2026-11-03T10:00:00Z"),
-          undo_pending_at: null,
+          move_pending_at: null,
         },
       ]);
       expect(await listMoveCandidates(trx, b.ctx, a.mailboxId, [idA1, idA2, idB])).toEqual([]);
@@ -920,7 +938,7 @@ describe("mail repository: email location", () => {
   async function locationOf(trx: Transaction<DB>, emailId: string) {
     return trx
       .selectFrom("emails")
-      .select(["folder", "uid", "inbox_uid", "moved_at", "status", "returned_at"])
+      .select(["folder", "uid", "source_uid", "moved_at", "status", "returned_at"])
       .where("id", "=", emailId)
       .executeTakeFirstOrThrow();
   }
@@ -936,15 +954,15 @@ describe("mail repository: email location", () => {
       const moved = await locationOf(trx, id);
       expect(moved.folder).toBe("AI/Info");
       expect(Number(moved.uid)).toBe(77);
-      expect(Number(moved.inbox_uid)).toBe(1);
+      expect(Number(moved.source_uid)).toBe(1);
       expect(moved.moved_at?.toISOString()).toBe(movedAt.toISOString());
       expect(moved.returned_at).toBeNull();
 
-      // undefined keeps inbox_uid and moved_at
+      // undefined keeps source_uid and moved_at
       await updateEmailLocation(trx, a.ctx, id, { folder: "AI/Info", uid: 78 });
       const kept = await locationOf(trx, id);
       expect(Number(kept.uid)).toBe(78);
-      expect(Number(kept.inbox_uid)).toBe(1);
+      expect(Number(kept.source_uid)).toBe(1);
       expect(kept.moved_at?.toISOString()).toBe(movedAt.toISOString());
 
       // org B cannot change it
@@ -955,7 +973,7 @@ describe("mail repository: email location", () => {
       await updateEmailLocation(trx, a.ctx, id, { folder: INBOX, uid: 5, sourceUid: 5, movedAt: null });
       const back = await locationOf(trx, id);
       expect(back.folder).toBe(INBOX);
-      expect(Number(back.inbox_uid)).toBe(5);
+      expect(Number(back.source_uid)).toBe(5);
       expect(back.moved_at).toBeNull();
       expect(back.status).toBe("pending");
     });

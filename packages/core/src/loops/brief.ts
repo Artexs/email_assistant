@@ -6,6 +6,7 @@ import { formatDayNumeric } from "../digest/local-time";
 import type { OutButton } from "../digest/message";
 import { cleanSubject, cutText, senderLabel, withoutEscapeRemains } from "../digest/text";
 import type { CoreTexts } from "../texts";
+import { HOUR_MS } from "../time";
 import { markUntrustedText } from "../triage/untrusted-text";
 
 export const BRIEF_SECTION_LINES = 5;
@@ -167,7 +168,7 @@ export function loopSections(input: BriefInput): BriefSections {
 
 function ageText(from: Date, now: Date, texts: CoreTexts): string {
   const ms = Math.max(0, now.getTime() - from.getTime());
-  const hours = Math.floor(ms / 3_600_000);
+  const hours = Math.floor(ms / HOUR_MS);
   if (hours < 1) return texts.brief.ageUnderHour;
   if (hours < 24) return texts.brief.ageHours(hours);
   return texts.brief.ageDays(Math.floor(hours / 24));

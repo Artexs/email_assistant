@@ -1,4 +1,4 @@
-import { DAY_MS } from "@ea/core";
+import { DAY_MS, MINUTE_MS } from "@ea/core";
 
 import type { FolderStatus, MessageMeta } from "./port";
 import type { NewSentEmail } from "./repo";
@@ -15,7 +15,7 @@ export const SENT_CHUNK_SIZE = 50;
 /** Texts read per run. */
 export const SENT_TEXT_RUN_LIMIT = 100;
 /** One Sent pass (headers and texts) stops after this time. It never holds the `mail.sync` run longer. */
-export const SENT_PASS_BUDGET_MS = 60_000;
+export const SENT_PASS_BUDGET_MS = MINUTE_MS;
 
 export type SentMode = "initial" | "incremental" | "rescan";
 /** `system`: the system sent it. `draft`: the user sent a draft of the system by hand. null: no link to an action. */

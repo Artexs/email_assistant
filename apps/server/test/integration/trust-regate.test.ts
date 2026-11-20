@@ -874,7 +874,8 @@ describe("the start run", () => {
     expect(main).toContain('scheduler.add("trust.regate", "20 */5 * * * *"');
     // The tripwire job is registered with the other jobs, and shutdown waits for both trust jobs.
     expect(main).toContain('scheduler.add("trust.tripwire"');
-    expect(main).toMatch(/Promise\.allSettled\(\[[^\]]*\bregateRun,[^\]]*\btripwireRun,/);
+    expect(main).toContain('runs.track("trust.regate"');
+    expect(main).toContain('runs.track("trust.tripwire"');
   });
 
   test("a failure of the whole start run stops the server before the workers start", () => {

@@ -1,4 +1,4 @@
-import { MAILBOX_ACTION_TYPES, type ActionType } from "@ea/core";
+import { MAILBOX_ACTION_TYPES, type ActionType, DAY_MS } from "@ea/core";
 import { sql, type Expression, type ExpressionBuilder, type SelectQueryBuilder, type SqlBool } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
@@ -35,8 +35,8 @@ export interface ClaimedAction {
     mailbox_id: string;
     folder: string;
     uid: number;
-    inbox_uid: number | null;
-    /** emails.source_folder. `inbox_uid` keeps its name: the last known UID in this folder. */
+    source_uid: number | null;
+    /** emails.source_folder. `source_uid` is the last known UID in this folder. */
     source_folder: string;
     message_id_header: string | null;
     content_hash: string;
@@ -59,8 +59,8 @@ export function mailOf(action: ClaimedAction): NonNullable<ClaimedAction["email"
   return action.email;
 }
 // Age of the action row and of the mail.
-export const CLAIM_MAX_AGE_MS = 24 * 3_600_000;
-export const CLAIM_MAX_MAIL_AGE_MS = 7 * 24 * 3_600_000;
+export const CLAIM_MAX_AGE_MS = DAY_MS;
+export const CLAIM_MAX_MAIL_AGE_MS = 7 * DAY_MS;
 // save_summary first, the move last (a move can change the UID); a draft before its send.
 const TYPE_RANK: Record<ActionType, number> = {
   save_summary: 0,
@@ -250,7 +250,7 @@ export async function claimActions(
       "emails.id as mail_id",
       "emails.folder",
       "emails.uid",
-      "emails.inbox_uid",
+      "emails.source_uid",
       "emails.source_folder",
       "emails.message_id_header",
       "emails.content_hash",
@@ -291,7 +291,7 @@ export async function claimActions(
               mailbox_id: row.mailbox_id,
               folder: row.folder as string,
               uid: Number(row.uid),
-              inbox_uid: row.inbox_uid === null ? null : Number(row.inbox_uid),
+              source_uid: row.source_uid === null ? null : Number(row.source_uid),
               source_folder: row.source_folder as string,
               message_id_header: row.message_id_header,
               content_hash: row.content_hash as string,

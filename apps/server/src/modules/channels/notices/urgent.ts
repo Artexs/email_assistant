@@ -1,4 +1,4 @@
-import { hasModelMark } from "@ea/core";
+import { hasModelMark, DAY_MS } from "@ea/core";
 
 import { type TenantContext } from "../../../platform/db";
 import { listActionsForEmails } from "../../actions";
@@ -14,7 +14,7 @@ import { type NoticeRecipient } from "../notice-fan-out";
 
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
-export const URGENT_LOOKBACK_MS = 24 * 3_600_000;
+export const URGENT_LOOKBACK_MS = DAY_MS;
 export const URGENT_LIMIT = 200;
 
 // Every recipient gets an urgent notice for mail that was triaged after the link (a push-only recipient: after the first device).

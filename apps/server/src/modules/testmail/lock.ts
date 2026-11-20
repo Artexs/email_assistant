@@ -1,9 +1,11 @@
 import { linkSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
+import { DAY_MS } from "@ea/core";
+
 import { HardError } from "../../platform/errors";
 
-const MAX_LOCK_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_LOCK_AGE_MS = DAY_MS;
 
 function pidIsAlive(pid: number): boolean {
   try {

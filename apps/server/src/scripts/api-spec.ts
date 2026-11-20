@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { createCliOutput } from "../platform/cli";
 import { describeError } from "../platform/errors";
 
-import { apiSpecUsage, buildSpecText, parseApiSpecArgs, REPO_ROOT, SPEC_FILE } from "./api-spec-build";
+import { apiSpecUsage, buildSpecText, parseApiSpecArgs, REPO_ROOT, SPEC_FILE } from "./lib/api-spec-build";
 
 const out = createCliOutput("api-spec");
 

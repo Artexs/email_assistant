@@ -218,9 +218,9 @@ emails.status:   pending → processing → triaged → done                (don
 - `apps/server/src/modules/triage/judge.test.ts`
 - `apps/server/src/modules/triage/eval-gap.test.ts`
 - `apps/server/src/scripts/eval-args.test.ts`
-- `apps/server/src/scripts/eval-judge-setup.test.ts`
+- `apps/server/src/scripts/lib/eval-judge-setup.test.ts`
 - `apps/server/src/platform/eval-ledger.test.ts`
-- `apps/server/src/scripts/eval-sim-load.test.ts`
+- `apps/server/src/scripts/lib/eval-sim-load.test.ts`
 - `packages/core/src/sim/draft-checks.test.ts`
 - `apps/server/test/integration/triage-suspicious.test.ts`
 - `apps/server/test/integration/triage-suspicious-readers.test.ts`

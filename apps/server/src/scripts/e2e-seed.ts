@@ -24,14 +24,6 @@ import { assertAppRole, createDb, type Db } from "../platform/db";
 import { describeError } from "../platform/errors";
 import { auditWebEvent, termsAcceptedHandler } from "../web";
 
-import { seedActivityRows, seedOtherOrgMail } from "./e2e-activity-rows";
-import { seedApprovalsRows } from "./e2e-approvals-rows";
-import { seedDelegationsRows } from "./e2e-delegations-rows";
-import { seedLoopsRows } from "./e2e-loops-rows";
-import { seedNewsletterRows } from "./e2e-newsletter-rows";
-import { seedOpenLoopsRows } from "./e2e-open-loops-rows";
-import { seedReplyPanelRows, type ReplyPanelSeedResult } from "./e2e-reply-panel-rows";
-import { seedReviewRows } from "./e2e-review-rows";
 import {
   E2E_ACTIVITY_MEMBER_EMAILS,
   E2E_APPROVALS_MEMBER_EMAILS,
@@ -119,8 +111,16 @@ import {
   seedFilePath,
   seedTargetOk,
 } from "./e2e-seed-args";
-import { seedSuggestionRows } from "./e2e-suggestion-rows";
-import { seedReportRows, seedTrustRows } from "./e2e-trust-rows";
+import { seedActivityRows, seedOtherOrgMail } from "./lib/e2e-activity-rows";
+import { seedApprovalsRows } from "./lib/e2e-approvals-rows";
+import { seedDelegationsRows } from "./lib/e2e-delegations-rows";
+import { seedLoopsRows } from "./lib/e2e-loops-rows";
+import { seedNewsletterRows } from "./lib/e2e-newsletter-rows";
+import { seedOpenLoopsRows } from "./lib/e2e-open-loops-rows";
+import { seedReplyPanelRows, type ReplyPanelSeedResult } from "./lib/e2e-reply-panel-rows";
+import { seedReviewRows } from "./lib/e2e-review-rows";
+import { seedSuggestionRows } from "./lib/e2e-suggestion-rows";
+import { seedReportRows, seedTrustRows } from "./lib/e2e-trust-rows";
 
 const out = createCliOutput("e2e-seed");
 

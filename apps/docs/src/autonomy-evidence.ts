@@ -4,12 +4,13 @@
 // `docs/capabilities/triage.md` (the go/no-go bar), `docs/capabilities/actions-and-undo.md` (Undo).
 import {
   barCategories,
-  type BarCategory,
+  DAY_MS,
   DEFAULT_THRESHOLD,
   evidenceKeySchema,
   GATE_BAR,
   GATE_MIN_KEPT,
   mailboxModes,
+  type BarCategory,
   UNDO_WINDOW_MS,
 } from "@ea/core";
 
@@ -34,7 +35,7 @@ const listNames = (names: readonly string[]): string =>
 export function autonomyEvidenceFacts(): EvidenceFact[] {
   const startMode = mailboxModes[0];
   const keyParts = Object.keys(evidenceKeySchema.shape).length;
-  const undoDays = UNDO_WINDOW_MS / 86_400_000;
+  const undoDays = UNDO_WINDOW_MS / DAY_MS;
   return [
     {
       id: "start-state",

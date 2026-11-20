@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { CONTRACT_CHECK_AFTER } from "./check-migrations-rules";
+import { CONTRACT_CHECK_AFTER } from "./lib/check-migrations-rules";
 
 export const checkMigrationsUsage =
   "usage: bun run db:check-migrations [--dir <folder>] [--after <14-digit timestamp>]";

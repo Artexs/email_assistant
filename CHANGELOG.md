@@ -17,6 +17,10 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+### Changed
+
+- The data export names the two mail columns `source_uid` and `move_pending_at`; the old names `inbox_uid` and `undo_pending_at` stay in the database as copies for one release.
+
 ## [0.4.2] - 2026-11-20
 
 ### Added
