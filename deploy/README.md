@@ -6,8 +6,10 @@ Run the commands in bash (the default VPS shell).
 `C` below means:
 
 ```sh
-C="docker compose -f deploy/compose.yaml --env-file .env"
+C="docker compose -f deploy/compose.yaml --env-file deploy/db.env"
 ```
+
+`deploy/db.env` holds the three database passwords (ADR 0019). A host that was not split yet has no `deploy/db.env`: use `--env-file .env` in `C` there, until § Env split is done.
 
 The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, section Web panel). The `db` service has no host port.
 
@@ -19,10 +21,10 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
 ## First install
 
 1. Clone the repo and go into it.
-2. Make the env file and lock it:
-   `cp .env.example .env && chmod 600 .env`
-3. Set these keys in `.env`:
-   - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: URL-safe. Make each with `openssl rand -hex 24`.
+2. Make the two env files and lock them. `deploy/db.env` holds the three database passwords for Compose; the server never gets it (ADR 0019). `.env` holds every other key and no database key: delete the lines that the example copies.
+   `cp .env.example .env && chmod 600 .env && cp deploy/db.env.example deploy/db.env && chmod 600 deploy/db.env`
+   `sed -i -E '/^(POSTGRES_PASSWORD|MIGRATOR_PASSWORD|APP_PASSWORD|MIGRATOR_DATABASE_URL|DATABASE_URL)=/d' .env`
+3. Set `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD` and `APP_PASSWORD` in `deploy/db.env`: URL-safe, each made with `openssl rand -hex 24`. Then set these keys in `.env`:
    - `CREDENTIALS_KEY`: `openssl rand -base64 32`. Keep a copy in a password manager. If you lose the key, you lose all stored mailbox passwords.
    - `CREDENTIALS_KEY_VERSION=1`
    - A new `CREDENTIALS_KEY` also drops every stored push device (phone notices): the stored secret of a device does not open, so the push sender removes the device on the next send (log `push_secret_unreadable`) and its open rows end `no_device`. Members turn notices on again in Settings. A changed `CREDENTIALS_KEY_VERSION` with the old key stored does not remove a device: the sender logs `push_key_version_mismatch` and waits (`docs/known-alerts.md`).
@@ -31,10 +33,10 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` stay `off` until you decide. `all` acts on every active mailbox of the server: read "Customers (S6a)" first.
    - `OPERATOR_CONTACT` and `OPERATOR_TELEGRAM_CHAT_ID` (optional, see "Customers (S6a)").
-   - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Their values in `.env` do not count for `server`.
+   - Compose sets `DATABASE_URL`, `MIGRATOR_DATABASE_URL` and `PORT` by itself. Keep none of them in `.env`.
    - Web panel keys: see the section Web panel. Leave `WEB_BASE_URL` empty to keep the web off, and empty the dev value of `WEB_TRUSTED_ORIGINS` that `cp .env.example .env` copied.
 4. Start the database: `$C up -d --wait db`
-5. Build the image and migrate: `$C run --build --rm cli bun run db:migrate`
+5. Build the image and migrate: `$C build server && $C run --rm -T migrate`
 6. Create the organisation:
    `$C run --rm cli bun run org:create --org-name <name> --email <email> --display-name <name> --plan active`
 7. Connect the mailbox. The password goes on stdin. Use `-T`, because the command has no terminal on stdin:
@@ -46,7 +48,7 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
 Rule: every VPS deploy is a release (a patch version is fine). Do not deploy a bare commit. The steps before the deploy (CI, changelog, tag) are in `docs/release-checklist.md`. What the scripts do is in `docs/capabilities/operations.md` § Releases.
 
 1. Run the release: `deploy/release.sh v<x.y.z>`. The tag must exist on `origin/master` and CI must be green on it (`docs/release-checklist.md`).
-2. The script does these steps and stops at the first failure: refuse a dirty tree or a tag that is not on `origin/master`; run `deploy/backup.sh` (the last stdout line must be `backup ok ...`); check the disk (stop under 3 GB free, after `docker builder prune -f`); write the state file `deploy/release-state/state` with `pending`; keep the running image as `ea-server:<current>`; check out the tag; build the image once with `EA_RELEASE=<tag>`; run `db:migrate`; start with `up -d --no-build --wait`; check `/health` and the `EA_RELEASE` of the running server; then update the state file (`current`, `previous`) and remove old images.
+2. The script does these steps and stops at the first failure: refuse a dirty tree or a tag that is not on `origin/master`; run `deploy/backup.sh` (the last stdout line must be `backup ok ...`); check the disk (stop under 3 GB free, after `docker builder prune -f`); write the state file `deploy/release-state/state` with `pending`; keep the running image as `ea-server:<current>`; check out the tag; build the image once with `EA_RELEASE=<tag>`; run the migrations in the one-off service `migrate`; start with `up -d --no-build --wait`; check `/health` and the `EA_RELEASE` of the running server; then update the state file (`current`, `previous`) and remove old images.
 3. The last output line is `release ok <tag> previous <old>`. Any other end is a failed release. A failed release before the `pending` mark prints "nothing changed, no rollback needed". After the mark it prints "roll back with deploy/rollback.sh".
 4. Watch for 30 minutes (`docs/release-checklist.md` step 10). On trouble run `deploy/rollback.sh` (§ Roll back a release).
 
@@ -54,7 +56,7 @@ The first release on a host has no `current`: the running image becomes `ea-serv
 
 ### Roll back a release
 
-Run `deploy/rollback.sh`. It needs no rebuild. It never runs `db:rollback` and never restores the database. The target is `current` when a release is pending (it broke), else `previous`. With no target it refuses (exit 2). The last output line is `rollback ok <target>`. A failed step leaves the state file as it was. Every "Roll back" section below keeps the SQL notes of its feature: do them as that section says, around the script.
+Run `deploy/rollback.sh`. It needs no rebuild. It never runs `db:rollback` and never restores the database. The target is `current` when a release is pending (it broke), else `previous`. With no target it refuses (exit 2). The last output line is `rollback ok <target>`. A split host (§ Env split) needs `deploy/env-split.sh --undo` before a rollback to a release older than the split helper; the script refuses and says so. A failed step leaves the state file as it was. Every "Roll back" section below keeps the SQL notes of its feature: do them as that section says, around the script.
 
 ### Release and rollback notes
 
@@ -83,6 +85,19 @@ Runbook for the first deploy with the changed log drivers (F103 stage 19):
 4. Run `$C up -d --wait`.
 
 On the dev machine, the next `up` of the shared dev stack also recreates `db` and `greenmail`.
+
+## Env split (an existing host)
+
+Use this once, on a host that has no `deploy/db.env` and still holds the database passwords in `.env` (ADR 0019). A new host starts split (§ First install). The tool moves the three passwords, and `MIGRATOR_DATABASE_URL` if `.env` has it, to `deploy/db.env`. It never prints a value and leaves no copy of `.env`.
+
+1. Back up the database: `deploy/backup.sh`. The last line must be `backup ok ...`. Never back up by copying `.env`.
+2. Split: `deploy/env-split.sh`. The last line is `env split ok moved=<3|4>`. A second run prints `env split: already split`.
+3. Check the state: `source deploy/compose-lib.sh && ea_env_split_state` prints `split`.
+4. Check the Compose config: `C="docker compose -f deploy/compose.yaml --env-file deploy/db.env"`, then `$C config --quiet` prints nothing and exits 0.
+5. Change every crontab line that calls Compose (`crontab -l`) to `--env-file deploy/db.env`.
+6. After the first release that holds the contract (the server gets no admin key): `deploy/check-server-env.sh`. It prints `server env ok keys=<n>`. A line `server env bad: <names>` names the keys that the server still holds.
+
+Roll back to a release that is older than the split helper (it has no `deploy/compose-lib.sh` and reads only `.env`): run `deploy/env-split.sh --undo` first. It appends the lines of `deploy/db.env` to `.env` and removes `deploy/db.env`. `deploy/rollback.sh` refuses with exit 2 and says so, until you do.
 
 ## Logs
 
@@ -198,9 +213,9 @@ Two flags control this feature. Both are off by default, for every organization.
 ### Make the keys (once)
 
 1. Make the VAPID pair on the VPS or on a machine that you trust: `bun run push:keys`. The command prints three bare lines: `VAPID_PUBLIC_KEY=...`, `VAPID_PRIVATE_KEY=...` and `VAPID_SUBJECT=mailto:<your address>`. Keep a copy in your password manager. No agent reads or prints these keys.
-2. Back up the file first: `cp -p .env .env.bak-vapid`. Paste the three lines as they are into the VPS `.env` (no prefix, no quotes). Replace `<your address>` with your real address: the push services see it in the token. Delete `.env.bak-vapid` when you are done: it holds every secret.
+2. Paste the three lines as they are into the VPS `.env` (no prefix, no quotes). Replace `<your address>` with your real address: the push services see it in the token. Keep the old value of each key in the password manager; never leave a copy of `.env` on the host.
 3. Check that the lines exist, without printing them: `grep -c '^VAPID_' .env` prints `3`. All three keys or none: a set of one or two stops the server at start, and the log names the key, not its value. An empty set switches Web Push off.
-4. Start the new code: `deploy/release.sh v<x.y.z>` (it runs `db:migrate` first). The server needs outbound HTTPS on port 443 to the push services of the browsers of your members (for Chrome on Android: `fcm.googleapis.com`).
+4. Start the new code: `deploy/release.sh v<x.y.z>` (it runs the migrations first). The server needs outbound HTTPS on port 443 to the push services of the browsers of your members (for Chrome on Android: `fcm.googleapis.com`).
 
 A new pair ends every subscribed device (a browser keeps the old public key). A new `CREDENTIALS_KEY` drops every stored device too (§ First install). Members turn notices on again in Settings.
 
@@ -221,7 +236,7 @@ Steps 1 to 3 stop the feature with no harm to mail, Telegram or other organizati
 
 1. Flags off (no deploy needed): `$C run --rm cli bun run org:flag --org-id <org id> --flag web_push --off` and the same with `telegram_minimal`. With `web_push` off the push sender waits, the cards and routes are absent, and every new notice goes to Telegram. A push row that already waits stays `pending` and ends `failed` / `expired` after 24 hours. A member whose route for that notice was "Phone" only gets no Telegram row for it (there is no fallback while the flag is off). With `telegram_minimal` off every member reads `full` again (the messages of before the setting).
 2. Remove a phone: Settings → "Phone notices" → "Remove" (before the flag goes off), or sign out on the phone. A removed device ends its open push rows `no_device`; a member with a chat gets the Telegram row of the event.
-3. Remove the keys: restore the backup of `.env` or delete the three `VAPID_*` lines, then `$C up -d --wait server`.
+3. Remove the keys: delete the three `VAPID_*` lines, then `$C up -d --wait server`.
 4. Roll back the code only if the server itself misbehaves: `deploy/rollback.sh` (§ Roll back a release). It never rolls back the database, and the new columns and the table `push_subscriptions` are harmless to a build that has the push sender (`v0.3.0` and later). For a rollback to such a build, do these two things first:
    - Turn the flag `telegram_minimal` off (step 1). The code before the level at send time ignores `memberships.telegram_detail`, so a member who chose `minimal` would get `full` text.
    - Let the pending outbox rows drain before a rollback to code older than the minimal render. The digest key `minimal` and the `approval_edit` key `sendId` are refused by the strict views of the older code, so those rows end `failed` / `bad_view` (they are digest text and card edits, not approvals).
@@ -258,8 +273,7 @@ Never run `tailscale up --force-reauth` over the tailnet. It cuts the connection
 
 1. Check the gateway of the Compose network. `deploy/compose.yaml` pins it to `172.30.0.1`. After the first `up` with the pinned file, this command must print `172.30.0.1`:
    `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'`
-2. Make a copy of `.env` first: `cp -p .env .env.bak-s5e`. The copy holds every secret. Delete it when the panel works: `rm .env.bak-s5e`.
-   Then set these keys in `.env`:
+2. Keep the old value of each key in the password manager; never leave a copy of `.env` on the host. Set these keys in `.env`:
    - `WEB_BASE_URL`: `https://<machine>.<tailnet>.ts.net` (no path, no trailing slash).
    - `WEB_AUTH_SECRET`: make it with `openssl rand -base64 32`. Never print it.
    - `WEB_TRUSTED_PROXIES`: `172.30.0.1` (the gateway from step 1).
@@ -279,11 +293,11 @@ A stack that started before the pin has another subnet (`172.18.0.0/16` on the V
 
 1. Do it outside a pilot week and ask the owner first.
 2. Check that `172.30.0.0/24` is free on the host: `docker network ls`, `ip -4 route`. Choose another range in `deploy/compose.yaml` if it clashes.
-3. Make a backup of the database: `deploy/backup.sh` (section Backups). Make a copy of `.env`: `cp -p .env .env.bak-f069`.
+3. Make a backup of the database: `deploy/backup.sh` (section Backups). Keep the old value of `WEB_TRUSTED_PROXIES` in the password manager; never leave a copy of `.env` on the host.
 4. Pull the new compose file. Set `WEB_TRUSTED_PROXIES=172.30.0.1` in `.env`.
 5. `$C down && $C up -d --wait`
 6. Check: `docker network inspect email-assistant_default --format '{{(index .IPAM.Config 0).Gateway}}'` prints `172.30.0.1`. After the first sign-in, `auth_sessions.ip_address` is a tailnet address.
-7. Rollback: restore the old compose file and set `WEB_TRUSTED_PROXIES` to the old gateway (from `.env.bak-f069`). Run `$C down && $C up -d --wait`. Delete `.env.bak-f069` when the move works.
+7. Rollback: restore the old compose file and set `WEB_TRUSTED_PROXIES` to the old gateway (the old value from the password manager). Run `$C down && $C up -d --wait`.
 
 ### Invite a customer (S6b)
 
@@ -439,7 +453,7 @@ The release script keeps the previous release: no need to write down a commit.
 2. Stop Serve (you, sudo): `sudo tailscale serve reset`
 3. To return to the new code later, run `deploy/release.sh` with a newer tag.
 
-Restore the copy `.env.bak-s5e` only if the edit of `.env` broke another key.
+Set the old value of another key back from the password manager only if the edit of `.env` broke it.
 
 ## Assist mode
 
@@ -619,7 +633,7 @@ Run `deploy/rollback.sh` for the code (§ Roll back a release). Roll back the co
 
 ### Update
 
-`deploy/release.sh` runs `db:migrate` before it starts the new code: the code writes `outbox.view`, `channel`, `locale` and `detail`. Rows queued by the old code keep their text and go out as they are.
+`deploy/release.sh` runs the migrations before it starts the new code: the code writes `outbox.view`, `channel`, `locale` and `detail`. Rows queued by the old code keep their text and go out as they are.
 
 A later change of a notice view schema (a stricter field, a renamed field) needs care: the sender renders a row up to 24 h after its queue, with the code that runs at the send. Release it only if the new schema still accepts the views of the rows queued in the last 24 h. Otherwise wait until `select count(*) from outbox where status in ('pending', 'sending') and view <> '{}'::jsonb and kind = '<kind>'` is 0, then release. A waiting row that the new schema rejects becomes `failed` / `bad_view` and the user gets no notice.
 
@@ -973,7 +987,7 @@ $C run --rm cli bun run org:flag --org-id <org id> --flag llm_pause_line --on
 Start time `T0`. Use the test mailbox only.
 
 1. Cron on the VPS, every hour:
-   `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file .env run --rm -T cli bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox> >> ~/ea-logs/seed.log 2>&1`
+   `0 * * * * cd <repo> && docker compose -f deploy/compose.yaml --env-file deploy/db.env run --rm -T cli bun run mailbox:seed --org-id <org> --mailbox-id <test mailbox> >> ~/ea-logs/seed.log 2>&1`
    Run `mkdir -p ~/ea-logs` first.
 2. Move back to INBOX (simulates a system move): in webmail, make the folder `EA-test` and move one stored test mail into it.
    Set the row folder:
@@ -1058,11 +1072,11 @@ What you need before you start: the age identity (`~/ea-backup-key.txt`) on your
 
 1. Install on the new Ubuntu host: Docker with the Compose plugin, git and Tailscale. Join the tailnet as in § Web panel, Tailscale (once).
 2. Clone the repo and go into it. Check out the tag that ran last (`git tag --sort=-v:refname | head -n 1`).
-3. Make `.env` as in § First install (`cp .env.example .env && chmod 600 .env`). Take these keys from the password manager. Never type a value into a chat or a ticket:
+3. Make `.env` and `deploy/db.env` as in § First install step 2 (it also deletes the database lines from the copied `.env`). Take these keys from the password manager. Never type a value into a chat or a ticket:
    - `CREDENTIALS_KEY` and `CREDENTIALS_KEY_VERSION`: the old values. A new key cannot open the stored mailbox passwords.
    - `TELEGRAM_BOT_TOKEN`, `OPERATOR_TELEGRAM_CHAT_ID`, `HEARTBEAT_URL`.
    - The LLM keys and the web keys (`WEB_BASE_URL`, `WEB_AUTH_SECRET` and the others of § Turn it on).
-   - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: new values. Make each with `openssl rand -hex 24`. The restore makes the roles with them.
+   - `POSTGRES_PASSWORD`, `MIGRATOR_PASSWORD`, `APP_PASSWORD`: new values, in `deploy/db.env`, not in `.env`. Make each with `openssl rand -hex 24`. The restore makes the roles with them.
 4. Get the latest backup file from B2 on your own machine, with the read key (the VPS key cannot read).
 5. Restore. The plain dump goes through the pipe and never touches a disk. On your own machine:
    `age -d -i ~/ea-backup-key.txt <file>.dump.age | ssh <host> 'cd <repo> && deploy/restore.sh --target new-host --stdin'`
