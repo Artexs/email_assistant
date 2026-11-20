@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -160,7 +161,7 @@ describe("sync lag", () => {
       mailboxIds.sort();
       // The query orders by lag, oldest first: that is the reverse of the id order here.
       for (const [index, mailboxId] of mailboxIds.entries()) {
-        await setMailbox(trx, mailboxId, { last_synced_at: new Date(at("09:00").getTime() - index * 60_000) });
+        await setMailbox(trx, mailboxId, { last_synced_at: new Date(at("09:00").getTime() - index * MINUTE_MS) });
       }
       const reading = await checkSyncLag(trx, NOW, cfg, STARTED);
       expect(reading.check.facts.mailboxes).toBe(7);

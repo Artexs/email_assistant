@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { HOUR_MS, DAY_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import {
@@ -31,7 +32,6 @@ import {
   checkRows,
   HISTORY_UID_VALIDITY,
   jobOf,
-  MINUTE_MS,
   historySecrets,
   RUNNING_KEY,
   seedMail,
@@ -192,7 +192,7 @@ describe("step 1: the job and its claim", () => {
       const row = await theCheck(db, box);
       expect(row).toMatchObject({ status: "no_result", no_result_reason: "auth_refused", attempts: 0 });
       expect(row.finished_at).not.toBeNull();
-      advance(box, 60 * MINUTE_MS);
+      advance(box, HOUR_MS);
       await job.run();
       expect(box.opens.count).toBe(1);
     });
@@ -397,7 +397,7 @@ describe("step 2: the backfill step", () => {
       const row = await theCheck(db, box);
       expect(row.status).toBe("waiting_flags");
       expect(row.key as unknown).toEqual(RUNNING_KEY);
-      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * 86_400_000);
+      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS);
       expect(row.backfill_done_at?.getTime()).toBe(box.clock.now.getTime());
       expect(row.locked_at).toBeNull();
       expect(row.attempts).toBe(0);
@@ -444,7 +444,7 @@ describe("step 2: the backfill step", () => {
       const row = await theCheck(db, box);
       expect(row.status).toBe("waiting_flags");
       // The window of the repeat is the window of its own read.
-      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * 86_400_000);
+      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS);
       expect(await emailsOf(box)).toHaveLength(5);
       const headers = await db
         .selectFrom("email_headers")
@@ -460,7 +460,7 @@ describe("step 2: the backfill step", () => {
     await withHistoryBox(db, {}, async (box) => {
       // A mail that is 25 days old now is 35 days old when the mailbox resumes: outside the window of the read.
       const oldUid = box.fake.deliver("INBOX", seedMail(6, box.clock.now), {
-        internalDate: new Date(box.clock.now.getTime() - 25 * 86_400_000),
+        internalDate: new Date(box.clock.now.getTime() - 25 * DAY_MS),
       });
       await updateCursor(
         db,
@@ -477,12 +477,12 @@ describe("step 2: the backfill step", () => {
       expect(waiting).toMatchObject({ status: "queued", attempts: 0 });
       expect(waiting.window_start).toBeNull();
 
-      advance(box, 10 * 86_400_000);
+      advance(box, 10 * DAY_MS);
       await setMailboxStatus(db, box, box.mailboxId, "active");
       await job.run();
       const row = await theCheck(db, box);
       expect(row.status).toBe("waiting_flags");
-      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * 86_400_000);
+      expect(row.window_start?.getTime()).toBe(box.clock.now.getTime() - HISTORY_WINDOW_DAYS * DAY_MS);
       // The backfill and the window agree: the mail that is 35 days old is in neither.
       const uids = (await emailsOf(box)).length;
       expect(uids).toBe(5);
@@ -606,7 +606,7 @@ describe("step 3: the flags wait", () => {
         await insertTestEmail(trx, box, box.mailboxId, {
           folder: "INBOX",
           uid: 901,
-          received_at: new Date(doneAt.getTime() - 40 * 86_400_000),
+          received_at: new Date(doneAt.getTime() - 40 * DAY_MS),
         });
         await insertTestEmail(trx, box, box.mailboxId, { folder: "Archive", uid: 902, received_at: doneAt });
       });
@@ -630,7 +630,7 @@ describe("step 3: the flags wait", () => {
           })
           .execute();
       // Every mail of the window has a row, but from before the backfill: the flags are not known yet.
-      for (const mail of mails) await flagRow(mail.id, new Date(doneAt.getTime() - 86_400_000));
+      for (const mail of mails) await flagRow(mail.id, new Date(doneAt.getTime() - DAY_MS));
       advance(box, 2 * MINUTE_MS);
       await job.run();
       expect((await theCheck(db, box)).status).toBe("waiting_flags");
@@ -683,7 +683,7 @@ describe("step 3: the flags wait", () => {
         await insertTestEmail(trx, box, second, {
           folder: "INBOX",
           uid: 920,
-          received_at: new Date(box.clock.now.getTime() - 86_400_000),
+          received_at: new Date(box.clock.now.getTime() - DAY_MS),
         });
       });
       advance(box, MINUTE_MS);

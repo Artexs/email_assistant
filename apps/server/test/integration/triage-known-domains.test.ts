@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import type { KyselyPlugin, Transaction } from "kysely";
 
@@ -43,8 +44,7 @@ afterEach(() => {
 });
 
 const now = new Date("2026-11-18T10:00:00Z");
-const DAY = 24 * 3_600_000;
-const ago = (days: number): Date => new Date(now.getTime() - days * DAY);
+const ago = (days: number): Date => new Date(now.getTime() - days * DAY_MS);
 
 interface Scene {
   ctx: TenantContext;
@@ -505,19 +505,23 @@ describe("the Sent domain list in detail", () => {
     });
   });
 
-  test("the default read is the newest 5000 mails: older mail beyond that count is not read", async () => {
-    expect(SENT_RECIPIENT_MAX_MAILS).toBe(5000);
-    await withRollback(db, async (trx) => {
-      const s = await scene(trx);
-      await sentTo(trx, s, ["a@alt.pl"], { days: 60 });
-      await sentTo(trx, s, ["a@alt.pl"], { days: 60 });
-      await seedSenderActivity(trx, s.ctx, s.mailboxId, {
-        sent: Array.from({ length: SENT_RECIPIENT_MAX_MAILS }, () => ({ at: ago(2), to: ["a@neu.pl"] })),
+  test(
+    "the default read is the newest 5000 mails: older mail beyond that count is not read",
+    async () => {
+      expect(SENT_RECIPIENT_MAX_MAILS).toBe(5000);
+      await withRollback(db, async (trx) => {
+        const s = await scene(trx);
+        await sentTo(trx, s, ["a@alt.pl"], { days: 60 });
+        await sentTo(trx, s, ["a@alt.pl"], { days: 60 });
+        await seedSenderActivity(trx, s.ctx, s.mailboxId, {
+          sent: Array.from({ length: SENT_RECIPIENT_MAX_MAILS }, () => ({ at: ago(2), to: ["a@neu.pl"] })),
+        });
+        const read = await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since: ago(90), minMails: 1, limit: 10 });
+        expect(read).toEqual([{ domain: "neu.pl", mails: SENT_RECIPIENT_MAX_MAILS }]);
       });
-      const read = await sentRecipientDomains(trx, s.ctx, s.mailboxId, { since: ago(90), minMails: 1, limit: 10 });
-      expect(read).toEqual([{ domain: "neu.pl", mails: SENT_RECIPIENT_MAX_MAILS }]);
-    });
-  }, 60_000);
+    },
+    MINUTE_MS
+  );
 
   test("the 90 day window reads sent_at, not internal_date", async () => {
     await withRollback(db, async (trx) => {
@@ -586,7 +590,7 @@ describe("the cache of the Sent domains", () => {
       expect([sentReads(statements), flaggedReads(statements)]).toEqual([1, 1]);
 
       const before = statements.length;
-      expect((await load(new Date(now.getTime() + 9 * 60_000))).sentDomains).toEqual(["kontrahent.pl"]);
+      expect((await load(new Date(now.getTime() + 9 * MINUTE_MS))).sentDomains).toEqual(["kontrahent.pl"]);
       expect([sentReads(statements), flaggedReads(statements)]).toEqual([1, 1]);
       expect(statements.length - before).toBeGreaterThan(0);
 
@@ -594,7 +598,7 @@ describe("the cache of the Sent domains", () => {
       expect((await load(now)).sentDomains).toEqual(["kontrahent.pl", "neuer.pl"]);
       expect(sentReads(statements)).toBe(2);
 
-      await load(new Date(now.getTime() + 11 * 60_000));
+      await load(new Date(now.getTime() + 11 * MINUTE_MS));
       expect(sentReads(statements)).toBe(3);
     });
   });

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { feedbackResultSchema, undoResultSchema } from "@ea/core";
+import { feedbackResultSchema, undoResultSchema, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 
 import type { ActionsScope } from "../../src/modules/actions";
@@ -14,8 +14,6 @@ import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers"
 
 const db = testDb();
 const NOW = new Date("2026-11-11T12:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 
 const orgs: WebOrg[] = [];
 let counter = 0;
@@ -49,7 +47,12 @@ async function addMailbox(orgId: string): Promise<string> {
 type Kind = "committed" | "logged";
 
 // A mail with a notification triage result. committed: move + mark_read applied; logged: only logged rows.
-async function addMail(orgId: string, mailboxId: string, kind: Kind = "committed", appliedAgo = HOUR): Promise<string> {
+async function addMail(
+  orgId: string,
+  mailboxId: string,
+  kind: Kind = "committed",
+  appliedAgo = HOUR_MS
+): Promise<string> {
   counter += 1;
   const at = new Date(NOW.getTime() - appliedAgo);
   const actions =
@@ -65,7 +68,7 @@ async function addMail(orgId: string, mailboxId: string, kind: Kind = "committed
   const mail = await db.transaction().execute((trx) =>
     insertTriagedWithActions(trx, { orgId }, mailboxId, {
       category: "notification",
-      createdAt: new Date(NOW.getTime() - 2 * HOUR),
+      createdAt: new Date(NOW.getTime() - 2 * HOUR_MS),
       subject: `Mail ${counter}`,
       from: "sender@x.test",
       messageId: `<web-undo-${counter}@ea-seed.test>`,
@@ -298,7 +301,7 @@ describe("POST /actions/undo", () => {
   test("too old and nothing", async () => {
     const { org, mine } = await setup();
     const app = appWith(org);
-    const old = await addMail(org.orgId, mine, "committed", 8 * DAY);
+    const old = await addMail(org.orgId, mine, "committed", 8 * DAY_MS);
     const logged = await addMail(org.orgId, mine, "logged");
     const a = await app.request("/api/actions/undo", post("owner", { emailId: old }));
     expect(undoResultSchema.parse(await json(a))).toEqual({ kind: "too_old" });

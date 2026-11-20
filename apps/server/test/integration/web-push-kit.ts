@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import { sql } from "kysely";
 
 import { upsertOrgFeature } from "../../src/modules/tenancy";
@@ -38,11 +39,7 @@ export const configWithPush = loadConfig({
 export const configNoPush = loadConfig(baseEnv);
 
 /** A new live session row of a user (the device binds to its id). */
-export async function newSession(
-  db: Db,
-  userId: string,
-  expiresAt = new Date(Date.now() + 86_400_000)
-): Promise<string> {
+export async function newSession(db: Db, userId: string, expiresAt = new Date(Date.now() + DAY_MS)): Promise<string> {
   const { rows } = await sql<{ id: string }>`
     insert into auth_sessions (user_id, token, expires_at)
     values (${userId}::uuid, ${randomUUID()}, ${expiresAt}) returning id`.execute(db);

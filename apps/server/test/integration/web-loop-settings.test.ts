@@ -1,4 +1,4 @@
-import { settingsViewSchema } from "@ea/core";
+import { settingsViewSchema, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { settingsRoutes } from "../../src/modules/config";
@@ -158,7 +158,7 @@ describe("T9 the switch auto_follow_up", () => {
     const on = await call(app, "owner", "PATCH", `/settings/${mailboxId}/switches/auto_follow_up`, { value: true });
     expect(on.body).toMatchObject({ changed: true, settings: { toolSwitches: { auto_follow_up: true } } });
     expect((await rawSwitches(mailboxId)).auto_follow_up).toBe(true);
-    await chase(db, { ctx: world.a.ctx, mailboxId }, new Date(NOW.getTime() + 24 * 3_600_000), { force: true });
+    await chase(db, { ctx: world.a.ctx, mailboxId }, new Date(NOW.getTime() + DAY_MS), { force: true });
     const sends = await loopSends(db, world.a.ctx.orgId);
     expect(sends.map((send) => [send.loop_id, send.status])).toEqual([[loop.id, "awaiting_approval"]]);
   });

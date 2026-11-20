@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { activityPageSchema, textTables } from "@ea/core";
+import { activityPageSchema, textTables, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { insertInboxFolder, insertMailbox } from "../../src/modules/mail/repo";
@@ -14,7 +14,6 @@ import { as, webOrg, webTestApp, type WebOrg } from "./web-helpers";
 
 const db = testDb();
 const NOW = new Date("2026-11-11T12:00:00Z");
-const HOUR = 3_600_000;
 
 const orgs: WebOrg[] = [];
 
@@ -51,7 +50,7 @@ async function addMail(
   hoursAgo: number,
   uid: number
 ): Promise<string> {
-  const at = new Date(NOW.getTime() - hoursAgo * HOUR);
+  const at = new Date(NOW.getTime() - hoursAgo * HOUR_MS);
   const mail = await db.transaction().execute((trx) =>
     insertTriagedWithActions(
       trx,

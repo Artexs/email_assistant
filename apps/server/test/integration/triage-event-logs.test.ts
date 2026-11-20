@@ -1,3 +1,4 @@
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -24,7 +25,6 @@ import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
 const now = new Date("2026-11-05T12:00:00.000Z");
-const DAY = 24 * 3_600_000;
 const MARKER = "MARKER-ERR-TEXT";
 
 afterAll(async () => {
@@ -228,7 +228,7 @@ describe("triage events: service", () => {
     async (deps, ctx, mailbox, email) => {
       await trx
         .updateTable("emails")
-        .set({ locked_at: new Date(now.getTime() + 60_000) })
+        .set({ locked_at: new Date(now.getTime() + MINUTE_MS) })
         .where("id", "=", email.id)
         .execute();
       return triageOne(deps, ctx, mailbox, email);
@@ -247,7 +247,7 @@ describe("triage events: service", () => {
 
   test("triage_claim_lost: the skip of a mail older than 7 days writes one warn line", async () => {
     await withRollback(db, async (trx) => {
-      const box = await mailboxWithMail(trx, { received_at: new Date(now.getTime() - 8 * DAY) });
+      const box = await mailboxWithMail(trx, { received_at: new Date(now.getTime() - 8 * DAY_MS) });
       await jobOver(trx, { triageOne: losingClaim(trx) }).run();
       expect(triageLines(err)).toEqual([
         `[triage] triage_claim_lost org_id=${box.orgId} mailbox_id=${box.mailboxId} email_id=${box.emailId}`,
@@ -263,7 +263,7 @@ describe("triage events: service", () => {
         triageOne: async (deps, ctx, mailbox, email) => {
           await trx
             .updateTable("mailbox_settings")
-            .set({ updated_at: new Date(now.getTime() + 60_000) })
+            .set({ updated_at: new Date(now.getTime() + MINUTE_MS) })
             .where("mailbox_id", "=", mailbox.id)
             .execute();
           return triageOne(deps, ctx, mailbox, email);
@@ -287,7 +287,7 @@ describe("triage events: levels", () => {
         triageOne: async (deps, ctx, mailbox, email) => {
           await trx
             .updateTable("mailbox_settings")
-            .set({ updated_at: new Date(now.getTime() + 60_000) })
+            .set({ updated_at: new Date(now.getTime() + MINUTE_MS) })
             .where("mailbox_id", "=", mailbox.id)
             .execute();
           return triageOne(deps, ctx, mailbox, email);

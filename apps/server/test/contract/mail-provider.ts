@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import {
@@ -20,8 +21,6 @@ export interface ContractEnv {
   seed(folder: string, msg: SeedMessage): Promise<void>;
   cleanup(): Promise<void>;
 }
-
-const DAY_MS = 86_400_000;
 
 function mail(n: number, extra: Partial<SeedMessage> = {}): SeedMessage {
   return {

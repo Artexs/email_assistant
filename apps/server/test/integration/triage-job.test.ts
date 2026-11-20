@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -33,7 +34,7 @@ afterAll(async () => {
 const now = new Date("2026-11-05T12:00:00.123Z");
 
 function minutesFromNow(minutes: number): Date {
-  return new Date(now.getTime() + minutes * 60_000);
+  return new Date(now.getTime() + minutes * MINUTE_MS);
 }
 
 let errorSpy: ReturnType<typeof spyOn>;
@@ -495,7 +496,7 @@ describe("createTriageJob: pause and errors", () => {
 
       for (let round = 0; round < 5; round += 1) {
         await triage.run();
-        clock.at = new Date(clock.at.getTime() + 61 * 60_000);
+        clock.at = new Date(clock.at.getTime() + 61 * MINUTE_MS);
       }
 
       expect(llm.prompts).toHaveLength(5);
@@ -1030,7 +1031,7 @@ describe("createTriageJob: junk folder limit", () => {
       await ensureSyncFolders(trx, ctx, mailboxId, [{ key: "junk", path: junkPath, role: "junk" }], now);
       // Three inbox calls today and two junk calls of the day before: one junk call is left under a limit of 1.
       for (let i = 0; i < 3; i += 1) await recordCall(trx, ctx, mailboxId, "INBOX", minutesFromNow(-10 + i));
-      await recordCall(trx, ctx, mailboxId, junkPath, new Date(dayStart.getTime() - 60_000));
+      await recordCall(trx, ctx, mailboxId, junkPath, new Date(dayStart.getTime() - MINUTE_MS));
       await recordCall(trx, ctx, mailboxId, junkPath, new Date(dayStart.getTime() - 120_000));
       const junkMail = await insertTestEmail(trx, ctx, mailboxId, {
         received_at: minutesFromNow(-30),
@@ -1117,7 +1118,7 @@ describe("suspended organizations", () => {
   describe("after a resume (D4)", () => {
     const resumedAt = new Date("2026-11-12T08:00:00Z");
     const resumedNow = new Date("2026-11-12T08:05:00Z");
-    const hours = (count: number) => count * 3_600_000;
+    const hours = (count: number) => count * HOUR_MS;
 
     async function resumedMailbox(trx: Transaction<DB>, resumed: boolean) {
       await pauseOtherMailboxes(trx);
@@ -1133,7 +1134,7 @@ describe("suspended organizations", () => {
     test("old mail of before the pause costs no LLM call; too_old wins", async () => {
       await withRollback(db, async (trx) => {
         const { ctx, mailboxId } = await resumedMailbox(trx, true);
-        const created_at = new Date(resumedAt.getTime() + 60_000);
+        const created_at = new Date(resumedAt.getTime() + MINUTE_MS);
         const backlog = await insertTestEmail(trx, ctx, mailboxId, {
           received_at: new Date(resumedAt.getTime() - hours(25)),
           created_at,
@@ -1145,7 +1146,7 @@ describe("suspended organizations", () => {
           subject: "recent",
         });
         const tooOld = await insertTestEmail(trx, ctx, mailboxId, {
-          received_at: new Date(resumedNow.getTime() - 8 * 24 * 3_600_000),
+          received_at: new Date(resumedNow.getTime() - 8 * DAY_MS),
           created_at,
           subject: "tooold",
         });
@@ -1174,7 +1175,7 @@ describe("suspended organizations", () => {
       await withRollback(db, async (trx) => {
         const { ctx, mailboxId } = await resumedMailbox(trx, false);
         const id = await insertTestEmail(trx, ctx, mailboxId, {
-          received_at: new Date(resumedNow.getTime() - 3 * 24 * 3_600_000),
+          received_at: new Date(resumedNow.getTime() - 3 * DAY_MS),
           created_at: resumedAt,
         });
         const llm = fakeLlm();
@@ -1189,7 +1190,7 @@ describe("suspended organizations", () => {
         const { ctx, mailboxId } = await resumedMailbox(trx, true);
         const id = await insertTestEmail(trx, ctx, mailboxId, {
           received_at: new Date(resumedAt.getTime() - hours(25)),
-          created_at: new Date(resumedAt.getTime() + 60_000),
+          created_at: new Date(resumedAt.getTime() + MINUTE_MS),
           backfilled_at: resumedNow,
         });
         const llm = fakeLlm();
@@ -1202,7 +1203,7 @@ describe("suspended organizations", () => {
     test("a mail stored after the backlog window is triaged", async () => {
       await withRollback(db, async (trx) => {
         const { ctx, mailboxId } = await resumedMailbox(trx, true);
-        const later = new Date(resumedAt.getTime() + 2 * 24 * 3_600_000);
+        const later = new Date(resumedAt.getTime() + 2 * DAY_MS);
         const id = await insertTestEmail(trx, ctx, mailboxId, {
           received_at: new Date(resumedAt.getTime() - hours(25)),
           created_at: later,
