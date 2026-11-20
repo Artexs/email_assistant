@@ -345,4 +345,4 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `packages/core/src/outgoing/templates.test.ts`
 - `packages/core/src/replies/quote.test.ts`
 - `packages/core/src/triage/draft-kinds.test.ts`
-- `packages/core/src/digest/approvals.test.ts`
+- `packages/core/src/digest/approvals-request.test.ts`, `approvals-request-texts.test.ts`, `approvals-set-request.test.ts`, `approvals-send-results.test.ts`, `approvals-edit.test.ts`, `approvals-card-text.test.ts`
