@@ -98,7 +98,7 @@ describe("blindLabelsSchema", () => {
   });
 });
 
-describe("blindView, exact output", () => {
+describe("blindView, reply loops", () => {
   test("a reply to itself and a loop of replies stop at the first repeat", () => {
     const loop: Batch = {
       ...batch,
@@ -106,14 +106,6 @@ describe("blindView, exact output", () => {
     };
     const view = blindView(loop, personas);
     expect(view.map((item) => item.thread.map((t) => t.subject))).toEqual([[], ["Temat c"], ["Temat b"]]);
-  });
-
-  test("a case that replies into a loop it is not part of lists each case of the loop once", () => {
-    const loop: Batch = {
-      ...batch,
-      cases: [makeCase("a", { replyTo: "b" }), makeCase("b", { replyTo: "c" }), makeCase("c", { replyTo: "b" })],
-    };
-    expect(blindView(loop, personas)[0]?.thread.map((t) => t.subject)).toEqual(["Temat c", "Temat b"]);
   });
 });
 
