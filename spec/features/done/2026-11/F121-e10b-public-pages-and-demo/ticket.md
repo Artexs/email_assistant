@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-20
 ---
 
 # F121 · E10b Public pages and demo
