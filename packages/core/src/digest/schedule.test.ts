@@ -103,6 +103,10 @@ describe("dueDigestSlot at the edges of the six hours", () => {
     expect(slotOf("2026-11-06T07:00:00Z", "2026-11-06T07:59", ["08:00"])?.key).toBe("2026-11-06T08:00");
   });
 
+  test("the newest slot wins whatever the order of the times", () => {
+    expect(slotOf("2026-11-06T23:30:00Z", null, ["23:00", "22:00"])?.key).toBe("2026-11-06T23:00");
+  });
+
   test("across midnight the newest of the slots of both days wins and its date and time are split from the key", () => {
     expect(slotOf("2026-11-06T23:30:00Z", null, ["22:00", "23:00"])).toEqual({
       key: "2026-11-06T23:00",
@@ -142,6 +146,30 @@ describe("nextDigestTime", () => {
   test("no times", () => {
     expect(next("2026-11-06T07:30:00Z", [])).toBeNull();
   });
+
+  test("the nearest time wins whatever the order of the times, and a time equal to now is not next", () => {
+    expect(next("2026-11-06T06:00:00Z", ["16:00", "08:00"])).toEqual({ date: "2026-11-06", time: "08:00" });
+    expect(next("2026-11-06T07:00:00Z", TIMES)).toEqual({ date: "2026-11-06", time: "16:00" });
+  });
+});
+
+describe("the digest times a user types", () => {
+  test("white space around the text is ignored, none in any letter case gives no times", () => {
+    expect(parseDigestTimesInput("  NONE \n")).toEqual({ ok: true, times: [] });
+    expect(parseDigestTimesInput(" 16:00 , 08:00 ")).toEqual({ ok: true, times: ["08:00", "16:00"] });
+    expect(parseDigestTimesInput("  ")).toEqual({ ok: false, error: "empty input" });
+  });
+
+  test("six times are the most; the seventh is refused", () => {
+    expect(parseDigestTimesInput("01:00,02:00,03:00,04:00,05:00,06:00")).toEqual({
+      ok: true,
+      times: ["01:00", "02:00", "03:00", "04:00", "05:00", "06:00"],
+    });
+    expect(parseDigestTimesInput("01:00,02:00,03:00,04:00,05:00,06:00,07:00")).toEqual({
+      ok: false,
+      error: "too many times (max 6)",
+    });
+  });
 });
 
 describe("isLateSlot", () => {
@@ -150,6 +178,11 @@ describe("isLateSlot", () => {
   test("late after 10 minutes", () => {
     expect(isLateSlot(slot, new Date("2026-11-06T07:05:00Z"), TZ)).toBe(false);
     expect(isLateSlot(slot, new Date("2026-11-06T07:11:00Z"), TZ)).toBe(true);
+  });
+
+  test("exactly 10 minutes after the slot is not late; a millisecond more is", () => {
+    expect(isLateSlot(slot, new Date("2026-11-06T07:10:00.000Z"), TZ)).toBe(false);
+    expect(isLateSlot(slot, new Date("2026-11-06T07:10:00.001Z"), TZ)).toBe(true);
   });
 });
 
