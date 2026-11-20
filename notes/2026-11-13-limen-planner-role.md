@@ -17,11 +17,11 @@
 - Small question: default plus `questions.md`. Blocking question: the job sets `needs-adam` in the ticket front matter (Limen shows it in `limen status` as "needs a decision"), commits, finishes. The coordinator asks the owner, then `limen continue <job> "<answer>"` resumes the same session with full context. A job never waits in a running state for an answer.
 - Order: Limen has no dependency field. `## Sequenced` holds `Plan after:` and `Build after:`. The coordinator reads them on each turn. A job finish wakes the coordinator, and that is when it starts the next item.
 - Earlier proposal (superseded by the rule below):
-  "Planning: start a `--role planner` job for the first NEXT ticket that has no `stages/` and whose `Plan after` tickets all have `stages/`. At most three planner jobs at once. Land it into `planned/`, give the owner the summary and `questions.md`. A ticket builds only after the owner says `Build FNNN` and its `Build after` tickets are in `done/`."
+  "Planning: start a `--role planner` job for the first NEXT ticket that has no `stages/` and whose `Plan after` tickets all have `stages/`. (Owner, 2026-11-20: the cap of three planner jobs is removed.) Land it into `planned/`, give the owner the summary and `questions.md`. A ticket builds only after the owner says `Build FNNN` and its `Build after` tickets are in `done/`."
 
 ## Coordinator rule (in force 2026-11-13; one-line pointer in `spec/build.md` NEXT)
 - Spawn: `limen spawn --role planner --engine pi --provider claude-bridge --model claude-opus-5-5 --thinking medium --extension /home/artek/.pi/agent/npm/node_modules/pi-claude-bridge --timeout 3h --label "plan · FNNN" "Plan FNNN: write stages/ for spec/features/planned/FNNN-slug/"`
-- At most three planner jobs at once. F091 plans after F088 and F090 have `stages/`. F092 waits for the owner (`needs-adam`).
+- (Owner, 2026-11-20: the cap of three planner jobs is removed.) F091 plans after F088 and F090 have `stages/`. F092 waits for the owner (`needs-adam`).
 - The job runs its own cold review. The coordinator lands it with `limen land`.
 - A job that ends with `needs-adam` set: ask the owner, then `limen continue <job> "<answer>"`.
 - Auto-build (owner decision 2026-11-13): a plan that lands with no `needs-adam` builds without a new owner OK once its `Build after` tickets are in `done/`. Send the owner the plan summary and the `questions.md` defaults. Stop at the owner checkpoints the plan names.
