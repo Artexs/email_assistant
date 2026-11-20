@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-14
+landed: 2026-11-20
 ---
 
 # F124 · The unit and integration suites run in parallel, and no unit test waits for a real multi-second timeout
