@@ -328,8 +328,8 @@ describe("deploy/compose.yaml drivers and the cli service", () => {
   });
 });
 
-// The migrate one-off service alone holds the migrator URL in its own env (the server keeps it until
-// the contract release). The password comes from the interpolation file, planted with a sentinel.
+// The migrate one-off service alone holds the migrator URL in its own env (deploy/test/compose-server-env.test.ts checks that
+// the server and cli have none). The password comes from the interpolation file, planted with a sentinel.
 describe("deploy/compose.yaml service migrate", () => {
   writeFileSync(
     join(project, "deploy", "db.env"),
@@ -367,11 +367,6 @@ describe("deploy/compose.yaml service migrate", () => {
     expect(migrate.volumes).toBeUndefined();
     expect(migrate.profiles).toEqual(["cli"]);
     expect(migrate.command).toEqual(["bun", "run", "db:migrate"]);
-  });
-
-  test("7. server still carries the migrator URL (expand; the contract stage flips this test)", () => {
-    const env = (services.server?.environment ?? {}) as Record<string, string>;
-    expect(new URL(env.MIGRATOR_DATABASE_URL ?? "").username).toBe("migrator");
   });
 });
 

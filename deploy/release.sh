@@ -33,6 +33,10 @@ refuse() {
 
 # The steps run from a function: git checkout rewrites the scripts of the new tag while bash still reads this file.
 main() {
+  # First: a host that is not split has the database keys in `.env`, so the server would start with them.
+  local split_state
+  split_state="$(ea_env_split_state)"
+  [[ "$split_state" == split ]] || refuse "run deploy/env-split.sh first (state $split_state)"
   local tag="${1:-}"
   [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || refuse "the tag must look like v<major>.<minor>.<patch>"
   local dirty
@@ -102,6 +106,8 @@ main() {
 
   step=verify
   EA_RELEASE="$tag" verify_release "$tag"
+  # The running server must hold none of the database keys. Exit 1 (a key) and exit 2 (no env read) both fail the release.
+  bash deploy/check-server-env.sh
 
   step=state
   previous="$current"
