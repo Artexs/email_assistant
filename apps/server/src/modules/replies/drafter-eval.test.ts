@@ -64,6 +64,7 @@ function client(scripts: { drafter: Step[]; judge?: Step[] }) {
   const llm: LlmClient = {
     modelOf: () => "fake",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       const role = req.role as "drafter" | "judge";
       const script = scripts[role] ?? [GOOD_JUDGE];
@@ -78,6 +79,7 @@ function client(scripts: { drafter: Step[]; judge?: Step[] }) {
         tokensOut: 50,
         latencyMs: 10,
         endpoint: "standard" as const,
+        provider: "openai" as const,
       };
       return { data: step as T, usage };
     },

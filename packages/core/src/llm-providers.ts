@@ -100,6 +100,13 @@ export type LlmProviderId = keyof typeof llmProviderCatalog;
 
 export const llmProviderIds = Object.keys(llmProviderCatalog) as [LlmProviderId, ...LlmProviderId[]];
 
+/** A provider id read from stored JSON. A row written before the provider was logged, or any other value, reads `null`. */
+export function toProviderId(value: unknown): LlmProviderId | null {
+  return typeof value === "string" && (llmProviderIds as readonly string[]).includes(value)
+    ? (value as LlmProviderId)
+    : null;
+}
+
 /**
  * The tier and the effort level of each role. The values equal the committed gate files and the old judge default, so
  * OpenAI keeps its production models. The drafter level `low` comes from its gate file.

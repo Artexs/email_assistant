@@ -131,6 +131,7 @@ beforeAll(async () => {
       promptVersion: "p1",
       model,
       endpoint: "standard",
+      provider: "openai" as const,
       outcome: "ok",
       tokensIn: tokens,
       tokensOut: tokens === null ? null : tokens / 5,

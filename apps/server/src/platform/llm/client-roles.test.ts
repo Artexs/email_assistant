@@ -52,7 +52,7 @@ function fakeProviders(answer: (provider: LlmProviderId, req: GenerateRequest) =
     },
     classifyError: (_error: unknown, model: string) => new LlmSoftError("network", model),
   });
-  return { providers: { gemini: make("gemini"), openai: make("openai") }, built, requests };
+  return { providers: { gemini: make("gemini"), openai: make("openai"), deepseek: make("deepseek") }, built, requests };
 }
 
 const classifierRow: LlmRoleSettings = {
@@ -116,6 +116,7 @@ describe("createLlmClient", () => {
       tokensOut: 2,
       latencyMs: 0,
       endpoint: "standard",
+      provider: "openai" as const,
     });
     expect(fake.built).toEqual([
       { provider: "openai", apiKey: "o-key", reasoningEffort: "none", baseUrl: null, endpoint: "standard" },
@@ -222,6 +223,19 @@ describe("createLlmClient", () => {
       llm.generate({ ...classifierCall, role: "writer" });
     expect(typeof wrongVersion).toBe("function");
     expect(typeof wrongRole).toBe("function");
+  });
+
+  test("the usage and providerOf carry the provider of the role's row", async () => {
+    const fake = fakeProviders(() => okText);
+    const llm = createLlmClient({
+      table: twoProviderTable({ provider: "deepseek", model: "deepseek-v4-pro" }),
+      providers: fake.providers,
+      ...fakeClock(),
+    });
+    expect(llm.providerOf("judge")).toBe("deepseek");
+    expect(llm.providerOf("classifier")).toBe("openai");
+    expect((await llm.generate(judgeCall)).usage.provider).toBe("deepseek");
+    expect((await llm.generate(classifierCall)).usage.provider).toBe("openai");
   });
 
   test("the usage and endpointOf carry the endpoint kind of the role's provider", async () => {

@@ -16,6 +16,7 @@ const usage: LlmUsage = {
   tokensOut: 5,
   latencyMs: 7,
   endpoint: "standard",
+  provider: "openai" as const,
 };
 
 interface Recorded {
@@ -32,6 +33,7 @@ function fakeLlm(answer: unknown | (() => never)): { llm: LlmClient; calls: Reco
   const llm: LlmClient = {
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       calls.push(req);
       if (typeof answer === "function") answer();
