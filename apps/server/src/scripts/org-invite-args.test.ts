@@ -1,6 +1,18 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { parseOrgInviteArgs } from "./org-invite-args";
+
+// A usage error: a `UsageError` of the parser, or a `parseArgs` error (unknown flag, missing value), which `runCli` maps to exit 2 as well.
+function isUsageError(run: () => unknown): boolean {
+  try {
+    run();
+  } catch (error) {
+    const code = typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
+    return error instanceof UsageError || (typeof code === "string" && code.startsWith("ERR_PARSE_ARGS_"));
+  }
+  return false;
+}
 
 const required = ["--org-name", "Acme", "--email", "a@x.test", "--display-name", "Ann"];
 
@@ -31,12 +43,12 @@ describe("parseOrgInviteArgs", () => {
     expect(options).toMatchObject({ locale: "en", timezone: "UTC", trialDays: 365, print: true });
   });
 
-  test("bad input gives undefined", () => {
-    expect(parseOrgInviteArgs([...required, "--lang", "de"])).toBeUndefined();
-    expect(parseOrgInviteArgs([...required, "--trial-days", "0"])).toBeUndefined();
-    expect(parseOrgInviteArgs([...required, "--trial-days", "366"])).toBeUndefined();
-    expect(parseOrgInviteArgs([...required, "--trial-days", "abc"])).toBeUndefined();
-    expect(parseOrgInviteArgs(["--org-name", "Acme", "--display-name", "Ann"])).toBeUndefined();
-    expect(parseOrgInviteArgs([...required, "--nope"])).toBeUndefined();
+  test("bad input is a usage error", () => {
+    expect(isUsageError(() => parseOrgInviteArgs([...required, "--lang", "de"]))).toBe(true);
+    expect(isUsageError(() => parseOrgInviteArgs([...required, "--trial-days", "0"]))).toBe(true);
+    expect(isUsageError(() => parseOrgInviteArgs([...required, "--trial-days", "366"]))).toBe(true);
+    expect(isUsageError(() => parseOrgInviteArgs([...required, "--trial-days", "abc"]))).toBe(true);
+    expect(isUsageError(() => parseOrgInviteArgs(["--org-name", "Acme", "--display-name", "Ann"]))).toBe(true);
+    expect(isUsageError(() => parseOrgInviteArgs([...required, "--nope"]))).toBe(true);
   });
 });
