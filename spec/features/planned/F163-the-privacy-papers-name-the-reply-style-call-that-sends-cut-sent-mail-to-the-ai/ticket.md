@@ -1,5 +1,8 @@
 ---
-touches: [packages/core/src/legal, apps/web/src/legal, docs/legal]
+touches:
+  - packages/core/src/legal
+  - apps/web/src/legal
+  - docs/legal
 opened: 2026-11-20
 ---
 # F163 · The privacy papers name the reply-style call that sends cut Sent mail to the AI
