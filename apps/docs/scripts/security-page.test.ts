@@ -1,20 +1,24 @@
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from "bun:test";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { barCategories, DEFAULT_THRESHOLD, GATE_BAR, GATE_MIN_KEPT, UNDO_WINDOW_MS } from "@ea/core";
 import { subprocessors } from "@ea/core/web";
 
 import { flaggedTextProblems } from "../src/flagged-text";
-import { blocksWithText, geminiOutsideCondition } from "../src/gemini-text";
+import { apiOperations, loadApiSpec, successAnswers } from "../src/api-reference";
+import { blocksWithText, geminiClaimProblems, geminiOutsideCondition } from "../src/gemini-text";
 import { publicClaims } from "../src/security/claims";
 import { publicSubprocessors } from "../src/security/subprocessor-view";
 
-// On the real build: the docs build runs into a folder of its own (on the device of the build: Astro renames files into it),
+// On the real build (the security page and the two reference pages): the docs build runs into a folder of its own (on the device of the build: Astro renames files into it),
 // so `dist` stays as it was. One docs build takes 4 to 15 seconds.
 const DOCS = join(import.meta.dir, "..");
 const WORK_ROOT = join(DOCS, "dist-security-test");
 setDefaultTimeout(60_000);
 
 let html = "";
+let api = "";
+let evidence = "";
 
 beforeAll(() => {
   mkdirSync(WORK_ROOT, { recursive: true });
@@ -27,6 +31,8 @@ beforeAll(() => {
   });
   if (run.exitCode !== 0) throw new Error(`docs build failed:\n${run.stdout.toString()}${run.stderr.toString()}`);
   html = readFileSync(join(out, "security/index.html"), "utf8");
+  api = readFileSync(join(out, "reference/api/index.html"), "utf8");
+  evidence = readFileSync(join(out, "reference/autonomy-evidence/index.html"), "utf8");
 });
 afterAll(() => rmSync(WORK_ROOT, { recursive: true, force: true }));
 
@@ -78,5 +84,54 @@ describe("the built /security/ page", () => {
     // Telegram names "drafts that wait for approval", which is also the heading of a panel page that a flag gates.
     const withoutServices = main().replace(/<tr id="subprocessor-[^"]*"[\s\S]*?<\/tr>/g, " ");
     expect(flaggedTextProblems(visible(withoutServices))).toEqual([]);
+  });
+});
+
+const mainOf = (html: string): string => /<main[\s\S]*<\/main>/.exec(html)?.[0] ?? "";
+const visibleOf = (html: string): string =>
+  blocksWithText(mainOf(html).replace(/<(script|style)[\s\S]*?<\/\1>/g, " ")).join("\n");
+const count = (html: string, needle: string): number => html.split(needle).length - 1;
+
+describe("the built /reference/api/ page", () => {
+  const operations = apiOperations(loadApiSpec());
+
+  test("T5 each operationId of the file is on the page once", () => {
+    const body = mainOf(api);
+    const missing = operations.filter((operation) => count(body, `id="op-${operation.operationId}"`) !== 1);
+    expect(missing.map((operation) => operation.operationId)).toEqual([]);
+    expect(operations.length).toBeGreaterThan(50);
+  });
+  test("T5 an operation with two success answers shows both statuses", () => {
+    const doubles = operations.filter((operation) => successAnswers(operation).length > 1);
+    expect(doubles.length).toBeGreaterThan(0);
+    for (const operation of doubles) {
+      const start = mainOf(api).indexOf(`id="op-${operation.operationId}"`);
+      const section = mainOf(api).slice(start, mainOf(api).indexOf("</section>", start));
+      for (const answer of successAnswers(operation)) expect(section).toContain(`<code>${answer.status}</code>`);
+    }
+  });
+  test("T8 no block names Gemini outside the condition: optional, off by default; no claim that it is removed", () => {
+    expect(count(api.toLowerCase(), "gemini")).toBe(0);
+    expect(geminiOutsideCondition(blocksWithText(mainOf(api)))).toEqual([]);
+    expect(geminiClaimProblems(visibleOf(api))).toEqual([]);
+  });
+  test("the page runs no script of its own and links to the claim on the security page", () => {
+    expect(mainOf(api)).not.toContain("<script");
+    expect(mainOf(api)).toContain("/security/#claim-private-panel");
+    expect(visibleOf(api)).toContain("Some routes answer only while an operator turns a feature on.");
+  });
+});
+
+describe("the built /reference/autonomy-evidence/ page", () => {
+  test("T6 the numbers on the page are the numbers of the code constants", () => {
+    const text = visibleOf(evidence);
+    expect(text).toContain(`at least ${Math.round(GATE_BAR * 100)} % on at least ${GATE_MIN_KEPT} mails`);
+    expect(text).toContain(`limit of confidence is ${DEFAULT_THRESHOLD}`);
+    expect(text).toContain(`Auto is off for each of the ${barCategories.length} categories`);
+    expect(text).toContain(`undone for ${UNDO_WINDOW_MS / 86_400_000} days`);
+  });
+  test("the page names no Gemini and makes no claim about the providers of the code", () => {
+    expect(count(evidence.toLowerCase(), "gemini")).toBe(0);
+    expect(geminiClaimProblems(visibleOf(evidence))).toEqual([]);
   });
 });

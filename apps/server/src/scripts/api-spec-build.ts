@@ -1,4 +1,4 @@
-// The OpenAPI file of the public docs site (ADR 0023, F121 stage 06): built from the app with fakes, so it cannot drift from the routes.
+// The OpenAPI file of the public docs site (ADR 0023; ticket folder spec/features/active/F121-e10b-public-pages-and-demo): built from the app with fakes, so it cannot drift from the routes.
 // `scripts/api-spec.ts` writes or checks the file; the drift test calls the same functions.
 import { join } from "node:path";
 
