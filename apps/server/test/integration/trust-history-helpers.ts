@@ -8,7 +8,7 @@ import { createFakeMailProvider } from "../../src/modules/mail/fake";
 import { insertCredentials, updateCursor } from "../../src/modules/mail/repo";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import { createLlmPause } from "../../src/modules/triage";
-import { createHistoryJob, type HistoryJobDeps } from "../../src/modules/trust";
+import { createHistoryJob, queueHistoryCheck, type HistoryJobDeps } from "../../src/modules/trust";
 import { createSecretBox } from "../../src/platform/crypto";
 import type { Db, TenantContext } from "../../src/platform/db";
 import type { LlmClient } from "../../src/platform/llm";
@@ -162,4 +162,22 @@ export async function theCheck(conn: Db, box: HistoryBox) {
   const [row] = rows;
   if (row === undefined) throw new Error("no check");
   return row;
+}
+
+/** The helpers of the history job tests that read or queue through one database handle. */
+export function historyJobKit(db: Db) {
+  async function queue(box: HistoryBox, reason: "connect" | "cli" | "flag_on" = "connect"): Promise<string> {
+    const id = await queueHistoryCheck(db, box, box.mailboxId, reason);
+    if (id === null) throw new Error("check not queued");
+    return id;
+  }
+
+  const emailsOf = (box: HistoryBox) =>
+    db
+      .selectFrom("emails")
+      .select(["id", "status", "skip_reason", "backfilled_at"])
+      .where("mailbox_id", "=", box.mailboxId)
+      .execute();
+
+  return { queue, emailsOf };
 }

@@ -15,6 +15,8 @@ import { advance, RUNNING_KEY, withHistoryBox, type BoxOptions, type HistoryBox 
 export const MODEL = RUNNING_KEY.model;
 /** Tokens that cost exactly one cent with the fixture price below (1 USD per million tokens in and out). */
 export const CENT_TOKENS = 10_000;
+/** The time between two runs of the classify step in the tests. */
+export const RUN_MS = 15_000;
 
 /** Registers the fixture price of the test model; the returned function removes it. */
 export function priceFixture(): () => void {
