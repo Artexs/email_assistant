@@ -1,6 +1,6 @@
 # Review: `apps/server/src` unit tests (F125 stage 05)
 
-Reader review by `plan.md` § Reader method, § Rules for the classes. Read-only on tests. Base of this review: `85436ab9` (HEAD of the job after the last merge of master).
+Reader review by `plan.md` § Reader method, § Rules for the classes. Read-only on tests. Base of this review: `f968f274` (HEAD of the job after the last merge of master).
 
 Notes for the reader:
 
