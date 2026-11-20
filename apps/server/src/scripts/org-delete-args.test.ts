@@ -12,22 +12,22 @@ describe("parseOrgDeleteArgs", () => {
     });
   });
 
-  test("an optional lock timeout parses; a bad one gives null", () => {
+  test("an optional lock timeout parses; a bad one throws a usage error", () => {
     expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "200"])).toEqual({
       orgId: ID,
       confirmName: "Acme",
       lockTimeoutMs: 200,
     });
-    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "0"])).toBeNull();
-    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "x"])).toBeNull();
+    expect(() => parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "0"])).toThrow();
+    expect(() => parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--lock-timeout-ms", "x"])).toThrow();
   });
 
-  test("a missing, empty or bad argument gives null", () => {
-    expect(parseOrgDeleteArgs(["--org-id", ID])).toBeNull();
-    expect(parseOrgDeleteArgs(["--confirm", "Acme"])).toBeNull();
-    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "  "])).toBeNull();
-    expect(parseOrgDeleteArgs(["--org-id", "nope", "--confirm", "Acme"])).toBeNull();
-    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--force"])).toBeNull();
-    expect(parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "extra"])).toBeNull();
+  test("a missing, empty or bad argument throws a usage error", () => {
+    expect(() => parseOrgDeleteArgs(["--org-id", ID])).toThrow();
+    expect(() => parseOrgDeleteArgs(["--confirm", "Acme"])).toThrow();
+    expect(() => parseOrgDeleteArgs(["--org-id", ID, "--confirm", "  "])).toThrow();
+    expect(() => parseOrgDeleteArgs(["--org-id", "nope", "--confirm", "Acme"])).toThrow();
+    expect(() => parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "--force"])).toThrow();
+    expect(() => parseOrgDeleteArgs(["--org-id", ID, "--confirm", "Acme", "extra"])).toThrow();
   });
 });

@@ -1,53 +1,39 @@
 import { resetTwoFactor } from "../modules/tenancy";
-import { loadConfig } from "../platform/config";
-import { assertAppRole, createDb } from "../platform/db";
+import { runCli, type CliSpec } from "../platform/cli";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
-import { parseTwoFactorResetArgs, usage } from "./web-two-factor-reset-args";
+import { refuseUnlessConfirmed, withDangerDb } from "./lib/danger-run";
+import { cliDescriptions, parseTwoFactorResetArgs } from "./web-two-factor-reset-args";
 
 const log = createLog("web-two-factor-reset");
+const failed = (error: unknown): void => log.error("two_factor_reset_failed", { ...errorFields(error) });
 
-// Prints ids and counts only, never an address or the organization name. Returns the exit code.
-async function main(): Promise<number> {
-  const args = parseTwoFactorResetArgs(process.argv.slice(2));
-  if (!args) {
-    process.stderr.write(`${usage}\n`);
-    return 1;
-  }
-
-  const config = loadConfig();
-  const db = createDb(config.DATABASE_URL);
-  try {
-    await assertAppRole(db);
+// Prints ids and counts only, never an address or the organization name. Refuses unless `--confirm` matches the
+// organization name (docs/cli.md § Risk classes): the check runs before the reset writes.
+const main: CliSpec["main"] = async (argv, out) => {
+  const args = parseTwoFactorResetArgs(argv);
+  return withDangerDb(failed, out, async (db) => {
+    const refused = await refuseUnlessConfirmed(db, args.orgId, args.confirm, out);
+    if (refused !== null) return refused;
     const result = await resetTwoFactor(
       db,
       { orgId: args.orgId },
       { userId: args.userId, actor: "cli", now: new Date() }
     );
     if (result.kind === "not_member") {
-      process.stderr.write("user is not a member of this organization\n");
+      out.writeErr("user is not a member of this organization\n");
       return 1;
     }
     const off = result.hadTwoFactor ? "" : " (it was off)";
-    process.stdout.write(
-      `user ${args.userId}: two-factor sign-in reset; ${result.sessionsEnded} sessions ended${off}\n`
-    );
+    out.write(`user ${args.userId}: two-factor sign-in reset; ${result.sessionsEnded} sessions ended${off}\n`);
     if (result.breakGlassCleared.length > 0) {
-      process.stdout.write(`user ${args.userId}: break-glass cleared in ${result.breakGlassCleared.join(", ")}\n`);
+      out.write(`user ${args.userId}: break-glass cleared in ${result.breakGlassCleared.join(", ")}\n`);
     }
     return 0;
-  } catch (error) {
-    log.error("two_factor_reset_failed", { ...errorFields(error) });
-    return 1;
-  } finally {
-    await db.destroy();
-  }
-}
-
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    log.error("two_factor_reset_failed", { ...errorFields(error) });
-    process.exit(1);
   });
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "web-two-factor-reset", descriptions: cliDescriptions, main });
+}

@@ -15,15 +15,15 @@ describe("parseOrgExportArgs", () => {
     });
   });
 
-  test("a missing or bad argument gives null", () => {
-    expect(parseOrgExportArgs(["--org-id", ID, "--recipient", recipient])).toBeNull();
-    expect(parseOrgExportArgs(["--org-id", ID, "--out", "/tmp/x.age"])).toBeNull();
-    expect(parseOrgExportArgs(["--recipient", recipient, "--out", "/tmp/x.age"])).toBeNull();
-    expect(parseOrgExportArgs(["--org-id", "nope", "--recipient", recipient, "--out", "/tmp/x.age"])).toBeNull();
-    expect(parseOrgExportArgs(["--org-id", ID, "--recipient", "hunter2", "--out", "/tmp/x.age"])).toBeNull();
-    expect(parseOrgExportArgs(["--org-id", ID, "--recipient", recipient, "--out", " "])).toBeNull();
-    expect(
+  test("a missing or bad argument throws a usage error", () => {
+    expect(() => parseOrgExportArgs(["--org-id", ID, "--recipient", recipient])).toThrow();
+    expect(() => parseOrgExportArgs(["--org-id", ID, "--out", "/tmp/x.age"])).toThrow();
+    expect(() => parseOrgExportArgs(["--recipient", recipient, "--out", "/tmp/x.age"])).toThrow();
+    expect(() => parseOrgExportArgs(["--org-id", "nope", "--recipient", recipient, "--out", "/tmp/x.age"])).toThrow();
+    expect(() => parseOrgExportArgs(["--org-id", ID, "--recipient", "hunter2", "--out", "/tmp/x.age"])).toThrow();
+    expect(() => parseOrgExportArgs(["--org-id", ID, "--recipient", recipient, "--out", " "])).toThrow();
+    expect(() =>
       parseOrgExportArgs(["--org-id", ID, "--recipient", recipient, "--out", "a", "--passphrase", "x"])
-    ).toBeNull();
+    ).toThrow();
   });
 });

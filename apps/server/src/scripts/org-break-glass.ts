@@ -5,33 +5,29 @@ import {
   listMemberships,
   setBreakGlassOwner,
 } from "../modules/tenancy";
-import { loadConfig } from "../platform/config";
-import { assertAppRole, createDb } from "../platform/db";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { errorFields } from "../platform/errors";
 import { createLog } from "../platform/log";
 
-import { parseOrgBreakGlassArgs, usage } from "./org-break-glass-args";
+import { refuseUnlessConfirmed, withDangerDb } from "./lib/danger-run";
+import { cliDescriptions, parseOrgBreakGlassArgs } from "./org-break-glass-args";
 
 const log = createLog("org-break-glass");
+const failed = (error: unknown): void => log.error("org_break_glass_failed", { ...errorFields(error) });
 
-const out = (line: string): void => {
-  process.stdout.write(`${line}\n`);
-};
-const fail = (line: string): number => {
-  process.stderr.write(`${line}\n`);
-  return 1;
-};
 const word = (value: boolean, yes: string, no: string): string => (value ? yes : no);
 
-// Prints ids and words only, never an address or a name. Returns the exit code.
-async function main(): Promise<number> {
-  const args = parseOrgBreakGlassArgs(process.argv.slice(2));
-  if (!args) return fail(usage);
+// Prints ids and words only, never an address or a name. The set and the clear read the organization first and
+// refuse unless `--confirm` matches its name (docs/cli.md § Risk classes). The list changes nothing.
+const main: CliSpec["main"] = async (argv, out: CliRawOutput) => {
+  const args = parseOrgBreakGlassArgs(argv);
+  const line = (text: string): void => out.write(`${text}\n`);
+  const fail = (text: string): number => {
+    out.writeErr(`${text}\n`);
+    return 1;
+  };
 
-  const config = loadConfig();
-  const db = createDb(config.DATABASE_URL);
-  try {
-    await assertAppRole(db);
+  return withDangerDb(failed, out, async (db) => {
     const ctx = { orgId: args.orgId };
     const now = new Date();
 
@@ -40,21 +36,24 @@ async function main(): Promise<number> {
       for (const member of await listMemberships(db, ctx)) {
         if (member.role !== "owner") continue;
         const profile = await getUserAuthProfile(db, member.user_id);
-        out(
+        line(
           `owner ${member.user_id}: two-factor ${word(profile?.twoFactorEnabled === true, "on", "off")}, break-glass ${word(member.break_glass, "yes", "no")}`
         );
       }
       return 0;
     }
 
+    const refused = await refuseUnlessConfirmed(db, args.orgId, args.confirm, out);
+    if (refused !== null) return refused;
+
     if (args.mode === "clear") {
       const result = await clearBreakGlassOwner(db, ctx, { actor: "cli", now, reason: "cli" });
       switch (result.kind) {
         case "cleared":
-          out(`org ${args.orgId}: break-glass owner ${result.userId} cleared`);
+          line(`org ${args.orgId}: break-glass owner ${result.userId} cleared`);
           return 0;
         case "none":
-          out(`org ${args.orgId}: no break-glass owner`);
+          line(`org ${args.orgId}: no break-glass owner`);
           return 0;
         case "not_found":
           return fail("organization not found");
@@ -64,12 +63,12 @@ async function main(): Promise<number> {
     const result = await setBreakGlassOwner(db, ctx, { userId: args.userId, actor: "cli", now });
     switch (result.kind) {
       case "set":
-        out(
+        line(
           `org ${args.orgId}: break-glass owner ${args.userId}${result.replaced === null ? "" : ` (was ${result.replaced})`}`
         );
         return 0;
       case "unchanged":
-        out(`org ${args.orgId}: ${args.userId} is already the break-glass owner`);
+        line(`org ${args.orgId}: ${args.userId} is already the break-glass owner`);
         return 0;
       case "not_found":
         return fail("organization not found");
@@ -78,17 +77,9 @@ async function main(): Promise<number> {
       case "no_two_factor":
         return fail("user has no two-factor sign-in: they turn it on in Settings → Account first");
     }
-  } catch (error) {
-    log.error("org_break_glass_failed", { ...errorFields(error) });
-    return 1;
-  } finally {
-    await db.destroy();
-  }
-}
-
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    log.error("org_break_glass_failed", { ...errorFields(error) });
-    process.exit(1);
   });
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "org-break-glass", descriptions: cliDescriptions, main });
+}
