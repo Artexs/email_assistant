@@ -14,7 +14,7 @@ const STANDARD_HOST = "api.openai.com";
 const EU_HOST = "eu.api.openai.com";
 
 /** The OpenAI domain and its sub-domains: no other host may claim to be OpenAI. */
-const isOpenAiHost = (host: string): boolean => host === "openai.com" || host.endsWith(".openai.com");
+export const isOpenAiHost = (host: string): boolean => host === "openai.com" || host.endsWith(".openai.com");
 
 /** `127.0.0.0/8`, `::1` and `localhost`. The IPv4-mapped IPv6 form is not accepted. */
 function isLoopbackHost(host: string): boolean {

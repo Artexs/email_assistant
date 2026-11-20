@@ -287,6 +287,18 @@ describe("openAiClientOptions", () => {
       defaultHeaders: {},
     });
   });
+
+  test("organization and project are null for every host that is not OpenAI, and unset for an OpenAI host", () => {
+    for (const url of ["https://api.deepseek.com", "http://127.0.0.1:11434/v1", "not a url"]) {
+      expect(openAiClientOptions("k", url)).toMatchObject({ organization: null, project: null });
+    }
+    expect(openAiClientOptions("k", BASE, "own")).toMatchObject({ organization: null, project: null });
+    for (const url of [BASE, "https://eu.api.openai.com/v1"]) {
+      const options = openAiClientOptions("k", url);
+      expect(options).not.toHaveProperty("organization");
+      expect(options).not.toHaveProperty("project");
+    }
+  });
 });
 
 const goodResponse: OpenAiResponseLike = {
@@ -410,7 +422,7 @@ describe("createOpenAiGenerate", () => {
         endpoint: "standard",
       })
     ).toBe("function");
-    expect(openaiProvider.label).toBe("OpenAI");
+    expect(openaiProvider.envPrefix).toBe("OPENAI");
   });
 });
 
