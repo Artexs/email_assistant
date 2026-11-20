@@ -305,4 +305,67 @@ describe("simGoNoGo", () => {
     expect(row.decision).toBe("go");
     expect(row.threshold).toBe(0.6);
   });
+  describe("the rows of one category with custom limits", () => {
+    // Urgent: 3 right at 0.9, 0.9 and exactly 0.5; 1 wrong; 1 with only a "wrong" verdict. The rule row, the model-error
+    // row and the row with no truth are not counted. Support 3; kept 5 at 0.5 (3 right); precision 0.6; Wilson lower 0.2307.
+    const rows = [
+      llm("urgent", "urgent"),
+      llm("urgent", "urgent"),
+      llm("urgent", "urgent", 0.5),
+      llm("info", "urgent"),
+      llm(null, "urgent", 0.9, { wrongOnly: true }),
+      llm(null, "urgent"),
+      llm("urgent", "urgent", 0.9, { source: "rule" }),
+      llm("urgent", "urgent", 0.9, { source: "error" }),
+    ];
+    const run = (opts: { bar?: number; minSupport?: number; minKept?: number }) => {
+      const { wilsonLower, ...rest } = simGoNoGo(rows, opts).urgent;
+      expect(wilsonLower).toBeCloseTo(0.2307, 4);
+      return rest;
+    };
+
+    test("go at the lowest threshold that is kept enough, with every count exact", () => {
+      expect(run({ bar: 0.2, minSupport: 3, minKept: 2 })).toEqual({
+        support: 3,
+        threshold: 0.5,
+        kept: 5,
+        tp: 3,
+        precision: 0.6,
+        recall: 1,
+        decision: "go",
+      });
+    });
+
+    test("the bar is compared with the Wilson lower bound, not with the precision", () => {
+      expect(run({ bar: 0.5, minSupport: 3, minKept: 2 }).decision).toBe("no-go");
+    });
+
+    test("a support below minSupport is too few, with the numbers of the lowest threshold", () => {
+      expect(run({ bar: 0.2, minSupport: 4, minKept: 2 })).toEqual({
+        support: 3,
+        threshold: null,
+        kept: 5,
+        tp: 3,
+        precision: 0.6,
+        recall: 1,
+        decision: "no-go: too few",
+      });
+    });
+
+    test("enough support but no threshold with enough kept rows is no-go with the numbers of the lowest threshold", () => {
+      expect(run({ bar: 0.2, minSupport: 3, minKept: 6 })).toEqual({
+        support: 3,
+        threshold: null,
+        kept: 5,
+        tp: 3,
+        precision: 0.6,
+        recall: 1,
+        decision: "no-go",
+      });
+    });
+
+    test("a support exactly at minSupport and kept exactly at minKept pass", () => {
+      expect(run({ bar: 0.2, minSupport: 3, minKept: 5 }).decision).toBe("go");
+    });
+  });
 });

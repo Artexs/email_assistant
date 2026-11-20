@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { MAIL_PRESETS, presetForAddress, presetKeys, serversFor } from "./providers";
+import { MAIL_PRESETS, presetForAddress, presetKeys, serversFor, type PresetKey } from "./providers";
 
 describe("MAIL_PRESETS", () => {
   test("every key has IMAP port 993 and an SMTP port that matches its security mode", () => {
@@ -41,6 +41,23 @@ describe("presetForAddress", () => {
     expect(presetForAddress("x@")).toBeNull();
   });
 
+  test.each<[string, PresetKey | null]>([
+    ["jan@interia.pl", "interia"],
+    ["jan@INTERIA.PL", "interia"],
+    ["@interia.pl", "interia"],
+    ["jan@ interia.pl ", "interia"],
+    ["jan@gmail.com", "gmail"],
+    ["jan@mac.com", "icloud"],
+    ["jan", null],
+    ["jan@nieznana.pl", null],
+    ["jan@", null],
+    ["jan@ ", null],
+    ["jan@interia.pl.evil.test", null],
+    ["jan@xinteria.pl", null],
+  ])("%p gives %p", (address, expected) => {
+    expect(presetForAddress(address)).toBe(expected);
+  });
+
   test("uses the last @", () => {
     expect(presetForAddress("a@b@gmail.com")).toBe("gmail");
   });
@@ -58,13 +75,46 @@ describe("serversFor", () => {
     expect(serversFor({ preset: "icloud" }).smtpSecurity).toBe("starttls");
   });
 
+  test.each(presetKeys)("a preset only gives the exact fields of %s", (key) => {
+    const { imapHost, imapPort, smtpHost, smtpPort, smtpSecurity } = MAIL_PRESETS[key];
+    expect(serversFor({ preset: key })).toEqual({ imapHost, imapPort, smtpHost, smtpPort, smtpSecurity });
+  });
+
+  test("a preset wins over every given field", () => {
+    expect(
+      serversFor({
+        preset: "gmail",
+        imapHost: "other.test",
+        imapPort: 1,
+        smtpHost: "other.test",
+        smtpPort: 2,
+        smtpSecurity: "starttls",
+      })
+    ).toEqual({
+      imapHost: "imap.gmail.com",
+      imapPort: 993,
+      smtpHost: "smtp.gmail.com",
+      smtpPort: 465,
+      smtpSecurity: "tls",
+    });
+  });
+
   test("returns the given fields without a preset; the security defaults to tls", () => {
     const fields = { imapHost: "127.0.0.1", imapPort: 3143, smtpHost: "127.0.0.1", smtpPort: 3025 };
     expect(serversFor(fields)).toEqual({ ...fields, smtpSecurity: "tls" });
     expect(serversFor({ ...fields, smtpSecurity: "starttls" }).smtpSecurity).toBe("starttls");
   });
 
-  test("throws when a field is missing", () => {
-    expect(() => serversFor({ imapHost: "h", imapPort: 1 })).toThrow("server fields missing");
+  test.each([
+    ["the IMAP host", { imapPort: 1, smtpHost: "h", smtpPort: 2 }],
+    ["the IMAP port", { imapHost: "h", smtpHost: "h", smtpPort: 2 }],
+    ["the SMTP host", { imapHost: "h", imapPort: 1, smtpPort: 2 }],
+    ["the SMTP port", { imapHost: "h", imapPort: 1, smtpHost: "h" }],
+  ])("throws when %s is missing", (_name, fields) => {
+    expect(() => serversFor(fields)).toThrow("server fields missing");
+  });
+
+  test("an empty input throws", () => {
+    expect(() => serversFor({})).toThrow("server fields missing");
   });
 });

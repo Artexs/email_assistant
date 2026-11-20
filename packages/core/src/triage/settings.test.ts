@@ -3,7 +3,14 @@ import { describe, expect, test } from "bun:test";
 import type { EvidenceKey } from "../trust/key";
 
 import { feedbackSources } from "./categories";
-import { autoFor, effectiveAutoFor, parseCategoryPolicy, parseToolSwitches, thresholdFor } from "./settings";
+import {
+  autoFor,
+  describeSettings,
+  effectiveAutoFor,
+  parseCategoryPolicy,
+  parseToolSwitches,
+  thresholdFor,
+} from "./settings";
 
 describe("feedbackSources", () => {
   test("has exactly the 7 values", () => {
@@ -132,5 +139,86 @@ describe("effectiveAutoFor (ADR 0028)", () => {
       expect(() => parseCategoryPolicy({ info: { auto: true, grant: { ...grantOf(KEY_A), at } } })).toThrow();
     }
     expect(() => parseCategoryPolicy({ info: { auto: true, grant: grantOf(KEY_A) } })).not.toThrow();
+  });
+});
+
+describe("describeSettings", () => {
+  test("default settings: every switch and every category is off, the threshold is 0.7", () => {
+    expect(
+      describeSettings({
+        mode: "shadow",
+        toolSwitches: parseToolSwitches({}),
+        categoryPolicy: {},
+        movesSupported: false,
+      })
+    ).toEqual([
+      "mode: shadow",
+      "switch move: off",
+      "switch mark_read: off",
+      "switch flag: off",
+      "switch create_draft: off",
+      "switch move_unsure: off",
+      "switch reply_drafts: off",
+      "auto urgent: off, threshold 0.7",
+      "auto needs_reply: off, threshold 0.7",
+      "auto info: off, threshold 0.7",
+      "auto notification: off, threshold 0.7",
+      "auto spam: off, threshold 0.7",
+      "moves supported: off",
+    ]);
+  });
+
+  test("every option set: the lines show each value, in the order of the switch names and the categories", () => {
+    expect(
+      describeSettings({
+        mode: "assist",
+        toolSwitches: parseToolSwitches({
+          move: true,
+          mark_read: true,
+          flag: true,
+          create_draft: true,
+          move_unsure: true,
+          auto_follow_up: true,
+          reply_drafts: true,
+        }),
+        categoryPolicy: parseCategoryPolicy({
+          urgent: { auto: true, threshold: 0.95 },
+          needs_reply: { auto: true, threshold: 0.8 },
+          info: { auto: true, threshold: 0 },
+          notification: { auto: true, threshold: 1 },
+          spam: { auto: true, threshold: 0.55 },
+        }),
+        movesSupported: true,
+      })
+    ).toEqual([
+      "mode: assist",
+      "switch move: on",
+      "switch mark_read: on",
+      "switch flag: on",
+      "switch create_draft: on",
+      "switch move_unsure: on",
+      "switch reply_drafts: on",
+      "auto urgent: on, threshold 0.95",
+      "auto needs_reply: on, threshold 0.8",
+      "auto info: on, threshold 0",
+      "auto notification: on, threshold 1",
+      "auto spam: on, threshold 0.55",
+      "moves supported: on",
+    ]);
+  });
+
+  test("a mixed state: one switch on, one category on, another category with a threshold and auto off", () => {
+    const lines = describeSettings({
+      mode: "assist",
+      toolSwitches: parseToolSwitches({ flag: true }),
+      categoryPolicy: parseCategoryPolicy({ spam: { auto: true }, info: { threshold: 0.9 } }),
+      movesSupported: true,
+    });
+    expect(lines).toContain("switch flag: on");
+    expect(lines).toContain("switch move: off");
+    expect(lines).toContain("auto spam: on, threshold 0.7");
+    expect(lines).toContain("auto info: off, threshold 0.9");
+    expect(lines).toContain("moves supported: on");
+    expect(lines).toHaveLength(13);
   });
 });

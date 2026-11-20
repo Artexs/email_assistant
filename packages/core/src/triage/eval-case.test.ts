@@ -84,6 +84,94 @@ describe("selectCases", () => {
   });
 });
 
+describe("selectCases priority inside one category", () => {
+  const withRules = (id: string, kinds: SenderRuleKind[], from = "a@example.com"): EvalCase =>
+    evalCaseSchema.parse({
+      id,
+      kind: "synthetic",
+      lang: "en",
+      from,
+      to: ["szef@firma.test"],
+      subject: "s",
+      body: "b",
+      senderRules: kinds.map((kind) => ({ pattern: "example.com", kind })),
+      expected: { category: "info" },
+    });
+  // Input in reverse id order: the priority is by id, not by the order of the list.
+  const list = [
+    withRules("g-none", []),
+    withRules("f-none", []),
+    withRules("e-block", ["blocklist"]),
+    withRules("d-white", ["whitelist"]),
+    withRules("c-block", ["blocklist"]),
+    withRules("b-both", ["blocklist", "whitelist"]),
+    withRules("a-vip", ["vip"]),
+  ];
+  const picked = (cases: EvalCase[], n: number) => selectCases(cases, { perCategory: n }).map((c) => c.id);
+
+  test.each([
+    [1, ["a-vip"]],
+    [2, ["a-vip", "c-block"]],
+    [3, ["a-vip", "c-block", "f-none"]],
+    [4, ["a-vip", "c-block", "f-none", "g-none"]],
+    [5, ["a-vip", "b-both", "c-block", "f-none", "g-none"]],
+    [6, ["a-vip", "b-both", "c-block", "d-white", "f-none", "g-none"]],
+    [7, ["a-vip", "b-both", "c-block", "d-white", "e-block", "f-none", "g-none"]],
+  ])(
+    "takes the first %i cases by priority: first rule case, first block-only case, no-rule cases, the rest",
+    (n, ids) => {
+      expect(picked(list, n)).toEqual(ids);
+    }
+  );
+
+  test("a block-only case is not chosen when it also has a whitelist rule", () => {
+    expect(picked([withRules("b-both", ["blocklist", "whitelist"]), withRules("c-block", ["blocklist"])], 2)).toEqual([
+      "b-both",
+      "c-block",
+    ]);
+    expect(
+      picked(
+        [
+          withRules("a-white", ["whitelist"]),
+          withRules("b-both", ["blocklist", "whitelist"]),
+          withRules("c-block", ["blocklist"]),
+        ],
+        2
+      )
+    ).toEqual(["a-white", "c-block"]);
+  });
+
+  test("without a whitelist case the first block-only case comes first", () => {
+    const cases = [withRules("a-none", []), withRules("b-block", ["blocklist"]), withRules("c-block", ["blocklist"])];
+    expect(picked(cases, 1)).toEqual(["b-block"]);
+    expect(picked(cases, 2)).toEqual(["a-none", "b-block"]);
+  });
+
+  test("without a block-only case a whitelist case comes first and the no-rule cases follow", () => {
+    const cases = [withRules("a-none", []), withRules("b-white", ["whitelist"]), withRules("c-white", ["whitelist"])];
+    expect(picked(cases, 2)).toEqual(["a-none", "b-white"]);
+    expect(picked(cases, 3)).toEqual(["a-none", "b-white", "c-white"]);
+  });
+
+  test("with no rule case the no-rule cases are the first n by id", () => {
+    expect(picked([withRules("b", []), withRules("a", [])], 1)).toEqual(["a"]);
+  });
+});
+
+describe("selectCases order by id", () => {
+  test("sorts by the text of the id, not by number", () => {
+    const cases = ["a2", "a10", "a1", "b1"].map((id) => makeCase(id, "info"));
+    expect(selectCases(cases, {}).map((c) => c.id)).toEqual(["a1", "a10", "a2", "b1"]);
+  });
+
+  test("cases with the same id keep their input order", () => {
+    const first = { ...makeCase("dup", "info"), subject: "first" };
+    const second = { ...makeCase("dup", "info"), subject: "second" };
+    expect(selectCases([first, second], {}).map((c) => c.subject)).toEqual(["first", "second"]);
+    expect(selectCases([second, first], {}).map((c) => c.subject)).toEqual(["second", "first"]);
+  });
+});
+
 describe("selectCases with delegation cases", () => {
   test("gives n delegation synthetic cases and still the injection subset", () => {
     const result = selectCases(buildList(), { perCategory: 2 });

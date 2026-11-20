@@ -125,6 +125,50 @@ describe("checkSendLimits", () => {
   });
 });
 
+describe("checkSendLimits until time of a full window", () => {
+  // Cap 3 per hour: the window passes when the oldest of the counted sends that fill it leaves.
+  const cap3: SendLimits = { mailboxHour: 3, mailboxDay: 100, recipientDay: 100 };
+  const at = (hhmm: string) => new Date(`2026-11-20T${hhmm}:00Z`);
+  const sendAt = (hhmm: string, to: readonly string[] = ["x@x.test"]): RecentSend => ({ startedAt: at(hhmm), to });
+  const now0930 = at("09:30");
+
+  test("three sends at 09:00, 09:10 and 09:20 hold until 10:00", () => {
+    expect(check([sendAt("09:00"), sendAt("09:10"), sendAt("09:20")], ["n@x.test"], cap3, now0930)).toEqual(
+      held("mailbox_hour", "2026-11-20T10:00:00.000Z")
+    );
+  });
+
+  test("the same sends in any order hold until the same time", () => {
+    const expected = held("mailbox_hour", "2026-11-20T10:00:00.000Z");
+    expect(check([sendAt("09:20"), sendAt("09:00"), sendAt("09:10")], ["n@x.test"], cap3, now0930)).toEqual(expected);
+    expect(check([sendAt("09:10"), sendAt("09:20"), sendAt("09:00")], ["n@x.test"], cap3, now0930)).toEqual(expected);
+  });
+
+  test("two sends do not fill a cap of three", () => {
+    expect(check([sendAt("09:00"), sendAt("09:10")], ["n@x.test"], cap3, now0930)).toEqual({ kind: "ok" });
+  });
+
+  test("more sends than the cap: the window passes when the oldest one that must leave has left", () => {
+    const sends = [sendAt("09:35"), sendAt("09:05"), sendAt("09:15"), sendAt("09:25"), sendAt("09:45")];
+    // Counted at 09:50: all five. The window holds 3 once the two oldest (09:05, 09:15) are gone: at 09:25 + 1 h.
+    expect(check(sends, ["n@x.test"], cap3, at("09:50"))).toEqual(held("mailbox_hour", "2026-11-20T10:25:00.000Z"));
+  });
+
+  test("a cap of one holds until the one send leaves", () => {
+    const one: SendLimits = { mailboxHour: 1, mailboxDay: 100, recipientDay: 100 };
+    expect(check([sendAt("09:20")], ["n@x.test"], one, now0930)).toEqual(
+      held("mailbox_hour", "2026-11-20T10:20:00.000Z")
+    );
+  });
+
+  test("the recipient window uses the same rule over the sends to that address, in any order", () => {
+    const limits: SendLimits = { mailboxHour: 100, mailboxDay: 100, recipientDay: 2 };
+    const recent = [sendAt("09:20", ["a@x.test"]), sendAt("09:00", ["a@x.test"]), sendAt("09:10", ["b@x.test"])];
+    expect(check(recent, ["a@x.test"], limits, now0930)).toEqual(held("recipient_day", "2026-11-21T09:00:00.000Z"));
+    expect(check(recent, ["b@x.test"], limits, now0930)).toEqual({ kind: "ok" });
+  });
+});
+
 describe("send limit error text", () => {
   test("15: round trip and rejects other text", () => {
     expect(sendLimitError("mailbox_day")).toBe("send_limit:mailbox_day");

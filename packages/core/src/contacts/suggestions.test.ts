@@ -282,6 +282,63 @@ describe("suggestionsFor: cap, order, skip", () => {
     expect(result.map((c) => c.pattern)).toEqual(["z@z.pl", "a@a.pl"]);
   });
 
+  // One address that earns a suggestion of each kind, with the given main count.
+  const ofKind = {
+    whitelist: (address: string, count: number) => sender(address, { rescued90: count }),
+    vip: (address: string, count: number) => sender(address, { received30: count, answered30: count }),
+    blocklist: (address: string, count: number) => sender(address, { correctedToSpam90: count }),
+  } as const;
+
+  test.each(["whitelist", "vip", "blocklist"] as const)(
+    "%s: the larger count comes first, whatever the input order and the keys",
+    (kind) => {
+      const big = ofKind[kind]("z@z.pl", 9);
+      const small = ofKind[kind]("a@a.pl", 5);
+      expect(suggestionsFor([small, big], ctx()).map((c) => c.pattern)).toEqual(["z@z.pl", "a@a.pl"]);
+      expect(suggestionsFor([big, small], ctx()).map((c) => c.pattern)).toEqual(["z@z.pl", "a@a.pl"]);
+    }
+  );
+
+  test.each(["whitelist", "vip", "blocklist"] as const)(
+    "%s: equal counts order by key ascending, whatever the input order",
+    (kind) => {
+      const a = ofKind[kind]("a@a.pl", 5);
+      const b = ofKind[kind]("b@b.pl", 5);
+      expect(suggestionsFor([a, b], ctx()).map((c) => c.pattern)).toEqual(["a@a.pl", "b@b.pl"]);
+      expect(suggestionsFor([b, a], ctx()).map((c) => c.pattern)).toEqual(["a@a.pl", "b@b.pl"]);
+    }
+  );
+
+  test("the kind comes before the count: a whitelist of 2 precedes a vip of 9 and a blocklist of 9", () => {
+    const inputs = [ofKind.blocklist("c@c.pl", 9), ofKind.vip("b@b.pl", 9), ofKind.whitelist("a@a.pl", 2)];
+    expect(suggestionsFor(inputs, ctx()).map((c) => `${c.kind}:${c.pattern}`)).toEqual([
+      "whitelist:a@a.pl",
+      "vip:b@b.pl",
+      "blocklist:c@c.pl",
+    ]);
+    expect(suggestionsFor([...inputs].reverse(), ctx()).map((c) => c.kind)).toEqual(["whitelist", "vip", "blocklist"]);
+  });
+
+  test("VIPs with equal answers: more flagged mails first, then the key", () => {
+    const vip = (address: string, flagged30: number) => sender(address, { ...vipMail, flagged30 });
+    const inputs = [vip("c@c.pl", 3), vip("a@a.pl", 3), vip("b@b.pl", 5)];
+    expect(suggestionsFor(inputs, ctx({ createdLast7Days: -5 })).map((c) => c.pattern)).toEqual([
+      "b@b.pl",
+      "a@a.pl",
+      "c@c.pl",
+    ]);
+  });
+
+  test("a domain candidate ranks by the sum of its senders", () => {
+    const inputs = [
+      sender("a@big.pl", { rescued90: 2 }),
+      sender("b@big.pl", { rescued90: 3 }),
+      sender("c@other.pl", { rescued90: 4 }),
+    ];
+    expect(suggestionsFor(inputs, ctx()).map((c) => c.pattern)).toEqual(["@big.pl", "c@other.pl"]);
+    expect(suggestionsFor([...inputs].reverse(), ctx()).map((c) => c.pattern)).toEqual(["@big.pl", "c@other.pl"]);
+  });
+
   test("a dismissed key is skipped and the next candidate fills the slot", () => {
     const four = [
       sender("a@a.pl", vipMail),

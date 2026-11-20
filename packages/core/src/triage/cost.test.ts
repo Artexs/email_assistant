@@ -105,6 +105,78 @@ describe("costPerMail by endpoint (F111 D7)", () => {
   });
 });
 
+describe("priceRowFor with dated rows", () => {
+  const key = "price-row-test-model";
+  const row = (inputPerM: number, from?: string, extra: { endpoint?: "eu" } = {}) => ({
+    inputPerM,
+    outputPerM: inputPerM,
+    ...(from === undefined ? {} : { from }),
+    ...extra,
+    source: "https://example.test/price",
+    checked: "2026-11-15",
+  });
+  const priceAt = (iso: string, endpoint?: "standard" | "eu" | "own") =>
+    priceRowFor(key, new Date(iso), endpoint)?.inputPerM ?? null;
+
+  function withRows(rows: ReturnType<typeof row>[], run: () => void): void {
+    llmPrices[key] = rows;
+    try {
+      run();
+    } finally {
+      Reflect.deleteProperty(llmPrices, key);
+    }
+  }
+
+  test("takes the row with the latest start that is not after the day, whatever the list order", () => {
+    withRows([row(3, "2026-12-01"), row(1), row(2, "2026-11-01")], () => {
+      expect(priceAt("2026-10-31T23:59:59Z")).toBe(1);
+      expect(priceAt("2026-11-01T00:00:00Z")).toBe(2);
+      expect(priceAt("2026-11-30T23:59:59Z")).toBe(2);
+      expect(priceAt("2026-12-01T00:00:00Z")).toBe(3);
+      expect(priceAt("2027-06-01T00:00:00Z")).toBe(3);
+    });
+  });
+
+  test("a row without a start applies from the beginning, and a dated row replaces it", () => {
+    withRows([row(2, "2026-11-01"), row(1)], () => {
+      expect(priceAt("2020-01-01T00:00:00Z")).toBe(1);
+      expect(priceAt("2026-11-01T00:00:00Z")).toBe(2);
+    });
+  });
+
+  test("no row applies before the first start", () => {
+    withRows([row(2, "2026-11-01")], () => {
+      expect(priceAt("2026-10-31T23:59:59Z")).toBeNull();
+    });
+  });
+
+  test("two rows with the same start: the later row of the list wins", () => {
+    withRows([row(1, "2026-11-01"), row(2, "2026-11-01")], () => {
+      expect(priceAt("2026-11-05T00:00:00Z")).toBe(2);
+    });
+  });
+
+  test("two rows without a start: the later row of the list wins", () => {
+    withRows([row(1), row(2)], () => {
+      expect(priceAt("2026-11-05T00:00:00Z")).toBe(2);
+    });
+  });
+
+  test("an EU row and a standard row are chosen apart", () => {
+    withRows([row(1), row(5, undefined, { endpoint: "eu" }), row(2, "2026-11-01")], () => {
+      expect(priceAt("2026-11-05T00:00:00Z", "standard")).toBe(2);
+      expect(priceAt("2026-11-05T00:00:00Z", "eu")).toBe(5);
+      expect(priceAt("2026-11-05T00:00:00Z")).toBe(2);
+    });
+  });
+
+  test("a model with an empty row list has no price", () => {
+    withRows([], () => {
+      expect(priceAt("2026-11-05T00:00:00Z")).toBeNull();
+    });
+  });
+});
+
 describe("toEndpointKind", () => {
   test("a missing key reads standard; a damaged value reads standard (the dearest rate)", () => {
     expect(toEndpointKind(undefined)).toBe("standard");
