@@ -95,7 +95,7 @@ Move the ticket to `active/` and commit. Spawn stage 01 with the board flags (wo
 
 - Scouts: 2 (`scouts.md`).
 - stage-01 [written], stage-02 [written].
-- Word counts (`wc -w`, after the review fixes): plan.md about 1480, stage-01 534, stage-02 560, ticket.md 368.
+- Word counts (`wc -w`, after the review fixes): plan.md 1484, stage-01 534, stage-02 595, ticket.md 368.
 - Questions: 3 minor defaults (`questions.md`); none blocking.
 
 ## Cold review
