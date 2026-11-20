@@ -10,9 +10,9 @@ import { fileURLToPath } from "node:url";
 import { DOCS_BASE } from "@ea/core";
 import type { AstroIntegration } from "astro";
 
-const TAG = /<([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
-const ATTRIBUTE = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
-const RAW_TEXT_ELEMENT = /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
+export const TAG = /<([a-zA-Z][a-zA-Z0-9-]*)((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+export const ATTRIBUTE = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
+export const RAW_TEXT_ELEMENT = /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi;
 const PLACEHOLDER_ORIGIN = "http://page.invalid";
 
 interface PageLinks {
@@ -37,7 +37,7 @@ export function pageLinks(html: string): PageLinks {
   return { links, ids };
 }
 
-function* htmlFiles(dir: string): Generator<string> {
+export function* htmlFiles(dir: string): Generator<string> {
   for (const entry of readdirSync(dir).sort()) {
     const path = join(dir, entry);
     if (statSync(path).isDirectory()) yield* htmlFiles(path);

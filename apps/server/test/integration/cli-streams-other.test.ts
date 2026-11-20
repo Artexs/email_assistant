@@ -231,6 +231,26 @@ describe("db-worktree streams", () => {
     expectOnlyStdout(dropped, "db-worktree", `dropped ${database}`);
   });
 
+  test("drop also drops the test worker databases `<name>_w<n>` of the database", async () => {
+    const { name, database } = await markedDatabase();
+    const workers = [1, 2].map((n) => `${database}_w${n}`);
+    await withAdmin(admin, async (client) => {
+      for (const worker of workers) {
+        await client.query(`CREATE DATABASE "${worker}"`);
+        await client.query(`COMMENT ON DATABASE "${worker}" IS '${worktreeDbComment}'`);
+      }
+    });
+    databases.push(...workers);
+    const dropped = await run("db-worktree", [name, "--drop"]);
+    expect(dropped.code).toBe(0);
+    for (const dropping of [database, ...workers])
+      expect(dropped.stdout).toContain(`[db-worktree] dropped ${dropping}\n`);
+    const left = await withAdmin(admin, (client) =>
+      client.query("SELECT datname FROM pg_database WHERE datname = ANY($1)", [[database, ...workers]])
+    );
+    expect(left.rows).toEqual([]);
+  });
+
   test("a database without the worktree mark: create and drop refuse on stderr", async () => {
     const { name, database } = newName();
     await withAdmin(admin, (client) => client.query(`CREATE DATABASE "${database}"`));

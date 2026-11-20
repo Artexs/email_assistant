@@ -31,8 +31,6 @@ export type MailboxRow = Omit<
   oauth_provider: "microsoft" | "google" | null;
   /** Why the OAuth login was refused; null for a password mailbox and for a mailbox that is not in `auth_error`. */
   auth_reason: AuthErrorReason | null;
-  uidvalidity: number | null;
-  last_uid: number | null;
   capabilities: MailCapabilities | Record<string, never>;
   folder_map: Record<string, string>;
 };
@@ -40,14 +38,14 @@ function toAuthReason(value: string | null): AuthErrorReason | null {
   return authErrorReasons.find((reason) => reason === value) ?? null;
 }
 function toMailboxRow(row: Selectable<DB["mailboxes"]>): MailboxRow {
+  // The two columns are an old copy of the INBOX cursor (the cursor is in `mailbox_folders`): they never leave the mapper.
+  const { uidvalidity: _uidvalidity, last_uid: _lastUid, ...rest } = row;
   return {
-    ...row,
+    ...rest,
     smtp_security: row.smtp_security === "starttls" ? "starttls" : "tls",
     send_via: row.send_via === "graph" ? "graph" : "smtp",
     oauth_provider: row.oauth_provider === "microsoft" || row.oauth_provider === "google" ? row.oauth_provider : null,
     auth_reason: toAuthReason(row.auth_reason),
-    uidvalidity: row.uidvalidity === null ? null : Number(row.uidvalidity),
-    last_uid: row.last_uid === null ? null : Number(row.last_uid),
     capabilities: row.capabilities as MailCapabilities | Record<string, never>,
     folder_map: row.folder_map as Record<string, string>,
   };
