@@ -4,6 +4,8 @@ import type { GenerateFn, GenerateRequest, GenerateResult } from "../client";
 import { isNetworkError, isRecord, LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 import type { ConfigCode, SoftCode } from "../errors";
 
+import { type CommonEnv, commonSettings, type LlmRowSettings } from "./env";
+
 import type { LlmProvider } from "./index";
 
 const SOFT_STATUSES = new Set([429, 500, 502, 503, 504]);
@@ -101,6 +103,16 @@ export const geminiProvider = {
   defaults: { timeoutMs: 30000, rpm: 12 },
   realMail: true,
   removedEnvKeys: ["GEMINI_MODEL_CLASSIFIER"] as const,
+  envShape: {},
+  ownModelKey: null,
+  check: () => undefined,
+  // One fixed endpoint: the SDK default host.
+  settings: (config: CommonEnv<"GEMINI">): LlmRowSettings => ({
+    ...commonSettings("GEMINI", config),
+    baseUrl: null,
+    endpoint: "standard",
+    ownModel: null,
+  }),
   createGenerate,
   classifyError: classifyGeminiError,
 } satisfies LlmProvider;

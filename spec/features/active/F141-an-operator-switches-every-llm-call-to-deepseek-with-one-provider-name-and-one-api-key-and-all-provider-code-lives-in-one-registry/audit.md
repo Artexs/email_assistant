@@ -67,3 +67,17 @@ Searched in `apps`, `packages`, `tools` and `deploy` (`*.ts`, `*.tsx`): 92 test,
 - Unquoted object keys (`{ gemini: provider }`), the word "Gemini" or "OpenAI" in prose, and identifiers such as `openAiReasoningEfforts` or `isOpenAiHost`. The five patterns of the plan do not match them; they are listed above and moved by stages 03, 04 and 07.
 - The endpoint kind `own` has no provider word, so the scan ignores it. The own endpoint is out of scope (the private model endpoint ticket, F140).
 - `.md` files (web legal texts), root files such as `eslint.config.js`, `package.json` and `deploy/`.
+
+## After (stage 07)
+
+The scan test (`apps/server/src/platform/llm/provider-scan.test.ts`) passes with four permanent exceptions and no `old site` entry. `config-llm.ts`, `endpoint.ts` (now `platform/llm/providers/endpoint.ts`, a registry file), `settings.ts` and `eval-config.ts` have no match: the openai row owns its endpoint keys (`providers/openai-env.ts`), and the two comment matches name the registry.
+
+| Exception | Reason |
+| --- | --- |
+| `packages/core/src/legal/subprocessors.ts` | The legal rows name the sub-processors; the owner wants no legal change. |
+| `apps/server/src/platform/outside-services.ts` | A hand list by design: each outside key is a decision. |
+| `apps/server/src/scripts/e2e-seed-args.ts` | The e2e pin sets every removed key and `OPENAI_OWN_MODEL` to empty text. |
+| `packages/core/src/metrics/cost-model.ts` | `pilotCost.models` is a measured record, not catalog data. |
+
+New check: `apps/server/src/platform/llm/providers/registry.test.ts` (each id of `llmProviderIds` has its three keys in the config shape and a server row).
+

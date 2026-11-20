@@ -41,3 +41,12 @@ providers, to switch between them, and to allow more providers later.
 ## Amendment (2026-11, roles)
 
 `LLM_PROVIDER` is the classifier's provider and the fallback of every other role. Each role (`judge`, `drafter`, `extractor`) may name its own provider and model with `LLM_<ROLE>_*` keys, so two providers can run at once (PD-026: the judge is another model family than the drafter). The writer keys `OPENAI_MODEL` and `GEMINI_MODEL` are removed; the drafter role replaces the writer. Still no automatic fallback between providers.
+
+## Amendment (2026-11-20, one provider switch with tiers)
+
+Ticket folder: [`spec/features/active/F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry/`](../../spec/features/active/F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry/ticket.md). This amendment replaces the per-role amendment above.
+
+- One `LLM_PROVIDER` runs every role. A role names a tier (`light` or `strong`) and an effort level in the core catalog; each provider row maps the tier to a model. The `LLM_<ROLE>_PROVIDER`, `LLM_<ROLE>_MODEL`, `LLM_<ROLE>_REASONING`, `OPENAI_MODEL_CLASSIFIER`, `GEMINI_MODEL_CLASSIFIER` and `OPENAI_REASONING_EFFORT` keys are removed (12 keys, `removedEnvKeys`). A non-empty value stops config. Eval and `llm:check` tools pin one run with `--provider`, `--model` and `--reasoning-effort`.
+- A third row, `deepseek`, is for dev, tests and evals (`DEEPSEEK_API_KEY`, fixed host). It has no sub-processor row, so config refuses `LLM_PROVIDER=deepseek` with `TRIAGE_LLM_SCOPE=all` outside the sim stack. `OPENAI_BASE_URL` still refuses the DeepSeek host.
+- `OPENAI_OWN_MODEL` names the one model of an own endpoint (`OPENAI_ENDPOINT_KIND=own`); every role on openai uses it.
+- A provider is one core catalog row plus one server row. The server row owns its extra env keys (`envShape`), its always-run checks (`check`) and its settings (`settings`). `config-llm.ts` names no provider; `platform/llm/provider-scan.test.ts` enforces it.
