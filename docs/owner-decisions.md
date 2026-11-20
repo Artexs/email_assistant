@@ -794,3 +794,16 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - 2026-11-20 · F153 plan P5/P7 · privacy · The papers and the `openai`/`gemini` sub-processor rows name To and Cc, the date and the sender marks (the classifier call sends them today). Undo: revert those sentences. · new
 - 2026-11-20 · F153 plan P8 · scope · The one-click unsubscribe line, `members` in `unsubscribe-data`, the report-mail line and the open-loops extractor call stay out of F153; a new ticket holds them and lands before the `bulk_unsubscribe` or `open_loops` flag goes on. Undo: add them to stage 01. · new
 - 2026-11-20 · F153 plan P2 · scope · Context mails keep no age limit (no code change); the text says so. Undo: a new ticket with an eval gate. · new
+- 2026-11-20 · F142 plan D1 · rule exception · No alias for the old address-helper names (the quality-pass text asked for one). Undo: re-export the old name. · new
+- 2026-11-20 · F142 plan D4/D5 · scope · No data migration: stored and sent addresses keep today's form; the one-address rule form is only a compare key (the cold review found that a stored compare form would change the address reminders go to). Undo: none needed. · new
+- 2026-11-20 · F142 plan D6 · user-visible · A delegate or sender rule whose address differs from an existing one only by `ς`/`σ`, a dotted I or padding is refused as `exists`. Undo: drop the pre-check. · new
+- 2026-11-20 · F142 plan D7 · user-visible · A reply outside the thread from a padded or combining-dot From does not close a loop. Undo: switch the read to `normalizedAddress`. · new
+- 2026-11-20 · F142 plan · scope · Other private address folds (reply drafts, outgoing sender, triage payloads, mail sync, login) stay out of scope; a follow-up ticket holds them. Undo: add them to a stage. · new
+- 2026-11-20 · F129 plan D13 · scope · `gemini:test` is removed; `llm:check --provider gemini` does the same. Undo: restore the script. · new
+- 2026-11-20 · F129 plan D8 · user-visible · `org:break-glass` (set and clear) and `web:two-factor-reset` need `--confirm <organization name>`. Undo: drop the guard. · new
+- 2026-11-20 · F129 plan D5 · user-visible · Bad arguments exit 2 in every tool; refusals and `mailbox:audit` lost mail exit 1; stopped runs (`eval --sim`, drafter eval, `testmail:send`) exit 4. Undo: change the table in docs/cli.md and the tools. · new
+- 2026-11-20 · F129 plan D13 · user-visible · `eval --json <file>` is renamed `--json-out <file>`. Undo: rename back. · new
+- 2026-11-20 · F129 plan D13 · scope · `testmail` stays in the server for now. Undo: a follow-up ticket moves it to `tools/`. · new
+- 2026-11-20 · F129 plan D12 · rule exception · `fake-tg` has its own exit site `tools/fake-telegram/src/cli-run.ts` (a tool never imports `apps/`). Undo: none needed. · new
+- 2026-11-20 · F129 plan D9 · scope · No new dev-DB guard (the refusals in `e2e:seed` and `db:worktree` stay). Undo: add a guard stage. · new
+- 2026-11-20 · F129 plan stage 00 · rule exception · Positional operands stay for `db:worktree`, `release:prepare`, `fake-tg send` and `wait`. Undo: convert them to flags. · new
