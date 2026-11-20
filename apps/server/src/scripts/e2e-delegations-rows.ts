@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { DAY_MS, type DraftPayload, MINUTE_MS, sendPayloadFor } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../platform/db";
@@ -8,8 +8,6 @@ import type { Db, DB, TenantContext } from "../platform/db";
 import { insertAction, insertMails, inTransaction } from "./e2e-activity-rows";
 import { E2E_DELEGATIONS, type DelegationsSeedIds } from "./e2e-seed-args";
 
-const MINUTE = 60_000;
-const DAY = 24 * 60 * MINUTE;
 const FIRST_UID = 920_001;
 
 type Plan = (typeof E2E_DELEGATIONS)[keyof typeof E2E_DELEGATIONS];
@@ -25,11 +23,11 @@ export async function seedDelegation(
   now: Date,
   ownerId: string
 ): Promise<{ delegationId: string; sendId: string }> {
-  const at = new Date(now.getTime() - (index + 1) * MINUTE);
+  const at = new Date(now.getTime() - (index + 1) * MINUTE_MS);
   const [emailId] = await insertMails(trx, ctx, mailboxId, [
     {
       uid: FIRST_UID + index,
-      receivedAt: new Date(at.getTime() - 10 * MINUTE),
+      receivedAt: new Date(at.getTime() - 10 * MINUTE_MS),
       subject: plan.subject,
       from: "boss@example.net",
       category: "delegation",
@@ -92,16 +90,16 @@ export async function seedDelegation(
       send_action_id: sendId,
       status: plan.status,
       task_summary: plan.task,
-      due_at: new Date(now.getTime() + plan.dueInDays * DAY),
+      due_at: new Date(now.getTime() + plan.dueInDays * DAY_MS),
       sent_message_id: sentStatus ? `<sent-${randomUUID()}@e2e.test>` : null,
-      sent_at: drafted ? null : new Date(now.getTime() - 3 * DAY),
+      sent_at: drafted ? null : new Date(now.getTime() - 3 * DAY_MS),
       reminders_sent: plan.remindersSent,
       // The chaser of the e2e server (one run each minute) plans a reminder for an overdue delegation that has no reminder in the last
       // 3 days: a planned reminder would change the rows under the spec. "Remind now" has no gap rule, so the spec is not affected.
       last_reminder_at: sentStatus ? now : null,
-      answered_at: plan.status === "answered" ? new Date(now.getTime() - DAY) : null,
+      answered_at: plan.status === "answered" ? new Date(now.getTime() - DAY_MS) : null,
       // The newest first: the list orders by `created_at`, so the seed order is the order on the page.
-      created_at: new Date(now.getTime() - index * MINUTE),
+      created_at: new Date(now.getTime() - index * MINUTE_MS),
     })
     .returning("id")
     .executeTakeFirstOrThrow();

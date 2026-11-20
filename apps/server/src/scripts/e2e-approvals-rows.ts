@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { DAY_MS, type DraftPayload, MINUTE_MS, sendPayloadFor } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../platform/db";
@@ -17,7 +17,6 @@ export interface ApprovalsSeedResult {
   reminderSendId: string;
 }
 
-const MINUTE = 60_000;
 const FIRST_UID = 910_001;
 
 type Plan = (typeof E2E_APPROVALS)[keyof typeof E2E_APPROVALS];
@@ -36,11 +35,11 @@ async function seedSend(
   delegates: Map<string, string>,
   kind: "delegation" | "reminder" = "delegation"
 ): Promise<string> {
-  const at = new Date(now.getTime() - (index + 1) * MINUTE);
+  const at = new Date(now.getTime() - (index + 1) * MINUTE_MS);
   const [emailId] = await insertMails(trx, ctx, mailboxId, [
     {
       uid: FIRST_UID + index,
-      receivedAt: new Date(at.getTime() - 10 * MINUTE),
+      receivedAt: new Date(at.getTime() - 10 * MINUTE_MS),
       subject: plan.subject,
       from: plan.from,
       category: "delegation",
@@ -116,7 +115,7 @@ async function seedSend(
       send_action_id: sendId,
       status: "drafted",
       task_summary: plan.task,
-      due_at: new Date(now.getTime() + 2 * 24 * 60 * MINUTE),
+      due_at: new Date(now.getTime() + 2 * DAY_MS),
     })
     .execute();
   return sendId;

@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
+
 import type { Db, TenantContext } from "../platform/db";
 
 import { insertMails, inTransaction } from "./e2e-activity-rows";
 import { E2E_REVIEW_MAIL_COUNT, E2E_REVIEW_SUMMARY, e2eReviewSender, e2eReviewSubject } from "./e2e-seed-args";
 
-const HOUR = 60 * 60_000;
 const FIRST_UID = 950_001;
 
 // The mail 1 to 12 of the review spec: categories as listed, all received in the last days, none labelled.
@@ -28,7 +29,7 @@ const CATEGORIES = [
 // link), and 12 real, triaged, unlabelled mails with a header row (the sender name). Mail 1 has a stored AI summary. The Message-ID is not
 // synthetic and the address is not a test sender, so `listReviewSample` counts them. No job of the e2e server reads the mail.
 export async function seedReviewRows(db: Db, ctx: TenantContext, mailboxId: string, now: Date): Promise<void> {
-  const finishedAt = new Date(now.getTime() - HOUR);
+  const finishedAt = new Date(now.getTime() - HOUR_MS);
   const entry = { acted: 60, total: 200, wouldMove: 40, outcome: "pass", moved: 0, upper: 0.0602 };
   await inTransaction(db, async (trx) => {
     await trx
@@ -39,13 +40,13 @@ export async function seedReviewRows(db: Db, ctx: TenantContext, mailboxId: stri
         reason: "connect",
         status: "done",
         result: JSON.stringify({ info: entry, notification: entry, spam: entry }),
-        created_at: new Date(finishedAt.getTime() - HOUR),
+        created_at: new Date(finishedAt.getTime() - HOUR_MS),
         finished_at: finishedAt,
       })
       .execute();
     const mails = Array.from({ length: E2E_REVIEW_MAIL_COUNT }, (_, index) => ({
       uid: FIRST_UID + index,
-      receivedAt: new Date(now.getTime() - (index + 1) * 3 * HOUR),
+      receivedAt: new Date(now.getTime() - (index + 1) * 3 * HOUR_MS),
       subject: e2eReviewSubject(index + 1),
       from: `e2e-review-sender-${index + 1}@review.example`,
       category: CATEGORIES[index % CATEGORIES.length] ?? "info",

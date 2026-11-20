@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
+
 import { type FolderMessageMeta, type MessageMeta } from "./port";
 import type { FolderRowAtUid, MoveCandidateRow, MovedRow } from "./repo";
 
@@ -62,7 +64,7 @@ export interface KnownCopy {
 }
 
 /** A `movePendingAt` older than this is a leftover; the normal rules apply. */
-export const MOVE_PENDING_MAX_AGE_MS = 24 * 3_600_000;
+export const MOVE_PENDING_MAX_AGE_MS = DAY_MS;
 
 /** UIDs that the other rows of the same identity hold in `folder`: they are never the copy of row `exceptId`. */
 export function otherCopyUids(copies: readonly KnownCopy[], exceptId: string, folder: string): Set<number> {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { DAY_MS, type DraftPayload, HOUR_MS, MINUTE_MS, sendPayloadFor } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { endOfLocalDay } from "../modules/loops";
@@ -18,14 +18,10 @@ import {
   type OpenLoopsSeedIds,
 } from "./e2e-seed-args";
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
 // The due date of a plan: days from the seed time, or one hour before the end of the local day (inside "Due today" at any hour).
 function dueOf(plan: E2eLoopPlan, now: Date): Date {
-  if (plan.dueInDays === "today") return new Date(endOfLocalDay(now, E2E_TIMEZONE).getTime() - HOUR);
-  return new Date(now.getTime() + plan.dueInDays * DAY);
+  if (plan.dueInDays === "today") return new Date(endOfLocalDay(now, E2E_TIMEZONE).getTime() - HOUR_MS);
+  return new Date(now.getTime() + plan.dueInDays * DAY_MS);
 }
 
 // One loop row with the texts stored (the Sent mail that opened it is not seeded: the follow-up quote is empty). The loops of a spec
@@ -40,7 +36,7 @@ async function seedLoop(
   now: Date
 ): Promise<string> {
   const closed = plan.closed !== undefined;
-  const waitFrom = new Date(now.getTime() - (index + 3) * DAY);
+  const waitFrom = new Date(now.getTime() - (index + 3) * DAY_MS);
   const row = await trx
     .insertInto("open_loops")
     .values({
@@ -49,7 +45,7 @@ async function seedLoop(
       kind: plan.kind,
       status: closed ? "closed" : "open",
       close_reason: plan.closed ?? null,
-      closed_at: closed ? new Date(now.getTime() - DAY) : null,
+      closed_at: closed ? new Date(now.getTime() - DAY_MS) : null,
       thread_key: `<e2e-loop-${randomUUID()}@e2e.test>`,
       message_id: `<e2e-loop-${randomUUID()}@e2e.test>`,
       subject: plan.subject,
@@ -65,11 +61,11 @@ async function seedLoop(
       wait_from_at: waitFrom,
       later_count: plan.laterCount ?? 0,
       follow_ups_sent: plan.followUpsSent ?? 0,
-      last_follow_up_at: plan.followUpsSent === undefined ? null : new Date(now.getTime() - DAY),
-      auto_reply_at: plan.autoReply === true ? new Date(now.getTime() - HOUR) : null,
+      last_follow_up_at: plan.followUpsSent === undefined ? null : new Date(now.getTime() - DAY_MS),
+      auto_reply_at: plan.autoReply === true ? new Date(now.getTime() - HOUR_MS) : null,
       // The newest first: the list orders by the due date, so the ties keep the seed order.
-      created_at: new Date(now.getTime() - index * MINUTE),
-      updated_at: new Date(now.getTime() - index * MINUTE),
+      created_at: new Date(now.getTime() - index * MINUTE_MS),
+      updated_at: new Date(now.getTime() - index * MINUTE_MS),
     })
     .returning("id")
     .executeTakeFirstOrThrow();
@@ -91,7 +87,7 @@ async function seedFollowUpPair(
     to: [plan.counterpart],
     cc: [],
     language: "en",
-    sent_at: new Date(now.getTime() - 4 * DAY).toISOString(),
+    sent_at: new Date(now.getTime() - 4 * DAY_MS).toISOString(),
     subject: plan.subject,
     quote: null,
     n: 1,
@@ -102,7 +98,7 @@ async function seedFollowUpPair(
     type: "create_draft",
     status: "applied",
     payload: { ...draft },
-    createdAt: new Date(now.getTime() - 2 * MINUTE),
+    createdAt: new Date(now.getTime() - 2 * MINUTE_MS),
   });
   return insertAction(trx, ctx, {
     emailId: null,
@@ -110,7 +106,7 @@ async function seedFollowUpPair(
     type: "send",
     status: "awaiting_approval",
     payload: { ...sendPayloadFor(draft) },
-    createdAt: new Date(now.getTime() - MINUTE),
+    createdAt: new Date(now.getTime() - MINUTE_MS),
     dependsOnActionId: draftId,
     notifiedAt: now,
   });

@@ -1,3 +1,5 @@
+import { DAY_MS } from "@ea/core";
+
 import { HardError } from "../../../platform/errors";
 import { contentFromHeaderBlock, contentFromSource } from "../imap/capture";
 import {
@@ -116,7 +118,7 @@ function toFolderMeta(stored: StoredMessage): FolderMessageMeta {
 }
 
 function utcDay(date: Date): number {
-  return Math.floor(date.getTime() / 86_400_000);
+  return Math.floor(date.getTime() / DAY_MS);
 }
 
 function stripTags(html: string): string {
