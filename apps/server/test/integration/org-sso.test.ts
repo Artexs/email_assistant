@@ -146,10 +146,10 @@ async function spawnEntry(
 }
 
 describe("org:sso", () => {
-  test("2. the real entry: a set without --org-id prints the usage on stderr, exit 1, no row; the script exists", async () => {
+  test("2. the real entry: a set without --org-id prints the usage on stderr, exit 2, no row; the script exists", async () => {
     const org = await seedOrg();
     const result = await spawnEntry(["--set", "--issuer", fake.issuer, "--client-secret-stdin"], `${SECRET}\n`);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stderr).toContain("usage: bun run org:sso");
     expect(result.stdout).toBe("");
     expect(result.stderr).not.toContain(SECRET);
@@ -174,7 +174,7 @@ describe("org:sso", () => {
   test("2c. the real entry: http for an origin is refused (no allow-list in production)", async () => {
     const org = await seedOrg();
     const result = await spawnEntry(setArgv(org), `${SECRET}\n`);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stderr).toContain("usage: bun run org:sso");
     expect(await providerRows(org.orgId)).toEqual([]);
   });
