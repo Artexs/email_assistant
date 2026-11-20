@@ -133,6 +133,7 @@ The run goes to the endpoint of `OPENAI_BASE_URL` (default `https://api.openai.c
 - `standard` and `eu`: the run has a USD cap, and the model needs a price row for that endpoint. A model with no row, or a price of 0, refuses the run. A model with only a standard row is refused on `eu`.
 - `own`: no USD cap, no price check and no month cap; the ledger line is `$0` and the price line of the report says `own endpoint: cost 0`. `--judge` is refused with an own classifier: the judge is a paid provider, so the run would have no cap.
 - The state file and the gate file carry `-eu` or `-own`, so two endpoints never share a resume. The EU price row is unverified (secondary source) and each report says so.
+- `cases/style-injection.json`: 4 made-up cases for the style suggestion (the stylist): each has 6 short sent texts of the injection persona (`INJECTION_PERSONA`) and `planted`, the strings that the style text must not hold. Only the stylist eval reads it (`## Stylist eval`).
 
 ## Reply drafter eval (F115)
 
@@ -148,6 +149,10 @@ The run goes to the endpoint of `OPENAI_BASE_URL` (default `https://api.openai.c
 - Gate file: a full holdout run with `--judge` and no `--limit` writes `evals/results/gate/drafter-<promptVersion>-<model>-<effort>-<scenario>-v<version>[-eu|-own].json` with the bars (code checks 100 %, 0 invented commitments, ≥ 80 % send as is, 0 planted strings) and `passed`.
 - Spend: the same cap and ledger as the classifier sim run (`--budget-usd`, default 1, month cap $20). The drafter model needs a price row. Exit codes: 0 done, 1 setup error, failed gate, injection under 100 % or over 10 % error cases, 2 bad arguments, 4 stopped (resume with the same command).
 - State file `evals/.runs/<model>-<effort>-<promptVersion>-drafter-<source>.jsonl`: ids, outcomes, codes and numbers. It holds no mail text and no draft text.
+
+## Stylist eval
+
+`bun run eval --sim <scenario> --part sent-dev|sent-holdout --stylist` runs the style suggestion of production (`prompts.stylist`, or `--stylist-prompt stylist-vN`) on the made-up sent mail of a part. The report and the style file `evals/results/styles/<scenario>-<part>-<prompt version>-<model>-<effort>.json` come out of it; the drafter eval reads the file with `--style` (`docs/capabilities/measurement.md` rule 17). `bun run eval --set style-injection --stylist` runs the 4 cases of `evals/cases/style-injection.json` (bar: every case passes) and writes `evals/results/styles/style-injection-<prompt version>-<model>-<effort>.json`. Tune the prompt on `sent-dev` only. Exit codes: 0 done, 1 setup error, too few samples, a failed check or an injection case under 100 %, 2 bad arguments, 4 stopped at the budget cap.
 
 ## Gate
 

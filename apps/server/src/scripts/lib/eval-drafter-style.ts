@@ -9,7 +9,7 @@ export const STYLE_SCENARIO = "scenario";
 export const STYLE_NONE = "none";
 
 // The style file of the stylist eval (`evals/results/styles/`). Synthetic text only.
-const styleFileSchema = z.object({
+export const styleFileSchema = z.object({
   scenario: z.string(),
   part: z.string(),
   promptVersion: z.string().min(1),
