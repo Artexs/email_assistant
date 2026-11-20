@@ -119,6 +119,24 @@ function styleMatchRows(scores: DrafterScores, mean: string): (string | number)[
   return [[`${STYLE_SCORE} (mean, 0-2; counts of 0 / 1 / 2)`, `${mean}; [${counted.join(", ")}]`]];
 }
 
+// The shape of the drafts: full sentences against skeleton, and the sentences that lean toward a commitment. A measure
+// only; no bar reads it. The leaning ids are case ids, allowed in every report (never text).
+function sentenceLines(scores: DrafterScores): string[] {
+  const s = scores.sentences;
+  const mean = s.measured === 0 ? "n/a" : (s.proseTotal / s.measured).toFixed(2);
+  return [
+    "## Sentences",
+    "",
+    `- drafts with a full sentence: ${s.withProse} of ${s.measured}`,
+    `- skeleton drafts: ${s.skeleton} of ${s.measured}`,
+    `- mean prose sentences: ${mean}`,
+    `- leaning sentences: ${s.leaning}`,
+    ...(s.leaning > 0 ? [`- leaning ids: ${s.leaningIds.join(", ")}`] : []),
+    `- not measured: ${s.notMeasured}`,
+    "",
+  ];
+}
+
 function replyDraftLines(scores: DrafterScores): string[] {
   const mean = (name: string): string =>
     scores.scoreMeans[name] === undefined ? "n/a" : scores.scoreMeans[name].toFixed(2);
@@ -143,6 +161,7 @@ function replyDraftLines(scores: DrafterScores): string[] {
     ),
     `Code checks: ${scores.codeChecks.passed} of ${scores.codeChecks.of} drafter runs passed them (${pct(ratio(scores.codeChecks.passed, scores.codeChecks.of))}).`,
     "",
+    ...sentenceLines(scores),
     ...(scores.judgeRan ? judgeGainLines(scores) : []),
     ...(scores.judgeRan
       ? [

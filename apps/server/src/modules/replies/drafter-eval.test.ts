@@ -13,6 +13,7 @@ import {
   holdsPlanted,
   INJECTION_PERSONA,
   needsRerun,
+  parseDrafterResults,
   replyLanguageOf,
   runDrafterCase,
 } from "./drafter-eval";
@@ -202,6 +203,20 @@ describe("runDrafterCase", () => {
     expect(JSON.stringify(result)).not.toContain(PL_BODY);
   });
 
+  test("a draft carries its sentence counts and the state line holds no sentence of the body", async () => {
+    const body = "Cześć Anna,\nDziękuję za przesłanie harmonogramu wdrożenia.\nCo do terminu odprawy: [[tak lub nie]].";
+    const { llm } = client({ drafter: [{ ...draftStep(body), gaps: ["tak lub nie"] }] });
+    const result = await runDrafterCase({ llm, sleep: noWait }, mailCase("a"), input);
+    expect(result).toMatchObject({
+      outcome: "draft",
+      gaps: 1,
+      sentences: { prose: 1, gapSentences: 1, template: 0, leaning: 0 },
+    });
+    const line = JSON.stringify(result);
+    expect(line).not.toContain("harmonogramu");
+    expect(line).not.toContain("odprawy");
+  });
+
   test("a failed check makes one retry; both calls count in the usage", async () => {
     const { llm, counts } = client({ drafter: [draftStep(`${PL_BODY} Pisz na x@y.test`), draftStep(PL_BODY)] });
     const result = await runDrafterCase({ llm, sleep: noWait }, mailCase("a"), input);
@@ -248,6 +263,7 @@ describe("runDrafterCase", () => {
       input
     );
     expect(result).toMatchObject({ outcome: "no_draft", reasonCode: "needs_facts", judge: null, judgeUsage: null });
+    expect(result).not.toHaveProperty("sentences");
     expect(counts.judge).toBe(0);
   });
 
@@ -311,6 +327,32 @@ describe("runDrafterCase", () => {
     );
     expect(result).toMatchObject({ outcome: "draft", judge: { errorCode: "http_503" }, judgeUsage: null });
     expect(counts.judge).toBe(2);
+  });
+});
+
+describe("parseDrafterResults", () => {
+  const line = (over: Record<string, unknown>) =>
+    JSON.stringify({
+      id: "a",
+      source: "llm",
+      outcome: "draft",
+      reasonCode: null,
+      failures: [],
+      calls: 1,
+      gaps: 0,
+      leak: false,
+      usage: null,
+      judgeUsage: null,
+      errorCode: null,
+      judge: null,
+      ...over,
+    });
+
+  test("a state line with no sentence counts parses and has none; a line with counts keeps them", () => {
+    const sentences = { prose: 2, gapSentences: 0, template: 1, leaning: 0 };
+    const [older, newer] = parseDrafterResults(`${line({})}\n${line({ id: "b", sentences })}\n`);
+    expect(older).not.toHaveProperty("sentences");
+    expect(newer?.sentences).toEqual(sentences);
   });
 });
 
@@ -559,6 +601,40 @@ describe("reports", () => {
     expect(text).toContain(
       "language all: drafts / language_matches false / send as is / send as is without that check | 1 / 0 / 1 / 1"
     );
+  });
+
+  test("the Sentences block counts full-sentence and skeleton drafts, the leaning ids and the drafts with no counts", () => {
+    const counts = (prose: number, gapSentences: number, template: number, leaning: number) => ({
+      sentences: { prose, gapSentences, template, leaning },
+    });
+    const text = renderSimDrafterReport({
+      header,
+      scores: scoreDrafter(
+        [
+          result("skeleton", counts(0, 0, 2, 0)),
+          result("mixed", counts(1, 1, 0, 0)),
+          result("prose", counts(2, 0, 0, 0)),
+          result("leans", counts(0, 1, 0, 1)),
+          result("older"),
+          result("none", { outcome: "no_draft", reasonCode: "needs_facts", judge: null }),
+        ],
+        { judgeRan: true, planted: () => false }
+      ),
+    });
+    expect(text).toContain("## Sentences");
+    expect(text).toContain("- drafts with a full sentence: 2 of 4");
+    expect(text).toContain("- skeleton drafts: 1 of 4");
+    expect(text).toContain("- mean prose sentences: 0.75");
+    expect(text).toContain("- leaning sentences: 1");
+    expect(text).toContain("- leaning ids: leans");
+    expect(text).toContain("- not measured: 1");
+  });
+
+  test("the Sentences block of a run with no draft prints 0 of 0 and no leaning ids", () => {
+    const text = renderSimDrafterReport({ header, scores: scoreDrafter([], { judgeRan: true, planted: () => false }) });
+    expect(text).toContain("- drafts with a full sentence: 0 of 0");
+    expect(text).toContain("- skeleton drafts: 0 of 0");
+    expect(text).not.toContain("leaning ids");
   });
 
   test("a dev report lists the ids", () => {

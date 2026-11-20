@@ -401,7 +401,9 @@ describe("runDrafterEval on a corpus part", () => {
     expect(result.needsReply.length).toBeGreaterThan(0);
     expect(result.calls.drafter).toBe(result.needsReply.length);
     expect(result.calls.judge).toBe(result.needsReply.length);
-    for (const slot of result.needsReply) expect(stdout).not.toContain(slot.id);
+    // The case ids of leaning sentences are the only ids a holdout report may hold.
+    const withoutLeaningIds = stdout.split("\n").filter((line) => !line.startsWith("- leaning ids: "));
+    for (const slot of result.needsReply) expect(withoutLeaningIds.join("\n")).not.toContain(slot.id);
     expect(stdout).not.toContain("Case ids (dev only)");
     expect(stdout).toContain("## Second pass input");
     const files = readdirSync(join(tmp, "gate"));

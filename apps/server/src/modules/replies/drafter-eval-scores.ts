@@ -1,4 +1,4 @@
-import { EXIT } from "@ea/core";
+import { EXIT, isSkeletonDraft } from "@ea/core";
 
 import { STYLE_SCORE } from "../triage";
 
@@ -24,6 +24,18 @@ export interface LanguageRow {
   languageFalse: number;
   sendAsIs: number;
   sendAsIsWithoutLanguage: number;
+}
+
+// The shape of the drafts, from the sentence counts of the results. A draft with no counts (a resumed older state file)
+// is only in `notMeasured`. The leaning ids are case ids, never text.
+export interface SentenceSummary {
+  measured: number;
+  withProse: number;
+  skeleton: number;
+  proseTotal: number;
+  leaning: number;
+  leaningIds: string[];
+  notMeasured: number;
 }
 
 export interface DrafterScores {
@@ -60,6 +72,7 @@ export interface DrafterScores {
   scoreCounts: Record<string, [number, number, number]>;
   // Graded drafts that passed every code check (all do) and that the judge still flags: a score 0 or a check false.
   judgeFlagged: number;
+  sentences: SentenceSummary;
 }
 
 export const ratio = (part: number, whole: number): number | null => (whole === 0 ? null : part / whole);
@@ -93,6 +106,20 @@ function sendAsIsWithoutLanguage(result: DrafterCaseResult): boolean {
     barScores(grade).every((value) => value >= 1) &&
     Object.entries(grade.checks).every(([name, value]) => name === "language_matches" || value)
   );
+}
+
+function sentenceSummary(drafts: readonly DrafterCaseResult[]): SentenceSummary {
+  const measured = drafts.flatMap((r) => (r.sentences === undefined ? [] : [{ id: r.id, counts: r.sentences }]));
+  const leaning = measured.filter((m) => m.counts.leaning > 0);
+  return {
+    measured: measured.length,
+    withProse: measured.filter((m) => m.counts.prose >= 1).length,
+    skeleton: measured.filter((m) => isSkeletonDraft(m.counts)).length,
+    proseTotal: measured.reduce((sum, m) => sum + m.counts.prose, 0),
+    leaning: leaning.reduce((sum, m) => sum + m.counts.leaning, 0),
+    leaningIds: leaning.map((m) => m.id).sort(),
+    notMeasured: drafts.length - measured.length,
+  };
 }
 
 export function scoreDrafter(
@@ -164,6 +191,7 @@ export function scoreDrafter(
     judgeFlagged: grades.filter(
       (grade) => barScores(grade).some((v) => v < 1) || Object.values(grade.checks).some((v) => !v)
     ).length,
+    sentences: sentenceSummary(drafts),
   };
 }
 

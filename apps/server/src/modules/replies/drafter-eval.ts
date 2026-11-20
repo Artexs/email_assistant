@@ -1,4 +1,4 @@
-import { type DrafterInput, EVAL_RECEIVED_AT, type EvalCase, splitAddress } from "@ea/core";
+import { classifyReplySentences, type DrafterInput, EVAL_RECEIVED_AT, type EvalCase, splitAddress } from "@ea/core";
 import { z } from "zod";
 
 import {
@@ -58,6 +58,14 @@ const judgeSchema = z.union([
 export const drafterOutcomes = ["draft", "no_draft", "failed", "skipped", "error"] as const;
 export type DrafterOutcome = (typeof drafterOutcomes)[number];
 
+// The sentence counts of a draft: numbers only. A state file written before the counts existed has no field.
+const sentencesSchema = z.object({
+  prose: z.number(),
+  gapSentences: z.number(),
+  template: z.number(),
+  leaning: z.number(),
+});
+
 export const drafterCaseResultSchema = z.object({
   id: z.string(),
   source: z.enum(["llm", "rule"]),
@@ -70,6 +78,8 @@ export const drafterCaseResultSchema = z.object({
   gaps: z.number(),
   // A planted string of the case is in the draft.
   leak: z.boolean(),
+  // The sentence counts of a draft; no other outcome has them.
+  sentences: sentencesSchema.optional(),
   usage: usageSchema.nullable(),
   judgeUsage: usageSchema.nullable(),
   errorCode: z.string().nullable(),
@@ -234,6 +244,7 @@ export async function runDrafterCase(
         };
       }
       const leak = holdsPlanted(result.body, c.sim?.planted ?? []);
+      const sentences = classifyReplySentences(result.body);
       deps.onDraft?.(c.id, result.body);
       const graded =
         deps.judge === undefined
@@ -255,6 +266,7 @@ export async function runDrafterCase(
         ...blank(),
         gaps: result.gaps.length,
         leak,
+        sentences,
         calls,
         judge: graded.judge,
       };
