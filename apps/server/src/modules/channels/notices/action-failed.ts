@@ -1,4 +1,4 @@
-import { MAILBOX_ACTION_TYPES, MOVE_TARGET_NAMES, type NoticeView } from "@ea/core";
+import { MAILBOX_ACTION_TYPES, MOVE_TARGET_NAMES, type NoticeView, DAY_MS } from "@ea/core";
 
 import { type Db, type TenantContext } from "../../../platform/db";
 import { listFailedFollowUps, listFailedUnnotified, markNotified, markResultNotified } from "../../actions";
@@ -9,7 +9,7 @@ import { type NoticeRecipient } from "../notice-fan-out";
 import { panelListUrlOf } from "./approval";
 import { DbOrTrx, queue, warnSkipped, type Detector } from "./run";
 
-export const ACTION_FAILED_LOOKBACK_MS = 24 * 3_600_000;
+export const ACTION_FAILED_LOOKBACK_MS = DAY_MS;
 export const ACTION_FAILED_LIMIT = 50;
 
 function isMailboxActionType(type: string): type is (typeof MAILBOX_ACTION_TYPES)[number] {

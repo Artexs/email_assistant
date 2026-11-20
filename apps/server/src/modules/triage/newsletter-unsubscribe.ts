@@ -3,7 +3,7 @@
 // the guarded client (`platform/public-http.ts`). The URL comes from the stored `List-Unsubscribe` header of a sender whose
 // `Authentication-Results` is trusted and on top (`listNewsletterSenders` decides `oneClick`); it is untrusted mail text. It is
 // never stored, logged or written to the audit row: the row and the audit hold the sender domain and a short code.
-import type { UnsubscribeRequestStatus } from "@ea/core";
+import { HOUR_MS, type UnsubscribeRequestStatus } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -17,7 +17,7 @@ import { listNewsletterSenders } from "./newsletter-senders";
 export const UNSUBSCRIBE_ORG_LIMIT = 20;
 /** At most this many requests per organization and sender domain in the last hour (the domain is the sender, not the target). */
 export const UNSUBSCRIBE_DOMAIN_LIMIT = 3;
-const WINDOW_MS = 3_600_000;
+const WINDOW_MS = HOUR_MS;
 
 export interface UnsubscribeDeps {
   db: Db;

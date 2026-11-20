@@ -20,6 +20,8 @@ import {
   type SuspiciousReason,
   type MailToolSwitches,
   type UrgencyProfile,
+  DAY_MS,
+  MINUTE_MS,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -123,9 +125,9 @@ export type TriageOutcome =
 
 // A mail ends in `triage_error` when it reaches this many tries (the count includes stale take-backs).
 export const HARD_ERROR_TRIES = 3;
-const HARD_ERROR_WAIT_MS = 5 * 60_000;
+const HARD_ERROR_WAIT_MS = 5 * MINUTE_MS;
 // Mail older than this is not triaged, unless the backfill stored it (architecture §4.1 rule 8).
-const MAX_AGE_MS = 7 * 24 * 3_600_000;
+const MAX_AGE_MS = 7 * DAY_MS;
 
 function payloadOf(action: PlannedAction): Record<string, unknown> {
   switch (action.type) {
@@ -410,7 +412,7 @@ async function handleClassifyError(
 }
 
 // Mail older than this before `resumed_at` is backlog of the pause.
-export const BACKLOG_GRACE_MS = 24 * 3_600_000;
+export const BACKLOG_GRACE_MS = DAY_MS;
 
 type SkipReason = "too_old" | "suspended_backlog" | "body_expired";
 
@@ -470,7 +472,7 @@ export async function triageOne(
   if (
     email.backfilled_at !== null &&
     email.body_text === null &&
-    email.created_at.getTime() < deps.now().getTime() - PENDING_BODY_DAYS * 24 * 3_600_000
+    email.created_at.getTime() < deps.now().getTime() - PENDING_BODY_DAYS * DAY_MS
   ) {
     return skipEmail(deps, ctx, mailbox, email, "body_expired");
   }

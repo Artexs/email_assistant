@@ -1,4 +1,4 @@
-import { type EvidenceKey, mailboxModes, parseCategoryPolicy, parseToolSwitches } from "@ea/core";
+import { type EvidenceKey, mailboxModes, parseCategoryPolicy, parseToolSwitches, MINUTE_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 import { z } from "zod";
 
@@ -25,8 +25,8 @@ import { loadSuspiciousContext } from "./suspicious-context";
 
 const log = createLog("triage");
 
-const STALE_AFTER_MS = 5 * 60_000;
-const RETRY_WAIT_MS = 5 * 60_000;
+const STALE_AFTER_MS = 5 * MINUTE_MS;
+const RETRY_WAIT_MS = 5 * MINUTE_MS;
 
 const modeSchema = z.enum(mailboxModes);
 
