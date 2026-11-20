@@ -43,6 +43,11 @@ describe("the drafter output schema", () => {
     ]);
   });
 
+  test("a draft in English parses to the same value", () => {
+    const english: DrafterOutput = { ...draft, language: "en" };
+    expect(drafterOutputSchema.parse(english)).toEqual(english);
+  });
+
   test("no draft with a reason code needs no body", () => {
     expect(drafterOutputSchema.parse(noDraft)).toEqual(noDraft);
   });
