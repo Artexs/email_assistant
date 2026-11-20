@@ -4,7 +4,17 @@ import { sql, type Transaction } from "kysely";
 import type { DB, TenantContext } from "../../../platform/db";
 import { ActionAnchorError, anchorOfRow } from "../anchor";
 
+import { statusGuard, writerGuard } from "./guard";
 import type { DbOrTrx } from "./shared";
+
+// The guard rows, resolved at load: an unknown row throws at import.
+const SET_EXPIRED_GUARDS = {
+  awaiting_approval: writerGuard("setExpired", `from "awaiting_approval"`),
+  approved: writerGuard("setExpired", `from "approved"`),
+};
+const SET_APPROVED_GUARD = writerGuard("setApproved", "default");
+const SET_REJECTED_AWAITING_GUARD = writerGuard("setRejected", `from "awaiting_approval"`);
+const SET_REJECTED_APPROVED_GUARD = writerGuard("setRejected", `from "approved"`);
 
 // A send of an incoming mail (`email_id`, `email` set) or of an open loop (a follow-up: `loop_id`, `email` null). `mailbox_id` comes
 // from the mail, or from the loop for a follow-up. A reader that needs the mail checks `email` first; the compiler makes it.
@@ -233,8 +243,7 @@ export async function setExpired(
     })
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("type", "=", "send")
-    .where("status", "=", opts.from)
+    .where((eb) => statusGuard(eb, SET_EXPIRED_GUARDS[opts.from]))
     .$if(opts.from === "approved" && opts.ignoreLock !== true, (qb) =>
       qb.where((eb) => eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]))
     )
@@ -281,8 +290,7 @@ export async function setApproved(
     })
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("type", "=", "send")
-    .where("status", "=", "awaiting_approval")
+    .where((eb) => statusGuard(eb, SET_APPROVED_GUARD))
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }
@@ -299,12 +307,11 @@ export async function setRejected(
     .set({ status: "rejected", status_reason: "rejected", locked_at: null, next_attempt_at: null, updated_at: opts.at })
     .where("id", "=", id)
     .where("org_id", "=", ctx.orgId)
-    .where("type", "=", "send")
     .where((eb) =>
       eb.or([
-        eb("status", "=", "awaiting_approval"),
+        statusGuard(eb, SET_REJECTED_AWAITING_GUARD),
         eb.and([
-          eb("status", "=", "approved"),
+          statusGuard(eb, SET_REJECTED_APPROVED_GUARD),
           eb.or([eb("locked_at", "is", null), eb("locked_at", "<", opts.staleBefore)]),
         ]),
       ])

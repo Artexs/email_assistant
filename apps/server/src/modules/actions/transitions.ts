@@ -1,7 +1,8 @@
 // Source of truth for `actions.status` edges. A new status write must update this file;
 // `transitions.test.ts` and `actions-transitions.test.ts` fail otherwise.
 //
-// This file is data only. No runtime code imports it (the runtime step is a separate task).
+// This file is data only. The status writers in `actions/repo/` read `WRITER_GUARDS` at runtime through
+// `statusGuard` (`actions/repo/guard.ts`); the map holds no code.
 // - `ACTION_ENTRIES`: how a new row gets its first status.
 // - `ACTION_EDGES`: the edges that callers use (design map). One row per (writer, from, to).
 // - `WRITER_GUARDS`: the guard of each writer variant, as the repository code writes it.
@@ -64,8 +65,7 @@ export interface ActionEdge {
 
 // One row per writer variant. `from` lists, per type, the statuses that the guard admits for a row
 // that the database can hold (a `send` is never `ready`: `actions_send_never_ready_check`).
-// A type that is not a key is not admitted, cannot exist in the status of the `to` list, or has no caller for
-// this variant (the `finishAction` variants with an explicit `from`: see their comment). Tests check only the keys.
+// A type that is not a key is not admitted by the variant: the writer's `WHERE` refuses it.
 // `to` lists the statuses that the variant can write. `held: "blocks"`: a row with a fresh `locked_at` is not changed.
 export interface WriterGuard {
   writer: ActionWriter;
@@ -394,34 +394,46 @@ export const WRITER_GUARDS: readonly WriterGuard[] = [
     },
     to: ["applying"],
   },
+  // One row per target: a guard can depend on the target. `finishAction` narrows `from` with its `opts.from`
+  // (default `ready`, `applying`), so a call without `opts.from` never admits `approved`. A send is never `ready`.
   {
     writer: "finishAction",
-    variant: "default",
-    // `from` defaults to `ready`, `applying`. A send is never `ready`.
+    variant: `to "applied"`,
     from: {
       move: ["ready", "applying"],
       mark_read: ["ready", "applying"],
       flag: ["ready", "applying"],
       save_summary: ["ready", "applying"],
       create_draft: ["ready", "applying"],
-      send: ["applying"],
+      send: ["applying", "approved"],
     },
-    to: ["applied", "failed", "expired"],
-  },
-  // `from: ["applying"]` and `from: ["approved"]`: only send callers pass them, so the map lists them for `send` only.
-  // The SQL has no type guard. A non-send row is never `approved`; a non-send `applying` row with an explicit
-  // `from` has no caller. If a non-send caller passes `from`, add its types here and test A shows the new edges.
-  {
-    writer: "finishAction",
-    variant: `from ["applying"]`,
-    from: { send: ["applying"] },
-    to: ["applied", "failed", "expired"],
+    to: ["applied"],
   },
   {
     writer: "finishAction",
-    variant: `from ["approved"]`,
-    from: { send: ["approved"] },
-    to: ["applied", "failed", "expired"],
+    variant: `to "failed"`,
+    from: {
+      move: ["ready", "applying"],
+      mark_read: ["ready", "applying"],
+      flag: ["ready", "applying"],
+      save_summary: ["ready", "applying"],
+      create_draft: ["ready", "applying"],
+      send: ["applying", "approved"],
+    },
+    to: ["failed"],
+  },
+  {
+    writer: "finishAction",
+    variant: `to "expired"`,
+    from: {
+      move: ["ready", "applying"],
+      mark_read: ["ready", "applying"],
+      flag: ["ready", "applying"],
+      save_summary: ["ready", "applying"],
+      create_draft: ["ready", "applying"],
+      send: ["applying", "approved"],
+    },
+    to: ["expired"],
   },
   {
     // The target is a parameter. A send is never `ready`, so it has no `toStatus: "ready"` variant.

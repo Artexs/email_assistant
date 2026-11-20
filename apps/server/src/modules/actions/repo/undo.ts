@@ -2,7 +2,11 @@ import { MAILBOX_ACTION_TYPES, type ActionType } from "@ea/core";
 
 import type { TenantContext } from "../../../platform/db";
 
+import { statusGuard, writerGuard } from "./guard";
 import { actionTypeSchema, type DbOrTrx } from "./shared";
+
+// The guard row, resolved at load: an unknown row throws at import.
+const MARK_UNDONE_GUARD = writerGuard("markUndone", "default");
 
 // The conditional update guards a double tap: only an `applied` original becomes `undone`. The caller writes the audit row.
 export async function markUndone(
@@ -16,7 +20,7 @@ export async function markUndone(
     .set({ status: "undone", status_reason: opts.reason, updated_at: opts.at })
     .where("id", "=", originalId)
     .where("org_id", "=", ctx.orgId)
-    .where("status", "=", "applied")
+    .where((eb) => statusGuard(eb, MARK_UNDONE_GUARD))
     .executeTakeFirst();
   return result.numUpdatedRows > 0n;
 }

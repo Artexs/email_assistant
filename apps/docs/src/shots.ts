@@ -7,6 +7,8 @@ import { join } from "node:path";
 import { DOCS_BASE } from "@ea/core";
 import { publicContentProblems } from "@ea/core/web";
 
+import { shotSource } from "../../web/e2e/lib/shot-source";
+
 export type ShotLocale = "en" | "pl";
 export type ShotViewport = "desktop" | "phone";
 
@@ -32,7 +34,7 @@ export const SHOT_MIN_BYTES = 10 * 1024;
 // The phone width of the page layout: a narrow screen takes the phone shot (`<picture>` source).
 export const SHOT_PHONE_MEDIA = "(max-width: 600px)";
 
-const ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
+const E2E_ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
   onboarding: {
     path: "/onboarding",
     en: "The Onboarding page of the panel, with the steps to connect a mailbox, link Telegram and choose the mode.",
@@ -60,17 +62,61 @@ const ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
   },
 };
 
-export const SHOTS: readonly ShotEntry[] = SHOT_PAGES.flatMap((page) =>
-  SHOT_LOCALES.flatMap((locale) =>
-    SHOT_VIEWPORTS.map((viewport) => ({
-      name: `${page}-${locale}-${viewport}`,
-      path: ALT[page].path,
-      locale,
-      viewport,
-      alt: ALT[page][locale],
-    }))
-  )
-);
+// The demo organization (`DEMO_SEED_FILE`) has one paused mailbox and the triaged mail of the seed: the alt texts say what the
+// picture shows, so they differ from the e2e organization's, which has no mailbox and no mail.
+const DEMO_ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
+  onboarding: {
+    path: "/onboarding",
+    en: "The Onboarding page of the panel in a demo organization, with one mailbox connected and the steps to link Telegram and choose the mode.",
+    pl: "Strona Start w panelu organizacji demo, z jedną podłączoną skrzynką i krokami: połącz Telegram i wybierz tryb.",
+  },
+  mailboxes: {
+    path: "/mailboxes",
+    en: "The Mailboxes page of the panel in a demo organization, with one paused demo mailbox and the Telegram card.",
+    pl: "Strona Skrzynki w panelu organizacji demo, z jedną wstrzymaną skrzynką demo i kartą Telegram.",
+  },
+  settings: {
+    path: "/settings",
+    en: "The Settings page of the panel in a demo organization, with the digest times and the signature of the assistant's messages.",
+    pl: "Strona Ustawienia w panelu organizacji demo, z godzinami podsumowań i podpisem wiadomości asystenta.",
+  },
+  rules: {
+    path: "/rules",
+    en: "The Rules page of the panel in a demo organization, with the form to add a sender rule and the rule lists.",
+    pl: "Strona Reguły w panelu organizacji demo, z formularzem dodania reguły nadawcy i listami reguł.",
+  },
+  activity: {
+    path: "/activity",
+    en: "The Activity page of the panel in a demo organization, with its filters and the demo mail that the assistant sorted.",
+    pl: "Strona Aktywność w panelu organizacji demo, z filtrami i pocztą demo, którą asystent posortował.",
+  },
+};
+
+export type ShotSourceKind = "demo" | "e2e";
+
+function shotsOf(source: ShotSourceKind): readonly ShotEntry[] {
+  const table = source === "demo" ? DEMO_ALT : E2E_ALT;
+  return SHOT_PAGES.flatMap((page) =>
+    SHOT_LOCALES.flatMap((locale) =>
+      SHOT_VIEWPORTS.map((viewport) => ({
+        name: `${page}-${locale}-${viewport}`,
+        path: table[page].path,
+        locale,
+        viewport,
+        alt: table[page][locale],
+      }))
+    )
+  );
+}
+
+// The shots of the e2e source. The demo source has the same names and paths, and its own alt texts.
+export const SHOTS: readonly ShotEntry[] = shotsOf("e2e");
+export const DEMO_SHOTS: readonly ShotEntry[] = shotsOf("demo");
+
+// The source that the build and the shot run use: `shotSource()` of the e2e lib (`DEMO_SEED_FILE`, else the default seed file).
+export function shotSourceKind(): ShotSourceKind {
+  return shotSource().kind;
+}
 
 // Texts of the panel that the public-content check of the shot run (`publicContentProblems`) accepts, each with its reason. The run has no
 // other allowance: a mail address of a real-looking domain on a page stops it. `shots.test.ts` checks each text still stands in the panel text.
@@ -118,12 +164,13 @@ export interface ShotView {
 export function shotView(
   page: string,
   currentLocale: string | undefined,
-  options: { on: boolean; exists: (name: string) => boolean }
+  options: { on: boolean; exists: (name: string) => boolean; source?: ShotSourceKind }
 ): ShotView {
+  const shots = options.source === "demo" ? DEMO_SHOTS : SHOTS;
   const locale = shotLocale(currentLocale);
   // A page that is not in the list has no shot of its name: this is the check, also for names like `toString`.
-  const desktop = isShotPage(page) ? SHOTS.find((shot) => shot.name === `${page}-${locale}-desktop`) : undefined;
-  const phone = isShotPage(page) ? SHOTS.find((shot) => shot.name === `${page}-${locale}-phone`) : undefined;
+  const desktop = isShotPage(page) ? shots.find((shot) => shot.name === `${page}-${locale}-desktop`) : undefined;
+  const phone = isShotPage(page) ? shots.find((shot) => shot.name === `${page}-${locale}-phone`) : undefined;
   if (desktop === undefined || phone === undefined) throw new Error(`shot_unknown_page ${page}`);
   if (!options.on) return { kind: "box", desktop, phone };
   for (const shot of [desktop, phone]) {

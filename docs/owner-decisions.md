@@ -761,3 +761,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 
 - Decision: one blind run of drafter-v3 on the holdout. It failed: 1 invented commitment (bar 0) and injection 13/14. Production stays on drafter-v1. A third use of the holdout needs the owner, or a new corpus version.
 - Source: `evals/results/gate/drafter-drafter-v3-gpt-6-luna-low-lab-01-v1.json`.
+
+### 2026-11-20 · F141 plan defaults: drafter fixed in code; DeepSeek refused with all-scope triage except the lab stack · privacy · new
+
+- Decision: (Q8) the drafter is fixed in code at tier light, effort low; a different F115 gate result is a one-line edit of `llmRoleModels` (this overrides the PD-072 "drafter model is config" wording). (Q9) ticket acceptance item 5 reads "zero outside the registry and a named exception list". (Q10) config refuses `LLM_PROVIDER=deepseek` with `TRIAGE_LLM_SCOPE=all`, except when `LAB_STACK=ea-sim`. (Q11) a removed key with a value stops the start; the coordinator cleans the dev `.env`, the VPS `.env` is an owner step. (Q3) `OPENAI_OWN_MODEL` replaces `OPENAI_MODEL_CLASSIFIER` for an own endpoint. (Q4) DeepSeek prices use the peak rates.
+- Why: plan defaults, taken by the coordinator after the cold review.
+- Undo: edit the question and the stage; none ships before stage 04.
+- Source: `spec/features/active/F141-*/questions.md`.
