@@ -3,17 +3,12 @@ import {
   noticeKinds,
   noticePath,
   renderNoticeEdit,
-  type AnsweredCallback,
+  type ApprovalCallback,
   type ApprovalEditOutcome,
-  type Callback,
   type CoreTexts,
-  type DelegateCallback,
-  type FeedbackCallback,
   type HeldBy,
-  type LoopCallback,
   type OutMessage,
   type RejectReason,
-  type ReplyCallback,
 } from "@ea/core";
 import type { Transaction } from "kysely";
 
@@ -57,12 +52,6 @@ export interface CallbackDeps {
   // The base URL of the panel (`WEB_BASE_URL`): the picker of the Delegate button links to the delegates page.
   webBaseUrl?: string;
 }
-
-// The answered check taps have their own handler (`answered-taps.ts`); `handleCallback` routes them first.
-type ApprovalCallback = Exclude<
-  Callback,
-  FeedbackCallback | AnsweredCallback | LoopCallback | DelegateCallback | ReplyCallback
->;
 
 // The panel path of the card that a tap edits, from its dedup key (`<kind>:<id>`): an approval card links to its send, any other
 // card to the page of its kind.
