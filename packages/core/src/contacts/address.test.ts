@@ -40,15 +40,14 @@ describe("the case form table over every code point", () => {
     }
     expect(wrong).toEqual([]);
     expect(codePointGroups().size).toBeGreaterThan(1000);
-    // The scan is a bounded run of 1.1 million rule calls, plus the build of the table; an instrumented run on a busy machine
-    // needs more than the default 5 seconds.
-  }, 30_000);
-
-  test("a letter that no code point folds to has only itself, and the empty text has no form but itself", () => {
+    // A text that no code point folds to has only itself, and the whitespace code points fold to the empty text and join no
+    // letter: the empty text has no form but itself.
     expect(addressCaseForms("\u03c2")).toEqual(["\u03c2"]);
     expect(addressCaseForms("")).toEqual([""]);
     expect(addressCaseForms(" ")).toEqual([" "]);
-  });
+    // The scan is a bounded run of 1.1 million rule calls, plus the build of the table; an instrumented run on a busy machine
+    // needs more than the default 5 seconds.
+  }, 30_000);
 });
 
 describe("normalizeAddress", () => {
