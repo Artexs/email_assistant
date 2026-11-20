@@ -316,7 +316,9 @@ describe("bun run credentials:check", () => {
       mkdirSync(join(root, "deploy"));
       copyFileSync(resolve(repoRoot, "deploy/restore.sh"), join(root, "deploy/restore.sh"));
       copyFileSync(resolve(repoRoot, "deploy/compose-lib.sh"), join(root, "deploy/compose-lib.sh"));
-      writeFileSync(join(root, ".env"), "POSTGRES_PASSWORD=unused\n");
+      // A split-env host: the database passwords are in deploy/db.env, and `.env` holds none of them.
+      writeFileSync(join(root, "deploy/db.env"), "POSTGRES_PASSWORD=unused\nMIGRATOR_PASSWORD=m\nAPP_PASSWORD=a\n");
+      writeFileSync(join(root, ".env"), "LOG_LEVEL=info\n");
       const dockerStub = join(stubs, "docker");
       writeFileSync(
         dockerStub,
