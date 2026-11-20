@@ -165,6 +165,11 @@ describe("cliDescriptionSchema issues and edges", () => {
       change: { usage: "bun run org:delete" },
       issues: [{ code: "custom", path: ["usage"], message: "usage first line names the tool" }],
     },
+    {
+      name: "a usage that ends with a newline",
+      change: { usage: "bun run org:status --org-id <uuid>\n" },
+      issues: [{ code: "custom", path: ["usage"], message: "usage has no trailing newline" }],
+    },
   ])("refuses $name with its exact issues", ({ change, issues }) => {
     expect<unknown>(issuesOf(change)).toEqual(issues);
   });
