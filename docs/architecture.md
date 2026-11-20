@@ -629,7 +629,7 @@ Tenancy:
   `evals/README.md` has the commands.
   CI runs the eval only when `prompts/`, `evals/` or the model config change, with a paid key and a budget alert.
 - **Web (Playwright, as built in S5d):** `bun run test:e2e` (`apps/web/e2e/`). Two projects, run one after the other with one worker: `mobile` (Pixel 7) and `desktop` (1280×800). 20 tests per project, 40 in all (specs: auth, account, mailboxes, onboarding, settings, rules, activity).
-  The run uses its own database (`E2E_DATABASE_URL`, `E2E_MIGRATOR_DATABASE_URL`; a target that the seed would wipe is refused), the real server on port 8081, the fake Telegram server (`tools/fake-telegram`) on port 8092 and the GreenMail of `bun run dev:up`.
+  The run uses its own database (`E2E_DATABASE_URL`, `E2E_MIGRATOR_DATABASE_URL`; a target that the seed would wipe is refused), the real server on port 8081, the fake Telegram server (`tools/fake-telegram`) on port 8092 and the GreenMail of `bun run dev:up`. The ports come from `E2E_PORT` and `E2E_TELEGRAM_PORT` (the docs check: `DOCS_TEST_PORT`, default 8093), and the mail addresses of a run carry a tag from `E2E_MAIL_TAG`. `scripts/limen-prepare.sh` sets all of them per job, so parallel jobs share no port, no database and no mailbox.
   `bun run e2e:seed` creates the fixed organization. CI has an `e2e` job with the same keys. Server code has route tests with `app.request` (`apps/server/src/**/*.test.ts`) next to the integration tests.
 - **CI:** GitHub Actions — lint, typecheck, unit tests, integration tests (service containers: Postgres, mail server).
 - **Containers and time (estimates):**
