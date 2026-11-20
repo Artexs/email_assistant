@@ -1,9 +1,9 @@
 import type { GenerateFn } from "../client";
 
+import { DEEPSEEK_BASE_URL } from "./deepseek-host";
 import { classifyOpenAiError, createOpenAiGenerate, type OpenAiLike } from "./openai";
 import type { openAiClientOptions } from "./openai";
 
-import { DEEPSEEK_BASE_URL } from "./deepseek-host";
 import type { LlmProvider } from "./index";
 
 // DeepSeek speaks the Responses API with strict `json_schema` like OpenAI, so this row reuses the OpenAI adapter.
