@@ -305,9 +305,9 @@ describe("org-status streams", () => {
 });
 
 describe("telegram-unlink streams", () => {
-  test("a missing option: the usage on stderr, exit 1", async () => {
+  test("a missing option: the usage on stderr, exit 2", async () => {
     const result = await run("telegram-unlink", ["--org-id", randomUUID()]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "telegram-unlink", "usage: bun run telegram:unlink");
   });
 
@@ -318,12 +318,12 @@ describe("telegram-unlink streams", () => {
     expectOnlyStdout(result, "telegram-unlink", `unlinked 0 chat(s) of user ${userId}`);
   });
 
-  test("a database that is down: `failed:` on stderr, exit 1", async () => {
+  test("a database that is down: `unreachable:` on stderr, exit 3", async () => {
     const result = await run("telegram-unlink", ["--org-id", randomUUID(), "--user-id", randomUUID()], {
       env: { DATABASE_URL: deadDb },
     });
-    expect(result.code).toBe(1);
-    expectOnlyStderr(result, "telegram-unlink", "failed: ");
+    expect(result.code).toBe(3);
+    expectOnlyStderr(result, "telegram-unlink", "unreachable: ");
   });
 
   test("a missing DATABASE_URL (the config error comes out of main): `failed:` on stderr, exit 1", async () => {
@@ -531,7 +531,7 @@ describe("failed lines of the database scripts", () => {
     },
     { script: "org-flag", args: () => ["--org-id", randomUUID()], unreachable: true },
     { script: "org-plan", args: () => ["--org-id", randomUUID(), "--plan", "active"], unreachable: true },
-    { script: "rules", args: () => ["list", "--org-id", randomUUID()] },
+    { script: "rules", args: () => ["list", "--org-id", randomUUID()], unreachable: true },
   ];
 
   for (const { script, args, unreachable } of scripts) {
