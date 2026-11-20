@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-09
+landed: 2026-11-20
 ---
 
 # F062 · The moved-mail columns have neutral names and the old INBOX cursor copy is gone
