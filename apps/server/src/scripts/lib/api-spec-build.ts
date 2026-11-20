@@ -24,12 +24,3 @@ export function renderSpec(spec: object): string {
 export async function buildSpecText(): Promise<string> {
   return renderSpec(await buildPublicSpec());
 }
-
-export const apiSpecUsage = "usage: bun run api:spec [--check]";
-
-/** `{ check }`, or null on any bad argument (the script prints the usage). */
-export function parseApiSpecArgs(argv: string[]): { check: boolean } | null {
-  if (argv.length === 0) return { check: false };
-  if (argv.length === 1 && argv[0] === "--check") return { check: true };
-  return null;
-}

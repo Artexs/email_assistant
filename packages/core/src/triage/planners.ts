@@ -1,6 +1,6 @@
 import { CLARIFICATION_MAX_CHARS, TASK_MAX_CHARS, type TriageAnalysis } from "./analysis";
 import type { Category } from "./categories";
-import { ADDRESS_PATTERN, sendPayloadFor, type DraftPayload, type SendPayload } from "./payloads";
+import { ADDRESS_PATTERN, dueDateOrNone, sendPayloadFor, type DraftPayload, type SendPayload } from "./payloads";
 import { isNoreplyAddress } from "./rules";
 
 export const actionTypes = ["move", "mark_read", "flag", "save_summary", "create_draft", "send"] as const;
@@ -95,7 +95,7 @@ function planDelegation(input: DelegationInput | undefined): PlannedAction[] {
       delegate_name: delegateName,
       to: [to],
       task: task.slice(0, TASK_MAX_CHARS),
-      due_date: input.dueDate ?? "",
+      due_date: dueDateOrNone(input.dueDate),
       language,
     });
   }

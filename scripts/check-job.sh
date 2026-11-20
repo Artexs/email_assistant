@@ -8,6 +8,7 @@
 #      Four processes, each with its own clean database (`EA_TEST_WORKER_DB=1`, `apps/server/test/worker-db.ts`).
 #      A server file pulls in most integration files, because they import the whole app.
 #      A change to a migration, package.json, bun.lock, bunfig.toml, a tsconfig or the test preload runs the full suite.
+#   5. The bare-code scan (apps/server/src/bare-codes.test.ts), on every run: a code can come from the merge with master.
 #
 # The pre-commit hook (scripts/pre-commit.sh) checked each commit; GitHub CI runs every suite on master after the land.
 # The last line names the master SHA and the tip: copy it into the final message.
@@ -51,5 +52,8 @@ else
   echo "check:job: integration tests that import a changed file"
   EA_TEST_WORKER_DB=1 bash scripts/ci-bun.sh test --parallel=4 --timeout=30000 --changed="$master" apps/server/test tools/fake-telegram/test
 fi
+
+echo "check:job: bare-code scan"
+bash scripts/ci-bun.sh test apps/server/src/bare-codes.test.ts
 
 echo "check:job PASS master=$(git rev-parse --short=10 "$master") tip=$(git rev-parse --short=10 HEAD) full=$full"
