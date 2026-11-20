@@ -103,6 +103,9 @@ function capture(): { out: CliRawOutput; stdout: string[]; stderr: string[] } {
       print: (text) => void stdout.push(text),
       fail: (text) => void stderr.push(text),
       raw: (text) => void stdout.push(text),
+      write: (text) => void stdout.push(text),
+      writeErr: (text) => void stderr.push(text),
+      json: (value) => void stdout.push(JSON.stringify(value)),
     },
   };
 }
