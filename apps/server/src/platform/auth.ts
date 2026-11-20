@@ -1,44 +1,21 @@
-import { HOUR_MS, TERMS_VERSION } from "@ea/core";
 import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api";
+import { createAuthMiddleware, isAPIError } from "better-auth/api";
 import { serialize as serializeCookie } from "hono/utils/cookie";
 import type { Transaction } from "kysely";
 import { Pool } from "pg";
 
-import { recordPasswordFailure, type LockoutStore } from "./auth-lockout";
-import {
-  isAllowedSsoPath,
-  rejectUnknownSsoBodyKeys,
-  ssoPlugins,
-  ssoSessionData,
-  SSO_SIGN_IN_PATH,
-  withoutIdpTokens,
-  type SsoEvent,
-  type SsoIdentity,
-  type SsoResolution,
-} from "./auth-sso";
-import {
-  failingPasswordVerify,
-  isSsoRequiredResetRequest,
-  refuseSsoRequiredSignIn,
-  signInBody,
-  wasSsoRequiredRefusal,
-  type HookContext,
-  type SignInOverride,
-} from "./auth-sso-required";
-import {
-  requireSecondFactorCode,
-  secondFactorActionOf,
-  signInAuditPlugin,
-  twoFactorOn,
-  twoFactorPlugin,
-  TWO_FACTOR_ALLOWED_PATHS,
-  type CodeApi,
-} from "./auth-two-factor";
+import { databaseHooksOf } from "./auth-database-hooks";
+import { authHookParts, authPlugins, runAfter, runBefore, type AuthPartContext } from "./auth-hooks";
+import type { LockoutStore } from "./auth-lockout";
+import { createResetLimiter, passwordResetHook, RESET_REQUEST_PATH } from "./auth-password";
+import { isAllowedSsoPath, SSO_SIGN_IN_PATH, type SsoEvent, type SsoIdentity, type SsoResolution } from "./auth-sso";
+import { TWO_FACTOR_ALLOWED_PATHS, type CodeApi } from "./auth-two-factor";
 import type { DB, Db } from "./db";
 import { errorFields } from "./errors";
 import { createLog } from "./log";
 import type { PwnedResult } from "./pwned";
+
+export { createAddressLimiter, RESET_REQUEST_ANSWER, RESET_REQUEST_PATH, type AddressLimiter } from "./auth-password";
 
 const log = createLog("auth");
 
@@ -94,13 +71,6 @@ export interface AuthDeps {
   onSsoEvent?: (event: SsoEvent) => Promise<void>;
 }
 
-// The reset request is refused for a member that "SSO required" refuses and for an SSO-only member.
-function resetRefusal(deps: AuthDeps): ((userId: string) => Promise<boolean>) | undefined {
-  const { passwordSignInRefused, ssoOnlyMember } = deps;
-  if (!passwordSignInRefused && !ssoOnlyMember) return undefined;
-  return async (userId) => (await passwordSignInRefused?.(userId)) === true || (await ssoOnlyMember?.(userId)) === true;
-}
-
 export type Auth = ReturnType<typeof createBetterAuth>;
 
 export interface AuthHandle {
@@ -120,56 +90,11 @@ export const AUTH_ALLOWED_PATHS: ReadonlySet<string> = new Set([
   ...TWO_FACTOR_ALLOWED_PATHS,
 ]);
 
-// The paths that end sessions, and the audit event of each.
-const REVOKE_EVENTS: Readonly<Record<string, AuthEventKind | undefined>> = {
-  "/revoke-sessions": "sessions_revoked",
-  "/revoke-other-sessions": "other_sessions_revoked",
-};
-
-export const RESET_REQUEST_PATH = "/request-password-reset";
-
-// Better Auth's own answer for a known and an unknown address.
-export const RESET_REQUEST_ANSWER = {
-  status: true,
-  message: "If this email exists in our system, check your email for the reset link",
-} as const;
-
 // The reset request is open only when the caller says so (the auth-mail sender is on).
 export function isAllowedAuthPath(method: string, path: string, opts?: { resetRequest: boolean }): boolean {
   if (path === RESET_REQUEST_PATH) return method === "POST" && opts?.resetRequest === true;
   if (isAllowedSsoPath(method, path)) return true;
   return AUTH_ALLOWED_PATHS.has(path) || (method === "GET" && path.startsWith("/reset-password/"));
-}
-
-export interface AddressLimiter {
-  // true = allowed; it records the request.
-  take(key: string): boolean;
-}
-
-const LIMITER_SWEEP_KEYS = 10_000;
-
-// A sliding window per key, in memory (one server process).
-export function createAddressLimiter(opts: { max: number; windowMs: number; now: () => Date }): AddressLimiter {
-  const seen = new Map<string, number[]>();
-  return {
-    take(key) {
-      const at = opts.now().getTime();
-      const cutoff = at - opts.windowMs;
-      if (seen.size > LIMITER_SWEEP_KEYS) {
-        for (const [other, times] of seen) {
-          if (times.every((time) => time <= cutoff)) seen.delete(other);
-        }
-      }
-      const recent = (seen.get(key) ?? []).filter((time) => time > cutoff);
-      if (recent.length >= opts.max) {
-        seen.set(key, recent);
-        return false;
-      }
-      recent.push(at);
-      seen.set(key, recent);
-      return true;
-    },
-  };
 }
 
 // Better Auth logs library text; only a fixed code reaches our log. Message starts from docs/known-alerts.md.
@@ -199,97 +124,6 @@ export function onAuthError(error: unknown): void {
   log.error("better_auth_error", { ...errorFields(error) });
 }
 
-const SIGN_IN_PATH = "/sign-in/email";
-const RESET_PASSWORD_PATH = "/reset-password";
-const TWO_FACTOR_DISABLE_PATH = "/two-factor/disable";
-const CHANGE_PASSWORD_PATH = "/change-password";
-const NEW_PASSWORD_PATHS: ReadonlySet<string> = new Set(["/reset-password", "/change-password"]);
-const MIN_PASSWORD_LENGTH = 12;
-const MAX_PASSWORD_LENGTH = 128;
-
-// A locked user gets the answer and the time of a wrong password, also for a request that the endpoint refuses before it checks the password
-// (the form-CSRF middleware, the e-mail and length checks). The hook does not throw: the endpoint runs all its own checks,
-// and its password check always fails. An error of `isLocked` is not caught (fail closed).
-async function lockSignIn(
-  ctx: HookContext,
-  lockout: LockoutStore,
-  now: () => Date
-): Promise<SignInOverride | undefined> {
-  const body = signInBody(ctx);
-  if (body === null) return undefined;
-  const found = await ctx.context.internalAdapter.findUserByEmail(body.email.toLowerCase());
-  if (!found || !(await lockout.isLocked(found.user.id, now()))) return undefined;
-  return failingPasswordVerify(ctx);
-}
-
-// No password is set without the current terms. This check runs before the leaked-password check: no outside call without the terms.
-function rejectMissingTerms(ctx: HookContext): void {
-  const version = (ctx.body as { termsVersion?: unknown } | undefined)?.termsVersion;
-  if (version !== TERMS_VERSION) {
-    throw APIError.from("BAD_REQUEST", { code: "TERMS_REQUIRED", message: "Accept the terms first." });
-  }
-}
-
-// The endpoint refuses a request without a session (`/change-password`) or without a live token (`/reset-password`) anyway.
-// For such a request no outside call goes out: the endpoint gives its own answer.
-async function mayChangePassword(ctx: HookContext): Promise<boolean> {
-  if (ctx.path === CHANGE_PASSWORD_PATH) {
-    return (await getSessionFromCtx(ctx)) !== null;
-  }
-  const body = ctx.body as { token?: unknown } | undefined;
-  const query = ctx.query as { token?: unknown } | undefined;
-  const token = body?.token || query?.token;
-  if (typeof token !== "string") return false;
-  const verification = await ctx.context.internalAdapter.findVerificationValue(`reset-password:${token}`);
-  return verification !== null && verification.expiresAt >= new Date();
-}
-
-// A leaked or unchecked password is never stored. Other lengths are refused by Better Auth itself.
-// A check that is down fails closed: no password changes.
-async function rejectLeakedPassword(ctx: HookContext, pwnedCheck: NonNullable<AuthDeps["pwnedCheck"]>): Promise<void> {
-  const password = (ctx.body as { newPassword?: unknown } | undefined)?.newPassword;
-  if (typeof password !== "string" || password.length < MIN_PASSWORD_LENGTH || password.length > MAX_PASSWORD_LENGTH) {
-    return;
-  }
-  if (!(await mayChangePassword(ctx))) return;
-  const result = await pwnedCheck(password);
-  if (result === "pwned") {
-    throw APIError.from("BAD_REQUEST", {
-      code: "PASSWORD_COMPROMISED",
-      message: "This password is in a list of leaked passwords. Choose another one.",
-    });
-  }
-  if (result === "unavailable") {
-    throw APIError.from("SERVICE_UNAVAILABLE", {
-      code: "PASSWORD_CHECK_UNAVAILABLE",
-      message: "The password check is not available. Try again later.",
-    });
-  }
-}
-
-async function countSignIn(ctx: HookContext, deps: AuthDeps, now: () => Date): Promise<void> {
-  const lockout = deps.lockout;
-  if (!lockout) return;
-  // A refusal by "SSO required" is no wrong password: no count, no lock, no lock mail.
-  if (wasSsoRequiredRefusal(ctx)) return;
-  const returned = ctx.context.returned;
-  if (isAPIError(returned)) {
-    const body = returned.body as { code?: unknown } | undefined;
-    if (returned.statusCode !== 401 || body?.code !== "INVALID_EMAIL_OR_PASSWORD") return;
-    const email = (ctx.body as { email?: unknown } | undefined)?.email;
-    if (typeof email !== "string") return;
-    const found = await ctx.context.internalAdapter.findUserByEmail(email.toLowerCase());
-    if (!found) return;
-    await recordPasswordFailure(
-      { lockout, now, onEvent: deps.onEvent, sendLockoutMail: deps.sendLockoutMail },
-      { id: found.user.id, email: found.user.email }
-    );
-    return;
-  }
-  const userId = ctx.context.newSession?.user.id;
-  if (userId) await lockout.recordSuccess(userId, now());
-}
-
 function createBetterAuth(deps: AuthDeps, pool: Pool) {
   const now = deps.now ?? (() => new Date());
   const report = async (kind: AuthEventKind, userId: string, data?: Record<string, string>): Promise<void> => {
@@ -300,14 +134,16 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
     }
   };
 
-  const resetLimiter = createAddressLimiter({
-    max: 3,
-    windowMs: HOUR_MS,
-    now,
-  });
-
-  // The plugin's verify endpoints, for the second-factor check in `hooks.before`. Set below; a request cannot arrive before it.
+  // The plugin's verify endpoints, for the second-factor check. Set below; a request cannot arrive before it.
   let codeApi: CodeApi | null = null;
+  const part: AuthPartContext = {
+    deps,
+    now,
+    report,
+    resetLimiter: createResetLimiter(now),
+    getCodeApi: () => codeApi,
+  };
+  const parts = authHookParts(part);
 
   const instance = betterAuth({
     appName: "Email Assistant",
@@ -330,20 +166,7 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         }
         log.info("password_reset_requested", { user_id: user.id });
       },
-      onPasswordReset: async ({ user }) => {
-        await report("password_set", user.id);
-        try {
-          await deps.lockout?.clear(user.id, now());
-        } catch (error) {
-          log.error("lockout_clear_failed", { ...errorFields(error) });
-        }
-        // The `before` hook proved that the request held the current version (the body is not readable here).
-        try {
-          await deps.onTermsAccepted(user.id, TERMS_VERSION);
-        } catch (error) {
-          log.error("terms_record_failed", { user_id: user.id, ...errorFields(error) });
-        }
-      },
+      onPasswordReset: passwordResetHook(part),
     },
     user: {
       modelName: "users",
@@ -412,82 +235,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
       ipAddress: { ipAddressHeaders: ["x-client-ip"] },
     },
     hooks: {
-      // One dispatcher: later stages add their paths here.
-      before: createAuthMiddleware(async (ctx) => {
-        if (ctx.path === SSO_SIGN_IN_PATH) rejectUnknownSsoBodyKeys(ctx.body);
-        if (ctx.path === RESET_REQUEST_PATH) {
-          const body = ctx.body as { email?: unknown } | undefined;
-          const key = String(body?.email ?? "")
-            .trim()
-            .toLowerCase();
-          if (!resetLimiter.take(key)) {
-            log.info("reset_request_limited");
-            return ctx.json(RESET_REQUEST_ANSWER);
-          }
-          const resetRefused = resetRefusal(deps);
-          if (resetRefused && (await isSsoRequiredResetRequest(ctx, resetRefused))) {
-            return ctx.json(RESET_REQUEST_ANSWER);
-          }
-        }
-        if (ctx.path === SIGN_IN_PATH) {
-          // A locked user gets the lockout answer first; both look like a wrong password.
-          const locked = deps.lockout ? await lockSignIn(ctx, deps.lockout, now) : undefined;
-          if (locked) return locked;
-          const refused = deps.passwordSignInRefused
-            ? await refuseSsoRequiredSignIn(ctx, deps.passwordSignInRefused)
-            : undefined;
-          if (refused) return refused;
-        }
-        if (ctx.path === RESET_PASSWORD_PATH) rejectMissingTerms(ctx);
-        if (NEW_PASSWORD_PATHS.has(ctx.path) && deps.pwnedCheck) {
-          await rejectLeakedPassword(ctx, deps.pwnedCheck);
-        }
-        const secondFactorAction = secondFactorActionOf(ctx.path);
-        if (secondFactorAction) {
-          // `getSessionFromCtx` returns null when the session read fails, so null must not pass (fail closed).
-          // A request with no session cannot turn TOTP off or make codes anyway.
-          const session = await getSessionFromCtx(ctx);
-          if (!session) {
-            throw APIError.from("UNAUTHORIZED", {
-              code: "SESSION_REQUIRED",
-              message: "A signed-in session is required.",
-            });
-          }
-          if (
-            ctx.path === TWO_FACTOR_DISABLE_PATH &&
-            deps.keepsTwoFactor &&
-            (await deps.keepsTwoFactor(session.user.id))
-          ) {
-            throw APIError.from("FORBIDDEN", {
-              code: "BREAK_GLASS_NEEDS_TWO_FACTOR",
-              message: "The break-glass owner keeps two-factor sign-in.",
-            });
-          }
-          // The password is not enough, the second factor must prove itself too.
-          if (twoFactorOn(session.user)) {
-            await requireSecondFactorCode(ctx, {
-              userId: session.user.id,
-              action: secondFactorAction,
-              api: codeApi,
-              report,
-              now,
-            });
-          }
-        }
-        return undefined;
-      }),
-      after: createAuthMiddleware(async (ctx) => {
-        if (ctx.path === SIGN_IN_PATH && deps.lockout) {
-          try {
-            await countSignIn(ctx, deps, now);
-          } catch (error) {
-            log.error("lockout_failed", { ...errorFields(error) });
-          }
-        }
-        const revoked = REVOKE_EVENTS[ctx.path];
-        const actorId = ctx.context.session?.user.id;
-        if (revoked && actorId && !isAPIError(ctx.context.returned)) await report(revoked, actorId);
-      }),
+      before: createAuthMiddleware((ctx) => runBefore(parts, ctx)),
+      after: createAuthMiddleware((ctx) => runAfter(parts, ctx)),
     },
     rateLimit: {
       enabled: true,
@@ -498,53 +247,8 @@ function createBetterAuth(deps: AuthDeps, pool: Pool) {
         [SSO_SIGN_IN_PATH]: { window: 60, max: 10 },
       },
     },
-    // Order matters: the audit plugin comes last, after `twoFactorPlugin()` and `ssoPlugins()` (it reads the result of the code step).
-    plugins: [
-      twoFactorPlugin(),
-      ...ssoPlugins({ resolveMember: deps.resolveSsoMember, onSsoEvent: deps.onSsoEvent }),
-      signInAuditPlugin(report),
-    ],
-    databaseHooks: {
-      session: {
-        create: {
-          // `ctx.context.session` is the session of the request: set only for an endpoint that needs one.
-          before: async (session, ctx) => {
-            const extra = ssoSessionData({
-              path: ctx?.path,
-              current: ctx?.context.session?.session ?? null,
-              now: now(),
-            });
-            if (extra !== undefined) return { data: { ...session, ...extra } };
-            // A password session of a member that "SSO required" refuses: no session. The before hook of the sign-in checks
-            // this too, but outside the transaction of the operator's switch, so a sign-in that passed it just before the
-            // commit would still get a session here, or a two-factor challenge that `/two-factor/verify-totp` turns into one.
-            // This hook covers `/sign-in/email` and `/two-factor/verify-totp` in one place. An error of the check fails closed.
-            if (deps.passwordSignInRefused && (await deps.passwordSignInRefused(session.userId))) {
-              log.info("password_session_refused_sso", { user_id: session.userId });
-              return false;
-            }
-            return undefined;
-          },
-        },
-      },
-      account: {
-        // No IdP token is stored (an `id_token` holds the IdP e-mail in clear).
-        create: { before: async (account) => withoutIdpTokens(account) },
-        update: {
-          before: async (account) => withoutIdpTokens(account),
-          after: async (account, ctx) => {
-            if (
-              ctx?.path === "/change-password" &&
-              typeof account === "object" &&
-              account !== null &&
-              account.providerId === "credential"
-            ) {
-              await report("password_changed", account.userId);
-            }
-          },
-        },
-      },
-    },
+    plugins: authPlugins(part),
+    databaseHooks: databaseHooksOf(part),
     // An OAuth state error redirects here (the default is a Better Auth error page that our server does not serve).
     onAPIError: { onError: onAuthError, errorURL: "/login?sso=failed" },
     logger: {
