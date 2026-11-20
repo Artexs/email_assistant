@@ -23,4 +23,10 @@ Every VPS deploy is a release: a tagged version (a patch version is fine). Do th
 10. **Watch for 30 minutes.** No new `error` event in the log store (`docs/capabilities/logs.md`). `bun run ops:alerts` shows no open alert. Sync lines keep coming.
 11. **On trouble:** `deploy/rollback.sh`. It needs no rebuild and never changes the database. Then fix forward in a new patch release. A rollback to a build older than the push sender (`v0.2.x`) needs the steps of `deploy/README.md` § Phone notices and Telegram detail → Roll back (step 5) first: that build fails its outbox claim on a push row.
 
+When the demo flow changed (the video on the docs home page), the video is re-recorded. This is a separate step: it is not a part of the release and starts no deploy.
+
+- Run `flock /tmp/email-assistant-shared-tests.lock bun run demo:record --seed <demo seed file>`. It writes `tmp/demo/demo.mp4`, `tmp/demo/demo.en.vtt` and `tmp/demo/demo.pl.vtt` and prints their sha256. A run is a candidate only when its log has `demo_source demo` and no line `demo_source e2e: not for upload`, and the video is 100 to 130 seconds and at most 15 MB. A run on the e2e seed proves the command only. (Until the demo-seed recording is built, `demo:record` on a demo seed stops with `demo_source_recording_not_built`: no candidate exists. Ticket: `spec/features/planned/F151-the-demo-video-and-the-docs-screenshots-come-from-the-synthetic-demo-week-export/`.)
+- The owner watches the video, then uploads the three files to the release `demo-video` (`deploy/README.md` § Docs site, the owner steps).
+- The coordinator then commits the three sha256 values to `DEMO_VIDEO_SHA256` and `DEMO_CAPTION_SHA256` in `apps/docs/src/demo-video.ts`. Without that commit the docs deploy downloads nothing.
+
 A migration with a `-- contract: v<x.y.z>` line removes what the old code used. The release `v<x.y.z>` named there stopped that use. It must be deployed already, and it must be the release that you can roll back to. Check this before step 9.

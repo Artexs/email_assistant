@@ -22,9 +22,40 @@ export interface MiniCorpus {
   cleanup(): void;
 }
 
+// Every folder this helper makes. A test that calls `cleanup` removes its own folder. Each test file that uses
+// this helper also calls `removeAllCorpora` in `afterAll`: it removes the rest (a test that makes two corpora,
+// and the template of `completeCorpus`). `process.on("exit")` is no cleanup: `bun test` can end a run without it,
+// and the folders then fill the inodes of /tmp. A test in `tmp-leak.test.ts` fails when a caller forgets it.
+const made = new Set<string>();
+let template: Promise<MiniCorpus> | undefined;
+
+function makeRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), "f097-sim-"));
+  made.add(root);
+  return root;
+}
+
+function corpusAt(root: string): MiniCorpus {
+  return {
+    root,
+    dir: join(root, miniScenario.id),
+    cleanup: () => {
+      rmSync(root, { recursive: true, force: true });
+      made.delete(root);
+    },
+  };
+}
+
+// Removes every folder this helper made in this test file.
+export function removeAllCorpora(): void {
+  for (const root of made) rmSync(root, { recursive: true, force: true });
+  made.clear();
+  template = undefined;
+}
+
 // Writes scenario.json and plan-spec.json; with `plan` it also runs `sim plan`.
 export async function createMiniCorpus(options: { plan?: boolean } = {}): Promise<MiniCorpus> {
-  const root = mkdtempSync(join(tmpdir(), "f097-sim-"));
+  const root = makeRoot();
   const dir = join(root, miniScenario.id);
   mkdirSync(dir, { recursive: true });
   writeJson(join(dir, "scenario.json"), miniScenario);
@@ -35,7 +66,7 @@ export async function createMiniCorpus(options: { plan?: boolean } = {}): Promis
     const result = await runSim(cmd);
     if (result.code !== 0) throw new Error("plan failed");
   }
-  return { root, dir, cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return corpusAt(root);
 }
 
 const scriptPath = resolve(import.meta.dir, "sim.ts");
@@ -147,19 +178,16 @@ async function writeCompleteCorpus(c: MiniCorpus): Promise<void> {
   }
 }
 
-let template: Promise<MiniCorpus> | undefined;
-
 // A copy of the complete corpus: it is built once per test file, then copied (the build is slow).
 export async function completeCorpus(): Promise<MiniCorpus> {
   if (template === undefined) {
     template = createMiniCorpus({ plan: true }).then(async (c) => {
       await writeCompleteCorpus(c);
-      process.on("exit", c.cleanup);
       return c;
     });
   }
   const source = await template;
-  const root = mkdtempSync(join(tmpdir(), "f097-sim-"));
+  const root = makeRoot();
   cpSync(source.root, root, { recursive: true });
-  return { root, dir: join(root, miniScenario.id), cleanup: () => rmSync(root, { recursive: true, force: true }) };
+  return corpusAt(root);
 }

@@ -3,7 +3,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { DEMO_FILES, DEMO_TEXTS, demoFilesExist, demoVideoView, DEMO_VIDEO_SHA256 } from "./demo-video";
+import {
+  DEMO_CAPTION_SHA256,
+  DEMO_FILES,
+  DEMO_TEXTS,
+  demoFilesExist,
+  demoVideoView,
+  DEMO_VIDEO_SHA256,
+} from "./demo-video";
 import { flaggedTextProblems } from "./flagged-text";
 
 describe("demoVideoView", () => {
@@ -24,6 +31,12 @@ describe("demoVideoView", () => {
 
   test("the pin is null until the owner uploaded a video", () => {
     expect(DEMO_VIDEO_SHA256).toBeNull();
+  });
+
+  test("the three pins are all null or all a sha256 in lowercase hex", () => {
+    const pins = [DEMO_VIDEO_SHA256, DEMO_CAPTION_SHA256.en, DEMO_CAPTION_SHA256.pl];
+    if (pins.every((pin) => pin === null)) return;
+    for (const pin of pins) expect(pin).toMatch(/^[0-9a-f]{64}$/);
   });
 
   test("the line under the video holds no string of a default-off flag, in both languages", () => {
