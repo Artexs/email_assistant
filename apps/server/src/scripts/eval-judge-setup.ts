@@ -24,8 +24,7 @@ export function judgeSetupError(table: LlmRoleTable, at: Date, role: JudgedRole 
 // The rates of a sim run, for this process only (the rows are copied, the config is not changed).
 // `--rpm` is the rate of the provider of `role` (the classifier, or the drafter in a drafter run). All roles on that
 // provider share it, the judge too when it runs on the same provider. `--judge-rpm` sets the judge role's own rate and
-// changes no provider rate. Without it the judge role keeps `LLM_JUDGE_RPM` (`judgeRoleRpm` when `--judge-provider`
-// moved the role: the table drops the role's env keys then) or has none.
+// changes no provider rate. Without it the judge role keeps `LLM_JUDGE_RPM` (`judgeRoleRpm`) or has none.
 export function simRoleTable(
   table: LlmRoleTable,
   opts: { rpm: number; judge: boolean; judgeRpm?: number; judgeRoleRpm?: number; role?: JudgedRole }

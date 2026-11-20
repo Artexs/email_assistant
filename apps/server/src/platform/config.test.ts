@@ -151,7 +151,6 @@ describe("loadConfig", () => {
   test("sets the LLM defaults with only the S1a keys", () => {
     const config = loadConfig(geminiEnv);
     expect(config.GEMINI_API_KEY).toBeUndefined();
-    expect(config.GEMINI_MODEL_CLASSIFIER).toBe("gemini-3.5-flash-lite");
     expect(llmRoleTable(config).roles.classifier.model).toBe("gemini-3.5-flash-lite");
     expect(config.GEMINI_TIMEOUT_MS).toBe(30000);
     expect(config.GEMINI_RPM).toBe(12);
@@ -213,8 +212,8 @@ describe("loadConfig", () => {
     expect(configError({ ...fullEnv, TRIAGE_LLM_SCOPE: "real" }).keys).toContain("TRIAGE_LLM_SCOPE");
   });
 
-  test("treats an empty GEMINI_MODEL_CLASSIFIER as the default", () => {
-    expect(loadConfig({ ...fullEnv, GEMINI_MODEL_CLASSIFIER: "" }).GEMINI_MODEL_CLASSIFIER).toBe(
+  test("an empty GEMINI_MODEL_CLASSIFIER loads and the tier model applies", () => {
+    expect(llmRoleTable(loadConfig({ ...geminiEnv, GEMINI_MODEL_CLASSIFIER: "" })).roles.classifier.model).toBe(
       "gemini-3.5-flash-lite"
     );
   });
@@ -223,9 +222,10 @@ describe("loadConfig", () => {
     expect(() => loadConfig({ ...fullEnv, GEMINI_MODEL: "x", OPENAI_MODEL: "y" })).not.toThrow();
   });
 
-  test("the classifier row takes the set GEMINI_MODEL_CLASSIFIER", () => {
-    const config = loadConfig({ ...geminiEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
-    expect(llmRoleTable(config).roles.classifier.model).toBe("gemini-3.1-flash-lite");
+  test("a set GEMINI_MODEL_CLASSIFIER is refused: the tier decides the model", () => {
+    const error = configError({ ...geminiEnv, GEMINI_MODEL_CLASSIFIER: "gemini-3.1-flash-lite" });
+    expect(error.keys).toEqual(["GEMINI_MODEL_CLASSIFIER"]);
+    expect(error.message).not.toContain("gemini-3.1-flash-lite");
   });
 
   test("AUTH_PWNED_CHECK defaults to on, accepts off and refuses other values", () => {
@@ -280,18 +280,16 @@ describe("loadConfig", () => {
   test("sets the OpenAI defaults with only the S1a keys", () => {
     const config = loadConfig({ ...fullEnv, OPENAI_API_KEY: "" });
     expect(config.OPENAI_API_KEY).toBeUndefined();
-    expect(config.OPENAI_MODEL_CLASSIFIER).toBe("gpt-6-luna");
+    expect(llmRoleTable(config).roles.classifier).toMatchObject({ model: "gpt-6-luna", reasoningEffort: "none" });
     expect(config.OPENAI_TIMEOUT_MS).toBe(30000);
     expect(config.OPENAI_RPM).toBe(60);
-    expect(config.OPENAI_REASONING_EFFORT).toBe("none");
   });
 
-  test("rejects a bad OPENAI_RPM and a bad OPENAI_REASONING_EFFORT, with no value in the message", () => {
+  test("rejects a bad OPENAI_RPM, and a set OPENAI_REASONING_EFFORT, with no value in the message", () => {
     expect(configError({ ...fullEnv, OPENAI_RPM: "0" }).keys).toContain("OPENAI_RPM");
     const error = configError({ ...fullEnv, OPENAI_REASONING_EFFORT: "bogus" });
     expect(error.keys).toContain("OPENAI_REASONING_EFFORT");
     expect(error.message).not.toContain("bogus");
-    expect(loadConfig({ ...fullEnv, OPENAI_REASONING_EFFORT: "xhigh" }).OPENAI_REASONING_EFFORT).toBe("xhigh");
   });
 
   test("accepts TRIAGE_LLM_SCOPE=synthetic with a GEMINI_API_KEY and no OPENAI_API_KEY", () => {

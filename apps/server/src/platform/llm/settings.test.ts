@@ -12,15 +12,16 @@ const env = {
   CREDENTIALS_KEY: randomBytes(32).toString("base64"),
   LLM_PROVIDER: "openai",
   OPENAI_API_KEY: "SECRET-KEY-MARKER",
-  OPENAI_MODEL_CLASSIFIER: "gpt-6-luna",
 };
 
 describe("llmEndpointFields (the llm_settings start log)", () => {
   test("1: an own server shows the kind and the hostname only: no path, no port", () => {
-    const table = llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11434/v1/secret-path" }));
+    const table = llmRoleTable(
+      loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11434/v1/secret-path", OPENAI_OWN_MODEL: "own-m" })
+    );
     expect(llmEndpointFields(table, "classifier")).toEqual({
       provider: "openai",
-      model: "gpt-6-luna",
+      model: "own-m",
       endpoint: "own",
       host: "127.0.0.1",
     });
@@ -35,8 +36,10 @@ describe("llmEndpointFields (the llm_settings start log)", () => {
       llmEndpointFields(llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "https://eu.api.openai.com/v1" })), "judge")
     ).toMatchObject({ endpoint: "eu", host: "eu.api.openai.com" });
     expect(
-      llmEndpointFields(llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "http://[::1]:11434/v1" })), "classifier")
-        .host
+      llmEndpointFields(
+        llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "http://[::1]:11434/v1", OPENAI_OWN_MODEL: "m" })),
+        "classifier"
+      ).host
     ).toBe("::1");
     expect(
       llmEndpointFields(llmRoleTable(loadConfig({ ...env, LLM_PROVIDER: "gemini", GEMINI_API_KEY: "g" })), "classifier")
@@ -49,7 +52,9 @@ describe("llmEndpointFields (the llm_settings start log)", () => {
       lines.push(args.join(" "));
     });
     try {
-      const table = llmRoleTable(loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11434/v1/secret-path" }));
+      const table = llmRoleTable(
+        loadConfig({ ...env, OPENAI_BASE_URL: "http://127.0.0.1:11434/v1/secret-path", OPENAI_OWN_MODEL: "own-m" })
+      );
       createLog("main").info("llm_settings", llmEndpointFields(table, "classifier"));
     } finally {
       spy.mockRestore();

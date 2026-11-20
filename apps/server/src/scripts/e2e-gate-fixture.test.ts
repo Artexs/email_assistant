@@ -5,6 +5,7 @@ import { describe, expect, test } from "bun:test";
 
 import { globalEvidenceFor, loadGateEvidence, runningEvidenceKey } from "../modules/triage";
 import { llmRoleTable, loadConfig } from "../platform/config";
+import { removedEnvKeys } from "../platform/config-llm";
 
 import { E2E_GATE_FIXTURE_DIR, E2E_LLM_PIN } from "./e2e-seed-args";
 
@@ -18,6 +19,18 @@ const config = loadConfig({
 });
 
 describe("the e2e gate fixture", () => {
+  test("the pin sets every removed key to empty text, and a removed key in the developer env cannot get through", () => {
+    for (const key of removedEnvKeys) expect(E2E_LLM_PIN).toHaveProperty([key], "");
+    const env = {
+      DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant_e2e",
+      CREDENTIALS_KEY: Buffer.alloc(32, 7).toString("base64"),
+    };
+    const old = { OPENAI_MODEL_CLASSIFIER: "gpt-6-luna", LLM_JUDGE_MODEL: "x", OPENAI_REASONING_EFFORT: "none" };
+    expect(() => loadConfig({ ...env, ...old })).toThrow();
+    const table = llmRoleTable(loadConfig({ ...env, ...old, ...E2E_LLM_PIN }));
+    expect(table.roles.classifier).toMatchObject({ provider: "openai", model: "gpt-6-luna", reasoningEffort: "none" });
+  });
+
   const index = loadGateEvidence(resolve(repoRoot, E2E_GATE_FIXTURE_DIR), { quiet: true });
   const key = runningEvidenceKey(llmRoleTable(config));
 

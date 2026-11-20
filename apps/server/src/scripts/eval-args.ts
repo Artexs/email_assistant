@@ -1,6 +1,6 @@
 import { parseArgs } from "node:util";
 
-import { type SentPart, sentParts, type SimPart, simParts } from "@ea/core";
+import { llmEffortLevels, type SentPart, sentParts, type SimPart, simParts } from "@ea/core";
 import { z } from "zod";
 
 import {
@@ -18,7 +18,6 @@ import {
   productionClassifierChoice,
   versionHasParts,
 } from "../modules/triage";
-import { openAiReasoningEfforts } from "../platform/config";
 import { RUN_CAP_USD } from "../platform/eval-ledger";
 import { llmProviderIds } from "../platform/llm";
 
@@ -64,7 +63,7 @@ export const evalUsage = [
 const optionsSchema = z.object({
   provider: z.enum(llmProviderIds).optional(),
   model: z.string().min(1).optional(),
-  "reasoning-effort": z.enum(openAiReasoningEfforts).optional(),
+  "reasoning-effort": z.enum(llmEffortLevels).optional(),
   set: z.enum(drafterSets).default("all"),
   bar: z.coerce.number().min(0).max(1).default(0.98),
   "min-kept": z.coerce.number().int().positive().default(30),
