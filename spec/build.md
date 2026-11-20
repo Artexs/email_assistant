@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F148-one-legal-version-format-and-parser-exist` (🟠 ACTIVE): One legal version format and parser exist
 - `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟠 ACTIVE): One operator alert path with texts in core and one locale type exist
 - `F143-the-files-that-the-last-tickets-grew-past-400-lines-are-split-by-aggregate-and-a-lint-check-warns-over-400-and-fails-over-800` (🟠 ACTIVE): The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
 - `F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry` (🟠 ACTIVE): One variable picks the LLM provider for the whole application: OpenAI, Gemini or DeepSeek, with one API key
@@ -60,6 +59,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
+- `F148-one-legal-version-format-and-parser-exist` (🟢 PROVEN): One legal version format and parser exist; landed 2026-11-20
 - `F146-one-action-id-header-exists-and-the-unread-exports-and-the-weaker-dkim-check-are-removed` (🟢 PROVEN): One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed; landed 2026-11-20
 - `F145-one-time-ts-spelling-minute-ms-hour-ms-day-ms-is-used-everywhere-and-a-lint-rule-bans-the-literals` (🟢 PROVEN): One time.ts spelling MINUTE_MS HOUR_MS DAY_MS is used everywhere and a lint rule bans the literals; landed 2026-11-20
 - `F144-the-sender-activity-read-is-split-into-readers-owned-by-the-modules-that-own-the-tables` (🟢 PROVEN): The sender activity read is split into readers owned by the modules that own the tables; landed 2026-11-20
@@ -68,8 +68,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F139-a-restore-into-a-fresh-database-volume-starts-without-the-guard-empty-failure` (🟢 PROVEN): A restore into a fresh database volume starts without the guard-empty failure; landed 2026-11-19
 - `F137-the-data-request-erase-keeps-every-mail-of-another-person-and-no-longer-leaves-mail-behind-when-an-address-has-odd-whitespace-a-dotless-i-or-a-unicode-case-form-the-text-match-misses` (🟢 PROVEN): the data request erase keeps every mail of another person and leaves no mail behind for odd whitespace, a dotless i or a Unicode case form; landed 2026-11-19
 - `F135-the-data-request-erase-finds-mail-of-a-sender-whose-address-has-a-greek-final-sigma-or-a-turkish-dotted-capital-i-the-database-and-the-program-lower-case-it-alike` (🟢 PROVEN): the data request erase finds mail of a sender whose address has a Greek final sigma or a Turkish dotted capital I (the database and the program lower-case it alike); landed 2026-11-19
-- `F134-one-click-unsubscribe-checks-that-the-dkim-signature-covers-the-list-unsubscribe-headers` (🟢 PROVEN): One-click unsubscribe checks that the DKIM signature covers the List-Unsubscribe headers; landed 2026-11-19
-- 2026-11: 111 landed. spec/features/done/2026-11/
+- 2026-11: 112 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
