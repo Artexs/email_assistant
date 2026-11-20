@@ -60,7 +60,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **Source:** `deploy/restore.sh` on the VPS, project `ea-drill`.
 - **Cause:** drill 1 took 173 s for `restore.sh` and 9 min wall time (RTO target 2 h). Counts before, drill and after were 2 / 2 / 1 / 313 (`organizations`, `users`, `mailboxes`, `emails`). On a fresh volume the first run fails at `guard-empty` with `FATAL: the database system is shutting down`: `pg_isready` turns healthy during the init phase of the Postgres image, before the final start. A checkout of `v0.1.0` fails at step `credentials` (`Script not found "credentials:check"`): use `v0.2.0` or later.
 - **Fix:** `restore.sh` now waits for the final server on TCP (step `db-ready`: `pg_isready -h 127.0.0.1` inside the `db` container, up to 60 probes, 1 s apart) before `guard-empty`. The init server listens on the socket only, so a TCP answer means the init ended. `restore failed at db-ready` means no TCP answer after 60 probes: read `$C logs db`. Next drill: 2027-05-19 (+6 months).
-- **Status:** fixed in code; drill rerun pending
+- **Status:** fixed (drill 2, 2026-11-20, v0.4.4): the first run printed `db ready probes=2` and ended `restore ok target=drill seconds=108`
 
 ---
 

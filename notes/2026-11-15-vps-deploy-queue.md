@@ -73,6 +73,18 @@ Every deploy to the VPS is a release: `deploy/release.sh <tag>` from a tag. No b
 - V1 (disk path), read 2026-11-19 after the drill: `statfs("/")` in `server` 20692127744 bytes, `df -B1 /` on the host 20708917248 bytes: 0.08 % apart, so `SLO_DISK_PATH` stays unset.
 - Cleanup: `--down` ran (project, volume, image `ea-drill-server` gone), `~/ea-drill` and `/tmp/f114-drill/` removed. The age key was never printed.
 
+## Restore drill record 2 (2026-11-20, F152: the F139 drill rerun)
+
+- Tag `T` = `v0.4.4` (`current=` of `deploy/release-state/state`, commit `fb1df6d6`; `pending=` empty, no `release.sh` or `rollback.sh` process, live server started 20:51:59Z, so the 30-minute watch had ended). `T` carries `wait_db_tcp`. Newest `db/migrations` file at `T` = live `max(version)` of `schema_migrations` = `20261120110001`. Host time 21:26Z, 17 GB free on `/`.
+- Backup used: `ea-20261120T212649Z.dump.age` (717634 bytes), run as `PATH=$HOME/bin:$PATH deploy/backup.sh`, `backup ok`, `status.json` `result=ok`. Backup time: not measured (the timer used `bc`, which the host does not have).
+- Live containers before and after: `email-assistant-db-1` id `bdd78b3d7c26`, started 2026-11-15T14:59:25Z; `email-assistant-server-1` id `ba6df47da63e`, started 2026-11-20T20:51:59Z. Same ids and start times after the drill.
+- Counts: before = after the backup = drill = after the cleanup = `organizations=2 users=2 mailboxes=1 emails=325`.
+- Result, first run, no rerun: `db ready probes=2`, `credentials ok=1 failed=0`, `restore ok target=drill seconds=108`; no line `restore failed at`. `probes=2`: the run saw the init server of the Postgres image, and the TCP wait held until the final server answered. The F139 fix works on a real fresh volume.
+- Wall time: the restore pipe 108 s; the drill from the backup to the end of the cleanup about 3 min (21:26:49Z to about 21:29:50Z). The `ea-drill-server` image build used only cached layers (the live `v0.4.4` build had filled the cache), so a cold host takes longer.
+- The `migrate` service path ran on a host (`dbmate … migrate` in the `migrate` service at `v0.4.4`; same schema, so it applied nothing). F108 stage 07 can cite this record.
+- `ea-sim`: up (5 containers), left running.
+- Cleanup: `--down` ran (project, volume `ea-drill_db-data`, network and image `ea-drill-server` gone; `docker volume ls -q --filter name=ea-drill_` prints nothing), `~/ea-drill` and the temp folder on the owner's PC removed. The age key and the plain dump were never printed. The drill output (no secret) is in the job folder `.limen/jobs/2026-11-20-f152-restore-drill-rerun-on-the-f9f18cdd/drill.log`.
+
 ## Release v0.3.1 (2026-11-19, 15:38 UTC)
 
 - VPS now at tag `v0.3.1` = `2a86a004` (green CI run on that commit). Before: `v0.3.0` = `105fb0c0`. Rollback target `v0.3.0` (`deploy/rollback.sh`). No migration. `release ok v0.3.1 previous v0.3.0`.

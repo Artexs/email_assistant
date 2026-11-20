@@ -48,7 +48,7 @@ The backup holds the whole database. Files: `BACKUP_DIR/ea-<UTC time>.dump.age` 
 
 ## Limits
 
-- The first timed restore drill ran on the VPS on 2026-11-19: `restore.sh` 173 s, 9 min wall time (PD-054; target RPO 24 h and RTO 2 h). The next drill is due 2027-05-19.
+- The first timed restore drill ran on the VPS on 2026-11-19: `restore.sh` 173 s, 9 min wall time (PD-054; target RPO 24 h and RTO 2 h). The second drill ran on 2026-11-20 at `v0.4.4`: the first run passed with `db ready probes=2` (the wait for the final server held on a fresh volume), `restore.sh` 108 s, about 3 min wall time. The next drill is due 2027-05-19.
 - Backup check on the VPS, 2026-11-20 (read only): one crontab line at `30 3 * * *`; `status.json` `result` `ok`, `last_ok_at` 2 h old; no rclone retry line and no lock line in `~/ea-logs/backup.log`; no open `slo_backup_age`. Bucket listing not done: this PC has no `rclone` and no read remote for the bucket (owner step O1 of `spec/features/active/F108-e7-t5-production-on-the-vps/questions.md`). Lifecycle rule not read (no read remote).
 - Env layout on the VPS since 2026-11-20: the database passwords and the migrator URL are in the file `db.env` in `deploy/` (mode 600, not in git), not in `.env`. `deploy/backup.sh` takes its Compose flags from `deploy/compose-lib.sh`, so it reads both files; the server and `cli` get no database password (`deploy/check-server-env.sh`). The backup does not hold either file.
 - A manual run over ssh needs the cron `PATH`: `PATH=$HOME/bin:$PATH deploy/backup.sh`. The apt `rclone` in `/usr/bin` fails the B2 login with the write-only key (`docs/known-alerts.md`). A manual run logs to its own file, so the last `backup ok` line of `~/ea-logs/backup.log` can be older than the `name` in `status.json`.
