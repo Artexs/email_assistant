@@ -96,8 +96,8 @@ This page describes the drafter, the gates, the requests and the closes. The sen
 
 - `packages/core/src/replies/checks.test.ts`, `packages/core/src/replies/eligibility.test.ts`, `packages/core/src/replies/recipients.test.ts`, `packages/core/src/replies/profile.test.ts`, `packages/core/src/metrics/reply-drafts.test.ts`
 - `apps/server/src/modules/replies/drafter.test.ts`, `apps/server/src/modules/replies/capability-page.test.ts`
-- `apps/server/test/integration/replies-drafter-job.test.ts`, `apps/server/test/integration/replies-drafter-committed.test.ts`
-- `apps/server/test/integration/replies-lifetime.test.ts`, `apps/server/test/integration/replies-answered-pass.test.ts`, `apps/server/test/integration/replies-sweep.test.ts`
+- `apps/server/test/integration/replies-drafter-job-drafting.test.ts`, `apps/server/test/integration/replies-drafter-job-gates.test.ts`, `apps/server/test/integration/replies-drafter-job-hostile.test.ts`, `apps/server/test/integration/replies-drafter-job-exactly-once.test.ts`, `apps/server/test/integration/replies-drafter-committed.test.ts`
+- `apps/server/test/integration/replies-lifetime-expiry.test.ts`, `apps/server/test/integration/replies-lifetime-gaps.test.ts`, `apps/server/test/integration/replies-lifetime-replace.test.ts`, `apps/server/test/integration/replies-answered-pass.test.ts`, `apps/server/test/integration/replies-sweep-answered.test.ts`, `apps/server/test/integration/replies-sweep-policy.test.ts`, `apps/server/test/integration/replies-sweep-moves.test.ts`
 - `apps/server/test/integration/replies-switch.test.ts`, `apps/server/test/integration/replies-retention.test.ts`, `apps/server/test/integration/replies-outcomes.test.ts`
 - `apps/server/test/integration/channels-reply-review-taps.test.ts`, `apps/server/test/integration/channels-reply-review-cards.test.ts`, `apps/server/test/integration/channels-reply-redraft.test.ts`, `apps/server/test/integration/channels-replies-ready.test.ts`
 - `apps/server/test/integration/web-reply-routes.test.ts`, `apps/server/test/integration/web-reply-panel.test.ts`, `apps/server/test/integration/web-reply-samples.test.ts`, `apps/server/test/integration/web-telegram.test.ts`

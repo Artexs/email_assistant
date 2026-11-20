@@ -28,6 +28,11 @@ refuse() {
 
 # From a function for the same reason as in release.sh: git checkout rewrites the scripts.
 main() {
+  # First, as in release.sh. The env check does not run here: the release before a contract release is a valid target and
+  # still holds the migrator URL.
+  local split_state
+  split_state="$(ea_env_split_state)"
+  [[ "$split_state" == split ]] || refuse "run deploy/env-split.sh first (state $split_state)"
   state_load || exit 2
   local target target_commit
   if [[ -n "$pending" ]]; then

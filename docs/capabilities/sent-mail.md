@@ -94,7 +94,7 @@ The assistant reads the Sent folder of a mailbox, never changes it, and keeps th
 - `apps/server/test/integration/mail-sent-texts.test.ts`
 - `apps/server/test/integration/mail-sent-repo.test.ts`
 - `apps/server/test/integration/mail-sent-readers.test.ts`
-- `apps/server/test/integration/retention-clear.test.ts`
+- `apps/server/test/integration/retention-clear-sent.test.ts`
 - `apps/server/test/integration/privacy-dsr-sent.test.ts`
 - `apps/server/test/integration/retention-clear-sent-concurrent.test.ts`
 - `apps/server/test/integration/loops-sent-off-copies.test.ts`

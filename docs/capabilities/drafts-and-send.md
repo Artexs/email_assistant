@@ -331,8 +331,8 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `apps/server/test/integration/actions-resume-approvals.test.ts`
 - `apps/server/test/integration/actions-close.test.ts`
 - `apps/server/test/integration/actions-feedback.test.ts`
-- `apps/server/test/integration/replies-drafter-job.test.ts`, `replies-drafter-committed.test.ts`, `replies-drafter-review.test.ts` (the drafter job: gates, cap, thread rule, kill point, two instances at once)
-- `apps/server/test/integration/replies-answered-pass.test.ts` (the pass before a reply send: Sent, flag, newer mail, moved original, soft errors), `replies-sweep.test.ts` (the sweep and `newerMailInThread`)
+- `apps/server/test/integration/replies-drafter-job-drafting.test.ts`, `replies-drafter-job-gates.test.ts`, `replies-drafter-job-hostile.test.ts`, `replies-drafter-job-exactly-once.test.ts`, `replies-drafter-committed.test.ts`, `replies-drafter-review.test.ts` (the drafter job: gates, cap, thread rule, kill point, two instances at once)
+- `apps/server/test/integration/replies-answered-pass.test.ts` (the pass before a reply send: Sent, flag, newer mail, moved original, soft errors), `replies-sweep-answered.test.ts`, `replies-sweep-policy.test.ts`, `replies-sweep-moves.test.ts` (the sweep and `newerMailInThread`)
 - `apps/server/test/integration/replies-switch.test.ts`, `replies-switch-route.test.ts`, `replies-cli.test.ts` (the switch, the OAuth guard, the close rule, the CLIs), `replies-profile-routes.test.ts`, `replies-profile-preview.test.ts` (the profile and the preview), `packages/core/src/replies/profile.test.ts`
 - `apps/server/test/integration/web-actions.test.ts`
 - `apps/server/test/integration/smtp-send.test.ts`
@@ -345,4 +345,4 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `packages/core/src/outgoing/templates.test.ts`
 - `packages/core/src/replies/quote.test.ts`
 - `packages/core/src/triage/draft-kinds.test.ts`
-- `packages/core/src/digest/approvals.test.ts`
+- `packages/core/src/digest/approvals-request.test.ts`, `approvals-request-texts.test.ts`, `approvals-set-request.test.ts`, `approvals-send-results.test.ts`, `approvals-edit.test.ts`, `approvals-card-text.test.ts`

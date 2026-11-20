@@ -45,9 +45,9 @@ services:
     stop_grace_period: 45s
     env_file: ../.env
     environment:
-      # These override the dev URLs of the env file
+      # This overrides the dev URL of the env file. The server holds no admin key: only `migrate` has the migrator URL, and
+      # deploy/check-server-env.sh checks the running container (deploy/README.md § Env split).
       DATABASE_URL: postgres://app:${APP_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
-      MIGRATOR_DATABASE_URL: postgres://migrator:${MIGRATOR_PASSWORD:?}@db:5432/email_assistant?sslmode=disable
       PORT: "8080"
       WEB_DIST: /app/apps/web/dist
       # The VPS log is JSON lines whatever .env says: a new install copies .env.example, which sets text (ADR 0024).
@@ -81,8 +81,7 @@ services:
     environment:
       LOG_FORMAT: text
 
-  # Runs the migrations: `$C run --rm -T migrate`. It alone holds the migrator URL (spec/features/active/F108-e7-t5-production-on-the-vps); `server` and `cli` still carry it until
-  # the contract release. No env file, no port, no volume, no healthcheck. Its output goes to your terminal and to the `local` log.
+  # Runs the migrations: `$C run --rm -T migrate`. It alone holds the migrator URL. No env file, no port, no volume, no healthcheck. Its output goes to your terminal and to the `local` log.
   migrate:
     image: ea-server
     pull_policy: never
