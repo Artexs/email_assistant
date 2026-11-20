@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟠 ACTIVE): One operator alert path with texts in core and one locale type exist
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
 - `F115-e6a-reply-drafts` (🟠 ACTIVE): Mail that needs a reply gets a checked draft that waits for one tap
 - `F108-e7-t5-production-on-the-vps` (🟠 ACTIVE): E7-T5 Production on the VPS
@@ -61,10 +60,10 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F150-stale-state-statements-and-bare-codes-outside-comments-are-cleaned-and-the-lint-rule-covers-them` (🟢 PROVEN): Stale state statements and bare codes outside comments are cleaned and the lint rule covers them; landed 2026-11-20
 - `F149-telegram-callbacks-dispatch-through-a-family-registry` (🟢 PROVEN): Telegram callbacks dispatch through a family registry; landed 2026-11-20
 - `F148-one-legal-version-format-and-parser-exist` (🟢 PROVEN): One legal version format and parser exist; landed 2026-11-20
+- `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟢 PROVEN): One operator alert path with texts in core and one locale type exist; landed 2026-11-20
 - `F146-one-action-id-header-exists-and-the-unread-exports-and-the-weaker-dkim-check-are-removed` (🟢 PROVEN): One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed; landed 2026-11-20
 - `F145-one-time-ts-spelling-minute-ms-hour-ms-day-ms-is-used-everywhere-and-a-lint-rule-bans-the-literals` (🟢 PROVEN): One time.ts spelling MINUTE_MS HOUR_MS DAY_MS is used everywhere and a lint rule bans the literals; landed 2026-11-20
-- `F144-the-sender-activity-read-is-split-into-readers-owned-by-the-modules-that-own-the-tables` (🟢 PROVEN): The sender activity read is split into readers owned by the modules that own the tables; landed 2026-11-20
-- 2026-11: 122 landed. spec/features/done/2026-11/
+- 2026-11: 123 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 

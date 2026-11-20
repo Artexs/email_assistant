@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F147 · One operator alert path with texts in core and one locale type exist
