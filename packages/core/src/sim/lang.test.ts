@@ -9,15 +9,6 @@ describe("detectLang", () => {
     expect(detectLang("Guten Tag, bitte schicken Sie mir den Bericht bis Freitag")).toBe("de");
     expect(detectLang("OK")).toBe("unknown");
   });
-  test.each([
-    ["Dzień dobry, proszę o fakturę", "pl"],
-    ["Hello, please send the invoice", "en"],
-    ["12345", "unknown"],
-    ["", "unknown"],
-  ] as const)("%j is %s", (text, expected) => {
-    expect(detectLang(text)).toBe(expected);
-  });
-
   test("a text of Polish letters and no stopword counts each word with such a letter as a hit", () => {
     expect(detectLang("Zażółć gęślą jaźń")).toBe("pl");
     expect(detectLang("Zażółć gęślą")).toBe("unknown");

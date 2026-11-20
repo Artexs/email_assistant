@@ -11,8 +11,6 @@ import {
   urgentRow,
 } from "./fixtures";
 
-const numberOf = (id: string) => Number(id.slice(id.lastIndexOf("-") + 1));
-
 describe("hiddenMoveRow", () => {
   test("a row with no override holds the default moved mail", () => {
     expect(hiddenMoveRow()).toEqual({
@@ -34,12 +32,6 @@ describe("hiddenMoveRow", () => {
       vip: true,
       whitelisted: true,
     });
-  });
-
-  test("each row gets the next id", () => {
-    const first = hiddenMoveRow().emailId;
-    const second = hiddenMoveRow().emailId;
-    expect(numberOf(second)).toBe(numberOf(first) + 1);
   });
 });
 

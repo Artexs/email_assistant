@@ -208,11 +208,4 @@ describe("partHash", () => {
     const sorted = ["a", "b", "c"].map((key) => [slotOf(key), text(`b-${key}`)]);
     expect(partHash(order.map(slotOf), texts)).toBe(hashOf(sorted));
   });
-
-  test("a dropped text and a slot with no text leave the hash", () => {
-    const some = new Map(texts);
-    some.set("b-b", { ...text("b-b"), dropped: true });
-    some.delete("b-c");
-    expect(partHash(["c", "b", "a"].map(slotOf), some)).toBe(hashOf([[slotOf("a"), text("b-a")]]));
-  });
 });

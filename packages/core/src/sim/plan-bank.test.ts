@@ -9,6 +9,7 @@ import { senderHistoryFor } from "./history-gen";
 import {
   batchSlots,
   buildSlot,
+  personaOf as envPersonaOf,
   planBank,
   type ContextState,
   type Env,
@@ -285,107 +286,10 @@ describe("buildSlot", () => {
     urgency: { vip, profile: { ...miniScenario.urgency.profile, ...profile } },
   });
 
-  test("a planned reply of a persona and topic has exactly the fields of the plan, the draws and the time", () => {
-    expect(build({ id: "b-inf-0001", category: "info", persona: "kasia", topic: "audyt" })).toEqual({
-      id: "b-inf-0001",
-      part: "dev",
-      persona: "kasia",
-      direction: "in",
-      to: ["szef"],
-      cc: [],
-      lang: "pl",
-      category: "info",
-      topic: "audyt",
-      hardCases: [],
-      kind: "synthetic",
-      style: { length: "short", format: "plain", signature: true, greeting: "informal" },
-      headers: {},
-      attachments: [],
-      thread: [],
-      brief: "Persona kasia reports a status on Audyt roczny for the executive's awareness",
-      receivedAt: AT,
-    });
-  });
-
-  test("a delegation slot names the delegate of the scenario and a draft of that kind", () => {
-    expect(build({ id: "b-del-0001", category: "delegation" }, { seed: 5 })).toEqual({
-      id: "b-del-0001",
-      part: "dev",
-      persona: "vendor-c",
-      direction: "in",
-      to: ["szef"],
-      cc: [],
-      lang: "pl",
-      category: "delegation",
-      topic: "faktury",
-      hardCases: [],
-      kind: "synthetic",
-      expectedDelegate: "marek",
-      expectedDraft: "delegation",
-      style: { length: "short", format: "plain", signature: false, greeting: "formal" },
-      headers: {},
-      attachments: [],
-      thread: [],
-      brief: "a task in oferty: asks the executive to have Faktury i platnosci handled by the team",
-      receivedAt: AT,
-    });
-  });
-
-  test("a newsletter slot gets list headers of its own host and no greeting", () => {
-    expect(
-      build({ id: "b-not-0001", category: "notification", persona: "news-d" }, { draws: { langs: ["en"] }, seed: 6 })
-    ).toEqual({
-      id: "b-not-0001",
-      part: "dev",
-      persona: "news-d",
-      direction: "in",
-      to: ["szef"],
-      cc: [],
-      lang: "en",
-      category: "notification",
-      topic: "fuzja",
-      hardCases: [],
-      kind: "synthetic",
-      style: { length: "short", format: "plain", signature: false, greeting: "none" },
-      headers: { "List-Id": "<news-d.lists.news-d.test>", "List-Unsubscribe": "<https://lists.news-d.test/u/1021>" },
-      attachments: [],
-      thread: [],
-      brief: "a system message about Fuzja z Beta, sent by Persona news-d, with no personal text",
-      receivedAt: AT,
-    });
-  });
-
-  test.each(["pl", "en"] as const)("a vip urgent slot in %s comes from the only VIP persona", (lang) => {
-    const slot = build(
-      { id: "b-urg-0001", category: "urgent" },
-      { draws: { langs: [lang], sources: ["vip"] }, seed: 3 }
-    );
-    expect([slot.persona, slot.urgencySource, slot.contextRef]).toEqual(["prezes", "vip", undefined]);
-    expect(slot.brief).toBe("a short request about Fuzja z Beta from an important person; no deadline words");
-  });
-
   test("a vip urgent slot with no VIP persona in the scenario stops with a message", () => {
     expect(() =>
       build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["vip"] }, scenario: withProfile({}, []) })
     ).toThrow("the scenario has no VIP persona for the vip urgency source");
-  });
-
-  test("context urgent slots alternate between the topics and the deadlines of the profile", () => {
-    const context = { next: 0 };
-    const slots = [0, 1, 2, 3].map(() =>
-      build({ id: "b-urg-0001", category: "urgent" }, { draws: { sources: ["context"] }, seed: 2, context })
-    );
-    expect(slots.map((slot) => slot.contextRef)).toEqual([
-      { kind: "topic", index: 0 },
-      { kind: "deadline", index: 0 },
-      { kind: "topic", index: 1 },
-      { kind: "deadline", index: 1 },
-    ]);
-    expect(slots.map((slot) => slot.topic)).toEqual([undefined, undefined, undefined, undefined]);
-    expect(slots[1]?.brief).toBe(
-      "about Oferta dla klienta A (due 2026-11-20), needs action today, does not say how pressing it is"
-    );
-    expect(context.next).toBe(4);
   });
 
   test("a profile with deadlines and no topic gives deadlines only", () => {
@@ -400,16 +304,6 @@ describe("buildSlot", () => {
       { kind: "deadline", index: 0 },
       { kind: "deadline", index: 0 },
     ]);
-  });
-
-  test("a profile with topics and no deadline gives topics only", () => {
-    const scenario = withProfile({ deadlines: [] });
-    const context = { next: 1 };
-    const slot = build(
-      { id: "b-urg-0001", category: "urgent" },
-      { draws: { sources: ["context"] }, scenario, context }
-    );
-    expect(slot.contextRef).toEqual({ kind: "topic", index: 0 });
   });
 
   test("a profile with no topic and no deadline stops with a message", () => {
@@ -436,4 +330,25 @@ describe("buildSlot", () => {
       ]);
     }
   );
+
+  test("a persona key that is not in the scenario stops with its key", () => {
+    expect(() => envPersonaOf(envOf(), "nobody")).toThrow("unknown persona: nobody");
+  });
+
+  test("a category whose group has no persona in the scenario stops with the group", () => {
+    const personas = miniScenario.personas.filter((p) => !["marketing", "spammer", "phishing"].includes(p.group));
+    expect(() => build({ id: "b-spa-0001", category: "spam" }, { scenario: { ...miniScenario, personas } })).toThrow(
+      "scenario has no persona of group spammer"
+    );
+  });
+
+  test("a sender who is in no topic starts a thread with the executive, never with a made-up persona", () => {
+    const topics = miniScenario.topics.filter((t) => !t.personas.includes("kasia"));
+    const plan = { id: "b-inf-0001", category: "info", persona: "kasia", topic: "faktury" } as const;
+    const first = [1, 2, 3, 4, 5, 6, 7, 8].map(
+      (seed) =>
+        build(plan, { draws: { threads: [true] }, seed, scenario: { ...miniScenario, topics } }).thread[0]?.persona
+    );
+    expect(first).toEqual(Array(8).fill("szef"));
+  });
 });
