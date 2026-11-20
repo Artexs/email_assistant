@@ -14,7 +14,7 @@ const toolFiles = new Set(
     .filter(([bun, file]) => bun === "bun" && file?.startsWith(SCRIPTS) && file.endsWith(".ts"))
     .map(([, file]) => (file as string).slice(SCRIPTS.length))
 );
-// A dev tool that the time-spelling ticket runs by path (`spec/features/active/F145-*/stages/stage-02-value-check.md`) and its last stage deletes.
+// A dev tool of the one-time time-spelling ticket: its stages run it by path and its last stage deletes it.
 // It has no `package.json` name. Delete this entry with the two files.
 const TEMPORARY = new Set(["time-rewrite-check.ts", "time-rewrite-check-values.ts"]);
 const argsFileOf = (file: string) => file.replace(/\.ts$/, "-args.ts");
