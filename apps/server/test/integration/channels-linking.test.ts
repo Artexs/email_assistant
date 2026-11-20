@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -26,7 +27,7 @@ afterAll(async () => {
 });
 
 const now = new Date("2026-11-06T10:00:00Z");
-const minutes = (n: number) => new Date(now.getTime() + n * 60_000);
+const minutes = (n: number) => new Date(now.getTime() + n * MINUTE_MS);
 
 async function linkRows(trx: Transaction<DB>, orgId: string) {
   return trx.selectFrom("chat_links").selectAll().where("org_id", "=", orgId).execute();

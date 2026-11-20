@@ -4,7 +4,7 @@
 // at a time (the chaser and a tap at once give one pair); a loop closes once (the chaser and Done at once give one close row and
 // no card on a closed loop); the Sent switch off wins over the chaser (no copy of the Sent mail is left, no open loop); a
 // settings change that commits before the run's lock stops the run.
-import { parseToolSwitches } from "@ea/core";
+import { parseToolSwitches, MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -73,139 +73,162 @@ const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> =>
   ]);
 
 describe.each(pairs)("two chasers at once (%s)", (_name, connA, connB) => {
-  test(`${ROUNDS} mailboxes: one run per part, one pair per loop, one reminder set`, async () => {
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const org = await newOrg();
-      const loops = await Promise.all([delegated(org), delegated(org), delegated(org)]);
-      await app.transaction().execute((trx) => openDelegation(trx, org, { dueAt: DUE_YESTERDAY }));
-      const results = await withTimeout(
-        Promise.all([chase(connA, org), jitter().then(() => chase(connB, org))]),
-        10_000
-      );
-      expect(results.map((result) => result.skipped ?? "ran").sort()).toEqual(["gate", "ran"]);
-      expect(await markers(app, org.ctx.orgId, "loops.chaser_run")).toHaveLength(1);
-      expect(await markers(app, org.ctx.orgId, "delegation.chaser_run")).toHaveLength(1);
-      for (const loop of loops) {
-        expect((await actionsOfLoop(app, loop.id)).map((row) => `${row.type}:${row.status}`)).toEqual([
-          "create_draft:ready",
-          "send:awaiting_approval",
-        ]);
+  test(
+    `${ROUNDS} mailboxes: one run per part, one pair per loop, one reminder set`,
+    async () => {
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const org = await newOrg();
+        const loops = await Promise.all([delegated(org), delegated(org), delegated(org)]);
+        await app.transaction().execute((trx) => openDelegation(trx, org, { dueAt: DUE_YESTERDAY }));
+        const results = await withTimeout(
+          Promise.all([chase(connA, org), jitter().then(() => chase(connB, org))]),
+          10_000
+        );
+        expect(results.map((result) => result.skipped ?? "ran").sort()).toEqual(["gate", "ran"]);
+        expect(await markers(app, org.ctx.orgId, "loops.chaser_run")).toHaveLength(1);
+        expect(await markers(app, org.ctx.orgId, "delegation.chaser_run")).toHaveLength(1);
+        for (const loop of loops) {
+          expect((await actionsOfLoop(app, loop.id)).map((row) => `${row.type}:${row.status}`)).toEqual([
+            "create_draft:ready",
+            "send:awaiting_approval",
+          ]);
+        }
+        const reminders = await app
+          .selectFrom("actions")
+          .select("id")
+          .where("org_id", "=", org.ctx.orgId)
+          .where("idempotency_key", "like", "%:reminder:%")
+          .execute();
+        expect(reminders).toHaveLength(2);
+        expect(await auditOf(app, org.ctx.orgId, "action.planned")).toHaveLength(6);
       }
-      const reminders = await app
-        .selectFrom("actions")
-        .select("id")
-        .where("org_id", "=", org.ctx.orgId)
-        .where("idempotency_key", "like", "%:reminder:%")
-        .execute();
-      expect(reminders).toHaveLength(2);
-      expect(await auditOf(app, org.ctx.orgId, "action.planned")).toHaveLength(6);
-    }
-  }, 60_000);
+    },
+    MINUTE_MS
+  );
 });
 
 describe.each(pairs)("the chaser and a Draft tap at once (%s)", (_name, connA, connB) => {
-  test(`${ROUNDS} loops: one pair, planned once, by one of them`, async () => {
-    const org = await newOrg();
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const loop = await delegated(org);
-      const [run, tap] = await withTimeout(
-        Promise.all([
-          chase(connA, org, new Date(NOW.getTime() + i * DAY_MS), { force: true }),
-          jitter().then(() =>
-            draftFollowUp({ db: connB, now: () => NOW }, org.ctx, { loopId: loop.id, userId: org.userId, via: "web" })
-          ),
-        ]),
-        10_000
-      );
-      const plannedBy = (run.followUps > 0 ? 1 : 0) + (tap.kind === "planned" ? 1 : 0);
-      // Another loop of an earlier round may be planned by this run too: only this loop counts.
-      const rows = await actionsOfLoop(app, loop.id);
-      expect(rows.map((row) => `${row.type}:${row.status}`)).toEqual(["create_draft:ready", "send:awaiting_approval"]);
-      expect(tap.kind === "planned" || tap.kind === "waiting").toBe(true);
-      expect(plannedBy).toBeGreaterThanOrEqual(1);
-      const planned = (await auditOf(app, org.ctx.orgId, "action.planned")).filter(
-        (row) => (row.data as Record<string, unknown>).loop_id === loop.id
-      );
-      expect(planned).toHaveLength(2);
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} loops: one pair, planned once, by one of them`,
+    async () => {
+      const org = await newOrg();
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const loop = await delegated(org);
+        const [run, tap] = await withTimeout(
+          Promise.all([
+            chase(connA, org, new Date(NOW.getTime() + i * DAY_MS), { force: true }),
+            jitter().then(() =>
+              draftFollowUp({ db: connB, now: () => NOW }, org.ctx, { loopId: loop.id, userId: org.userId, via: "web" })
+            ),
+          ]),
+          10_000
+        );
+        const plannedBy = (run.followUps > 0 ? 1 : 0) + (tap.kind === "planned" ? 1 : 0);
+        // Another loop of an earlier round may be planned by this run too: only this loop counts.
+        const rows = await actionsOfLoop(app, loop.id);
+        expect(rows.map((row) => `${row.type}:${row.status}`)).toEqual([
+          "create_draft:ready",
+          "send:awaiting_approval",
+        ]);
+        expect(tap.kind === "planned" || tap.kind === "waiting").toBe(true);
+        expect(plannedBy).toBeGreaterThanOrEqual(1);
+        const planned = (await auditOf(app, org.ctx.orgId, "action.planned")).filter(
+          (row) => (row.data as Record<string, unknown>).loop_id === loop.id
+        );
+        expect(planned).toHaveLength(2);
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 describe.each(pairs)("the chaser and Done at once (%s)", (_name, connA, connB) => {
-  test(`${ROUNDS} stale loops with a waiting card: one close row, the card expired`, async () => {
-    const org = await newOrg();
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const loop = await delegated(org, { due_at: new Date(NOW.getTime() - 31 * DAY_MS) });
-      const card = await app
-        .transaction()
-        .execute((trx) => priorFollowUp(trx, org, loop.id, { status: "awaiting_approval" }));
-      await withTimeout(
-        Promise.all([
-          chase(connA, org, new Date(NOW.getTime() + i * DAY_MS), { force: true }),
-          jitter().then(() =>
-            doneLoop({ db: connB, now: () => NOW }, org.ctx, { loopId: loop.id, userId: org.userId, via: "web" })
-          ),
-        ]),
-        10_000
-      );
-      const row = await loopOf(app, loop.id);
-      expect(row.status).toBe("closed");
-      expect(["stale", "done"]).toContain(row.close_reason ?? "");
-      const closes = (await auditOf(app, org.ctx.orgId, "loop.closed")).filter(
-        (entry) => (entry.data as Record<string, unknown>).loop_id === loop.id
-      );
-      expect(closes).toHaveLength(1);
-      const send = (await loopSends(app, org.ctx.orgId)).find((entry) => entry.id === card.sendId);
-      expect(send).toMatchObject({ status: "expired", status_reason: "loop_closed" });
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} stale loops with a waiting card: one close row, the card expired`,
+    async () => {
+      const org = await newOrg();
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const loop = await delegated(org, { due_at: new Date(NOW.getTime() - 31 * DAY_MS) });
+        const card = await app
+          .transaction()
+          .execute((trx) => priorFollowUp(trx, org, loop.id, { status: "awaiting_approval" }));
+        await withTimeout(
+          Promise.all([
+            chase(connA, org, new Date(NOW.getTime() + i * DAY_MS), { force: true }),
+            jitter().then(() =>
+              doneLoop({ db: connB, now: () => NOW }, org.ctx, { loopId: loop.id, userId: org.userId, via: "web" })
+            ),
+          ]),
+          10_000
+        );
+        const row = await loopOf(app, loop.id);
+        expect(row.status).toBe("closed");
+        expect(["stale", "done"]).toContain(row.close_reason ?? "");
+        const closes = (await auditOf(app, org.ctx.orgId, "loop.closed")).filter(
+          (entry) => (entry.data as Record<string, unknown>).loop_id === loop.id
+        );
+        expect(closes).toHaveLength(1);
+        const send = (await loopSends(app, org.ctx.orgId)).find((entry) => entry.id === card.sendId);
+        expect(send).toMatchObject({ status: "expired", status_reason: "loop_closed" });
+      }
+    },
+    MINUTE_MS
+  );
 
-  test(`${ROUNDS} due loops: a loop that Done closed has no waiting card`, async () => {
-    const org = await newOrg();
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const loop = await delegated(org);
-      await withTimeout(
-        Promise.all([
-          chase(connA, org, new Date(NOW.getTime() + i * DAY_MS), { force: true }),
-          jitter().then(() =>
-            doneLoop({ db: connB, now: () => NOW }, org.ctx, { loopId: loop.id, userId: org.userId, via: "web" })
-          ),
-        ]),
-        10_000
-      );
-      const row = await loopOf(app, loop.id);
-      expect([row.status, row.close_reason]).toEqual(["closed", "done"]);
-      const live = (await actionsOfLoop(app, loop.id)).filter(
-        (entry) =>
-          ["awaiting_approval", "approved", "applying", "ready"].includes(entry.status) && entry.type === "send"
-      );
-      expect(live).toEqual([]);
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} due loops: a loop that Done closed has no waiting card`,
+    async () => {
+      const org = await newOrg();
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const loop = await delegated(org);
+        await withTimeout(
+          Promise.all([
+            chase(connA, org, new Date(NOW.getTime() + i * DAY_MS), { force: true }),
+            jitter().then(() =>
+              doneLoop({ db: connB, now: () => NOW }, org.ctx, { loopId: loop.id, userId: org.userId, via: "web" })
+            ),
+          ]),
+          10_000
+        );
+        const row = await loopOf(app, loop.id);
+        expect([row.status, row.close_reason]).toEqual(["closed", "done"]);
+        const live = (await actionsOfLoop(app, loop.id)).filter(
+          (entry) =>
+            ["awaiting_approval", "approved", "applying", "ready"].includes(entry.status) && entry.type === "send"
+        );
+        expect(live).toEqual([]);
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 describe.each(pairs)("the chaser and the Sent switch off at once (%s)", (_name, connA, connB) => {
-  test(`${ROUNDS} mailboxes: no open loop and no copy of the Sent mail is left`, async () => {
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const org = await newOrg();
-      const loop = await delegated(org);
-      await withTimeout(
-        Promise.all([
-          chase(connA, org),
-          jitter().then(() =>
-            setSentSync(connB, org.ctx, org.mailboxId, { enabled: false, actor: "test", at: NOW }, sentSwitchHooks)
-          ),
-        ]),
-        10_000
-      );
-      const row = await loopOf(app, loop.id);
-      expect([row.status, row.close_reason]).toEqual(["closed", "sent_off"]);
-      for (const send of await actionsOfLoop(app, loop.id)) {
-        expect(send.status === "expired" || send.status === "ready").toBe(true);
-        for (const key of ["quote", "to", "cc", "subject"]) expect(send.payload as object).not.toHaveProperty(key);
+  test(
+    `${ROUNDS} mailboxes: no open loop and no copy of the Sent mail is left`,
+    async () => {
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const org = await newOrg();
+        const loop = await delegated(org);
+        await withTimeout(
+          Promise.all([
+            chase(connA, org),
+            jitter().then(() =>
+              setSentSync(connB, org.ctx, org.mailboxId, { enabled: false, actor: "test", at: NOW }, sentSwitchHooks)
+            ),
+          ]),
+          10_000
+        );
+        const row = await loopOf(app, loop.id);
+        expect([row.status, row.close_reason]).toEqual(["closed", "sent_off"]);
+        for (const send of await actionsOfLoop(app, loop.id)) {
+          expect(send.status === "expired" || send.status === "ready").toBe(true);
+          for (const key of ["quote", "to", "cc", "subject"]) expect(send.payload as object).not.toHaveProperty(key);
+        }
       }
-    }
-  }, 60_000);
+    },
+    MINUTE_MS
+  );
 });
 
 describe.each(pairs)("a settings change before the run's lock (%s)", (_name, connA, connB) => {
@@ -236,31 +259,35 @@ describe.each(pairs)("a settings change before the run's lock (%s)", (_name, con
 });
 
 describe.each(pairs)("two runs of the delegation wrapper at once (%s)", (_name, connA, connB) => {
-  test(`${ROUNDS} mailboxes: one run, one marker, one reminder`, async () => {
-    for (let i = 0; i < ROUNDS; i += 1) {
-      const org = await newOrg();
-      await app.transaction().execute((trx) => openDelegation(trx, org, { dueAt: DUE_YESTERDAY }));
-      const settings = await getMailboxSettings(app, org.ctx, org.mailboxId);
-      if (settings === undefined) throw new Error("no settings");
-      const mailbox = { id: org.mailboxId, timezone: "Europe/Warsaw", settingsVersion: settings.version };
-      const results = await withTimeout(
-        Promise.all([
-          runChaserForMailbox({ db: connA, now: () => NOW }, org.ctx, mailbox, NOW),
-          jitter().then(() => runChaserForMailbox({ db: connB, now: () => NOW }, org.ctx, mailbox, NOW)),
-        ]),
-        10_000
-      );
-      expect(results.map((result) => result.skipped ?? "ran").sort()).toEqual(["gate", "ran"]);
-      expect(await markers(app, org.ctx.orgId, "delegation.chaser_run")).toHaveLength(1);
-      const reminders = await app
-        .selectFrom("actions")
-        .select("id")
-        .where("org_id", "=", org.ctx.orgId)
-        .where("idempotency_key", "like", "%:reminder:%")
-        .execute();
-      expect(reminders).toHaveLength(2);
-    }
-  }, 60_000);
+  test(
+    `${ROUNDS} mailboxes: one run, one marker, one reminder`,
+    async () => {
+      for (let i = 0; i < ROUNDS; i += 1) {
+        const org = await newOrg();
+        await app.transaction().execute((trx) => openDelegation(trx, org, { dueAt: DUE_YESTERDAY }));
+        const settings = await getMailboxSettings(app, org.ctx, org.mailboxId);
+        if (settings === undefined) throw new Error("no settings");
+        const mailbox = { id: org.mailboxId, timezone: "Europe/Warsaw", settingsVersion: settings.version };
+        const results = await withTimeout(
+          Promise.all([
+            runChaserForMailbox({ db: connA, now: () => NOW }, org.ctx, mailbox, NOW),
+            jitter().then(() => runChaserForMailbox({ db: connB, now: () => NOW }, org.ctx, mailbox, NOW)),
+          ]),
+          10_000
+        );
+        expect(results.map((result) => result.skipped ?? "ran").sort()).toEqual(["gate", "ran"]);
+        expect(await markers(app, org.ctx.orgId, "delegation.chaser_run")).toHaveLength(1);
+        const reminders = await app
+          .selectFrom("actions")
+          .select("id")
+          .where("org_id", "=", org.ctx.orgId)
+          .where("idempotency_key", "like", "%:reminder:%")
+          .execute();
+        expect(reminders).toHaveLength(2);
+      }
+    },
+    MINUTE_MS
+  );
 });
 
 // The flag is read again under the lock; another organization's loops stay out of the run.

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { noticeViewSchemas, renderNotice } from "@ea/core";
+import { noticeViewSchemas, renderNotice, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -33,7 +33,6 @@ afterAll(async () => {
 // The direct answers of the bot follow the detail level of the chat. The level is a fake here: `telegramDetailOf` reads
 // `deps.detailOf`, and the effective level of the member without it (`channels-detail-send.test.ts` covers the real reader).
 const T = new Date("2026-11-06T10:00:00Z");
-const HOUR = 3_600_000;
 const BASE = "https://ea.example.ts.net";
 const SUBJECT = "MARKER-SUBJECT-4f2a";
 const SENDER = "marker-sender-4f2a@mail.test";
@@ -70,7 +69,7 @@ async function setup(trx: Transaction<DB>) {
     userId: a.userId,
     role: "owner",
     chatId: 1,
-    linkedAt: new Date(T.getTime() - 30 * 24 * HOUR),
+    linkedAt: new Date(T.getTime() - 30 * DAY_MS),
     locale: "en",
   };
   return { a, ctx, link };
@@ -116,7 +115,7 @@ describe("/digest at the minimal level", () => {
       ] as const) {
         await insertTriaged(trx, ctx, a.mailboxId, {
           category,
-          createdAt: new Date(T.getTime() - HOUR),
+          createdAt: new Date(T.getTime() - HOUR_MS),
           subject: SUBJECT,
           from,
         });
@@ -146,7 +145,7 @@ describe("/digest at the minimal level", () => {
       const { a, ctx, link } = await setup(trx);
       await insertTriaged(trx, ctx, a.mailboxId, {
         category: "urgent",
-        createdAt: new Date(T.getTime() - HOUR),
+        createdAt: new Date(T.getTime() - HOUR_MS),
         subject: SUBJECT,
         from: SENDER,
       });
@@ -167,7 +166,7 @@ describe("/review at the minimal level", () => {
       await setOrgFeature(trx, ctx, { flag: "review_command", enabled: true, actor: "cli", now: T });
       await insertTriaged(trx, ctx, a.mailboxId, {
         category: "info",
-        createdAt: new Date(T.getTime() - HOUR),
+        createdAt: new Date(T.getTime() - HOUR_MS),
         subject: SUBJECT,
         from: SENDER,
       });
@@ -201,8 +200,8 @@ describe("/status at the minimal level", () => {
       const { a, ctx, link } = await setup(trx);
       const second = await addMailbox(trx, a.orgId);
       await insertDraftAndSend(trx, ctx, a.mailboxId, {
-        notifiedAt: new Date(T.getTime() - 2 * HOUR),
-        createdAt: new Date(T.getTime() - 3 * HOUR),
+        notifiedAt: new Date(T.getTime() - 2 * HOUR_MS),
+        createdAt: new Date(T.getTime() - 3 * HOUR_MS),
       });
       const addresses = await trx
         .selectFrom("mailboxes")
@@ -264,13 +263,13 @@ describe("the queued digest", () => {
       const { a, ctx, link } = await setup(trx);
       await insertTriaged(trx, ctx, a.mailboxId, {
         category: "urgent",
-        createdAt: new Date(T.getTime() - HOUR),
+        createdAt: new Date(T.getTime() - HOUR_MS),
         subject: SUBJECT,
         from: SENDER,
       });
       const outboxId = await queueDigest(trx, link, {
         slot: { key: "2026-11-06T08:00", date: "2026-11-06", time: "08:00" },
-        periodStart: new Date(T.getTime() - 24 * HOUR),
+        periodStart: new Date(T.getTime() - DAY_MS),
         now: T,
         timeZone: "Europe/Warsaw",
         testMail: NO_TEST_SENDERS,

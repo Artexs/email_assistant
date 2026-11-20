@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -37,11 +38,9 @@ afterEach(() => {
   setLogLevel("info");
 });
 
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const NOW = new Date("2026-11-20T10:00:00Z");
-const CREATED = new Date(NOW.getTime() - HOUR);
-const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE);
+const CREATED = new Date(NOW.getTime() - HOUR_MS);
+const at = (minutes: number): Date => new Date(NOW.getTime() + minutes * MINUTE_MS);
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
 interface Setup {
@@ -125,7 +124,7 @@ const claimAll = (conn: Db | Transaction<DB>, s: Setup, time: Date = NOW) =>
   claimActions(conn, s.ctx, s.mailboxId, {
     now: time,
     limit: 20,
-    staleBefore: new Date(time.getTime() - 10 * MINUTE),
+    staleBefore: new Date(time.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "all" } },
   });
 

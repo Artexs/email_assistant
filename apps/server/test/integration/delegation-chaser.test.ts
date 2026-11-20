@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { parseToolSwitches } from "@ea/core";
+import { parseToolSwitches, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -26,7 +26,6 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 24 * 3_600_000;
 const TZ = "Europe/Warsaw";
 // 07:29 and 07:30 in Warsaw (CET) on 2026-11-10.
 const at0729 = new Date("2026-11-10T06:29:00Z");
@@ -122,10 +121,12 @@ describe("reminderDecision", () => {
     expect(reminderDecision(base, 1, now).remind).toBe(false);
     expect(reminderDecision({ ...base, reminders_sent: 2 }, 0, now).remind).toBe(false);
     const gap = (ms: number) => new Date(now.getTime() - ms);
-    expect(reminderDecision({ ...base, reminders_sent: 1, last_reminder_at: gap(3 * DAY - 1) }, 0, now).remind).toBe(
+    expect(reminderDecision({ ...base, reminders_sent: 1, last_reminder_at: gap(3 * DAY_MS - 1) }, 0, now).remind).toBe(
       false
     );
-    expect(reminderDecision({ ...base, reminders_sent: 1, last_reminder_at: gap(3 * DAY) }, 0, now).remind).toBe(true);
+    expect(reminderDecision({ ...base, reminders_sent: 1, last_reminder_at: gap(3 * DAY_MS) }, 0, now).remind).toBe(
+      true
+    );
   });
 });
 
@@ -271,14 +272,14 @@ describe("the delegation part of the one chaser", () => {
       const young = await openDelegation(trx, s, {
         status: "overdue",
         remindersSent: 1,
-        lastReminderAt: new Date(at0730.getTime() - 2 * DAY),
+        lastReminderAt: new Date(at0730.getTime() - 2 * DAY_MS),
       });
       expect(await run(s, at0730)).toMatchObject({ reminders: 0 });
       expect(await reminderRows(trx, s.ctx, young.emailId)).toEqual([]);
 
       await trx
         .updateTable("delegations")
-        .set({ last_reminder_at: new Date(at0730.getTime() - 3 * DAY) })
+        .set({ last_reminder_at: new Date(at0730.getTime() - 3 * DAY_MS) })
         .where("id", "=", young.id)
         .execute();
       expect(await run(s, nextDay)).toMatchObject({ reminders: 1 });
@@ -299,7 +300,7 @@ describe("the delegation part of the one chaser", () => {
       const s = await setup(trx);
       const d = await openDelegation(trx, s, {
         status: "overdue",
-        lastReminderAt: new Date(at0730.getTime() - DAY),
+        lastReminderAt: new Date(at0730.getTime() - DAY_MS),
       });
       expect(await run(s, at0730)).toMatchObject({ reminders: 0 });
       expect(await reminderRows(trx, s.ctx, d.emailId)).toEqual([]);

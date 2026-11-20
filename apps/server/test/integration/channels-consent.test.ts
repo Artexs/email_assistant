@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { OPEN_LOOPS_CONSENT_SINCE, TELEGRAM_CONSENT_VERSION, consentCovers } from "@ea/core";
+import { OPEN_LOOPS_CONSENT_SINCE, TELEGRAM_CONSENT_VERSION, consentCovers, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { Hono } from "hono";
 import type { Transaction } from "kysely";
@@ -271,7 +271,7 @@ describe("GET /api/channels/telegram consentVersion (F116 stage 22)", () => {
 
     // An unlink withdraws the consent: after a CLI link the old row does not count.
     expect((await app.request("/api/channels/telegram/link", as("owner", { method: "DELETE" }))).status).toBe(204);
-    await link(org.orgId, org.ownerId, new Date(NOW.getTime() + 60_000));
+    await link(org.orgId, org.ownerId, new Date(NOW.getTime() + MINUTE_MS));
     expect(await stateOf(app, "owner")).toMatchObject({ linked: true, consentVersion: null });
   });
 });

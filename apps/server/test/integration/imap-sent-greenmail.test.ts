@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, beforeEach, expect, test } from "bun:test";
 
 import {
@@ -34,8 +35,6 @@ beforeEach(() => {
   configureFeatures({ off: [] });
 });
 
-const HOUR = 3_600_000;
-
 test("the Sent pass keeps the flags, the UIDs and the numbering of the Sent folder on a real server", async () => {
   await withRollback(db, async (trx) => {
     const suffix = randomUUID();
@@ -68,10 +67,10 @@ test("the Sent pass keeps the flags, the UIDs and the numbering of the Sent fold
     );
     const now = new Date();
     await upsertOrgFeature(trx, ctx, { flag: "sent_sync", enabled: true, setBy: "test", setAt: now });
-    await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: new Date(now.getTime() - 2 * HOUR) });
+    await writeSentSwitch(trx, ctx, mailboxId, { enabled: true, at: new Date(now.getTime() - 2 * HOUR_MS) });
     await setFolderMapEntry(trx, ctx, mailboxId, "sent", "Sent");
 
-    const sentAt = new Date(now.getTime() - HOUR);
+    const sentAt = new Date(now.getTime() - HOUR_MS);
     const parent = `<parent-${suffix}@x.test>`;
     await appendRaw(
       imap,

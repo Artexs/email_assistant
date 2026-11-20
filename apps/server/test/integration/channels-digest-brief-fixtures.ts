@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import type { Insertable, Transaction } from "kysely";
 
 import { scheduleDigests } from "../../src/modules/channels";
@@ -16,8 +17,7 @@ import { insertLoopRow } from "./loops-fixtures";
 export const LINKED = new Date("2026-11-05T20:00:00Z");
 export const EIGHT = "2026-11-20T07:00:00Z";
 export const SIXTEEN = "2026-11-20T15:00:00Z";
-export const HOUR = 3_600_000;
-export const DAY = 24 * HOUR;
+export { HOUR_MS as HOUR, DAY_MS as DAY } from "@ea/core";
 
 export interface BriefOrg extends CommandOrg {
   chatId: number;
@@ -33,7 +33,7 @@ export async function briefOrg(
   await linkChat(trx, org.ctx, org.userId, chatId, LINKED);
   await setDigestTimes(trx, org.ctx, org.userId, ["08:00", "16:00"]);
   if (opts.consent !== false)
-    await consentRow(trx, org.ctx.orgId, org.userId, CURRENT_CONSENT, new Date(LINKED.getTime() + HOUR));
+    await consentRow(trx, org.ctx.orgId, org.userId, CURRENT_CONSENT, new Date(LINKED.getTime() + HOUR_MS));
   return { ...org, chatId };
 }
 

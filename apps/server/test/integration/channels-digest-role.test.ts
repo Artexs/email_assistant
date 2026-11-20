@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -135,7 +136,7 @@ describe("the Delegate button of the urgent notice by role", () => {
       await detectNotices({
         db: trx,
         now: () => now,
-        startedAt: new Date(now.getTime() - 3_600_000),
+        startedAt: new Date(now.getTime() - HOUR_MS),
         testMail: NO_TEST_SENDERS,
       });
       const rows = await trx
@@ -189,7 +190,7 @@ describe("the role reaches the digest through the job and the /digest command", 
       await insertDelegate(trx, org.ctx, { name: "Anna" });
       await insertTriaged(trx, org.ctx, org.mailboxId, {
         category: "needs_reply",
-        createdAt: new Date(now.getTime() - 3_600_000),
+        createdAt: new Date(now.getTime() - HOUR_MS),
         subject: "Budget question",
         from: "boss@y.test",
         fields: { language: "en" },

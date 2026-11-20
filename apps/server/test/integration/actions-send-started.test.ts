@@ -1,3 +1,4 @@
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -10,10 +11,9 @@ import { testDb, withRollback } from "./helpers";
 
 const db = testDb();
 
-const HOUR = 3_600_000;
 const NOW = new Date("2026-11-20T10:00:00Z");
-const SINCE = new Date(NOW.getTime() - 24 * HOUR);
-const ago = (hours: number): Date => new Date(NOW.getTime() - hours * HOUR);
+const SINCE = new Date(NOW.getTime() - DAY_MS);
+const ago = (hours: number): Date => new Date(NOW.getTime() - hours * HOUR_MS);
 
 async function setup(trx: Transaction<DB>) {
   const org = await createOrgWithMailbox(trx);

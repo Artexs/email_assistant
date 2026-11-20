@@ -1,4 +1,4 @@
-import { AI_FOLDER_NAMES } from "@ea/core";
+import { AI_FOLDER_NAMES, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -36,10 +36,9 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
 const NOW = new Date("2026-11-07T12:00:00Z");
-const RECEIVED = new Date(NOW.getTime() - HOUR);
-const SINCE = new Date(RECEIVED.getTime() - 86_400_000);
+const RECEIVED = new Date(NOW.getTime() - HOUR_MS);
+const SINCE = new Date(RECEIVED.getTime() - DAY_MS);
 
 // Interia: a protocol COPY gives a new UID (no MOVE, UIDPLUS); a webmail move keeps it.
 const INTERIA: FakeMailProviderOptions = {
@@ -129,7 +128,7 @@ async function claim(trx: Transaction<DB>, s: Setup, at: Date = NOW): Promise<Cl
   return claimActions(trx, s.ctx, s.mailboxId, {
     now: at,
     limit: 20,
-    staleBefore: new Date(at.getTime() - 10 * 60_000),
+    staleBefore: new Date(at.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
   });
 }
@@ -429,7 +428,7 @@ describe("original move: the ensure", () => {
   });
 });
 
-const REVERSE_AT = new Date(RECEIVED.getTime() + 60_000);
+const REVERSE_AT = new Date(RECEIVED.getTime() + MINUTE_MS);
 
 // A mail the system moved to `folder` (original `applied`) with a `ready` reverse. The mail sits in `folder` on the fake.
 async function insertMoved(
@@ -590,7 +589,7 @@ describe("reverse move", () => {
       expect(result.returnedBelowCursor).toBe(1);
       expect((await emailState(trx, mail.emailId)).folder).toBe(INBOX);
 
-      const [again] = await claim(trx, s, new Date(NOW.getTime() + 11 * 60_000));
+      const [again] = await claim(trx, s, new Date(NOW.getTime() + 11 * MINUTE_MS));
       expect(again?.id).toBe(mail.reverseId);
       expect(again?.email?.folder).toBe(INBOX);
       s.fake.calls.length = 0;
@@ -704,7 +703,7 @@ describe("ensureMoved", () => {
 });
 
 const JUNK = "Wiadomości-śmieci";
-const LATER = new Date(NOW.getTime() + 11 * 60_000);
+const LATER = new Date(NOW.getTime() + 11 * MINUTE_MS);
 
 describe("source folder and the rescue", () => {
   test("(1) a forward move of an Oferty mail into AI/Info keeps source_folder and source_uid; it uses a MOVE", async () => {

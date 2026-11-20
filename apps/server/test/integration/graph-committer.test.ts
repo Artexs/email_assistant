@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format, inspect } from "node:util";
 
-import { DEFAULT_SEND_LIMITS, type SendLimits } from "@ea/core";
+import { DEFAULT_SEND_LIMITS, type SendLimits, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, spyOn, test, type Mock } from "bun:test";
 
 import { committerDeps } from "../../src/composition";
@@ -158,11 +158,11 @@ async function seedSend(box: Box, over: { approved?: boolean; to?: string } = {}
   const { draftId, sendId } = await db.transaction().execute((trx) =>
     insertDraftAndSend(trx, { orgId: box.orgId }, box.id, {
       to,
-      createdAt: new Date(Date.now() - 30 * 60_000),
+      createdAt: new Date(Date.now() - 30 * MINUTE_MS),
       draftStatus: "applied",
       draftProviderResult: { uid: 1, folder: "Drafts" },
       sendStatus: over.approved === false ? "awaiting_approval" : "approved",
-      ...(over.approved === false ? {} : { approved: { userId, at: new Date(Date.now() - 60_000) } }),
+      ...(over.approved === false ? {} : { approved: { userId, at: new Date(Date.now() - MINUTE_MS) } }),
       subject: "Graph canary subject",
       task: "graph-canary-task-text",
     })
