@@ -21,7 +21,14 @@ import {
   simMetaOf,
 } from "../../modules/triage";
 import { createCliOutput } from "../../platform/cli";
-import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides } from "../../platform/config";
+import {
+  type Config,
+  ConfigError,
+  llmRoleTable,
+  runFlagError,
+  runFlagExitCode,
+  runOverrides,
+} from "../../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -50,7 +57,7 @@ const runsDir = resolve(import.meta.dir, "../../../../../evals/.runs");
 const gateDir = resolve(import.meta.dir, "../../../../../evals/results/gate");
 
 function out(text: string): void {
-  process.stdout.write(`${text}\n`);
+  cli.write(`${text}\n`);
 }
 
 function extrasMapperOf(
@@ -97,8 +104,8 @@ export async function runSim(options: EvalOptions, deps: SimDeps = {}): Promise<
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
     cli.fail(runFlagError(error));
-    cli.fail(evalUsage);
-    return 1;
+    cli.fail(`usage: ${evalUsage}`);
+    return runFlagExitCode(error);
   }
   const row = table.roles.classifier;
   const keys = table.providers[row.provider];

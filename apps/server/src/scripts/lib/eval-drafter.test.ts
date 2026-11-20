@@ -245,13 +245,13 @@ describe("runDrafterEval", () => {
     expect(stateFiles().sort()).toEqual([judgedName as string, oldName].sort());
   });
 
-  test("the budget is reached after one case: exit 2; a rerun resumes and drafts only the second case", async () => {
+  test("the budget is reached after one case: exit 4; a rerun resumes and drafts only the second case", async () => {
     const file = casesFile([injectionCases[0] as EvalCase, injectionCases[1] as EvalCase]);
     // One case costs about $0.0108: the first fits, a second one on top does not fit under the cap.
     const args = injectionArgs(["--budget-usd", "0.02"]);
     const heavy = { tokensIn: 100_000, judgeTokensIn: 1000 };
     const first = await run(args, { fake: fakeClient(heavy), deps: { injectionFile: file } });
-    expect(first.code).toBe(2);
+    expect(first.code).toBe(4);
     expect(first.calls.drafter).toBe(1);
     expect(first.calls.judge).toBe(1);
     expect(lines.some((line) => line.includes("budget cap reached"))).toBe(true);
@@ -351,6 +351,18 @@ describe("runDrafterEval", () => {
     expect(again.code).toBe(0);
     expect(again.calls.drafter).toBe(1);
   });
+
+  test("provider errors in a row stop the run with exit 4 (not 1) and the ledger row is still written", async () => {
+    const file = casesFile(injectionCases.slice(0, 5));
+    const stopped = await run(injectionArgs(), {
+      fake: fakeClient({ failDrafterFrom: 1 }),
+      deps: { injectionFile: file },
+    });
+    expect(stopped.code).toBe(4);
+    // Three errors in a row stop the run: the fourth and fifth case never reach the drafter.
+    expect(stopped.calls.drafter).toBe(3);
+    expect(readFileSync(join(tmp, "spend.jsonl"), "utf8").trim().split("\n")).toHaveLength(1);
+  });
 });
 
 describe("runDrafterEval on a corpus part", () => {
@@ -406,9 +418,9 @@ describe("runDrafterEval on a corpus part", () => {
     expect(lines.some((line) => line.includes("no gate file: --limit is set"))).toBe(true);
   });
 
-  test("a holdout run that stops at the budget writes no gate file and exits 2", async () => {
+  test("a holdout run that stops at the budget writes no gate file and exits 4", async () => {
     const result = await holdout({ fake: fakeClient({ tokensIn: 100_000 }), extra: ["--budget-usd", "0.02"] });
-    expect(result.code).toBe(2);
+    expect(result.code).toBe(4);
     expect(existsSync(join(tmp, "gate"))).toBe(false);
   });
 

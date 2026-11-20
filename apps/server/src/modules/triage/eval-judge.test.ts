@@ -215,7 +215,7 @@ describe("eval --judge", () => {
     expect(first.complete).toBe(false);
     expect(first.cases).toHaveLength(3);
     expect(failing.counts.classifier).toBe(3);
-    expect(evalExitCode(first)).toBe(2);
+    expect(evalExitCode(first)).toBe(4);
 
     const working = routedLlm({ classifier: [delegationAnswer()], judge: [allTwos] });
     const second = await runEval(deps(working.llm), {

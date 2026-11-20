@@ -479,9 +479,9 @@ describe("triage-label streams", () => {
 });
 
 describe("eval streams", () => {
-  test("a bad option: the usage on stderr, exit 1", async () => {
+  test("a bad option: the usage on stderr, exit 2", async () => {
     const result = await run("eval", ["--no-such-flag"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expectOnlyStderr(result, "eval", "usage: ");
   });
 

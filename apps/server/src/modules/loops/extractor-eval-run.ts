@@ -4,7 +4,14 @@ import { dirname, resolve } from "node:path";
 
 import { costPerMail, type LlmEffortLevel, type SentPart } from "@ea/core";
 
-import { type Config, ConfigError, llmRoleTable, runFlagError, runOverrides } from "../../platform/config";
+import {
+  type Config,
+  ConfigError,
+  llmRoleTable,
+  runFlagError,
+  runFlagExitCode,
+  runOverrides,
+} from "../../platform/config";
 import {
   acquireStateLock,
   appendLedgerLine,
@@ -80,7 +87,7 @@ export interface ExtractorEvalRunDeps {
 
 // `eval --sim <scenario> --part sent-dev|sent-holdout --extractor`: the code filters and `extractSent` on every
 // case of the part, under the run cap and the month cap. Exit 0: done (and the gate passed, on the holdout);
-// 1: a usage or setup error, a failed gate, or over 10% error cases; 2: the run stopped (cap or errors), resume it.
+// 1: a setup error, a failed gate, or over 10% error cases; 2: a run flag the provider does not take; 4: the run stopped (cap or errors), resume it.
 export async function runExtractorEvalRun(
   options: ExtractorEvalOptions,
   deps: ExtractorEvalRunDeps,
@@ -104,8 +111,8 @@ export async function runExtractorEvalRun(
   } catch (error) {
     if (!(error instanceof ConfigError)) throw error;
     cli.fail(runFlagError(error));
-    cli.fail(deps.usage);
-    return 1;
+    cli.fail(`usage: ${deps.usage}`);
+    return runFlagExitCode(error);
   }
   const row = table.roles.extractor;
   const keys = table.providers[row.provider];

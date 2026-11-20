@@ -159,13 +159,13 @@ describe("plan and status", () => {
     expect(result.stdout).toMatch(/^total slots \d+ written 0 /m);
   });
 
-  test("4 the script prints the usage and exits 1 for an unknown command or a missing --root value", () => {
+  test("4 the script prints the usage and exits 2 for an unknown command or a missing --root value", () => {
     const unknown = runSimCli(["frobnicate", "mini"]);
-    expect(unknown.code).toBe(1);
-    expect(unknown.stderr).toContain("usage:");
+    expect(unknown.code).toBe(2);
+    expect(unknown.stderr).toContain("usage: bun run sim");
     const noValue = runSimCli(["plan", "mini", "--root"]);
-    expect(noValue.code).toBe(1);
-    expect(noValue.stderr).toContain("usage:");
+    expect(noValue.code).toBe(2);
+    expect(noValue.stderr).toContain("usage: bun run sim");
   });
 });
 
