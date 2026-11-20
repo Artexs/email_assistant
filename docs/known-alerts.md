@@ -242,7 +242,7 @@ Status values: `fixed` · `fix pending` · `workaround` · `won't fix` · `inves
 - **First seen:** 2026-11-14 (F105 stage 08; not seen live)
 - **Source:** `apps/server/src/platform/auth-two-factor.ts` (`backupCodesLeft`, called by `GET /api/me/two-factor`). Level `warn`. The line holds the user id and the error fields only.
 - **Cause:** the user has two-factor sign-in on, but the `auth_two_factors` row is missing or its backup codes do not decrypt. The usual case is a changed `WEB_AUTH_SECRET`. The panel then shows that the number of backup codes is unknown.
-- **Fix:** `$C run --rm cli bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>` for that user, after the check of who asks (`deploy/README.md` § Two-factor sign-in). The user turns the second factor on again.
+- **Fix:** `$C run --rm cli bun run web:two-factor-reset --org-id <uuid> --user-id <uuid> --confirm "<organization name>"` for that user, after the check of who asks (`deploy/README.md` § Two-factor sign-in). The user turns the second factor on again.
 - **Status:** workaround
 
 ### `user_moves_failed`

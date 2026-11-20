@@ -6,6 +6,7 @@ import { en } from "../../src/i18n/en";
 import { E2E_BASE_URL, e2eEnv, repoRoot } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { e2eTwoFactorOrgName } from "../../../server/src/scripts/e2e-seed-args";
 import { holdsToken, totpCode } from "../totp";
 
 // The tests change one user's second factor and depend on each other: one after the other, in this order.
@@ -222,7 +223,8 @@ test("a trusted device skips the code step at the next sign-in", async ({ browse
 
 test("the break-glass owner sees the note and cannot turn it off", async ({ browser }, testInfo) => {
   const user = readSeed().twoFactorOwners[projectOf(testInfo.project.name)];
-  breakGlass(["--org-id", user.orgId, "--user-id", user.userId]);
+  const orgName = e2eTwoFactorOrgName(projectOf(testInfo.project.name));
+  breakGlass(["--org-id", user.orgId, "--user-id", user.userId, "--confirm", orgName]);
   try {
     const page = await newSession(browser, testInfo.project.name);
     await toCodeStep(page, user);
@@ -243,7 +245,7 @@ test("the break-glass owner sees the note and cannot turn it off", async ({ brow
     await page.reload();
     await expect(section.getByText(en.tf_on_text)).toBeVisible();
   } finally {
-    breakGlass(["--org-id", user.orgId, "--clear"]);
+    breakGlass(["--org-id", user.orgId, "--clear", "--confirm", orgName]);
   }
 });
 

@@ -365,16 +365,16 @@ Break-glass owner (one owner of an organization; the one exception to "SSO requi
 
 ```sh
 $C run --rm cli bun run org:break-glass --org-id <uuid>
-$C run --rm cli bun run org:break-glass --org-id <uuid> --user-id <uuid>
-$C run --rm cli bun run org:break-glass --org-id <uuid> --clear
+$C run --rm cli bun run org:break-glass --org-id <uuid> --user-id <uuid> --confirm "<organization name>"
+$C run --rm cli bun run org:break-glass --org-id <uuid> --clear --confirm "<organization name>"
 ```
 
-The user must be an owner and must have two-factor sign-in on. The break-glass owner cannot turn it off.
+The set and the clear need `--confirm` with the organization name (case and spaces around it do not matter). Without it the command exits 2; with a wrong name it exits 1 and changes nothing. The list needs none. The user must be an owner and must have two-factor sign-in on. The break-glass owner cannot turn it off.
 
 A member who lost the phone and the backup codes:
 
 1. Check who asks, outside the system: a call to a known number, or in person. Do not trust a mail or a chat message.
-2. Run `$C run --rm cli bun run web:two-factor-reset --org-id <uuid> --user-id <uuid>`.
+2. Run `$C run --rm cli bun run web:two-factor-reset --org-id <uuid> --user-id <uuid> --confirm "<organization name>"`. A missing `--confirm` exits 2; a wrong name exits 1 and changes nothing.
 3. The reset ends every session and every trusted device of the user and clears the break-glass mark. The user signs in with the password and can turn two-factor sign-in on again.
 
 Never change `WEB_AUTH_SECRET` without a plan to reset every member's second factor: the secrets and codes are encrypted with it, and a new value makes them unreadable. Each member then needs the reset above.

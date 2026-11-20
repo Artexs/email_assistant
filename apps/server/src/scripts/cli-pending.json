@@ -1,11 +1,4 @@
 {
-  "danger": [
-    "apps/server/src/scripts/org-break-glass.ts",
-    "apps/server/src/scripts/org-delete.ts",
-    "apps/server/src/scripts/org-dsr.ts",
-    "apps/server/src/scripts/org-export.ts",
-    "apps/server/src/scripts/web-two-factor-reset.ts"
-  ],
   "org": [
     "apps/server/src/scripts/lib/invite-delivery.ts",
     "apps/server/src/scripts/org-create.ts",

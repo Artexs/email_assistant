@@ -80,7 +80,7 @@ describe("web:two-factor-reset CLI", () => {
     const { orgId, userId, email, orgName } = await createEnrolledOwner();
     expect(await counts(userId)).toEqual({ rows: 1, sessions: 2, flag: true });
 
-    const result = await run(["--org-id", orgId, "--user-id", userId]);
+    const result = await run(["--org-id", orgId, "--user-id", userId, "--confirm", orgName]);
     expect(result.code).toBe(0);
     expect(result.stdout).toContain(`user ${userId}: two-factor sign-in reset; 2 sessions ended`);
     expect(result.stdout).toContain(`user ${userId}: break-glass cleared in ${orgId}`);
@@ -91,7 +91,7 @@ describe("web:two-factor-reset CLI", () => {
     }
     expect(await counts(userId)).toEqual({ rows: 0, sessions: 0, flag: false });
 
-    const again = await run(["--org-id", orgId, "--user-id", userId]);
+    const again = await run(["--org-id", orgId, "--user-id", userId, "--confirm", orgName]);
     expect(again.code).toBe(0);
     expect(again.stdout).toContain("0 sessions ended (it was off)");
     expect(again.stdout).not.toContain("break-glass");
@@ -102,7 +102,7 @@ describe("web:two-factor-reset CLI", () => {
     const member = await createEnrolledOwner();
     const other = await createEnrolledOwner();
 
-    const result = await run(["--org-id", member.orgId, "--user-id", other.userId]);
+    const result = await run(["--org-id", member.orgId, "--user-id", other.userId, "--confirm", member.orgName]);
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("user is not a member");
     expect(result.stdout).toBe("");
@@ -110,9 +110,9 @@ describe("web:two-factor-reset CLI", () => {
     expect(await counts(other.userId)).toEqual({ rows: 1, sessions: 2, flag: true });
   });
 
-  test("9c. a bad argument: the usage on stderr, exit 1", async () => {
+  test("9c. a bad argument: the usage on stderr, exit 2", async () => {
     const result = await run(["--org-id", "nope"]);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stderr).toContain("usage: bun run web:two-factor-reset");
   });
 });

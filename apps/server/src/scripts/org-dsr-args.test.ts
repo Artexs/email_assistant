@@ -28,11 +28,13 @@ describe("parseOrgDsrArgs", () => {
     ).toEqual({ orgId: ID, address: "p@x.test", mode: "find", report: { recipient, out: "/tmp/r.age" } });
   });
 
-  test("a usage error gives null: no mode, half a report, a bad key, a bad id", () => {
-    expect(parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.test"])).toBeNull();
-    expect(parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.test", "--find", "--recipient", recipient])).toBeNull();
-    expect(parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.test", "--find", "--out", "/tmp/r.age"])).toBeNull();
-    expect(
+  test("a usage error: no mode, half a report, a bad key, a bad id", () => {
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.test"])).toThrow();
+    expect(() =>
+      parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.test", "--find", "--recipient", recipient])
+    ).toThrow();
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.test", "--find", "--out", "/tmp/r.age"])).toThrow();
+    expect(() =>
       parseOrgDsrArgs([
         "--org-id",
         ID,
@@ -44,20 +46,20 @@ describe("parseOrgDsrArgs", () => {
         "--out",
         "/tmp/r.age",
       ])
-    ).toBeNull();
-    expect(parseOrgDsrArgs(["--org-id", "nope", "--address", "p@x.test", "--find"])).toBeNull();
-    expect(parseOrgDsrArgs(["--org-id", ID, "--address", " ", "--find"])).toBeNull();
-    expect(parseOrgDsrArgs(["--org-id", ID, "--find"])).toBeNull();
+    ).toThrow();
+    expect(() => parseOrgDsrArgs(["--org-id", "nope", "--address", "p@x.test", "--find"])).toThrow();
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--address", " ", "--find"])).toThrow();
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--find"])).toThrow();
   });
 
   test("a bad address is no usage error", () => {
-    expect(parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.", "--find"])).not.toBeNull();
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--address", "p@x.", "--find"])).not.toThrow();
   });
 
   test("--rule-check with --org-id alone is the rule_check mode; any other option is a usage error", () => {
     expect(parseOrgDsrArgs(["--org-id", ID, "--rule-check"])).toEqual({ mode: "rule_check", orgId: ID });
-    expect(parseOrgDsrArgs(["--org-id", ID, "--rule-check", "--address", "p@x.test"])).toBeNull();
-    expect(parseOrgDsrArgs(["--org-id", ID, "--rule-check", "--find"])).toBeNull();
-    expect(parseOrgDsrArgs(["--rule-check"])).toBeNull();
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--rule-check", "--address", "p@x.test"])).toThrow();
+    expect(() => parseOrgDsrArgs(["--org-id", ID, "--rule-check", "--find"])).toThrow();
+    expect(() => parseOrgDsrArgs(["--rule-check"])).toThrow();
   });
 });
