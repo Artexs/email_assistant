@@ -2,6 +2,8 @@
 
 // The 30 most common words of each language. A word that both languages use ("to", "a", "i", "do", "on", "no") is
 // left out, so a hit counts for one language only. `checks.test.ts` checks both lists.
+// English also holds the greeting and topic words of the reply drafts ("dear", "hi", "regarding"): a short draft
+// whose other words are all in gaps still reads as English.
 export const POLISH_WORDS = [
   "nie",
   "się",
@@ -66,6 +68,9 @@ export const ENGLISH_WORDS = [
   "please",
   "hello",
   "would",
+  "dear",
+  "hi",
+  "regarding",
 ] as const;
 
 const POLISH = new Set<string>(POLISH_WORDS);

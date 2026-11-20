@@ -228,9 +228,9 @@ describe("checkReplyBody: quoted, encoded and lookalike forms", () => {
 });
 
 describe("the word lists of the language check", () => {
-  test("each list has 30 distinct words and the lists share none", () => {
+  test("Polish has 30 distinct words, English 33, and the lists share none", () => {
     expect(new Set(POLISH_WORDS).size).toBe(30);
-    expect(new Set(ENGLISH_WORDS).size).toBe(30);
+    expect(new Set(ENGLISH_WORDS).size).toBe(33);
     expect(POLISH_WORDS.filter((word) => (ENGLISH_WORDS as readonly string[]).includes(word))).toEqual([]);
   });
 });
@@ -277,6 +277,13 @@ describe("pins of the number rules", () => {
     expect(failuresOf(body, "pl")).toEqual([]);
     // The sentences outside the gaps still count.
     expect(failuresOf("Hello, thanks for your message. [[tak lub nie]]", "pl")).toEqual(["language"]);
+  });
+
+  test("an English draft of only a greeting and topic lines with gaps passes as en", () => {
+    const body =
+      "Dear Karin Lindqvist,\nRegarding certificate responsibility: [[accept or decline]].\nRegarding shipment arrival: [[yes or no and date]].";
+    expect(failuresOf(body, "en")).toEqual([]);
+    expect(failuresOf(body, "pl")).toEqual(["language"]);
   });
 
   test("too_long counts code points, not UTF-16 units", () => {
