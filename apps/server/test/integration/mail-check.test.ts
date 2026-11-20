@@ -415,7 +415,7 @@ describe("mailbox:check CLI", () => {
     }
   });
 
-  test("a host that the guard refuses: exit 2, no connection, no host name", async () => {
+  test("a host that the guard refuses: exit 1, no connection, no host name", async () => {
     const suffix = randomUUID();
     const { orgId, userId } = await createOrg(db, suffix);
     try {
@@ -450,7 +450,7 @@ describe("mailbox:check CLI", () => {
       ]);
 
       expect(stderr).toBe("");
-      expect(code).toBe(2);
+      expect(code).toBe(1);
       expect(stdout).toContain("status: active since ");
       expect(stdout).toContain("imap-host: refused");
       expect(stdout).toContain("smtp-host: refused");
@@ -463,9 +463,9 @@ describe("mailbox:check CLI", () => {
     }
   });
 
-  test("bad args print the usage and exit 1", async () => {
+  test("bad args print the usage and exit 2", async () => {
     const proc = runCheck(["--org-id", randomUUID()]);
-    expect(await proc.exited).toBe(1);
+    expect(await proc.exited).toBe(2);
     expect(await new Response(proc.stderr).text()).toContain("usage");
   });
 });

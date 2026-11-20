@@ -97,7 +97,7 @@ describe("bun run mailbox:settings auto with the flag trust_ladder", () => {
     }
   });
 
-  test("no gate file for the running key: exit 2 and the block names the missing evidence", async () => {
+  test("no gate file for the running key: exit 1 and the block names the missing evidence", async () => {
     const dir = mkdtempSync(join(tmpdir(), "f110-cli-gate-empty-"));
     const created = await db.transaction().execute((trx) => createOrgWithMailbox(trx));
     const ctx = { orgId: created.orgId };
@@ -105,7 +105,7 @@ describe("bun run mailbox:settings auto with the flag trust_ladder", () => {
       await insertDefaultSettings(db, ctx, created.mailboxId);
       await setOrgFeature(db, ctx, { flag: "trust_ladder", enabled: true, actor: "cli", now: new Date() });
       const result = await runCli(created.orgId, created.mailboxId, "info", { GATE_EVIDENCE_DIR: dir });
-      expect(result.code).toBe(2);
+      expect(result.code).toBe(1);
       expect(result.out).toContain("refused: info did not pass go/no-go (no_global)");
     } finally {
       rmSync(dir, { recursive: true, force: true });

@@ -1,7 +1,7 @@
-import { parseArgs } from "node:util";
-
 import {
   barCategories,
+  UsageError,
+  type CliDescription,
   replySwitchNames,
   toolSwitchNames,
   urgencyProfileSchema,
@@ -15,18 +15,30 @@ import { z } from "zod";
 
 import type { SyncFolderRow } from "../modules/mail";
 
-export const usage = [
-  "usage:",
-  "  bun run mailbox:settings show   --org-id <uuid> --mailbox-id <uuid>",
-  "  bun run mailbox:settings mode   --org-id <uuid> --mailbox-id <uuid> --mode shadow|assist [--keep-switches]",
-  "  bun run mailbox:settings auto   --org-id <uuid> --mailbox-id <uuid> --category urgent|needs_reply|info|notification|spam --value on|off [--threshold 0.nn] [--force]",
-  "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft|reply_drafts --value on|off",
-  "  bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off",
-  "  bun run mailbox:settings sent-sync --org-id <uuid> --mailbox-id <uuid> --value on|off   (consent to read Sent: turn it on only on the owner's instruction)",
-  "  bun run mailbox:settings urgency --org-id <uuid> --mailbox-id <uuid> (--file <path.json> | --clear)",
-  "  bun run mailbox:settings expire-ready --org-id <uuid> --mailbox-id <uuid>",
-  "  Exit 0: ok. Exit 1: usage error or failure. Exit 2: refused by the go/no-go gate.",
-].join("\n");
+import { parseFlags } from "./lib/parse-flags";
+
+export const cliDescriptions = [
+  {
+    name: "mailbox:settings",
+    summary: "Shows or changes the settings of one mailbox: mode, auto, switches, folders, urgency.",
+    risk: "write",
+    needs: ["db"],
+    usage: [
+      "bun run mailbox:settings show   --org-id <uuid> --mailbox-id <uuid>",
+      "  bun run mailbox:settings mode   --org-id <uuid> --mailbox-id <uuid> --mode shadow|assist [--keep-switches]",
+      "  bun run mailbox:settings auto   --org-id <uuid> --mailbox-id <uuid> --category urgent|needs_reply|info|notification|spam --value on|off [--threshold 0.nn] [--force]",
+      "  bun run mailbox:settings switch --org-id <uuid> --mailbox-id <uuid> --name move|mark_read|flag|move_unsure|create_draft|reply_drafts --value on|off",
+      "  bun run mailbox:settings sync-folder --org-id <uuid> --mailbox-id <uuid> --key offers|social|bills|junk --value on|off",
+      "  bun run mailbox:settings sent-sync --org-id <uuid> --mailbox-id <uuid> --value on|off   (consent to read Sent: turn it on only on the owner's instruction)",
+      "  bun run mailbox:settings urgency --org-id <uuid> --mailbox-id <uuid> (--file <path.json> | --clear)",
+      "  bun run mailbox:settings expire-ready --org-id <uuid> --mailbox-id <uuid>",
+    ].join("\n"),
+    exits: { 1: "refused by the go/no-go gate or failed", 3: "the database did not answer" },
+  },
+] satisfies readonly CliDescription[];
+
+/** The usage text of the tool, for the line that a refused urgency file prints. */
+export const usage = cliDescriptions.map((description) => description.usage).join("\n");
 
 export type SettingsCommand =
   | { kind: "show" | "expire-ready"; orgId: string; mailboxId: string }
@@ -60,10 +72,10 @@ const threshold = z
 
 const common = { orgId: z.uuid(), mailboxId: z.uuid() };
 
-// Returns undefined on any bad argument; the script prints the usage.
-export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
+// Throws `UsageError` (or a `parseArgs` error, which `runCli` also maps to exit 2) on any bad argument.
+export function parseSettingsArgs(argv: string[]): SettingsCommand {
   try {
-    const { values, positionals } = parseArgs({
+    const { values, positionals } = parseFlags({
       args: argv,
       options: {
         "org-id": { type: "string" },
@@ -80,11 +92,10 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
         clear: { type: "boolean" },
       },
       allowPositionals: true,
-      strict: true,
     });
     const ids = { orgId: values["org-id"], mailboxId: values["mailbox-id"] };
     const [kind, ...extra] = positionals;
-    if (extra.length > 0) return undefined;
+    if (extra.length > 0) throw new UsageError("one subcommand and no other operand");
     // Each subcommand takes only its own flags.
     const allowed: Record<string, string[]> = {
       show: [],
@@ -97,9 +108,14 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
       urgency: ["file", "clear"],
     };
     const own = allowed[kind ?? ""];
-    if (!own) return undefined;
+    if (!own)
+      throw new UsageError(
+        "the first argument is show, mode, auto, switch, sync-folder, sent-sync, urgency or expire-ready"
+      );
     const given = Object.keys(values).filter((key) => key !== "org-id" && key !== "mailbox-id");
-    if (given.some((key) => !own.includes(key))) return undefined;
+    const foreign = given.filter((key) => !own.includes(key));
+    if (foreign.length > 0)
+      throw new UsageError(`${kind} does not take ${foreign.map((key) => `--${key}`).join(", ")}`);
 
     switch (kind) {
       case "show":
@@ -133,7 +149,9 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
       case "urgency": {
         const parsed = z.object(common).parse(ids);
         // Exactly one of the two.
-        if ((values.file === undefined) === (values.clear === undefined)) return undefined;
+        if ((values.file === undefined) === (values.clear === undefined)) {
+          throw new UsageError("urgency takes --file or --clear, not none and not both");
+        }
         if (values.file !== undefined) {
           return { kind, ...parsed, source: { file: z.string().min(1).parse(values.file) } };
         }
@@ -156,8 +174,11 @@ export function parseSettingsArgs(argv: string[]): SettingsCommand | undefined {
         return { kind: "switch", ...parsed };
       }
     }
-  } catch {
-    return undefined;
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new UsageError(`bad or missing argument: ${error.issues.map((issue) => issue.path.join(".")).join(", ")}`);
+    }
+    throw error;
   }
 }
 

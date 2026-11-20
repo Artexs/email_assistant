@@ -1,17 +1,15 @@
 import type { ProfileInput, ProfileView } from "@ea/core";
 
 import { getProfileView, updateMailboxProfile } from "../modules/replies";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
 
-import { parseProfileArgs, usage, type ProfileCommand } from "./mailbox-profile-args";
-
-const out = createCliOutput("mailbox-profile");
+import { reportFailure } from "./lib/mailbox-failure";
+import { cliDescriptions, parseProfileArgs, type ProfileCommand } from "./mailbox-profile-args";
 
 // An operator CLI on the server: it shows the stored texts to the operator, never to a log.
-function printView(view: ProfileView): void {
+function printView(out: CliRawOutput, view: ProfileView): void {
   out.print(`display name: ${view.displayName ?? "(not set)"}`);
   out.print(`signature: ${view.signature === null ? "(not set)" : `${Array.from(view.signature).length} characters`}`);
   out.print(
@@ -30,7 +28,11 @@ async function readText(path: string): Promise<string | undefined> {
   }
 }
 
-async function run(command: ProfileCommand, db: Parameters<typeof updateMailboxProfile>[0]): Promise<number> {
+async function run(
+  out: CliRawOutput,
+  command: ProfileCommand,
+  db: Parameters<typeof updateMailboxProfile>[0]
+): Promise<number> {
   const ctx = { orgId: command.orgId };
   const input: ProfileInput = {};
   if (command.displayName !== undefined) input.displayName = command.displayName;
@@ -53,7 +55,7 @@ async function run(command: ProfileCommand, db: Parameters<typeof updateMailboxP
       out.fail("no such mailbox in this organization");
       return 1;
     }
-    printView(view);
+    printView(out, view);
     return 0;
   }
   const result = await updateMailboxProfile(db, ctx, command.mailboxId, input, { via: "cli" });
@@ -65,33 +67,32 @@ async function run(command: ProfileCommand, db: Parameters<typeof updateMailboxP
     out.fail(`refused: ${result.field} (${result.code}); nothing stored`);
     return 1;
   }
-  printView(result.view);
+  printView(out, result.view);
   out.print(result.changed.length === 0 ? "no change" : `changed: ${result.changed.join(", ")}`);
   return 0;
 }
 
-async function main(): Promise<number> {
-  const command = parseProfileArgs(process.argv.slice(2));
-  if (!command) {
-    out.fail(usage);
-    return 1;
-  }
+async function runCommand(command: ProfileCommand, out: CliRawOutput): Promise<number> {
   const config = loadConfig();
   const db = createDb(config.DATABASE_URL);
   try {
     await assertAppRole(db);
-    return await run(command, db);
-  } catch (error) {
-    out.fail(`failed: ${describeError(error)}`);
-    return 1;
+    return await run(out, command, db);
   } finally {
     await db.destroy();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB. Any later error gets one line and its code.
+const main: CliSpec["main"] = async (argv, out) => {
+  const command = parseProfileArgs(argv);
+  try {
+    return await runCommand(command, out);
+  } catch (error) {
+    return reportFailure(out, error, "label");
+  }
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "mailbox-profile", descriptions: cliDescriptions, main });
+}

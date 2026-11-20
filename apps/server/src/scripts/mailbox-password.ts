@@ -1,7 +1,3 @@
-import { parseArgs } from "node:util";
-
-import { z } from "zod";
-
 import {
   configureMailHosts,
   MailAuthError,
@@ -9,52 +5,17 @@ import {
   updateMailboxPassword,
   verifySmtpLogin,
 } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { ConfigError, loadConfig, mailAllowLocal, type Config } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError, HardError } from "../platform/errors";
+import { HardError } from "../platform/errors";
 
-const out = createCliOutput("mailbox-password");
+import { reportFailure } from "./lib/mailbox-failure";
+import { readStdinSecret } from "./lib/stdin-secret";
+import { cliDescriptions, parseMailboxPasswordArgs, type MailboxPasswordArgs } from "./mailbox-password-args";
 
-const usage = [
-  "usage: read -rsp 'New password: ' P && printf '%s' \"$P\" | bun run mailbox:password --org-id <uuid> --mailbox-id <uuid>",
-  "  [--secret-kind password|app_password (default: keep the stored kind)]",
-  "The password comes only from stdin, never from an argument.",
-].join("\n");
-
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-        "secret-kind": { type: "string" },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const mailboxId = values["mailbox-id"];
-    const secretKind = values["secret-kind"];
-    if (orgId === undefined || mailboxId === undefined) return undefined;
-    if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(mailboxId).success) return undefined;
-    if (secretKind !== undefined && secretKind !== "password" && secretKind !== "app_password") return undefined;
-    return { orgId, mailboxId, secretKind } as const;
-  } catch {
-    return undefined;
-  }
-}
-
-// A terminal would show the typed password, so stdin must be a pipe.
-async function readPassword(): Promise<string | undefined> {
-  if (process.stdin.isTTY) return undefined;
-  const text = await Bun.stdin.text();
-  const password = text.replace(/\r?\n$/, "");
-  return password === "" ? undefined : password;
-}
-
-function readConfig(): Config | undefined {
+function readConfig(out: CliRawOutput): Config | undefined {
   try {
     const config = loadConfig();
     configureMailHosts({ allowLocal: mailAllowLocal(config) });
@@ -69,15 +30,8 @@ function readConfig(): Config | undefined {
   }
 }
 
-async function main(): Promise<number> {
-  const options = readOptions();
-  const password = options && (await readPassword());
-  if (!options || password === undefined) {
-    out.fail(usage);
-    return 1;
-  }
-
-  const config = readConfig();
+async function run(options: MailboxPasswordArgs, password: string, out: CliRawOutput): Promise<number> {
+  const config = readConfig(out);
   if (config === undefined) return 1;
   const db = createDb(config.DATABASE_URL);
   try {
@@ -100,7 +54,7 @@ async function main(): Promise<number> {
       // `MailboxOAuthError` is one: its message is `oauth mailbox: use Reconnect in the panel`.
       out.fail(error.message);
     } else {
-      out.fail(`failed: ${describeError(error)}`);
+      return reportFailure(out, error, "label");
     }
     return 1;
   } finally {
@@ -108,9 +62,21 @@ async function main(): Promise<number> {
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before stdin, config or DB. A terminal or an empty stdin is a refusal (exit 1).
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseMailboxPasswordArgs(argv);
+  const secret = await readStdinSecret();
+  if (!secret.ok) {
+    out.fail(secret.refusal);
+    return 1;
+  }
+  try {
+    return await run(options, secret.secret, out);
+  } catch (error) {
+    return reportFailure(out, error, "label");
+  }
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "mailbox-password", descriptions: cliDescriptions, main });
+}

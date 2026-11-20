@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { format } from "node:util";
 
 import {
   assertTestAddress,
@@ -10,27 +9,21 @@ import {
   type ProbeMoveReport,
   type ProbeSendReport,
 } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliSpec } from "../platform/cli";
 import { mailAllowLocalFromEnv } from "../platform/config";
 
+import { reportFailure } from "./lib/mailbox-failure";
+import { readStdinSecret } from "./lib/stdin-secret";
 import {
+  cliDescriptions,
   parseMailboxProbeArgs,
   probeSubOf,
-  probeUsage,
   type MailboxProbeMoveArgs,
   type MailboxProbeSendArgs,
 } from "./mailbox-probe-args";
 
 // One prefix per subcommand, as the two old entry files had; a bad subcommand has only the entry name.
 const outputName = (sub: string | undefined) => (sub === undefined ? "mailbox-probe" : `mailbox-probe-${sub}`);
-
-// A terminal would show the typed password, so stdin must be a pipe.
-async function readPassword(): Promise<string | undefined> {
-  if (process.stdin.isTTY) return undefined;
-  const text = await Bun.stdin.text();
-  const password = text.replace(/\r?\n$/, "");
-  return password === "" ? undefined : password;
-}
 
 function flatten(prefix: string, value: unknown): string[] {
   if (Array.isArray(value)) return [`${prefix}: ${value.length === 0 ? "-" : value.join(" | ")}`];
@@ -74,28 +67,31 @@ async function runSend(
   return 0;
 }
 
-async function main(argv: string[]): Promise<number> {
-  const out = createCliOutput(outputName(probeSubOf(argv)));
+// Parse first: a bad argument is a usage error (exit 2) before stdin or any connection. The password comes only from a pipe.
+const main: CliSpec["main"] = async (argv, out) => {
   const args = parseMailboxProbeArgs(argv);
-  const password = args === null ? undefined : await readPassword();
-  if (args === null || password === undefined) {
-    out.fail(probeUsage(probeSubOf(argv)));
+  const secret = await readStdinSecret();
+  if (!secret.ok) {
+    out.fail(secret.refusal);
     return 1;
   }
-  configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
-  // Read here, not through loadConfig: the probe needs no DB and no other key (the config key is read by the server only).
-  assertTestAddress(args.address, process.env.TEST_MAILBOX_ADDRESS);
-  const print: Print = (line) => out.print(line);
-  return args.sub === "move"
-    ? runMove(args, password, print)
-    : runSend(args, password, print, (line) => out.fail(line));
-}
+  try {
+    configureMailHosts({ allowLocal: mailAllowLocalFromEnv(process.env) });
+    // Read here, not through loadConfig: the probe needs no DB and no other key (the config key is read by the server only).
+    assertTestAddress(args.address, process.env.TEST_MAILBOX_ADDRESS);
+    const print: Print = (line) => out.print(line);
+    return await (args.sub === "move"
+      ? runMove(args, secret.secret, print)
+      : runSend(args, secret.secret, print, (line) => out.fail(line)));
+  } catch (error) {
+    return reportFailure(out, error, "message");
+  }
+};
 
-main(process.argv.slice(2))
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    createCliOutput(outputName(probeSubOf(process.argv.slice(2)))).fail(
-      `failed: ${error instanceof Error ? error.message : format(error)}`
-    );
-    process.exit(1);
+if (import.meta.main) {
+  await runCli({
+    prefix: outputName(probeSubOf(process.argv.slice(2))),
+    descriptions: cliDescriptions,
+    main,
   });
+}

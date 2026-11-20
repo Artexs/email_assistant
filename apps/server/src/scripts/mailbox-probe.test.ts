@@ -77,9 +77,9 @@ describe("mailbox-probe address guard", () => {
     expect(connections()).toBe(0);
   });
 
-  test("a bad subcommand prints the usage and exits 1", async () => {
+  test("a bad subcommand prints the usage and exits 2", async () => {
     const result = await run(["drop"], {});
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("[mailbox-probe] usage:");
   });

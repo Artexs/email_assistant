@@ -1,6 +1,7 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
-import { parseMailboxProbeArgs, probeSubOf, probeUsage } from "./mailbox-probe-args";
+import { cliDescriptions, parseMailboxProbeArgs, probeSubOf } from "./mailbox-probe-args";
 
 const base = ["--host", "imap.example.test", "--port", "993", "--address", "probe@example.test"];
 const sendExtra = ["--smtp-host", "smtp.example.test", "--smtp-port", "465", "--to", "probe@example.test"];
@@ -28,35 +29,39 @@ describe("parseMailboxProbeArgs", () => {
   });
 
   test("move refuses a send-only flag", () => {
-    expect(parseMailboxProbeArgs(["move", ...base, "--smtp-host", "x"])).toBeNull();
-    expect(parseMailboxProbeArgs(["move", "--smtp-host", "x"])).toBeNull();
-    expect(parseMailboxProbeArgs(["move", ...base, "--to", "probe@example.test"])).toBeNull();
+    expect(() => parseMailboxProbeArgs(["move", ...base, "--smtp-host", "x"])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs(["move", "--smtp-host", "x"])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs(["move", ...base, "--to", "probe@example.test"])).toThrow(UsageError);
   });
 
   test("send needs every send flag", () => {
-    expect(parseMailboxProbeArgs(["send", ...base])).toBeNull();
-    expect(parseMailboxProbeArgs(["send", ...base, "--smtp-host", "x", "--smtp-port", "465"])).toBeNull();
+    expect(() => parseMailboxProbeArgs(["send", ...base])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs(["send", ...base, "--smtp-host", "x", "--smtp-port", "465"])).toThrow(
+      UsageError
+    );
   });
 
   test("an unknown or missing subcommand is a usage error", () => {
-    expect(parseMailboxProbeArgs(["drop"])).toBeNull();
-    expect(parseMailboxProbeArgs(["drop", ...base])).toBeNull();
-    expect(parseMailboxProbeArgs([])).toBeNull();
-    expect(parseMailboxProbeArgs(base)).toBeNull();
+    expect(() => parseMailboxProbeArgs(["drop"])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs(["drop", ...base])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs([])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs(base)).toThrow(UsageError);
   });
 
   test("a port outside 1..65535 is a usage error, in both subcommands", () => {
     for (const port of ["0", "70000", "-1", "1.5", "x", ""]) {
       const bad = ["--host", "h", "--port", port, "--address", "a@example.test"];
-      expect(parseMailboxProbeArgs(["move", ...bad])).toBeNull();
-      expect(parseMailboxProbeArgs(["send", ...bad, ...sendExtra])).toBeNull();
-      expect(parseMailboxProbeArgs(["send", ...base, "--smtp-host", "s", "--smtp-port", port, "--to", "a"])).toBeNull();
+      expect(() => parseMailboxProbeArgs(["move", ...bad])).toThrow(UsageError);
+      expect(() => parseMailboxProbeArgs(["send", ...bad, ...sendExtra])).toThrow(UsageError);
+      expect(() =>
+        parseMailboxProbeArgs(["send", ...base, "--smtp-host", "s", "--smtp-port", port, "--to", "a"])
+      ).toThrow(UsageError);
     }
   });
 
   test("an unknown flag or an operand is a usage error", () => {
-    expect(parseMailboxProbeArgs(["move", ...base, "--no-such-flag"])).toBeNull();
-    expect(parseMailboxProbeArgs(["move", ...base, "extra"])).toBeNull();
+    expect(() => parseMailboxProbeArgs(["move", ...base, "--no-such-flag"])).toThrow(UsageError);
+    expect(() => parseMailboxProbeArgs(["move", ...base, "extra"])).toThrow(UsageError);
   });
 });
 
@@ -67,11 +72,11 @@ describe("usage", () => {
     expect(probeSubOf(["--help"])).toBeUndefined();
   });
 
-  test("one subcommand shows its own usage; none shows both", () => {
-    expect(probeUsage("move")).toContain("mailbox:probe-move");
-    expect(probeUsage("move")).not.toContain("mailbox:probe-send");
-    expect(probeUsage("send")).toContain("--smtp-host");
-    expect(probeUsage(undefined)).toContain("mailbox:probe-move");
-    expect(probeUsage(undefined)).toContain("mailbox:probe-send");
+  test("each subcommand has its own description with its own usage", () => {
+    const byName = Object.fromEntries(cliDescriptions.map((item) => [item.name, item]));
+    expect(byName["mailbox:probe-move"]?.subcommand).toBe("move");
+    expect(byName["mailbox:probe-move"]?.usage).not.toContain("mailbox:probe-send");
+    expect(byName["mailbox:probe-send"]?.subcommand).toBe("send");
+    expect(byName["mailbox:probe-send"]?.usage).toContain("--smtp-host");
   });
 });

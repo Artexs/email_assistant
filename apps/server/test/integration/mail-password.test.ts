@@ -310,9 +310,21 @@ describe("updateMailboxPassword on an OAuth mailbox", () => {
 });
 
 describe("mailbox:password CLI", () => {
-  test("no arguments and no stdin prints the usage and exits 1", async () => {
+  test("no arguments prints the usage and exits 2", async () => {
     const proc = Bun.spawn(["bun", script], { cwd: repoRoot, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+    expect(await proc.exited).toBe(2);
+    expect(await new Response(proc.stderr).text()).toContain("usage: bun run mailbox:password");
+  });
+
+  test("valid arguments and no stdin are refused: exit 1, one `refused:` line", async () => {
+    const id = randomUUID();
+    const proc = Bun.spawn(["bun", script, "--org-id", id, "--mailbox-id", id], {
+      cwd: repoRoot,
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    });
     expect(await proc.exited).toBe(1);
-    expect(await new Response(proc.stderr).text()).toContain("usage");
+    expect(await new Response(proc.stderr).text()).toBe("[mailbox-password] refused: the password on stdin is empty\n");
   });
 });

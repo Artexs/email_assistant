@@ -560,10 +560,10 @@ describe("mailbox:connect CLI", () => {
     }
   });
 
-  test("no password on stdin prints the usage and exits 1", async () => {
+  test("no password on stdin is refused: exit 1, one `refused:` line", async () => {
     const proc = runConnect(["--org-id", randomUUID(), "--address", "u@localhost"]);
     expect(await proc.exited).toBe(1);
-    expect(await new Response(proc.stderr).text()).toContain("usage");
+    expect(await new Response(proc.stderr).text()).toBe("[mailbox-connect] refused: the password on stdin is empty\n");
   });
 });
 

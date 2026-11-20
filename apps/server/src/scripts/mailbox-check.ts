@@ -1,7 +1,3 @@
-import { format, parseArgs } from "node:util";
-
-import { z } from "zod";
-
 import {
   configureMailHosts,
   inspectMailbox,
@@ -9,18 +5,13 @@ import {
   type MailCapabilities,
   type MailboxInspection,
 } from "../modules/mail";
-import { createCliOutput } from "../platform/cli";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
 import { loadConfig, mailAllowLocal } from "../platform/config";
 import { createSecretBox } from "../platform/crypto";
 import { assertAppRole, createDb } from "../platform/db";
 
-const out = createCliOutput("mailbox-check");
-
-const usage = [
-  "usage: bun run mailbox:check --org-id <uuid> --mailbox-id <uuid> [--probe]",
-  "  --probe adds one draft and sends one mail to the mailbox itself: use it only on a test account.",
-  "  Exit 2: the host guard refuses a mail server of this mailbox.",
-].join("\n");
+import { reportFailure } from "./lib/mailbox-failure";
+import { cliDescriptions, parseMailboxCheckArgs, type MailboxCheckArgs } from "./mailbox-check-args";
 
 const CAPABILITY_LABELS: [keyof MailCapabilities, string][] = [
   ["idle", "IDLE"],
@@ -30,27 +21,6 @@ const CAPABILITY_LABELS: [keyof MailCapabilities, string][] = [
   ["specialUse", "SPECIAL-USE"],
   ["keywords", "KEYWORDS"],
 ];
-
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-        probe: { type: "boolean", default: false },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const mailboxId = values["mailbox-id"];
-    if (orgId === undefined || mailboxId === undefined) return undefined;
-    if (!z.uuid().safeParse(orgId).success || !z.uuid().safeParse(mailboxId).success) return undefined;
-    return { orgId, mailboxId, probe: values.probe };
-  } catch {
-    return undefined;
-  }
-}
 
 function reportLines(report: CheckReport): string[] {
   const capabilities = CAPABILITY_LABELS.map(
@@ -75,18 +45,12 @@ function inspectionLines(inspection: MailboxInspection): { lines: string[]; code
   ];
   if (report !== null) return { lines: [...lines, ...reportLines(report)], code: 0 };
   if (hosts.imap === "refused" || hosts.smtp === "refused") {
-    return { lines: [...lines, "the host guard refuses a mail server of this mailbox: no connection"], code: 2 };
+    return { lines: [...lines, "the host guard refuses a mail server of this mailbox: no connection"], code: 1 };
   }
   return { lines: [...lines, "mail host lookup failed: no connection"], code: 1 };
 }
 
-async function main(): Promise<number> {
-  const options = readOptions();
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
-
+async function run(options: MailboxCheckArgs, out: CliRawOutput): Promise<number> {
   const config = loadConfig();
 
   configureMailHosts({ allowLocal: mailAllowLocal(config) });
@@ -100,17 +64,21 @@ async function main(): Promise<number> {
     const { lines, code } = inspectionLines(inspection);
     for (const line of lines) out.print(line);
     return code;
-  } catch (error) {
-    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
-    return 1;
   } finally {
     await db.destroy();
   }
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(`failed: ${error instanceof Error ? error.message : format(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB. Any later error gets one line and its code.
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseMailboxCheckArgs(argv);
+  try {
+    return await run(options, out);
+  } catch (error) {
+    return reportFailure(out, error, "message");
+  }
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "mailbox-check", descriptions: cliDescriptions, main });
+}

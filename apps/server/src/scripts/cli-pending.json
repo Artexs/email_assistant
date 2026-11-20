@@ -10,15 +10,6 @@
     "apps/server/src/scripts/org-status.ts",
     "apps/server/src/scripts/web-invite.ts"
   ],
-  "mailbox": [
-    "apps/server/src/scripts/mailbox-check.ts",
-    "apps/server/src/scripts/mailbox-connect.ts",
-    "apps/server/src/scripts/mailbox-password.ts",
-    "apps/server/src/scripts/mailbox-probe.ts",
-    "apps/server/src/scripts/mailbox-profile.ts",
-    "apps/server/src/scripts/mailbox-rescan.ts",
-    "apps/server/src/scripts/mailbox-settings.ts"
-  ],
   "mailbox-cli": [
     "apps/server/src/scripts/mailbox-audit.ts",
     "apps/server/src/scripts/mailbox-backfill.ts",
