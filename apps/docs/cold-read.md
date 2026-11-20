@@ -30,7 +30,7 @@ Notation: `claim:<id>` is the row with that id in the claims table of the page `
 | 7   | Can it send without me?             | `claim:never-sends-alone`: an owner approves each draft. Also `claim:shadow-first` and `claim:undo`.                                                                                                                                                                                           |
 | 8   | What does it cost?                  | `page:pricing`: a placeholder price, marked "Not for sale", with the cost table for 50, 100 and 200 mails a day. No real price exists.                                                                                                                                                         |
 | 9   | How do I delete my data?            | `claim:export-and-delete` (the operator deletes an organization or erases one person on written request) and `claim:retention` (what the daily job clears, and when).                                                                                                                          |
-| 10  | How do I see it work?               | While no video is published: `page:start`, the tutorial. After the owner has published the video (owner gate G3, pinned by `DEMO_VIDEO_SHA256`): the video on `page:index`, and `page:start` as the written route.                                                                             |
+| 10  | How do I see it work?               | While no video is published: `page:start`, the tutorial. After the owner has published the video (owner gate G3, pinned by `DEMO_VIDEO_SHA256` and `DEMO_CAPTION_SHA256`): the video on `page:index`, and `page:start` as the written route.                                                   |
 
 ## Compare
 

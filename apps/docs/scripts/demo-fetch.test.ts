@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { DEMO_FILES, DEMO_MAX_BYTES, DEMO_VIDEO_SHA256 } from "../src/demo-video";
+import { DEMO_CAPTION_SHA256, DEMO_FILES, DEMO_MAX_BYTES, DEMO_VIDEO_SHA256 } from "../src/demo-video";
 import { type Downloader, main } from "./demo-fetch";
 
 const sha = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -31,14 +31,16 @@ describe("demo-fetch", () => {
       calls.push(to);
       for (const [name, text] of Object.entries(files)) writeFileSync(join(to, name), text);
     };
+  const captionPins = { en: sha("WEBVTT\n"), pl: sha("WEBVTT\n") };
   const full = (video: string): Record<string, string> => ({
     "demo.mp4": video,
     "demo.en.vtt": "WEBVTT\n",
     "demo.pl.vtt": "WEBVTT\n",
   });
 
-  test("the committed pin is null: no pin, no download", () => {
+  test("the committed pins are null: no pin, no download", () => {
     expect(DEMO_VIDEO_SHA256).toBeNull();
+    expect(DEMO_CAPTION_SHA256).toEqual({ en: null, pl: null });
   });
 
   test("T4 a null pin: no download call, exit 0, `demo_video off`", async () => {
@@ -50,49 +52,64 @@ describe("demo-fetch", () => {
   });
 
   test("T4 a file of another hash exits 1 with demo_video_hash", async () => {
-    expect(await main(dir, releaseOf(full("other")), sha("video"))).toBe(1);
+    expect(await main(dir, releaseOf(full("other")), sha("video"), captionPins)).toBe(1);
     expect(printed.join("\n")).toContain("demo_video_hash");
   });
 
   test("T4 a matching file exits 0 and the files stay", async () => {
-    expect(await main(dir, releaseOf(full("video")), sha("video"))).toBe(0);
+    expect(await main(dir, releaseOf(full("video")), sha("video"), captionPins)).toBe(0);
     for (const name of DEMO_FILES) expect(existsSync(join(dir, name))).toBe(true);
     expect(printed.join("\n")).toContain("demo_video on");
   });
 
   test("a pin in capital letters still matches", async () => {
-    expect(await main(dir, releaseOf(full("video")), sha("video").toUpperCase())).toBe(0);
+    expect(await main(dir, releaseOf(full("video")), sha("video").toUpperCase(), captionPins)).toBe(0);
+  });
+
+  test("a changed caption file exits 1 and names it, also when the video matches", async () => {
+    const changed = { ...full("video"), "demo.en.vtt": "WEBVTT\n\n00:00.000 --> 00:01.000\nnew text\n" };
+    expect(await main(dir, releaseOf(changed), sha("video"), captionPins)).toBe(1);
+    expect(printed.join("\n")).toContain("demo_video_hash demo.en.vtt");
+    printed = [];
+    const polish = { ...full("video"), "demo.pl.vtt": "changed" };
+    expect(await main(dir, releaseOf(polish), sha("video"), captionPins)).toBe(1);
+    expect(printed.join("\n")).toContain("demo_video_hash demo.pl.vtt");
+  });
+
+  test("a video pin with no caption pin exits 1: the owner pins all three files", async () => {
+    expect(await main(dir, releaseOf(full("video")), sha("video"), { en: null, pl: sha("WEBVTT\n") })).toBe(1);
+    expect(printed.join("\n")).toContain("demo_video_pin_missing demo.en.vtt");
   });
 
   test("a failed download exits 1 (a pinned video must be there)", async () => {
     const missingRelease: Downloader = async () => {
       throw new Error("gh_release_download_failed");
     };
-    expect(await main(dir, missingRelease, sha("video"))).toBe(1);
+    expect(await main(dir, missingRelease, sha("video"), captionPins)).toBe(1);
     expect(printed.join("\n")).toContain("demo_video_download");
   });
 
   test("a missing caption file exits 1 and names it", async () => {
     const rest = full("video");
     delete rest["demo.pl.vtt"];
-    expect(await main(dir, releaseOf(rest), sha("video"))).toBe(1);
+    expect(await main(dir, releaseOf(rest), sha("video"), captionPins)).toBe(1);
     expect(printed.join("\n")).toContain("demo_video_missing demo.pl.vtt");
   });
 
   test("an unknown file of the release exits 1", async () => {
-    expect(await main(dir, releaseOf({ ...full("video"), "demo.zip": "z" }), sha("video"))).toBe(1);
+    expect(await main(dir, releaseOf({ ...full("video"), "demo.zip": "z" }), sha("video"), captionPins)).toBe(1);
     expect(printed.join("\n")).toContain("demo_video_extra demo.zip");
   });
 
   test("a file over 20 MB exits 1 before the hash is read", async () => {
     const big = "a".repeat(DEMO_MAX_BYTES + 1);
-    expect(await main(dir, releaseOf({ ...full("video"), "demo.en.vtt": big }), sha("video"))).toBe(1);
+    expect(await main(dir, releaseOf({ ...full("video"), "demo.en.vtt": big }), sha("video"), captionPins)).toBe(1);
     expect(printed.join("\n")).toContain("demo_video_size demo.en.vtt");
   });
 
   test("an old file in the folder is removed before the download", async () => {
-    await main(dir, releaseOf({ ...full("video"), "old.txt": "x" }), sha("video"));
-    expect(await main(dir, releaseOf(full("video")), sha("video"))).toBe(0);
+    await main(dir, releaseOf({ ...full("video"), "old.txt": "x" }), sha("video"), captionPins);
+    expect(await main(dir, releaseOf(full("video")), sha("video"), captionPins)).toBe(0);
     expect(existsSync(join(dir, "old.txt"))).toBe(false);
   });
 });

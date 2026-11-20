@@ -23,7 +23,7 @@ the caption then names the day.
 ## Result
 
 3 of 8 steps are not live (2, 3, 5). Rule D7 allows 2; the coordinator raised the limit to 3 for the e2e-seed video
-(`spec/features/active/F121-e10b-public-pages-and-demo/stage-09-question.md`, option 1). The `live` flags in `DEMO_STEPS` follow this table.
+(`spec/features/done/2026-11/F121-e10b-public-pages-and-demo/stage-09-question.md`, option 1). The `live` flags in `DEMO_STEPS` follow this table.
 The e2e-seed video is never a G3 candidate (D10). Follow-up ticket F151 redoes the spike on the C1 demo seed, where the sim stack has real
 triage, and must make steps 2, 3 and 5 live or say why not.
 
