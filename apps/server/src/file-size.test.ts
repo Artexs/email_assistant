@@ -40,59 +40,107 @@ const serverFile = "apps/server/src/__size-fixture.ts";
 const wcLines = (file: string): number => readFileSync(path.join(repoRoot, file), "utf8").split("\n").length - 1;
 
 describe("size rule", () => {
-  test("400 lines: no size message", async () => {
-    expect(await sizeMessages(serverFile, linesText(400))).toEqual([]);
-  }, TIMEOUT);
+  test(
+    "400 lines: no size message",
+    async () => {
+      expect(await sizeMessages(serverFile, linesText(400))).toEqual([]);
+    },
+    TIMEOUT
+  );
 
-  test("401 lines: one warning, no error", async () => {
-    expect(await sizeMessages(serverFile, linesText(401))).toEqual([warning]);
-  }, TIMEOUT);
+  test(
+    "401 lines: one warning, no error",
+    async () => {
+      expect(await sizeMessages(serverFile, linesText(401))).toEqual([warning]);
+    },
+    TIMEOUT
+  );
 
-  test("800 lines: one warning, no error", async () => {
-    expect(await sizeMessages(serverFile, linesText(800))).toEqual([warning]);
-  }, TIMEOUT);
+  test(
+    "800 lines: one warning, no error",
+    async () => {
+      expect(await sizeMessages(serverFile, linesText(800))).toEqual([warning]);
+    },
+    TIMEOUT
+  );
 
-  test("801 lines: one warning and one error", async () => {
-    expect(await sizeMessages(serverFile, linesText(801))).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "801 lines: one warning and one error",
+    async () => {
+      expect(await sizeMessages(serverFile, linesText(801))).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 
-  test("packages/core: 801 lines give a warning and an error", async () => {
-    expect(await sizeMessages("packages/core/src/__size-fixture.ts", linesText(801))).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "packages/core: 801 lines give a warning and an error",
+    async () => {
+      expect(await sizeMessages("packages/core/src/__size-fixture.ts", linesText(801))).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 
-  test("apps/web .tsx: 801 lines give a warning and an error", async () => {
-    expect(await sizeMessages("apps/web/src/lib/__size-fixture.tsx", linesText(801))).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "apps/web .tsx: 801 lines give a warning and an error",
+    async () => {
+      expect(await sizeMessages("apps/web/src/lib/__size-fixture.tsx", linesText(801))).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 
-  test("apps/web .astro: 801 lines give a warning and an error", async () => {
-    const text = `---\n${linesText(797)}---\n<div>text</div>\n<p>text</p>\n`;
-    expect(text.split("\n").length - 1).toBe(801);
-    expect(await sizeMessages("apps/web/src/components/__size-fixture.astro", text)).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "apps/web .astro: 801 lines give a warning and an error",
+    async () => {
+      const text = `---\n${linesText(797)}---\n<div>text</div>\n<p>text</p>\n`;
+      expect(text.split("\n").length - 1).toBe(801);
+      expect(await sizeMessages("apps/web/src/components/__size-fixture.astro", text)).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 
-  test("a test file of 801 lines: no size message", async () => {
-    expect(await sizeMessages("apps/server/src/__size-fixture.test.ts", linesText(801))).toEqual([]);
-  }, TIMEOUT);
+  test(
+    "a test file of 801 lines: no size message",
+    async () => {
+      expect(await sizeMessages("apps/server/src/__size-fixture.test.ts", linesText(801))).toEqual([]);
+    },
+    TIMEOUT
+  );
 
-  test("a file under apps/server/test of 801 lines: no size message", async () => {
-    expect(await sizeMessages("apps/server/test/integration/__size-fixture.ts", linesText(801))).toEqual([]);
-  }, TIMEOUT);
+  test(
+    "a file under apps/server/test of 801 lines: no size message",
+    async () => {
+      expect(await sizeMessages("apps/server/test/integration/__size-fixture.ts", linesText(801))).toEqual([]);
+    },
+    TIMEOUT
+  );
 
-  test("a last line without a newline still counts", async () => {
-    expect(await sizeMessages(serverFile, linesText(801, false))).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "a last line without a newline still counts",
+    async () => {
+      expect(await sizeMessages(serverFile, linesText(801, false))).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 
-  test("blank lines count", async () => {
-    const text = `${linesText(501)}${"\n".repeat(300)}`;
-    expect(text.split("\n").length - 1).toBe(801);
-    expect(await sizeMessages(serverFile, text)).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "blank lines count",
+    async () => {
+      const text = `${linesText(501)}${"\n".repeat(300)}`;
+      expect(text.split("\n").length - 1).toBe(801);
+      expect(await sizeMessages(serverFile, text)).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 
-  test("comment lines count", async () => {
-    const text = `${linesText(501)}${"// comment\n".repeat(300)}`;
-    expect(text.split("\n").length - 1).toBe(801);
-    expect(await sizeMessages(serverFile, text)).toEqual([warning, failure]);
-  }, TIMEOUT);
+  test(
+    "comment lines count",
+    async () => {
+      const text = `${linesText(501)}${"// comment\n".repeat(300)}`;
+      expect(text.split("\n").length - 1).toBe(801);
+      expect(await sizeMessages(serverFile, text)).toEqual([warning, failure]);
+    },
+    TIMEOUT
+  );
 });
 
 describe("size exceptions", () => {
@@ -103,22 +151,26 @@ describe("size exceptions", () => {
     "apps/server/src/scripts/e2e-seed.ts",
   ];
 
-  test("the list is a live split plan, or it is gone with its block", async () => {
-    if (existsSync(exceptionsFile)) {
-      const entries: { file: string; stage: string }[] = JSON.parse(readFileSync(exceptionsFile, "utf8"));
-      expect(entries.length).toBeGreaterThan(0);
-      for (const { file } of entries) {
-        expect(allowed).toContain(file);
-        expect(existsSync(path.join(repoRoot, file))).toBe(true);
-        expect(wcLines(file)).toBeGreaterThan(800);
-        // A listed file warns and does not fail.
-        expect(await sizeMessages(file, linesText(801))).toEqual([warning]);
+  test(
+    "the list is a live split plan, or it is gone with its block",
+    async () => {
+      if (existsSync(exceptionsFile)) {
+        const entries: { file: string; stage: string }[] = JSON.parse(readFileSync(exceptionsFile, "utf8"));
+        expect(entries.length).toBeGreaterThan(0);
+        for (const { file } of entries) {
+          expect(allowed).toContain(file);
+          expect(existsSync(path.join(repoRoot, file))).toBe(true);
+          expect(wcLines(file)).toBeGreaterThan(800);
+          // A listed file warns and does not fail.
+          expect(await sizeMessages(file, linesText(801))).toEqual([warning]);
+        }
+      } else {
+        expect(readFileSync(path.join(repoRoot, "eslint.config.js"), "utf8")).not.toContain("size-exceptions");
+        expect(await sizeMessages("apps/server/src/scripts/e2e-seed.ts", linesText(801))).toEqual([warning, failure]);
       }
-    } else {
-      expect(readFileSync(path.join(repoRoot, "eslint.config.js"), "utf8")).not.toContain("size-exceptions");
-      expect(await sizeMessages("apps/server/src/scripts/e2e-seed.ts", linesText(801))).toEqual([warning, failure]);
-    }
-  }, TIMEOUT);
+    },
+    TIMEOUT
+  );
 
   test("no source file disables a size rule", () => {
     const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: repoRoot, encoding: "utf8" })
