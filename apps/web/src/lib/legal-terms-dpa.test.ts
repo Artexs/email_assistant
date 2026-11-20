@@ -1,13 +1,14 @@
+import { userLocales, type UserLocale } from "@ea/core/web";
 import { describe, expect, test } from "bun:test";
 
 import { pl } from "../i18n/pl";
-import { isAllowedPlaceholder, legalLangs, legalPlaceholders, type LegalLang } from "./legal";
+import { isAllowedPlaceholder, legalPlaceholders } from "./legal";
 import { findPlaceholders, headingTitles, readLegalSource } from "./legal-checks";
 
 // The terms of service and the data processing agreement. The texts are drafts: each fact that no source
 // states is a placeholder.
 
-const termsHeadings: Record<LegalLang, string[]> = {
+const termsHeadings: Record<UserLocale, string[]> = {
   en: [
     "The service",
     "Accounts",
@@ -32,7 +33,7 @@ const termsHeadings: Record<LegalLang, string[]> = {
   ],
 };
 
-const dpaHeadings: Record<LegalLang, string[]> = {
+const dpaHeadings: Record<UserLocale, string[]> = {
   en: [
     "Parties and subject",
     "Nature and purpose",
@@ -62,7 +63,7 @@ const dpaHeadings: Record<LegalLang, string[]> = {
 };
 
 describe("the terms of service sources", () => {
-  for (const lang of legalLangs) {
+  for (const lang of userLocales) {
     const source = readLegalSource(lang, "terms");
 
     test(`1. ${lang}: the nine ## headings are in the fixed order`, () => {
@@ -97,7 +98,7 @@ describe("the terms of service sources", () => {
 });
 
 describe("the data processing agreement sources", () => {
-  for (const lang of legalLangs) {
+  for (const lang of userLocales) {
     const source = readLegalSource(lang, "dpa");
 
     test(`1. ${lang}: the eleven ## headings are in the fixed order`, () => {

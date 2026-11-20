@@ -8,6 +8,8 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 
+import type { UserLocale } from "@ea/core";
+
 import { createCliOutput } from "../../server/src/platform/cli";
 import {
   DEMO_CAPTION_FILES,
@@ -17,7 +19,6 @@ import {
   DEMO_RELEASE_TAG,
   DEMO_VIDEO_FILE,
   DEMO_VIDEO_SHA256,
-  type DemoLang,
 } from "../src/demo-video";
 
 const EXIT_OK = 0;
@@ -54,7 +55,7 @@ export function sha256File(path: string): string {
 export function demoFolderProblem(
   dir: string,
   pin: string,
-  captionPins: Readonly<Record<DemoLang, string | null>> = DEMO_CAPTION_SHA256
+  captionPins: Readonly<Record<UserLocale, string | null>> = DEMO_CAPTION_SHA256
 ): string | null {
   const present = readdirSync(dir).sort();
   const missing = DEMO_FILES.find((name) => !present.includes(name));
@@ -79,7 +80,7 @@ export async function main(
   dir: string,
   download: Downloader,
   pin: string | null = DEMO_VIDEO_SHA256,
-  captionPins: Readonly<Record<DemoLang, string | null>> = DEMO_CAPTION_SHA256
+  captionPins: Readonly<Record<UserLocale, string | null>> = DEMO_CAPTION_SHA256
 ): Promise<number> {
   const out = createCliOutput("demo-fetch");
   if (pin === null) {
