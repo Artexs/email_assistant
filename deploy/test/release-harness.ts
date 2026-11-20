@@ -24,6 +24,8 @@ import { join } from "node:path";
 //   curl-fail       `/health` answers 000
 //   df-values       free bytes, one value per `df` call (the last one repeats); default 10 GiB
 //   backup-bad      `deploy/backup.sh` prints no `backup ok` line
+//   env-check       the stub `deploy/check-server-env.sh` exits with the number on line 1 and prints the other lines on stderr
+// The layout starts with a split env (deploy/db.env, an empty .env); `setEnvState` changes it.
 
 const DEPLOY = join(import.meta.dir, "..");
 const GIB = 1024 * 1024 * 1024;
@@ -33,6 +35,7 @@ export interface Harness {
   stubs: string;
   setSwitch(name: string, content?: string): void;
   writeState(state: Partial<Record<StateKey, string>>): void;
+  setEnvState(state: "split" | "old" | "mixed"): void;
   state(): Record<StateKey, string> | null;
   calls(): string[];
   run(script: "release.sh" | "rollback.sh", args?: string[], env?: Record<string, string>): RunResult;
@@ -47,6 +50,8 @@ export interface RunResult {
 }
 
 export const GIB_BYTES = GIB;
+
+const DB_ENV = "POSTGRES_PASSWORD=sentinel-p-81\nMIGRATOR_PASSWORD=sentinel-m-81\nAPP_PASSWORD=sentinel-a-81\n";
 
 function stub(dir: string, name: string, body: string): void {
   const file = join(dir, name);
@@ -65,6 +70,7 @@ export function createHarness(): Harness {
   chmodSync(join(root, "deploy", "release.sh"), 0o755);
   chmodSync(join(root, "deploy", "rollback.sh"), 0o755);
   writeFileSync(join(root, ".env"), "");
+  writeFileSync(join(root, "deploy", "db.env"), DB_ENV);
   writeFileSync(join(stubs, "images"), "");
 
   stub(
@@ -134,6 +140,18 @@ echo "backup ping failed" >&2
 `
   );
   chmodSync(join(root, "deploy", "backup.sh"), 0o755);
+  // The env check of the temp layout: it prints `server env ok` unless the switch `env-check` sets an exit code.
+  writeFileSync(
+    join(root, "deploy", "check-server-env.sh"),
+    `#!/usr/bin/env bash
+echo "deploy/check-server-env.sh" >>"$STUB_ROOT/calls.log"
+if [[ -f "$STUB_DIR/env-check" ]]; then
+  tail -n +2 "$STUB_DIR/env-check" >&2
+  exit "$(head -n 1 "$STUB_DIR/env-check")"
+fi
+echo "server env ok keys=12"
+`
+  );
 
   const stateFile = join(root, "deploy", "release-state", "state");
   return {
@@ -141,6 +159,17 @@ echo "backup ping failed" >&2
     stubs,
     setSwitch(name, content = "1\n") {
       writeFileSync(join(stubs, name), content);
+    },
+    setEnvState(envState) {
+      const dbEnv = join(root, "deploy", "db.env");
+      if (envState === "old") {
+        rmSync(dbEnv, { force: true });
+        writeFileSync(join(root, ".env"), DB_ENV);
+      } else {
+        writeFileSync(dbEnv, DB_ENV);
+        const url = "MIGRATOR_DATABASE_URL=postgres://migrator:sentinel-u-81@x/y\n";
+        writeFileSync(join(root, ".env"), envState === "mixed" ? url : "");
+      }
     },
     writeState(state) {
       const keys: StateKey[] = ["current", "current_commit", "previous", "previous_commit", "pending"];
