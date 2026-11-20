@@ -253,40 +253,56 @@ function judgeErrorShare(results: readonly DrafterCaseResult[]): number {
   return errors / results.length;
 }
 
-// The early look at a style on a dev or week pair: no bar, no gate file. The cases are the ids that both runs hold; a
-// pair is such a case with a `style_match` score in both. The judge stops the smoke when a run has more than 5% judge
-// errors or scores every pair the same; else the style passes when B has the higher mean or more wins than losses.
-export function styleSmoke(a: readonly DrafterCaseResult[], b: readonly DrafterCaseResult[]): StyleSmoke {
+export interface SmokePair {
+  id: string;
+  a: number;
+  b: number;
+}
+
+// The cases that both runs hold, each with its `style_match` score in A and in B. A case with no score in a run is no
+// pair.
+export function smokePairs(a: readonly DrafterCaseResult[], b: readonly DrafterCaseResult[]): SmokePair[] {
   const inB = new Map(b.map((r) => [r.id, r]));
-  const scoresA: number[] = [];
-  const scoresB: number[] = [];
-  let wins = 0;
-  let losses = 0;
-  let ties = 0;
+  const pairs: SmokePair[] = [];
   for (const ra of a) {
     const rb = inB.get(ra.id);
-    const styleA = gradeOf(ra)?.scores[STYLE_SCORE];
-    const styleB = rb === undefined ? undefined : gradeOf(rb)?.scores[STYLE_SCORE];
-    if (styleA === undefined || styleB === undefined) continue;
-    scoresA.push(styleA);
-    scoresB.push(styleB);
-    if (styleB > styleA) wins += 1;
-    else if (styleB < styleA) losses += 1;
-    else ties += 1;
+    const scoreA = gradeOf(ra)?.scores[STYLE_SCORE];
+    const scoreB = rb === undefined ? undefined : gradeOf(rb)?.scores[STYLE_SCORE];
+    if (scoreA !== undefined && scoreB !== undefined) pairs.push({ id: ra.id, a: scoreA, b: scoreB });
   }
-  const meanA = mean(scoresA) ?? 0;
-  const meanB = mean(scoresB) ?? 0;
+  return pairs;
+}
+
+// The early look at a style on a dev or week pair: no bar, no gate file. The judge stops the smoke when a run has more
+// than 5% judge errors or scores every pair the same; else the style passes when B has the higher mean or more wins
+// than losses.
+export function styleSmoke(a: readonly DrafterCaseResult[], b: readonly DrafterCaseResult[]): StyleSmoke {
+  const pairs = smokePairs(a, b);
+  const wins = pairs.filter((pair) => pair.b > pair.a).length;
+  const losses = pairs.filter((pair) => pair.b < pair.a).length;
+  const meanA = mean(pairs.map((pair) => pair.a)) ?? 0;
+  const meanB = mean(pairs.map((pair) => pair.b)) ?? 0;
   const judgeErrorShareA = judgeErrorShare(a);
   const judgeErrorShareB = judgeErrorShare(b);
-  const allScores = [...scoresA, ...scoresB];
-  const flat = allScores.length === 0 || allScores.every((score) => score === allScores[0]);
+  const scores = pairs.flatMap((pair) => [pair.a, pair.b]);
+  const flat = scores.every((score) => score === scores[0]);
   const verdict: SmokeVerdict =
     flat || judgeErrorShareA > SMOKE_MAX_JUDGE_ERROR_SHARE || judgeErrorShareB > SMOKE_MAX_JUDGE_ERROR_SHARE
       ? "judge_stop"
       : meanB > meanA || wins > losses
         ? "pass"
         : "fail";
-  return { pairs: scoresA.length, wins, losses, ties, meanA, meanB, judgeErrorShareA, judgeErrorShareB, verdict };
+  return {
+    pairs: pairs.length,
+    wins,
+    losses,
+    ties: pairs.length - wins - losses,
+    meanA,
+    meanB,
+    judgeErrorShareA,
+    judgeErrorShareB,
+    verdict,
+  };
 }
 
 function barRows(x: {

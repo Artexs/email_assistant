@@ -13,7 +13,24 @@ describe("parseStyleGateArgs", () => {
       style: "s.json",
       injection: "i.json",
       out: "r.md",
+      smoke: false,
     });
+  });
+
+  test("--smoke needs no injection file, and an injection file with it is a usage error", () => {
+    const smoke = ["--smoke", "--a", "a.jsonl", "--b", "b.jsonl", "--style", "s.json", "--out", "r.md"];
+    expect(parseStyleGateArgs(smoke)).toEqual({
+      a: "a.jsonl",
+      b: "b.jsonl",
+      style: "s.json",
+      injection: null,
+      out: "r.md",
+      smoke: true,
+    });
+    expect(() => parseStyleGateArgs([...smoke, "--injection", "i.json"])).toThrow(
+      new UsageError("--injection is not used with --smoke")
+    );
+    expect(() => parseStyleGateArgs(smoke.slice(0, 7))).toThrow(new UsageError("missing argument: --out"));
   });
 
   test.each([

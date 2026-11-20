@@ -26,13 +26,18 @@ const INJECTION = { promptVersion: "stylist-v1", model: "gpt-6-luna", effort: "l
 const CASE_IDS = Array.from({ length: 60 }, (_, index) => `c${index}`);
 
 // The state file name that `eval --drafter --judge` writes for a run with this style key.
-function stateName(styleSuffix: string, judgeVersion = "judge-v4"): string {
+function stateName(
+  styleSuffix: string,
+  judgeVersion = "judge-v4",
+  part = "holdout",
+  drafterPrompt = "drafter-v4"
+): string {
   return evalStateFileName({
     model: "gpt-6-luna",
     endpoint: "standard",
     reasoningEffort: "low",
-    promptVersion: "drafter-v4",
-    set: `drafter-sim-lab-01-v1-holdout${styleSuffix}`,
+    promptVersion: drafterPrompt,
+    set: `drafter-sim-lab-01-v1-${part}${styleSuffix}`,
     judgeModel: "gpt-6.1-terra",
     judgeVersion,
   });
@@ -137,12 +142,23 @@ describe("runStyleGate", () => {
   const holdout = async () => ({ ids: CASE_IDS, version: "1", manifestSha: "abc123" });
 
   // Writes the inputs of one run of the command; `cases` are the ids that the runs hold, `b` the style scores of B.
-  function setup(name: string, input: { aSuffix?: string; bSuffix?: string; cases?: string[]; bStyle?: number }) {
+  function setup(
+    name: string,
+    input: {
+      aSuffix?: string;
+      bSuffix?: string;
+      cases?: string[];
+      bStyle?: number;
+      part?: string;
+      bDrafterPrompt?: string;
+    }
+  ) {
     const base = join(dir, name);
     const cases = input.cases ?? CASE_IDS;
+    const part = input.part ?? "holdout";
     const files = {
-      a: join(base, stateName(input.aSuffix ?? "-style-none")),
-      b: join(base, stateName(input.bSuffix ?? `-style-${STYLE_KEY}`)),
+      a: join(base, stateName(input.aSuffix ?? "-style-none", "judge-v4", part)),
+      b: join(base, stateName(input.bSuffix ?? `-style-${STYLE_KEY}`, "judge-v4", part, input.bDrafterPrompt)),
       style: join(base, "style.json"),
       injection: join(base, "injection.json"),
       out: join(base, "report.md"),
@@ -157,15 +173,23 @@ describe("runStyleGate", () => {
     return files;
   }
 
-  async function run(files: ReturnType<typeof setup>) {
+  async function run(files: ReturnType<typeof setup>, mode: { smoke?: boolean; holdout?: typeof holdout } = {}) {
     const printed: string[] = [];
+    const smoke = mode.smoke === true;
     const code = await runStyleGate(
-      { a: files.a, b: files.b, style: files.style, injection: files.injection, out: files.out },
+      {
+        a: files.a,
+        b: files.b,
+        style: files.style,
+        injection: smoke ? null : files.injection,
+        out: files.out,
+        smoke,
+      },
       {
         out: { print: (t) => printed.push(t), fail: (t) => printed.push(t), write: (t) => printed.push(t) },
         gateDir: files.gate,
         now: () => new Date("2026-11-21T10:00:00Z"),
-        holdout,
+        holdout: mode.holdout ?? holdout,
       }
     );
     return { code, printed: printed.join("\n") };
@@ -228,5 +252,56 @@ describe("runStyleGate", () => {
     const { code, printed } = await run(files);
     expect(code).toBe(1);
     expect(printed).toBe(`state file ${files.b} cannot be read`);
+  });
+
+  describe("--smoke", () => {
+    const cases = CASE_IDS.slice(0, 20);
+    const neverCalled = async (): Promise<never> => {
+      throw new Error("the holdout loader was called");
+    };
+
+    test("two dev runs with a gain exit 0 and write the report, ids and scores only, and no gate file", async () => {
+      const files = setup("smoke-pass", { part: "dev", cases });
+      const { code, printed } = await run(files, { smoke: true, holdout: neverCalled });
+      const report = readFileSync(files.out, "utf8");
+      expect(code).toBe(0);
+      expect(report).toContain("Verdict: pass (smoke)");
+      expect(report).toContain("Pairs: 20 (wins 20, losses 0, ties 0)");
+      expect(report).toContain("style_match mean: A 1.00, B 2.00");
+      expect(report).toContain("- c0: 1, 2");
+      expect(report).not.toContain(STYLE.text);
+      expect(printed).toContain("style smoke: pass (smoke)");
+      expect(existsSync(files.gate)).toBe(false);
+    });
+
+    test("equal scores in both runs exit 1 with the judge stop", async () => {
+      const files = setup("smoke-flat", { part: "dev", cases, bStyle: 1 });
+      const { code } = await run(files, { smoke: true });
+      expect(code).toBe(1);
+      expect(readFileSync(files.out, "utf8")).toContain("Verdict: judge stop");
+    });
+
+    test("a holdout pair exits 2 and writes no report", async () => {
+      const files = setup("smoke-holdout", {});
+      const { code, printed } = await run(files, { smoke: true });
+      expect(code).toBe(2);
+      expect(printed).toBe("a holdout pair goes through the full gate");
+      expect(existsSync(files.out)).toBe(false);
+    });
+
+    test("a pair with another drafter prompt in B exits 2", async () => {
+      const files = setup("smoke-prompt", { part: "dev", cases, bDrafterPrompt: "drafter-v5" });
+      const { code, printed } = await run(files, { smoke: true });
+      expect(code).toBe(2);
+      expect(printed).toBe("the runs differ in the drafter prompt");
+    });
+
+    test("without --smoke a dev pair is refused as before and the full gate writes no gate file", async () => {
+      const files = setup("smoke-off", { part: "dev", cases });
+      const { code, printed } = await run(files);
+      expect(code).toBe(1);
+      expect(printed).toContain("no gate file: a run is not a holdout run");
+      expect(existsSync(files.gate)).toBe(false);
+    });
   });
 });
