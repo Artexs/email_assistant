@@ -55,6 +55,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F159-the-english-approval-text-says-1-time-an-empty-quote-shows-no-cut-note-and-the-dead-code-the-mutation-run-found-in-the-approval-card-is-removed` (🟢 PROVEN): The English approval text says "1 time", and an empty quote shows no false cut note; landed 2026-11-20
 - `F158-tmp-never-fills-up-from-job-caches-because-a-periodic-cleanup-removes-stale-cache-files` (🟢 PROVEN): /tmp never fills up from job caches because a periodic cleanup removes stale cache files; landed 2026-11-20
+- `F156-the-draft-schema-refuses-an-impossible-date-such-as-2026-13-01` (🟢 PROVEN): The draft schema refuses an impossible date such as 2026-13-01; landed 2026-11-20
 - `F155-the-source-text-regexes-in-main-test-ts-and-composition-test-ts-are-replaced-by-behaviour-tests` (🟢 PROVEN): The source-text regexes in main.test.ts and composition.test.ts are replaced by behaviour tests; landed 2026-11-20
 - `F154-the-core-functions-with-5-or-more-surviving-mutants-get-tests-that-fail-when-the-code-breaks` (🟢 PROVEN): The core functions with 5 or more surviving mutants get tests that fail when the code breaks; landed 2026-11-20
 - `F153-the-legal-claims-ledger-and-dpia-draft-say-what-the-ai-provider-call-sends-including-thread-context-mails-rows-c030-to-c032-c193-c201` (🟢 PROVEN): the legal claims ledger and DPIA draft say what the AI provider call sends, including thread context mails (rows C030 to C032, C193, C201); landed 2026-11-20
@@ -62,8 +63,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F149-telegram-callbacks-dispatch-through-a-family-registry` (🟢 PROVEN): Telegram callbacks dispatch through a family registry; landed 2026-11-20
 - `F148-one-legal-version-format-and-parser-exist` (🟢 PROVEN): One legal version format and parser exist; landed 2026-11-20
 - `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟢 PROVEN): One operator alert path with texts in core and one locale type exist; landed 2026-11-20
-- `F146-one-action-id-header-exists-and-the-unread-exports-and-the-weaker-dkim-check-are-removed` (🟢 PROVEN): One ACTION_ID_HEADER exists and the unread exports and the weaker DKIM check are removed; landed 2026-11-20
-- 2026-11: 124 landed. spec/features/done/2026-11/
+- 2026-11: 125 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 

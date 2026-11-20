@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F156 · The draft schema refuses an impossible date such as 2026-13-01
