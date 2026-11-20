@@ -10,6 +10,39 @@ import {
 } from "./address";
 import { ADDRESS_RULE_PROBES } from "./address-probes";
 
+// This block comes first on purpose: the case form table is built once, on the first call, and a mutation run credits the
+// build only to the test that makes that call. So this test checks the whole table, over every code point, against the rule.
+describe("the case form table over every code point", () => {
+  test("every group of single code points that fold to one letter is the list of addressCaseForms, in code-point order", () => {
+    const groups = new Map<string, string[]>();
+    for (let cp = 1; cp <= 0x10ffff; cp++) {
+      if (cp >= 0xd800 && cp <= 0xdfff) continue;
+      const char = String.fromCodePoint(cp);
+      const target = normalizeAddress(char);
+      if (target === "") continue;
+      groups.set(target, [...(groups.get(target) ?? []), char]);
+    }
+    const wrong: string[] = [];
+    for (const [target, chars] of groups) {
+      const expected = [target, ...chars.filter((char) => char !== target)];
+      if (target === "i") expected.push("i\u0307", "I\u0307");
+      if (JSON.stringify(addressCaseForms(target)) !== JSON.stringify(expected)) wrong.push(target);
+    }
+    expect(wrong).toEqual([]);
+    expect(groups.size).toBeGreaterThan(1000);
+  });
+
+  test("the last code point is its own form", () => {
+    expect(addressCaseForms("\u{10ffff}")).toEqual(["\u{10ffff}"]);
+  });
+
+  test("a letter that no code point folds to has only itself, and the empty text has no form but itself", () => {
+    expect(addressCaseForms("\u03c2")).toEqual(["\u03c2"]);
+    expect(addressCaseForms("")).toEqual([""]);
+    expect(addressCaseForms(" ")).toEqual([" "]);
+  });
+});
+
 describe("normalizeAddress", () => {
   test("ASCII: trim and lower case", () => {
     expect(normalizeAddress("  Anna@Acme.PL ")).toBe("anna@acme.pl");
@@ -196,6 +229,27 @@ describe("addressCaseForms", () => {
 });
 
 describe("addressCasedCodePoints", () => {
+  // The first call of the list: the exact set, from the rule over every code point, and the same list object on every call.
+  test("is exactly the code points that share a form with another code point, ascending, and is built once", () => {
+    const groups = new Map<string, number[]>();
+    for (let cp = 1; cp <= 0x10ffff; cp++) {
+      if (cp >= 0xd800 && cp <= 0xdfff) continue;
+      const target = normalizeAddress(String.fromCodePoint(cp));
+      if (target === "") continue;
+      groups.set(target, [...(groups.get(target) ?? []), cp]);
+    }
+    const expected = new Set<number>();
+    for (const [target, members] of groups) {
+      if (members.length < 2) continue;
+      expected.add(target.codePointAt(0) as number);
+      for (const member of members) expected.add(member);
+    }
+    const list = addressCasedCodePoints();
+    expect(list).toEqual([...expected].sort((a, b) => a - b));
+    expect(list.length).toBeGreaterThan(1000);
+    expect(addressCasedCodePoints()).toBe(list);
+  });
+
   test("holds the capitals, the Kelvin, Ohm and Angstrom signs, the final sigma and the dotted capital I", () => {
     const cased = new Set(addressCasedCodePoints());
     for (const char of [
