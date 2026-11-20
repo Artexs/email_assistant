@@ -91,7 +91,7 @@ The committer is the only component that changes a mailbox. The job `actions.com
 `actions.status` flow (moved from `docs/architecture.md` §4.6; the `delegations.status` flow stays there for now). The `create_draft` and `send` lines belong to `drafts-and-send.md`.
 
 ```
-actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; tests compare it with the guards)
+actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; the writers read their guards from it at runtime)
                  ready → applied                                      (idempotent: move, flag, mark read, save summary; the ensure rule, rule 4 of this page)
                  ready → expired                                      (stale: older than 24 h; policy_changed; undo; manual)
                  ready → applying → applied | expired                 (create_draft; expired = send_closed: its send ended before the APPEND)
@@ -128,7 +128,7 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; test
 ## Limits
 
 - The panel lists only the sends that wait for a tap or are approved and held (the Approvals page, flag `approvals_page`, [drafts-and-send.md](drafts-and-send.md) rules 12 to 14) and has the Undo button of Activity. It has no list of other actions (moves, flags, mark read, drafts that wait for the committer).
-- The transition table `transitions.ts` is data only: no runtime code checks a write against it. Tests compare it with the guards of the writers; a runtime guard is `F068-actions-transitions-runtime`.
+- The transition table `transitions.ts` is data only, and the status writers check it at runtime. Each writer builds the type and status part of its `WHERE` from a `WRITER_GUARDS` row through `statusGuard` (`actions/repo/guard.ts`), in the same `UPDATE` as the write. The guards admit exactly the drawn edges (`ACTION_EDGES`); a move that no caller uses returns `false` and changes nothing. One gap stays: the map cannot tell an original draft row from a reverse draft row, so a draft edge for one kind stays open for the other (no caller uses one). Tests compare the guards with the edges and drive each closed move against the real writer.
 - `emails.status = 'done'` is in the CHECK of the table but no code writes it. Check against the code: `grep` finds no write of `done` to `emails.status` in `apps/server/src` or `packages/core/src` (`docs/product/stage-2/06-architecture-review.md` §3.15).
 - The Undo window is 7 days (`UNDO_WINDOW_MS`) and a stale `ready` original expires after 24 h. No setting changes them.
 - An Undo needs an `active` mailbox and an `ACTIONS_SCOPE` that admits the mail (under `synthetic`: test mail); otherwise the answer is `held` and nothing is written.
