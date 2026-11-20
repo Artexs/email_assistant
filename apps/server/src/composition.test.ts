@@ -234,7 +234,7 @@ describe("the token store is wired into every composition root", () => {
 
   test("the history check is queued at every connect path: web form, OAuth callback and mailbox:connect", () => {
     const hook = "onConnected: queueHistoryCheckOnConnect(db)";
-    const web = read("web.ts");
+    const web = read("web-routers.ts");
     expect(web.split(hook)).toHaveLength(3);
     expect(callOf(web, "mailRoutes")).toContain(hook);
     expect(callOf(web, "mailOAuthCallbackRoutes")).toContain(hook);
@@ -282,7 +282,7 @@ describe("the sent switch hooks are wired into every caller of setSentSync", () 
         callers.push(file);
         expect(callOf(text.slice(call.index), "setSentSync"), file).toContain("sentSwitchHooks");
       }
-      expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web.ts"]);
+      expect(callers.sort()).toEqual(["scripts/mailbox-settings.ts", "web-route-deps.ts"]);
       // The hook closes the loops (`onSentOff`) and then clears the follow-up cards (`clearLoopCards`), in one transaction.
       const wiring = read("composition.ts");
       expect(wiring).toContain("await onSentOff(trx, ctx, input);");
@@ -443,11 +443,11 @@ describe("the gate evidence is built once at start (F110 stage 02)", () => {
   });
 
   test("the web passes the gate to the one settings deps builder", () => {
-    expect(callOf(read("web.ts"), "settingsDeps")).toContain("gate");
+    expect(callOf(read("web-route-deps.ts"), "settingsDeps")).toContain("gate");
   });
 
   test("the web mounts the trust routes with the settings deps of the same gate and the test mail rule", () => {
-    const call = callOf(read("web.ts"), "trustRoutes");
+    const call = callOf(read("web-routers.ts"), "trustRoutes");
     expect(call).toContain("settingsDeps(db, now, extras.gate)");
     expect(call).toContain("testMail: testMailRule(config)");
   });

@@ -280,7 +280,7 @@ A reply draft is the fifth kind: the drafter writes it for a mail that needs an 
 | function | `renderTemplate`                                                                                               | `packages/core/src/outgoing/templates.ts`                                                |
 | function | `quoteOriginal`, `quoteCut`                                                                                    | `packages/core/src/outgoing/quote.ts`                                                    |
 | function | `isExternalSender`, `approvalViewOf`                                                                           | `packages/core/src/outgoing/sender.ts`                                                   |
-| function | `renderApprovalRequest`, `renderSendResult`, `approvalEdit`                                                    | `packages/core/src/digest/approvals.ts`                                                  |
+| function | `renderApprovalRequest`, `renderSendResult`, `approvalEdit`                                                    | `digest/approvals.ts`, `approval-results.ts`, `approval-edit.ts`                         |
 | function | `draftPayloadSchema`, `sendPayloadSchema`, `sendPayloadFor`                                                    | `packages/core/src/triage/payloads.ts`                                                   |
 
 ## Data
