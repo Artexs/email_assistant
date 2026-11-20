@@ -77,7 +77,7 @@ run_check() {
     (cd "$wt" && bun run typecheck >>"$log" 2>&1) || reason="typecheck failed"
   fi
   if [ -z "$reason" ]; then
-    (cd "$wt" && bun run lint >>"$log" 2>&1) || reason="lint failed"
+    (cd "$wt" && bun run lint:full >>"$log" 2>&1) || reason="lint failed"
   fi
   if [ -z "$reason" ]; then
     (cd "$wt" && bun run test:unit:ci >>"$log" 2>&1) || reason="unit tests failed"

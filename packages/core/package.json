@@ -8,7 +8,7 @@
     "./push": "./src/push-worker.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit --incremental --tsBuildInfoFile ../../node_modules/.cache/tsc/core.tsbuildinfo"
   },
   "dependencies": {
     "zod": "^4.1.12"
