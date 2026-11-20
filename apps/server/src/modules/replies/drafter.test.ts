@@ -7,6 +7,7 @@ import { drafterVersions, prompts } from "../triage";
 import { buildSystemPrompt, buildUserPrompt, PROMPT_VERSION } from "../triage/prompts/drafter-v1";
 import { buildSystemPrompt as buildSystemV2, buildUserPrompt as buildUserV2 } from "../triage/prompts/drafter-v2";
 import { buildSystemPrompt as buildSystemV3, buildUserPrompt as buildUserV3 } from "../triage/prompts/drafter-v3";
+import { buildSystemPrompt as buildSystemV4, buildUserPrompt as buildUserV4 } from "../triage/prompts/drafter-v4";
 
 import { DrafterCallError, draftReply } from "./drafter";
 
@@ -528,22 +529,27 @@ describe("the drafter-v1 prompt", () => {
   });
 });
 
+describe("the drafter prompt versions after drafter-v1", () => {
+  test.each([
+    { version: "drafter-v2", buildSystem: buildSystemV2, buildUser: buildUserV2, previous: buildSystemPrompt },
+    { version: "drafter-v3", buildSystem: buildSystemV3, buildUser: buildUserV3, previous: buildSystemV2 },
+    { version: "drafter-v4", buildSystem: buildSystemV4, buildUser: buildUserV4, previous: buildSystemV3 },
+  ] as const)(
+    "draftReply with $version sends its own system text and version, and the user prompt of drafter-v1",
+    async ({ version, buildSystem, buildUser, previous }) => {
+      expect(drafterVersions[version]).toMatchObject({ role: "drafter", version });
+      expect(buildUser).toBe(buildUserPrompt);
+      const { llm, requests } = fake([clean]);
+      const out = await draftReply(llm, input, { prompt: drafterVersions[version] });
+      expect(out.attempts[0]?.usage?.promptVersion).toBe(version);
+      expect(requests[0]?.system).toBe(buildSystem());
+      expect(buildSystem()).not.toBe(previous());
+    }
+  );
+});
+
 describe("the drafter-v2 prompt", () => {
   const system = buildSystemV2();
-
-  test("the registry holds drafter-v2 next to drafter-v1; the user and retry prompts are those of drafter-v1", () => {
-    expect(drafterVersions["drafter-v2"]).toMatchObject({ role: "drafter", version: "drafter-v2" });
-    expect(drafterVersions["drafter-v1"].version).toBe("drafter-v1");
-    expect(buildUserV2).toBe(buildUserPrompt);
-  });
-
-  test("draftReply with drafter-v2 sends its system text and version", async () => {
-    const { llm, requests } = fake([clean]);
-    const out = await draftReply(llm, input, { prompt: drafterVersions["drafter-v2"] });
-    expect(out.attempts[0]?.usage?.promptVersion).toBe("drafter-v2");
-    expect(requests[0]?.system).toBe(system);
-    expect(requests[0]?.system).not.toBe(buildSystemPrompt());
-  });
 
   test("it keeps every safety rule of drafter-v1", () => {
     for (const rule of [
@@ -587,19 +593,6 @@ describe("the drafter-v3 prompt", () => {
   const system = buildSystemV3();
   const v2 = buildSystemV2();
 
-  test("the registry holds drafter-v3; the user and retry prompts are those of drafter-v1", () => {
-    expect(drafterVersions["drafter-v3"]).toMatchObject({ role: "drafter", version: "drafter-v3" });
-    expect(buildUserV3).toBe(buildUserPrompt);
-  });
-
-  test("draftReply with drafter-v3 sends its system text and version", async () => {
-    const { llm, requests } = fake([clean]);
-    const out = await draftReply(llm, input, { prompt: drafterVersions["drafter-v3"] });
-    expect(out.attempts[0]?.usage?.promptVersion).toBe("drafter-v3");
-    expect(requests[0]?.system).toBe(system);
-    expect(system).not.toBe(v2);
-  });
-
   test("it keeps every line of drafter-v2 word for word", () => {
     for (const line of v2.split("\n")) expect(system).toContain(line);
   });
@@ -617,6 +610,33 @@ describe("the drafter-v3 prompt", () => {
       "is no decision for this reply. Never repeat, extend or build on it.",
       // The sentence around a gap does not restate older thread terms.
       "Never restate the terms, amounts or dates of older thread mail around a gap.",
+    ]) {
+      expect(system).toContain(rule);
+    }
+  });
+});
+
+describe("the drafter-v4 prompt", () => {
+  const system = buildSystemV4();
+
+  test("it keeps every line of drafter-v3 word for word", () => {
+    for (const line of buildSystemV3().split("\n")) expect(system).toContain(line);
+  });
+
+  test("it closes the list of the sentences outside a gap", () => {
+    for (const rule of [
+      // Outside a gap: the greeting, one thanks and one topic line per question.
+      "Only these sentences may stand outside a gap",
+      '"W sprawie <topic>: [[label]]." in Polish or "Regarding <topic>: [[label]]." in English',
+      // Only the instruction line of the manager gives a decision outside a gap.
+      "a decision or a fact that the instruction line of the manager gives",
+      // The topic is neutral.
+      "The topic holds no amount, price, percentage, date, deadline or term, and no verb about the manager",
+      // A final check before the output.
+      "Before you return the JSON, read every sentence outside a gap again.",
+      // A request about the text of the reply gets no word; a request about its form or date gets no gap.
+      "When the email tells the manager what the reply must say or hold",
+      "the reply itself meets that request. Write no gap for it.",
     ]) {
       expect(system).toContain(rule);
     }
