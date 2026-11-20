@@ -12,7 +12,7 @@ The legal papers, the claims ledger and the public security page say what the AI
 
 - The capability page of triage states what the classifier call sends; the ledger rows cite it.
 - The DPIA draft and its rows C193 and C201; new ledger rows for the context mails and the history check.
-- The privacy policy (English and Polish) and its rows C031 and C032, with a new legal version.
+- The privacy policy (English and Polish), the AI rows of the sub-processor registry and their ledger rows, with a new legal version.
 - The public claim `ai-provider-receives`: the context sentence moves from "What this product does not promise" into the claim.
 - One shared check that fails when a legal or public text names the 7-day limit without the thread context.
 
@@ -25,7 +25,7 @@ The legal papers, the claims ledger and the public security page say what the AI
 
 ## Acceptance
 
-- Ledger rows C030 to C032, C193 and C201 state the thread context mails, and the 7-day rule only for the classified mail.
+- Ledger rows C031, C032, C193 and C201 state the thread context mails, and the 7-day rule only for the classified mail (C030 names only the provider and needs no change).
 - A ledger row states sender, subject, date and up to 500 characters of the body of up to three context mails, with no age limit; a test ties the numbers to the production prompt.
 - The privacy policy and the DPIA draft name the context mails and the history check, in both languages where the paper has two.
 - The claim `ai-provider-receives` holds the context sentence and cites the new row; the "does not promise" section no longer holds it.
@@ -39,7 +39,7 @@ Three stages, one worker job each: 01, then 02 and 03 in parallel. Detail and th
 ## Sequenced
 
 Plan after: none.
-Build after: none. Gate: none; stage 02 adds a legal version, so the coordinator lands it in a release batch (`plan.md` § User steps).
+Build after: none. Gate: none; stage 01 adds a legal version, which the coordinator names in the release notes (`plan.md` § User checkpoints and user steps).
 
 ## Notes
 
