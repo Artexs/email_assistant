@@ -1,6 +1,7 @@
 // Every rule of the form "exactly one", "once", "never twice", "only" gets a race on two connections with committed
 // rows, as the app role and as the table owner (the owner is not filtered by row-level security, so a missing `org_id` filter shows).
 // The organization and its users are deleted after each test.
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import {
@@ -36,7 +37,6 @@ afterAll(async () => {
 
 const ROLES = ["app", "owner"] as const;
 const ROUNDS = 12;
-const HOUR = 3_600_000;
 const T = new Date();
 
 function withTimeout<T>(p: Promise<T>, ms = 20_000): Promise<T> {
@@ -46,14 +46,14 @@ function withTimeout<T>(p: Promise<T>, ms = 20_000): Promise<T> {
 // An organization: owner and owner 2 (both linked, both covered), a third owner with an old consent (linked), a member.
 async function world() {
   const s = await kit.setup();
-  await consentRow(appDb, s.org.orgId, s.org.ownerId, CURRENT_CONSENT, new Date(T.getTime() - HOUR));
-  await consentRow(appDb, s.org.orgId, s.u2, CURRENT_CONSENT, new Date(T.getTime() - HOUR));
+  await consentRow(appDb, s.org.orgId, s.org.ownerId, CURRENT_CONSENT, new Date(T.getTime() - HOUR_MS));
+  await consentRow(appDb, s.org.orgId, s.u2, CURRENT_CONSENT, new Date(T.getTime() - HOUR_MS));
   const oldOwner = await appDb.transaction().execute(async (trx) => {
     const id = await addMember(trx, s.org.orgId, "owner");
-    await linkChat(trx, s.ctx, id, randomChatId(), new Date(T.getTime() - HOUR));
+    await linkChat(trx, s.ctx, id, randomChatId(), new Date(T.getTime() - HOUR_MS));
     return id;
   });
-  await consentRow(appDb, s.org.orgId, oldOwner, OLD_CONSENT, new Date(T.getTime() - HOUR));
+  await consentRow(appDb, s.org.orgId, oldOwner, OLD_CONSENT, new Date(T.getTime() - HOUR_MS));
   return { ...s, oldOwner };
 }
 type World = Awaited<ReturnType<typeof world>>;
@@ -69,7 +69,7 @@ const detect = (conn: Db) =>
   detectNotices({
     db: conn,
     now: () => new Date(),
-    startedAt: new Date(T.getTime() - HOUR),
+    startedAt: new Date(T.getTime() - HOUR_MS),
     testMail: NO_TEST_SENDERS,
   });
 
@@ -121,7 +121,7 @@ for (const role of ROLES) {
     test("an owner with an old consent: ten sends and two runs at once give one line", async () => {
       const s = await world();
       // The second owner withdraws: an old consent row replaces the current one.
-      await consentRow(appDb, s.org.orgId, s.u2, OLD_CONSENT, new Date(T.getTime() - 30 * 60_000));
+      await consentRow(appDb, s.org.orgId, s.u2, OLD_CONSENT, new Date(T.getTime() - 30 * MINUTE_MS));
       await followUps(s, ROUNDS);
       await Promise.all([withTimeout(detect(a)), withTimeout(detect(b))]);
       const lines = await outboxOf(s.org.orgId, "loop_consent");
@@ -135,12 +135,12 @@ for (const role of ROLES) {
       const s = await world();
       const ended = await followUps(s, ROUNDS, {
         sendStatus: "applied",
-        notifiedAt: new Date(T.getTime() - HOUR),
+        notifiedAt: new Date(T.getTime() - HOUR_MS),
         send: { provider_result: JSON.stringify({ sent_copy: "appended" }) },
       });
       const failed = await followUps(s, ROUNDS, {
         sendStatus: "failed",
-        notifiedAt: new Date(T.getTime() - HOUR),
+        notifiedAt: new Date(T.getTime() - HOUR_MS),
         send: { status_reason: "smtp_error" },
       });
       await Promise.all([withTimeout(detect(a)), withTimeout(detect(b))]);

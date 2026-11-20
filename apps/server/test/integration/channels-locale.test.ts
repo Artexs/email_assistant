@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { textTables, type UserLocale } from "@ea/core";
+import { textTables, type UserLocale, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -50,8 +50,6 @@ const users: { name: string; locale: UserLocale | null; expected: UserLocale }[]
 ];
 
 const T = new Date("2026-11-06T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 const TOKEN = "123456:LOCALETOKENaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
 let logSpy: ReturnType<typeof spyOn>;
@@ -77,14 +75,14 @@ async function member(
   const ctx = { orgId: created.orgId };
   await trx.updateTable("users").set({ locale }).where("id", "=", created.userId).execute();
   if (opts.settings !== false) await insertDefaultSettings(trx, ctx, created.mailboxId);
-  await markSynced(trx, ctx, created.mailboxId, new Date(T.getTime() - 5 * MINUTE));
+  await markSynced(trx, ctx, created.mailboxId, new Date(T.getTime() - 5 * MINUTE_MS));
   await trx
     .updateTable("mailboxes")
-    .set({ status_changed_at: new Date(T.getTime() - HOUR) })
+    .set({ status_changed_at: new Date(T.getTime() - HOUR_MS) })
     .where("id", "=", created.mailboxId)
     .execute();
   const chatId = randomChatId();
-  if (opts.linked) await linkChat(trx, ctx, created.userId, chatId, opts.linkedAt ?? new Date(T.getTime() - HOUR));
+  if (opts.linked) await linkChat(trx, ctx, created.userId, chatId, opts.linkedAt ?? new Date(T.getTime() - HOUR_MS));
   return { ...created, ctx, chatId };
 }
 
@@ -143,13 +141,13 @@ describe("an urgent notice", () => {
       const m = await member(trx, locale);
       await insertTriaged(trx, m.ctx, m.mailboxId, {
         category: "urgent",
-        createdAt: new Date(T.getTime() - 10 * MINUTE),
+        createdAt: new Date(T.getTime() - 10 * MINUTE_MS),
       });
 
       await detectNotices({
         db: trx,
         now: () => T,
-        startedAt: new Date(T.getTime() - HOUR),
+        startedAt: new Date(T.getTime() - HOUR_MS),
         testMail: NO_TEST_SENDERS,
       });
       await sendQueued(trx);
@@ -170,7 +168,7 @@ describe("an approval request", () => {
       const to = `anna-${randomUUID()}@example.test`;
       const delegateId = await insertDelegate(trx, m.ctx, { name: "Anna Nowak", email: to });
       const pair = await insertDraftAndSend(trx, m.ctx, m.mailboxId, {
-        createdAt: new Date(T.getTime() - 30 * MINUTE),
+        createdAt: new Date(T.getTime() - 30 * MINUTE_MS),
         draftProviderResult: { folder: "Drafts", uid: 7 },
         subject: "Quarterly offer",
         from: "boss@example.test",
@@ -184,7 +182,7 @@ describe("an approval request", () => {
       await detectNotices({
         db: trx,
         now: () => T,
-        startedAt: new Date(T.getTime() - HOUR),
+        startedAt: new Date(T.getTime() - HOUR_MS),
         testMail: NO_TEST_SENDERS,
       });
       await sendQueued(trx);
@@ -288,7 +286,7 @@ describe("/start with a link token", () => {
       await isolateChannels(trx);
       const m = await member(trx, locale, { linked: false });
       const bot = botFor(trx);
-      const { token } = await createLinkToken(trx, m.ctx, m.userId, new Date(T.getTime() - 16 * MINUTE));
+      const { token } = await createLinkToken(trx, m.ctx, m.userId, new Date(T.getTime() - 16 * MINUTE_MS));
 
       await bot.send(m.chatId, `/start ${token}`);
 

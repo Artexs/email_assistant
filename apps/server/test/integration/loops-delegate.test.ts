@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -41,7 +42,6 @@ afterAll(async () => {
 });
 
 const NOW = new Date("2026-11-20T10:00:00Z");
-const DAY = 24 * 3_600_000;
 const SWITCHES = { move: true, mark_read: true, flag: true, create_draft: true, move_unsure: false };
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -543,7 +543,7 @@ describe("T8 the send is applied", () => {
         .set({ status: "approved", approved_at: NOW, approved_by: s.userId, approved_via: "web" })
         .where("id", "=", result.sendId)
         .execute();
-      clock.now = new Date(NOW.getTime() + 60_000);
+      clock.now = new Date(NOW.getTime() + MINUTE_MS);
       await committer.run();
 
       expect(sender.sent).toHaveLength(1);
@@ -551,7 +551,7 @@ describe("T8 the send is applied", () => {
       const [delegation] = await delegationsOf(trx, s);
       expect(delegation?.status).toBe("sent");
       expect(delegation?.sent_at?.getTime()).toBe(clock.now.getTime());
-      expect(delegation?.due_at?.getTime()).toBe(clock.now.getTime() + 3 * DAY);
+      expect(delegation?.due_at?.getTime()).toBe(clock.now.getTime() + 3 * DAY_MS);
     });
   });
 });

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { format } from "node:util";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -43,8 +44,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-06T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 
 function at(offsetMs: number): Date {
   return new Date(T.getTime() + offsetMs);
@@ -80,18 +79,18 @@ async function org(trx: Transaction<DB>): Promise<Org> {
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
   const assistantId = await addMember(trx, created.orgId);
-  await linkChat(trx, ctx, created.userId, randomChatId(), at(-HOUR));
-  await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR));
-  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+  await linkChat(trx, ctx, created.userId, randomChatId(), at(-HOUR_MS));
+  await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR_MS));
+  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE_MS));
   await trx
     .updateTable("mailboxes")
-    .set({ status_changed_at: at(-HOUR) })
+    .set({ status_changed_at: at(-HOUR_MS) })
     .where("id", "=", created.mailboxId)
     .execute();
   return { ctx, orgId: created.orgId, ownerId: created.userId, assistantId, mailboxId: created.mailboxId };
 }
 
-async function run(trx: Transaction<DB>, startedAt = at(-HOUR)): Promise<void> {
+async function run(trx: Transaction<DB>, startedAt = at(-HOUR_MS)): Promise<void> {
   await detectNotices({ db: trx, now: () => T, startedAt, testMail: NO_TEST_SENDERS });
 }
 
@@ -138,7 +137,7 @@ describe("urgent notices", () => {
       const b = await org(trx);
       await suspendOrg(trx, b.orgId);
       for (const o of [a, b]) {
-        await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+        await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
       }
 
       await run(trx);
@@ -152,7 +151,10 @@ describe("urgent notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
+        category: "urgent",
+        createdAt: at(-10 * MINUTE_MS),
+      });
       await trx
         .insertInto("actions")
         .values({
@@ -194,7 +196,7 @@ describe("urgent notices", () => {
       const flagged = (o: Org, reasons: string[]) =>
         insertTriaged(trx, o.ctx, o.mailboxId, {
           category: "urgent",
-          createdAt: at(-10 * MINUTE),
+          createdAt: at(-10 * MINUTE_MS),
           suspiciousReasons: reasons,
         });
       const onId = await flagged(on, ["lookalike_domain", "risky_attachment"]);
@@ -238,7 +240,7 @@ describe("urgent notices", () => {
       await setOrgFeature(trx, other.ctx, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
       const pdf = { name: "faktura.pdf", type: "application/pdf", size: 122880, inline: false };
       const urgent = (o: Org) =>
-        insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+        insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
       const onId = await urgent(on);
       const offId = await urgent(off);
       const noRowId = await urgent(other);
@@ -287,7 +289,7 @@ describe("urgent notices", () => {
       const urgent = (o: Org, fields: Record<string, unknown>, extra: { reasonCode?: string } = {}) =>
         insertTriaged(trx, o.ctx, o.mailboxId, {
           category: "urgent",
-          createdAt: at(-10 * MINUTE),
+          createdAt: at(-10 * MINUTE_MS),
           confidence: 0.87,
           fields,
           ...extra,
@@ -334,7 +336,7 @@ describe("urgent notices", () => {
       const make = (o: Org) =>
         insertTriaged(trx, o.ctx, o.mailboxId, {
           category: "urgent",
-          createdAt: at(-10 * MINUTE),
+          createdAt: at(-10 * MINUTE_MS),
           reason: "",
           confidence: 0.87,
         });
@@ -368,7 +370,10 @@ describe("urgent notices", () => {
       await isolateChannels(trx);
       const o = await org(trx);
       await setOrgFeature(trx, o.ctx, { flag: "attachment_line", enabled: true, actor: "cli", now: T });
-      const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
+        category: "urgent",
+        createdAt: at(-10 * MINUTE_MS),
+      });
       await insertAttachmentHeaders(trx, o.ctx, emailId, [
         { name: "logo.png", type: "image/png", size: 5, inline: true },
       ]);
@@ -385,10 +390,10 @@ describe("urgent notices", () => {
       const o = await org(trx);
       await trx
         .updateTable("chat_links")
-        .set({ linked_at: at(-5 * MINUTE) })
+        .set({ linked_at: at(-5 * MINUTE_MS) })
         .where("user_id", "=", o.assistantId)
         .execute();
-      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
 
       await run(trx);
       const found = await rows(trx, o.orgId, "urgent");
@@ -402,11 +407,11 @@ describe("urgent notices", () => {
       const o = await org(trx);
       await trx
         .updateTable("chat_links")
-        .set({ linked_at: at(-48 * HOUR) })
+        .set({ linked_at: at(-48 * HOUR_MS) })
         .where("org_id", "=", o.orgId)
         .execute();
-      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-25 * HOUR) });
-      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "info", createdAt: at(-10 * MINUTE) });
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-25 * HOUR_MS) });
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "info", createdAt: at(-10 * MINUTE_MS) });
 
       await run(trx);
       expect(await rows(trx, o.orgId)).toHaveLength(0);
@@ -420,7 +425,7 @@ describe("urgent notices", () => {
       await ensureSyncFolders(trx, o.ctx, o.mailboxId, [{ key: "junk", path: "Wiadomości-śmieci", role: "junk" }], T);
       const offers = await insertTriagedWithActions(trx, o.ctx, o.mailboxId, {
         category: "urgent",
-        createdAt: at(-10 * MINUTE),
+        createdAt: at(-10 * MINUTE_MS),
         folder: "Oferty",
         sourceFolder: "Oferty",
         uid: 21,
@@ -428,7 +433,7 @@ describe("urgent notices", () => {
       });
       const junk = await insertTriagedWithActions(trx, o.ctx, o.mailboxId, {
         category: "urgent",
-        createdAt: at(-9 * MINUTE),
+        createdAt: at(-9 * MINUTE_MS),
         folder: "Wiadomości-śmieci",
         sourceFolder: "Wiadomości-śmieci",
         uid: 22,
@@ -452,7 +457,7 @@ describe("urgent notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
       await setStatus(trx, o, "paused");
 
       await run(trx);
@@ -466,7 +471,7 @@ describe("auth_error notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const s = at(-20 * MINUTE);
+      const s = at(-20 * MINUTE_MS);
       await setStatus(trx, o, "auth_error", s);
 
       await run(trx);
@@ -477,7 +482,7 @@ describe("auth_error notices", () => {
       expect(found[0]?.dedup_key).toBe(`auth_error:${o.mailboxId}:${s.getTime()}`);
       expect(found[0]?.status).toBe("pending");
 
-      const s2 = at(-2 * MINUTE);
+      const s2 = at(-2 * MINUTE_MS);
       await setStatus(trx, o, "active");
       await setStatus(trx, o, "auth_error", s2);
       await run(trx);
@@ -495,7 +500,7 @@ describe("auth_error notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await setStatus(trx, o, "auth_error", at(-20 * MINUTE));
+      await setStatus(trx, o, "auth_error", at(-20 * MINUTE_MS));
       await run(trx);
       await setStatus(trx, o, "active");
 
@@ -528,7 +533,7 @@ describe("auth_error notices of an OAuth mailbox", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await setOAuthError(trx, o.mailboxId, "google", "oauth_expired", at(-20 * MINUTE));
+      await setOAuthError(trx, o.mailboxId, "google", "oauth_expired", at(-20 * MINUTE_MS));
 
       await run(trx);
 
@@ -544,7 +549,7 @@ describe("auth_error notices of an OAuth mailbox", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await setStatus(trx, o, "auth_error", at(-20 * MINUTE));
+      await setStatus(trx, o, "auth_error", at(-20 * MINUTE_MS));
 
       await run(trx);
 
@@ -558,8 +563,8 @@ describe("auth_error notices of an OAuth mailbox", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const s = at(-20 * MINUTE);
-      const s2 = at(-2 * MINUTE);
+      const s = at(-20 * MINUTE_MS);
+      const s2 = at(-2 * MINUTE_MS);
       await setOAuthError(trx, o.mailboxId, "microsoft", "oauth_expired", s);
       await run(trx);
       // A Reconnect clears the reason with the status (the table CHECK).
@@ -589,8 +594,8 @@ describe("auth_error notices of an OAuth mailbox", () => {
       await isolateChannels(trx);
       const a = await org(trx);
       const b = await org(trx);
-      await setOAuthError(trx, a.mailboxId, "google", "oauth_revoked", at(-20 * MINUTE));
-      await setOAuthError(trx, b.mailboxId, "microsoft", null, at(-20 * MINUTE));
+      await setOAuthError(trx, a.mailboxId, "google", "oauth_revoked", at(-20 * MINUTE_MS));
+      await setOAuthError(trx, b.mailboxId, "microsoft", null, at(-20 * MINUTE_MS));
 
       await run(trx);
 
@@ -615,7 +620,7 @@ describe("host_blocked notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const s = at(-20 * MINUTE);
+      const s = at(-20 * MINUTE_MS);
       await setStatus(trx, o, "host_blocked", s);
 
       await run(trx);
@@ -641,7 +646,7 @@ describe("host_blocked notices", () => {
       expect(found[0]?.text).not.toContain("imap.x.test");
       expect(found[0]?.text).not.toContain("smtp.x.test");
 
-      const s2 = at(-2 * MINUTE);
+      const s2 = at(-2 * MINUTE_MS);
       await setStatus(trx, o, "active");
       await setStatus(trx, o, "host_blocked", s2);
       await run(trx);
@@ -659,7 +664,7 @@ describe("host_blocked notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await setStatus(trx, o, "host_blocked", at(-20 * MINUTE));
+      await setStatus(trx, o, "host_blocked", at(-20 * MINUTE_MS));
       await run(trx);
       await setStatus(trx, o, "active");
 
@@ -675,11 +680,11 @@ describe("host_blocked notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await setStatus(trx, o, "paused", at(-20 * MINUTE));
+      await setStatus(trx, o, "paused", at(-20 * MINUTE_MS));
       await run(trx);
       expect(await rows(trx, o.orgId, "host_blocked")).toHaveLength(0);
 
-      await setStatus(trx, o, "auth_error", at(-10 * MINUTE));
+      await setStatus(trx, o, "auth_error", at(-10 * MINUTE_MS));
       await run(trx);
       expect(await rows(trx, o.orgId, "host_blocked")).toHaveLength(0);
       expect(await rows(trx, o.orgId, "auth_error")).toHaveLength(1);
@@ -692,10 +697,10 @@ describe("host_blocked notices", () => {
       const a = await org(trx);
       const b = await org(trx);
       const c = await org(trx);
-      await setStatus(trx, a, "host_blocked", at(-20 * MINUTE));
+      await setStatus(trx, a, "host_blocked", at(-20 * MINUTE_MS));
       // Organization C has a blocked mailbox too, but no linked chat: it gets no notice at all.
       await trx.deleteFrom("chat_links").where("org_id", "=", c.orgId).execute();
-      await setStatus(trx, c, "host_blocked", at(-20 * MINUTE));
+      await setStatus(trx, c, "host_blocked", at(-20 * MINUTE_MS));
 
       await run(trx);
       expect(await rows(trx, b.orgId, "host_blocked")).toHaveLength(0);
@@ -719,14 +724,14 @@ describe("sync notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const last = at(-40 * MINUTE);
+      const last = at(-40 * MINUTE_MS);
       await markSynced(trx, o.ctx, o.mailboxId, last);
 
-      await run(trx, at(-5 * MINUTE));
+      await run(trx, at(-5 * MINUTE_MS));
       expect(await rows(trx, o.orgId, "sync_stale")).toHaveLength(0);
 
-      await run(trx, at(-15 * MINUTE));
-      await run(trx, at(-15 * MINUTE));
+      await run(trx, at(-15 * MINUTE_MS));
+      await run(trx, at(-15 * MINUTE_MS));
       const found = await rows(trx, o.orgId, "sync_stale");
       expect(found).toHaveLength(1);
       expect(found[0]?.user_id).toBe(o.ownerId);
@@ -740,7 +745,7 @@ describe("sync notices", () => {
       const o = await org(trx);
       await trx
         .updateTable("mailboxes")
-        .set({ last_synced_at: null, created_at: at(-2 * HOUR) })
+        .set({ last_synced_at: null, created_at: at(-2 * HOUR_MS) })
         .where("id", "=", o.mailboxId)
         .execute();
 
@@ -756,17 +761,17 @@ describe("sync notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const last = at(-40 * MINUTE);
+      const last = at(-40 * MINUTE_MS);
       await markSynced(trx, o.ctx, o.mailboxId, last);
       await run(trx);
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", sent_at: at(-10 * MINUTE) })
+        .set({ status: "sent", sent_at: at(-10 * MINUTE_MS) })
         .where("org_id", "=", o.orgId)
         .where("kind", "=", "sync_stale")
         .execute();
 
-      await markSynced(trx, o.ctx, o.mailboxId, at(-MINUTE));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-MINUTE_MS));
       await run(trx);
       await run(trx);
       const ok = await rows(trx, o.orgId, "sync_ok");
@@ -778,9 +783,9 @@ describe("sync notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await markSynced(trx, o.ctx, o.mailboxId, at(-40 * MINUTE));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-40 * MINUTE_MS));
       await run(trx);
-      await markSynced(trx, o.ctx, o.mailboxId, at(-MINUTE));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-MINUTE_MS));
       await run(trx);
       const stale = await rows(trx, o.orgId, "sync_stale");
       expect(stale).toHaveLength(1);
@@ -794,8 +799,8 @@ describe("sync notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR));
-      await setStatus(trx, o, "active", at(-MINUTE));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR_MS));
+      await setStatus(trx, o, "active", at(-MINUTE_MS));
 
       await run(trx);
       expect(await rows(trx, o.orgId, "sync_stale")).toHaveLength(0);
@@ -804,17 +809,17 @@ describe("sync notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR_MS));
       await run(trx);
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", sent_at: at(-10 * MINUTE) })
+        .set({ status: "sent", sent_at: at(-10 * MINUTE_MS) })
         .where("org_id", "=", o.orgId)
         .where("kind", "=", "sync_stale")
         .execute();
       expect(await rows(trx, o.orgId, "sync_stale")).toHaveLength(1);
 
-      await setStatus(trx, o, "active", at(-MINUTE));
+      await setStatus(trx, o, "active", at(-MINUTE_MS));
       await run(trx);
       expect(await rows(trx, o.orgId, "sync_ok")).toHaveLength(0);
 
@@ -828,7 +833,7 @@ describe("sync notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-2 * HOUR_MS));
       await setStatus(trx, o, "paused");
       await run(trx);
       expect(await rows(trx, o.orgId, "sync_stale")).toHaveLength(0);
@@ -846,7 +851,10 @@ describe("organizations", () => {
       await isolateChannels(trx);
       const a = await org(trx);
       const b = await org(trx);
-      const emailB = await insertTriaged(trx, b.ctx, b.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const emailB = await insertTriaged(trx, b.ctx, b.mailboxId, {
+        category: "urgent",
+        createdAt: at(-10 * MINUTE_MS),
+      });
 
       await run(trx);
       const forB = await rows(trx, b.orgId, "urgent");
@@ -863,8 +871,11 @@ describe("organizations", () => {
       await isolateChannels(trx);
       const a = await org(trx);
       const b = await org(trx);
-      const skipped = await insertTriaged(trx, a.ctx, a.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
-      await insertTriaged(trx, b.ctx, b.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      const skipped = await insertTriaged(trx, a.ctx, a.mailboxId, {
+        category: "urgent",
+        createdAt: at(-10 * MINUTE_MS),
+      });
+      await insertTriaged(trx, b.ctx, b.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
       await trx.updateTable("organizations").set({ timezone: "Mars/Base" }).where("id", "=", a.orgId).execute();
 
       await run(trx);
@@ -884,7 +895,7 @@ describe("organizations", () => {
       const a = await org(trx);
       const b = await org(trx);
       for (const o of [a, b]) {
-        await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+        await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
       }
       // An infinite resume time is not a Date: the run of this organization throws before any detector queues a row.
       await trx
@@ -917,7 +928,7 @@ describe("a database error", () => {
       },
     } as unknown as Db;
 
-    await detectNotices({ db: broken, now: () => T, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+    await detectNotices({ db: broken, now: () => T, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
     expect(errorLines).toEqual(["[channels] notices_failed error=Error"]);
   });
 });
@@ -930,7 +941,7 @@ describe("action_failed notices", () => {
   ): Promise<{ emailId: string; actionId: string }> {
     const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
       category: "info",
-      createdAt: at(-2 * HOUR),
+      createdAt: at(-2 * HOUR_MS),
       subject: opts.subject ?? "Marker subject",
       from: "Ann <ann@firma.test>",
     });
@@ -975,7 +986,7 @@ describe("action_failed notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const { emailId, actionId } = await failedMove(trx, o, { updatedAt: at(-MINUTE) });
+      const { emailId, actionId } = await failedMove(trx, o, { updatedAt: at(-MINUTE_MS) });
 
       await run(trx);
       const found = await rows(trx, o.orgId, "action_failed");
@@ -998,7 +1009,7 @@ describe("action_failed notices", () => {
       const o = await org(trx);
       const emailId = await insertTriaged(trx, o.ctx, o.mailboxId, {
         category: "delegation",
-        createdAt: at(-2 * HOUR),
+        createdAt: at(-2 * HOUR_MS),
         subject: "Marker subject",
         from: "Ann <ann@firma.test>",
       });
@@ -1017,7 +1028,7 @@ describe("action_failed notices", () => {
       });
       await trx
         .updateTable("actions")
-        .set({ updated_at: at(-MINUTE) })
+        .set({ updated_at: at(-MINUTE_MS) })
         .where("id", "=", reverse)
         .execute();
 
@@ -1035,7 +1046,7 @@ describe("action_failed notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const { actionId } = await failedMove(trx, o, { statusReason: "mail_not_found", updatedAt: at(-MINUTE) });
+      const { actionId } = await failedMove(trx, o, { statusReason: "mail_not_found", updatedAt: at(-MINUTE_MS) });
       await run(trx);
       expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(0);
       expect(await notifiedAt(trx, actionId)).toBeNull();
@@ -1049,7 +1060,7 @@ describe("action_failed notices", () => {
       const { actionId } = await failedMove(trx, o, {
         reverse: true,
         statusReason: "mail_not_found",
-        updatedAt: at(-MINUTE),
+        updatedAt: at(-MINUTE_MS),
       });
       await run(trx);
       const found = await rows(trx, o.orgId, "action_failed");
@@ -1064,7 +1075,7 @@ describe("action_failed notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const { actionId } = await failedMove(trx, o, { updatedAt: at(-30 * HOUR) });
+      const { actionId } = await failedMove(trx, o, { updatedAt: at(-30 * HOUR_MS) });
       await run(trx);
       expect(await rows(trx, o.orgId, "action_failed")).toHaveLength(0);
       expect(await notifiedAt(trx, actionId)).toEqual(T);
@@ -1075,7 +1086,7 @@ describe("action_failed notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await failedMove(trx, o, { reverse: true, updatedAt: at(-MINUTE) });
+      await failedMove(trx, o, { reverse: true, updatedAt: at(-MINUTE_MS) });
       await run(trx);
       const found = await rows(trx, o.orgId, "action_failed");
       expect(found).toHaveLength(1);
@@ -1088,7 +1099,7 @@ describe("action_failed notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const { emailId } = await failedMove(trx, o, { reverse: true, updatedAt: at(-MINUTE) });
+      const { emailId } = await failedMove(trx, o, { reverse: true, updatedAt: at(-MINUTE_MS) });
       await trx
         .updateTable("emails")
         .set({ folder: "Oferty", source_folder: "Oferty" })
@@ -1107,8 +1118,8 @@ describe("action_failed notices", () => {
       const created = await createOrgWithMailbox(trx);
       const ctx = { orgId: created.orgId };
       const assistantId = await addMember(trx, created.orgId);
-      await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR));
-      await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+      await linkChat(trx, ctx, assistantId, randomChatId(), at(-HOUR_MS));
+      await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE_MS));
       const o: Org = {
         ctx,
         orgId: created.orgId,
@@ -1116,7 +1127,7 @@ describe("action_failed notices", () => {
         assistantId,
         mailboxId: created.mailboxId,
       };
-      const { actionId } = await failedMove(trx, o, { updatedAt: at(-MINUTE) });
+      const { actionId } = await failedMove(trx, o, { updatedAt: at(-MINUTE_MS) });
 
       await run(trx);
 
@@ -1130,7 +1141,7 @@ describe("action_failed notices", () => {
       await isolateChannels(trx);
       const a = await org(trx);
       const b = await org(trx);
-      const { actionId } = await failedMove(trx, b, { updatedAt: at(-MINUTE) });
+      const { actionId } = await failedMove(trx, b, { updatedAt: at(-MINUTE_MS) });
       await run(trx);
       expect(await rows(trx, a.orgId, "action_failed")).toHaveLength(0);
       expect(await rows(trx, b.orgId, "action_failed")).toHaveLength(1);
@@ -1152,7 +1163,7 @@ interface SendOrg extends Org {
 async function sendOrg(trx: Transaction<DB>): Promise<SendOrg> {
   const o = await org(trx);
   const secondOwnerId = await addMember(trx, o.orgId, "owner");
-  await linkChat(trx, o.ctx, secondOwnerId, randomChatId(), at(-HOUR));
+  await linkChat(trx, o.ctx, secondOwnerId, randomChatId(), at(-HOUR_MS));
   return { ...o, secondOwnerId };
 }
 
@@ -1165,7 +1176,7 @@ async function waiting(trx: Transaction<DB>, o: Org, opts: Pair = {}) {
       ? undefined
       : (opts.delegateId ?? (await insertDelegate(trx, o.ctx, { name: "Anna Nowak", email: to })));
   const pair = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
-    createdAt: at(-30 * MINUTE),
+    createdAt: at(-30 * MINUTE_MS),
     draftProviderResult: APPLIED,
     subject: "Quarterly offer",
     from: SENDER,
@@ -1307,7 +1318,7 @@ describe("approval requests", () => {
           delegateId,
           delegateName: name,
           sendStatus: "applied",
-          approved: { userId: o.ownerId, at: at(-3 * HOUR) },
+          approved: { userId: o.ownerId, at: at(-3 * HOUR_MS) },
         });
         const delegationId = await insertDelegation(trx, o.ctx, {
           mailboxId: o.mailboxId,
@@ -1421,14 +1432,14 @@ describe("approval requests", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sendOrg(trx);
-      const broken = await waiting(trx, o, { createdAt: at(-40 * MINUTE) });
+      const broken = await waiting(trx, o, { createdAt: at(-40 * MINUTE_MS) });
       const good = await waiting(trx, o);
       await sql`update actions set payload = jsonb_set(payload, '{kind}', '"nope"') where id = ${broken.draftId}`.execute(
         trx
       );
       const urgentId = await insertTriaged(trx, o.ctx, o.mailboxId, {
         category: "urgent",
-        createdAt: at(-10 * MINUTE),
+        createdAt: at(-10 * MINUTE_MS),
       });
 
       await run(trx);
@@ -1469,9 +1480,9 @@ async function finishSend(
       provider_result: patch.providerResult === undefined ? null : JSON.stringify(patch.providerResult),
       attempts: patch.attempts ?? 0,
       applied_at: patch.appliedAt ?? null,
-      approved_at: ["applied", "approved"].includes(patch.status) ? at(-HOUR) : null,
-      notified_at: at(-HOUR),
-      updated_at: at(-5 * MINUTE),
+      approved_at: ["applied", "approved"].includes(patch.status) ? at(-HOUR_MS) : null,
+      notified_at: at(-HOUR_MS),
+      updated_at: at(-5 * MINUTE_MS),
     })
     .where("id", "=", sendId)
     .execute();
@@ -1496,12 +1507,12 @@ describe("send result notices", () => {
       const o = await sendOrg(trx);
       const ok = await ended(trx, o, {
         status: "applied",
-        appliedAt: at(-20 * MINUTE),
+        appliedAt: at(-20 * MINUTE_MS),
         providerResult: { sent_copy: "appended" },
       });
       const noCopy = await ended(trx, o, {
         status: "applied",
-        appliedAt: at(-20 * MINUTE),
+        appliedAt: at(-20 * MINUTE_MS),
         providerResult: { sent_copy: "failed" },
       });
 
@@ -1528,12 +1539,12 @@ describe("send result notices", () => {
       const o = await sendOrg(trx);
       const young = await ended(trx, o, {
         status: "applied",
-        appliedAt: at(-MINUTE),
+        appliedAt: at(-MINUTE_MS),
         providerResult: { sent_copy: "pending" },
       });
       const old = await ended(trx, o, {
         status: "applied",
-        appliedAt: new Date(T.getTime() - SENT_COPY_PENDING_MAX_AGE_MS - MINUTE),
+        appliedAt: new Date(T.getTime() - SENT_COPY_PENDING_MAX_AGE_MS - MINUTE_MS),
         providerResult: { sent_copy: "pending" },
       });
 
@@ -1552,7 +1563,7 @@ describe("send result notices", () => {
       const o = await sendOrg(trx);
       const graph = await ended(trx, o, {
         status: "applied",
-        appliedAt: at(-20 * MINUTE),
+        appliedAt: at(-20 * MINUTE_MS),
         providerResult: { sent_copy: "provider" },
       });
 
@@ -1568,7 +1579,7 @@ describe("send result notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sendOrg(trx);
-      const applied = { status: "applied", appliedAt: at(-20 * MINUTE), providerResult: { sent_copy: "appended" } };
+      const applied = { status: "applied", appliedAt: at(-20 * MINUTE_MS), providerResult: { sent_copy: "appended" } };
       const removed = await ended(trx, o, applied);
       await insertAction(trx, o.ctx, removed.emailId, {
         type: "create_draft",
@@ -1589,7 +1600,7 @@ describe("send result notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sendOrg(trx);
-      const sent = { status: "applied", appliedAt: at(-20 * MINUTE), providerResult: { sent_copy: "appended" } };
+      const sent = { status: "applied", appliedAt: at(-20 * MINUTE_MS), providerResult: { sent_copy: "appended" } };
       const before = await ended(trx, o, sent);
       await run(trx);
       expect((await resultText(trx, o, before.sendId)).data).toEqual([]);
@@ -1659,7 +1670,7 @@ describe("send result notices", () => {
         payload: { kind: "delegation", to: [first.to] },
         dependsOnActionId: first.draftId,
         idempotencyKey: `${first.sendId}:again`,
-        createdAt: at(-20 * MINUTE),
+        createdAt: at(-20 * MINUTE_MS),
       });
 
       await run(trx);
@@ -1907,7 +1918,7 @@ describe("send_held notices", () => {
     await detectNotices({
       db: trx,
       now: () => now,
-      startedAt: new Date(now.getTime() - HOUR),
+      startedAt: new Date(now.getTime() - HOUR_MS),
       testMail: NO_TEST_SENDERS,
     });
   }
@@ -1916,7 +1927,7 @@ describe("send_held notices", () => {
   async function held(trx: Transaction<DB>, o: Org, nextAttemptAt: Date, lastError: string | null = LIMIT_ERROR) {
     const p = await waiting(trx, o, {
       sendStatus: "approved",
-      approved: { userId: o.ownerId, at: at(-20 * MINUTE) },
+      approved: { userId: o.ownerId, at: at(-20 * MINUTE_MS) },
       outgoingMessageId: `<${randomUUID()}@x.test>`,
     });
     await trx
@@ -1931,8 +1942,8 @@ describe("send_held notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE));
-      await held(trx, o, new Date(NOW.getTime() + 20 * MINUTE));
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE_MS));
+      await held(trx, o, new Date(NOW.getTime() + 20 * MINUTE_MS));
 
       await runAt(trx, NOW);
       const first = await rows(trx, o.orgId, "send_held");
@@ -1944,7 +1955,7 @@ describe("send_held notices", () => {
         status: "pending",
       });
       expect(first[0]?.view).toMatchObject({ mailboxId: o.mailboxId, limit: "mailbox_hour", waiting: 2 });
-      expect(new Date((first[0]?.view as { nextAt: string }).nextAt)).toEqual(new Date(NOW.getTime() + 10 * MINUTE));
+      expect(new Date((first[0]?.view as { nextAt: string }).nextAt)).toEqual(new Date(NOW.getTime() + 10 * MINUTE_MS));
       expect(first[0]?.text).toContain("2 waiting; the next one goes out at about");
 
       await runAt(trx, NOW);
@@ -1966,8 +1977,8 @@ describe("send_held notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await held(trx, o, new Date(NOW.getTime() - MINUTE));
-      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE), "smtp_421");
+      await held(trx, o, new Date(NOW.getTime() - MINUTE_MS));
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE_MS), "smtp_421");
 
       await runAt(trx, NOW);
       expect(await rows(trx, o.orgId, "send_held")).toEqual([]);
@@ -1978,7 +1989,7 @@ describe("send_held notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE), "send_limit:123456:MARKER-LIMIT");
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE_MS), "send_limit:123456:MARKER-LIMIT");
 
       await runAt(trx, NOW);
       expect(await rows(trx, o.orgId, "send_held")).toEqual([]);
@@ -1995,11 +2006,16 @@ describe("send_held notices", () => {
       await isolateChannels(trx);
       const a = await org(trx);
       const b = await org(trx);
-      await held(trx, a, new Date(NOW.getTime() + 10 * MINUTE));
+      await held(trx, a, new Date(NOW.getTime() + 10 * MINUTE_MS));
 
       expect(await listSendLimitHolds(trx, b.ctx, NOW)).toEqual([]);
       expect(await listSendLimitHolds(trx, a.ctx, NOW)).toEqual([
-        { mailboxId: a.mailboxId, waiting: 1, nextAt: new Date(NOW.getTime() + 10 * MINUTE), lastError: LIMIT_ERROR },
+        {
+          mailboxId: a.mailboxId,
+          waiting: 1,
+          nextAt: new Date(NOW.getTime() + 10 * MINUTE_MS),
+          lastError: LIMIT_ERROR,
+        },
       ]);
     });
   });
@@ -2008,11 +2024,11 @@ describe("send_held notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      await held(trx, o, new Date(NOW.getTime() + 30 * MINUTE), "send_limit:mailbox_day");
-      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE), "send_limit:recipient_day");
+      await held(trx, o, new Date(NOW.getTime() + 30 * MINUTE_MS), "send_limit:mailbox_day");
+      await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE_MS), "send_limit:recipient_day");
 
       expect(await listSendLimitHolds(trx, o.ctx, NOW)).toMatchObject([
-        { waiting: 2, nextAt: new Date(NOW.getTime() + 10 * MINUTE), lastError: "send_limit:recipient_day" },
+        { waiting: 2, nextAt: new Date(NOW.getTime() + 10 * MINUTE_MS), lastError: "send_limit:recipient_day" },
       ]);
     });
   });
@@ -2021,20 +2037,20 @@ describe("send_held notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await org(trx);
-      const p = await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE));
+      const p = await held(trx, o, new Date(NOW.getTime() + 10 * MINUTE_MS));
       await runAt(trx, NOW);
       expect((await rows(trx, o.orgId, "send_held")).map((row) => row.status)).toEqual(["pending"]);
 
       await trx
         .updateTable("actions")
-        .set({ next_attempt_at: new Date(NOW.getTime() - MINUTE) })
+        .set({ next_attempt_at: new Date(NOW.getTime() - MINUTE_MS) })
         .where("id", "=", p.sendId)
         .execute();
       await runAt(trx, NOW);
       expect(await rows(trx, o.orgId, "send_held")).toMatchObject([{ status: "failed", error_code: "outdated" }]);
 
       const paused = await org(trx);
-      await held(trx, paused, new Date(NOW.getTime() + 10 * MINUTE));
+      await held(trx, paused, new Date(NOW.getTime() + 10 * MINUTE_MS));
       await setStatus(trx, paused, "paused");
       await runAt(trx, NOW);
       expect(await rows(trx, paused.orgId, "send_held")).toEqual([]);
@@ -2044,7 +2060,7 @@ describe("send_held notices", () => {
 
 describe("delegation answered notices", () => {
   async function answered(trx: Transaction<DB>, o: Org, opts: { withAnswerMail: boolean }) {
-    const p = await waiting(trx, o, { sendStatus: "applied", approved: { userId: o.ownerId, at: at(-3 * HOUR) } });
+    const p = await waiting(trx, o, { sendStatus: "applied", approved: { userId: o.ownerId, at: at(-3 * HOUR_MS) } });
     await trx.updateTable("actions").set({ result_notified_at: T }).where("id", "=", p.sendId).execute();
     const delegationId = await insertDelegation(trx, o.ctx, {
       mailboxId: o.mailboxId,
@@ -2053,10 +2069,10 @@ describe("delegation answered notices", () => {
       draftActionId: p.draftId,
       sendActionId: p.sendId,
       status: "answered",
-      answeredAt: at(-5 * MINUTE),
+      answeredAt: at(-5 * MINUTE_MS),
     });
     if (opts.withAnswerMail) {
-      const answerId = await insertTestEmail(trx, o.ctx, o.mailboxId, { received_at: at(-10 * MINUTE) });
+      const answerId = await insertTestEmail(trx, o.ctx, o.mailboxId, { received_at: at(-10 * MINUTE_MS) });
       await trx
         .updateTable("delegations")
         .set({ answered_email_id: answerId })
@@ -2139,7 +2155,6 @@ describe("urgent notice with a delegate", () => {
 
 describe("after a resume (D4)", () => {
   const resumedAt = new Date("2026-11-12T08:00:00Z");
-  const DAY = 24 * HOUR;
 
   function later(offsetMs: number): Date {
     return new Date(resumedAt.getTime() + offsetMs);
@@ -2151,15 +2166,15 @@ describe("after a resume (D4)", () => {
     await resumeOrg(trx, o.orgId, resumedAt);
     await trx
       .updateTable("chat_links")
-      .set({ linked_at: later(-10 * DAY) })
+      .set({ linked_at: later(-10 * DAY_MS) })
       .where("org_id", "=", o.orgId)
       .execute();
     await trx
       .updateTable("mailboxes")
       .set({
         status: "active",
-        status_changed_at: later(-10 * DAY),
-        created_at: later(-10 * DAY),
+        status_changed_at: later(-10 * DAY_MS),
+        created_at: later(-10 * DAY_MS),
         last_synced_at: lastSyncedAt,
       })
       .where("id", "=", o.mailboxId)
@@ -2171,7 +2186,7 @@ describe("after a resume (D4)", () => {
     await detectNotices({
       db: trx,
       now: () => now,
-      startedAt: new Date(now.getTime() - HOUR),
+      startedAt: new Date(now.getTime() - HOUR_MS),
       testMail: NO_TEST_SENDERS,
     });
   }
@@ -2179,13 +2194,13 @@ describe("after a resume (D4)", () => {
   test("no sync-late row in the first 30 minutes after the resume; one after, unless the sync is fresh", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const stale = await resumedOrg(trx, later(-3 * DAY));
-      const fresh = await resumedOrg(trx, later(2 * MINUTE));
+      const stale = await resumedOrg(trx, later(-3 * DAY_MS));
+      const fresh = await resumedOrg(trx, later(2 * MINUTE_MS));
 
-      await runAt(trx, later(5 * MINUTE));
+      await runAt(trx, later(5 * MINUTE_MS));
       expect(await rows(trx, stale.orgId, "sync_stale")).toHaveLength(0);
 
-      await runAt(trx, later(31 * MINUTE));
+      await runAt(trx, later(31 * MINUTE_MS));
       expect(await rows(trx, stale.orgId, "sync_stale")).toHaveLength(1);
       expect(await rows(trx, fresh.orgId, "sync_stale")).toHaveLength(0);
     });
@@ -2194,11 +2209,14 @@ describe("after a resume (D4)", () => {
   test("urgent mail of before the resume gets no notice; mail after it does", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const o = await resumedOrg(trx, later(2 * MINUTE));
-      const before = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: later(-2 * HOUR) });
-      const after = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: later(MINUTE) });
+      const o = await resumedOrg(trx, later(2 * MINUTE_MS));
+      const before = await insertTriaged(trx, o.ctx, o.mailboxId, {
+        category: "urgent",
+        createdAt: later(-2 * HOUR_MS),
+      });
+      const after = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: later(MINUTE_MS) });
 
-      await runAt(trx, later(3 * MINUTE));
+      await runAt(trx, later(3 * MINUTE_MS));
 
       const found = await rows(trx, o.orgId, "urgent");
       expect(found.length).toBeGreaterThan(0);
@@ -2218,8 +2236,11 @@ describe("stored views and locales", () => {
       await isolateChannels(trx);
       const o = await sendOrg(trx);
       for (const userId of [o.ownerId, o.secondOwnerId, o.assistantId]) await setLocale(trx, userId, "en");
-      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
-      const failedMail = await insertTriaged(trx, o.ctx, o.mailboxId, { category: "info", createdAt: at(-2 * HOUR) });
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
+      const failedMail = await insertTriaged(trx, o.ctx, o.mailboxId, {
+        category: "info",
+        createdAt: at(-2 * HOUR_MS),
+      });
       const failed = await insertAction(trx, o.ctx, failedMail, {
         type: "move",
         status: "failed",
@@ -2227,19 +2248,19 @@ describe("stored views and locales", () => {
       });
       await trx
         .updateTable("actions")
-        .set({ status_reason: "hard_error", attempts: 3, updated_at: at(-MINUTE) })
+        .set({ status_reason: "hard_error", attempts: 3, updated_at: at(-MINUTE_MS) })
         .where("id", "=", failed)
         .execute();
       await waiting(trx, o);
       await ended(trx, o, {
         status: "applied",
-        appliedAt: at(-20 * MINUTE),
+        appliedAt: at(-20 * MINUTE_MS),
         providerResult: { sent_copy: "appended" },
       });
-      await setStatus(trx, o, "auth_error", at(-HOUR));
+      await setStatus(trx, o, "auth_error", at(-HOUR_MS));
       await run(trx);
-      await setStatus(trx, o, "active", at(-HOUR));
-      await markSynced(trx, o.ctx, o.mailboxId, at(-40 * MINUTE));
+      await setStatus(trx, o, "active", at(-HOUR_MS));
+      await markSynced(trx, o.ctx, o.mailboxId, at(-40 * MINUTE_MS));
       await run(trx);
 
       const found = await rows(trx, o.orgId);
@@ -2260,7 +2281,7 @@ describe("stored views and locales", () => {
       const o = await org(trx);
       await setLocale(trx, o.ownerId, "en");
       await setLocale(trx, o.assistantId, null);
-      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE) });
+      await insertTriaged(trx, o.ctx, o.mailboxId, { category: "urgent", createdAt: at(-10 * MINUTE_MS) });
 
       await run(trx);
 
@@ -2297,7 +2318,6 @@ describe("stored views and locales", () => {
 });
 
 describe("sent_missing notices", () => {
-  const DAY = 24 * HOUR;
   const initialOff = [...featureSettings().off];
 
   beforeEach(() => {
@@ -2325,14 +2345,14 @@ describe("sent_missing notices", () => {
   ): Promise<SentOrg> {
     const o = await org(trx);
     const secondOwnerId = await addMember(trx, o.orgId, "owner");
-    await linkChat(trx, o.ctx, secondOwnerId, randomChatId(), at(-HOUR));
+    await linkChat(trx, o.ctx, secondOwnerId, randomChatId(), at(-HOUR_MS));
     await upsertOrgFeature(trx, o.ctx, {
       flag: "sent_sync",
       enabled: opts.flag ?? true,
       setBy: "test",
       setAt: T,
     });
-    await writeSentSwitch(trx, o.ctx, o.mailboxId, { enabled: opts.switchOn ?? true, at: at(-30 * DAY) });
+    await writeSentSwitch(trx, o.ctx, o.mailboxId, { enabled: opts.switchOn ?? true, at: at(-30 * DAY_MS) });
     if (opts.switchOn === false) return { ...o, secondOwnerId };
     await trx
       .updateTable("mailbox_sent_sync")
@@ -2340,8 +2360,8 @@ describe("sent_missing notices", () => {
         path: "Sent",
         uidvalidity: "7",
         last_uid: "1",
-        first_pass_at: opts.firstPass ?? at(-8 * DAY),
-        last_pass_at: opts.lastPass === undefined ? at(-5 * MINUTE) : opts.lastPass,
+        first_pass_at: opts.firstPass ?? at(-8 * DAY_MS),
+        last_pass_at: opts.lastPass === undefined ? at(-5 * MINUTE_MS) : opts.lastPass,
         last_error_code: opts.errorCode ?? null,
       })
       .where("mailbox_id", "=", o.mailboxId)
@@ -2402,12 +2422,12 @@ describe("sent_missing notices", () => {
         await trx.selectFrom("mailboxes").select("address").where("id", "=", o.mailboxId).executeTakeFirstOrThrow()
       ).address;
       for (const row of found) {
-        expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-8 * DAY).getTime()}`);
+        expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-8 * DAY_MS).getTime()}`);
         expect(row.mailbox_id).toBe(o.mailboxId);
         expect(row.status).toBe("pending");
         expect(row.view).toEqual({
           address,
-          since: at(-8 * DAY).toISOString(),
+          since: at(-8 * DAY_MS).toISOString(),
           now: T.toISOString(),
           timeZone: "Europe/Warsaw",
         });
@@ -2429,17 +2449,17 @@ describe("sent_missing notices", () => {
   test("3: the newest user mail starts the quiet period when it is later than the first pass", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const o = await sentOrg(trx, { firstPass: at(-20 * DAY) });
-      await sentMail(trx, o, at(-9 * DAY));
-      await sentMail(trx, o, at(-15 * DAY));
+      const o = await sentOrg(trx, { firstPass: at(-20 * DAY_MS) });
+      await sentMail(trx, o, at(-9 * DAY_MS));
+      await sentMail(trx, o, at(-15 * DAY_MS));
 
       await run(trx);
 
       const found = await missing(trx, o);
       expect(found).toHaveLength(2);
       for (const row of found) {
-        expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-9 * DAY).getTime()}`);
-        expect((row.view as { since: string }).since).toBe(at(-9 * DAY).toISOString());
+        expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-9 * DAY_MS).getTime()}`);
+        expect((row.view as { since: string }).since).toBe(at(-9 * DAY_MS).toISOString());
       }
     });
   });
@@ -2447,12 +2467,12 @@ describe("sent_missing notices", () => {
   test("4: a user mail 6 days ago gives no row; a pending row of the older period is cancelled", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const o = await sentOrg(trx, { firstPass: at(-20 * DAY) });
-      await sentMail(trx, o, at(-9 * DAY));
+      const o = await sentOrg(trx, { firstPass: at(-20 * DAY_MS) });
+      await sentMail(trx, o, at(-9 * DAY_MS));
       await run(trx);
       expect(await missing(trx, o)).toHaveLength(2);
 
-      await sentMail(trx, o, at(-6 * DAY));
+      await sentMail(trx, o, at(-6 * DAY_MS));
       await run(trx);
 
       await expectCancelled(trx, o);
@@ -2463,17 +2483,17 @@ describe("sent_missing notices", () => {
   test("a new quiet period after a new user mail: a new row; the old pending row is cancelled", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const o = await sentOrg(trx, { firstPass: at(-30 * DAY) });
+      const o = await sentOrg(trx, { firstPass: at(-30 * DAY_MS) });
       await run(trx);
-      const firstKey = `sent_missing:${o.mailboxId}:${at(-30 * DAY).getTime()}`;
+      const firstKey = `sent_missing:${o.mailboxId}:${at(-30 * DAY_MS).getTime()}`;
       expect((await missing(trx, o)).map((row) => row.dedup_key)).toEqual([firstKey, firstKey]);
 
-      await sentMail(trx, o, at(-8 * DAY));
+      await sentMail(trx, o, at(-8 * DAY_MS));
       await run(trx);
 
       const found = await missing(trx, o);
       expect(found).toHaveLength(4);
-      const secondKey = `sent_missing:${o.mailboxId}:${at(-8 * DAY).getTime()}`;
+      const secondKey = `sent_missing:${o.mailboxId}:${at(-8 * DAY_MS).getTime()}`;
       expect(found.filter((row) => row.dedup_key === firstKey).every((row) => row.status === "failed")).toBe(true);
       expect(found.filter((row) => row.dedup_key === secondKey).map((row) => row.status)).toEqual([
         "pending",
@@ -2486,7 +2506,7 @@ describe("sent_missing notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sentOrg(trx);
-      await sentMail(trx, o, at(-DAY), { origin: "system", actionId: randomUUID() });
+      await sentMail(trx, o, at(-DAY_MS), { origin: "system", actionId: randomUUID() });
       await run(trx);
       expect(await missing(trx, o)).toHaveLength(2);
     });
@@ -2495,13 +2515,13 @@ describe("sent_missing notices", () => {
   test("6: a first pass 6 days ago gives no row; the limit is 7 days, not less", async () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
-      const o = await sentOrg(trx, { firstPass: at(-6 * DAY) });
+      const o = await sentOrg(trx, { firstPass: at(-6 * DAY_MS) });
       await run(trx);
       expect(await missing(trx, o)).toHaveLength(0);
 
       await trx
         .updateTable("mailbox_sent_sync")
-        .set({ first_pass_at: new Date(at(-7 * DAY).getTime() + 1) })
+        .set({ first_pass_at: new Date(at(-7 * DAY_MS).getTime() + 1) })
         .where("mailbox_id", "=", o.mailboxId)
         .execute();
       await run(trx);
@@ -2509,7 +2529,7 @@ describe("sent_missing notices", () => {
 
       await trx
         .updateTable("mailbox_sent_sync")
-        .set({ first_pass_at: at(-7 * DAY) })
+        .set({ first_pass_at: at(-7 * DAY_MS) })
         .where("mailbox_id", "=", o.mailboxId)
         .execute();
       await run(trx);
@@ -2524,9 +2544,9 @@ describe("sent_missing notices", () => {
         (trx, o) => upsertOrgFeature(trx, o.ctx, { flag: "sent_sync", enabled: false, setBy: "test", setAt: T }),
       ],
       ["mailbox paused", (trx, o) => setStatus(trx, o, "paused")],
-      ["mailbox host_blocked", (trx, o) => setStatus(trx, o, "host_blocked", at(-HOUR))],
-      ["mailbox auth_error", (trx, o) => setStatus(trx, o, "auth_error", at(-HOUR))],
-      ["switch off", (trx, o) => writeSentSwitch(trx, o.ctx, o.mailboxId, { enabled: false, at: at(-HOUR) })],
+      ["mailbox host_blocked", (trx, o) => setStatus(trx, o, "host_blocked", at(-HOUR_MS))],
+      ["mailbox auth_error", (trx, o) => setStatus(trx, o, "auth_error", at(-HOUR_MS))],
+      ["switch off", (trx, o) => writeSentSwitch(trx, o.ctx, o.mailboxId, { enabled: false, at: at(-HOUR_MS) })],
     ];
     test.each(cases)("%s", async (_name, change) => {
       await withRollback(db, async (trx) => {
@@ -2560,12 +2580,12 @@ describe("sent_missing notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const a = await sentOrg(trx);
-      const b = await sentOrg(trx, { firstPass: at(-12 * DAY) });
+      const b = await sentOrg(trx, { firstPass: at(-12 * DAY_MS) });
       // Organization C is quiet too but its flag is off: the flag of A and B does not reach it.
       const c = await sentOrg(trx, { flag: false });
       // Organization D has a recent mail: the quiet mailbox of A does not make D quiet.
-      const d = await sentOrg(trx, { firstPass: at(-20 * DAY) });
-      await sentMail(trx, d, at(-2 * DAY));
+      const d = await sentOrg(trx, { firstPass: at(-20 * DAY_MS) });
+      await sentMail(trx, d, at(-2 * DAY_MS));
 
       await run(trx);
 
@@ -2579,7 +2599,7 @@ describe("sent_missing notices", () => {
         expect(found.map((row) => row.user_id).sort()).toEqual([o.ownerId, o.secondOwnerId].sort());
         for (const row of found) {
           expect(row.mailbox_id).toBe(o.mailboxId);
-          expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-days * DAY).getTime()}`);
+          expect(row.dedup_key).toBe(`sent_missing:${o.mailboxId}:${at(-days * DAY_MS).getTime()}`);
         }
       }
       const all = await trx
@@ -2606,10 +2626,10 @@ describe("sent_missing notices", () => {
       await run(trx);
       await expectCancelled(trx, o);
 
-      const stale = await sentOrg(trx, { lastPass: at(-2 * HOUR) });
+      const stale = await sentOrg(trx, { lastPass: at(-2 * HOUR_MS) });
       await run(trx);
       expect(await missing(trx, stale)).toHaveLength(0);
-      const edge = await sentOrg(trx, { lastPass: at(-HOUR) });
+      const edge = await sentOrg(trx, { lastPass: at(-HOUR_MS) });
       await run(trx);
       expect(await missing(trx, edge)).toHaveLength(2);
       const never = await sentOrg(trx, { lastPass: null });
@@ -2628,7 +2648,7 @@ describe("sent_missing notices", () => {
       // Off, then on: the new period has a first pass 20 minutes ago. An old pass marks its own start time.
       await trx
         .updateTable("mailbox_sent_sync")
-        .set({ first_pass_at: at(-20 * MINUTE), last_pass_at: at(-30 * MINUTE) })
+        .set({ first_pass_at: at(-20 * MINUTE_MS), last_pass_at: at(-30 * MINUTE_MS) })
         .where("mailbox_id", "=", o.mailboxId)
         .execute();
       await run(trx);
@@ -2648,10 +2668,10 @@ describe("sent_missing notices", () => {
       capabilities: testCapabilities,
       folderMap: {},
     });
-    await writeSentSwitch(trx, o.ctx, id, { enabled: true, at: at(-30 * DAY) });
+    await writeSentSwitch(trx, o.ctx, id, { enabled: true, at: at(-30 * DAY_MS) });
     await trx
       .updateTable("mailbox_sent_sync")
-      .set({ path: "Sent", first_pass_at: firstPass, last_pass_at: at(-MINUTE) })
+      .set({ path: "Sent", first_pass_at: firstPass, last_pass_at: at(-MINUTE_MS) })
       .where("mailbox_id", "=", id)
       .execute();
     return id;
@@ -2661,9 +2681,9 @@ describe("sent_missing notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sentOrg(trx);
-      const quiet = await secondMailbox(trx, o, at(-9 * DAY));
-      const recent = await secondMailbox(trx, o, at(-20 * DAY));
-      await sentMail(trx, { ...o, mailboxId: recent }, at(-2 * DAY));
+      const quiet = await secondMailbox(trx, o, at(-9 * DAY_MS));
+      const recent = await secondMailbox(trx, o, at(-20 * DAY_MS));
+      await sentMail(trx, { ...o, mailboxId: recent }, at(-2 * DAY_MS));
 
       await run(trx);
 
@@ -2677,8 +2697,8 @@ describe("sent_missing notices", () => {
         const own = found.filter((row) => row.mailbox_id === mailboxId);
         expect(own).toHaveLength(2);
         for (const row of own) {
-          expect(row.dedup_key).toBe(`sent_missing:${mailboxId}:${at(-days * DAY).getTime()}`);
-          expect((row.view as { since: string }).since).toBe(at(-days * DAY).toISOString());
+          expect(row.dedup_key).toBe(`sent_missing:${mailboxId}:${at(-days * DAY_MS).getTime()}`);
+          expect((row.view as { since: string }).since).toBe(at(-days * DAY_MS).toISOString());
         }
       }
     });
@@ -2688,7 +2708,7 @@ describe("sent_missing notices", () => {
     await withRollback(db, async (trx) => {
       await isolateChannels(trx);
       const o = await sentOrg(trx);
-      const broken = await secondMailbox(trx, o, at(-9 * DAY));
+      const broken = await secondMailbox(trx, o, at(-9 * DAY_MS));
       const original = noticeQueue.queueNotice;
       const spy = spyOn(noticeQueue, "queueNotice").mockImplementation(async (...args) => {
         if (args[2].mailboxId === broken) throw new Error("test failure");

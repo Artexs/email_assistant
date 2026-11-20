@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -136,7 +137,7 @@ describe("job:run CLI", () => {
       await setOrgFeature(trx, ctx, { flag: "sender_context", enabled: true, actor: "cli", now: new Date() });
       await seedSenderActivity(trx, ctx, org.mailboxId, {
         address: "anna.cli@acme.pl",
-        mails: [{ at: new Date(Date.now() - 24 * 3_600_000) }],
+        mails: [{ at: new Date(Date.now() - DAY_MS) }],
       });
       return org;
     });
@@ -168,7 +169,7 @@ describe("job:run CLI", () => {
       await db.transaction().execute(async (trx) => {
         await seedSenderActivity(trx, { orgId: created.orgId }, created.mailboxId, {
           address: "anna.cli@acme.pl",
-          mails: [{ at: new Date(Date.now() - 3_600_000) }],
+          mails: [{ at: new Date(Date.now() - HOUR_MS) }],
         });
       });
       const failed = await runJob(["--name", "contacts.refresh"]);

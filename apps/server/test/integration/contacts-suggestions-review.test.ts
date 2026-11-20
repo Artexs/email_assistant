@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { isStorableSuggestionPattern, matchSender } from "@ea/core";
+import { isStorableSuggestionPattern, matchSender, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -47,7 +47,7 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const later = (hours: number) => new Date(NOW.getTime() + hours * 3_600_000);
+const later = (hours: number) => new Date(NOW.getTime() + hours * HOUR_MS);
 const pass = (org: Org, d: typeof db | Transaction<DB> = db) =>
   refreshMailboxProfiles({ db: d, credentialsKey: KEY, testMail: NO_TEST }, org.ctx, org.mailboxId, { now: NOW });
 const profileCount = async (org: Org) =>

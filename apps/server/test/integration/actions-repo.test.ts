@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -180,9 +181,7 @@ describe("actions repository", () => {
 });
 
 const NOW = new Date("2026-11-07T12:00:00.000Z");
-const STALE_BEFORE = new Date(NOW.getTime() - 10 * 60_000);
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
+const STALE_BEFORE = new Date(NOW.getTime() - 10 * MINUTE_MS);
 const ALL: MailboxClaimFilter = { kind: "all" };
 const SEND_ALL: SendClaimFilter = { kind: "all" };
 
@@ -214,14 +213,14 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const newer = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
-        receivedAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
+        receivedAt: ago(HOUR_MS),
         actions: [ready("move"), ready("flag"), ready("save_summary"), ready("mark_read")],
       });
       const older = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
-        receivedAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
+        receivedAt: ago(2 * HOUR_MS),
         actions: [ready("move"), ready("flag")],
       });
 
@@ -250,12 +249,12 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const first = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("flag")],
       });
       const second = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("flag")],
       });
       const expected = [first.emailId, second.emailId].sort();
@@ -269,13 +268,13 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const synthetic = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
         messageId: "<seed-1@ea-seed.test>",
         actions: [ready("flag"), ready("save_summary")],
       });
       const real = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         messageId: "<real-1@example.com>",
         actions: [ready("flag"), ready("save_summary")],
       });
@@ -306,14 +305,14 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const fromTestSender = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
         messageId: "<t-1@ses.test>",
         from: "T@a.test",
         actions: [ready("move")],
       });
       await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         messageId: "<b-1@firma.test>",
         from: "boss@firma.test",
         actions: [ready("move")],
@@ -333,28 +332,28 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [],
       });
       const waiting = await insertAction(trx, a.ctx, mail.emailId, {
         ...ready("flag"),
-        nextAttemptAt: new Date(NOW.getTime() + 60_000),
-        createdAt: ago(HOUR),
+        nextAttemptAt: new Date(NOW.getTime() + MINUTE_MS),
+        createdAt: ago(HOUR_MS),
       });
       const fresh = await insertAction(trx, a.ctx, mail.emailId, {
         ...ready("mark_read"),
-        lockedAt: ago(60_000),
-        createdAt: ago(HOUR),
+        lockedAt: ago(MINUTE_MS),
+        createdAt: ago(HOUR_MS),
       });
       const stale = await insertAction(trx, a.ctx, mail.emailId, {
         ...ready("move"),
-        lockedAt: ago(20 * 60_000),
-        createdAt: ago(HOUR),
+        lockedAt: ago(20 * MINUTE_MS),
+        createdAt: ago(HOUR_MS),
       });
       const due = await insertAction(trx, a.ctx, mail.emailId, {
         ...ready("save_summary"),
-        nextAttemptAt: ago(60_000),
-        createdAt: ago(HOUR),
+        nextAttemptAt: ago(MINUTE_MS),
+        createdAt: ago(HOUR_MS),
       });
 
       expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
@@ -374,8 +373,8 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const old = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(8 * DAY),
-        receivedAt: ago(8 * DAY),
+        createdAt: ago(8 * DAY_MS),
+        receivedAt: ago(8 * DAY_MS),
         actions: [],
       });
       await insertAction(trx, a.ctx, old.emailId, { ...ready("move"), createdAt: NOW });
@@ -383,12 +382,12 @@ describe("claimActions", () => {
       const applied = await insertAction(trx, a.ctx, old.emailId, {
         type: "flag",
         status: "applied",
-        createdAt: ago(DAY),
+        createdAt: ago(DAY_MS),
       });
       const reverse = await insertAction(trx, a.ctx, old.emailId, {
         ...ready("flag"),
         reversesActionId: applied,
-        createdAt: ago(3 * DAY),
+        createdAt: ago(3 * DAY_MS),
       });
 
       expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
@@ -406,10 +405,10 @@ describe("claimActions", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [],
       });
-      await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(CLAIM_MAX_AGE_MS + HOUR) });
+      await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(CLAIM_MAX_AGE_MS + HOUR_MS) });
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
       expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
         total: 0,
@@ -426,7 +425,7 @@ describe("finishAction", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("flag"), ready("move")],
       });
       await trx
@@ -479,12 +478,12 @@ describe("releaseAction and releaseActions", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("flag")],
       });
       const [id] = mail.actionIds as [string];
       await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
-      const next = new Date(NOW.getTime() + 5 * 60_000);
+      const next = new Date(NOW.getTime() + 5 * MINUTE_MS);
 
       expect(
         await releaseAction(trx, a.ctx, id, new Date(NOW.getTime() + 1), {
@@ -514,7 +513,7 @@ describe("releaseAction and releaseActions", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("flag"), ready("mark_read")],
       });
       const [first, second] = mail.actionIds as [string, string];
@@ -542,12 +541,12 @@ describe("expireStaleReady", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [],
       });
-      const old = ago(25 * HOUR);
+      const old = ago(25 * HOUR_MS);
       const staleMove = await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: old });
-      const freshMove = await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(HOUR) });
+      const freshMove = await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(HOUR_MS) });
       const appliedFlag = await insertAction(trx, a.ctx, mail.emailId, {
         type: "flag",
         status: "applied",
@@ -562,7 +561,7 @@ describe("expireStaleReady", () => {
       const lockedMove = await insertAction(trx, a.ctx, mail.emailId, {
         ...ready("mark_read"),
         createdAt: old,
-        lockedAt: ago(60_000),
+        lockedAt: ago(MINUTE_MS),
       });
 
       const expired = await expireStaleReady(trx, a.ctx, a.mailboxId, { now: NOW, staleBefore: STALE_BEFORE });
@@ -581,11 +580,11 @@ describe("tenant filter", () => {
       const { a, b } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("flag"), ready("move")],
       });
       const [flag, move] = mail.actionIds as [string, string];
-      await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(25 * HOUR) });
+      await insertAction(trx, a.ctx, mail.emailId, { ...ready("move"), createdAt: ago(25 * HOUR_MS) });
 
       // org B asks for org A's mailbox
       expect(await countClaimable(trx, b.ctx, a.mailboxId, countOpts())).toEqual({
@@ -623,7 +622,7 @@ describe("claimActions with two connections", () => {
         for (let n = 0; n < 6; n += 1) {
           await insertTriagedWithActions(trx, ctx, created.mailboxId, {
             category: "info",
-            createdAt: ago((n + 1) * HOUR),
+            createdAt: ago((n + 1) * HOUR_MS),
             actions: [ready("flag")],
           });
         }
@@ -653,8 +652,8 @@ describe("listActionsForEmails (grown view)", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
-        actions: [{ type: "move", status: "undone", payload: { folder: "ai_info" }, appliedAt: ago(HOUR) }],
+        createdAt: ago(2 * HOUR_MS),
+        actions: [{ type: "move", status: "undone", payload: { folder: "ai_info" }, appliedAt: ago(HOUR_MS) }],
       });
       const [original] = mail.actionIds as [string];
       const reverse = await insertAction(trx, a.ctx, mail.emailId, {
@@ -663,7 +662,7 @@ describe("listActionsForEmails (grown view)", () => {
         payload: { folder: "ai_info" },
         reversesActionId: original,
         appliedAt: ago(1000),
-        createdAt: ago(60_000),
+        createdAt: ago(MINUTE_MS),
       });
 
       const views = (await listActionsForEmails(trx, a.ctx, [mail.emailId], new Date())).get(mail.emailId);
@@ -675,7 +674,7 @@ describe("listActionsForEmails (grown view)", () => {
           folder: "ai_info",
           reverse: false,
           reversesActionId: null,
-          appliedAt: ago(HOUR),
+          appliedAt: ago(HOUR_MS),
           kind: null,
           delegateId: null,
         },
@@ -699,7 +698,7 @@ describe("listActionsForEmails (grown view)", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         sourceFolder: "Wiadomości-śmieci",
         folder: "Wiadomości-śmieci",
         actions: [{ type: "move", status: "logged", payload: { folder: "inbox" } }],
@@ -715,7 +714,7 @@ describe("listActionsForEmails (grown view)", () => {
       const { a } = await createTwoTenants(trx);
       await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         folder: "AI/Info",
         sourceFolder: "Oferty",
         actions: [{ type: "move", status: "ready", payload: { folder: "ai_info" } }],
@@ -750,7 +749,7 @@ describe("markUndone", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
         actions: [
           { type: "move", status: "ready", payload: { folder: "ai_info" } },
           { type: "flag", status: "applied" },
@@ -774,7 +773,7 @@ describe("insertReverse", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
         actions: [{ type: "move", status: "applied", payload: { folder: "ai_info" } }],
       });
       const [original] = mail.actionIds as [string];
@@ -808,7 +807,7 @@ describe("lockActionsForUndo and lockLatestOriginalMove", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
         actions: [
           { type: "save_summary", status: "applied", payload: { summary: "s" } },
           { type: "flag", status: "applied" },
@@ -828,13 +827,13 @@ describe("lockActionsForUndo and lockLatestOriginalMove", () => {
         x.type.localeCompare(y.type)
       );
       expect(candidates).toEqual([
-        { id: flag, type: "flag", payload: {}, status: "applied", appliedAt: ago(2 * HOUR), reverse: null },
+        { id: flag, type: "flag", payload: {}, status: "applied", appliedAt: ago(2 * HOUR_MS), reverse: null },
         {
           id: move,
           type: "move",
           payload: { folder: "ai_info" },
           status: "applied",
-          appliedAt: ago(2 * HOUR),
+          appliedAt: ago(2 * HOUR_MS),
           reverse: { id: reverse as string, status: "ready" },
         },
       ]);
@@ -847,7 +846,7 @@ describe("lockActionsForUndo and lockLatestOriginalMove", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(5 * HOUR),
+        createdAt: ago(5 * HOUR_MS),
         actions: [{ type: "move", status: "undone", payload: { folder: "ai_info" } }],
       });
       expect(await lockLatestOriginalMove(trx, a.ctx, "00000000-0000-0000-0000-000000000000")).toBeUndefined();
@@ -855,7 +854,7 @@ describe("lockActionsForUndo and lockLatestOriginalMove", () => {
         type: "move",
         status: "applied",
         payload: { folder: "ai_info" },
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await insertAction(trx, a.ctx, mail.emailId, { type: "flag", status: "applied", createdAt: ago(1000) });
 
@@ -886,7 +885,7 @@ describe("lockActionsForUndo and lockLatestOriginalMove", () => {
       const mail = await db.transaction().execute((trx) =>
         insertTriagedWithActions(trx, ctx, created.mailboxId, {
           category: "info",
-          createdAt: ago(2 * HOUR),
+          createdAt: ago(2 * HOUR_MS),
           actions: [{ type: "move", status: "applied", payload: { folder: "ai_info" } }],
         })
       );
@@ -921,7 +920,7 @@ describe("listFailedUnnotified and markNotified", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(4 * DAY),
+        createdAt: ago(4 * DAY_MS),
         subject: "Quarterly plan",
         from: "boss@example.test",
         messageId: "<q@example.test>",
@@ -934,17 +933,17 @@ describe("listFailedUnnotified and markNotified", () => {
       const [notFound, old, notified] = mail.actionIds as [string, string, string];
       await trx
         .updateTable("actions")
-        .set({ status_reason: "mail_not_found", updated_at: ago(2 * DAY) })
+        .set({ status_reason: "mail_not_found", updated_at: ago(2 * DAY_MS) })
         .where("id", "=", notFound)
         .execute();
       await trx
         .updateTable("actions")
-        .set({ updated_at: ago(3 * DAY) })
+        .set({ updated_at: ago(3 * DAY_MS) })
         .where("id", "=", old)
         .execute();
       await trx
         .updateTable("actions")
-        .set({ notified_at: ago(DAY) })
+        .set({ notified_at: ago(DAY_MS) })
         .where("id", "=", notified)
         .execute();
       const reverse = await insertAction(trx, a.ctx, mail.emailId, {
@@ -953,7 +952,7 @@ describe("listFailedUnnotified and markNotified", () => {
         statusReason: "mail_not_found",
         reversesActionId: notFound,
         payload: { folder: "ai_info" },
-        createdAt: ago(DAY),
+        createdAt: ago(DAY_MS),
       });
 
       const listed = await listFailedUnnotified(trx, a.ctx, { limit: 10 });
@@ -967,7 +966,7 @@ describe("listFailedUnnotified and markNotified", () => {
         from_address: "boss@example.test",
         message_id_header: "<q@example.test>",
       });
-      expect(listed[0]?.updated_at.getTime()).toBe(ago(3 * DAY).getTime());
+      expect(listed[0]?.updated_at.getTime()).toBe(ago(3 * DAY_MS).getTime());
       expect(listed[1]).toMatchObject({
         reverse: true,
         status_reason: "mail_not_found",
@@ -989,20 +988,20 @@ describe("listFailedUnnotified: sends and drafts", () => {
       const failedPair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "failed",
         sendStatus: "failed",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const reverse = await insertAction(trx, a.ctx, failedPair.emailId, {
         type: "create_draft",
         status: "failed",
         reversesActionId: failedPair.draftId,
         payload: { kind: "delegation", folder: "Drafts", uid: 7, reason: "rejected" },
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const move = await insertAction(trx, a.ctx, failedPair.emailId, {
         type: "move",
         status: "failed",
         payload: { folder: "ai_info" },
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
 
       const listed = await listFailedUnnotified(trx, a.ctx, { limit: 10 });
@@ -1017,7 +1016,7 @@ describe("countActionsSince", () => {
       const { a } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [
           { type: "flag", status: "applied" },
           { type: "move", status: "undone", payload: { folder: "ai_info" } },
@@ -1033,14 +1032,14 @@ describe("countActionsSince", () => {
         createdAt: ago(1000),
       });
       // too old
-      await insertAction(trx, a.ctx, mail.emailId, { type: "flag", status: "applied", createdAt: ago(3 * DAY) });
+      await insertAction(trx, a.ctx, mail.emailId, { type: "flag", status: "applied", createdAt: ago(3 * DAY_MS) });
       await trx
         .updateTable("actions")
-        .set({ updated_at: ago(30 * 60_000) })
+        .set({ updated_at: ago(30 * MINUTE_MS) })
         .where("email_id", "=", mail.emailId)
         .execute();
 
-      expect(await countActionsSince(trx, a.ctx, { since: ago(2 * HOUR) })).toEqual({
+      expect(await countActionsSince(trx, a.ctx, { since: ago(2 * HOUR_MS) })).toEqual({
         applied: 1,
         failed: 1,
         undone: 1,
@@ -1055,7 +1054,7 @@ describe("countReadyOriginals", () => {
       const { a, b } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [
           { type: "flag", status: "ready" },
           { type: "move", status: "ready", payload: { folder: "ai_info" } },
@@ -1082,12 +1081,12 @@ describe("countReadyOriginals", () => {
       });
       await insertTriagedWithActions(trx, a.ctx, otherMailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [{ type: "flag", status: "ready" }],
       });
       await insertTriagedWithActions(trx, b.ctx, b.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [{ type: "flag", status: "ready" }],
       });
 
@@ -1106,7 +1105,7 @@ describe("expireReadyOriginals", () => {
         insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
           category,
           uid,
-          createdAt: ago(HOUR),
+          createdAt: ago(HOUR_MS),
           actions: [
             { type: "move", status: "ready", payload: { folder: "ai_info" } },
             { type: "mark_read", status: "ready" },
@@ -1124,7 +1123,7 @@ describe("expireReadyOriginals", () => {
       });
       const locked = await insertAction(trx, a.ctx, info.emailId, {
         ...ready("mark_read"),
-        lockedAt: ago(60_000),
+        lockedAt: ago(MINUTE_MS),
         createdAt: ago(2000),
       });
       const filter = { mailboxId: a.mailboxId, types: ["move", "mark_read"] as const };
@@ -1170,7 +1169,7 @@ describe("expireReadyOriginals", () => {
         insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
           category,
           uid,
-          createdAt: ago(HOUR),
+          createdAt: ago(HOUR_MS),
           actions: [
             { type: "move", status: "ready", payload: { folder: "ai_info" } },
             { type: "mark_read", status: "ready" },
@@ -1200,7 +1199,7 @@ describe("tenant filter (7.1b)", () => {
       const { a, b } = await createTwoTenants(trx);
       const mail = await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [
           { type: "move", status: "applied", payload: { folder: "ai_info" } },
           { type: "flag", status: "failed" },
@@ -1215,7 +1214,7 @@ describe("tenant filter (7.1b)", () => {
       expect(await lockLatestOriginalMove(trx, b.ctx, mail.emailId)).toBeUndefined();
       expect(await listFailedUnnotified(trx, b.ctx, { limit: 10 })).toEqual([]);
       expect(await markNotified(trx, b.ctx, flag, NOW)).toBe(false);
-      expect(await countActionsSince(trx, b.ctx, { since: ago(DAY) })).toEqual({ applied: 0, failed: 0, undone: 0 });
+      expect(await countActionsSince(trx, b.ctx, { since: ago(DAY_MS) })).toEqual({ applied: 0, failed: 0, undone: 0 });
       expect(
         await expireReadyOriginals(
           trx,
@@ -1337,7 +1336,7 @@ describe("createPlanned with dependsOn and setDelegationId", () => {
 });
 
 describe("claimActions: drafts and sends (D16, D17)", () => {
-  const MIN = 60_000;
+  const MIN = MINUTE_MS;
   const approvedNow = (userId: string) => ({ userId, at: ago(MIN) });
   const ids = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
 
@@ -1356,7 +1355,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const { a } = await setup(trx);
       const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "ready",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(claimed.map((row) => row.id)).toEqual([pair.draftId]);
@@ -1370,7 +1369,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         bodyText: "Hello body",
         inReplyTo: "<in@x.test>",
         referencesHeader: "<r1@x.test> <in@x.test>",
@@ -1390,7 +1389,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         payload: { kind: "delegation", to: ["d@x.test"] },
       });
       expect(send?.approved_at?.getTime()).toBe(ago(MIN).getTime());
-      expect(send?.created_at.getTime()).toBe(ago(HOUR).getTime());
+      expect(send?.created_at.getTime()).toBe(ago(HOUR_MS).getTime());
       expect(send?.original_created_at).toBeNull();
       expect(send?.email).toMatchObject({
         body_text: "Hello body",
@@ -1409,7 +1408,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         draftStatus: "ready",
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       // A draft is made only while its send waits: with the send `approved` the draft is not claimed either.
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
@@ -1424,12 +1423,12 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const rejected = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "ready",
         sendStatus: "rejected",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "ready",
         sendStatus: "expired",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
       expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
@@ -1452,7 +1451,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         sendStatus: "approved",
         approved: approvedNow(userId),
         to: "B@x.test",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const none: SendClaimFilter = { kind: "none" };
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, none))).toEqual([]);
@@ -1479,7 +1478,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const two = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await trx
         .updateTable("actions")
@@ -1489,7 +1488,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const empty = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await trx
         .updateTable("actions")
@@ -1499,7 +1498,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const broken = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await trx
         .updateTable("actions")
@@ -1520,7 +1519,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         sendStatus: "applying",
         approved: approvedNow(userId),
         outgoingMessageId: "<out@x.test>",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts(ALL, 50, { kind: "none" }));
       expect(claimed.map((row) => row.id)).toEqual([pair.sendId]);
@@ -1534,12 +1533,12 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const synthetic = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "ready",
         messageId: "<seed-1@ea-seed.test>",
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
       });
       const real = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "ready",
         messageId: "<real-1@example.com>",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts({ kind: "none" }))).toEqual([]);
       expect(
@@ -1558,11 +1557,11 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const approved = approvedNow(userId);
       const draftDue = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "applying",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const draftWait = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "applying",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await trx
         .updateTable("actions")
@@ -1578,25 +1577,25 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         sendStatus: "applying",
         approved,
         lockedAt: ago(11 * MIN),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const sendFresh = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "applying",
         approved,
         lockedAt: ago(MIN),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const approvedStale = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved,
         lockedAt: ago(11 * MIN),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const approvedFresh = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved,
         lockedAt: ago(MIN),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const claimed = ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts()));
       expect(claimed).toEqual([draftDue.draftId, sendStale.sendId, approvedStale.sendId].sort());
@@ -1612,7 +1611,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const [send] = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(send?.id).toBe(pair.sendId);
@@ -1632,7 +1631,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
   test("7: markApplying moves a claimed ready draft and keeps the outgoing id when none is given", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await setup(trx);
-      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR_MS) });
       await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(await markApplying(trx, a.ctx, pair.draftId, NOW)).toBe(true);
       expect(await actionState(trx, pair.draftId)).toMatchObject({ status: "applying", outgoing_message_id: null });
@@ -1647,7 +1646,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
           sendStatus: status,
           approved: approvedNow(userId),
           lockedAt: NOW,
-          createdAt: ago(HOUR),
+          createdAt: ago(HOUR_MS),
         });
       const one = await mk("applying");
       expect(await finishAction(trx, a.ctx, one.sendId, NOW, { status: "applied", at: NOW })).toBe(true);
@@ -1685,7 +1684,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
 
       const four = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "applying",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await trx.updateTable("actions").set({ locked_at: NOW }).where("id", "=", four.draftId).execute();
       expect(
@@ -1706,7 +1705,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         sendStatus: "applying",
         approved: approvedNow(userId),
         lockedAt: NOW,
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       expect(
         await releaseAction(trx, a.ctx, pair.sendId, NOW, {
@@ -1722,13 +1721,13 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         sendStatus: "approved",
         approved: approvedNow(userId),
         lockedAt: NOW,
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const applying = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "applying",
         approved: approvedNow(userId),
         lockedAt: NOW,
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       expect(await releaseActions(trx, a.ctx, [approved.sendId, applying.sendId], NOW, NOW)).toBe(2);
       expect(await actionState(trx, approved.sendId)).toMatchObject({ status: "approved", locked_at: null });
@@ -1739,7 +1738,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
   test("10: updateProviderResult merges into an existing object", async () => {
     await withRollback(db, async (trx) => {
       const { a, b } = await setup(trx);
-      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR_MS) });
       await trx
         .updateTable("actions")
         .set({ provider_result: JSON.stringify({ response: "250 ok", sent_copy: "pending" }) })
@@ -1763,22 +1762,22 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       // a second draft (reminder) of the same mail is ready with a waiting send; the order is by type rank
-      const move = await insertAction(trx, a.ctx, pair.emailId, { ...ready("move"), createdAt: ago(HOUR) });
+      const move = await insertAction(trx, a.ctx, pair.emailId, { ...ready("move"), createdAt: ago(HOUR_MS) });
       const second = await insertAction(trx, a.ctx, pair.emailId, {
         type: "create_draft",
         status: "ready",
         payload: { kind: "reminder" },
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const secondSend = await insertAction(trx, a.ctx, pair.emailId, {
         type: "send",
         status: "awaiting_approval",
         payload: { kind: "reminder", to: ["d@x.test"] },
         dependsOnActionId: second,
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(claimed.map((row) => [row.id, row.type])).toEqual([
@@ -1793,13 +1792,13 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
   test("12: a draft of mail received 8 days ago is claimed; a move of it is not", async () => {
     await withRollback(db, async (trx) => {
       const { a } = await setup(trx);
-      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR_MS) });
       await trx
         .updateTable("emails")
-        .set({ received_at: ago(8 * DAY) })
+        .set({ received_at: ago(8 * DAY_MS) })
         .where("id", "=", pair.emailId)
         .execute();
-      await insertAction(trx, a.ctx, pair.emailId, { ...ready("move"), createdAt: ago(HOUR) });
+      await insertAction(trx, a.ctx, pair.emailId, { ...ready("move"), createdAt: ago(HOUR_MS) });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(claimed.map((row) => row.type)).toEqual(["create_draft"]);
     });
@@ -1808,11 +1807,11 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
   test("13: org B's context claims and counts nothing of org A", async () => {
     await withRollback(db, async (trx) => {
       const { a, b, userId } = await setup(trx);
-      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR_MS) });
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       expect(await claimActions(trx, b.ctx, a.mailboxId, claimOpts())).toEqual([]);
       expect(await countClaimable(trx, b.ctx, a.mailboxId, countOpts())).toEqual({
@@ -1832,8 +1831,8 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const pair = await db.transaction().execute((trx) =>
         insertDraftAndSend(trx, ctx, created.mailboxId, {
           sendStatus: "approved",
-          approved: { userId: created.userId, at: ago(60_000) },
-          createdAt: ago(HOUR),
+          approved: { userId: created.userId, at: ago(MINUTE_MS) },
+          createdAt: ago(HOUR_MS),
         })
       );
       let first: { id: string }[] = [];
@@ -1856,7 +1855,7 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const pair = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "applied",
         sendStatus: "rejected",
-        createdAt: ago(3 * HOUR),
+        createdAt: ago(3 * HOUR_MS),
       });
       const reverse = await insertAction(trx, a.ctx, pair.emailId, {
         type: "create_draft",
@@ -1864,13 +1863,13 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         payload: { kind: "delegation", folder: "Drafts", uid: 4, reason: "rejected" },
         reversesActionId: pair.draftId,
         idempotencyKey: `${pair.draftId}:undo`,
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, claimOpts());
       expect(claimed.map((row) => row.id)).toEqual([reverse]);
       expect(claimed[0]?.reverses_action_id).toBe(pair.draftId);
-      expect(claimed[0]?.original_created_at?.getTime()).toBe(ago(3 * HOUR).getTime());
-      expect(claimed[0]?.created_at.getTime()).toBe(ago(HOUR).getTime());
+      expect(claimed[0]?.original_created_at?.getTime()).toBe(ago(3 * HOUR_MS).getTime());
+      expect(claimed[0]?.created_at.getTime()).toBe(ago(HOUR_MS).getTime());
     });
   });
 
@@ -1879,8 +1878,8 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
       const { a, userId } = await setup(trx);
       const old = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
-        approved: { userId, at: ago(APPROVAL_TTL_MS + HOUR) },
-        createdAt: ago(3 * DAY),
+        approved: { userId, at: ago(APPROVAL_TTL_MS + HOUR_MS) },
+        createdAt: ago(3 * DAY_MS),
       });
       expect(await claimActions(trx, a.ctx, a.mailboxId, claimOpts())).toEqual([]);
       expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({
@@ -1891,8 +1890,8 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
 
       const young = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
-        approved: { userId, at: ago(APPROVAL_TTL_MS - HOUR) },
-        createdAt: ago(3 * DAY),
+        approved: { userId, at: ago(APPROVAL_TTL_MS - HOUR_MS) },
+        createdAt: ago(3 * DAY_MS),
       });
       expect(ids(await claimActions(trx, a.ctx, a.mailboxId, claimOpts()))).toEqual([young.sendId]);
 
@@ -1912,21 +1911,21 @@ describe("claimActions: drafts and sends (D16, D17)", () => {
         sendStatus: "approved",
         approved: approvedNow(userId),
         to: "b@x.test",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         draftStatus: "ready",
         sendStatus: "approved",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       // an applying send and an awaiting one are not "held approved" sends
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "applying",
         approved: approvedNow(userId),
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
-      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR_MS) });
       expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "none" } })).toBe(1);
       expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "self", addresses: ["b@x.test"] } })).toBe(
         0
@@ -1945,15 +1944,15 @@ describe("countClaimable: drafts and sends", () => {
       const created = await createOrgWithMailbox(trx);
       const a = { ctx: { orgId: created.orgId }, mailboxId: created.mailboxId };
       const owner = { id: created.userId };
-      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR_MS) });
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
-        approved: { userId: owner.id, at: ago(60_000) },
-        createdAt: ago(HOUR),
+        approved: { userId: owner.id, at: ago(MINUTE_MS) },
+        createdAt: ago(HOUR_MS),
       });
       await insertTriagedWithActions(trx, a.ctx, a.mailboxId, {
         category: "info",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         actions: [ready("move"), ready("save_summary")],
       });
       expect(await countClaimable(trx, a.ctx, a.mailboxId, countOpts())).toEqual({

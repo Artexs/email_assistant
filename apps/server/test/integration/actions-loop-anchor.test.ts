@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -58,9 +59,7 @@ afterAll(async () => {
 type Trx = Transaction<DB>;
 
 const NOW = new Date("2026-11-20T12:00:00Z");
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
-const STALE_BEFORE = new Date(NOW.getTime() - 10 * 60_000);
+const STALE_BEFORE = new Date(NOW.getTime() - 10 * MINUTE_MS);
 const ago = (ms: number) => new Date(NOW.getTime() - ms);
 const FILTER: ClaimFilter = { mailbox: { kind: "all" }, send: { kind: "all" } };
 const CLAIM = { now: NOW, staleBefore: STALE_BEFORE, filter: FILTER };
@@ -85,16 +84,19 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
       const loopOfB = await insertLoopRow(trx, b, b.mailboxId);
-      const waiting = await insertLoopActionPair(trx, a, loopId, { createdAt: ago(HOUR) });
+      const waiting = await insertLoopActionPair(trx, a, loopId, { createdAt: ago(HOUR_MS) });
       const approved = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         sendStatus: "approved",
-        createdAt: ago(HOUR),
-        send: { approved_at: ago(HOUR), approved_by: a.userId, approved_via: "telegram" },
+        createdAt: ago(HOUR_MS),
+        send: { approved_at: ago(HOUR_MS), approved_by: a.userId, approved_via: "telegram" },
       });
-      const theirLoop = await insertLoopActionPair(trx, b, loopOfB, { createdAt: ago(HOUR) });
-      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
-      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      const theirLoop = await insertLoopActionPair(trx, b, loopOfB, { createdAt: ago(HOUR_MS) });
+      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR_MS) });
+      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, {
+        draftStatus: "ready",
+        createdAt: ago(HOUR_MS),
+      });
 
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, { ...CLAIM, limit: 50 });
       // The draft of the waiting loop send, the approved loop send and the mail draft. The waiting loop send is not claimed.
@@ -125,11 +127,11 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       });
       const mineLoop = await insertLoopRow(trx, a, a.mailboxId);
       const siblingLoop = await insertLoopRow(trx, a, siblingId);
-      const mine = await insertLoopActionPair(trx, a, mineLoop, { createdAt: ago(HOUR) });
-      const sibling = await insertLoopActionPair(trx, a, siblingLoop, { createdAt: ago(HOUR) });
+      const mine = await insertLoopActionPair(trx, a, mineLoop, { createdAt: ago(HOUR_MS) });
+      const sibling = await insertLoopActionPair(trx, a, siblingLoop, { createdAt: ago(HOUR_MS) });
       const mailOfSibling = await insertDraftAndSend(trx, a.ctx, siblingId, {
         draftStatus: "ready",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       const claimed = await claimActions(trx, a.ctx, a.mailboxId, { ...CLAIM, limit: 50 });
       expect(claimed.map((row) => row.id)).toEqual([mine.draftId]);
@@ -143,8 +145,8 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
     await withRollback(db, async (trx) => {
       const a = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
-      await insertLoopActionPair(trx, a, loopId, { createdAt: ago(HOUR) });
-      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR) });
+      await insertLoopActionPair(trx, a, loopId, { createdAt: ago(HOUR_MS) });
+      await insertDraftAndSend(trx, a.ctx, a.mailboxId, { draftStatus: "ready", createdAt: ago(HOUR_MS) });
       expect((await countClaimable(trx, a.ctx, a.mailboxId, CLAIM)).total).toBe(2);
     });
   });
@@ -156,11 +158,11 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         sendStatus: "approved",
-        send: { approved_at: ago(HOUR), approved_by: a.userId, approved_via: "telegram" },
+        send: { approved_at: ago(HOUR_MS), approved_by: a.userId, approved_via: "telegram" },
       });
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
-        approved: { userId: a.userId, at: ago(HOUR) },
+        approved: { userId: a.userId, at: ago(HOUR_MS) },
       });
       expect(await countHeldSends(trx, a.ctx, a.mailboxId, { send: { kind: "none" } })).toBe(2);
     });
@@ -171,9 +173,9 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       const a = await side(trx);
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
-      const loopSend = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(HOUR) });
-      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(2 * HOUR) });
-      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { createdAt: ago(HOUR) });
+      const loopSend = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(HOUR_MS) });
+      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(2 * HOUR_MS) });
+      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { createdAt: ago(HOUR_MS) });
 
       const list = await listApprovalSends(trx, a.ctx, { staleBefore: STALE_BEFORE, limit: 100 });
       // Newest first: the loop send (1 h old) before the mail send (2 h old).
@@ -211,32 +213,38 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
       const setId = "11111111-1111-4111-8111-111111111111";
-      const single = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(3 * HOUR) });
+      const single = await insertLoopActionPair(trx, a, loopId, {
+        draftStatus: "applied",
+        createdAt: ago(3 * HOUR_MS),
+      });
       // A forged `set_id` on a follow-up: it is still one card and never part of a set.
       const forged = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         setId,
-        createdAt: ago(2 * HOUR),
+        createdAt: ago(2 * HOUR_MS),
       });
       const ended = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         sendStatus: "expired",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
       // A failed follow-up is told by the fixed failure notice (`listFailedFollowUps`), never by a result line.
       const failedLoop = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
         sendStatus: "failed",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
         send: { status_reason: "outcome_unknown" },
       });
-      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR) });
+      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { createdAt: ago(HOUR_MS) });
       const mineSet = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         setId: "22222222-2222-4222-8222-222222222222",
-        createdAt: ago(HOUR),
+        createdAt: ago(HOUR_MS),
       });
-      const done = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { sendStatus: "expired", createdAt: ago(HOUR) });
-      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { createdAt: ago(HOUR) });
+      const done = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
+        sendStatus: "expired",
+        createdAt: ago(HOUR_MS),
+      });
+      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { createdAt: ago(HOUR_MS) });
 
       const cards = await listSendsToNotify(trx, a.ctx, { limit: 50 });
       expect(cards.map((send) => send.id).sort()).toEqual([single.sendId, forged.sendId, mine.sendId].sort());
@@ -251,7 +259,7 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       const results = await listSendResultsToNotify(trx, a.ctx, {
         limit: 50,
         now: NOW,
-        pendingCopyMaxAgeMs: HOUR,
+        pendingCopyMaxAgeMs: HOUR_MS,
       });
       expect(results.map((send) => send.id).sort()).toEqual([ended.sendId, done.sendId].sort());
       expect(await listFailedFollowUps(trx, a.ctx, { limit: 50 })).toEqual([
@@ -269,11 +277,11 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
         draftStatus: "applied",
         sendStatus: "approved",
         send: {
-          approved_at: ago(HOUR),
+          approved_at: ago(HOUR_MS),
           approved_by: a.userId,
           approved_via: "telegram",
           last_error: "send_limit:hourly",
-          next_attempt_at: new Date(NOW.getTime() + HOUR),
+          next_attempt_at: new Date(NOW.getTime() + HOUR_MS),
         },
       });
       await trx
@@ -291,11 +299,11 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
         .execute();
       const mail = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "approved",
-        approved: { userId: a.userId, at: ago(HOUR) },
+        approved: { userId: a.userId, at: ago(HOUR_MS) },
       });
       await trx
         .updateTable("actions")
-        .set({ last_error: "send_limit:hourly", next_attempt_at: new Date(NOW.getTime() + HOUR) })
+        .set({ last_error: "send_limit:hourly", next_attempt_at: new Date(NOW.getTime() + HOUR_MS) })
         .where("id", "=", mail.sendId)
         .execute();
 
@@ -317,11 +325,11 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
       const loopOfB = await insertLoopRow(trx, b, b.mailboxId);
       const started = {
-        approved_at: ago(HOUR),
+        approved_at: ago(HOUR_MS),
         approved_by: a.userId,
         approved_via: "telegram",
-        applied_at: ago(HOUR),
-        send_started_at: ago(HOUR),
+        applied_at: ago(HOUR_MS),
+        send_started_at: ago(HOUR_MS),
       };
       await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
@@ -339,19 +347,19 @@ describe("a loop-anchored pair and the readers of cards, lists and notices", () 
       });
       await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         sendStatus: "applying",
-        approved: { userId: a.userId, at: ago(HOUR) },
+        approved: { userId: a.userId, at: ago(HOUR_MS) },
       });
       await trx
         .updateTable("actions")
-        .set({ send_started_at: ago(HOUR) })
+        .set({ send_started_at: ago(HOUR_MS) })
         .where("status", "=", "applying")
         .execute();
-      const recent = await listRecentSends(trx, a.ctx, a.mailboxId, ago(DAY));
+      const recent = await listRecentSends(trx, a.ctx, a.mailboxId, ago(DAY_MS));
       expect(recent).toHaveLength(2);
       expect(recent.some((send) => send.to.join(",") === "to@x.test,cc1@x.test,cc2@x.test")).toBe(true);
       // The other organization's loop send is not counted here, and ours is not counted there.
-      expect(await listRecentSends(trx, b.ctx, b.mailboxId, ago(DAY))).toHaveLength(1);
-      expect(await listRecentSends(trx, a.ctx, b.mailboxId, ago(DAY))).toHaveLength(0);
+      expect(await listRecentSends(trx, b.ctx, b.mailboxId, ago(DAY_MS))).toHaveLength(1);
+      expect(await listRecentSends(trx, a.ctx, b.mailboxId, ago(DAY_MS))).toHaveLength(0);
     });
   });
 
@@ -417,20 +425,23 @@ describe("a loop-anchored pair and the 48 hour job", () => {
       const b = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
       // Old and never notified: due for `not_notified`.
-      const oldLoop = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(8 * DAY) });
+      const oldLoop = await insertLoopActionPair(trx, a, loopId, {
+        draftStatus: "applied",
+        createdAt: ago(8 * DAY_MS),
+      });
       // Notified long ago, the request unseen: due for `not_seen`.
       const unseenLoop = await insertLoopActionPair(trx, a, loopId, {
         draftStatus: "applied",
-        createdAt: ago(5 * DAY),
-        notifiedAt: ago(3 * DAY),
+        createdAt: ago(5 * DAY_MS),
+        notifiedAt: ago(3 * DAY_MS),
       });
-      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { ...request, createdAt: ago(8 * DAY) });
+      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { ...request, createdAt: ago(8 * DAY_MS) });
       const unseen = await insertDraftAndSend(trx, a.ctx, a.mailboxId, {
         ...request,
-        createdAt: ago(5 * DAY),
-        notifiedAt: ago(3 * DAY),
+        createdAt: ago(5 * DAY_MS),
+        notifiedAt: ago(3 * DAY_MS),
       });
-      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { ...request, createdAt: ago(8 * DAY) });
+      const theirs = await insertDraftAndSend(trx, b.ctx, b.mailboxId, { ...request, createdAt: ago(8 * DAY_MS) });
 
       const due = await listExpiredApprovals(trx, a.ctx, a.mailboxId, {
         now: NOW,
@@ -445,7 +456,7 @@ describe("a loop-anchored pair and the 48 hour job", () => {
           [unseenLoop.sendId, "not_seen"],
         ].sort()
       );
-      const unseenList = await listUnseenApprovalSends(trx, a.ctx, { before: ago(HOUR) });
+      const unseenList = await listUnseenApprovalSends(trx, a.ctx, { before: ago(HOUR_MS) });
       expect(unseenList.map((row) => [row.id, row.mailboxId]).sort()).toEqual(
         [
           [unseen.sendId, a.mailboxId],
@@ -475,8 +486,8 @@ describe("a loop-anchored pair and the 48 hour job", () => {
       await pauseOtherMailboxes(trx);
       const a = await side(trx);
       const loopId = await insertLoopRow(trx, a, a.mailboxId);
-      const loop = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(8 * DAY) });
-      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { ...request, createdAt: ago(8 * DAY) });
+      const loop = await insertLoopActionPair(trx, a, loopId, { draftStatus: "applied", createdAt: ago(8 * DAY_MS) });
+      const mine = await insertDraftAndSend(trx, a.ctx, a.mailboxId, { ...request, createdAt: ago(8 * DAY_MS) });
 
       await createExpiryJob({
         db: trx,

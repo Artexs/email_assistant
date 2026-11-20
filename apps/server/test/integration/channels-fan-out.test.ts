@@ -3,7 +3,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { format } from "node:util";
 
-import { noticeRenderers } from "@ea/core";
+import { noticeRenderers, MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -35,8 +35,6 @@ afterAll(async () => {
 });
 
 const T = new Date("2026-11-20T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 const at = (ms: number) => new Date(T.getTime() + ms);
 const box = createSecretBox(randomBytes(32).toString("base64"), 1);
 
@@ -68,17 +66,17 @@ async function world(trx: Transaction<DB>, flag = true): Promise<World> {
   await isolateChannels(trx);
   const created = await createOrgWithMailbox(trx);
   const ctx = { orgId: created.orgId };
-  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE));
+  await markSynced(trx, ctx, created.mailboxId, at(-5 * MINUTE_MS));
   await trx
     .updateTable("mailboxes")
-    .set({ status_changed_at: at(-2 * HOUR) })
+    .set({ status_changed_at: at(-2 * HOUR_MS) })
     .where("id", "=", created.mailboxId)
     .execute();
   if (flag) await setOrgFeature(trx, ctx, { flag: "web_push", enabled: true, actor: "cli", now: T });
   return { ctx, orgId: created.orgId, mailboxId: created.mailboxId, owner: created.userId };
 }
 
-const chat = (trx: Transaction<DB>, w: World, userId: string, linkedAt = at(-2 * HOUR)) =>
+const chat = (trx: Transaction<DB>, w: World, userId: string, linkedAt = at(-2 * HOUR_MS)) =>
   linkChat(trx, w.ctx, userId, randomChatId(), linkedAt);
 
 let counter = 0;
@@ -89,7 +87,7 @@ async function device(
   w: World,
   userId: string,
   createdAt: Date,
-  sessionEnd = at(24 * HOUR)
+  sessionEnd = at(DAY_MS)
 ): Promise<string> {
   counter += 1;
   const { rows } = await sql<{ id: string }>`
@@ -119,7 +117,7 @@ async function setRoutes(trx: Transaction<DB>, w: World, userId: string, routes:
 }
 
 async function run(trx: Transaction<DB>): Promise<void> {
-  await detectNotices({ db: trx, now: () => T, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+  await detectNotices({ db: trx, now: () => T, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
 }
 
 async function outbox(trx: Transaction<DB>, orgId: string, kind?: string) {
@@ -142,7 +140,7 @@ async function urgentMail(trx: Transaction<DB>, w: World, triagedAt: Date): Prom
 
 async function waitingSend(trx: Transaction<DB>, w: World, updatedAt: Date) {
   const pair = await insertDraftAndSend(trx, w.ctx, w.mailboxId, {
-    createdAt: at(-30 * MINUTE),
+    createdAt: at(-30 * MINUTE_MS),
     draftProviderResult: { folder: "Drafts", uid: 1 },
     subject: "Quarterly offer",
     from: "boss@example.test",
@@ -157,7 +155,7 @@ async function waitingSend(trx: Transaction<DB>, w: World, updatedAt: Date) {
 async function digestOf(trx: Transaction<DB>, w: World, slot: string): Promise<string> {
   const digest = await trx
     .insertInto("digests")
-    .values({ org_id: w.orgId, user_id: w.owner, slot_key: slot, period_start: at(-24 * HOUR), period_end: T })
+    .values({ org_id: w.orgId, user_id: w.owner, slot_key: slot, period_start: at(-24 * HOUR_MS), period_end: T })
     .returning("id")
     .executeTakeFirstOrThrow();
   return digest.id;
@@ -166,7 +164,7 @@ async function digestOf(trx: Transaction<DB>, w: World, slot: string): Promise<s
 const authErrorView = () => ({
   address: "box@example.test",
   mailboxId: randomUUID(),
-  since: at(-HOUR),
+  since: at(-HOUR_MS),
   now: T,
   timeZone: "Europe/Warsaw",
 });
@@ -176,8 +174,8 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
-      const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
+      const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await run(trx);
       const rows = await outbox(trx, w.orgId, "urgent");
       expect(shape(rows)).toEqual([`telegram urgent:${emailId}`, `push urgent:${emailId}:push:${sub}`].sort());
@@ -192,8 +190,8 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, false);
       await chat(trx, w, w.owner);
-      await device(trx, w, w.owner, at(-HOUR));
-      const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+      await device(trx, w, w.owner, at(-HOUR_MS));
+      const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await run(trx);
       expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual([`telegram urgent:${emailId}`]);
     });
@@ -203,9 +201,9 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const first = await device(trx, w, w.owner, at(-HOUR));
-      const second = await device(trx, w, w.owner, at(-50 * MINUTE));
-      const send = await waitingSend(trx, w, at(-20 * MINUTE));
+      const first = await device(trx, w, w.owner, at(-HOUR_MS));
+      const second = await device(trx, w, w.owner, at(-50 * MINUTE_MS));
+      const send = await waitingSend(trx, w, at(-20 * MINUTE_MS));
       await run(trx);
       const key = `approval:${send.sendId}`;
       const expected = [
@@ -223,7 +221,7 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
       const call = (key: string) =>
         queueNotice(trx, w.ctx, {
           userId: w.owner,
@@ -232,7 +230,7 @@ describe("queueNotice fans out by the route of the member", () => {
           view: authErrorView(),
           dedupKey: key,
           mailboxId: w.mailboxId,
-          eventAt: at(-10 * MINUTE),
+          eventAt: at(-10 * MINUTE_MS),
           now: T,
         });
       expect(await call("route:none")).toBeString();
@@ -249,7 +247,7 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
       const call = (key: string) =>
         queueNotice(trx, w.ctx, {
           userId: w.owner,
@@ -258,7 +256,7 @@ describe("queueNotice fans out by the route of the member", () => {
           view: authErrorView(),
           dedupKey: key,
           mailboxId: w.mailboxId,
-          eventAt: at(-10 * MINUTE),
+          eventAt: at(-10 * MINUTE_MS),
           now: T,
         });
       await setRoutes(trx, w, w.owner, { updates: "push" });
@@ -281,7 +279,7 @@ describe("queueNotice fans out by the route of the member", () => {
         view: authErrorView(),
         dedupKey: "neither",
         mailboxId: w.mailboxId,
-        eventAt: at(-10 * MINUTE),
+        eventAt: at(-10 * MINUTE_MS),
         now: T,
       });
       expect(id).toBeString();
@@ -293,7 +291,7 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      await device(trx, w, w.owner, at(-HOUR));
+      await device(trx, w, w.owner, at(-HOUR_MS));
       const id = await queueNotice(trx, w.ctx, {
         userId: w.owner,
         locale: "en",
@@ -312,8 +310,8 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      await device(trx, w, w.owner, at(-HOUR), at(-MINUTE));
-      const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+      await device(trx, w, w.owner, at(-HOUR_MS), at(-MINUTE_MS));
+      const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await run(trx);
       expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual([`telegram urgent:${emailId}`]);
     });
@@ -323,15 +321,15 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const old = await urgentMail(trx, w, at(-2 * HOUR + 30 * MINUTE)); // 08:30, before the device
+      const old = await urgentMail(trx, w, at(-2 * HOUR_MS + 30 * MINUTE_MS)); // 08:30, before the device
       await run(trx);
-      const sub = await device(trx, w, w.owner, at(-MINUTE)); // 09:59
-      const later = new Date(at(0).getTime() + MINUTE);
-      await detectNotices({ db: trx, now: () => later, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+      const sub = await device(trx, w, w.owner, at(-MINUTE_MS)); // 09:59
+      const later = new Date(at(0).getTime() + MINUTE_MS);
+      await detectNotices({ db: trx, now: () => later, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
       expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual([`telegram urgent:${old}`]);
       // A mail triaged after the device was added: one push row.
-      const fresh = await urgentMail(trx, w, at(-MINUTE + 30_000));
-      await detectNotices({ db: trx, now: () => later, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+      const fresh = await urgentMail(trx, w, at(-MINUTE_MS + 30_000));
+      await detectNotices({ db: trx, now: () => later, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
       expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual(
         [`telegram urgent:${old}`, `telegram urgent:${fresh}`, `push urgent:${fresh}:push:${sub}`].sort()
       );
@@ -341,8 +339,13 @@ describe("queueNotice fans out by the route of the member", () => {
   test("6b. a member with no chat and only a dead device keeps the Telegram row of before (the route counts live devices only)", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await device(trx, w, w.owner, at(-HOUR), at(-MINUTE));
-      const plan = await planFanOut(trx, w.ctx, { userId: w.owner, kind: "urgent", eventAt: at(-10 * MINUTE), now: T });
+      await device(trx, w, w.owner, at(-HOUR_MS), at(-MINUTE_MS));
+      const plan = await planFanOut(trx, w.ctx, {
+        userId: w.owner,
+        kind: "urgent",
+        eventAt: at(-10 * MINUTE_MS),
+        now: T,
+      });
       expect(plan).toEqual({ telegram: true, deviceIds: [] });
     });
   });
@@ -350,17 +353,17 @@ describe("queueNotice fans out by the route of the member", () => {
   test("7b. a device that was bound again to a new session gets no push row for the mail of the time its session was dead", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await chat(trx, w, w.owner, at(-6 * HOUR));
+      await chat(trx, w, w.owner, at(-6 * HOUR_MS));
       // The device was made 5 h ago; its session ended 3 h ago; a new session began 1 h ago and the device was bound to it.
-      const sub = await device(trx, w, w.owner, at(-5 * HOUR), at(-3 * HOUR));
+      const sub = await device(trx, w, w.owner, at(-5 * HOUR_MS), at(-3 * HOUR_MS));
       const { rows } = await sql<{ id: string }>`
         insert into auth_sessions (user_id, token, expires_at, created_at)
-        values (${w.owner}::uuid, ${randomUUID()}, ${at(24 * HOUR)}, ${at(-HOUR)}) returning id`.execute(trx);
+        values (${w.owner}::uuid, ${randomUUID()}, ${at(DAY_MS)}, ${at(-HOUR_MS)}) returning id`.execute(trx);
       await sql`update push_subscriptions set session_id = ${rows[0]?.id ?? ""}::uuid where id = ${sub}::uuid`.execute(
         trx
       );
-      const dead = await urgentMail(trx, w, at(-2 * HOUR));
-      const fresh = await urgentMail(trx, w, at(-30 * MINUTE));
+      const dead = await urgentMail(trx, w, at(-2 * HOUR_MS));
+      const fresh = await urgentMail(trx, w, at(-30 * MINUTE_MS));
       await run(trx);
       expect(shape(await outbox(trx, w.orgId, "urgent"))).toEqual(
         [`telegram urgent:${dead}`, `telegram urgent:${fresh}`, `push urgent:${fresh}:push:${sub}`].sort()
@@ -372,7 +375,7 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+      const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
       const urgent = queueNotice(trx, w.ctx, {
         userId: w.owner,
         locale: "en",
@@ -414,7 +417,7 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      await device(trx, w, w.owner, at(-HOUR));
+      await device(trx, w, w.owner, at(-HOUR_MS));
       const urgent = noticeRenderers.urgent;
       const original = urgent.push;
       // A push render that fails: the Telegram check passes, so only the push check can stop the write.
@@ -424,7 +427,7 @@ describe("queueNotice fans out by the route of the member", () => {
         },
       };
       try {
-        const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+        const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
         await expect(
           queueNotice(trx, w.ctx, {
             userId: w.owner,
@@ -435,7 +438,7 @@ describe("queueNotice fans out by the route of the member", () => {
               from: "boss@example.test",
               subject: "Contract",
               ai: { reasonCode: "llm", reason: null },
-              receivedAt: at(-20 * MINUTE),
+              receivedAt: at(-20 * MINUTE_MS),
               synthetic: false,
               folderTag: null,
               actions: [],
@@ -447,7 +450,7 @@ describe("queueNotice fans out by the route of the member", () => {
             dedupKey: `urgent:${emailId}`,
             emailId,
             mailboxId: w.mailboxId,
-            eventAt: at(-5 * MINUTE),
+            eventAt: at(-5 * MINUTE_MS),
             now: T,
           })
         ).rejects.toThrow("urgent");
@@ -462,7 +465,7 @@ describe("queueNotice fans out by the route of the member", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
       await setRoutes(trx, w, w.owner, { updates: "both" });
       const input = (key: string, only: "telegram" | "push") => ({
         userId: w.owner,
@@ -476,7 +479,7 @@ describe("queueNotice fans out by the route of the member", () => {
       });
       expect(await queueNotice(trx, w.ctx, input("t", "telegram"))).toBeString();
       await expect(queueNotice(trx, w.ctx, input("p0", "push"))).rejects.toThrow("needs eventAt");
-      expect(await queueNotice(trx, w.ctx, { ...input("p", "push"), eventAt: at(-MINUTE) })).toBeString();
+      expect(await queueNotice(trx, w.ctx, { ...input("p", "push"), eventAt: at(-MINUTE_MS) })).toBeString();
       expect(shape(await outbox(trx, w.orgId))).toEqual(["telegram t", `push ${pushDedupKey("p", sub)}`].sort());
     });
   });
@@ -486,8 +489,8 @@ describe("push-only recipients", () => {
   test("1. an organization with one owner, a device and no chat: an urgent mail gives one push row and no Telegram row", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
-      const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
+      const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await run(trx);
       expect(shape(await outbox(trx, w.orgId))).toEqual([`push urgent:${emailId}:push:${sub}`]);
     });
@@ -496,8 +499,8 @@ describe("push-only recipients", () => {
   test("2. an urgent mail triaged before the device was added gives no row", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await device(trx, w, w.owner, at(-HOUR));
-      await urgentMail(trx, w, at(-2 * HOUR));
+      await device(trx, w, w.owner, at(-HOUR_MS));
+      await urgentMail(trx, w, at(-2 * HOUR_MS));
       await run(trx);
       expect(await outbox(trx, w.orgId)).toHaveLength(0);
     });
@@ -506,8 +509,8 @@ describe("push-only recipients", () => {
   test("3. a waiting approval gives one push row; the approval is marked notified in the same run", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
-      const send = await waitingSend(trx, w, at(-20 * MINUTE));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
+      const send = await waitingSend(trx, w, at(-20 * MINUTE_MS));
       await run(trx);
       expect(shape(await outbox(trx, w.orgId, "approval"))).toEqual([
         `push ${pushDedupKey(`approval:${send.sendId}`, sub)}`,
@@ -524,9 +527,9 @@ describe("push-only recipients", () => {
   test("4. the flag off: no row, and the approval stays unmarked", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx, false);
-      await device(trx, w, w.owner, at(-HOUR));
-      await urgentMail(trx, w, at(-10 * MINUTE));
-      const send = await waitingSend(trx, w, at(-20 * MINUTE));
+      await device(trx, w, w.owner, at(-HOUR_MS));
+      await urgentMail(trx, w, at(-10 * MINUTE_MS));
+      const send = await waitingSend(trx, w, at(-20 * MINUTE_MS));
       await run(trx);
       expect(await outbox(trx, w.orgId)).toHaveLength(0);
       const state = await trx
@@ -543,8 +546,8 @@ describe("push-only recipients", () => {
       const w = await world(trx);
       const telegramOnly = await addMember(trx, w.orgId, "owner");
       await chat(trx, w, telegramOnly);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
-      const emailId = await urgentMail(trx, w, at(-10 * MINUTE));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
+      const emailId = await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await run(trx);
       const rows = await outbox(trx, w.orgId, "urgent");
       expect(rows.filter((row) => row.user_id === telegramOnly).map((row) => row.channel)).toEqual(["telegram"]);
@@ -564,9 +567,9 @@ describe("push-only recipients", () => {
   test("6. a push-only owner with no consent row and a follow-up approval gets a push row of kind approval, and the approval is marked", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
       const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
-        send: { updated_at: at(-20 * MINUTE) },
+        send: { updated_at: at(-20 * MINUTE_MS) },
       });
       await run(trx);
       const rows = await outbox(trx, w.orgId);
@@ -586,9 +589,9 @@ describe("push-only recipients", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
       const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
-        send: { updated_at: at(-20 * MINUTE) },
+        send: { updated_at: at(-20 * MINUTE_MS) },
       });
       await run(trx);
       const rows = await outbox(trx, w.orgId);
@@ -604,10 +607,10 @@ describe("push-only recipients", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
-      await consentRow(trx, w.orgId, w.owner, CURRENT_CONSENT, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
+      await consentRow(trx, w.orgId, w.owner, CURRENT_CONSENT, at(-HOUR_MS));
       const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, {
-        send: { updated_at: at(-20 * MINUTE) },
+        send: { updated_at: at(-20 * MINUTE_MS) },
       });
       await run(trx);
       expect(shape(await outbox(trx, w.orgId))).toEqual(
@@ -622,15 +625,15 @@ describe("push-only recipients", () => {
       const pushOnly = w.owner;
       const withChat = await addMember(trx, w.orgId, "owner");
       await chat(trx, w, withChat);
-      const subA = await device(trx, w, pushOnly, at(-HOUR));
-      const subB = await device(trx, w, withChat, at(-HOUR));
+      const subA = await device(trx, w, pushOnly, at(-HOUR_MS));
+      const subB = await device(trx, w, withChat, at(-HOUR_MS));
       // The default route of an updates kind is Telegram: this owner picked both.
       await setRoutes(trx, w, withChat, { updates: "both" });
       const follow = await insertFollowUp(trx, w.ctx, w.mailboxId, pushOnly, {
         sendStatus: "applied",
         send: {
-          updated_at: at(-20 * MINUTE),
-          applied_at: at(-20 * MINUTE),
+          updated_at: at(-20 * MINUTE_MS),
+          applied_at: at(-20 * MINUTE_MS),
           provider_result: '{"sent_copy":"appended"}',
         },
       });
@@ -656,7 +659,7 @@ describe("push-only recipients", () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
       await chat(trx, w, w.owner);
-      await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { send: { updated_at: at(-20 * MINUTE) } });
+      await insertFollowUp(trx, w.ctx, w.mailboxId, w.owner, { send: { updated_at: at(-20 * MINUTE_MS) } });
       await run(trx);
       expect((await outbox(trx, w.orgId)).map((row) => `${row.channel} ${row.kind}`)).toEqual([
         "telegram loop_consent",
@@ -667,7 +670,7 @@ describe("push-only recipients", () => {
   test("9. a removed mailbox reaches a push-only owner by push", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      const sub = await device(trx, w, w.owner, at(-HOUR));
+      const sub = await device(trx, w, w.owner, at(-HOUR_MS));
       const mailboxId = randomUUID();
       expect(await queueMailboxRemovedNotices(trx, w.ctx, { mailboxId, now: T })).toBe(1);
       expect(shape(await outbox(trx, w.orgId))).toEqual([`push ${pushDedupKey(`mailbox_removed:${mailboxId}`, sub)}`]);
@@ -677,8 +680,8 @@ describe("push-only recipients", () => {
   test("10. a suspended organization is not visited", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await device(trx, w, w.owner, at(-HOUR));
-      await urgentMail(trx, w, at(-10 * MINUTE));
+      await device(trx, w, w.owner, at(-HOUR_MS));
+      await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await trx.updateTable("organizations").set({ plan: "suspended" }).where("id", "=", w.orgId).execute();
       await run(trx);
       expect(await outbox(trx, w.orgId)).toHaveLength(0);
@@ -690,25 +693,25 @@ describe("push-only recipients", () => {
       const w = await world(trx);
       const withChat = await addMember(trx, w.orgId, "owner");
       await chat(trx, w, withChat);
-      await device(trx, w, withChat, at(-HOUR));
+      await device(trx, w, withChat, at(-HOUR_MS));
       const expired = await addMember(trx, w.orgId, "owner");
-      await device(trx, w, expired, at(-HOUR), at(-MINUTE));
-      await device(trx, w, w.owner, at(-30 * MINUTE));
-      await device(trx, w, w.owner, at(-3 * HOUR));
+      await device(trx, w, expired, at(-HOUR_MS), at(-MINUTE_MS));
+      await device(trx, w, w.owner, at(-30 * MINUTE_MS));
+      await device(trx, w, w.owner, at(-3 * HOUR_MS));
       const found = (await listPushOnlyMembers(trx, { now: T, orgId: w.orgId })).map((member) => ({
         userId: member.userId,
         since: member.since,
         role: member.role,
       }));
-      expect(found).toEqual([{ userId: w.owner, since: at(-3 * HOUR), role: "owner" }]);
+      expect(found).toEqual([{ userId: w.owner, since: at(-3 * HOUR_MS), role: "owner" }]);
     });
   });
 
   test("no push row logs a failure", async () => {
     await withRollback(db, async (trx) => {
       const w = await world(trx);
-      await device(trx, w, w.owner, at(-HOUR));
-      await urgentMail(trx, w, at(-10 * MINUTE));
+      await device(trx, w, w.owner, at(-HOUR_MS));
+      await urgentMail(trx, w, at(-10 * MINUTE_MS));
       await run(trx);
       expect(errorLines).toEqual([]);
     });
