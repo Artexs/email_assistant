@@ -3,8 +3,25 @@
 // the 7-day limit must say that it is about the classified mail and name the thread context, so a reader cannot take the limit for
 // all mail that the AI gets.
 
-const SEVEN_DAYS =
-  /older than 7 days|up to 7 days old|7-day limit|starszej niż 7 dni|starszych niż 7 dni|starsze niż 7 dni|limit 7 dni/i;
+// "7" or "seven" in English; "7", "siedem" or the inflected "siedmiu" in Polish. A bare "7 days" is not enough: copies, undo and
+// approvals also last 7 days. The pattern needs a word about the age of the mail next to the number.
+const EN_7 = "(?:7|seven)";
+const PL_7 = "(?:7|siedem|siedmiu)";
+const SEVEN_DAYS = new RegExp(
+  [
+    `older than ${EN_7} days`,
+    `${EN_7} days old`,
+    `(?:more|longer) than ${EN_7} days`,
+    `last ${EN_7} days`,
+    `${EN_7}[- ]day (?:limit|rule|window)`,
+    `starsz\\p{L}* (?:niż|od) ${PL_7} dni`,
+    `sprzed (?:ponad |więcej niż )?${PL_7} dni`,
+    `z ostatnich ${PL_7} dni`,
+    `(?:limit|reguła|okno) ${PL_7} dni`,
+    `${PL_7}-dniow\\p{L}*`,
+  ].join("|"),
+  "iu"
+);
 const CONTEXT = /context|kontekst/i;
 const CLASSIFIED = /classif|klasyfik/i;
 

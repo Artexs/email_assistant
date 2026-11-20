@@ -43,4 +43,44 @@ describe("sevenDayLimitProblems", () => {
     expect(sevenDayLimitProblems(["Copies are kept 30 days."])).toEqual([]);
     expect(sevenDayLimitProblems([OLD_C201, "fine", OLD_C032])).toEqual([OLD_C201, OLD_C032]);
   });
+
+  test("returns other wordings of the limit, in both languages", () => {
+    const texts = [
+      "Nie wysyła wiadomości sprzed ponad 7 dni.",
+      "Only mail from the last 7 days goes to the AI.",
+      "It does not send mail older than seven days.",
+      "Mail more than 7 days old is not sent.",
+      "Wiadomości starszych niż siedem dni nie wysyła.",
+      "Wiadomość starsza niż 7 dni nie trafia do modelu.",
+      "Tylko poczta z ostatnich 7 dni trafia do modelu AI.",
+      "Poczta z ostatnich siedmiu dni.",
+      "Mail from the last seven days goes to the AI.",
+      "Mail that is 7 days old or older is not sent.",
+      "Limit siedmiu dni dotyczy całej poczty.",
+      "Nie wysyła poczty sprzed ponad siedmiu dni.",
+    ];
+    expect(sevenDayLimitProblems(texts)).toEqual(texts);
+  });
+
+  test("passes those wordings when the sentence names the classified mail and the context", () => {
+    expect(
+      sevenDayLimitProblems([
+        "It does not classify mail older than seven days; the context mails can be older.",
+        "Nie klasyfikuje wiadomości sprzed ponad 7 dni; wiadomości kontekstowe mogą być starsze.",
+        "Only mail from the last 7 days is classified; context mails have no age limit.",
+        "Klasyfikuje tylko pocztę z ostatnich siedmiu dni; kontekst może być starszy.",
+      ])
+    ).toEqual([]);
+  });
+
+  test("does not flag a retention period of 7 days", () => {
+    expect(
+      sevenDayLimitProblems([
+        "Copies on the server are kept 7 days by default.",
+        "Kopie na serwerze są domyślnie trzymane 7 dni.",
+        "Without approval the send ends after 48 hours (a reply draft: after 7 days).",
+        "The member can reverse an automatic move with Undo for 7 days.",
+      ])
+    ).toEqual([]);
+  });
 });
