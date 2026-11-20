@@ -43,11 +43,12 @@ No `env_file`, no `ports`, no `volumes`, no healthcheck. Call: `"${EA_COMPOSE[@]
 `deploy/env-split.sh [--undo]`, run from the repo root.
 - State `old` → writes `deploy/db.env` (600) with the D5 lines of `.env`, then rewrites `.env` without them (other lines and order kept). Last line `env split ok moved=<3|4>`. Exit 0.
 - State `split` → `env split: already split`, exit 0, no write.
+- Refused before any write (exit 2): a D5 key with `export`, an indent or a space before `=`; a D5 key twice; a `deploy/db.env` without the three passwords. `.env` keeps its owner and mode; no value goes into argv.
 - State `mixed` where every D5 line of `.env` is also in db.env with an equal value (a split that stopped between the two renames) → removes them from `.env`, last line `env split ok finished=<n>`. Any other `mixed`, or a key twice → `env split refused: <reason>` (key names only), exit 2, no write.
 - `--undo`: state `split` → appends the db.env lines to `.env`, then removes db.env; last line `env split undone moved=<n>`. Else exit 2.
 - Never prints a value. Leaves no temp file and no `.env.bak*`.
 
-`deploy/check-server-env.sh`: reads `exec -T server env`, names only. Clean → `server env ok keys=<n>`, exit 0. A D5 key → `server env bad: <names, sorted, comma list>` on stderr, exit 1. Compose or exec failure → exit 2.
+`deploy/check-server-env.sh`: reads `exec -T server env`, names only. Clean → `server env ok keys=<n>`, exit 0. A D5 key → `server env bad: <names, sorted, comma list>` on stderr, exit 1. Compose or exec failure, or an empty server env → `server env check failed: …` on stderr, exit 2.
 
 ## Guards (stage 05)
 
@@ -58,5 +59,6 @@ No `env_file`, no `ports`, no `volumes`, no healthcheck. Call: `"${EA_COMPOSE[@]
 - F114 drill (ran 2026-11-19 at `v0.3.1`, before stage 01): it does not prove the `migrate` path. The F139 drill rerun on the release that carries stage 01 does (V4).
 - F139 (restore readiness wait before `guard-empty`): lands before stage 05; stage 01 and stage 05 keep its wait in `restore.sh`.
 - `backup.sh` (lock and B2 retries since 2026-11-19): a lock-refused run exits 75 and writes no status; stage 01 keeps that order (lock, trap, then the helper).
+- Release train (2026-11-20): `v0.4.2` (tag `34374ba0`) holds stages 01–03 and the F139 wait, not on the VPS yet (VPS at `v0.4.1`); stage 04 deploys it. `v0.4.3` is the first release with stage 05.
 - Stage files with `C=… --env-file .env`: none outside F108 at `f21809c4`. A later one written before stage 04 must use the README `C=` line after it.
 - A later one-off DB-admin command runs in `migrate` or `exec db psql -U postgres`; never add a D5 key to `server` or `cli`.

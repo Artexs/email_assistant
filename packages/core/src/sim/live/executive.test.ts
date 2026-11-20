@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseCallback } from "../../digest/callback";
+import { type Callback, encodeCallback, parseCallback } from "../../digest/callback";
 import { localDateTime } from "../../digest/local-time";
 
 import {
@@ -99,6 +99,19 @@ describe("executiveDecision approvals", () => {
   test("an approval card with no read draft gets no press and counts no_rule", () => {
     const card = approval(undefined);
     expect(executiveDecision(card, truth(), fresh)).toEqual({ press: null, count: "no_rule" });
+  });
+
+  test("a press with no reason is only the button, without a reason key", () => {
+    const card = approval({ kind: "delegation", recipient: MAGDA });
+    expect(executiveDecision(card, truth(), fresh)).toStrictEqual({ press: `ap:${ID}` });
+  });
+
+  test("a draft of another kind is rejected as not needed even when a clarification is expected", () => {
+    const card = approval({ kind: "other", recipient: MAGDA });
+    expect(executiveDecision(card, truth({ category: "needs_reply", expectedDraft: "clarification" }), fresh)).toEqual({
+      press: `ar:${ID}`,
+      then: "reason_not_needed",
+    });
   });
 
   test("a card that lacks the button of its rule gets no press", () => {
@@ -338,7 +351,14 @@ describe("executiveTapAt", () => {
   });
 
   test("a text that is not a time throws", () => {
-    expect(() => executiveTapAt("not a date", 1)).toThrow();
+    expect(() => executiveTapAt("not a date", 1)).toThrow("executiveTapAt needs an ISO instant");
+  });
+
+  test("a card at the first minute of the hours starts from that minute", () => {
+    // 2026-11-23 08:00 Warsaw is 07:00 UTC: the tap is 5 to 90 minutes after the card, on the same day.
+    const delay = new Date(executiveTapAt("2026-11-23T07:00:00Z", 1)).getTime() - Date.parse("2026-11-23T07:00:00Z");
+    expect(delay).toBeGreaterThanOrEqual(5 * 60_000);
+    expect(delay).toBeLessThanOrEqual(90 * 60_000);
   });
 });
 
@@ -404,5 +424,59 @@ describe("cardsOf", () => {
 
   test("an empty message gives no card", () => {
     expect(cardsOf(1, [])).toEqual([]);
+  });
+});
+
+describe("cardsOf by the kind of the button", () => {
+  type CardIdField = "actionId" | "setId" | "emailId" | undefined;
+  const row = (
+    callback: Callback,
+    kind: ExecCardKind,
+    idField: CardIdField
+  ): [string, Callback, ExecCardKind, CardIdField] => [`${callback.kind} is ${kind}`, callback, kind, idField];
+
+  test.each([
+    row({ kind: "approve", actionId: ID }, "approval", "actionId"),
+    row({ kind: "reject", actionId: ID }, "approval", "actionId"),
+    row({ kind: "approve_set", setId: ID }, "reminder_set", "setId"),
+    row({ kind: "reject_set", setId: ID }, "reminder_set", "setId"),
+    row({ kind: "send_again", actionId: ID }, "send_failed", "actionId"),
+    row({ kind: "went_out", actionId: ID }, "send_failed", "actionId"),
+    row({ kind: "right", category: "urgent", emailId: ID }, "feedback", "emailId"),
+    row({ kind: "pick", category: "info", emailId: ID }, "feedback", "emailId"),
+    row({ kind: "cancel", emailId: ID }, "feedback", "emailId"),
+    row({ kind: "mistake", actionId: ID }, "other", undefined),
+    row({ kind: "delegation_done", delegationId: ID }, "other", undefined),
+    row({ kind: "review_right", category: "urgent", emailId: ID }, "other", undefined),
+    row({ kind: "answered_yes", emailId: ID }, "other", undefined),
+    row({ kind: "delegate_open", emailId: ID }, "other", undefined),
+    row({ kind: "reply_draft", emailId: ID }, "other", undefined),
+  ])("a single button: %s", (_name, callback, kind, idField) => {
+    const data = encodeCallback(callback);
+    const expected: ExecCard = { kind, messageId: 4, buttons: [data] };
+    if (idField !== undefined) expected[idField] = ID;
+    expect(cardsOf(4, [data])).toEqual([expected]);
+  });
+
+  test("a button that names no action, set, mail or delegation is part of no card", () => {
+    const loop = encodeCallback({ kind: "loop_done", loopId: ID });
+    const skip = encodeCallback({ kind: "reply_skip", sendId: ID });
+    const review = encodeCallback({ kind: "reply_review" });
+    expect(cardsOf(4, [loop, skip, review, `ap:${ID}`])).toEqual([
+      { kind: "approval", messageId: 4, buttons: [`ap:${ID}`], actionId: ID },
+    ]);
+  });
+
+  test("buttons of one id with two kinds make one card of the kind that comes first in the card order", () => {
+    const cards = cardsOf(4, [`ap:${ID}`, `rw:p:${ID}`, `mk:${ID}`]);
+    expect(cards).toEqual([
+      { kind: "reject_reason", messageId: 4, buttons: [`ap:${ID}`, `rw:p:${ID}`, `mk:${ID}`], actionId: ID },
+    ]);
+    expect(cardsOf(4, [`rw:p:${ID}`, `ap:${ID}`])).toEqual([
+      { kind: "reject_reason", messageId: 4, buttons: [`rw:p:${ID}`, `ap:${ID}`], actionId: ID },
+    ]);
+    expect(cardsOf(4, [`mk:${ID}`, `ag:${ID}`, `ap:${ID}`])).toEqual([
+      { kind: "approval", messageId: 4, buttons: [`mk:${ID}`, `ag:${ID}`, `ap:${ID}`], actionId: ID },
+    ]);
   });
 });

@@ -4,7 +4,7 @@
 
 Full rules: `docs/code-patterns.md` (accepted, wins on conflict). Architecture: `docs/architecture.md`, `docs/modules.md`, ADRs in `docs/decisions/`.
 
-Checks (owner, 2026-11-20): the pre-commit hook (`scripts/pre-commit.sh`) lints the staged files, typechecks and runs the unit tests that import a changed file on each commit. A job runs `bun run check:job` once as its last step (merge master, then lint, typecheck, unit and integration tests of the changed files, and the bare-code scan). GitHub CI runs every suite on master. `test:e2e` runs under `flock /tmp/email-assistant-shared-tests.lock` (`CLAUDE.md`).
+Checks (owner, 2026-11-20): the pre-commit hook (`scripts/pre-commit.sh`) lints the staged files, typechecks and runs the unit tests that import a changed file on each commit. A job runs `bun run check:job` once as its last step (merge master, then lint, typecheck, unit and integration tests of the changed files, and the bare-code scan). GitHub CI runs every suite on master. Every job runs `test:e2e` and `docs:test` with no lock, on its own e2e DB and ports (`CLAUDE.md`).
 
 ## Shape
 

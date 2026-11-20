@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-20
+landed: 2026-11-20
 ---
 
 # F159 · The English approval text says "1 time", and an empty quote shows no false cut note

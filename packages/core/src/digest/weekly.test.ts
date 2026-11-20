@@ -395,3 +395,156 @@ describe("the reply draft line of the weekly report", () => {
     ).toBe(false);
   });
 });
+
+describe("the mail line and the auto items of the weekly report", () => {
+  type Row = WeekStats["m8"][number];
+  const mailbox = "00000000-0000-4000-8000-000000000001";
+  const row = (category: Row["category"], patch: Partial<Row> = {}): Row => ({
+    mailboxId: mailbox,
+    category,
+    auto: true,
+    kept: 40,
+    precision: 0.97,
+    recall: 0.9,
+    wilsonLower: 0.9,
+    decision: "go",
+    global: null,
+    history: null,
+    trip: null,
+    ...patch,
+  });
+  const linesOf = (patch: Partial<WeekStats>): string[] =>
+    renderWeeklyReport({ week: weekStatsExample({ ...EMPTY, ...patch }), timeZone, answeredWaiting: 0 }, en).text.split(
+      "\n"
+    );
+  const autoLine = (rows: Row[]): string | undefined => linesOf({ m8: rows }).find((line) => line.startsWith("Auto:"));
+  const mail = (important: number, triaged: number, labelled = 0): Partial<WeekStats> => {
+    const base = weekStatsExample();
+    return {
+      m1: {
+        ...base.m1,
+        important,
+        misses: important === 0 ? 0 : 1,
+        sample: { ...base.m1.sample, labelled, important: 1, misses: 0 },
+      },
+      m4: { ...base.m4, triaged },
+    };
+  };
+
+  test.each([
+    ["no important mail but mail triaged", 0, 5, ["Missed important mail (lower bound): – (0 of 0)"]],
+    ["important mail and nothing triaged", 3, 0, ["Missed important mail (lower bound): 33% (1 of 3)"]],
+  ])("the mail line: %s", (_name, important, triaged, expected) => {
+    const lines = linesOf(mail(important, triaged));
+    expect(lines.slice(1, 1 + expected.length)).toEqual(expected);
+    expect(lines.includes("No mail this week.")).toBe(important === 0 && triaged === 0);
+  });
+
+  test.each([
+    ["nothing handled and none would be", 0, 0, []],
+    ["some mail handled and some would be", 3, 2, []],
+  ])("the shadow mode line: %s", (_name, handled, wouldHandle, expected) => {
+    const lines = linesOf({ m4: { triaged: 8, handled, wouldHandle } });
+    expect(lines.filter((line) => line.startsWith("Would handle"))).toEqual(expected);
+  });
+
+  test("the review sample line shows from one labelled mail", () => {
+    expect(linesOf(mail(3, 3, 0))).not.toContain("Random review sample: 0 missed of 1");
+    expect(linesOf(mail(3, 3, 1))[2]).toBe("Random review sample: 0 missed of 1");
+  });
+
+  test.each([
+    ["a category with no auto row has no item", [row("spam", { auto: false })], undefined],
+    ["29 kept labels: too few", [row("spam", { kept: 29 })], "Auto: spam fewer than 30 labels (29)"],
+    [
+      "30 kept labels and no precision: too few",
+      [row("spam", { kept: 30, precision: null })],
+      "Auto: spam fewer than 30 labels (30)",
+    ],
+    [
+      "30 kept labels, a precision and no lower bound: no suffix",
+      [row("spam", { kept: 30, wilsonLower: null })],
+      "Auto: spam 97% of 30 labels",
+    ],
+    [
+      "30 kept labels, a precision and a lower bound: the suffix",
+      [row("spam", { kept: 30, wilsonLower: 0.874 })],
+      "Auto: spam 97% of 30 labels (lower bound 87%)",
+    ],
+  ])("auto item: %s", (_name, rows, expected) => {
+    expect(autoLine(rows)).toBe(expected ?? "Auto: no category on auto");
+  });
+
+  test("with two auto rows of one category the row with more kept labels stands; a tie keeps the first", () => {
+    expect(autoLine([row("spam", { kept: 35, precision: 0.8 }), row("spam", { kept: 40, precision: 0.9 })])).toBe(
+      "Auto: spam 90% of 40 labels (lower bound 90%)"
+    );
+    expect(autoLine([row("spam", { kept: 40, precision: 0.9 }), row("spam", { kept: 35, precision: 0.8 })])).toBe(
+      "Auto: spam 90% of 40 labels (lower bound 90%)"
+    );
+    expect(autoLine([row("spam", { kept: 40, precision: 0.8 }), row("spam", { kept: 40, precision: 0.9 })])).toBe(
+      "Auto: spam 80% of 40 labels (lower bound 90%)"
+    );
+  });
+});
+
+describe("the evidence items of the weekly report", () => {
+  type Row = WeekStats["m8"][number];
+  const mailbox = "00000000-0000-4000-8000-000000000001";
+  const row = (category: Row["category"], patch: Partial<Row> = {}): Row => ({
+    mailboxId: mailbox,
+    category,
+    auto: true,
+    kept: 40,
+    precision: 0.97,
+    recall: 0.9,
+    wilsonLower: 0.9,
+    decision: "go",
+    global: { decision: "go", provisional: false, wilsonLower: 0.9, cases: 120 },
+    history: { outcome: "pass", acted: 80, moved: 1 },
+    trip: { tripped: false, reason: null },
+    ...patch,
+  });
+  const evidence = (rows: Row[]): string[] =>
+    renderWeeklyReport({ week: weekStatsExample({ ...EMPTY, m8: rows }), timeZone, answeredWaiting: 0 }, en)
+      .text.split("\n")
+      .filter((line) => line.startsWith("spam:"));
+
+  test("a tripped row with no reason does not hide a later tripped row that has one", () => {
+    expect(
+      evidence([
+        row("spam", { trip: { tripped: true, reason: null } }),
+        row("spam", { trip: { tripped: true, reason: "corrections" } }),
+      ])
+    ).toEqual(["spam: paused (you corrected its moves)"]);
+  });
+
+  test("a trip that is not tripped does not pause the category, whatever its reason", () => {
+    expect(evidence([row("spam", { trip: { tripped: false, reason: "corrections" } })])).toEqual([
+      "spam: auto on · proof go · check pass",
+    ]);
+  });
+
+  test("with several auto rows the row with the most kept labels gives the proof and the check; a tie keeps the first", () => {
+    const none = { decision: "none" as const, provisional: false, wilsonLower: null, cases: 0 };
+    const rows = [row("spam", { kept: 35, global: none }), row("spam", { kept: 40, history: null })];
+    expect(evidence(rows)).toEqual(["spam: auto on · proof go · check none"]);
+    expect(evidence([...rows].reverse())).toEqual(["spam: auto on · proof go · check none"]);
+    expect(evidence([row("spam", { kept: 40, global: none }), row("spam", { kept: 40 })])).toEqual([
+      "spam: auto on · proof none · check pass",
+    ]);
+  });
+
+  test("a proof decision of none reads proof none", () => {
+    const global = { decision: "none" as const, provisional: false, wilsonLower: 0.9, cases: 120 };
+    expect(evidence([row("spam", { global })])).toEqual(["spam: auto on · proof none · check pass"]);
+  });
+
+  test.each([
+    ["fail", "check fail"],
+    ["unknown", "check no result"],
+  ] as const)("the check outcome %s reads %s", (outcome, phrase) => {
+    const history = { outcome, acted: 80, moved: 1 } as unknown as Row["history"];
+    expect(evidence([row("spam", { history })])).toEqual([`spam: auto on · proof go · ${phrase}`]);
+  });
+});

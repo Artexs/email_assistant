@@ -5,7 +5,7 @@ import { e2eLaunchOptions, e2eWebServers } from "./servers";
 
 // The shot run of the docs site: `bun run docs:shots` makes `apps/docs/public/shots/<name>.png` from the e2e seed.
 // It uses the web servers, the seed and the env of the panel e2e config (`servers.ts`, `global-setup.ts`), but its own test folder:
-// `bun run test:e2e` (`testDir: ./tests`) never runs this spec. Run it under `flock /tmp/email-assistant-shared-tests.lock` (fixed ports).
+// `bun run test:e2e` (`testDir: ./tests`) never runs this spec. The ports come from `env.ts`; the run needs no lock.
 loadDotEnv();
 // Fails with the setup command, or with `refusing: <reason>` for a database the seed would wipe, before any command runs.
 const env = e2eEnv();

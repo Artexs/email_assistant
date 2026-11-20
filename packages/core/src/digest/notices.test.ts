@@ -71,6 +71,26 @@ describe("renderUrgentNotice", () => {
     expect(renderUrgentNotice({ ...urgent, aiText: null }, textTables.en).text).not.toContain("💬");
   });
 
+  test("with no AI text the notice has no empty line", () => {
+    expect(renderUrgentNotice({ ...urgent, aiText: null }, textTables.en).text.split("\n")).toEqual([
+      "🔴 Urgent mail",
+      "From: Ann <ann@firma.test>",
+      "Subject: Server down",
+      "Received 07:42",
+      "→ would flag",
+    ]);
+  });
+
+  test("a delegable mail has the Delegate button in the first row", () => {
+    expect(renderUrgentNotice({ ...urgent, delegable: true }, textTables.en).buttons).toEqual([
+      [
+        { text: "✅ Right", data: `fr:u:${ID}` },
+        { text: "✏️ Change", data: `fe:${ID}` },
+        { text: "👥 Delegate", data: `dg:${ID}` },
+      ],
+    ]);
+  });
+
   test("marks a test mail", () => {
     const first = renderUrgentNotice({ ...urgent, synthetic: true }, textTables.en).text.split("\n")[0];
     expect(first?.endsWith("· 🧪 test")).toBe(true);
@@ -369,6 +389,17 @@ describe("other notices", () => {
     expect(message.buttons).toEqual([]);
   });
 
+  test("sync late with a last good sync prints its clock, in three lines", () => {
+    expect(
+      renderSyncStaleNotice(
+        { address: "me@firma.test", lastSyncedAt: new Date("2026-11-05T06:00:00Z"), now, timeZone },
+        textTables.en
+      ).text
+    ).toBe(
+      "⚠️ Mail sync is late for me@firma.test.\nLast good sync: 5 Nov 07:00. The system keeps trying.\n/status shows the state."
+    );
+  });
+
   test("sync works again", () => {
     const message = renderSyncOkNotice(
       {
@@ -467,6 +498,20 @@ describe("renderActionFailedNotice", () => {
     expect(lines({ ...base, folderName: null })[0]).toBe("⚠️ Could not move a mail");
   });
 
+  test.each([
+    ["flag", false, "Tried 3 times. /status shows the mailbox state."],
+    ["mark_read", false, "Tried 3 times. /status shows the mailbox state."],
+    ["create_draft", false, "Tried 3 times. /status shows the mailbox state."],
+    ["flag", true, "Tried 3 times. /status shows the mailbox state."],
+    ["mark_read", true, "Tried 3 times. /status shows the mailbox state."],
+  ] as const)("the last line of a %s with reverse %s", (actionType, reverse, last) => {
+    expect(lines({ ...base, actionType, reverse }).at(-1)).toBe(last);
+  });
+
+  test("an original move after bad_payload does not name the folder in its first line", () => {
+    expect(lines({ ...base, reason: "bad_payload" })[0]).toBe("⚠️ Could not move a mail");
+  });
+
   test("marks a test mail after the first line only", () => {
     expect(lines({ ...base, synthetic: true })[1]).toBe("🧪 test");
     expect(renderActionFailedNotice(base, textTables.en).text).not.toContain("🧪");
@@ -489,6 +534,18 @@ describe("renderSendHeldNotice", () => {
       text: "⏸ Sends from boss@x.test wait: the hourly send limit of this mailbox is reached.\n3 waiting; the next one goes out at about 11:10.",
       buttons: [],
     });
+  });
+
+  test("a follow-up hold is two lines, with the panel link as a third line only when set", () => {
+    const held = { ...base, followUps: true };
+    const first = "⏸ A follow-up waits: the hourly send limit of this mailbox is reached.";
+    expect(renderSendHeldNotice(held, textTables.en)).toEqual({
+      text: `${first}\n3 waiting; the next one goes out at about 11:10.`,
+      buttons: [],
+    });
+    expect(renderSendHeldNotice({ ...held, panelUrl: "https://app.test/approvals" }, textTables.en).text).toBe(
+      `${first}\n3 waiting; the next one goes out at about 11:10.\nOpen in panel: https://app.test/approvals`
+    );
   });
 
   test("the two other limits have their own text", () => {

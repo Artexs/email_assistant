@@ -97,3 +97,30 @@ describe("blindLabelsSchema", () => {
     expect(blindLabelsSchema.safeParse([{ id: "a", category: "spam", extra: 1 }]).success).toBe(false);
   });
 });
+
+describe("blindView, reply loops", () => {
+  test("a reply to itself and a loop of replies stop at the first repeat", () => {
+    const loop: Batch = {
+      ...batch,
+      cases: [makeCase("a", { replyTo: "a" }), makeCase("b", { replyTo: "c" }), makeCase("c", { replyTo: "b" })],
+    };
+    const view = blindView(loop, personas);
+    expect(view.map((item) => item.thread.map((t) => t.subject))).toEqual([[], ["Temat c"], ["Temat b"]]);
+  });
+});
+
+describe("blindLabelsSchema, exact issues", () => {
+  test("a repeated id is an issue on each later label, at its own index", () => {
+    const result = blindLabelsSchema.safeParse([
+      { id: "a", category: "spam" },
+      { id: "b", category: "info" },
+      { id: "a", category: "info" },
+      { id: "a", category: "urgent" },
+    ]);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map(({ code, path, message }) => ({ code, path, message }))).toEqual([
+      { code: "custom", path: [2, "id"], message: "label id not unique" },
+      { code: "custom", path: [3, "id"], message: "label id not unique" },
+    ]);
+  });
+});

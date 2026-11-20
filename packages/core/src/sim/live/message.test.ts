@@ -71,6 +71,13 @@ describe("labMessageId and parseLabMessageId", () => {
     expect(parseLabMessageId("<w-1-001.week-20261123-a1b2@kordelan.test")).toBeNull();
     expect(parseLabMessageId("")).toBeNull();
   });
+
+  test.each([
+    ["with spaces around the brackets", "  <w-1-001.week-20261123-a1b2@kordelan.test> \n"],
+    ["with spaces around the bare form", " \tw-1-001.week-20261123-a1b2@kordelan.test  "],
+  ])("an id %s gives the slot and the run", (_name, raw) => {
+    expect(parseLabMessageId(raw)).toEqual({ slotId: "w-1-001", runId: RUN });
+  });
 });
 
 describe("toLabMessage", () => {
@@ -96,6 +103,19 @@ describe("toLabMessage", () => {
       "<w-1-002.week-20261123-a1b2@kordelan.test>",
     ]);
     expect(message.cc).toEqual(["erp@kordelan.test"]);
+  });
+
+  test("a reply answers the last slot of the chain, whatever its length", () => {
+    const first = build(middle, [root]);
+    expect(first.inReplyTo).toBe("<w-1-001.week-20261123-a1b2@klient.test>");
+    expect(first.references).toEqual(["<w-1-001.week-20261123-a1b2@klient.test>"]);
+    const third = build(slot({ id: "w-1-004", parentId: "w-1-003" }), [root, middle, reply]);
+    expect(third.inReplyTo).toBe("<w-1-003.week-20261123-a1b2@klient.test>");
+    expect(third.references).toHaveLength(3);
+  });
+
+  test("a slot with no parent has no In-Reply-To header at all", () => {
+    expect(Object.keys(build(root))).not.toContain("inReplyTo");
   });
 
   test("3 a sent slot is appended to Sent, from the executive at the mailbox", () => {

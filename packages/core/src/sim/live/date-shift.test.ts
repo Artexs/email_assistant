@@ -97,3 +97,46 @@ describe("shiftDatesInText style and edges", () => {
     expect(shiftDatesInText("28.12.2026", 7, ANCHOR).text).toBe("04.01.2027");
   });
 });
+
+describe("shiftDatesInText forms and years", () => {
+  test("a day and month nearest to the anchor may fall in the next year", () => {
+    expect(shiftDatesInText("5 stycznia", 7, "2027-12-20")).toEqual({ text: "12 stycznia", shifted: 1 });
+  });
+
+  test("a year below 1000 keeps four digits", () => {
+    expect(shiftDatesInText("01.01.1000", -1, ANCHOR)).toEqual({ text: "31.12.0999", shifted: 1 });
+  });
+
+  test("a two-digit day and month keeps two digits, a one-digit day of a month name does not", () => {
+    expect(shift("10.02", -7)).toEqual({ text: "03.02", shifted: 1 });
+    expect(shift("January 10", -7)).toEqual({ text: "January 3", shifted: 1 });
+    expect(shift("10 stycznia", -7)).toEqual({ text: "3 stycznia", shifted: 1 });
+  });
+
+  test("a year in the text decides the date, whatever the anchor", () => {
+    expect(shift("29 stycznia 2031")).toEqual({ text: "27 listopada 2030", shifted: 1 });
+    expect(shift("January 29, 2031")).toEqual({ text: "November 27, 2030", shifted: 1 });
+  });
+
+  test.each(["31 lutego 2027", "February 30", "30 lutego"])("an impossible date %s stays", (source) => {
+    expect(shift(source)).toEqual({ text: source, shifted: 0 });
+  });
+
+  test.each(["Januar 29", "Januar 29, 2027", "stycznia 29", "März 5"])(
+    "a month name of another language in the English order, %s, stays",
+    (source) => {
+      expect(shift(source)).toEqual({ text: source, shifted: 0 });
+    }
+  );
+
+  test("the separators of a month-name date stay as they were", () => {
+    expect(shift("29\u00a0stycznia\u00a02027").text).toBe("27\u00a0listopada\u00a02026");
+    expect(shift("29.  Januar\t2027").text).toBe("27.  November\t2026");
+    expect(shift("January\u00a0\u00a029,  2027").text).toBe("November\u00a0\u00a027,  2026");
+  });
+
+  test("a month name with mixed capitals follows the case of its first letter", () => {
+    expect(shift("29 sTYCZNIA").text).toBe("27 listopada");
+    expect(shift("29 Stycznia").text).toBe("27 Listopada");
+  });
+});

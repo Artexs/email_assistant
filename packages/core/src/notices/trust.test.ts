@@ -286,6 +286,17 @@ describe("the links of a trust notice (TG1)", () => {
     expect(goodSettings(value)).toBe(false);
   });
 
+  test.each([
+    ["a password with no user name", "https://:pw@app.example.test/settings"],
+    ["text that passes the pattern but is no URL", "https://["],
+  ])("the settings link schema refuses %s", (_name, value) => {
+    expect(trustSettingsUrlSchema.safeParse(value).success).toBe(false);
+  });
+
+  test("the report link schema refuses 36 characters that are not a uuid", () => {
+    expect(trustReportUrlSchema.safeParse(`${host}/report?mailbox=${"0".repeat(36)}`).success).toBe(false);
+  });
+
   test("a report link of another mailbox than the view is refused", () => {
     expect(good(`${host}/report?mailbox=99999999-9999-4999-8999-999999999999`)).toBe(false);
   });

@@ -81,7 +81,8 @@ export const approvalsEn: ApprovalTexts = {
   followUpRemoved: "↩️ Follow-up removed: tracking of your sent mail is off.",
   draftStays: "The draft stays in Drafts.",
   causes: {
-    tries: (tries, code) => `The send failed ${tries} times${code === "" ? "" : ` (${code})`}`,
+    tries: (tries, code) =>
+      `The send failed ${tries} ${tries === 1 ? "time" : "times"}${code === "" ? "" : ` (${code})`}`,
     contentSoft: (code) =>
       `The mail server refused the content for now (code ${code === "" ? "unknown" : code}); the system never retries after the content`,
     softCap: (code) =>
