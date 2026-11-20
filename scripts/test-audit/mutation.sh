@@ -5,6 +5,7 @@
 # Static mutants (module-level code, about 36 % of the core mutants at 2026-11-20) are ignored by default: each one
 # runs the whole suite (about 19 CPU seconds), which is tens of CPU hours for core. --with-static tests them too.
 # Installs only in the work folder (never bun add / bun install in the repo); an EXIT trap removes it.
+# One run at a time: a lock file in /tmp (waits up to 2 hours, then exits 3).
 # Prints no env value.
 set -euo pipefail
 
@@ -41,6 +42,18 @@ node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
 if [[ "$node_major" -lt 22 ]]; then
   echo "mutation.sh: Stryker needs Node 22 or higher; found $(node --version)" >&2
   exit 1
+fi
+
+# One Stryker run at a time (concurrency 8 fills the machine): the lock is held until this script exits, and
+# it comes before the copy of the sources so that a run which waited still tests the current files.
+lock=/tmp/email-assistant-mutation.lock
+exec 9>"$lock"
+if ! flock -n 9; then
+  echo "mutation.sh: waiting for the mutation lock" >&2
+  if ! flock -w 7200 9; then
+    echo "mutation.sh: mutation lock busy for 2 hours" >&2
+    exit 3
+  fi
 fi
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
