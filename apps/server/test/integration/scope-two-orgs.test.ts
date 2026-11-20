@@ -162,7 +162,7 @@ async function addPendingMail(trx: Transaction<DB>, box: Box, messageId: string)
     folder: "INBOX",
     source_folder: "INBOX",
     uid,
-    inbox_uid: uid,
+    source_uid: uid,
     content_hash: contentHash(meta as NonNullable<typeof meta>),
   });
 }
