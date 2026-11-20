@@ -119,4 +119,4 @@ delegations.status: drafted → sent                                    (the del
 - `apps/server/src/modules/delegation/list.test.ts`
 - `apps/web/e2e/tests/delegates.spec.ts`, `apps/web/e2e/tests/delegations.spec.ts`
 - `packages/core/src/triage/planners.test.ts`
-- `packages/core/src/digest/approvals.test.ts`
+- `packages/core/src/digest/approvals-request.test.ts`, `approvals-send-results.test.ts`
