@@ -113,3 +113,45 @@ Name single `file:line` keys that stay untouched inside an `ok` group. The list 
 - **Mutation timeouts and unstable mutants.** 76 mutants ended in timeout; 6 changed state between two runs (`replies/digits.ts` ×3, `testmail/batch.ts`, `triage/suspicious.ts`); they are out of the GAP counts.
 - **Reader accuracy (N3).** The reader decided each row. The `Evidence` column and the linked example exist so that the owner can sample; the owner's marks are the check.
 - **Time saved is serial.** The saving counts the serial run of the data base. The parallel runs of the parallel-runs ticket change the wall-clock gain; G01 also takes most cases out of the slowest int file (`lab-bots.test.ts`, 73.3 s, 23 cases).
+
+## 6. Phase B result
+
+Phase B cut stages 09–20 ran on 2026-11-20. Every key of the 10 approval groups is done, deferred with a reason, or rejected. The count is in keys, as `cut-keys.ts` prints them: **174 done + 11 deferred + 4 rejected = 189 keys**. The `rows` column of `approval-groups.tsv` counts review rows and sums to 101; it is not this count. The check script and its output are `/tmp/f125-s21/count.ts` and `/tmp/f125-s21/count.log`. The script reads `approval-groups.tsv` and `reject.tsv` and resolves each key with `cut-keys.ts` on a fresh scan at the base of this stage (`405dcdcd`). A rejected key is counted in its group's "Rows deferred" cell. No product code changed in phase B. The only code change outside tests and CI is a tool fix in stage 20 (the mutant compare key gets its end place).
+
+Lines are test files only (`*.test.ts`, `*.test-helper.ts`), from `git show --numstat` of the group commits. Times are serial runs of `cut-run.sh` on the files of the stage. The runs of one stage did not share a machine load, so treat a time change below 2× as noise.
+
+| Group | Action | Rows done | Rows deferred | Lines removed (git) | Cases before → after | Int time before → after (s) | Stage log |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| G01 | `MOVE-TO-UNIT` | 13 | 0 | 319 removed, 564 added (int net −304, unit net +549) | unit +12, int −12 (`lab-bots` int 23 → 12, unit 0 → 11; stage 11: unit 53 → 54, int 21 → 20) | 95.83 → 41.94 (`lab-bots` 83.90 → 34.23; stats and budget files 11.93 → 7.71) | `cut-s09.md`, `cut-s10.md`, `cut-s11.md` |
+| G02 | `DELETE-DUP` | 1 | 4 | 5 removed, 0 added | unit 6 → 5 | none (unit 1.30 → 0.32) | `cut-s12.md` |
+| G03 | `MERGE-TABLE` | 52 | 0 | 370 removed, 226 added (net −144) | unchanged: unit 72 → 72 and 56 → 56, int 53 → 53 (names kept) | 41.28 → 71.83 (`cli-streams-other`; load, a guess) | `cut-s13.md`, `cut-s14.md`, `cut-s15.md` |
+| G04 | `MERGE-TABLE` | 33 | 4 | 121 removed, 71 added (net −50) | unchanged: unit 208 → 208 (one run for G04 and G05) | none (unit 8.06 → 2.82 for both) | `cut-s16.md` |
+| G05 | `MERGE-TABLE` | 29 | 0 | 116 removed, 99 added (net −17) | same run as G04 | none | `cut-s16.md` |
+| G06 | `FIX-NEVER-RUNS` | 2 | 0 | 0 (CI file and capability page) | the 2 seed cases skip in the `ci` job and now run in the `e2e` job; a skip fails that step | none | `cut-s17.md` |
+| G07 | `FIX-NEVER-RUNS` | 20 | 0 | 0 (`package.json`, `scripts/check-job.sh`, kit README) | unit +20 (they ran in no lane before) | none | `cut-s18.md` |
+| G08 | `FIX-NEVER-RUNS` | 3 | 0 | 0 | unit +3 (same change as G07; 23 cases together) | none | `cut-s18.md` |
+| G09 | `REWRITE-WEAK` | 14 | 3 (+ 4 rejected) | 17 removed, 66 added (net +49) | unchanged: unit 133 → 133 | none | `cut-s19.md` |
+| G10 | `REWRITE-WEAK` | 7 | 0 | 18 removed, 91 added (net +73) | unchanged: unit 22 → 22, int 60 → 60 | 11.06 → 7.81 (6 files; noise) | `cut-s20.md` |
+
+Group commits: G01 `59ace0bd`, `d4217c04`, `653dae9e`; G02 `bc4a0a48`; G03 `8f7cdbbe`, `671f8ff3`, `94bfe511`; G04 `dba3687d`; G05 `97bc6862`; G06 `cb6abd4b`; G07 and G08 `3fa603b4`; G09 `e0b133d1`; G10 `122a50aa`.
+
+Result against the size check at the top: the cut removed 1 case (G02), moved 12 cases from the int lane to the unit lane (G01) and merged 114 cases into table rows (G03 to G05, names kept). The int lane lost about 54 s of serial time in the three G01 files. No other group saved int time. A rewrite adds lines on purpose (G09, G10).
+
+### Deferred rows (11 keys) and rejected rows (4 keys)
+
+| Key | Group | Reason | What lets a later job finish it |
+| --- | --- | --- | --- |
+| `packages/core/src/triage/cost.test.ts:6`, `:10`, `:14`, `:18` (the four `costPerMail` cases) | G04 | Open branch `limen/2026-11-19-f138-stage-02-remove-gemini-prov-e2edaabc` changes the file. Its one commit is not on master (`git cherry`). | The branch lands or is dropped. Then merge the four cases into one `test.each` table. Each case is `ok` in `cut-keys.ts` at the base of this stage. |
+| `apps/server/src/platform/config.test.ts:221`, `:295`, `:459` | G09 | The same open branch changes the file. | Same. Then give the three cases exact asserts. Each is `ok` in `cut-keys.ts` at this base. |
+| `apps/server/test/integration/rules-cli.test.ts` (usage case, was `:71`, renamed) | G02 | Failed proof: the kept case in `rules.test.ts` only checks `isValidSenderPattern`. It does not pin exit 2 and the usage line. | The owner picks other kept cases: `rules-args.test.ts` ("a pattern with no local part and no domain is a usage error") and `platform/cli.test.ts` ("a UsageError returns 2 with the message and the usage line"). Then the case is a true duplicate. |
+| `apps/server/test/integration/testmail-cli.test.ts:262` | G02 | Failed proof: only this CLI case shows that `send` takes the lock before it sends. | A case of the `send` wiring that asserts the lock before the send. Then cut this one. |
+| `apps/server/test/integration/org-export-cli.test.ts:123` | G02 | Failed proof: the kept case asserts a bare `toThrow()`. The CLI case pins exit 2, the usage prefix and no file written. | Rewrite the kept case with exact asserts (a rewrite, not a cut). Then cut this one. |
+| `apps/server/test/integration/mailbox-settings-urgency-cli.test.ts:131` | G02 | Failed proof: the CLI output (usage line, issue paths, read-failure line) has no other test. | A kept case that pins that output. Then cut this one. |
+| `apps/server/src/main.test.ts:42`, `:52`, `:61` | rejected (G09) | Owner, 2026-11-20: not rewritten in the cut stages. | The follow-up ticket that replaces the source regexes with behaviour tests (F155). |
+| `apps/server/src/scripts/time-rewrite-check.test.ts:43` | rejected (G09) | The file is gone at master. | Nothing to do. |
+
+**Can run now:** none. The reason of the seven open-branch rows (G04 and G09) is still true at `405dcdcd`. `git branch --no-merged HEAD` lists `limen/2026-11-19-f138-stage-02-remove-gemini-prov-e2edaabc`, and `git diff --name-only HEAD...<branch>` names `cost.test.ts` and `config.test.ts`. The four G02 rows need another kept case, not a landed branch.
+
+### Found product bugs
+
+None. No cut log reports a wrong product value. Two tool facts came out of the stages: two mutants of `contacts/address.ts` are killed only by a 5 s load timeout (now in `data/mutation-unstable.tsv`), and two mutants can start at one place, so the compare key needs the end place (fixed in stage 20).
