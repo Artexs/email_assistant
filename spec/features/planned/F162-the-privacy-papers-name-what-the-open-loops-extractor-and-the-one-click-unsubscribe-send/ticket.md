@@ -30,3 +30,12 @@ The privacy page, the claims ledger and the DPIA draft say what the open-loops e
 ## Notes
 
 - Source: `docs/owner-decisions.md`, entry "F153 plan P8" (2026-11-20).
+
+## Slices
+
+Four stages, one worker job each: 01 first; then 02 and 04 next to each other; 03 after 02. No DB migration, no `bun.lock` change. Detail: `plan.md` § How to run.
+
+## Sequenced
+
+Plan after: none.
+Build after: none (the legal papers fix that added rows C261, C262 and the first version of 2026-11-20 is in `done/`, F153). Gate: none; stage 01 adds a legal version, which the coordinator names in the notes of the release after v0.4.4.
