@@ -1,4 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 import { cliDescriptionSchema, type CliDescription } from "@ea/core";
@@ -6,12 +5,9 @@ import { describe, expect, test } from "bun:test";
 
 import { readToolCommands } from "./lib/cli-tools";
 
-// The standard of docs/cli.md, one test per tool command. A file in `cli-pending.json` is not converted yet: the list shrinks
-// with each conversion stage and the file goes away at the last one.
+// The standard of docs/cli.md, one test per tool command of the root `package.json`. No tool is exempt.
 const root = resolve(import.meta.dir, "../../../..");
 const SPAWN_TIMEOUT_MS = 20_000;
-const pending = JSON.parse(readFileSync(join(import.meta.dir, "cli-pending.json"), "utf8")) as Record<string, string[]>;
-const pendingFiles = Object.values(pending).flat();
 const commands = readToolCommands(root);
 
 // Bun loads a `.env` of the working directory, also with an empty env: `--no-env-file` keeps the run free of it.
@@ -30,14 +26,12 @@ async function run(file: string, args: string[]) {
   return { stdout, stderr, code };
 }
 
-describe("cli standard: the tools that follow it", () => {
-  const converted = commands.filter((command) => !pendingFiles.includes(command.file));
-
-  test("at least one tool follows the standard", () => {
-    expect(converted.map((command) => command.name)).toContain("cli:list");
+describe("cli standard: every tool command", () => {
+  test("the tool list holds cli:list", () => {
+    expect(commands.map((command) => command.name)).toContain("cli:list");
   });
 
-  for (const command of converted) {
+  for (const command of commands) {
     const argv = command.subcommand === undefined ? [] : [command.subcommand];
 
     describe(command.name, () => {
@@ -78,20 +72,4 @@ describe("cli standard: the tools that follow it", () => {
       );
     });
   }
-});
-
-describe("cli standard: the pending list", () => {
-  const toolFiles = new Set(commands.map((command) => command.file));
-
-  test("each pending file exists and is a tool file or a helper of scripts/lib/", () => {
-    const bad = pendingFiles.filter(
-      (file) =>
-        !existsSync(join(root, file)) || !(toolFiles.has(file) || file.startsWith("apps/server/src/scripts/lib/"))
-    );
-    expect(bad).toEqual([]);
-  });
-
-  test("no file is pending twice", () => {
-    expect(pendingFiles.filter((file, index) => pendingFiles.indexOf(file) !== index)).toEqual([]);
-  });
 });

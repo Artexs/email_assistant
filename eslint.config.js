@@ -246,11 +246,8 @@ const logEventSelectors = [
   },
 ];
 
-// CLI standard (docs/cli.md): a tool returns its exit code to `runCli` and prints through `createCliOutput`. The two exit sites and the
-// files of `cli-pending.json` (tools not converted yet; the list shrinks per stage) are outside the rule.
-const cliPending = Object.values(
-  JSON.parse(readFileSync(path.resolve(__dirname, serverSrc, "scripts/cli-pending.json"), "utf8"))
-).flat();
+// CLI standard (docs/cli.md): a tool returns its exit code to `runCli` and prints through `createCliOutput`. The two exit sites
+// (`platform/cli.ts`, outside `scripts/`, and `tools/fake-telegram/src/cli-run.ts`) are the only files outside the rule.
 const cliExitMessage = "Exit and raw output: runCli and createCliOutput (docs/cli.md).";
 // `no-restricted-properties` matches only a bare identifier as the object, so it cannot see `process.stdout.write`: selectors do.
 const cliProcessSelectors = [
@@ -293,13 +290,13 @@ export default tseslint.config(
   },
   {
     files: [`${serverSrc}/scripts/**/*.ts`],
-    ignores: ["**/*.test.ts", ...cliPending],
+    ignores: ["**/*.test.ts"],
     // Flat config replaces the options of a rule: the server scripts keep the log-line selectors.
     rules: { "no-restricted-syntax": ["error", ...logEventSelectors, ...cliProcessSelectors] },
   },
   {
     files: ["tools/*/src/**/*.ts"],
-    ignores: ["**/*.test.ts", "tools/fake-telegram/src/cli-run.ts", ...cliPending],
+    ignores: ["**/*.test.ts", "tools/fake-telegram/src/cli-run.ts"],
     rules: { "no-restricted-syntax": ["error", ...cliProcessSelectors] },
   },
   {
