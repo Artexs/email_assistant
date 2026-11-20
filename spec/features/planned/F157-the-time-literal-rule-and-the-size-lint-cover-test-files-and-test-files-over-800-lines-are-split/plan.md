@@ -92,7 +92,7 @@ Spawn per stage with the board's worker flags (`spec/build.md` TRACK) and `--pre
 
 ## Cold review
 
-Model: `claude-sonnet-5-5` (no `[risky]` stage, no risk area of the board). Started detached; this job may not wait for it. The coordinator files it as `plan-review-1.md` and continues this job for the fixes.
+Model: `claude-sonnet-5-5` (no `[risky]` stage, no risk area of the board). Started detached (`2026-11-20-f157-plan-review-da20f6cf`); this job may not wait. The coordinator files it as `plan-review-1.md` and continues this job for the fixes.
 
 ## Log
 
