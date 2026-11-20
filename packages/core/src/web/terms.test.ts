@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
+import { compareLegalVersions, formatLegalVersion, isCanonicalLegalVersion, parseLegalVersion } from "./legal-version";
 import { TERMS_HISTORY, TERMS_VERSION, termsAcceptBodySchema } from "./terms";
+
+// The hyphen entries of the history: the legacy spelling of `.2`. Stored acceptance rows hold these strings, so they stay.
+// Frozen: a new entry uses the dot.
+const LEGACY_HYPHEN_VERSIONS: readonly string[] = ["2026-11-18-2", "2026-11-19-2"];
 
 describe("termsAcceptBodySchema", () => {
   test("accepts the current version", () => {
@@ -15,10 +20,24 @@ describe("termsAcceptBodySchema", () => {
 });
 
 describe("TERMS_HISTORY", () => {
-  test("3. versions are unique and each has the form YYYY-MM-DD or YYYY-MM-DD-N", () => {
+  test("3. every version parses", () => {
+    for (const entry of TERMS_HISTORY) expect(parseLegalVersion(entry.version), entry.version).not.toBeNull();
+  });
+
+  test("3. every version is canonical or in the frozen legacy hyphen list", () => {
+    for (const { version } of TERMS_HISTORY) {
+      if (LEGACY_HYPHEN_VERSIONS.includes(version)) continue;
+      const parsed = parseLegalVersion(version);
+      expect(
+        isCanonicalLegalVersion(version),
+        `TERMS_HISTORY entry ${version} is not canonical; write it as ${parsed === null ? "YYYY-MM-DD.N" : formatLegalVersion(parsed)}`
+      ).toBe(true);
+    }
+  });
+
+  test("3. every legacy hyphen version is an entry of TERMS_HISTORY", () => {
     const versions = TERMS_HISTORY.map((entry) => entry.version);
-    expect(new Set(versions).size).toBe(versions.length);
-    for (const version of versions) expect(version).toMatch(/^\d{4}-\d{2}-\d{2}(-\d+)?$/);
+    expect(LEGACY_HYPHEN_VERSIONS.filter((version) => !versions.includes(version))).toEqual([]);
   });
 
   test("3. only the first entry (the stub era) has no digest; the other digests are unique hex", () => {
@@ -28,9 +47,19 @@ describe("TERMS_HISTORY", () => {
     expect(new Set(digests).size).toBe(digests.length);
   });
 
-  test("3. versions grow: each is after the one before it", () => {
-    const versions = TERMS_HISTORY.map((entry) => entry.version);
-    expect([...versions].sort()).toEqual(versions);
+  test("3. each version is strictly after the one before it", () => {
+    const parsed = TERMS_HISTORY.map((entry) => parseLegalVersion(entry.version));
+    for (let index = 1; index < parsed.length; index += 1) {
+      const before = parsed[index - 1];
+      const current = parsed[index];
+      if (before === null || before === undefined || current === null || current === undefined)
+        throw new Error(`entry ${index} does not parse`);
+      expect(compareLegalVersions(before, current), TERMS_HISTORY[index]?.version).toBeLessThan(0);
+    }
+  });
+
+  test("5. TERMS_VERSION is canonical or in the frozen legacy hyphen list", () => {
+    expect(isCanonicalLegalVersion(TERMS_VERSION) || LEGACY_HYPHEN_VERSIONS.includes(TERMS_VERSION)).toBe(true);
   });
 
   test("4. TERMS_VERSION is the version of the last entry, and it is not the stub-era version", () => {

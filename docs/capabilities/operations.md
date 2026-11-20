@@ -29,7 +29,7 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 7. **The two host checks** (F114 stage 04) read no database:
    - Disk: `statfs` of `SLO_DISK_PATH` (default `/`; in the container this is the host root volume, to be confirmed on the VPS). It gives `free_pct` and `free_gb` (1024^3 bytes, one decimal). Firing: `free_pct < SLO_DISK_FREE_PCT` (default 15) or `free_gb < SLO_DISK_FREE_GB` (default 2). Clear: both at least 5 points and 0.5 GB above those values. Else `between`. A volume that cannot be read makes the check throw: `slo_check_failed`, kind skipped for this tick.
    - Backup age: reads `BACKUP_STATUS_FILE` (the file of `deploy/backup.sh`, mounted read-only; empty = the check is off and an open alert stays as it is). Firing: the file is missing, unreadable or has a bad shape (`missing` 1), the last run failed (`failed` 1), or the last good backup is older than `SLO_BACKUP_MAX_AGE_H` hours (default 26). Else clear (no `between`). Facts: `age_h` (whole hours since `last_ok_at`, -1 if none), `failed`, `missing`.
-8. **The text.** Line 1: `ALERT <kind>`, `STILL OPEN <kind> (since <ISO time>)`, `RESOLVED <kind> (open <N> min)` or `TEST <kind>`. Line 2: the facts in words. Line 3 (not for resolved): up to five ids of mailboxes, mails or organizations, then `+N more`. Last line: `Runbook: docs/known-alerts.md#<kind>`. In Polish the words change (`ALARM`, `Instrukcja:`) and the decimal separator is a comma.
+8. **The text.** The words live in core (`packages/core/src/texts/operator.ts`, `slo`) and `renderSloAlert` in `packages/core/src/ops/alert-text.ts` joins them; the operator module only sends. Line 1: `ALERT <kind>`, `STILL OPEN <kind> (since <ISO time>)`, `RESOLVED <kind> (open <N> min)` or `TEST <kind>`. Line 2: the facts in words. Line 3 (not for resolved): up to five ids of mailboxes, mails or organizations, then `+N more`. Last line: `Runbook: docs/known-alerts.md#<kind>`. In Polish the words change (`ALARM`, `Instrukcja:`) and the decimal separator is a comma.
 9. **No real send outside the operator chat.** Dev and sim leave `OPERATOR_TELEGRAM_CHAT_ID` empty and send nothing real.
 
 ### Releases
@@ -67,7 +67,7 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 | job      | `ops.slo` (`30 */5 * * * *`)                                                                                               | `apps/server/src/main.ts`                           |
 | function | `runSloTick`                                                                                                               | `apps/server/src/modules/operator/slo-job.ts`       |
 | function | `checkSyncLag`, `checkUrgentLatency`, `checkLlmErrors`, `checkDisk`, `checkBackupAge`                                      | `apps/server/src/modules/operator/slo-checks.ts`    |
-| function | `sloAlertText`                                                                                                             | `apps/server/src/modules/operator/slo-texts.ts`     |
+| function | `renderSloAlert`, `renderOperatorEvent`, `operatorEventKey`                                                                | `packages/core/src/ops/alert-text.ts`, `events.ts`  |
 | function | `nextAlertStep`                                                                                                            | `packages/core/src/ops/alert-step.ts`               |
 | CLI      | `bun run ops:alerts [--days 7]`: one line per incident of the last days (kind, opened, notices, resolved or `open`, facts) | `apps/server/src/scripts/ops-alerts.ts`             |
 | CLI      | `bun run ops:alert-test (--kind <kind> \| --all)`: sends the `TEST` text through the real path, writes no row              | `apps/server/src/scripts/ops-alert-test.ts`         |
@@ -104,7 +104,8 @@ The server runs one job, `ops.slo`, every 5 minutes. It checks service levels an
 - `apps/server/test/integration/ops-slo-job.test.ts`
 - `apps/server/test/integration/slo-checks.test.ts`
 - `apps/server/test/integration/ops-alerts-repo.test.ts`
-- `apps/server/src/modules/operator/slo-texts.test.ts`
+- `packages/core/src/ops/alert-text.test.ts`
+- `packages/core/src/ops/events.test.ts`
 - `apps/server/src/modules/operator/slo-host-checks.test.ts`
 - `deploy/test/backup.test.ts`
 - `deploy/test/release.test.ts`
