@@ -9,7 +9,7 @@ import { frontMatterValue } from "./stale";
 // The built home pages (`/` and `/pl/`) and the link from the built pricing page to the security page.
 // The docs build runs into a folder of its own, so `dist` stays as it was (as in `security-page.test.ts`).
 const DOCS = join(import.meta.dir, "..");
-const WORK_ROOT = join(DOCS, "dist-home-test");
+const WORK_ROOT = join(DOCS, ".dist-home-test");
 setDefaultTimeout(60_000);
 
 let out = "";
