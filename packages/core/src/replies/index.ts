@@ -7,7 +7,7 @@ export {
   UNKNOWN_LANGUAGE_MAX_CHARS,
 } from "./checks";
 export type { ReplyCheckCode, ReplyCheckResult, SensitiveCode } from "./checks";
-export { GAP_LABEL_MAX, gapsOf, hasBrokenGapSyntax, hasGaps } from "./gaps";
+export { GAP_LABEL_MAX, gapsOf, hasBrokenGapSyntax, hasGaps, withoutGaps } from "./gaps";
 export { classifyReplySentences, isSkeletonDraft, LEANING_PHRASES } from "./sentences";
 export type { ReplySentenceCounts } from "./sentences";
 export { detectLanguage } from "./language";

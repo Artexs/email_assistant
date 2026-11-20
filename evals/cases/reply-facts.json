@@ -1,0 +1,278 @@
+[
+  {
+    "id": "rfct-01",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Ewa Malinowska <ewa.malinowska@biuro-nowak.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Spotkanie w sprawie umowy",
+    "body": "Dzień dobry,\n\nczy czwartek o 10:00 pasuje Panu na spotkanie w sprawie umowy? I kiedy możemy się spodziewać podpisanego egzemplarza?\n\nZ poważaniem\nEwa Malinowska",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers both questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-01"
+    },
+    "instruction": "Tak, czwartek 10:00 pasuje, umowę podpiszę w piątek",
+    "mustHold": [["czwartek", "czwartku"], ["10:00"], ["piątek", "piątku"]]
+  },
+  {
+    "id": "rfct-02",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Krzysztof Bielak <krzysztof.bielak@hurtownia-zachod.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Budżet na szkolenia",
+    "body": "Jan,\n\nile mamy w tym kwartale na szkolenia zespołu i do kiedy muszę złożyć zamówienie?\n\nKrzysztof",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers both questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-02"
+    },
+    "instruction": "Budżet to 40 tysięcy, zamówienie do 15 grudnia",
+    "mustHold": [["40"], ["15"], ["grudnia"]]
+  },
+  {
+    "id": "rfct-03",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Dorota Sikora <dorota.sikora@klient-alfa.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Oferta na usługi serwisowe",
+    "body": "Dzień dobry,\n\nprosimy o ofertę na serwis maszyn na przyszły rok. Czy możliwy jest rabat przy umowie dwuletniej?\n\nPozdrawiam\nDorota Sikora",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers both questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-03"
+    },
+    "instruction": "Ofertę przygotuje Marta do jutra, rabat 5 procent jest możliwy",
+    "mustHold": [["jutro", "jutra"], ["Marta", "Marty", "Martę"], ["5"]]
+  },
+  {
+    "id": "rfct-04",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Paweł Gajda <pawel.gajda@firma.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Wizyta zarządu w oddziale",
+    "body": "Cześć Janek,\n\nplanujemy wizytę zarządu w oddziale. Gdzie i o której się spotykamy? I ile osób mam zgłosić do recepcji?\n\nPaweł",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers all three facts of two questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-04"
+    },
+    "instruction": "Spotkanie w sali Mazury o 14:30, będzie nas troje",
+    "mustHold": [["Mazury"], ["14:30"], ["troje", "trzy", "3"]]
+  },
+  {
+    "id": "rfct-05",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Alicja Rutkowska <alicja.rutkowska@audyt-partner.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Termin audytu",
+    "body": "Dzień dobry,\n\nkiedy możemy zacząć audyt w Państwa firmie? Kto będzie naszym kontaktem po stronie zarządu?\n\nAlicja Rutkowska",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers the date only; the contact person stays a gap",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-05"
+    },
+    "instruction": "Audyt może się zacząć 18 listopada",
+    "mustHold": [["18"], ["listopada"]]
+  },
+  {
+    "id": "rfct-06",
+    "kind": "synthetic",
+    "lang": "pl",
+    "from": "Marcin Wysocki <marcin.wysocki@logistyka-wisla.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Telekonferencja z działem finansów",
+    "body": "Dzień dobry,\n\nczy środa rano jest dobra na telekonferencję? Czy ktoś z finansów dołączy?\n\nMarcin Wysocki",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "line in English; the draft keeps Polish",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-06"
+    },
+    "instruction": "Yes, Wednesday at 9:00 works, Anna from finance will join",
+    "mustHold": [["9:00"], ["Anna"]]
+  },
+  {
+    "id": "rfct-07",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Sarah Dunn <sarah.dunn@boardoffice.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Board call and vendor choice",
+    "body": "Hi Jan,\n\nCan you join the board call on Tuesday? Also, which of the two vendors do you prefer for the audit?\n\nSarah",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers both questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-07"
+    },
+    "instruction": "Yes, Tuesday works, I prefer the second vendor",
+    "mustHold": [["Tuesday"], ["second"]]
+  },
+  {
+    "id": "rfct-08",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Mark Holloway <mark.holloway@supplier-north.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Delivery and invoice",
+    "body": "Hello,\n\nPlease confirm the delivery date for the order. And what amount should the invoice show?\n\nBest regards\nMark Holloway",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers both questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-08"
+    },
+    "instruction": "Delivery is on 12 March, the invoice amount is 800 euro",
+    "mustHold": [["12"], ["March"], ["800"]]
+  },
+  {
+    "id": "rfct-09",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Helen Park <helen.park@industry-forum.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Speaker slot in May",
+    "body": "Dear Jan,\n\nWould you speak at our conference in May? Tell us which slot suits you.\n\nHelen Park\nIndustry Forum",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers both parts of one request",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-09"
+    },
+    "instruction": "Yes, I can speak on the second day, the slot after lunch is fine",
+    "mustHold": [["second"], ["lunch"]]
+  },
+  {
+    "id": "rfct-10",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Peter Lang <peter.lang@partnerlab.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Pilot project setup",
+    "body": "Jan,\n\nthree quick questions for the pilot: what is the budget, how many engineers do you want on it, and when does it start?\n\nPeter",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers all three questions",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-10"
+    },
+    "instruction": "Budget is 60 thousand, 4 engineers, start on 2 June",
+    "mustHold": [["60"], ["4", "four"], ["June"]]
+  },
+  {
+    "id": "rfct-11",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Laura Finch <laura.finch@events-agency.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Hotel for the retreat",
+    "body": "Hi Jan,\n\nWhich hotel should we book for the team retreat, and for how many nights?\n\nLaura Finch",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "answers the hotel only; the number of nights stays a gap",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-11"
+    },
+    "instruction": "The Hilton near the station is fine",
+    "mustHold": [["Hilton"]]
+  },
+  {
+    "id": "rfct-12",
+    "kind": "synthetic",
+    "lang": "en",
+    "from": "Oliver Reed <oliver.reed@clientcorp.test>",
+    "to": ["szef@firma.test"],
+    "cc": [],
+    "subject": "Workshop next week",
+    "body": "Hello Jan,\n\nCan we hold the workshop next Tuesday? Who from your side will attend?\n\nOliver Reed",
+    "thread": [],
+    "expected": {
+      "category": "needs_reply"
+    },
+    "note": "line in Polish; the draft keeps English",
+    "sim": {
+      "corpus": "reply-facts",
+      "version": "1",
+      "part": "dev",
+      "slotId": "rfct-12"
+    },
+    "instruction": "Tak, spotkanie we wtorek o 11:00, przyjdzie Marek",
+    "mustHold": [["11:00"], ["Marek"]]
+  }
+]

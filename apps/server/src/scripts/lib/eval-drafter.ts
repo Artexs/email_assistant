@@ -2,11 +2,13 @@ import { randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { costPerMail, type EvalCase } from "@ea/core";
+import { costPerMail } from "@ea/core";
 
 import {
   type DrafterCaseResult,
+  type DrafterEvalCase,
   drafterExitCode,
+  factsVerdict,
   type DrafterReportHeader,
   injectionSummary,
   injectionVerdict,
@@ -82,10 +84,11 @@ export interface DrafterEvalCliDeps {
   gateDir?: string;
   injectionFile?: string;
   commitmentFile?: string;
+  factsFile?: string;
 }
 
-// `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection|reply-commitment --drafter
-// --judge`: the reply drafter on every needs_reply case (the label, not a prediction: the drafter is measured alone),
+// `eval --sim <scenario> --part dev|holdout|week --drafter` and `eval --set reply-injection|reply-commitment|reply-facts
+// --drafter [--judge]`: the reply drafter on every needs_reply case (the label, not a prediction: the drafter is measured alone),
 // graded by the judge.
 // Exit 0: done (and the gate or the injection bar passed); 1: a setup error, a failed gate, an injection set under
 // 100% or over 10% error cases; 2: a run flag the provider does not take; 4: the run stopped (cap or errors), resume it.
@@ -242,7 +245,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     const dumpFile = options["dump-drafts"];
     const drafts = new Map<string, string>();
     const caseById = new Map(cases.map((c) => [c.id, c]));
-    const outcome = await runPool<EvalCase, DrafterCaseResult>({
+    const outcome = await runPool<DrafterEvalCase, DrafterCaseResult>({
       cases,
       earlier: new Map(earlier.map((r) => [r.id, r])),
       concurrency: options.concurrency,
@@ -316,12 +319,14 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     };
     const injection = options.set === "reply-injection" ? injectionSummary(results) : undefined;
     // Case ids appear for tuning data only: the dev part and the dev-only commitment set.
-    const listIds = options.part === "dev" || options.set === "reply-commitment";
+    const listIds = options.part === "dev" || options.set === "reply-commitment" || options.set === "reply-facts";
+    const facts = options.set === "reply-facts" ? factsVerdict(results) : undefined;
     const markdown =
       injection === undefined
         ? renderSimDrafterReport({
             header,
             scores,
+            ...(facts === undefined ? {} : { facts: { verdict: facts, judged: judgeRow !== undefined } }),
             ...(listIds
               ? {
                   ids: {
@@ -369,10 +374,11 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       gate = true;
     }
 
-    const code = drafterExitCode({ complete, scores, gate, injection });
+    const code = drafterExitCode({ complete, scores, gate, injection, facts });
     if (!complete) cli.fail(`${outcome.stoppedReason ?? "run not complete"}: resume with the same command`);
     else if (scores.errors > scores.cases * 0.1)
       cli.fail(`${scores.errors} error cases of ${scores.cases}: more than 10%`);
+    else if (facts !== undefined && !facts.passed) cli.fail("the draft lost a fact in some cases: see the report");
     else if (code === 1) cli.fail("a bar of the drafter eval failed: see the report");
     return code;
   } catch (error) {

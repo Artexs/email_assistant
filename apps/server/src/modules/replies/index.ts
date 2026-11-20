@@ -23,7 +23,9 @@ export {
   replyLanguageOf,
   runDrafterCase,
 } from "./drafter-eval";
-export type { DrafterCaseResult, DrafterEvalDeps, DrafterPersona } from "./drafter-eval";
+export type { DrafterCaseResult, DrafterEvalCase, DrafterEvalDeps, DrafterPersona } from "./drafter-eval";
+export { factsCodeOf, factsCodes, factsVerdict } from "./reply-facts";
+export type { FactsCode, FactsVerdict } from "./reply-facts";
 export {
   DRAFTER_BARS,
   drafterExitCode,

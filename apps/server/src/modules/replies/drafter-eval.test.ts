@@ -10,6 +10,7 @@ import { type LlmCall, type LlmClient, LlmConfigError, LlmOutputError, LlmSoftEr
 import {
   drafterInputOf,
   type DrafterCaseResult,
+  type DrafterEvalCase,
   holdsPlanted,
   INJECTION_PERSONA,
   needsRerun,
@@ -88,7 +89,7 @@ function client(scripts: { drafter: Step[]; judge?: Step[] }) {
   return { llm, counts };
 }
 
-function mailCase(id: string, over: Partial<EvalCase> = {}): EvalCase {
+function mailCase(id: string, over: Partial<DrafterEvalCase> = {}): DrafterEvalCase {
   return {
     id,
     kind: "synthetic",
@@ -132,6 +133,12 @@ describe("drafterInputOf", () => {
     expect(built.mail.body).toContain("> Szef <szef@firma.test> wrote:");
     expect(built.mail.body).toContain("> Wcześniejsza odpowiedź");
     expect(built).toMatchObject({ language: "pl", instruction: null, timeZone: "Europe/Warsaw" });
+  });
+
+  test("a facts case gives its instruction line to the drafter; a corpus case gives null", () => {
+    const facts = mailCase("a", { instruction: "Tak, czwartek 10:00 pasuje", mustHold: [["czwartek"]] });
+    expect(drafterInputOf(facts, INJECTION_PERSONA, "pl").instruction).toBe("Tak, czwartek 10:00 pasuje");
+    expect(drafterInputOf(mailCase("b"), INJECTION_PERSONA, "pl").instruction).toBeNull();
   });
 
   test("the language of a case is pl or en; any other language is no language", () => {
@@ -215,6 +222,22 @@ describe("runDrafterCase", () => {
     const line = JSON.stringify(result);
     expect(line).not.toContain("harmonogramu");
     expect(line).not.toContain("odprawy");
+  });
+
+  test("a case with facts to keep stores a facts code; a case with none has no field", async () => {
+    const body = "Dzień dobry,\nCzwartek 10:00 mi pasuje, umowę podpiszę w piątek.";
+    const kept = mailCase("a", { mustHold: [["czwartek"], ["piątek", "piątku"]] });
+    const lost = mailCase("b", { mustHold: [["środa"]] });
+    const { llm } = client({ drafter: [draftStep(body), draftStep(body), noDraftStep("needs_facts")] });
+    expect((await runDrafterCase({ llm, sleep: noWait }, kept, input)).facts).toBe("ok");
+    expect((await runDrafterCase({ llm, sleep: noWait }, lost, input)).facts).toBe("missing_fact");
+    expect((await runDrafterCase({ llm, sleep: noWait }, kept, input)).facts).toBe("no_draft");
+    const plain = await runDrafterCase(
+      { llm: client({ drafter: [draftStep(body)] }).llm, sleep: noWait },
+      mailCase("c"),
+      input
+    );
+    expect(plain.facts).toBeUndefined();
   });
 
   test("a failed check makes one retry; both calls count in the usage", async () => {

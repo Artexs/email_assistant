@@ -35,9 +35,9 @@ import { stylistArgsValid, STYLE_INJECTION_SET } from "./lib/eval-args-stylist";
 import { parseFlags } from "./lib/parse-flags";
 
 const sets = ["synthetic", "injection", "delegation", "all"] as const;
-// `reply-injection` and `reply-commitment` are the sets of the drafter run (`--drafter`); the classifier run takes
+// `reply-injection`, `reply-commitment` and `reply-facts` are the sets of the drafter run (`--drafter`); the classifier run takes
 // neither of them.
-const replySets = ["reply-injection", "reply-commitment"] as const;
+const replySets = ["reply-injection", "reply-commitment", "reply-facts"] as const;
 // `style-injection` is the set of the stylist run (`--stylist`); no other run takes it.
 const drafterSets = [...sets, ...replySets, STYLE_INJECTION_SET] as const;
 export type ReplySet = (typeof replySets)[number];
@@ -69,12 +69,12 @@ export const evalUsage = [
   "                    [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4] [--limit n] [--out <file.md>]",
   "                    (the open-loops extractor on the sent-mail bank; the part sent-holdout needs --extractor, and --extractor needs a sent part)",
   "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
-  "       bun run eval --set reply-injection|reply-commitment --drafter --judge [--model …] [--out <file.md>]",
-  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev|week or --set reply-commitment)]`,
+  "       bun run eval --set reply-injection|reply-commitment|reply-facts --drafter [--judge] [--model …] [--out <file.md>]",
+  `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev|week or --set reply-commitment|reply-facts)]`,
   `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)] [--style none|scenario|<style file> (default scenario; the gate file needs scenario)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   `                    [--judge [--judge-provider ${ids}] [--judge-model <id>] [--judge-rpm <n>]]`,
-  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider sets every role, --model picks the drafter model; the judge model must differ from the drafter model (default judge: the strong tier of the provider); the injection set needs --judge)",
+  "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider sets every role, --model picks the drafter model; the judge model must differ from the drafter model (default judge: the strong tier of the provider); the injection and commitment sets need --judge; the facts set takes it optionally)",
   `       bun run eval --sim <scenario> --part sent-dev|sent-holdout --stylist [--stylist-prompt ${stylistVersionIds.join("|")} (default: the production prompt)] [--provider …] [--model …] [--reasoning-effort …]`,
   "                    [--budget-usd 1] [--spend-ledger <file>] [--out <file.md>]   (the style suggestion on the sent mail of the part; writes the report and the style file in evals/results/styles/)",
   "       bun run eval --set style-injection --stylist [--stylist-prompt …] [--provider …] [--model …] [--reasoning-effort …] [--budget-usd 1] [--spend-ledger <file>] [--out <file.md>]",
@@ -207,7 +207,7 @@ const extractorAllowed = new Set<string>([
   "limit",
   "out",
 ]);
-// The options of a drafter run: `--sim <scenario> --part dev|holdout|week` or `--set reply-injection|reply-commitment`.
+// The options of a drafter run: `--sim <scenario> --part dev|holdout|week` or `--set reply-injection|reply-commitment|reply-facts`.
 const drafterAllowed = new Set<string>([
   ...extractorAllowed,
   "drafter",
@@ -270,7 +270,8 @@ type ParsedData = Omit<z.infer<typeof optionsSchema>, "part" | "json-out"> & {
 };
 
 // `--drafter` runs the reply drafter on `--sim <scenario> --part dev|holdout|week` or on `--set reply-injection` or
-// `--set reply-commitment`; any other combination is a usage error. The two sets have no corpus and always need the judge.
+// `--set reply-commitment` or `--set reply-facts`; any other combination is a usage error. The sets have no corpus; the
+// injection and commitment sets always need the judge, the facts set reads the draft text by code and takes it optionally.
 function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): EvalOptions | undefined {
   if (data.extractor || data.suspicious || data.real || data.gap) return undefined;
   if (Object.keys(values).some((key) => !drafterAllowed.has(key))) return undefined;
@@ -281,10 +282,12 @@ function parseDrafterArgs(data: ParsedData, values: Record<string, unknown>): Ev
   // Exactly one source: a corpus part (never a sent part) or one reply set.
   if (sim === set) return undefined;
   if (sim && (data.part === undefined || data.sentPart !== undefined || values.set !== undefined)) return undefined;
-  if (set && (data.part !== undefined || data.sentPart !== undefined || !data.judge)) return undefined;
-  // Draft texts leave the run only for made-up tuning data: the dev and week parts and the dev-only commitment set.
+  if (set && (data.part !== undefined || data.sentPart !== undefined || (!data.judge && data.set !== "reply-facts")))
+    return undefined;
+  // Draft texts leave the run only for made-up tuning data: the dev and week parts and the dev-only commitment and facts sets.
   // The holdout stays unread; the injection set is a bar, not tuning data.
-  const dumpAllowed = data.part === "dev" || data.part === "week" || data.set === "reply-commitment";
+  const dumpAllowed =
+    data.part === "dev" || data.part === "week" || data.set === "reply-commitment" || data.set === "reply-facts";
   if (data["dump-drafts"] !== undefined && !dumpAllowed) return undefined;
   return {
     ...data,

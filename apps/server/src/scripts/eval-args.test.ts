@@ -400,4 +400,17 @@ describe("--drafter", () => {
     expect(() => parseEvalArgs([...commitment, "--sim", "lab-01", "--part", "dev"])).toThrow(UsageError);
     expect(() => parseEvalArgs(["--set", "reply-commitment"])).toThrow(UsageError);
   });
+
+  test("--set reply-facts is a drafter set where the judge is optional and drafts may be dumped", () => {
+    expect(parseEvalArgs(["--set", "reply-facts", "--drafter"])).toMatchObject({ set: "reply-facts", drafter: true });
+    expect(parseEvalArgs(["--set", "reply-facts", "--drafter", "--judge"])).toMatchObject({ judge: true });
+    expect(parseEvalArgs(["--set", "reply-facts", "--drafter", "--dump-drafts", "d.jsonl"])).toMatchObject({
+      "dump-drafts": "d.jsonl",
+    });
+    expect(() => parseEvalArgs(["--set", "reply-fact", "--drafter"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--set", "reply-facts"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--set", "reply-facts", "--drafter", "--sim", "lab-01", "--part", "dev"])).toThrow(
+      UsageError
+    );
+  });
 });

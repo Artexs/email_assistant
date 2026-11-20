@@ -20,6 +20,7 @@ import {
 } from "../triage";
 
 import { DrafterCallError, draftReply } from "./drafter";
+import { type FactsCode, factsCodeOf, factsCodeSchema } from "./reply-facts";
 
 // The drafter eval: the drafter of the product on one case, then the `reply` rubric of the judge. The state line and
 // the report hold ids, codes, numbers and flags: never a mail text, a draft text or a judge comment.
@@ -80,6 +81,8 @@ export const drafterCaseResultSchema = z.object({
   leak: z.boolean(),
   // The sentence counts of a draft; no other outcome has them.
   sentences: sentencesSchema.optional(),
+  // The facts code of a case of the reply facts set; no other case has it.
+  facts: factsCodeSchema.optional(),
   usage: usageSchema.nullable(),
   judgeUsage: usageSchema.nullable(),
   errorCode: z.string().nullable(),
@@ -133,7 +136,10 @@ function bodyWithThread(c: EvalCase): string {
   return [c.body, ...quoted].join("\n\n");
 }
 
-export function drafterInputOf(c: EvalCase, persona: DrafterPersona, language: "pl" | "en"): DrafterInput {
+/** A case of the drafter eval: a corpus case, or a reply facts case with an instruction line and the facts to keep. */
+export type DrafterEvalCase = EvalCase & { instruction?: string; mustHold?: string[][] };
+
+export function drafterInputOf(c: DrafterEvalCase, persona: DrafterPersona, language: "pl" | "en"): DrafterInput {
   const sender = splitAddress(c.from);
   const receivedAt = c.receivedAt === undefined ? EVAL_RECEIVED_AT : new Date(c.receivedAt);
   return {
@@ -145,7 +151,7 @@ export function drafterInputOf(c: EvalCase, persona: DrafterPersona, language: "
       body: bodyWithThread(c),
     },
     style: { displayName: persona.displayName, signature: persona.signature, writingStyle: persona.writingStyle },
-    instruction: null,
+    instruction: c.instruction ?? null,
     language,
     today: receivedAt,
     timeZone: persona.timeZone,
@@ -184,6 +190,11 @@ const blank = (): Pick<
   judge: null,
 });
 
+// The `facts` field of a result: only a case with `mustHold` has it.
+function factsField(c: DrafterEvalCase, result: Parameters<typeof factsCodeOf>[0]): { facts?: FactsCode } {
+  return c.mustHold === undefined ? {} : { facts: factsCodeOf(result, c.mustHold) };
+}
+
 function sumUsage(usages: readonly LlmUsage[]): CaseUsage | null {
   const first = usages[0];
   if (first === undefined) return null;
@@ -199,13 +210,21 @@ function sumUsage(usages: readonly LlmUsage[]): CaseUsage | null {
 // retries after a wait; a config error goes up and ends the run. Every call without a usage is charged by the pool.
 export async function runDrafterCase(
   deps: DrafterEvalDeps,
-  c: EvalCase,
+  c: DrafterEvalCase,
   input: DrafterRunInput,
   attempts?: AttemptHooks
 ): Promise<DrafterCaseResult> {
   const language = replyLanguageOf(c);
   if (language === null) {
-    return { id: c.id, source: "rule", outcome: "skipped", usage: null, judgeUsage: null, ...blank() };
+    return {
+      id: c.id,
+      source: "rule",
+      outcome: "skipped",
+      usage: null,
+      judgeUsage: null,
+      ...blank(),
+      ...factsField(c, { outcome: "skipped", reasonCode: null, leak: false, body: null }),
+    };
   }
   const drafterInput = drafterInputOf(c, input.persona, language);
   for (let attempt = 0; ; attempt += 1) {
@@ -228,6 +247,7 @@ export async function runDrafterCase(
           ...blank(),
           reasonCode: result.reason,
           calls,
+          ...factsField(c, { outcome: "no_draft", reasonCode: result.reason, leak: false, body: null }),
         };
       }
       if (result.kind === "failed") {
@@ -241,6 +261,7 @@ export async function runDrafterCase(
           reasonCode: result.reason,
           failures: result.failures,
           calls,
+          ...factsField(c, { outcome: "failed", reasonCode: result.reason, leak: false, body: null }),
         };
       }
       const leak = holdsPlanted(result.body, c.sim?.planted ?? []);
@@ -269,6 +290,7 @@ export async function runDrafterCase(
         sentences,
         calls,
         judge: graded.judge,
+        ...factsField(c, { outcome: "draft", reasonCode: null, leak, body: result.body }),
       };
     } catch (error) {
       if (error instanceof LlmConfigError) throw error;
@@ -295,6 +317,7 @@ export async function runDrafterCase(
         ...blank(),
         calls: error.attempts.length,
         errorCode: code,
+        ...factsField(c, { outcome: "error", reasonCode: null, leak: false, body: null }),
       };
     }
   }

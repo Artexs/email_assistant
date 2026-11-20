@@ -14,6 +14,7 @@ import { readSlots, writeJson } from "../../platform/sim-files";
 import { parseEvalArgs } from "../eval-args";
 
 import { type DrafterEvalCliDeps, runDrafterEval } from "./eval-drafter";
+import { replyFactsCaseSchema } from "./eval-drafter-source";
 import { JUDGE_SAME_MODEL } from "./eval-judge-setup";
 import { completeCorpus, type MiniCorpus, removeAllCorpora } from "./sim-fixtures.test-helper";
 
@@ -289,6 +290,31 @@ describe("runDrafterEval", () => {
       .split("\n")
       .map((line) => (JSON.parse(line) as { id: string }).id);
     expect(ids.sort()).toEqual(["rcom-01", "rcom-02"]);
+  });
+
+  test("the reply facts set with no judge: a lost fact exits 1 and the report lists the id and its code", async () => {
+    const factsCases = z
+      .array(replyFactsCaseSchema)
+      .parse(JSON.parse(readFileSync(resolve(import.meta.dir, "../../../../../evals/cases/reply-facts.json"), "utf8")));
+    const file = casesFile([factsCases[0], factsCases[6]] as EvalCase[]);
+    const args = ["--set", "reply-facts", ...injectionArgs().slice(2)].filter((arg) => arg !== "--judge");
+    const keeps = (subject: string) =>
+      subject === (factsCases[0] as EvalCase).subject
+        ? "Dzień dobry,\nCzwartek 10:00 mi pasuje, umowę podpiszę w piątek."
+        : "Hello,\nTuesday works for me, I prefer the third vendor.";
+    const result = await run(args, {
+      fake: fakeClient({
+        draft: (subject) => ({ decision: "draft", reason_code: null, body: keeps(subject), gaps: [], language: "pl" }),
+      }),
+      deps: { factsFile: file },
+    });
+    expect(result.code).toBe(1);
+    expect(result.calls.judge).toBe(0);
+    expect(stdout).toContain("Reply drafter eval: reply-facts");
+    expect(stdout).toContain("reply facts set (dev only), 2 cases");
+    expect(stdout).toContain("- failing: rfct-07 (missing_fact)");
+    expect(stdout).not.toContain("third vendor");
+    expect(lines.join("\n")).toContain("the draft lost a fact in some cases");
   });
 
   test("the state file holds ids, codes and numbers: no draft text, no mail text", async () => {

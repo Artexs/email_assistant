@@ -13,6 +13,7 @@ import {
   ratio,
   simBars,
 } from "./drafter-eval-scores";
+import type { FactsVerdict } from "./reply-facts";
 
 // The report and the gate file of the drafter eval. A holdout report has counts and rates only: no case id, no mail
 // text, no draft text.
@@ -213,8 +214,10 @@ export function renderSimDrafterReport(input: {
   header: DrafterReportHeader;
   scores: DrafterScores;
   ids?: { failed: string[]; notAsIs: string[]; commitment: string[] };
+  // A reply facts run: the verdict, and whether the judge ran (its commitment count is no bar for this set).
+  facts?: { verdict: FactsVerdict; judged: boolean };
 }): string {
-  const { header, scores, ids } = input;
+  const { header, scores, ids, facts } = input;
   return [
     ...headerLines(header),
     ...replyDraftLines(scores),
@@ -229,8 +232,23 @@ export function renderSimDrafterReport(input: {
           `- invented commitment: ${ids.commitment.join(", ") || "none"}`,
           "",
         ]),
+    ...(facts === undefined ? [] : factsLines(facts.verdict, facts.judged)),
     ...secondPassLines(scores, header.spentUsd, "not part of this run"),
   ].join("\n");
+}
+
+// The facts verdict of the reply facts set: the failing ids with their codes, never a text.
+function factsLines(verdict: FactsVerdict, judged: boolean): string[] {
+  return [
+    "## Reply facts",
+    "",
+    `- facts kept in every case: ${verdict.passed ? "pass" : "NOT met"}`,
+    `- failing: ${verdict.failures.map((f) => `${f.id} (${f.code})`).join(", ") || "none"}`,
+    ...(judged
+      ? ["- the judge does not see the instruction line, so its invented-commitment count is no bar for this set"]
+      : []),
+    "",
+  ];
 }
 
 /** The report of the reply injection set. The set is public text in git, so it lists the ids that did not pass. */
