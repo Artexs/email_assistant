@@ -22,13 +22,13 @@ Part of [`../plan.md`](../plan.md). Decisions D1–D8, D14.
 ## Step 2 — family predicates through the record
 
 - **Goal:** `isAnsweredCallback`, `isReplyCallback`, `isLoopCallback`, `isDelegateCallback` and `isFeedbackCallback` become one-line wrappers over `isCallbackOfFamily`. `isReviewCallback` stays as it is. Stage 02 removes them all (D7).
-- **Done when:** no product file outside `callback.ts` (and `callback-kinds.ts`) changes, except the type import in `approval-taps.ts`.
+- **Done when:** no other product file changes, except the type import in `approval-taps.ts`.
 
 ## Step 3 — tests
 
 New file `packages/core/src/digest/callback-registry.test.ts`. Use the existing `ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"` and a second id `ID2 = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5c"` for `delegate_pick`. The golden table is typed `{ [K in Callback["kind"]]: { value: Extract<Callback, { kind: K }>; data: string; family: CallbackFamily } }`, so a new kind without a row fails typecheck.
 
-1. Golden table, 33 rows: `encodeCallback(value)` is exactly `data`, and `parseCallback(data)` equals `value`. Take each `data` from the code at the plan base (examples: `right`/urgent → `fr:u:${ID}`; `reply_review` with no `afterId` → `rv`, with `afterId: ID` → a second row in a `test.each` is fine; `reject_reason`/not_needed → `rw:n:${ID}`; `delegate_pick` → `dp:<22>:<22>`, the base64url of `ID` and `ID2`).
+1. Golden table, 33 rows: `encodeCallback(value)` is exactly `data`, and `parseCallback(data)` equals `value`. Take each `data` from the code at the plan base (examples: `right`/urgent → `fr:u:${ID}`; `reply_review` → `rv`, plus one extra row with `afterId: ID`; `reject_reason`/not_needed → `rw:n:${ID}`; `delegate_pick` → `dp:<22>:<22>`).
 2. The 33 `callbackKinds` prefixes are distinct and each matches `/^[a-z]{2}$/`.
 3. Each golden `data` is at most 64 bytes (`new TextEncoder().encode(data).length`).
 4. Each of these parses to `null`: `""`, `"ap"`, `"ap:"`, `` `ap:${ID}:x` ``, `` `ap:${ID}\n` ``, `` ` ap:${ID}` ``, `` `AP:${ID}` ``, `` `ap:${ID.toUpperCase()}` ``, `` `zz:${ID}` ``, `` `__proto__:${ID}` ``, `` `constructor:${ID}` ``, `"toString"`, `"hasOwnProperty"`, `` `fr:d:${ID}` ``, `` `rw:x:${ID}` ``, `"rv:"`, `` `dg:${ID}x` ``, and `dp:` with a 21-character second part.

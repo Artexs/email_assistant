@@ -29,7 +29,7 @@ Part of [`../plan.md`](../plan.md). Decisions D7, D9–D11, D14, D15.
 
 - **Goal:** one family API (D7).
 - Remove `isAnsweredCallback`, `isReplyCallback`, `isLoopCallback`, `isDelegateCallback`, `isFeedbackCallback` and `isReviewCallback` from core. Move each caller to `isCallbackOfFamily` or `callbackFamilyOf`: `digest.test.ts`, `callback.test.ts`, `callback-loop.test.ts`. Keep the truth value of each assert: `isFeedbackCallback(x)` becomes `isCallbackOfFamily(x, "feedback")`; an `isReviewCallback` assert becomes a check that the kind starts with `review_` and the family is `feedback`. Drop test 8 of `callback-registry.test.ts` (it compared the old predicates).
-- **Docs (D15):** in `docs/capabilities/digest-and-notices.md`, rule 10 says: the prefixes and codecs are in `callbackKinds` (`packages/core/src/digest/callback.ts` or `callback-kinds.ts`); a new kind is one entry there and one golden row; a new family also needs one `callbackHandlers` entry in `callbacks.ts`. The Telegram rows of the table point to rule 10 instead of a short prefix list. Fix the file paths in the tests list if a test file was added.
+- **Docs (D15):** in `docs/capabilities/digest-and-notices.md`, rule 10 says: the prefixes and codecs are in `callbackKinds` (`packages/core/src/digest/callback.ts` or `callback-kinds.ts`); a new kind is one entry there and one golden row; a new family also needs one `callbackHandlers` entry in `callbacks.ts`. The Telegram rows of the table point to rule 10 instead of a short prefix list. Add the new test files to its tests list.
 - **Done when:** the six names above give no match in `apps/`, `packages/` and `tools/`; this check must find nothing.
 
 ## Tests
@@ -41,7 +41,7 @@ New unit file `apps/server/src/modules/channels/callbacks-dispatch.test.ts`, no 
 
 Break check: swap the `loop` and `delegate` entries in the recording record and see test 1 fail; restore. Report it.
 
-The integration tests that cover the taps pass with no edit to their asserts: `channels-callbacks.test.ts` (feedback, review, approval, "junk data is not valid", "forged data is not valid", suspended organization), `channels-loop-taps.test.ts`, `channels-loop-taps-answers.test.ts`, `channels-delegate-taps.test.ts`, `channels-reply-review.test.ts`, `channels-reply-redraft.test.ts`, `triage-answered-check.test.ts`. `check:job` runs the ones that import a changed file; run the others that it skips with `bun test <file>` once, after the last commit.
+The integration tests that cover the taps pass with no edit to their asserts: `channels-callbacks.test.ts` (feedback, review, approval, "junk data is not valid", "forged data is not valid", suspended organization), `channels-loop-taps.test.ts`, `channels-loop-taps-answers.test.ts`, `channels-delegate-taps.test.ts`, `channels-reply-review.test.ts`, `channels-reply-redraft.test.ts`, `triage-answered-check.test.ts`. Run with `bun test <file>`, once after the last commit, each one that `check:job` skips.
 
 ## Check
 

@@ -73,11 +73,11 @@ Move the ticket to `active/` and commit. Spawn stage 01 (board worker model, `--
 
 - Scouts: 3 (`scouts.md`).
 - ticket.md [written], plan.md [written], stage 01 [written], stage 02 [written].
-- Word counts: see § Cold review.
+- Word counts (`wc -w`, before the review): plan.md 1,186; stage 01 696; stage 02 699; ticket.md 325.
 
 ## Cold review
 
-Not run yet.
+Model: `claude-opus-5-5`, because stage 01 is `[risky]` (parse of untrusted Telegram data). Result: pending.
 
 ## Log
 
