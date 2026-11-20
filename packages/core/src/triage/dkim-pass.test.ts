@@ -1,38 +1,90 @@
 import { describe, expect, test } from "bun:test";
 
-import { hasCoveredDkimPass, hasTrustedAlignedDkimPass } from "./dkim-pass";
+import { hasCoveredDkimPass } from "./dkim-pass";
 import type { DkimSignature } from "./dkim-signature";
 
 const TRUSTED = ["interia.pl"];
 
-describe("hasTrustedAlignedDkimPass", () => {
+// The shared hosting suffixes of the alignment cases below (same list as the suffix case).
+const SHARED_SUFFIXES = [
+  "github.io",
+  "pages.dev",
+  "vercel.app",
+  "netlify.app",
+  "blogspot.com",
+  "herokuapp.com",
+  "azurewebsites.net",
+  "web.app",
+  "firebaseapp.com",
+  "onrender.com",
+];
+
+// One covering signature (`h=` names From and both list headers) per `header.d` domain that a case of this file uses.
+// Built from a fixed list and the suffix array, not from the case strings: a case with a new domain must add it here.
+const SIGNED_DOMAINS = [
+  "c.example",
+  "news.c.example",
+  "a.news.c.example",
+  "other.c.example",
+  "example",
+  "co.uk",
+  "evilc.example",
+  "other.example",
+  "x.example",
+  "evil.example",
+  ...SHARED_SUFFIXES.flatMap((suffix) => [suffix, `other.${suffix}`, `evil.${suffix}`]),
+];
+const SIGNED: DkimSignature[] = SIGNED_DOMAINS.map((d) => ({
+  d,
+  h: ["from", "list-unsubscribe", "list-unsubscribe-post"],
+}));
+
+// Fails when the input names a `header.d` (also inside a comment or a quoted string) that has no signature in SIGNED:
+// otherwise a false case could be false only for the missing signature, whatever the parser does.
+function expectSigned(authResults: string | null): void {
+  const signed = new Set(SIGNED.map((signature) => signature.d));
+  for (const match of (authResults ?? "").matchAll(/header\.d\s*=\s*([^\s;)"]+)/gi)) {
+    const domain = (match[1] ?? "").toLowerCase().replace(/\.+$/, "");
+    if (!signed.has(domain)) throw new Error(`unsigned header.d ${domain}: add it to SIGNED`);
+  }
+}
+
+// The cases of the removed weaker check: a pass that SIGNED covers, so the result decides only on the parser and the alignment.
+function alignedCovered(
+  authResults: string | null,
+  trustedAuthservIds: readonly string[],
+  fromDomain: string
+): boolean {
+  expectSigned(authResults);
+  return hasCoveredDkimPass(authResults, trustedAuthservIds, fromDomain, SIGNED);
+}
+
+describe("the Authentication-Results parser and the alignment of the trusted result, through hasCoveredDkimPass", () => {
   test("1: a trusted id, dkim=pass and header.d of the From domain", () => {
-    expect(hasTrustedAlignedDkimPass("interia.pl; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(true);
-    expect(
-      hasTrustedAlignedDkimPass("mx.interia.pl; spf=pass; dkim=pass header.d=c.example", TRUSTED, "c.example")
-    ).toBe(true);
+    expect(alignedCovered("interia.pl; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(true);
+    expect(alignedCovered("mx.interia.pl; spf=pass; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(true);
   });
 
   test("2: header.d of a parent of the From domain counts, down to the registrable domain only", () => {
     const pass = (d: string) => `interia.pl; dkim=pass header.d=${d}`;
-    expect(hasTrustedAlignedDkimPass(pass("c.example"), TRUSTED, "news.c.example")).toBe(true);
-    expect(hasTrustedAlignedDkimPass(pass("news.c.example"), TRUSTED, "a.news.c.example")).toBe(true);
+    expect(alignedCovered(pass("c.example"), TRUSTED, "news.c.example")).toBe(true);
+    expect(alignedCovered(pass("news.c.example"), TRUSTED, "a.news.c.example")).toBe(true);
     // A child, a sibling and a public suffix do not count.
-    expect(hasTrustedAlignedDkimPass(pass("news.c.example"), TRUSTED, "c.example")).toBe(false);
-    expect(hasTrustedAlignedDkimPass(pass("other.c.example"), TRUSTED, "news.c.example")).toBe(false);
-    expect(hasTrustedAlignedDkimPass(pass("example"), TRUSTED, "c.example")).toBe(false);
-    expect(hasTrustedAlignedDkimPass(pass("co.uk"), TRUSTED, "shop.co.uk")).toBe(false);
-    expect(hasTrustedAlignedDkimPass(pass("evilc.example"), TRUSTED, "c.example")).toBe(false);
+    expect(alignedCovered(pass("news.c.example"), TRUSTED, "c.example")).toBe(false);
+    expect(alignedCovered(pass("other.c.example"), TRUSTED, "news.c.example")).toBe(false);
+    expect(alignedCovered(pass("example"), TRUSTED, "c.example")).toBe(false);
+    expect(alignedCovered(pass("co.uk"), TRUSTED, "shop.co.uk")).toBe(false);
+    expect(alignedCovered(pass("evilc.example"), TRUSTED, "c.example")).toBe(false);
   });
 
   test("3: an authserv-id that is not trusted gives false, even with dkim=pass for the right domain", () => {
-    expect(hasTrustedAlignedDkimPass("evil.example; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(false);
-    expect(hasTrustedAlignedDkimPass("notinteria.pl; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(false);
-    expect(hasTrustedAlignedDkimPass("interia.pl; dkim=pass header.d=c.example", [], "c.example")).toBe(false);
+    expect(alignedCovered("evil.example; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(false);
+    expect(alignedCovered("notinteria.pl; dkim=pass header.d=c.example", TRUSTED, "c.example")).toBe(false);
+    expect(alignedCovered("interia.pl; dkim=pass header.d=c.example", [], "c.example")).toBe(false);
   });
 
   test("4: dkim=fail, none, a missing header.d, another domain, and a pass in a comment give false", () => {
-    const check = (value: string | null) => hasTrustedAlignedDkimPass(value, TRUSTED, "c.example");
+    const check = (value: string | null) => alignedCovered(value, TRUSTED, "c.example");
     expect(check("interia.pl; dkim=fail header.d=c.example")).toBe(false);
     expect(check("interia.pl; dkim=none")).toBe(false);
     expect(check("interia.pl; dkim=pass")).toBe(false);
@@ -45,29 +97,21 @@ describe("hasTrustedAlignedDkimPass", () => {
     expect(check("interia.pl; x-dkim=pass header.d=c.example")).toBe(false);
     expect(check("interia.pl")).toBe(false);
     expect(check(null)).toBe(false);
-    expect(hasTrustedAlignedDkimPass("interia.pl; dkim=pass header.d=c.example", TRUSTED, "")).toBe(false);
+    expect(alignedCovered("interia.pl; dkim=pass header.d=c.example", TRUSTED, "")).toBe(false);
   });
 
   test("5: case and a second result: the passing result may follow a failing one", () => {
     expect(
-      hasTrustedAlignedDkimPass(
-        "Interia.PL; DKIM=Pass Header.D=C.Example; dkim=fail header.d=x.example",
-        TRUSTED,
-        "c.example"
-      )
+      alignedCovered("Interia.PL; DKIM=Pass Header.D=C.Example; dkim=fail header.d=x.example", TRUSTED, "c.example")
     ).toBe(true);
     expect(
-      hasTrustedAlignedDkimPass(
-        "interia.pl; dkim=fail header.d=c.example; dkim=pass header.d=c.example",
-        TRUSTED,
-        "c.example"
-      )
+      alignedCovered("interia.pl; dkim=fail header.d=c.example; dkim=pass header.d=c.example", TRUSTED, "c.example")
     ).toBe(true);
   });
 
   // The header is lexed per RFC 8601 before it is split on `;`.
   test("6: a `;` or a `dkim=pass` inside a comment or a quoted string never makes a result", () => {
-    const check = (value: string) => hasTrustedAlignedDkimPass(value, TRUSTED, "c.example");
+    const check = (value: string) => alignedCovered(value, TRUSTED, "c.example");
     // The three probes of the review.
     expect(
       check(
@@ -96,7 +140,7 @@ describe("hasTrustedAlignedDkimPass", () => {
   });
 
   test("7: a malformed value (open comment, open quote, stray parenthesis) trusts nothing; a NUL after pass is no pass", () => {
-    const check = (value: string) => hasTrustedAlignedDkimPass(value, TRUSTED, "c.example");
+    const check = (value: string) => alignedCovered(value, TRUSTED, "c.example");
     expect(check("interia.pl; dkim=pass header.d=c.example (open")).toBe(false);
     expect(check('interia.pl; dkim=pass header.d=c.example; x="open')).toBe(false);
     expect(check("interia.pl; dkim=pass header.d=c.example)")).toBe(false);
@@ -104,32 +148,20 @@ describe("hasTrustedAlignedDkimPass", () => {
   });
 
   test("8: a shared hosting suffix is not a registrable domain: one more label is needed (NOTE 3)", () => {
-    const suffixes = [
-      "github.io",
-      "pages.dev",
-      "vercel.app",
-      "netlify.app",
-      "blogspot.com",
-      "herokuapp.com",
-      "azurewebsites.net",
-      "web.app",
-      "firebaseapp.com",
-      "onrender.com",
-    ];
-    for (const suffix of suffixes) {
+    for (const suffix of SHARED_SUFFIXES) {
       const pass = (d: string) => `interia.pl; dkim=pass header.d=${d}`;
       // A signature of the suffix does not align with a tenant, and a tenant does not align with a sibling.
-      expect({ suffix, ok: hasTrustedAlignedDkimPass(pass(suffix), TRUSTED, `evil.${suffix}`) }).toEqual({
+      expect({ suffix, ok: alignedCovered(pass(suffix), TRUSTED, `evil.${suffix}`) }).toEqual({
         suffix,
         ok: false,
       });
-      expect(hasTrustedAlignedDkimPass(pass(`other.${suffix}`), TRUSTED, `evil.${suffix}`)).toBe(false);
+      expect(alignedCovered(pass(`other.${suffix}`), TRUSTED, `evil.${suffix}`)).toBe(false);
       // The tenant domain and its parents down to the tenant label still align.
-      expect(hasTrustedAlignedDkimPass(pass(`evil.${suffix}`), TRUSTED, `evil.${suffix}`)).toBe(true);
-      expect(hasTrustedAlignedDkimPass(pass(`evil.${suffix}`), TRUSTED, `news.evil.${suffix}`)).toBe(true);
+      expect(alignedCovered(pass(`evil.${suffix}`), TRUSTED, `evil.${suffix}`)).toBe(true);
+      expect(alignedCovered(pass(`evil.${suffix}`), TRUSTED, `news.evil.${suffix}`)).toBe(true);
     }
     // A domain that is not a shared suffix keeps the old rule.
-    expect(hasTrustedAlignedDkimPass("interia.pl; dkim=pass header.d=c.example", TRUSTED, "news.c.example")).toBe(true);
+    expect(alignedCovered("interia.pl; dkim=pass header.d=c.example", TRUSTED, "news.c.example")).toBe(true);
   });
 });
 
@@ -194,5 +226,17 @@ describe("hasCoveredDkimPass", () => {
       )
     ).toBe(true);
     expect(covered([{ d: "esp.example", h: full }], auth)).toBe(false);
+  });
+});
+
+describe("the DKIM exports", () => {
+  test("8: dkim-pass.ts exports only hasCoveredDkimPass", async () => {
+    expect(Object.keys(await import("./dkim-pass")).sort()).toEqual(["hasCoveredDkimPass"]);
+  });
+
+  test("9: @ea/core has no hasTrustedAlignedDkimPass and has hasCoveredDkimPass", async () => {
+    const core = await import("../index");
+    expect(Object.hasOwn(core, "hasTrustedAlignedDkimPass")).toBe(false);
+    expect(Object.hasOwn(core, "hasCoveredDkimPass")).toBe(true);
   });
 });
