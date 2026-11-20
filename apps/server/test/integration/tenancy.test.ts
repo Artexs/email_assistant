@@ -176,7 +176,14 @@ describe("createOrganizationWithOwner", () => {
 
 describe("org:create CLI", () => {
   function runOrgCreate(args: string[]) {
-    return Bun.spawn(["bun", orgCreateScript, ...args], { cwd: repoRoot, stdout: "pipe", stderr: "pipe" });
+    // `env: process.env`: without it Bun starts the child with the environment of this process at its start, not with
+    // the worker database that the preload put in `process.env`.
+    return Bun.spawn(["bun", orgCreateScript, ...args], {
+      cwd: repoRoot,
+      env: process.env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
   }
 
   test("creates the organization, user and owner membership; a duplicate e-mail leaves no organization", async () => {
