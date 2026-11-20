@@ -40,8 +40,6 @@ export const tablesEM: Record<string, ExportTable> = {
   emails: byOrgExcluding(
     {
       from_address_lower: "derived: lower(from_address), the database recomputes it",
-      inbox_uid: "copy of source_uid for the rollback window; dropped by the contract migration",
-      undo_pending_at: "copy of move_pending_at for the rollback window; dropped by the contract migration",
     },
     "id",
     "org_id",
@@ -154,11 +152,7 @@ export const tablesEM: Record<string, ExportTable> = {
     "updated_at",
     "loop_wait_days"
   ),
-  mailboxes: byOrgExcluding(
-    {
-      uidvalidity: "stale copy of the INBOX cursor; dropped by the contract migration",
-      last_uid: "stale copy of the INBOX cursor; dropped by the contract migration",
-    },
+  mailboxes: byOrg(
     "id",
     "org_id",
     "protocol",

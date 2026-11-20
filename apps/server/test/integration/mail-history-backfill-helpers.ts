@@ -62,9 +62,10 @@ export const byId = <T extends { message_id_header: string | null }>(rows: T[], 
 
 export async function cursorOf(trx: Db | Transaction<DB>, mailboxId: string) {
   return trx
-    .selectFrom("mailboxes")
+    .selectFrom("mailbox_folders")
     .select(["uidvalidity", "last_uid"])
-    .where("id", "=", mailboxId)
+    .where("mailbox_id", "=", mailboxId)
+    .where("key", "=", "inbox")
     .executeTakeFirstOrThrow();
 }
 

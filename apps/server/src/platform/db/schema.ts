@@ -273,7 +273,6 @@ export interface Emails {
   from_address_lower: Generated<string | null>;
   id: Generated<string>;
   in_reply_to: string | null;
-  inbox_uid: Int8 | null;
   locked_at: Timestamp | null;
   mailbox_id: string;
   message_id_header: string | null;
@@ -292,7 +291,6 @@ export interface Emails {
   thread_key: string;
   to_addresses: Generated<string[]>;
   uid: Int8;
-  undo_pending_at: Timestamp | null;
 }
 
 export interface HistoryCheckItems {
@@ -347,7 +345,6 @@ export interface Mailboxes {
   imap_host: string;
   imap_port: number;
   last_synced_at: Timestamp | null;
-  last_uid: Int8 | null;
   oauth_provider: string | null;
   org_id: string;
   protocol: Generated<string>;
@@ -357,7 +354,6 @@ export interface Mailboxes {
   smtp_security: Generated<string>;
   status: Generated<string>;
   status_changed_at: Generated<Timestamp>;
-  uidvalidity: Int8 | null;
 }
 
 export interface MailboxFolders {

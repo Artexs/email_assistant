@@ -4,8 +4,8 @@ import { join, relative, sep } from "node:path";
 import { describe, expect, test } from "bun:test";
 
 // Guard: no code names the retired columns of `emails` (`inbox_uid`, `undo_pending_at`).
-// Until the contract migration drops them they still typecheck (they are in `schema.ts`) and raw `sql`
-// strings never typecheck, so only a source scan keeps another branch from writing them again.
+// The database no longer has them, but a raw `sql` string never typechecks and another branch may still carry the old
+// names, so only a source scan keeps a branch from writing them again.
 
 const RETIRED: readonly { name: string; pattern: RegExp }[] = [
   { name: "inbox_uid", pattern: /\binbox_uid\b/ },
@@ -17,10 +17,6 @@ const RETIRED: readonly { name: string; pattern: RegExp }[] = [
 
 /** Path (from the repo root, `/` separated) to the retired names the file may hold; `"*"` is every name. */
 export const RETIRED_COLUMN_ALLOW: Readonly<Record<string, readonly string[] | "*">> = {
-  // The generated schema keeps the columns until the contract migration.
-  "apps/server/src/platform/db/schema.ts": "*",
-  // The excluded entries of the data export map (a test needs every column listed).
-  "apps/server/src/modules/privacy/export-map/tables-e-m.ts": "*",
   // This file names the retired columns on purpose.
   "apps/server/src/platform/db/retired-columns.test.ts": "*",
   // The test of the copy trigger writes the old names on purpose.
@@ -101,8 +97,8 @@ describe("retired emails column names", () => {
     expect(findRetiredNames(files)).toEqual(["apps/server/src/x.ts:2 inbox_uid"]);
   });
 
-  test("the same text in schema.ts is no finding", () => {
-    const files = [{ path: "apps/server/src/platform/db/schema.ts", text: "inbox_uid" }];
+  test("the same text in the schema test of the renamed columns is no finding", () => {
+    const files = [{ path: "apps/server/test/integration/emails-renamed-columns-schema.test.ts", text: "inbox_uid" }];
     expect(findRetiredNames(files)).toEqual([]);
   });
 
