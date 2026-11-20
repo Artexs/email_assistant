@@ -1,0 +1,467 @@
+# Mutation summary: `packages/core`
+
+Score **86.45 %**: 21250 mutants, 11535 killed, 76 timeout, 1483 survived, 337 no coverage, 7819 error or ignored (outside the score).
+
+Stryker tests: 2769; kill nothing (`S11`): 439; kill only mutants that another test also kills (`S10`): 1567; greedy cover: 986; unjoined to a JUnit case: 9.
+
+## Cases that kill no mutant (439)
+
+- `packages/core/src/contacts/address.test.ts:42` src/contacts/address.test.ts > ADDRESS_TRIM_CHARS > a code point is in the set exactly when trim() strips it, over every code point
+- `packages/core/src/contacts/address.test.ts:53` src/contacts/address.test.ts > ADDRESS_TRIM_CHARS > 25 code points in ascending order, no duplicate
+- `packages/core/src/contacts/address.test.ts:62` src/contacts/address.test.ts > ADDRESS_RULE_PROBES > 66 strings; the order is fixed because tests read entries by index
+- `packages/core/src/contacts/address.test.ts:68` src/contacts/address.test.ts > ADDRESS_RULE_PROBES > the list holds a tab, a no-break space, U+3000 and a newline
+- `packages/core/src/contacts/address.test.ts:73` src/contacts/address.test.ts > ADDRESS_RULE_PROBES > no duplicate entry
+- `packages/core/src/contacts/address.test.ts:169` src/contacts/address.test.ts > addressCasedCodePoints > leaves out the dotless i, the long s, digits and punctuation
+- `packages/core/src/digest/answered-check.test.ts:110` src/digest/answered-check.test.ts > the flag > answered_check defaults off, epic E3a
+- `packages/core/src/digest/answers.test.ts:11` src/digest/answers.test.ts > answers > undo texts
+- `packages/core/src/digest/approvals-follow-up.test.ts:157` src/digest/approvals-follow-up.test.ts > the follow-up card (T1, T2, T3) > the view of a follow-up parses with the strict schema; a view without the new fields still does
+- `packages/core/src/digest/approvals-follow-up.test.ts:222` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > accepts plain address 1
+- `packages/core/src/digest/approvals-follow-up.test.ts:222` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > accepts plain address 2
+- `packages/core/src/digest/approvals-follow-up.test.ts:222` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > accepts plain address 3
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses angle brackets
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses application program command at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses application program command in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses application program command in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses arabic letter mark at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses arabic letter mark in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses arabic letter mark in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bell control at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bell control in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bell control in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bidi isolate start at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bidi isolate start in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bidi isolate start in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bidi override at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bidi override in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses bidi override in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses byte order mark at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses byte order mark in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses byte order mark in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses cancel tag at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses cancel tag in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses cancel tag in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses combining grapheme joiner at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses combining grapheme joiner in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses combining grapheme joiner in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses delete control at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses delete control in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses delete control in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses halfwidth hangul filler at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses halfwidth hangul filler in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses halfwidth hangul filler in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul choseong filler at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul choseong filler in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul choseong filler in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul filler at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul filler in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul filler in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul jungseong filler at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul jungseong filler in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses hangul jungseong filler in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses header injection
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses left-to-right embedding at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses left-to-right embedding in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses left-to-right embedding in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses line separator at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses line separator in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses line separator in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses list
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses mongolian vowel separator at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses mongolian vowel separator in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses mongolian vowel separator in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses next line at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses next line in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses next line in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses pop directional isolate at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses pop directional isolate in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses pop directional isolate in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses quoted
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses right-to-left mark at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses right-to-left mark in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses right-to-left mark in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses soft hyphen at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses soft hyphen in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses soft hyphen in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses tag begin at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses tag begin in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses tag begin in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses tag space at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses tag space in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses tag space in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses variation selector 1 at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses variation selector 1 in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses variation selector 1 in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses variation selector 16 at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses variation selector 16 in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses variation selector 16 in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses word joiner at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses word joiner in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses word joiner in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses zero width non-joiner at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses zero width non-joiner in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses zero width non-joiner in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses zero width space at the end
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses zero width space in the domain
+- `packages/core/src/digest/approvals-follow-up.test.ts:226` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > refuses zero width space in the local part
+- `packages/core/src/digest/approvals-follow-up.test.ts:227` src/digest/approvals-follow-up.test.ts > a recipient that the card could hide or reorder is not an address > a test label holds no address
+- `packages/core/src/digest/approvals.test.ts:391` src/digest/approvals.test.ts > the texts of the copy check (the mail client edit) > the two card lines, in English and in Polish
+- `packages/core/src/digest/local-time.test.ts:33` src/digest/local-time.test.ts > localToInstant > a normal time
+- `packages/core/src/digest/local-time.test.ts:44` src/digest/local-time.test.ts > localToInstant > an ambiguous time in autumn gives the later instant
+- `packages/core/src/digest/local-time.test.ts:248` src/digest/local-time.test.ts > quietEnd on a daylight-saving day > localToInstant: an ambiguous time gives the later instant in a zone west of UTC
+- `packages/core/src/digest/notices.test.ts:681` src/digest/notices.test.ts > reply draft notices (F115 stage 03, stage 12) > every reply result text is one line, has no address and is not empty, en and pl
+- `packages/core/src/digest/review.test.ts:94` src/digest/review.test.ts > renderReviewPage > 4: the flag is off by default and belongs to E2a
+- `packages/core/src/digest/weekly.test.ts:322` src/digest/weekly.test.ts > the suggestion line of the weekly report > a view queued before the key (no `suggestions`) still parses and renders; a bad link or an extra key does not parse
+- `packages/core/src/digest/weekly.test.ts:384` src/digest/weekly.test.ts > the reply draft line of the weekly report > a view queued before the key has no `replyDrafts` and still parses with all zero
+- `packages/core/src/features.test.ts:16` src/features.test.ts > featureFlags registry > every flag has a valid key, description, epic and remove-by date
+- `packages/core/src/features.test.ts:27` src/features.test.ts > featureFlags registry > the mailbox OAuth flags default off, epic E9a, remove by 2027-06-01
+- `packages/core/src/features.test.ts:39` src/features.test.ts > featureFlags registry > the epic pattern accepts every epic code form and refuses the rest
+- `packages/core/src/features.test.ts:48` src/features.test.ts > featureFlags registry > the placeholder flags exist and default off
+- `packages/core/src/features.test.ts:55` src/features.test.ts > featureFlags registry > reply_drafts exists, defaults off, epic E6a, remove by 2027-06-01
+- `packages/core/src/features.test.ts:61` src/features.test.ts > featureFlags registry > web_push exists, defaults off, epic E9, remove by 2027-06-01
+- `packages/core/src/features.test.ts:67` src/features.test.ts > featureFlags registry > telegram_minimal exists, defaults off, epic E9, remove by 2027-06-01, after web_push
+- `packages/core/src/features.test.ts:74` src/features.test.ts > featureFlags registry > draft_copy_check exists, defaults off, epic E6a, remove by 2027-06-01
+- `packages/core/src/features.test.ts:80` src/features.test.ts > featureFlags registry > sender_context, contact_wait and sender_suggestions exist, default off, epic E11a, remove by 2027-06-01, in this order
+- `packages/core/src/features.test.ts:90` src/features.test.ts > featureFlags registry > security_log exists, defaults off and has the epic E7-T2 and remove-by 2027-03-01
+- `packages/core/src/features.test.ts:97` src/features.test.ts > featureFlags registry > mistake_capture defaults off and has the epic E3a
+- `packages/core/src/features.test.ts:103` src/features.test.ts > featureFlags registry > llm_pause_line defaults off and has the epic E3a
+- `packages/core/src/features.test.ts:110` src/features.test.ts > featureFlags registry > weekly_report and handled_share default off and have the epic E3a
+- `packages/core/src/features.test.ts:129` src/features.test.ts > featureFlags registry > answered_check defaults off and has the epic E3a
+- `packages/core/src/features.test.ts:135` src/features.test.ts > featureFlags registry > featureKeys lists the registry keys in registry order
+- `packages/core/src/legal/data-categories.test.ts:7` src/legal/data-categories.test.ts > dataCategories > category ids are unique
+- `packages/core/src/legal/data-categories.test.ts:12` src/legal/data-categories.test.ts > dataCategories > every text has a non-empty en and pl, and a category has a subject
+- `packages/core/src/legal/data-categories.test.ts:25` src/legal/data-categories.test.ts > dataCategories > every entry is table.column or table.*
+- `packages/core/src/legal/data-categories.test.ts:50` src/legal/data-categories.test.ts > dataCategories > no table is both in a category and in NO_PERSONAL_DATA_TABLES
+- `packages/core/src/legal/data-categories.test.ts:56` src/legal/data-categories.test.ts > dataCategories > every NO_PERSONAL_DATA_TABLES entry has a reason
+- `packages/core/src/legal/data-categories.test.ts:61` src/legal/data-categories.test.ts > dataCategories > sender-context: both tables, people who are not members, 365 days after the last activity
+- `packages/core/src/legal/subprocessors.test.ts:7` src/legal/subprocessors.test.ts > subprocessors > ids are unique
+- `packages/core/src/legal/subprocessors.test.ts:12` src/legal/subprocessors.test.ts > subprocessors > every text has a non-empty en and pl
+- `packages/core/src/legal/subprocessors.test.ts:26` src/legal/subprocessors.test.ts > subprocessors > a placeholder is the same in both languages
+- `packages/core/src/legal/subprocessors.test.ts:35` src/legal/subprocessors.test.ts > subprocessors > termsUrl is an https URL or a to-confirm placeholder
+- `packages/core/src/llm-providers.test.ts:27` src/llm-providers.test.ts > llm provider catalog > no model id is in two rows: the flat map holds every row key
+- `packages/core/src/llm-roles.test.ts:7` src/llm-roles.test.ts > llm roles > the role list is fixed
+- `packages/core/src/llm-roles.test.ts:18` src/llm-roles.test.ts > llm roles > a prompt version starts with its role
+- `packages/core/src/loops/brief.test.ts:94` src/loops/brief.test.ts > loopSections and renderBrief (T1) > a section holds at most 5 lines and counts the rest from the total the reader gave
+- `packages/core/src/loops/dates.test.ts:26` src/loops/dates.test.ts > resolveDue (T2b) > a weekday word is the next such day, never the same day
+- `packages/core/src/loops/dates.test.ts:38` src/loops/dates.test.ts > resolveDue (T2b) > end_of_week and next_week on a weekend
+- `packages/core/src/loops/dates.test.ts:48` src/loops/dates.test.ts > resolveDue (T2b) > a Saturday in March: Monday 17:00 is CEST
+- `packages/core/src/loops/dates.test.ts:54` src/loops/dates.test.ts > resolveDue (T2b) > a date is 17:00 local on that day
+- `packages/core/src/loops/dates.test.ts:58` src/loops/dates.test.ts > resolveDue (T2b) > a date before the sent mail gives null
+- `packages/core/src/loops/dates.test.ts:63` src/loops/dates.test.ts > resolveDue (T2b) > more than 60 days ahead gives null; day 60 holds
+- `packages/core/src/loops/dates.test.ts:69` src/loops/dates.test.ts > resolveDue (T2b) > a date that does not exist gives null
+- `packages/core/src/loops/dates.test.ts:85` src/loops/dates.test.ts > dueRefSchema > accepts a date and a word; refuses an unknown word and extra keys
+- `packages/core/src/loops/extractor.test.ts:185` src/loops/extractor.test.ts > the JSON schema that the provider gets > is a strict object with every output key required and no other key
+- `packages/core/src/mail/providers.test.ts:7` src/mail/providers.test.ts > MAIL_PRESETS > every key has IMAP port 993 and an SMTP port that matches its security mode
+- `packages/core/src/mail/providers.test.ts:14` src/mail/providers.test.ts > MAIL_PRESETS > iCloud uses an app password and SMTP on 587 with STARTTLS
+- `packages/core/src/mail/sync-folders.test.ts:55` src/mail/sync-folders.test.ts > SORT_FOLDER_NAMES > comes from the sync defaults
+- `packages/core/src/mail/sync-folders.test.ts:61` src/mail/sync-folders.test.ts > AI_FOLDER_ROOT > is the first part of the AI info folder
+- `packages/core/src/mail/sync-folders.test.ts:67` src/mail/sync-folders.test.ts > syncFolderDefaultPath > returns the default path of each folder key
+- `packages/core/src/metrics/cost-model.test.ts:58` src/metrics/cost-model.test.ts > costToRun > the pilot block is the sum of the four weeks of pilot-cost.md
+- `packages/core/src/metrics/m1.test.ts:45` src/metrics/m1.test.ts > missedImportant > no rows gives zeros and no upper bound
+- `packages/core/src/metrics/m2.test.ts:58` src/metrics/m2.test.ts > openLoopsOnTime: delegations > the default due time is 3 days
+- `packages/core/src/metrics/m4.test.ts:22` src/metrics/m4.test.ts > handledShare > an empty week is all zeros
+- `packages/core/src/metrics/m5.test.ts:45` src/metrics/m5.test.ts > urgentLatency > no rows → null and zeros
+- `packages/core/src/metrics/reply-drafts.test.ts:31` src/metrics/reply-drafts.test.ts > replyOutcomeCounts > no rows give zero everywhere
+- `packages/core/src/metrics/week-stats.test.ts:107` src/metrics/week-stats.test.ts > buildWeekStats > an empty week passes the schema
+- `packages/core/src/metrics/week.test.ts:24` src/metrics/week.test.ts > weekRange > a normal week runs Monday 00:00 to the next Monday 00:00 local
+- `packages/core/src/metrics/week.test.ts:30` src/metrics/week.test.ts > weekRange > the week of the autumn change has 169 hours
+- `packages/core/src/metrics/week.test.ts:37` src/metrics/week.test.ts > weekRange > the week of the spring change has 167 hours
+- `packages/core/src/notices/digest-view.test.ts:13` src/notices/digest-view.test.ts > the loopIds of a digest view > a digest of before the brief has none and still parses; a list of ids parses
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses a json path
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses a look-alike digit (full-width)
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses a nul
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses a quote
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses braces
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses empty
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses leading space
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses no dashes
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses trailing newline
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses upper case
+- `packages/core/src/notices/digest-view.test.ts:32` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses urn prefix
+- `packages/core/src/notices/digest-view.test.ts:36` src/notices/digest-view.test.ts > the loopIds of a digest view > refuses more than 40 ids, a non-array and a number in the list
+- `packages/core/src/notices/digest-view.test.ts:43` src/notices/digest-view.test.ts > the loopIds of a digest view > the view stays strict: an unknown key is refused
+- `packages/core/src/notices/encode.test.ts:33` src/notices/encode.test.ts > encodeNoticeView > writes dates as ISO strings
+- `packages/core/src/notices/encode.test.ts:43` src/notices/encode.test.ts > encodeNoticeView > replaces a lone surrogate and a NUL in a string
+- `packages/core/src/notices/encode.test.ts:101` src/notices/encode.test.ts > encodeNoticeView > an approval view > T5 a view without version and panelUrl encodes (rows of the last 24 h)
+- `packages/core/src/notices/encode.test.ts:105` src/notices/encode.test.ts > encodeNoticeView > an approval view > T5 version and an https or http panelUrl encode
+- `packages/core/src/notices/encode.test.ts:131` src/notices/encode.test.ts > encodeNoticeView > a view without facts encodes to an empty object
+- `packages/core/src/notices/push.test.ts:42` src/notices/push.test.ts > pushPayloadSchema > 2. it refuses an extra key (a subject) and a count of -1; it keeps the six keys
+- `packages/core/src/notices/push.test.ts:56` src/notices/push.test.ts > pushPayloadSchema > 3. the id and the item id are at most 64 characters (a longer one would break the 256-byte budget)
+- `packages/core/src/notices/push.test.ts:62` src/notices/push.test.ts > pushPayloadSchema > 4. the test payload of the device API passes; every push kind passes; the longest payload stays under 256 bytes
+- `packages/core/src/notices/registry.test.ts:351` src/notices/registry.test.ts > notice registries > have one entry per kind
+- `packages/core/src/notices/registry.test.ts:357` src/notices/registry.test.ts > notice registries > the fixture table has one case per kind
+- `packages/core/src/notices/registry.test.ts:365` src/notices/registry.test.ts > the weekly report view > accepts the stored view and refuses an extra key
+- `packages/core/src/notices/registry.test.ts:371` src/notices/registry.test.ts > the weekly report view > refuses a week with a subject field
+- `packages/core/src/notices/registry.test.ts:377` src/notices/registry.test.ts > the weekly report view > has a renderer
+- `packages/core/src/notices/registry.test.ts:408` src/notices/registry.test.ts > the not_triaged view (F109 stage 15, test 9) > a subject, a name or any extra key is refused by the strict view
+- `packages/core/src/notices/registry.test.ts:419` src/notices/registry.test.ts > the sent_missing view > accepts the stored view, refuses an extra field and a missing since
+- `packages/core/src/notices/registry.test.ts:469` src/notices/registry.test.ts > the mailbox_removed view (F117 stage 12, test 5) > the encoded view keeps the access field
+- `packages/core/src/notices/registry.test.ts:506` src/notices/registry.test.ts > the approval_edit view > T5: an extra field, an unknown outcome and an empty text are refused
+- `packages/core/src/notices/registry.test.ts:546` src/notices/registry.test.ts > renderNotice > digest: the Polish texts fit one message
+- `packages/core/src/notices/registry.test.ts:546` src/notices/registry.test.ts > renderNotice > mailbox_removed: the Polish texts fit one message
+- `packages/core/src/notices/registry.test.ts:660` src/notices/registry.test.ts > the mail channel (F110 stage 20) > exactly the report kinds have a mail renderer
+- `packages/core/src/notices/reply-views.test.ts:15` src/notices/reply-views.test.ts > replies_ready view > accepts a count, the queue time, the time zone and the review flag; the panel link is optional
+- `packages/core/src/notices/reply-views.test.ts:24` src/notices/reply-views.test.ts > replies_ready view > refuses an extra key, a missing key and a count below 1
+- `packages/core/src/notices/reply-views.test.ts:35` src/notices/reply-views.test.ts > reply_prompt view > accepts the mail id and nothing else
+- `packages/core/src/notices/reply-views.test.ts:39` src/notices/reply-views.test.ts > reply_prompt view > is strict: an extra key (a subject, a body, a reason) is refused; the id is required
+- `packages/core/src/notices/reply-views.test.ts:48` src/notices/reply-views.test.ts > reply_result view > accepts the mail id and a reason code
+- `packages/core/src/notices/reply-views.test.ts:54` src/notices/reply-views.test.ts > reply_result view > refuses an extra key
+- `packages/core/src/notices/reply-views.test.ts:60` src/notices/reply-views.test.ts > reply_result view > refuses a text as the reason: not a code, empty, too long, upper case, with an address
+- `packages/core/src/notices/routes.test.ts:114` src/notices/routes.test.ts > noticeRoutesSchema > it keeps the three groups and three values of the database CHECK, and nothing else
+- `packages/core/src/replies/checks.test.ts:232` src/replies/checks.test.ts > the word lists of the language check > each list has 30 distinct words and the lists share none
+- `packages/core/src/replies/digits.test.ts:764` src/replies/digits.test.ts > pins: the IBAN scan > the lengths of the three countries without a registry example
+- `packages/core/src/security-log.test.ts:7` src/security-log.test.ts > security log registry > every value is a known kind and every kind is used once
+- `packages/core/src/sim/audit.test.ts:84` src/sim/audit.test.ts > verdictFileSchema > accepts pending, ok and wrong with a category; rejects another text
+- `packages/core/src/sim/files.test.ts:26` src/sim/files.test.ts > blind and label files > a blind case refuses a slot field
+- `packages/core/src/sim/files.test.ts:42` src/sim/files.test.ts > blind and label files > 3 a label takes delegation and refuses unsure and a missing blindHash
+- `packages/core/src/sim/hard-cases.test.ts:32` src/sim/hard-cases.test.ts > hard-case registry > 27 unique tags with unique short ids
+- `packages/core/src/sim/hard-cases.test.ts:40` src/sim/hard-cases.test.ts > hard-case registry > categories are non-empty and valid
+- `packages/core/src/sim/hard-cases.test.ts:47` src/sim/hard-cases.test.ts > hard-case registry > the 8 reply-injection rules are injections on needs_reply
+- `packages/core/src/sim/hard-cases.test.ts:58` src/sim/hard-cases.test.ts > hard-case registry > calendar_invite adds one text/calendar attachment
+- `packages/core/src/sim/hard-cases.test.ts:65` src/sim/hard-cases.test.ts > hard-case registry > every rule applies to a draft of each of its categories with a valid brief and no input change
+- `packages/core/src/sim/hard-cases.test.ts:79` src/sim/hard-cases.test.ts > hard-case registry > urgent_no_keyword drops a contextRef when it sets the source to text
+- `packages/core/src/sim/hard-cases.test.ts:88` src/sim/hard-cases.test.ts > hard-case registry > facts of the table
+- `packages/core/src/sim/live/env-guard.test.ts:44` src/sim/live/env-guard.test.ts > checkSimEnv > 7 each of the 12 codes has a case
+- `packages/core/src/sim/plan-bank.test.ts:39` src/sim/plan-bank.test.ts > planBank > 1 two calls give the same JSON
+- `packages/core/src/sim/plan-bank.test.ts:43` src/sim/plan-bank.test.ts > planBank > 2 slot counts per category and per hard tag
+- `packages/core/src/sim/plan-bank.test.ts:54` src/sim/plan-bank.test.ts > planBank > 3 ids are unique and never in both parts
+- `packages/core/src/sim/plan-bank.test.ts:60` src/sim/plan-bank.test.ts > planBank > 4 urgent holdout sources: 10 text, 5 vip, 5 context
+- `packages/core/src/sim/plan-bank.test.ts:74` src/sim/plan-bank.test.ts > planBank > 5 language counts follow the largest remainder of 0.6
+- `packages/core/src/sim/plan-bank.test.ts:84` src/sim/plan-bank.test.ts > planBank > 6 delegation slots carry a delegate, missing-data slots a clarification
+- `packages/core/src/sim/plan-bank.test.ts:101` src/sim/plan-bank.test.ts > planBank > 7 and 12 newsletter and marketing senders carry list headers with a .test host
+- `packages/core/src/sim/plan-bank.test.ts:123` src/sim/plan-bank.test.ts > planBank > 9 receivedAt is a weekday inside the two bank weeks, local hour 7-18
+- `packages/core/src/sim/plan-bank.test.ts:137` src/sim/plan-bank.test.ts > planBank > 10 another seed gives another urgent dev id set
+- `packages/core/src/sim/plan-bank.test.ts:147` src/sim/plan-bank.test.ts > planBank > 11 batches hold at most 25 slots and count from batch-001 per part
+- `packages/core/src/sim/plan-bank.test.ts:158` src/sim/plan-bank.test.ts > planBank > hard slots keep style variety although each tag has one slot per part
+- `packages/core/src/sim/plan-bank.test.ts:164` src/sim/plan-bank.test.ts > planBank > 12 hard slots carry the facts of their category
+- `packages/core/src/sim/plan-bank.test.ts:180` src/sim/plan-bank.test.ts > sender history > every slot has a valid history; one persona has one history per part
+- `packages/core/src/sim/plan-bank.test.ts:192` src/sim/plan-bank.test.ts > sender history > a replaced sender (bounce, vip_looks_like_spam) has the history of the final persona
+- `packages/core/src/sim/plan-bank.test.ts:209` src/sim/plan-bank.test.ts > sender history > group profiles: boss, system and phishing
+- `packages/core/src/sim/plan-bank.test.ts:228` src/sim/plan-bank.test.ts > batchSlots > sets part and batch in id order, 25 per batch, from the start index
+- `packages/core/src/sim/plan-sent.test.ts:33` src/sim/plan-sent.test.ts > planSentBank > T5 the same seed gives byte-equal slots twice; another seed differs
+- `packages/core/src/sim/plan-sent.test.ts:55` src/sim/plan-sent.test.ts > planSentBank > T6 the language share is 60% pl in each part (±1)
+- `packages/core/src/sim/plan-sent.test.ts:60` src/sim/plan-sent.test.ts > planSentBank > T6 expectsReply 50%, dated promise 25%, stated due 30% of the expectsReply cases
+- `packages/core/src/sim/plan-sent.test.ts:73` src/sim/plan-sent.test.ts > planSentBank > T6 at least 15% of the expectsReply cases go to a delegate (D8); no other slot has one as first recipient
+- `packages/core/src/sim/plan-sent.test.ts:87` src/sim/plan-sent.test.ts > planSentBank > T6 sentAt is inside the scenario week, 20% on the weekend, between 07:00 and 19:00 local
+- `packages/core/src/sim/plan-sent.test.ts:101` src/sim/plan-sent.test.ts > planSentBank > T7 no slot id repeats across the parts
+- `packages/core/src/sim/plan-sent.test.ts:107` src/sim/plan-sent.test.ts > planSentBank > T8 every hard-case tag meets its floor: 6 in holdout, 1 in dev
+- `packages/core/src/sim/plan-sent.test.ts:114` src/sim/plan-sent.test.ts > planSentBank > T4 conditional_promise slots never carry a promise; the other tags keep their label rule
+- `packages/core/src/sim/plan-sent.test.ts:133` src/sim/plan-sent.test.ts > planSentBank > the structure of the tags: threads, quotes, recipients
+- `packages/core/src/sim/plan-sent.test.ts:156` src/sim/plan-sent.test.ts > planSentBank > every due label resolves to a date; a past or far date is in the brief
+- `packages/core/src/sim/plan-sent.test.ts:172` src/sim/plan-sent.test.ts > planSentBank > recipients are persona keys of the scenario; the executive never receives
+- `packages/core/src/sim/plan-sent.test.ts:184` src/sim/plan-sent.test.ts > planSentBank > a brief names no label word
+- `packages/core/src/sim/plan-week.test.ts:46` src/sim/plan-week.test.ts > dayCounts > 1 the default spec gives 830 mails over 7 days
+- `packages/core/src/sim/plan-week.test.ts:52` src/sim/plan-week.test.ts > dayCounts > 2 the mix by largest remainder, a tie by the mix order
+- `packages/core/src/sim/plan-week.test.ts:69` src/sim/plan-week.test.ts > planWeek > 1 two calls give the same JSON
+- `packages/core/src/sim/plan-week.test.ts:96` src/sim/plan-week.test.ts > planWeek > 3 a parent is an earlier mail of the same thread, 10 minutes or more, at most 5 deep
+- `packages/core/src/sim/plan-week.test.ts:114` src/sim/plan-week.test.ts > planWeek > 4 days and hours: the local date follows the id; few weekday mails are off hours
+- `packages/core/src/sim/plan-week.test.ts:131` src/sim/plan-week.test.ts > planWeek > 5 every delegation slot has a behaviour; the counts follow the shares
+- `packages/core/src/sim/plan-week.test.ts:152` src/sim/plan-week.test.ts > planWeek > 6 each weekday has one slot of each phishing tag, two auto-replies and one bounce
+- `packages/core/src/sim/plan-week.test.ts:169` src/sim/plan-week.test.ts > planWeek > 7 batches are in time order
+- `packages/core/src/sim/plan-week.test.ts:183` src/sim/plan-week.test.ts > planWeek > language and urgency sources follow the shares over the week
+- `packages/core/src/sim/plan-week.test.ts:192` src/sim/plan-week.test.ts > planWeek > no brief of the week holds a banned word, with no strip
+- `packages/core/src/sim/plan-week.test.ts:201` src/sim/plan-week.test.ts > week history > 1 the schema parses it and every sender of an incoming slot is a key
+- `packages/core/src/sim/plan-week.test.ts:211` src/sim/plan-week.test.ts > week history > 2 a phishing or spammer persona is new with no mail
+- `packages/core/src/sim/plan-week.test.ts:224` src/sim/plan-week.test.ts > week history > 3 the JSON holds no voice text and no display name
+- `packages/core/src/sim/plan-week.test.ts:232` src/sim/plan-week.test.ts > week history > the counts scale with the days: a 30-day boss history is a third of the 90-day ranges
+- `packages/core/src/sim/random.test.ts:7` src/sim/random.test.ts > createRng > seed 97 gives the fixed first values
+- `packages/core/src/sim/random.test.ts:13` src/sim/random.test.ts > createRng > shuffle is repeatable and does not change its input
+- `packages/core/src/sim/random.test.ts:31` src/sim/random.test.ts > deriveSeed > each label has its own stream
+- `packages/core/src/sim/random.test.ts:39` src/sim/random.test.ts > largestRemainder and quota > counts add up to the total and follow the shares
+- `packages/core/src/sim/random.test.ts:47` src/sim/random.test.ts > largestRemainder and quota > quota shuffles the items and keeps the counts
+- `packages/core/src/sim/scenario.test.ts:23` src/sim/scenario.test.ts > validateScenario > the executive voice and signature are optional and default to none
+- `packages/core/src/sim/sent-hard-cases.test.ts:7` src/sim/sent-hard-cases.test.ts > sent hard-case registry > T3 the 13 tags of the discovery notes each have a label rule and a brief hint
+- `packages/core/src/sim/sent-hard-cases.test.ts:46` src/sim/sent-hard-cases.test.ts > sent hard-case registry > a hint names no label word
+- `packages/core/src/sim/sent-slot.test.ts:38` src/sim/sent-slot.test.ts > sent shapes > an ask or a promise over 80 characters is refused
+- `packages/core/src/sim/sent-slot.test.ts:92` src/sim/sent-slot.test.ts > sent shapes > a blind case holds no label key and no slot field
+- `packages/core/src/sim/sent-slot.test.ts:100` src/sim/sent-slot.test.ts > sent shapes > a label date is a calendar day and the hash is sha256 hex
+- `packages/core/src/sim/sent-slot.test.ts:105` src/sim/sent-slot.test.ts > sent shapes > T2 the sent parts and the incoming parts share no member
+- `packages/core/src/site.test.ts:64` src/site.test.ts > docsUrl > the product name
+- `packages/core/src/site.test.ts:70` src/site.test.ts > placeholder price > the placeholder price is 25 dollars per mailbox per month
+- `packages/core/src/tenancy.test.ts:7` src/tenancy.test.ts > membershipRoleSchema > accepts owner and assistant
+- `packages/core/src/tenancy.test.ts:12` src/tenancy.test.ts > membershipRoleSchema > rejects other values
+- `packages/core/src/tenancy.test.ts:19` src/tenancy.test.ts > userLocaleSchema > accepts pl and en, rejects other values
+- `packages/core/src/testmail/batch.test.ts:157` src/testmail/batch.test.ts > delegation category > a batch without delegatesActive defaults to false
+- `packages/core/src/testmail/batch.test.ts:181` src/testmail/batch.test.ts > delegation category > batchCategories is the test categories plus delegation
+- `packages/core/src/testmail/batch.test.ts:196` src/testmail/batch.test.ts > testmailCategories equals classifierCategories
+- `packages/core/src/testmail/target.test.ts:236` src/testmail/target.test.ts > targetInputSchema > refuses an unknown field
+- `packages/core/src/texts/bot.test.ts:23` src/texts/bot.test.ts > bot texts > 1. the English help equals the old helpText() byte for byte; linked and alreadyLinked end with it
+- `packages/core/src/texts/bot.test.ts:38` src/texts/bot.test.ts > bot texts > 2. the Polish help starts with Polecenia: and names each command once
+- `packages/core/src/texts/bot.test.ts:56` src/texts/bot.test.ts > bot texts > the menu entries: the English ones are the old BOT_COMMANDS descriptions
+- `packages/core/src/texts/bot.test.ts:67` src/texts/bot.test.ts > bot texts > the Polish empty /review text names the 30 days
+- `packages/core/src/texts/bot.test.ts:74` src/texts/bot.test.ts > bot texts > the Polish tap texts for a reply with a gap and for the flag off
+- `packages/core/src/texts/bot.test.ts:87` src/texts/bot.test.ts > bot texts > the expired tap text says no hours, en and pl
+- `packages/core/src/texts/bot.test.ts:210` src/texts/bot.test.ts > the taps of the reply drafts (F115 stage 13) > the Polish texts are the agreed ones (informal ty)
+- `packages/core/src/texts/bot.test.ts:228` src/texts/bot.test.ts > the taps of the reply drafts (F115 stage 13) > every reason that blocks a draft has a text in both languages, and the Polish one differs from the English one
+- `packages/core/src/texts/bot.test.ts:239` src/texts/bot.test.ts > the taps of the reply drafts (F115 stage 13) > no text holds an address or a line break; each is short enough for the answer of a tap (200 characters) except the shown limits
+- `packages/core/src/texts/brief.test.ts:46` src/texts/brief.test.ts > the fixed lines > every Polish line holds a diacritic or a plain word, never a word with its diacritic dropped
+- `packages/core/src/texts/index.test.ts:102` src/texts/index.test.ts > the texts registry > both locales have the same keys
+- `packages/core/src/texts/index.test.ts:140` src/texts/index.test.ts > followUpRemoved > Polish keeps its diacritics and the shared term for a follow-up; English says the same without mail data
+- `packages/core/src/time.test.ts:7` src/time.test.ts > time constants > an hour and a day in milliseconds
+- `packages/core/src/time.test.ts:14` src/time.test.ts > addDays > moves across month, year and leap-day edges
+- `packages/core/src/time.test.ts:24` src/time.test.ts > addDays > moves by a week and by many days
+- `packages/core/src/time.test.ts:33` src/time.test.ts > one definition > no source file outside the tests defines its own DAY_MS or HOUR_MS (or dayMs, hourMs)
+- `packages/core/src/triage/analysis.test.ts:20` src/triage/analysis.test.ts > buildTriageAnalysisSchema > accepts a valid answer
+- `packages/core/src/triage/analysis.test.ts:24` src/triage/analysis.test.ts > buildTriageAnalysisSchema > rejects a category outside the allowed list
+- `packages/core/src/triage/analysis.test.ts:29` src/triage/analysis.test.ts > buildTriageAnalysisSchema > rejects unsure and delegation from the classifier list
+- `packages/core/src/triage/analysis.test.ts:34` src/triage/analysis.test.ts > buildTriageAnalysisSchema > rejects confidence 1.2
+- `packages/core/src/triage/analysis.test.ts:38` src/triage/analysis.test.ts > buildTriageAnalysisSchema > rejects a bad due_date
+- `packages/core/src/triage/analysis.test.ts:42` src/triage/analysis.test.ts > buildTriageAnalysisSchema > delegate_id: with ids accepts an id and null, refuses another id
+- `packages/core/src/triage/analysis.test.ts:49` src/triage/analysis.test.ts > buildTriageAnalysisSchema > delegate_id: with no ids refuses any id and accepts null
+- `packages/core/src/triage/analysis.test.ts:54` src/triage/analysis.test.ts > buildTriageAnalysisSchema > task and clarification limits
+- `packages/core/src/triage/analysis.test.ts:62` src/triage/analysis.test.ts > buildTriageAnalysisSchema > the v1 fields still parse
+- `packages/core/src/triage/analysis.test.ts:68` src/triage/analysis.test.ts > buildTriageAnalysisSchema > JSON schema: delegate_id is anyOf the enum and null
+- `packages/core/src/triage/cost.test.ts:33` src/triage/cost.test.ts > costPerMail > every price row names a source and a check date; only an unverified row has no URL
+- `packages/core/src/triage/cost.test.ts:52` src/triage/cost.test.ts > costPerMail > the EU price row is marked unverified (secondary source)
+- `packages/core/src/triage/dkim-signature.test.ts:93` src/triage/dkim-signature.test.ts > dkimSignaturesSchema > 11: it takes the stored shape and refuses another one or more than 8 entries
+- `packages/core/src/triage/draft-kinds.test.ts:25` src/triage/draft-kinds.test.ts > every draft kind is complete > the draft payload union has one member per kind
+- `packages/core/src/triage/draft-kinds.test.ts:73` src/triage/draft-kinds.test.ts > every draft kind is complete > a reply draft: 11 Cc fail the schema, 10 pass, To is exactly one address
+- `packages/core/src/triage/draft-kinds.test.ts:95` src/triage/draft-kinds.test.ts > every draft kind is complete > each kind has a template or a reason for none, never both
+- `packages/core/src/triage/eval-case.test.ts:124` src/triage/eval-case.test.ts > evalCaseSchema > accepts a valid case and fills defaults
+- `packages/core/src/triage/eval-case.test.ts:134` src/triage/eval-case.test.ts > evalCaseSchema > parses delegates with default tags and the expected delegate and draft
+- `packages/core/src/triage/eval-case.test.ts:150` src/triage/eval-case.test.ts > evalCaseSchema > rejects a bad delegate key, an empty name and an unknown draft kind
+- `packages/core/src/triage/eval-case.test.ts:159` src/triage/eval-case.test.ts > evalCaseSchema > rejects an upper-case id
+- `packages/core/src/triage/eval-case.test.ts:163` src/triage/eval-case.test.ts > evalCaseSchema > rejects an unknown category
+- `packages/core/src/triage/eval-case.test.ts:167` src/triage/eval-case.test.ts > evalCaseSchema > rejects an empty to list
+- `packages/core/src/triage/payloads.test.ts:40` src/triage/payloads.test.ts > draftPayloadSchema > clarification parses
+- `packages/core/src/triage/payloads.test.ts:40` src/triage/payloads.test.ts > draftPayloadSchema > delegation parses
+- `packages/core/src/triage/payloads.test.ts:40` src/triage/payloads.test.ts > draftPayloadSchema > reminder parses
+- `packages/core/src/triage/payloads.test.ts:44` src/triage/payloads.test.ts > draftPayloadSchema > a `to` with two addresses is refused
+- `packages/core/src/triage/payloads.test.ts:50` src/triage/payloads.test.ts > draftPayloadSchema > due_date accepts a date and an empty string, refuses another shape
+- `packages/core/src/triage/payloads.test.ts:57` src/triage/payloads.test.ts > draftPayloadSchema > a bad address is refused in every draft kind
+- `packages/core/src/triage/payloads.test.ts:99` src/triage/payloads.test.ts > edit fields of a draft payload > an old payload parses and gets no new key
+- `packages/core/src/triage/payloads.test.ts:105` src/triage/payloads.test.ts > edit fields of a draft payload > T8 the schema checks the length of the stored text
+- `packages/core/src/triage/planners.test.ts:163` src/triage/planners.test.ts > AI_FOLDER_NAMES > has one name for every folder key
+- `packages/core/src/triage/planners.test.ts:280` src/triage/planners.test.ts > move targets > MOVE_TARGET_NAMES adds INBOX to the app folder names
+- `packages/core/src/triage/policy.test.ts:181` src/triage/policy.test.ts > decidePolicy: shadow mode > the loop covers all 32 switch combinations
+- `packages/core/src/triage/quota-day.test.ts:11` src/triage/quota-day.test.ts > quota day > the time zone is America/Los_Angeles
+- `packages/core/src/triage/sender-history.test.ts:9` src/triage/sender-history.test.ts > relationOf > a delegate wins over every other relation
+- `packages/core/src/triage/sender-history.test.ts:13` src/triage/sender-history.test.ts > relationOf > a VIP sender is vip
+- `packages/core/src/triage/sender-history.test.ts:17` src/triage/sender-history.test.ts > relationOf > bulk means more than half of the mail
+- `packages/core/src/triage/sender-history.test.ts:22` src/triage/sender-history.test.ts > relationOf > an answer or a mail to the sender is known; nothing is new
+- `packages/core/src/triage/sender-history.test.ts:50` src/triage/sender-history.test.ts > senderHistorySchema > accepts a valid history and has every field of the sender context list
+- `packages/core/src/triage/sender-history.test.ts:75` src/triage/sender-history.test.ts > senderHistorySchema > refuses an extra key, so no text field can enter
+- `packages/core/src/triage/settings.test.ts:10` src/triage/settings.test.ts > feedbackSources > has exactly the 7 values
+- `packages/core/src/triage/suspicious.test.ts:296` src/triage/suspicious.test.ts > freeMailDomains > lists the common free-mail domains
+- `packages/core/src/triage/suspicious.test.ts:344` src/triage/suspicious.test.ts > freeMailDomains > holds the common Polish and international free-mail domains
+- `packages/core/src/triage/urgency-profile.test.ts:7` src/triage/urgency-profile.test.ts > urgencyProfileSchema > an empty object parses to empty lists
+- `packages/core/src/triage/urgency-profile.test.ts:11` src/triage/urgency-profile.test.ts > urgencyProfileSchema > refuses too many items, a long label, an invalid date and an extra key
+- `packages/core/src/triage/urgency-profile.test.ts:19` src/triage/urgency-profile.test.ts > urgencyProfileSchema > refuses a NUL character in a label and in a keyword, with the code nul_char
+- `packages/core/src/triage/urgency-profile.test.ts:30` src/triage/urgency-profile.test.ts > urgencyProfileSchema > trims a label and defaults keywords
+- `packages/core/src/trust/evidence.test.ts:156` src/trust/evidence.test.ts > autoEvidence over the whole input space > the loops ran every combination
+- `packages/core/src/web/activity.test.ts:17` src/web/activity.test.ts > activityQuerySchema > empty query leaves every field undefined
+- `packages/core/src/web/activity.test.ts:33` src/web/activity.test.ts > activityQuerySchema > limit is an integer from 1 to 100
+- `packages/core/src/web/activity.test.ts:40` src/web/activity.test.ts > activityQuerySchema > since, notRated, before and unknown keys
+- `packages/core/src/web/activity.test.ts:51` src/web/activity.test.ts > feedbackBodySchema > accepts the five label categories only
+- `packages/core/src/web/activity.test.ts:88` src/web/activity.test.ts > activityItemSchema > parses a full item
+- `packages/core/src/web/activity.test.ts:92` src/web/activity.test.ts > activityItemSchema > suspicious holds rule codes only and is required
+- `packages/core/src/web/activity.test.ts:100` src/web/activity.test.ts > activityItemSchema > parses an item with null fields
+- `packages/core/src/web/activity.test.ts:105` src/web/activity.test.ts > activityItemSchema > range table in ms
+- `packages/core/src/web/activity.test.ts:112` src/web/activity.test.ts > undoResultSchema > kinds
+- `packages/core/src/web/approvals.test.ts:43` src/web/approvals.test.ts > approval read schemas > an item, a list and a detail parse
+- `packages/core/src/web/approvals.test.ts:49` src/web/approvals.test.ts > approval read schemas > every object is closed: an unknown key fails, also inside the view and the delegates
+- `packages/core/src/web/approvals.test.ts:59` src/web/approvals.test.ts > approval read schemas > the list holds at most 100 items; a list item has only the states waiting and held
+- `packages/core/src/web/approvals.test.ts:65` src/web/approvals.test.ts > approval read schemas > the detail allows a null view for a payload that retention cleared; the item does not
+- `packages/core/src/web/approvals.test.ts:71` src/web/approvals.test.ts > approval read schemas > heldBy takes the four reasons only
+- `packages/core/src/web/errors.test.ts:7` src/web/errors.test.ts > apiErrorSchema > accepts an error code alone
+- `packages/core/src/web/errors.test.ts:11` src/web/errors.test.ts > apiErrorSchema > accepts details
+- `packages/core/src/web/errors.test.ts:16` src/web/errors.test.ts > apiErrorSchema > refuses an empty object
+- `packages/core/src/web/errors.test.ts:20` src/web/errors.test.ts > apiErrorSchema > lists too_large
+- `packages/core/src/web/errors.test.ts:24` src/web/errors.test.ts > apiErrorSchema > lists the S5b codes
+- `packages/core/src/web/errors.test.ts:29` src/web/errors.test.ts > apiErrorSchema > lists rule_limit after rule_exists
+- `packages/core/src/web/errors.test.ts:34` src/web/errors.test.ts > apiErrorSchema > lists mailbox_limit
+- `packages/core/src/web/errors.test.ts:38` src/web/errors.test.ts > apiErrorSchema > lists org_suspended
+- `packages/core/src/web/errors.test.ts:42` src/web/errors.test.ts > apiErrorSchema > lists terms_outdated
+- `packages/core/src/web/loops.test.ts:13` src/web/loops.test.ts > loopListQuerySchema > the kind is required and must be a known kind
+- `packages/core/src/web/loops.test.ts:21` src/web/loops.test.ts > loopListQuerySchema > the filter is open, due or closed; the limit is 1 to 100 and comes from text
+- `packages/core/src/web/loops.test.ts:34` src/web/loops.test.ts > the bodies > a loop action takes an empty object only
+- `packages/core/src/web/loops.test.ts:39` src/web/loops.test.ts > the bodies > the wait is a whole number from 1 to 10 and nothing else
+- `packages/core/src/web/loops.test.ts:45` src/web/loops.test.ts > the bodies > the delegate body needs a UUID
+- `packages/core/src/web/loops.test.ts:52` src/web/loops.test.ts > loopFollowUpAnswerSchema > planned carries the send id; would_draft carries nothing
+- `packages/core/src/web/mail-oauth.test.ts:8` src/web/mail-oauth.test.ts > mail OAuth start schemas > the body takes no mailbox id or a uuid, and refuses a non-uuid
+- `packages/core/src/web/mail-oauth.test.ts:15` src/web/mail-oauth.test.ts > mail OAuth start schemas > the provider param is one of the registry keys
+- `packages/core/src/web/mail-oauth.test.ts:22` src/web/mail-oauth.test.ts > mail OAuth start schemas > the error codes of the start route are listed
+- `packages/core/src/web/mailboxes.test.ts:100` src/web/mailboxes.test.ts > mailboxViewSchema > parses a view without sync time and mode
+- `packages/core/src/web/mailboxes.test.ts:104` src/web/mailboxes.test.ts > mailboxViewSchema > parses an OAuth view with a reason and refuses an unknown provider or reason
+- `packages/core/src/web/mailboxes.test.ts:112` src/web/mailboxes.test.ts > mailboxViewSchema > refuses an unknown status
+- `packages/core/src/web/mailboxes.test.ts:125` src/web/mailboxes.test.ts > telegramLinkSchema > refuses a bad url
+- `packages/core/src/web/me.test.ts:55` src/web/me.test.ts > meSchema > accepts a full object
+- `packages/core/src/web/me.test.ts:59` src/web/me.test.ts > meSchema > accepts a trial plan with a date, and refuses an unknown plan
+- `packages/core/src/web/me.test.ts:65` src/web/me.test.ts > meSchema > refuses an object without terms
+- `packages/core/src/web/me.test.ts:69` src/web/me.test.ts > meSchema > refuses an object without operatorContact
+- `packages/core/src/web/me.test.ts:73` src/web/me.test.ts > meSchema > refuses an object without operator or without features, and accepts a future flag key (D23)
+- `packages/core/src/web/me.test.ts:84` src/web/me.test.ts > meSchema > refuses an object without approvalsWaiting or with a negative or fractional count
+- `packages/core/src/web/me.test.ts:91` src/web/me.test.ts > meSchema > refuses an object without digestTimes
+- `packages/core/src/web/me.test.ts:95` src/web/me.test.ts > meSchema > refuses the old null fields
+- `packages/core/src/web/me.test.ts:100` src/web/me.test.ts > meSchema > refuses an incomplete onboarding object
+- `packages/core/src/web/notify.test.ts:19` src/web/notify.test.ts > notifyPatchSchema > a time past 24 h or a bad shape is time_invalid
+- `packages/core/src/web/organization.test.ts:39` src/web/organization.test.ts > organizationPatchSchema > refuses an empty timezone at its path
+- `packages/core/src/web/organization.test.ts:44` src/web/organization.test.ts > organizationPatchSchema > gives an i18n message for an empty or too long timezone
+- `packages/core/src/web/organization.test.ts:60` src/web/organization.test.ts > digestTimesBodySchema > refuses a bad time
+- `packages/core/src/web/organization.test.ts:64` src/web/organization.test.ts > digestTimesBodySchema > refuses seven times
+- `packages/core/src/web/password.test.ts:14` src/web/password.test.ts > passwordSchema > refuses 11 characters
+- `packages/core/src/web/password.test.ts:19` src/web/password.test.ts > passwordSchema > refuses 129 characters
+- `packages/core/src/web/password.test.ts:24` src/web/password.test.ts > passwordSchema > accepts 12 and 128 characters
+- `packages/core/src/web/password.test.ts:73` src/web/password.test.ts > forgotFormSchema > trims and lower-cases the address
+- `packages/core/src/web/password.test.ts:77` src/web/password.test.ts > forgotFormSchema > refuses an address without a domain
+- `packages/core/src/web/replies.test.ts:17` src/web/replies.test.ts > the bodies of the reply routes are strict and capped > the raw limit of the instruction is 1000 characters (the service cleans and caps it at 300)
+- `packages/core/src/web/replies.test.ts:21` src/web/replies.test.ts > the bodies of the reply routes are strict and capped > a request takes an id and an optional line, nothing else
+- `packages/core/src/web/replies.test.ts:37` src/web/replies.test.ts > the bodies of the reply routes are strict and capped > a redraft needs its line; a recipients change takes a mode and no address
+- `packages/core/src/web/replies.test.ts:50` src/web/replies.test.ts > the bodies of the reply routes are strict and capped > the answers carry no instruction: the status and the conflict schemas refuse an extra key
+- `packages/core/src/web/replies.test.ts:64` src/web/replies.test.ts > the reply fields of an approval item > redraftsLeft is 0 to 5 and the mode is one of the three; a key outside the schema is refused
+- `packages/core/src/web/rules.test.ts:23` src/web/rules.test.ts > ruleBodySchema > refuses an unknown kind
+- `packages/core/src/web/rules.test.ts:31` src/web/rules.test.ts > ruleBodySchema > refuses a 255 character pattern
+- `packages/core/src/web/rules.test.ts:40` src/web/rules.test.ts > rule lists and queries > ruleListSchema parses a rule
+- `packages/core/src/web/rules.test.ts:51` src/web/rules.test.ts > rule lists and queries > rulesQuerySchema allows no mailbox id
+- `packages/core/src/web/sender-context.test.ts:9` src/web/sender-context.test.ts > senderLineSchema > accepts counts and a null last-seen
+- `packages/core/src/web/sender-context.test.ts:14` src/web/sender-context.test.ts > senderLineSchema > rejects a text field and a window other than 90 days
+- `packages/core/src/web/sender-context.test.ts:30` src/web/sender-context.test.ts > suggestionItemSchema > accepts an open suggestion
+- `packages/core/src/web/sender-context.test.ts:34` src/web/sender-context.test.ts > suggestionItemSchema > rejects a reason with a text key and an unknown kind
+- `packages/core/src/web/sessions.test.ts:38` src/web/sessions.test.ts > sessionsSchema > accepts a list and refuses a bad date
+- `packages/core/src/web/settings.test.ts:37` src/web/settings.test.ts > settingsViewSchema > parses a full fixture
+- `packages/core/src/web/settings.test.ts:41` src/web/settings.test.ts > settingsViewSchema > refuses a fixture without create_draft
+- `packages/core/src/web/settings.test.ts:47` src/web/settings.test.ts > settingsViewSchema > refuses a fixture without urgencyProfile; takes a profile
+- `packages/core/src/web/settings.test.ts:57` src/web/settings.test.ts > the open-loops fields of the settings view > loopWaitDays is 1 to 10 and whole; sentTracking is one of three codes
+- `packages/core/src/web/settings.test.ts:70` src/web/settings.test.ts > the open-loops fields of the settings view > the switch auto_follow_up is optional in the list: it shows only while the flag is on
+- `packages/core/src/web/settings.test.ts:106` src/web/settings.test.ts > sentSync in the settings view > takes null and a full object
+- `packages/core/src/web/settings.test.ts:114` src/web/settings.test.ts > sentSync in the settings view > refuses an unknown error code and a missing field
+- `packages/core/src/web/settings.test.ts:123` src/web/settings.test.ts > sentSync in the settings view > the body schema takes a boolean and refuses text
+- `packages/core/src/web/settings.test.ts:130` src/web/settings.test.ts > urgencyBodySchema > takes a profile, null and an empty profile (defaults fill the lists)
+- `packages/core/src/web/settings.test.ts:136` src/web/settings.test.ts > urgencyBodySchema > refuses 21 topics, a bad date and a missing profile
+- `packages/core/src/web/settings.test.ts:146` src/web/settings.test.ts > noGoBodySchema > parses a too-few gate
+- `packages/core/src/web/stats.test.ts:41` src/web/stats.test.ts > weekStatsSchema > refuses an extra key, at the top and inside a metric
+- `packages/core/src/web/stats.test.ts:46` src/web/stats.test.ts > weekStatsSchema > the reply draft counts are all zero for an empty week, a stored week with no key reads all zero, and a bad count is refused
+- `packages/core/src/web/stats.test.ts:63` src/web/stats.test.ts > weekStatsSchema > refuses a negative count and a bad week start
+- `packages/core/src/web/stats.test.ts:68` src/web/stats.test.ts > weekStatsSchema > the response holds a list of weeks
+- `packages/core/src/web/stats.test.ts:74` src/web/stats.test.ts > statsQuerySchema > defaults to 8 weeks
+- `packages/core/src/web/stats.test.ts:78` src/web/stats.test.ts > statsQuerySchema > refuses more than 12 weeks
+- `packages/core/src/web/telegram.test.ts:33` src/web/telegram.test.ts > telegramConsentBodySchema > needs a version of 1 to 32 characters
+- `packages/core/src/web/telegram.test.ts:42` src/web/telegram.test.ts > TELEGRAM_CONSENT_VERSION > it is pinned: only a change of the consent text `tg_consent_text` moves it, in the same commit as the new TERMS_HISTORY entry
+- `packages/core/src/web/terms.test.ts:7` src/web/terms.test.ts > termsAcceptBodySchema > accepts the current version
+- `packages/core/src/web/terms.test.ts:11` src/web/terms.test.ts > termsAcceptBodySchema > refuses an empty version, a missing version and a long version
+- `packages/core/src/web/terms.test.ts:19` src/web/terms.test.ts > TERMS_HISTORY > 3. versions are unique and each has the form YYYY-MM-DD or YYYY-MM-DD-N
+- `packages/core/src/web/terms.test.ts:25` src/web/terms.test.ts > TERMS_HISTORY > 3. only the first entry (the stub era) has no digest; the other digests are unique hex
+- `packages/core/src/web/terms.test.ts:32` src/web/terms.test.ts > TERMS_HISTORY > 3. versions grow: each is after the one before it
+- `packages/core/src/web/terms.test.ts:37` src/web/terms.test.ts > TERMS_HISTORY > 4. TERMS_VERSION is the version of the last entry, and it is not the stub-era version
+- `packages/core/src/web/two-factor.test.ts:7` src/web/two-factor.test.ts > twoFactorStatusSchema > accepts an enrolled and a not enrolled state
+- `packages/core/src/web/two-factor.test.ts:16` src/web/two-factor.test.ts > twoFactorStatusSchema > refuses an extra key, a negative count and an unknown requirement
+- `packages/core/src/web/zod.test.ts:9` src/web/zod.test.ts > web zod > runs without the JIT
+
+## The 15 files with the most survived and no-coverage mutants
+
+| File | Survived | No coverage | Score |
+| --- | --- | --- | --- |
+| `packages/core/src/triage/suspicious.ts` | 126 | 28 | 68.44 % |
+| `packages/core/src/sim/checks.ts` | 82 | 11 | 71.99 % |
+| `packages/core/src/digest/approvals.ts` | 57 | 13 | 89.10 % |
+| `packages/core/src/web/public-content.ts` | 58 | 8 | 77.78 % |
+| `packages/core/src/digest/digest.ts` | 43 | 15 | 89.26 % |
+| `packages/core/src/replies/schema.ts` | 0 | 42 | 0.00 % |
+| `packages/core/src/sim/sent-slot.ts` | 42 | 0 | 71.03 % |
+| `packages/core/src/testmail/batch.ts` | 39 | 3 | 79.61 % |
+| `packages/core/src/texts/approvals.ts` | 34 | 4 | 79.89 % |
+| `packages/core/src/changelog.ts` | 28 | 6 | 83.50 % |
+| `packages/core/src/texts/notices.ts` | 31 | 3 | 86.77 % |
+| `packages/core/src/loops/replies.ts` | 31 | 2 | 82.07 % |
+| `packages/core/src/replies/views.ts` | 33 | 0 | 79.11 % |
+| `packages/core/src/replies/digits.ts` | 31 | 1 | 92.21 % |
+| `packages/core/src/sim/live/executive.ts` | 28 | 2 | 84.92 % |
