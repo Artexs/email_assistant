@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { GrammyError, HttpError } from "grammy";
+import { GrammyError } from "grammy";
+
+import { SoftError } from "../../../platform/errors";
 
 import { checkBot } from "./check";
 import { telegramErrorLabel } from "./errors";
@@ -47,14 +49,14 @@ describe("checkBot", () => {
     expect(telegramErrorLabel(error)).toBe("GrammyError getMe 401");
   });
 
-  test("a closed port gives an HttpError whose label has no token", async () => {
+  test("a closed port gives a SoftError with no token and no cause", async () => {
     const closed = Bun.serve({ port: 0, hostname: "127.0.0.1", fetch: () => new Response("") });
     const port = closed.port;
     await closed.stop(true);
     const error = await checkBot(token, { apiRoot: `http://127.0.0.1:${port}` }).catch((e: unknown) => e);
-    expect(error).toBeInstanceOf(HttpError);
-    expect(telegramErrorLabel(error)).toBe("HttpError getMe");
-    expect(telegramErrorLabel(error)).not.toContain("MARKERTOKEN");
+    expect(error).toBeInstanceOf(SoftError);
+    expect((error as SoftError).message).toBe("Telegram did not answer (getMe)");
+    expect((error as SoftError).cause).toBeUndefined();
   });
 });
 

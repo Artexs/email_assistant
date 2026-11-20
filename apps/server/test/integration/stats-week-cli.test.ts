@@ -7,7 +7,7 @@ import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import { setOrgFeature } from "../../src/modules/tenancy";
 import { runningEvidenceKey } from "../../src/modules/triage";
 import { llmRoleTable, loadConfig } from "../../src/platform/config";
-import { usage } from "../../src/scripts/stats-week-args";
+import { statsWeekUsage } from "../../src/scripts/stats-week-args";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb } from "./helpers";
@@ -53,7 +53,7 @@ async function run(args: string[], env: Record<string, string> = {}) {
 }
 
 describe("stats:week CLI", () => {
-  test("a week that is not a Monday, a bad id or a stray argument print the usage and exit 1", async () => {
+  test("a week that is not a Monday, a bad id or a stray argument print the usage and exit 2", async () => {
     const orgId = crypto.randomUUID();
     const argLists = [
       ["--org-id", orgId, "--week", "2026-11-17"],
@@ -66,8 +66,8 @@ describe("stats:week CLI", () => {
     // One bun start costs about a second; six in a row used 3 s of the 5 s test limit and failed in a loaded CI run.
     const results = await Promise.all(argLists.map((args) => run(args)));
     for (const result of results) {
-      expect(result.code).toBe(1);
-      expect(result.stderr).toContain(`[stats-week] ${usage}`);
+      expect(result.code).toBe(2);
+      expect(result.stderr).toContain(`[stats-week] usage: ${statsWeekUsage}`);
       expect(result.stdout).toBe("");
     }
   });

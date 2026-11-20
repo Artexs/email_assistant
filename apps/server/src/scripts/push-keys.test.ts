@@ -53,8 +53,8 @@ describe("push:keys", () => {
   });
 
   test("refuses an argument and prints no key", async () => {
-    const { code, out, err } = await run(["--write"]);
-    expect({ code, out, usage: err.includes("usage:") }).toEqual({ code: 1, out: "", usage: true });
+    const { code, out, err } = await run(["--no-such-flag"]);
+    expect({ code, out, usage: err.includes("usage: bun run push:keys") }).toEqual({ code: 2, out: "", usage: true });
   });
 
   test("the script writes no file and no log line, and reads no config", () => {
