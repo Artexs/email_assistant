@@ -213,7 +213,9 @@ emails.status:   pending → processing → triaged → done                (don
 - `apps/server/test/integration/triage-returned.test.ts`
 - `apps/server/src/modules/triage/classifier.test.ts`
 - `apps/server/src/modules/triage/pause.test.ts`
-- `apps/server/src/modules/triage/eval.test.ts`
+- `apps/server/src/modules/triage/eval-run.test.ts`
+- `apps/server/src/modules/triage/eval-worker-pool.test.ts`
+- `apps/server/src/modules/triage/eval-log-state.test.ts`
 - `apps/server/src/modules/triage/eval-judge.test.ts`
 - `apps/server/src/modules/triage/gate-evidence.test.ts`
 - `apps/server/src/modules/triage/judge.test.ts`
