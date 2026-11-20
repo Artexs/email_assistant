@@ -1,3 +1,4 @@
+import { HOUR_MS, DAY_MS } from "@ea/core";
 import type { Category } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
@@ -15,14 +16,13 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 86_400_000;
 const ADDRESS = "x@example.com";
 const LOW_ID = "00000000-0000-4000-8000-000000000001";
 const HIGH_ID = "ffffffff-ffff-4fff-8fff-ffffffffffff";
 
 const window = (mailboxId: string): SenderWindowOptions => ({
   mailboxId,
-  since: new Date(NOW.getTime() - 90 * DAY),
+  since: new Date(NOW.getTime() - 90 * DAY_MS),
   until: NOW,
   testMail: { senders: [] },
 });
@@ -76,7 +76,7 @@ const feedback = (
     })
     .execute();
 
-const hours = (base: Date, count: number): Date => new Date(base.getTime() + count * 3_600_000);
+const hours = (base: Date, count: number): Date => new Date(base.getTime() + count * HOUR_MS);
 
 describe("newestResultsBySender", () => {
   test("1 the newest result of a mail counts once, with its suspicious reasons", async () => {

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import { afterAll, expect, test } from "bun:test";
 
 import {
@@ -30,8 +31,6 @@ const secrets = createSecretBox(config.CREDENTIALS_KEY, config.CREDENTIALS_KEY_V
 afterAll(async () => {
   await db.destroy();
 });
-
-const DAY_MS = 86_400_000;
 
 test("history backfill stores the old mail below the cursor; the flag refresh reads \\Answered and \\Flagged from the server", async () => {
   await withRollback(db, async (trx) => {
@@ -73,7 +72,7 @@ test("history backfill stores the old mail below the cursor; the flag refresh re
       await server.appendMessage("INBOX", raw(1), ["\\Answered"], new Date(now.getTime() - 5 * DAY_MS));
       await server.appendMessage("INBOX", raw(2), ["\\Flagged"], new Date(now.getTime() - 10 * DAY_MS));
       await server.appendMessage("INBOX", raw(3), [], new Date(now.getTime() - 20 * DAY_MS));
-      await server.appendMessage("INBOX", raw(4), [], new Date(now.getTime() - 3_600_000));
+      await server.appendMessage("INBOX", raw(4), [], new Date(now.getTime() - HOUR_MS));
       const synced = await syncMailbox(
         { db: trx, provider: server, isOwnActionId: async () => false, now: () => now },
         ctx,

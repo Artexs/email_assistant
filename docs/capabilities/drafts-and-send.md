@@ -321,10 +321,12 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 
 - `apps/server/test/integration/actions-drafts-apply.test.ts`
 - `apps/server/test/integration/actions-drafts-remove.test.ts`
-- `apps/server/test/integration/actions-send.test.ts`
+- `apps/server/test/integration/actions-send-outcomes.test.ts`, `actions-send-guards.test.ts`, `actions-send-recovery.test.ts`, `actions-send-chain.test.ts` (the send, its retries, its recovery and the whole chain; the shared setup is in `actions-send-helpers.ts`)
 - `apps/server/test/integration/actions-approvals.test.ts`
 - `apps/server/test/integration/actions-edit.test.ts`
-- `apps/server/test/integration/channels-card-sync.test.ts`
+- `apps/server/test/integration/channels-card-sync-decisions.test.ts`
+- `apps/server/test/integration/channels-card-sync-hooks.test.ts`
+- `apps/server/test/integration/channels-card-sync-probes.test.ts`
 - `apps/server/test/integration/channels-card-edits.test.ts`
 - `apps/server/test/integration/approval-edit-schema.test.ts`
 - `apps/server/test/integration/web-approvals.test.ts`, `web-approvals-write.test.ts`, `web-approvals-races.test.ts` (the panel routes and their races)
@@ -332,8 +334,8 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 - `apps/server/test/integration/actions-resume-approvals.test.ts`
 - `apps/server/test/integration/actions-close.test.ts`
 - `apps/server/test/integration/actions-feedback.test.ts`
-- `apps/server/test/integration/replies-drafter-job.test.ts`, `replies-drafter-committed.test.ts`, `replies-drafter-review.test.ts` (the drafter job: gates, cap, thread rule, kill point, two instances at once)
-- `apps/server/test/integration/replies-answered-pass.test.ts` (the pass before a reply send: Sent, flag, newer mail, moved original, soft errors), `replies-sweep.test.ts` (the sweep and `newerMailInThread`)
+- `apps/server/test/integration/replies-drafter-job-drafting.test.ts`, `replies-drafter-job-gates.test.ts`, `replies-drafter-job-hostile.test.ts`, `replies-drafter-job-exactly-once.test.ts`, `replies-drafter-committed.test.ts`, `replies-drafter-review.test.ts` (the drafter job: gates, cap, thread rule, kill point, two instances at once)
+- `apps/server/test/integration/replies-answered-pass.test.ts` (the pass before a reply send: Sent, flag, newer mail, moved original, soft errors), `replies-sweep-answered.test.ts`, `replies-sweep-policy.test.ts`, `replies-sweep-moves.test.ts` (the sweep and `newerMailInThread`)
 - `apps/server/test/integration/replies-switch.test.ts`, `replies-switch-route.test.ts`, `replies-cli.test.ts` (the switch, the OAuth guard, the close rule, the CLIs), `replies-profile-routes.test.ts`, `replies-profile-preview.test.ts` (the profile and the preview), `packages/core/src/replies/profile.test.ts`
 - `apps/server/test/integration/web-actions.test.ts`
 - `apps/server/test/integration/smtp-send.test.ts`

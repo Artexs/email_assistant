@@ -1,6 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
-import { operatorOrgListSchema, type OperatorOrgList } from "@ea/core";
+import { operatorOrgListSchema, type OperatorOrgList, HOUR_MS, MINUTE_MS } from "@ea/core";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 
 import { recordLlmCall } from "../../src/modules/audit";
@@ -31,8 +31,6 @@ const extras = {
   botUsername: null,
 };
 const NOW = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
-const MINUTE = 60_000;
 const at = (offsetMs: number) => new Date(NOW.getTime() + offsetMs);
 
 let org: WebOrg;
@@ -86,7 +84,7 @@ async function insertMailboxRow(
 beforeAll(async () => {
   org = await webOrg(db);
   const ctx = { orgId: org.orgId };
-  const active = await insertMailboxRow(org.orgId, "active", at(-5 * MINUTE));
+  const active = await insertMailboxRow(org.orgId, "active", at(-5 * MINUTE_MS));
   await insertMailboxRow(org.orgId, "auth_error", null);
   await insertMailboxRow(org.otherOrgId, "active", null);
   await insertMailboxRow(org.otherOrgId, "host_blocked", null);
@@ -96,15 +94,16 @@ beforeAll(async () => {
       org_id: org.orgId,
       user_id: org.ownerId,
       channel: "telegram",
+      // eslint-disable-next-line ea/no-time-literals -- a random chat id, not a duration
       external_chat_id: 900_000_000_000 + Math.floor(Math.random() * 99_000_000_000),
-      linked_at: at(-HOUR),
+      linked_at: at(-HOUR_MS),
     })
     .execute();
   const emailId = await insertTestEmail(db as never, ctx, active);
   const sendId = await insertAction(db as never, ctx, emailId, { type: "send", status: "failed" });
   await db
     .updateTable("actions")
-    .set({ updated_at: at(-2 * HOUR) })
+    .set({ updated_at: at(-2 * HOUR_MS) })
     .where("id", "=", sendId)
     .execute();
   const dedupKey = `sync_ok:${randomUUID()}`;
@@ -115,8 +114,8 @@ beforeAll(async () => {
     mailboxId: active,
     view: {},
     locale: "en",
-    createdAt: at(-HOUR),
-    nextAttemptAt: at(-HOUR),
+    createdAt: at(-HOUR_MS),
+    nextAttemptAt: at(-HOUR_MS),
   });
   await db
     .updateTable("outbox")
@@ -178,7 +177,7 @@ describe("GET /api/operator/orgs (F099 stage 07)", () => {
       members: 2,
       linkedChats: 1,
       mailboxes: { total: 2, active: 1, paused: 0, authError: 1, hostBlocked: 0 },
-      lastSyncAt: at(-5 * MINUTE).toISOString(),
+      lastSyncAt: at(-5 * MINUTE_MS).toISOString(),
       failures24h: { sends: 1, outbox: 1 },
     });
     expect(llmToday).toMatchObject({ since: "2026-11-20T08:00:00.000Z", calls: 5, unpricedCalls: 2 });

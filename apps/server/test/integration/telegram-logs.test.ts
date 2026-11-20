@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Update } from "grammy/types";
 
@@ -19,8 +20,6 @@ afterAll(async () => {
 });
 
 const T0 = new Date("2026-11-06T10:00:00Z");
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
 
 const at = (offsetMs: number): Date => new Date(T0.getTime() + offsetMs);
 
@@ -112,7 +111,7 @@ describe("telegram logs", () => {
         await isolateChannels(trx);
         const { orgId, userId, mailboxId } = await createOrgWithMailbox(trx);
         const ctx = { orgId };
-        await markSynced(trx, ctx, mailboxId, at(-5 * MINUTE));
+        await markSynced(trx, ctx, mailboxId, at(-5 * MINUTE_MS));
         await setDigestTimes(trx, ctx, userId, ["08:00"]);
         linkToken = (await createLinkToken(trx, ctx, userId, T0)).token;
 
@@ -121,7 +120,7 @@ describe("telegram logs", () => {
           db: trx,
           token: MARKERS.token,
           now: () => clock,
-          startedAt: at(-HOUR),
+          startedAt: at(-HOUR_MS),
           llmDailyCap: 300,
           triageScope: "synthetic",
           actionsScope: { kind: "off" },
@@ -142,14 +141,14 @@ describe("telegram logs", () => {
 
           emailId = await insertTriaged(trx, ctx, mailboxId, {
             category: "urgent",
-            createdAt: at(MINUTE),
+            createdAt: at(MINUTE_MS),
             reason: MARKERS.reason,
             subject: MARKERS.subject,
             from: MARKERS.from,
           });
           const infoId = await insertTriaged(trx, ctx, mailboxId, {
             category: "info",
-            createdAt: at(MINUTE),
+            createdAt: at(MINUTE_MS),
             reason: MARKERS.reason,
             subject: MARKERS.subject,
             from: MARKERS.from,
@@ -163,7 +162,7 @@ describe("telegram logs", () => {
             },
           ]);
 
-          clock = at(2 * MINUTE);
+          clock = at(2 * MINUTE_MS);
           fake.push(messageUpdate({ updateId: 2, chatId: CHAT_ID, text: "/status" }));
           fake.push(messageUpdate({ updateId: 3, chatId: CHAT_ID, text: "/digest" }));
           await waitFor(() => fake.count("sendMessage") >= 3, "the replies to /status and /digest");
@@ -175,12 +174,12 @@ describe("telegram logs", () => {
 
           await insertTriaged(trx, ctx, mailboxId, {
             category: "urgent",
-            createdAt: at(3 * MINUTE),
+            createdAt: at(3 * MINUTE_MS),
             reason: MARKERS.reason,
             subject: MARKERS.subject,
             from: MARKERS.from,
           });
-          clock = at(4 * MINUTE);
+          clock = at(4 * MINUTE_MS);
           fake.failNextSend();
           await runtime.notify();
 

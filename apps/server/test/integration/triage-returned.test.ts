@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -23,10 +24,9 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
 const NOW = new Date();
-const RECEIVED = new Date(NOW.getTime() - 3 * HOUR);
-const APPLIED = new Date(NOW.getTime() - HOUR);
+const RECEIVED = new Date(NOW.getTime() - 3 * HOUR_MS);
+const APPLIED = new Date(NOW.getTime() - HOUR_MS);
 
 interface Tenant {
   ctx: TenantContext;
@@ -295,12 +295,12 @@ describe("processReturned after a return into a sort folder", () => {
         from: "sender@x.test",
         to: [t.address],
         subject: `Offer ${n}`,
-        date: new Date(NOW.getTime() - 3 * HOUR),
+        date: new Date(NOW.getTime() - 3 * HOUR_MS),
         text: `Body ${n}`,
       });
-      const uid = fake.deliver("Oferty", seedMail(1), { internalDate: new Date(NOW.getTime() - 2 * HOUR) });
+      const uid = fake.deliver("Oferty", seedMail(1), { internalDate: new Date(NOW.getTime() - 2 * HOUR_MS) });
       await sync();
-      fake.deliver("Oferty", seedMail(2), { internalDate: new Date(NOW.getTime() - HOUR) });
+      fake.deliver("Oferty", seedMail(2), { internalDate: new Date(NOW.getTime() - HOUR_MS) });
       await sync();
 
       // The mail is triaged and moved to AI/Info by the system.
@@ -401,7 +401,7 @@ describe("createReturnedJob", () => {
       // The oldest flag is first in line.
       await trx
         .updateTable("emails")
-        .set({ returned_at: new Date(NOW.getTime() - HOUR) })
+        .set({ returned_at: new Date(NOW.getTime() - HOUR_MS) })
         .where("id", "=", first.emailId)
         .execute();
       let calls = 0;

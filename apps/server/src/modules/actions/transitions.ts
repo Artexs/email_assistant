@@ -520,14 +520,14 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "a send is claimed",
     then: "its draft (`depends_on_action_id`) must be `applied`",
     enforcedBy: ["claimableWhere (repo/claims.ts)", "send.ts re-check (E12)"],
-    test: "actions-repo.test.ts › 2: an approved send with an applied draft is claimed with the mail fields; actions-repo.test.ts › 1: a ready draft is claimed while its send waits; the send is not; actions-send.test.ts › a claimed send whose draft is no longer applied is released as approved with no count (P1 re-check)",
+    test: "actions-repo-claim-sends.test.ts › 2: an approved send with an applied draft is claimed with the mail fields; actions-repo-claim-sends.test.ts › 1: a ready draft is claimed while its send waits; the send is not; actions-send-guards.test.ts › a claimed send whose draft is no longer applied is released as approved with no count (P1 re-check)",
   },
   {
     id: "P2",
     when: "a draft (original) is claimed",
     then: "one of its sends must be `awaiting_approval`; else the draft ends `expired` (`send_closed`)",
     enforcedBy: ["sendWaits (repo/claims.ts)", "drafts.ts (E8)", "expiry.ts (E14c)"],
-    test: "actions-repo.test.ts › 3: a draft waits for its send to wait too; actions-drafts-apply.test.ts › a dead send: no APPEND, the draft expires with send_closed",
+    test: "actions-repo-claim-sends.test.ts › 3: a draft waits for its send to wait too; actions-drafts-apply.test.ts › a dead send: no APPEND, the draft expires with send_closed",
   },
   {
     id: "P3",
@@ -541,7 +541,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "a send ends (`applied`, `rejected`, `expired`)",
     then: "its draft: `ready` -> `expired`; `applied` with UIDPLUS -> a reverse row; the applied reverse row -> the draft `undone`",
     enforcedBy: ["closeDraftOfSend (expiry.ts)", "send-close.ts", "send-finish.ts", "drafts.ts"],
-    test: "actions-send.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts-remove.test.ts › the reverse row removes the draft and marks the original undone with the reason; actions-drafts-remove.test.ts › a reverse row with the reason expired marks the original undone with that reason",
+    test: "actions-send-outcomes.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts-remove.test.ts › the reverse row removes the draft and marks the original undone with the reason; actions-drafts-remove.test.ts › a reverse row with the reason expired marks the original undone with that reason",
   },
   {
     id: "P5",
@@ -562,7 +562,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "delegation hooks run (`DelegationHooks`)",
     then: "send applied: delegation `sent`; send failed or expired: delegation `cancelled`; delegation closed: its reminder sends expire",
     enforcedBy: ["send-finish.ts", "send-failure.ts", "send-close.ts", "expiry.ts", "expireReminderActions"],
-    test: "actions-send.test.ts › (14) triage, draft, approval, send, the delegation is sent; actions-expiry.test.ts › (1)",
+    test: "actions-send-chain.test.ts › (14) triage, draft, approval, send, the delegation is sent; actions-expiry.test.ts › (1)",
   },
 ];
 

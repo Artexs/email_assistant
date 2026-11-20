@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -214,7 +215,7 @@ describe("lockout", () => {
   test("at most 3 lockout mails per UTC day", async () => {
     const { email } = await createOwner();
     for (let round = 0; round < 4; round += 1) {
-      clock = new Date(START.getTime() + round * 16 * 60_000);
+      clock = new Date(START.getTime() + round * 16 * MINUTE_MS);
       await lockUser(email);
     }
     expect(lockoutMails).toHaveLength(3);
@@ -226,7 +227,7 @@ describe("lockout", () => {
   test("failures older than the window do not count", async () => {
     const { email, userId } = await createOwner();
     await wrong(email, 9);
-    clock = new Date(START.getTime() + 16 * 60_000);
+    clock = new Date(START.getTime() + 16 * MINUTE_MS);
     await wrong(email, 1);
     expect(await row(userId)).toMatchObject({ failed_count: 1, locked_until: null });
   });

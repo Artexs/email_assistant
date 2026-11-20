@@ -7,6 +7,7 @@ import {
   telegramLinkSchema,
   telegramLockAnswerSchema,
   telegramStateSchema,
+  DAY_MS,
 } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import { sql } from "kysely";
@@ -658,7 +659,7 @@ describe("the lock and the next notice", () => {
         user_id: org.ownerId,
         channel: "telegram",
         external_chat_id: chatId,
-        linked_at: new Date(NOW.getTime() - 30 * 86_400_000),
+        linked_at: new Date(NOW.getTime() - 30 * DAY_MS),
       })
       .execute();
     const ctx = { orgId: org.orgId };

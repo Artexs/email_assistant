@@ -9,6 +9,7 @@ import {
   type GateEvidenceDeps,
   type GateIndexFile,
   type GlobalEvidence,
+  DAY_MS,
 } from "@ea/core";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
@@ -358,7 +359,7 @@ describe("regateAll", () => {
       const box = await setup(trx, { notification: on(KEY_A) });
       await insertCheckRow(trx, box.ctx, box.mailboxId, {
         status: "done",
-        finished_at: new Date(NOW.getTime() - 86_400_000),
+        finished_at: new Date(NOW.getTime() - DAY_MS),
         result: JSON.stringify({
           notification: { outcome: "fail", acted: 60, moved: 6, upper: 0.2, total: 100, wouldMove: 30 },
         }),

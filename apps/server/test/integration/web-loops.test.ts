@@ -1,4 +1,4 @@
-import { loopListSchema } from "@ea/core";
+import { loopListSchema, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { loopRoutes } from "../../src/modules/loops";
@@ -40,12 +40,11 @@ async function setup() {
 }
 
 const UNKNOWN = "00000000-0000-4000-8000-000000000000";
-const DAY = 24 * 3_600_000;
 
 describe("T1 GET /loops", () => {
   test("a page by due date, then the cursor page; a loop of another organization is never listed", async () => {
     const { world, app, make } = await setup();
-    const due = (days: number) => new Date(FRIDAY.getTime() + days * DAY);
+    const due = (days: number) => new Date(FRIDAY.getTime() + days * DAY_MS);
     const l3 = await make({ due_at: due(5) });
     const l1 = await make({ due_at: due(3) });
     const l2 = await make({ due_at: due(4) });

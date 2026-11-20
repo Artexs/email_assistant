@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { TELEGRAM_CONSENT_VERSION, telegramLinkSchema, telegramStateSchema } from "@ea/core";
+import { TELEGRAM_CONSENT_VERSION, telegramLinkSchema, telegramStateSchema, MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, spyOn, test } from "bun:test";
 import { GrammyError, HttpError } from "grammy";
 import { Hono } from "hono";
@@ -90,13 +90,13 @@ describe("telegram routes", () => {
     expect(res.headers.get("cache-control")).toBe("no-store");
     const body = telegramLinkSchema.parse(await res.json());
     expect(body.url).toMatch(/^https:\/\/t\.me\/fake_ea_bot\?start=[A-Za-z0-9_-]{43}$/);
-    expect(body.expiresAt).toBe(new Date(NOW.getTime() + 15 * 60_000).toISOString());
+    expect(body.expiresAt).toBe(new Date(NOW.getTime() + 15 * MINUTE_MS).toISOString());
     const rows = await tokenRows(org.orgId);
     expect(rows).toHaveLength(1);
     expect(rows[0]?.user_id).toBe(org.assistantId);
 
     const token = new URL(body.url).searchParams.get("start") ?? "";
-    const linkedAt = new Date(NOW.getTime() + 60_000);
+    const linkedAt = new Date(NOW.getTime() + MINUTE_MS);
     const consumed = await consumeLinkToken(db, { token, chatId: randomChatId(), now: linkedAt });
     expect(consumed.kind).toBe("linked");
 

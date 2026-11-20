@@ -7,6 +7,7 @@ import {
   type GateEvidenceDeps,
   type GateIndexFile,
   type GlobalEvidence,
+  HOUR_MS,
 } from "@ea/core";
 import type { Hono } from "hono";
 
@@ -123,7 +124,7 @@ export async function addDoneCheck(
       status: "done",
       result: JSON.stringify(result),
       finished_at: finishedAt,
-      created_at: new Date(finishedAt.getTime() - 3_600_000),
+      created_at: new Date(finishedAt.getTime() - HOUR_MS),
     })
   );
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 
 import { actionRoutes, getActionFeedback } from "../../src/modules/actions";
@@ -12,7 +13,6 @@ import { as, TEST_ORIGIN, webOrg, webTestApp, type WebOrg } from "./web-helpers"
 
 const db = testDb();
 const NOW = new Date("2026-11-14T12:00:00Z");
-const DAY = 24 * 3_600_000;
 
 const orgs: WebOrg[] = [];
 
@@ -43,7 +43,7 @@ async function addMailbox(orgId: string): Promise<string> {
 }
 
 // A send of the given status; an applied send gets its `applied_at` `ageMs` before NOW.
-async function addSend(orgId: string, mailboxId: string, status: string, ageMs = DAY): Promise<string> {
+async function addSend(orgId: string, mailboxId: string, status: string, ageMs = DAY_MS): Promise<string> {
   const ctx = { orgId };
   const approved = status === "applied" ? { userId: await ownerOf(orgId), at: NOW } : undefined;
   const { sendId } = await db
@@ -182,7 +182,7 @@ describe("POST /api/actions/:id/mistake", () => {
       via: "web",
     });
 
-    const old = await addSend(org.orgId, mine, "applied", 8 * DAY);
+    const old = await addSend(org.orgId, mine, "applied", 8 * DAY_MS);
     const late = await app.request(`/api/actions/${old}/mistake`, post("owner"));
     expect(late.status).toBe(409);
     expect(await late.json()).toEqual({ error: "too_late" });

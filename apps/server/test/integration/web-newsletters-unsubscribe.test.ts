@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 
 import { configureFeatures, upsertOrgFeature } from "../../src/modules/tenancy";
@@ -254,7 +255,7 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
   });
 
   test("11: at most 3 requests per sender domain and 20 per organization in an hour; an older row does not count", async () => {
-    const recent = new Date(NOW.getTime() - 10 * 60_000);
+    const recent = new Date(NOW.getTime() - 10 * MINUTE_MS);
     // Two earlier requests of the domain in the last hour (rows of other senders) and one from 2 h ago.
     await addRequest(db, box.org.orgId, box.mailboxId, "a@d.example", { status: "done", createdAt: recent });
     await addRequest(db, box.org.orgId, box.mailboxId, "b@d.example", { status: "done", createdAt: recent });
@@ -272,7 +273,7 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
   });
 
   test("11b: the organization limit counts every domain", async () => {
-    const recent = new Date(NOW.getTime() - 5 * 60_000);
+    const recent = new Date(NOW.getTime() - 5 * MINUTE_MS);
     expect(UNSUBSCRIBE_ORG_LIMIT).toBe(20);
     for (let i = 0; i < UNSUBSCRIBE_ORG_LIMIT; i += 1)
       await addRequest(db, box.org.orgId, box.mailboxId, `s@d${i}.example`, { status: "done", createdAt: recent });
@@ -283,7 +284,7 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
   });
 
   test("11e: a sender that has a request is 409 `already_requested` also when the limit is reached (the stored state wins over the limit)", async () => {
-    const recent = new Date(NOW.getTime() - 5 * 60_000);
+    const recent = new Date(NOW.getTime() - 5 * MINUTE_MS);
     for (const from of ["a@d.example", "b@d.example", "c@d.example"])
       await addRequest(db, box.org.orgId, box.mailboxId, from, { status: "done", createdAt: recent });
     await oneClick("c@d.example");
@@ -302,7 +303,7 @@ describe("POST /api/newsletters/:mailboxId/unsubscribe", () => {
   });
 
   test("11c: the limit of another organization does not count", async () => {
-    const recent = new Date(NOW.getTime() - 5 * 60_000);
+    const recent = new Date(NOW.getTime() - 5 * MINUTE_MS);
     await addSenderMail(db, box.org.otherOrgId, box.otherMailboxId, { from: "t@c.example" });
     for (let i = 0; i < 3; i += 1)
       await addRequest(db, box.org.otherOrgId, box.otherMailboxId, `s${i}@c.example`, {

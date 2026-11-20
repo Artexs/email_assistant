@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import type { DkimSignature } from "@ea/core";
 import type { Hono } from "hono";
 
@@ -14,7 +15,6 @@ import { webOrg, webTestApp, type WebOrg } from "./web-helpers";
 // Committed rows for the newsletters route: an organization with an owner and a member (role `assistant`), one
 // mailbox each for it and for a second organization, and the flag `bulk_unsubscribe`.
 export const NOW = new Date("2026-11-18T12:00:00Z");
-const HOUR = 3_600_000;
 export const TRUSTED = ["interia.pl"];
 export const PASS = "interia.pl; dkim=pass header.d=c.example";
 export const LINK = "<https://u.c.example/unsub?id=1>, <mailto:unsub@c.example>";
@@ -100,7 +100,7 @@ const signaturesJson = (value: DkimSignature[] | null): string | null =>
 
 /** A triaged mail with its header row, committed. */
 export async function addSenderMail(db: Db, orgId: string, mailboxId: string, m: SenderMail): Promise<string> {
-  const at = new Date(NOW.getTime() - (m.hoursAgo ?? 1) * HOUR);
+  const at = new Date(NOW.getTime() - (m.hoursAgo ?? 1) * HOUR_MS);
   return db.transaction().execute(async (trx) => {
     const id = await insertTriaged(trx, { orgId }, mailboxId, {
       category: m.category ?? "notification",
@@ -151,12 +151,12 @@ export async function addRequest(
       method: "one_click",
       status,
       code: over.code ?? (status === "requested" ? null : status),
-      created_at: over.createdAt ?? new Date(NOW.getTime() - 2 * HOUR),
+      created_at: over.createdAt ?? new Date(NOW.getTime() - 2 * HOUR_MS),
       finished_at:
         over.finishedAt === undefined
           ? status === "requested"
             ? null
-            : new Date(NOW.getTime() - HOUR)
+            : new Date(NOW.getTime() - HOUR_MS)
           : over.finishedAt,
     })
     .execute();

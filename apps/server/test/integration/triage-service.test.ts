@@ -1,3 +1,4 @@
+import { MINUTE_MS, DAY_MS, HOUR_MS } from "@ea/core";
 import type { Category, LlmEndpointKind } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
@@ -54,7 +55,7 @@ async function setup(trx: Transaction<DB>) {
   const [email] = await claimEmails(trx, ctx, created.mailboxId, {
     now,
     limit: 10,
-    staleBefore: new Date(now.getTime() - 5 * 60_000),
+    staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
     syntheticOnly: false,
   });
   if (!email) throw new Error("claim failed");
@@ -218,7 +219,7 @@ describe("saveTriage", () => {
       const { ctx, emailId, email, mailbox } = await setup(trx);
       await trx
         .updateTable("emails")
-        .set({ locked_at: new Date(now.getTime() + 60_000) })
+        .set({ locked_at: new Date(now.getTime() + MINUTE_MS) })
         .where("id", "=", emailId)
         .execute();
       expect(await saveTriage(trx, ctx, mailbox, email, decision(), now)).toEqual({ kind: "lost" });
@@ -237,7 +238,7 @@ describe("saveTriage", () => {
       const [again]: ClaimedEmail[] = await claimEmails(trx, ctx, mailbox.id, {
         now,
         limit: 10,
-        staleBefore: new Date(now.getTime() - 5 * 60_000),
+        staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
         syntheticOnly: false,
       });
       if (!again) throw new Error("second claim failed");
@@ -306,7 +307,7 @@ function fakePause(): FakePause {
     resets: 0,
     trip(kind, code, at) {
       this.trips.push({ kind, code });
-      return new Date(at.getTime() + 5 * 60_000);
+      return new Date(at.getTime() + 5 * MINUTE_MS);
     },
     isPaused: () => false,
     pausedUntil: () => null,
@@ -328,7 +329,7 @@ async function setupMail(
   const claimed = await claimEmails(trx, base.ctx, base.mailbox.id, {
     now,
     limit: 10,
-    staleBefore: new Date(now.getTime() - 5 * 60_000),
+    staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
     syntheticOnly,
   });
   const email = claimed.find((row) => row.id === emailId);
@@ -545,7 +546,7 @@ describe("triageOne", () => {
         email
       );
 
-      const until = new Date(now.getTime() + 5 * 60_000);
+      const until = new Date(now.getTime() + 5 * MINUTE_MS);
       expect(outcome).toEqual({ kind: "paused", until });
       expect(pause.trips).toEqual([{ kind: "soft", code: "http_429" }]);
       const mail = await trx.selectFrom("emails").selectAll().where("id", "=", emailId).executeTakeFirstOrThrow();
@@ -675,12 +676,12 @@ describe("triageOne", () => {
             const mail = await trx.selectFrom("emails").selectAll().where("id", "=", emailId).executeTakeFirstOrThrow();
             attemptsAfter.push(mail.attempts);
             expect(mail.status).toBe("pending");
-            expect(mail.next_attempt_at).toEqual(new Date(clock.getTime() + 5 * 60_000));
-            clock = new Date(clock.getTime() + 6 * 60_000);
+            expect(mail.next_attempt_at).toEqual(new Date(clock.getTime() + 5 * MINUTE_MS));
+            clock = new Date(clock.getTime() + 6 * MINUTE_MS);
             const claimed = await claimEmails(trx, ctx, mailbox.id, {
               now: clock,
               limit: 10,
-              staleBefore: new Date(clock.getTime() - 5 * 60_000),
+              staleBefore: new Date(clock.getTime() - 5 * MINUTE_MS),
               syntheticOnly: false,
             });
             const again = claimed.find((row) => row.id === emailId);
@@ -696,7 +697,7 @@ describe("triageOne", () => {
         const [row] = await results(trx, emailId);
         expect(row).toMatchObject({ category: "unsure", reason_code: "triage_error", confidence: 0, model: null });
         expect(await emailStatus(trx, emailId)).toBe("triaged");
-        expect(await countLlmCallsSince(trx, ctx, mailbox.id, new Date(now.getTime() - 60_000))).toBe(3);
+        expect(await countLlmCallsSince(trx, ctx, mailbox.id, new Date(now.getTime() - MINUTE_MS))).toBe(3);
       });
     }
   });
@@ -707,7 +708,7 @@ describe("triageOne", () => {
         const { ctx, emailId, email, mailbox } = await setupMail(trx);
         await trx
           .updateTable("emails")
-          .set({ locked_at: new Date(now.getTime() + 60_000) })
+          .set({ locked_at: new Date(now.getTime() + MINUTE_MS) })
           .where("id", "=", emailId)
           .execute();
         const outcome = await triageOne(
@@ -763,7 +764,7 @@ describe("triageOne", () => {
       const claimed = await claimEmails(trx, ctx, mailbox.id, {
         now: clock,
         limit: 10,
-        staleBefore: new Date(clock.getTime() - 5 * 60_000),
+        staleBefore: new Date(clock.getTime() - 5 * MINUTE_MS),
         syntheticOnly: false,
       });
       const again = claimed.find((row) => row.id === emailId);
@@ -855,7 +856,7 @@ describe("triageOne", () => {
       const claimed = await claimEmails(trx, base.ctx, base.mailbox.id, {
         now,
         limit: 10,
-        staleBefore: new Date(now.getTime() - 5 * 60_000),
+        staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
         syntheticOnly: false,
       });
       const email = claimed.find((row) => row.id === currentId);
@@ -911,7 +912,7 @@ describe("triageOne", () => {
       const claimed = await claimEmails(trx, base.ctx, base.mailbox.id, {
         now,
         limit: 10,
-        staleBefore: new Date(now.getTime() - 5 * 60_000),
+        staleBefore: new Date(now.getTime() - 5 * MINUTE_MS),
         syntheticOnly: { testMail: NO_TEST_SENDERS },
       });
       const email = claimed.find((row) => row.id === currentId);
@@ -942,7 +943,7 @@ describe("triageOne", () => {
 describe("triageOne: cost gates", () => {
   const dayStart = new Date("2026-11-05T08:00:00Z");
   const nextDayStart = new Date("2026-11-06T08:00:00Z");
-  const eightDaysAgo = new Date(now.getTime() - 8 * 24 * 3_600_000);
+  const eightDaysAgo = new Date(now.getTime() - 8 * DAY_MS);
 
   function deps(trx: Transaction<DB>, llm: LlmClient, dailyCap = 1000, junkDailyCap = 1000) {
     return { db: trx, llm, pause: fakePause(), testMail: NO_TEST_SENDERS, dailyCap, junkDailyCap, now: () => now };
@@ -987,7 +988,7 @@ describe("triageOne: cost gates", () => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx, { received_at: eightDaysAgo });
       await trx
         .updateTable("emails")
-        .set({ locked_at: new Date(now.getTime() + 60_000) })
+        .set({ locked_at: new Date(now.getTime() + MINUTE_MS) })
         .where("id", "=", emailId)
         .execute();
       expect(await triageOne(deps(trx, fakeLlm(analysis())), ctx, mailbox, email)).toEqual({ kind: "lost" });
@@ -1013,7 +1014,7 @@ describe("triageOne: cost gates", () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx, {
         received_at: eightDaysAgo,
-        created_at: new Date(now.getTime() - 40 * 24 * 3_600_000),
+        created_at: new Date(now.getTime() - 40 * DAY_MS),
         backfilled_at: now,
         body_text: null,
       });
@@ -1036,7 +1037,7 @@ describe("triageOne: cost gates", () => {
 
   test("a backfilled mail with a body, or without a body but stored under 7 days ago, is triaged", async () => {
     await withRollback(db, async (trx) => {
-      const old = new Date(now.getTime() - 40 * 24 * 3_600_000);
+      const old = new Date(now.getTime() - 40 * DAY_MS);
       const withBody = await setupMail(trx, { created_at: old, backfilled_at: now, body_text: "Body" });
       const fresh = await setupMail(trx, { created_at: now, backfilled_at: now, body_text: null });
       for (const one of [withBody, fresh]) {
@@ -1050,7 +1051,7 @@ describe("triageOne: cost gates", () => {
   test("at the daily cap the mail waits for the next quota day; no LLM call", async () => {
     await withRollback(db, async (trx) => {
       const { ctx, emailId, email, mailbox } = await setupMail(trx);
-      await addLlmCalls(trx, ctx, mailbox.id, [dayStart, new Date(now.getTime() - 60_000)]);
+      await addLlmCalls(trx, ctx, mailbox.id, [dayStart, new Date(now.getTime() - MINUTE_MS)]);
       const llm = fakeLlm(analysis());
 
       expect(await triageOne(deps(trx, llm, 2), ctx, mailbox, email)).toEqual({
@@ -1072,7 +1073,7 @@ describe("triageOne: cost gates", () => {
       const { ctx, email, mailbox } = await setupMail(trx);
       await addLlmCalls(trx, ctx, mailbox.id, [
         new Date(dayStart.getTime() - 1),
-        new Date(dayStart.getTime() - 3_600_000),
+        new Date(dayStart.getTime() - HOUR_MS),
       ]);
       const llm = fakeLlm(analysis());
       expect(await triageOne(deps(trx, llm, 2), ctx, mailbox, email)).toEqual({ kind: "triaged" });
@@ -1449,7 +1450,7 @@ describe("triageOne: the reply rule", () => {
 
   test("a late reply (skipTooOld) still marks the delegation", async () => {
     await withRollback(db, async (trx) => {
-      const received = new Date(now.getTime() - 8 * 24 * 3_600_000);
+      const received = new Date(now.getTime() - 8 * DAY_MS);
       const { ctx, emailId, email, mailbox, delegationId } = await replySetup(trx, { receivedAt: received });
       const llm = fakeLlm(analysis());
       expect(await triageOne(triageDeps(trx, llm), ctx, mailbox, email)).toEqual({ kind: "skipped" });
@@ -1497,7 +1498,7 @@ describe("triageOne: the reply rule", () => {
       const reply = await replySetup(trx);
       await trx
         .updateTable("emails")
-        .set({ locked_at: new Date(now.getTime() + 60_000) })
+        .set({ locked_at: new Date(now.getTime() + MINUTE_MS) })
         .where("id", "=", reply.emailId)
         .execute();
       expect(await saveTriage(trx, reply.ctx, reply.mailbox, reply.email, decision(), now)).toEqual({ kind: "lost" });
@@ -1506,7 +1507,7 @@ describe("triageOne: the reply rule", () => {
       const mail = await delegationSetup(trx);
       await trx
         .updateTable("emails")
-        .set({ locked_at: new Date(now.getTime() + 60_000) })
+        .set({ locked_at: new Date(now.getTime() + MINUTE_MS) })
         .where("id", "=", mail.emailId)
         .execute();
       const planned = decision({
@@ -1537,7 +1538,7 @@ describe("triageOne: the reply rule", () => {
       for (const mailboxId of [mail.mailbox.id, reply.mailbox.id]) {
         await trx
           .updateTable("mailbox_settings")
-          .set({ updated_at: new Date(now.getTime() + 60_000) })
+          .set({ updated_at: new Date(now.getTime() + MINUTE_MS) })
           .where("mailbox_id", "=", mailboxId)
           .execute();
       }
@@ -1557,14 +1558,14 @@ describe("triageOne: the reply rule", () => {
       const claimed = await claimEmails(trx, mail.ctx, mail.mailbox.id, {
         now: clock,
         limit: 10,
-        staleBefore: new Date(clock.getTime() - 5 * 60_000),
+        staleBefore: new Date(clock.getTime() - 5 * MINUTE_MS),
         syntheticOnly: false,
       });
       const mailAgain = claimed.find((row) => row.id === mail.emailId);
       const claimedReply = await claimEmails(trx, reply.ctx, reply.mailbox.id, {
         now: clock,
         limit: 10,
-        staleBefore: new Date(clock.getTime() - 5 * 60_000),
+        staleBefore: new Date(clock.getTime() - 5 * MINUTE_MS),
         syntheticOnly: false,
       });
       const replyAgain = claimedReply.find((row) => row.id === reply.emailId);
