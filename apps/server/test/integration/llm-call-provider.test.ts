@@ -43,7 +43,7 @@ const pause: LlmPause = {
   isPaused: () => false,
   pausedUntil: () => null,
   pausedSince: () => null,
-  reset: () => {},
+  reset: () => undefined,
 };
 
 async function setupMail(trx: Transaction<DB>) {
