@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -95,7 +96,7 @@ describe("the channel of a request", () => {
         instruction: "a line",
       });
       await r.job();
-      const window = { since: new Date(r.clock.now.getTime() - 3_600_000), limit: 50, maxLifeMs: 3_600_000 };
+      const window = { since: new Date(r.clock.now.getTime() - HOUR_MS), limit: 50, maxLifeMs: HOUR_MS };
       expect(await listEndedRequestsVia(trx, r.box.ctx, { via: "telegram", ...window })).toEqual([]);
       expect(await listEndedRequestsVia(trx, r.box.ctx, { via: "web", ...window })).toHaveLength(1);
     });

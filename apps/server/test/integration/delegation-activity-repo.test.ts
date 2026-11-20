@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { delegationCountsByDelegateAddress } from "../../src/modules/delegation";
@@ -13,10 +14,9 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const DAY = 86_400_000;
 const ADDRESS = "boss@example.com";
 
-const options = (mailboxId: string) => ({ mailboxId, since: new Date(NOW.getTime() - 90 * DAY), until: NOW });
+const options = (mailboxId: string) => ({ mailboxId, since: new Date(NOW.getTime() - 90 * DAY_MS), until: NOW });
 
 // One delegation of `delegateId` made `days` before the fixed clock, in the mailbox of `org`.
 async function delegate(trx: Trx, org: Org, delegateId: string, days: number): Promise<void> {

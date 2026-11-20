@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import { listUrgentNoticeTimes } from "../../src/modules/channels";
@@ -148,7 +149,7 @@ describe("loopDueRows", () => {
       expect(all).toHaveLength(5);
       const followed = all.find((row) => row.id === delegated);
       expect(followed?.kind).toBe("delegated");
-      expect(followed?.firstFollowUpAt).toEqual(new Date(DUE.getTime() + 23 * 3_600_000));
+      expect(followed?.firstFollowUpAt).toEqual(new Date(DUE.getTime() + 23 * HOUR_MS));
       expect(all.filter((row) => row.firstFollowUpAt !== null)).toHaveLength(1);
       expect(await loopDueRows(trx, ctx, { range, mailboxId })).toHaveLength(5);
       expect(await loopDueRows(trx, ctx, { range, mailboxId: randomUUID() })).toEqual([]);
@@ -163,7 +164,7 @@ describe("loopDueRows", () => {
       await insertLoopActionPair(trx, ctx, open, {
         draftStatus: "applied",
         sendStatus: "undone",
-        createdAt: new Date(DUE.getTime() - 3_600_000),
+        createdAt: new Date(DUE.getTime() - HOUR_MS),
         send: { approved_at: DUE, approved_by: ownerId, approved_via: "telegram" },
       });
       const row = (await loopDueRows(trx, ctx, { range })).find((r) => r.id === open);

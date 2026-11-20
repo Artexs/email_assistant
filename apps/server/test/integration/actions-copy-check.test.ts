@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { sendPayloadFor, type DraftPayload } from "@ea/core";
+import { sendPayloadFor, type DraftPayload, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -389,7 +389,7 @@ describe("the copy check: a follow-up", () => {
         cc_addresses: cc,
         counterpart: to[0] ?? null,
         language: "en",
-        due_at: new Date(NOW.getTime() - 86_400_000),
+        due_at: new Date(NOW.getTime() - DAY_MS),
       });
       const draft: DraftPayload = {
         kind: "follow_up",
@@ -450,7 +450,7 @@ describe("the copy check: a follow-up", () => {
         cc_addresses: [],
         counterpart: to[0] ?? null,
         language: "en",
-        due_at: new Date(NOW.getTime() - 86_400_000),
+        due_at: new Date(NOW.getTime() - DAY_MS),
       });
       const draft: DraftPayload = {
         kind: "follow_up",

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, spyOn, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -238,11 +239,11 @@ describe("expireSend", () => {
         status_reason: "held_timeout",
       });
 
-      const fresh = await approved(new Date(now.getTime() - 60_000));
+      const fresh = await approved(new Date(now.getTime() - MINUTE_MS));
       expect(await close(trx, s.ctx, fresh.sendId, hooks, { reason: "held_timeout" })).toBe(false);
       expect((await getSend(trx, s.ctx, fresh.sendId))?.status).toBe("approved");
 
-      const stale = await approved(new Date(now.getTime() - STALE_AFTER_MS - 60_000));
+      const stale = await approved(new Date(now.getTime() - STALE_AFTER_MS - MINUTE_MS));
       expect(await close(trx, s.ctx, stale.sendId, hooks, { reason: "held_timeout" })).toBe(true);
       expect((await getSend(trx, s.ctx, stale.sendId))?.status).toBe("expired");
 

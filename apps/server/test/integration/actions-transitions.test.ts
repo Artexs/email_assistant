@@ -1,4 +1,4 @@
-import { actionTypes, type ActionType } from "@ea/core";
+import { actionTypes, type ActionType, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -141,8 +141,8 @@ const WRONG_TOKEN = new Date("2026-11-11T10:00:01Z");
 // The held rule: a row is held when `locked_at` is at or after `staleBefore`.
 const NOW = new Date("2026-11-11T12:00:00Z");
 const STALE_BEFORE = new Date(NOW.getTime() - STALE_AFTER_MS);
-const FRESH_LOCK = new Date(NOW.getTime() - 60_000);
-const STALE_LOCK = new Date(STALE_BEFORE.getTime() - 60_000);
+const FRESH_LOCK = new Date(NOW.getTime() - MINUTE_MS);
+const STALE_LOCK = new Date(STALE_BEFORE.getTime() - MINUTE_MS);
 
 // For every status and every type of the guard: the real function must change the row exactly when the map says so.
 // A guard with `held: "blocks"` is also driven with a fresh lock (not changed) and a stale lock (changed);
@@ -404,7 +404,7 @@ describe("transitions map: expireReadyDraft", () => {
   });
 });
 
-const OLD = new Date(NOW.getTime() - CLAIM_MAX_AGE_MS - 3_600_000);
+const OLD = new Date(NOW.getTime() - CLAIM_MAX_AGE_MS - HOUR_MS);
 
 describe("transitions map: expireStaleReady", () => {
   test("default: the guard row equals the behavior (held or not)", async () => {

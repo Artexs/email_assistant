@@ -1,5 +1,6 @@
 import { format } from "node:util";
 
+import { MINUTE_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -25,7 +26,6 @@ const MONDAY_0830 = new Date("2026-11-23T07:30:00Z");
 const MONDAY_0900 = new Date("2026-11-23T08:00:00Z");
 const NEXT_MONDAY_0900 = new Date("2026-11-30T08:00:00Z");
 const TUESDAY = new Date("2026-11-24T08:00:00Z");
-const MINUTE = 60_000;
 const DEDUP = "weekly_report:2026-11-16";
 
 let errorLines: string[] = [];
@@ -57,7 +57,7 @@ async function tick(
   await detectNotices({
     db: trx,
     now: () => now,
-    startedAt: new Date(now.getTime() - 24 * 3_600_000),
+    startedAt: new Date(now.getTime() - DAY_MS),
     testMail,
     ...(trustEvidence === undefined ? {} : { trustEvidence }),
   });
@@ -113,7 +113,7 @@ describe("weekly report detector", () => {
         expect((row.view as { week: { m3: { total: number } } }).week.m3.total).toBe(4);
       }
 
-      await tick(trx, new Date(MONDAY_0900.getTime() + MINUTE));
+      await tick(trx, new Date(MONDAY_0900.getTime() + MINUTE_MS));
       expect(await weeklyRows(trx, o.ctx.orgId)).toHaveLength(2);
     });
   });
@@ -199,8 +199,8 @@ describe("weekly report detector", () => {
       expect(await weeklyRows(trx, a.ctx.orgId)).toHaveLength(1);
 
       const late = await addMember(trx, a.ctx.orgId);
-      await member(trx, a.ctx, late, new Date(MONDAY_0900.getTime() + 5 * MINUTE), ["09:00"]);
-      await tick(trx, new Date(MONDAY_0900.getTime() + 10 * MINUTE));
+      await member(trx, a.ctx, late, new Date(MONDAY_0900.getTime() + 5 * MINUTE_MS), ["09:00"]);
+      await tick(trx, new Date(MONDAY_0900.getTime() + 10 * MINUTE_MS));
       const rows = await weeklyRows(trx, a.ctx.orgId);
       expect(rows.map((row) => row.user_id).sort()).toEqual([a.ownerId, late].sort());
     });
@@ -237,12 +237,12 @@ describe("weekly report detector", () => {
       const readsAfterFirst = reads;
 
       // Within the window the detector does not read the week at all.
-      await tick(trx, new Date(MONDAY_0900.getTime() + 14 * MINUTE), broken);
+      await tick(trx, new Date(MONDAY_0900.getTime() + 14 * MINUTE_MS), broken);
       expect(reads).toBe(readsAfterFirst);
-      await tick(trx, new Date(MONDAY_0900.getTime() + 14 * MINUTE));
+      await tick(trx, new Date(MONDAY_0900.getTime() + 14 * MINUTE_MS));
       expect(await weeklyRows(trx, o.ctx.orgId)).toHaveLength(0);
 
-      await tick(trx, new Date(MONDAY_0900.getTime() + 15 * MINUTE));
+      await tick(trx, new Date(MONDAY_0900.getTime() + 15 * MINUTE_MS));
       expect(await weeklyRows(trx, o.ctx.orgId)).toHaveLength(2);
     });
   });
@@ -261,7 +261,7 @@ describe("weekly report detector", () => {
 
       await tick(trx, MONDAY_0900, broken);
       // The retry after the window fails again: the same week and the same id log once only.
-      await tick(trx, new Date(MONDAY_0900.getTime() + 20 * MINUTE), broken);
+      await tick(trx, new Date(MONDAY_0900.getTime() + 20 * MINUTE_MS), broken);
       expect(warnings()).toHaveLength(1);
       expect(warnings()[0]).toBe(warnLine);
 

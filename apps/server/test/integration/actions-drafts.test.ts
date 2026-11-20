@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -38,7 +39,6 @@ afterAll(async () => {
 
 // The hash of the Drafts copy that the draft step reads once after its APPEND (the baseline of the edit check).
 const HEX64 = expect.stringMatching(/^[0-9a-f]{64}$/);
-const MINUTE = 60_000;
 const NOW = new Date("2026-11-07T12:00:00Z");
 const CREATED = new Date("2026-11-07T11:00:00Z");
 const secrets = createSecretBox(randomBytes(32).toString("base64"), 1);
@@ -124,7 +124,7 @@ async function claimOne(trx: Transaction<DB>, s: Setup, id: string, at: Date = N
   const claimed = await claimActions(trx, s.ctx, s.mailboxId, {
     now: at,
     limit: 20,
-    staleBefore: new Date(at.getTime() - 10 * MINUTE),
+    staleBefore: new Date(at.getTime() - 10 * MINUTE_MS),
     filter: { mailbox: { kind: "all" }, send: { kind: "none" } },
   });
   const action = claimed.find((row) => row.id === id);
@@ -233,7 +233,7 @@ describe("applyDraft", () => {
       expect(stuck.locked_at?.getTime()).toBe(NOW.getTime());
       expect(await draftUids(s)).toHaveLength(1);
 
-      const later = new Date(NOW.getTime() + 11 * MINUTE);
+      const later = new Date(NOW.getTime() + 11 * MINUTE_MS);
       const again = await claimOne(trx, s, p.draftId, later);
       expect(again.status).toBe("applying");
       expect(await applyDraft(depsOf(s, trx, later), s.ctx, again, s.fake)).toEqual({ kind: "applied" });
@@ -277,7 +277,7 @@ describe("applyDraft", () => {
       expect(row).toMatchObject({ status: "applying", locked_at: null, attempts: 0 });
       expect(row.next_attempt_at?.getTime()).toBe(NOW.getTime() + RETRY_WAIT_MS);
 
-      const later = new Date(NOW.getTime() + 6 * MINUTE);
+      const later = new Date(NOW.getTime() + 6 * MINUTE_MS);
       const again = await claimOne(trx, s, p.draftId, later);
       expect(await applyDraft(depsOf(s, trx, later), s.ctx, again, s.fake)).toEqual({ kind: "applied" });
       expect(await draftUids(s)).toHaveLength(1);
@@ -303,7 +303,7 @@ describe("applyDraft", () => {
         const action = await claimOne(trx, s, p.draftId, at);
         outcomes.push(await applyDraft(depsOf(s, trx, at, { hooks }), s.ctx, action, s.fake));
         attempts.push((await actionState(trx, p.draftId)).attempts);
-        at = new Date(at.getTime() + 6 * MINUTE);
+        at = new Date(at.getTime() + 6 * MINUTE_MS);
       }
 
       expect(outcomes).toEqual([
@@ -617,7 +617,7 @@ describe("removeDraft", () => {
       payload: { kind: "delegation", folder: "Drafts", uid, reason },
       reversesActionId: p.draftId,
       idempotencyKey: `${p.draftId}:undo`,
-      createdAt: new Date(NOW.getTime() + MINUTE),
+      createdAt: new Date(NOW.getTime() + MINUTE_MS),
     });
     return { draftId: p.draftId, reverseId, uid };
   }
@@ -706,7 +706,7 @@ describe("removeDraft", () => {
       let at = NOW;
       const outcomes: unknown[] = [];
       for (let n = 0; n < 3; n += 1) {
-        at = new Date(at.getTime() + 10 * MINUTE);
+        at = new Date(at.getTime() + 10 * MINUTE_MS);
         const reverse = await claimOne(trx, s, reverseId, at);
         outcomes.push(await applyAction(depsOf(s, trx, at), s.ctx, reverse, s.fake));
         if (n < 2) expect(await actionState(trx, reverseId)).toMatchObject({ status: "ready", attempts: n + 1 });
@@ -751,7 +751,7 @@ describe("removeDraft", () => {
       expect(stuck.status).toBe("ready");
       expect(stuck.locked_at?.getTime()).toBe(NOW.getTime());
 
-      const later = new Date(NOW.getTime() + 11 * MINUTE);
+      const later = new Date(NOW.getTime() + 11 * MINUTE_MS);
       const again = await claimOne(trx, s, reverseId, later);
       expect(await applyAction(depsOf(s, trx, later), s.ctx, again, s.fake)).toEqual({ kind: "applied" });
 

@@ -1,6 +1,6 @@
 import { format } from "node:util";
 
-import { REPLY_CONSENT_SINCE } from "@ea/core";
+import { REPLY_CONSENT_SINCE, MINUTE_MS, HOUR_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -28,8 +28,6 @@ import { markAnswered, sentSyncOn, sweepOrg, sweepReply, type SweepOrg } from ".
 // The review cards of the reply drafts in Telegram.
 const db = testDb();
 const T = new Date("2026-11-20T10:00:00Z");
-const HOUR = 3_600_000;
-const MINUTE = 60_000;
 const at = (offsetMs: number): Date => new Date(T.getTime() + offsetMs);
 
 let logSpy: ReturnType<typeof spyOn>;
@@ -65,7 +63,7 @@ async function consent(trx: Transaction<DB>, o: SweepOrg, userId: string, versio
     event: auditEvents.webTelegramConsent,
     actor: userId,
     data: { via: "web", version },
-    at: at(-2 * HOUR),
+    at: at(-2 * HOUR_MS),
   });
 }
 
@@ -74,8 +72,8 @@ async function team(trx: Transaction<DB>, opts: { consented?: boolean; webBaseUr
   await isolateChannels(trx);
   const o = await sweepOrg(trx);
   const memberId = await addMember(trx, o.ctx.orgId);
-  await linkChat(trx, o.ctx, o.userId, randomChatId(), at(-HOUR));
-  await linkChat(trx, o.ctx, memberId, randomChatId(), at(-HOUR));
+  await linkChat(trx, o.ctx, o.userId, randomChatId(), at(-HOUR_MS));
+  await linkChat(trx, o.ctx, memberId, randomChatId(), at(-HOUR_MS));
   if (opts.consented !== false) await consent(trx, o, o.userId, REPLY_CONSENT_SINCE);
   let tick = 0;
   const link = (userId: string, role: "owner" | "assistant"): LinkedChat => ({
@@ -83,7 +81,7 @@ async function team(trx: Transaction<DB>, opts: { consented?: boolean; webBaseUr
     userId,
     role,
     chatId: 1,
-    linkedAt: at(-HOUR),
+    linkedAt: at(-HOUR_MS),
     locale: "en",
   });
   const deps: CallbackDeps = {
@@ -101,9 +99,9 @@ async function team(trx: Transaction<DB>, opts: { consented?: boolean; webBaseUr
 
 // Three open replies, oldest first. The `bodyText` of the draft is the text of the card.
 async function threeReplies(trx: Transaction<DB>, o: SweepOrg) {
-  const first = await sweepReply(trx, o, { createdAt: at(-3 * HOUR) });
-  const second = await sweepReply(trx, o, { createdAt: at(-2 * HOUR) });
-  const third = await sweepReply(trx, o, { createdAt: at(-HOUR) });
+  const first = await sweepReply(trx, o, { createdAt: at(-3 * HOUR_MS) });
+  const second = await sweepReply(trx, o, { createdAt: at(-2 * HOUR_MS) });
+  const third = await sweepReply(trx, o, { createdAt: at(-HOUR_MS) });
   return [first, second, third];
 }
 
@@ -230,8 +228,8 @@ describe("the review: Review, Skip, Send, Reject", () => {
   test("3b. Send on a send that is not a reply queues no review card", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx);
-      const delegation = await insertDraftAndSend(trx, o.ctx, o.mailboxId, { createdAt: at(-HOUR) });
-      await sweepReply(trx, o, { createdAt: at(-30 * MINUTE) });
+      const delegation = await insertDraftAndSend(trx, o.ctx, o.mailboxId, { createdAt: at(-HOUR_MS) });
+      await sweepReply(trx, o, { createdAt: at(-30 * MINUTE_MS) });
 
       const result = await handleCallback(o.deps, o.owner, `ap:${delegation.sendId}`);
 
@@ -259,7 +257,7 @@ describe("the review: Review, Skip, Send, Reject", () => {
       const o = await team(trx);
       await threeReplies(trx, o);
 
-      await detectNotices({ db: trx, now: () => T, startedAt: at(-HOUR), testMail: NO_TEST_SENDERS });
+      await detectNotices({ db: trx, now: () => T, startedAt: at(-HOUR_MS), testMail: NO_TEST_SENDERS });
 
       expect(await cards(trx, o)).toHaveLength(0);
       // The `replies_ready` notice is the only thing that the owner gets.
@@ -298,7 +296,7 @@ describe("the review: Review, Skip, Send, Reject", () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx);
       await threeReplies(trx, o);
-      await setOrgFeature(trx, o.ctx, { flag: "reply_drafts", enabled: false, actor: "cli", now: at(-HOUR) });
+      await setOrgFeature(trx, o.ctx, { flag: "reply_drafts", enabled: false, actor: "cli", now: at(-HOUR_MS) });
 
       expect(await handleCallback(o.deps, o.owner, "rv")).toEqual({
         answer: "Reply drafts are switched off. Nothing was sent.",
@@ -327,7 +325,7 @@ describe("what the review card shows", () => {
       const o = await team(trx);
       const pair = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "reply",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
         from: "boss@x.test",
         to: "boss@x.test",
         replyBody: "Hello,\n\nThe price is [[the price]].",
@@ -349,7 +347,7 @@ describe("what the review card shows", () => {
       const o = await team(trx);
       const pair = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "reply",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
         from: "boss@x.test",
         to: "boss@x.test",
         cc: ["cc@x.test"],
@@ -361,7 +359,7 @@ describe("what the review card shows", () => {
           org_id: o.ctx.orgId,
           reply_to: ["Boss@X.test", "team@x.test"],
           parts_known: true,
-          captured_at: at(-HOUR),
+          captured_at: at(-HOUR_MS),
         })
         .execute();
 
@@ -376,7 +374,7 @@ describe("what the review card shows", () => {
   test("16. while the Sent mail is not read the card says so, and the approvals list carries sentVisible false (ApprovalItem); with the Sent read on it does not", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx);
-      await sweepReply(trx, o, { createdAt: at(-HOUR) });
+      await sweepReply(trx, o, { createdAt: at(-HOUR_MS) });
 
       await handleCallback(o.deps, o.owner, "rv");
 
@@ -406,7 +404,7 @@ describe("the consent check (D16)", () => {
       const o = await team(trx, { consented: false, webBaseUrl: "https://app.test" });
       await consent(trx, o, o.userId, "2026-11-15.2");
       await threeReplies(trx, o);
-      await upsertOrgFeature(trx, o.ctx, { flag: "approvals_page", enabled: true, setBy: "test", setAt: at(-HOUR) });
+      await upsertOrgFeature(trx, o.ctx, { flag: "approvals_page", enabled: true, setBy: "test", setAt: at(-HOUR_MS) });
 
       const refused = await handleCallback(o.deps, o.owner, "rv");
 
@@ -435,7 +433,7 @@ describe("the consent check (D16)", () => {
         event: auditEvents.chatUnlinked,
         actor: o.userId,
         data: { user_id: o.userId },
-        at: at(-HOUR),
+        at: at(-HOUR_MS),
       });
       expect((await handleCallback(o.deps, o.owner, "rv")).send?.text).toContain("Confirm the new Telegram terms");
       expect(await cards(trx, o)).toHaveLength(0);
@@ -476,13 +474,13 @@ describe("the review cards and the F102 card sync", () => {
       await handleCallback(o.deps, o.owner, "rv");
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", external_message_id: "77", sent_at: at(MINUTE), text: "card text" })
+        .set({ status: "sent", external_message_id: "77", sent_at: at(MINUTE_MS), text: "card text" })
         .where("kind", "=", "approval")
         .execute();
       await handleCallback(o.deps, o.owner, `rk:${first?.sendId}`);
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", external_message_id: "78", sent_at: at(MINUTE), text: "card text" })
+        .set({ status: "sent", external_message_id: "78", sent_at: at(MINUTE_MS), text: "card text" })
         .where("kind", "=", "approval")
         .execute();
       await handleCallback(o.deps, o.owner, "rv");
@@ -499,7 +497,7 @@ describe("the review cards and the F102 card sync", () => {
       expect(found).toHaveLength(2);
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", external_message_id: "79", sent_at: at(MINUTE), text: "card text" })
+        .set({ status: "sent", external_message_id: "79", sent_at: at(MINUTE_MS), text: "card text" })
         .where("kind", "=", "approval")
         .execute();
       for (const card of all.filter((row) => row.dedup_key.startsWith(`approval:${first?.sendId}`))) {
@@ -517,7 +515,7 @@ describe("the review cards and the F102 card sync", () => {
         .set({ status: "pending", external_message_id: null, sent_at: null })
         .where("dedup_key", "=", `approval:${first?.sendId}:r2`)
         .execute();
-      expect(await cancelPendingApprovalRequestsOfClosedSends(trx, o.ctx, { staleBefore: at(-HOUR) })).toBe(0);
+      expect(await cancelPendingApprovalRequestsOfClosedSends(trx, o.ctx, { staleBefore: at(-HOUR_MS) })).toBe(0);
       // A review card that no sender took, of a send that is closed now: `failed` / `outdated`.
       await trx
         .updateTable("outbox")
@@ -529,7 +527,7 @@ describe("the review cards and the F102 card sync", () => {
         .set({ status: "rejected" })
         .where("id", "=", first?.sendId as string)
         .execute();
-      const cancelled = await cancelPendingApprovalRequestsOfClosedSends(trx, o.ctx, { staleBefore: at(-HOUR) });
+      const cancelled = await cancelPendingApprovalRequestsOfClosedSends(trx, o.ctx, { staleBefore: at(-HOUR_MS) });
       expect(cancelled).toBeGreaterThanOrEqual(1);
       const row = await trx
         .selectFrom("outbox")
@@ -547,7 +545,7 @@ describe("the review cards and the F102 card sync", () => {
       await handleCallback(o.deps, o.owner, "rv");
       await trx
         .updateTable("outbox")
-        .set({ status: "sent", external_message_id: "91", sent_at: at(MINUTE), text: "✍️ Reply card" })
+        .set({ status: "sent", external_message_id: "91", sent_at: at(MINUTE_MS), text: "✍️ Reply card" })
         .where("kind", "=", "approval")
         .execute();
       const { reject } = await import("../../src/modules/actions");
@@ -585,7 +583,7 @@ describe("the review cards and the F102 card sync", () => {
       const sendCard = (key: string, messageId: string, text: string) =>
         trx
           .updateTable("outbox")
-          .set({ status: "sent", external_message_id: messageId, sent_at: at(MINUTE), text })
+          .set({ status: "sent", external_message_id: messageId, sent_at: at(MINUTE_MS), text })
           .where("dedup_key", "=", key)
           .execute();
       await sendCard(`approval:${first?.sendId}:r1`, "91", "✍️ Reply card one");
@@ -660,7 +658,7 @@ describe("review repair: other kinds, refused cards, plain cards in quiet hours"
       const clarification = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "clarification",
         to: "boss@x.test",
-        createdAt: at(-4 * HOUR),
+        createdAt: at(-4 * HOUR_MS),
       });
       const [reply] = await threeReplies(trx, o);
 
@@ -676,7 +674,7 @@ describe("review repair: other kinds, refused cards, plain cards in quiet hours"
       await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "clarification",
         to: "boss@x.test",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
       });
 
       const result = await handleCallback(o.deps, o.owner, "rv");
@@ -689,7 +687,7 @@ describe("review repair: other kinds, refused cards, plain cards in quiet hours"
   test("TG3. Skip on a send that is not a reply does nothing: not found, no card, the send is unchanged", async () => {
     await withRollback(db, async (trx) => {
       const o = await team(trx);
-      const delegation = await insertDraftAndSend(trx, o.ctx, o.mailboxId, { createdAt: at(-2 * HOUR) });
+      const delegation = await insertDraftAndSend(trx, o.ctx, o.mailboxId, { createdAt: at(-2 * HOUR_MS) });
       await threeReplies(trx, o);
 
       const result = await handleCallback(o.deps, o.owner, `rk:${delegation.sendId}`);
@@ -716,12 +714,12 @@ describe("review repair: other kinds, refused cards, plain cards in quiet hours"
       const o = await team(trx);
       const bad = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "reply",
-        createdAt: at(-3 * HOUR),
+        createdAt: at(-3 * HOUR_MS),
         from: "boss@x.test",
         to: "boss@x.test",
         cc: longCc,
       });
-      const good = await sweepReply(trx, o, { createdAt: at(-2 * HOUR) });
+      const good = await sweepReply(trx, o, { createdAt: at(-2 * HOUR_MS) });
       const lines: string[] = [];
       logSpy.mockImplementation((...args: unknown[]) => {
         lines.push(format(...args));
@@ -747,7 +745,7 @@ describe("review repair: other kinds, refused cards, plain cards in quiet hours"
       const o = await team(trx);
       const bad = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "reply",
-        createdAt: at(-3 * HOUR),
+        createdAt: at(-3 * HOUR_MS),
         from: "boss@x.test",
         to: "boss@x.test",
         cc: longCc,
@@ -773,7 +771,7 @@ describe("review repair: other kinds, refused cards, plain cards in quiet hours"
       const pair = await insertDraftAndSend(trx, o.ctx, o.mailboxId, {
         kind: "clarification",
         to: "boss@x.test",
-        createdAt: at(-HOUR),
+        createdAt: at(-HOUR_MS),
       });
       const view = {
         actionId: pair.sendId,

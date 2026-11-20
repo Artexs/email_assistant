@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import { localToInstant, unitCost, type LiveRunPlan, type LlmCallRow, type Slot } from "@ea/core";
+import { localToInstant, unitCost, type LiveRunPlan, type LlmCallRow, type Slot, MINUTE_MS } from "@ea/core";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -59,7 +59,7 @@ const WEEK = {
   tail: "2026-12-03T23:00:00.000Z",
 };
 // A day run on Friday 2026-11-27: the tail ends Sat 2026-11-28 00:00 Warsaw.
-const DAY = {
+const DAY_RUN = {
   id: "day-20261127-0a1b",
   start: "2026-11-27",
   endsAt: "2026-11-27T23:00:00.000Z",
@@ -249,8 +249,8 @@ describe("M2 and M7 of the run window (stage 13 tests 5, 6, 6b)", () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
       const [silent] = byBehaviour("silent") as [Slot];
-      const run = runOf(DAY, "day", [silent.id]);
-      await addDelegation(trx, org, DAY.id, { slot: silent, sentAt: new Date("2026-11-27T09:00:00.000Z") });
+      const run = runOf(DAY_RUN, "day", [silent.id]);
+      await addDelegation(trx, org, DAY_RUN.id, { slot: silent, sentAt: new Date("2026-11-27T09:00:00.000Z") });
       const events = injected(run, [silent.id]);
       const ctx = { orgId: org.orgId };
       const joined = await joinRun(trx, ctx, run, events, corpus, org.mailboxId);
@@ -417,7 +417,7 @@ async function fillWorld(trx: Transaction<DB>, org: Org) {
         status: "sent",
         created_at: receivedAt,
         next_attempt_at: receivedAt,
-        sent_at: new Date(receivedAt.getTime() + 5 * 60_000),
+        sent_at: new Date(receivedAt.getTime() + 5 * MINUTE_MS),
       })
       .execute();
   }

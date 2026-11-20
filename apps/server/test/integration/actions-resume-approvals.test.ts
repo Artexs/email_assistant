@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql, type Transaction } from "kysely";
 
@@ -25,10 +26,9 @@ afterAll(async () => {
   await db.destroy();
 });
 
-const HOUR = 3_600_000;
 const pausedAt = new Date("2026-11-10T08:00:00Z");
-const resumedAt = new Date(pausedAt.getTime() + 30 * HOUR);
-const resumedAfter60h = () => new Date(pausedAt.getTime() + 72 * HOUR);
+const resumedAt = new Date(pausedAt.getTime() + 30 * HOUR_MS);
+const resumedAfter60h = () => new Date(pausedAt.getTime() + 3 * DAY_MS);
 const APPLIED = { folder: "Drafts", uid: 7 };
 const hooks = { onSuspended: cancelPendingOutboxOfOrg, onResumed: resumeHook(db) };
 
@@ -45,8 +45,8 @@ async function waiting(
 ) {
   return insertDraftAndSend(trx, s.ctx, s.mailboxId, {
     draftProviderResult: APPLIED,
-    createdAt: new Date(pausedAt.getTime() - 3 * HOUR),
-    notifiedAt: new Date(pausedAt.getTime() - 2 * HOUR),
+    createdAt: new Date(pausedAt.getTime() - 3 * HOUR_MS),
+    notifiedAt: new Date(pausedAt.getTime() - 2 * HOUR_MS),
     ...opts,
   });
 }
@@ -68,9 +68,9 @@ async function queueRequest(
       text: "Approve?",
       buttons: "[]",
       status: opts.status,
-      created_at: new Date(pausedAt.getTime() - 2 * HOUR),
-      next_attempt_at: new Date(pausedAt.getTime() - 2 * HOUR),
-      sent_at: opts.status === "sent" ? new Date(pausedAt.getTime() - 2 * HOUR) : null,
+      created_at: new Date(pausedAt.getTime() - 2 * HOUR_MS),
+      next_attempt_at: new Date(pausedAt.getTime() - 2 * HOUR_MS),
+      sent_at: opts.status === "sent" ? new Date(pausedAt.getTime() - 2 * HOUR_MS) : null,
     })
     .execute();
 }
@@ -152,12 +152,12 @@ describe("resume of a suspended organization (F079)", () => {
       const other = await createOrgWithMailbox(trx);
       const approved = await waiting(trx, s, {
         sendStatus: "approved",
-        approved: { userId: s.userId, at: new Date(pausedAt.getTime() - HOUR) },
+        approved: { userId: s.userId, at: new Date(pausedAt.getTime() - HOUR_MS) },
       });
       const foreign = await insertDraftAndSend(trx, { orgId: other.orgId }, other.mailboxId, {
         draftProviderResult: APPLIED,
-        createdAt: new Date(pausedAt.getTime() - 3 * HOUR),
-        notifiedAt: new Date(pausedAt.getTime() - 2 * HOUR),
+        createdAt: new Date(pausedAt.getTime() - 3 * HOUR_MS),
+        notifiedAt: new Date(pausedAt.getTime() - 2 * HOUR_MS),
       });
 
       const result = await pauseAndResume(trx, s.ctx);
@@ -173,7 +173,7 @@ describe("resume of a suspended organization (F079)", () => {
     await withRollback(db, async (trx) => {
       const s = await setup(trx);
       await pauseAndResume(trx, s.ctx);
-      const fresh = await waiting(trx, s, { notifiedAt: new Date(resumedAt.getTime() + HOUR) });
+      const fresh = await waiting(trx, s, { notifiedAt: new Date(resumedAt.getTime() + HOUR_MS) });
       await queueRequest(trx, s, { kind: "approval", key: fresh.sendId, emailId: fresh.emailId, status: "pending" });
 
       // active to trial is not a resume: no hook runs.
@@ -214,7 +214,7 @@ describe("resume of a suspended organization (F079)", () => {
       await queueRequest(trx, s, { kind: "approval", key: unseen.sendId, emailId: unseen.emailId, status: "pending" });
       await setOrgPlan(trx, s.ctx, { plan: "suspended", actor: "operator", now: pausedAt }, hooks);
 
-      const duringPause = new Date(pausedAt.getTime() + 60 * HOUR);
+      const duringPause = new Date(pausedAt.getTime() + 60 * HOUR_MS);
       const job = createExpiryJob({
         db: trx,
         now: () => duringPause,
@@ -250,7 +250,7 @@ describe("resume of a suspended organization (F079)", () => {
       const unseen = await waiting(trx, s);
       const job = createExpiryJob({
         db: trx,
-        now: () => new Date(pausedAt.getTime() + 60 * HOUR),
+        now: () => new Date(pausedAt.getTime() + 60 * HOUR_MS),
         hooks: noDelegationHooks,
         uidplus: async () => true,
       });
@@ -300,8 +300,8 @@ describe("resume of a suspended organization (F079)", () => {
           .where("org_id", "=", s.orgId)
           .where("dedup_key", "=", `approval:${key}`)
           .execute();
-      await claim(stale.sendId, new Date(resumedAt.getTime() - SENDER_STALE_MS - 60_000));
-      await claim(live.sendId, new Date(resumedAt.getTime() - 60_000));
+      await claim(stale.sendId, new Date(resumedAt.getTime() - SENDER_STALE_MS - MINUTE_MS));
+      await claim(live.sendId, new Date(resumedAt.getTime() - MINUTE_MS));
 
       await setOrgPlan(trx, s.ctx, { plan: "active", actor: "operator", now: resumedAt }, hooks);
 

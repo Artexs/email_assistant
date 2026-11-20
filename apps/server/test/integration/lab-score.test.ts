@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import type { LiveRunPlan, Slot } from "@ea/core";
+import { MINUTE_MS } from "@ea/core";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import type { Transaction } from "kysely";
 
@@ -188,7 +189,7 @@ describe("joinRun (stage 12 tests 6 to 8)", () => {
     await withRollback(db, async (trx) => {
       const org = await createOrgWithMailbox(trx);
       const [a] = inbound as [Slot];
-      const emailId = await mailOf(trx, org, a.id, "info", new Date(T0.getTime() - 60_000));
+      const emailId = await mailOf(trx, org, a.id, "info", new Date(T0.getTime() - MINUTE_MS));
       await trx
         .insertInto("triage_results")
         .values({
@@ -197,7 +198,7 @@ describe("joinRun (stage 12 tests 6 to 8)", () => {
           category: "urgent",
           confidence: 0.9,
           reason_code: "direct_request",
-          created_at: new Date(T0.getTime() + 60_000),
+          created_at: new Date(T0.getTime() + MINUTE_MS),
         })
         .execute();
       // An older row inserted after the newest one must not win: the order is by time, not by insert order.

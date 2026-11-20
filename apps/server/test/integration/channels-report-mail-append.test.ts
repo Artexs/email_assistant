@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, spyOn, test } from "bun:test";
 import type { Transaction } from "kysely";
 import { simpleParser, type AddressObject } from "mailparser";
@@ -60,7 +61,6 @@ afterEach(() => {
   for (const spy of spies) spy.mockRestore();
 });
 
-const HOUR = 3_600_000;
 // 11:00 in Europe/Warsaw (UTC+1): outside the default quiet hours 22:00-07:00.
 const T = new Date("2026-11-17T10:00:00Z");
 const BASE = "https://app.example.test";
@@ -139,7 +139,7 @@ async function mailRow(
     const id = await insertDigest(trx, b.ctx, {
       userId: b.userId,
       slotKey: `${new Date(Date.UTC(2026, 0, 1 + slotCount++)).toISOString().slice(0, 10)}T08:00`,
-      periodStart: new Date(createdAt.getTime() - 24 * HOUR),
+      periodStart: new Date(createdAt.getTime() - DAY_MS),
       periodEnd: createdAt,
     });
     digestId = id ?? undefined;
@@ -233,7 +233,7 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
         .executeTakeFirstOrThrow();
       expect(digest.sent_at?.toISOString()).toBe(T.toISOString());
       // A second run appends nothing more.
-      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      await sender(trx, b, new Date(T.getTime() + MINUTE_MS)).run();
       expect(b.appended).toHaveLength(1);
     });
   });
@@ -269,7 +269,7 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
         createdAt: T,
         nextAttemptAt: T,
       });
-      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      await sender(trx, b, new Date(T.getTime() + MINUTE_MS)).run();
       expect(await stateOf(trx, other ?? "")).toMatchObject({ status: "failed", error_code: "bad_view" });
       expect(b.appended).toHaveLength(2);
     });
@@ -303,12 +303,12 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
       }
       const stuck = await box(trx, { status: "paused" });
       const old = await mailRow(trx, stuck);
-      await sender(trx, stuck, new Date(T.getTime() + 25 * HOUR)).run();
+      await sender(trx, stuck, new Date(T.getTime() + 25 * HOUR_MS)).run();
       expect(await stateOf(trx, old)).toMatchObject({ status: "failed", error_code: "expired", locked_at: null });
       expect(stuck.appended).toHaveLength(0);
       // A younger row of the same mailbox waits.
-      const young = await mailRow(trx, stuck, { createdAt: new Date(T.getTime() + 2 * HOUR) });
-      await sender(trx, stuck, new Date(T.getTime() + 25 * HOUR)).run();
+      const young = await mailRow(trx, stuck, { createdAt: new Date(T.getTime() + 2 * HOUR_MS) });
+      await sender(trx, stuck, new Date(T.getTime() + 25 * HOUR_MS)).run();
       expect(await stateOf(trx, young)).toMatchObject({ status: "pending", error_code: null });
     });
   });
@@ -378,8 +378,8 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
   test("a network error: the row backs off and counts an attempt; the next row of the mailbox waits; one message in the end", async () => {
     await withRollback(db, async (trx) => {
       const b = await box(trx);
-      const first = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 2 * 60_000) });
-      const second = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 60_000) });
+      const first = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 2 * MINUTE_MS) });
+      const second = await mailRow(trx, b, { createdAt: new Date(T.getTime() - MINUTE_MS) });
       b.fake.failOn("appendMessage", new SoftError("lost connection"));
       await sender(trx, b).run();
       const hit = await stateOf(trx, first);
@@ -403,7 +403,7 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
       b.fake.failOn("appendMessage", new HardError("NO [OVERQUOTA]"), 5);
       await sender(trx, b).run();
       expect(await stateOf(trx, id)).toMatchObject({ status: "failed", error_code: "append_refused", locked_at: null });
-      await sender(trx, b, new Date(T.getTime() + HOUR)).run();
+      await sender(trx, b, new Date(T.getTime() + HOUR_MS)).run();
       expect(b.appended).toHaveLength(1);
     });
   });
@@ -432,7 +432,7 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
       });
       const id = await mailRow(trx, b);
       for (let attempt = 0; attempt < 5; attempt += 1) {
-        await sender(trx, b, new Date(T.getTime() + attempt * HOUR)).run();
+        await sender(trx, b, new Date(T.getTime() + attempt * HOUR_MS)).run();
       }
       expect(await stateOf(trx, id)).toMatchObject({ status: "failed", error_code: "too_many_errors" });
     });
@@ -460,7 +460,7 @@ describe("step 1: the sender APPENDs a mail row into the INBOX", () => {
       const id = await mailRow(trx, b);
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .set({ status: "sending", locked_at: new Date(T.getTime() - 10 * MINUTE_MS) })
         .where("id", "=", id)
         .execute();
       await sender(trx, b).run();
@@ -521,8 +521,8 @@ describe("the Telegram sender leaves mail rows alone and the mail sender leaves 
   test("a mail row older than 24 h expires; a younger one stays pending; a Telegram row is left alone", async () => {
     await withRollback(db, async (trx) => {
       const b = await box(trx, { status: "paused" });
-      const old = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 25 * HOUR) });
-      const young = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 23 * HOUR) });
+      const old = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 25 * HOUR_MS) });
+      const young = await mailRow(trx, b, { createdAt: new Date(T.getTime() - 23 * HOUR_MS) });
       const telegram = await insertOutbox(trx, b.ctx, {
         userId: b.userId,
         kind: "weekly_report",
@@ -530,7 +530,7 @@ describe("the Telegram sender leaves mail rows alone and the mail sender leaves 
         mailboxId: b.mailboxId,
         view: {},
         locale: "en",
-        createdAt: new Date(T.getTime() - 25 * HOUR),
+        createdAt: new Date(T.getTime() - 25 * HOUR_MS),
         nextAttemptAt: T,
       });
       await sender(trx, b).run();
@@ -553,7 +553,7 @@ describe("one login per mailbox per run (review TG1, N2)", () => {
   async function threeRows(trx: Transaction<DB>, b: Box): Promise<string[]> {
     const ids: string[] = [];
     for (let i = 0; i < 3; i += 1) {
-      ids.push(await mailRow(trx, b, { createdAt: new Date(T.getTime() - (3 - i) * 60_000) }));
+      ids.push(await mailRow(trx, b, { createdAt: new Date(T.getTime() - (3 - i) * MINUTE_MS) }));
     }
     return ids;
   }
@@ -642,10 +642,10 @@ describe("a retry looks for the message first (review N1)", () => {
       // The mark never landed: the row is `sending` with an old lock, as a crash leaves it.
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", sent_at: null, locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .set({ status: "sending", sent_at: null, locked_at: new Date(T.getTime() - 10 * MINUTE_MS) })
         .where("id", "=", id)
         .execute();
-      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      await sender(trx, b, new Date(T.getTime() + MINUTE_MS)).run();
       expect(b.appended).toHaveLength(1);
       expect((await b.fake.fetchAbove("INBOX", 0)).map((meta) => meta.messageId)).toEqual([messageIdOf(id, b)]);
       expect(await stateOf(trx, id)).toMatchObject({ status: "sent", attempts: 1 });
@@ -687,7 +687,7 @@ describe("a retry looks for the message first (review N1)", () => {
       expect(await stateOf(trx, first)).toMatchObject({ status: "sent", attempts: 0 });
       const retried = await mailRow(trx, b);
       await trx.updateTable("outbox").set({ attempts: 1 }).where("id", "=", retried).execute();
-      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      await sender(trx, b, new Date(T.getTime() + MINUTE_MS)).run();
       expect(b.fake.calls).toContain("searchSinceIn");
       expect(b.appended).toHaveLength(2);
       expect(await stateOf(trx, retried)).toMatchObject({ status: "sent" });
@@ -712,7 +712,7 @@ describe("a retry looks for the message first (review N1)", () => {
       const id = await mailRow(trx, b);
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", attempts: 4, locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .set({ status: "sending", attempts: 4, locked_at: new Date(T.getTime() - 10 * MINUTE_MS) })
         .where("id", "=", id)
         .execute();
       await sender(trx, b).run();
@@ -722,10 +722,10 @@ describe("a retry looks for the message first (review N1)", () => {
       const other = await mailRow(trx, b);
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", attempts: 0, locked_at: new Date(T.getTime() - 10 * 60_000) })
+        .set({ status: "sending", attempts: 0, locked_at: new Date(T.getTime() - 10 * MINUTE_MS) })
         .where("id", "=", other)
         .execute();
-      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      await sender(trx, b, new Date(T.getTime() + MINUTE_MS)).run();
       expect(await stateOf(trx, other)).toMatchObject({ status: "sent", attempts: 1 });
     });
   });
@@ -751,10 +751,10 @@ describe("a retry looks for the message first (review N1)", () => {
       await sender(trx, b).run();
       await trx
         .updateTable("outbox")
-        .set({ status: "sending", sent_at: null, locked_at: new Date(T.getTime() - HOUR) })
+        .set({ status: "sending", sent_at: null, locked_at: new Date(T.getTime() - HOUR_MS) })
         .where("id", "=", id)
         .execute();
-      await sender(trx, b, new Date(T.getTime() + 60_000)).run();
+      await sender(trx, b, new Date(T.getTime() + MINUTE_MS)).run();
       expect(await stateOf(trx, id)).toMatchObject({ status: "sent" });
       expect(seen).toEqual(["appendMessage", "close", "searchSinceIn", "fetchByUidsIn", "close"]);
     });
