@@ -8,6 +8,15 @@ import { sevenDayLimitProblems } from "@ea/core";
 import { REPO_URL, repoRoot } from "../in-place";
 import { claimProblems, parseLedger, type PublicClaim, proofUrl, publicClaims } from "./claims";
 
+// The two security pages and the heading of the section that says what the product does not promise.
+const PAGES = [
+  { file: "../content/docs/security.mdx", heading: "## What this product does not promise" },
+  { file: "../content/docs/pl/security.mdx", heading: "## Czego ten produkt nie obiecuje" },
+];
+function readPage(file: string): string {
+  return readFileSync(join(import.meta.dir, file), "utf8");
+}
+
 const LEDGER = `# Claims
 
 | #    | Claim | Source | Condition |
@@ -214,11 +223,75 @@ describe("the public claims of the security page", () => {
       claim.condition?.pl ?? "",
     ]);
     expect(sevenDayLimitProblems(claimTexts)).toEqual([]);
-    const page = readFileSync(join(import.meta.dir, "../content/docs/security.mdx"), "utf8");
-    expect(sevenDayLimitProblems(page.split("\n"))).toEqual([]);
+    for (const { file } of PAGES) {
+      expect(sevenDayLimitProblems(readPage(file).split("\n"))).toEqual([]);
+    }
+  });
+
+  test("the claim ai-provider-receives cites the context row and the history-check row, with the numbers", () => {
     const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
-    expect(receives?.text.en).toMatch(/older than 7 days/);
-    expect(receives?.text.en).toMatch(/thread as context/);
-    expect(receives?.text.pl).toMatch(/kontekst/);
+    expect(receives?.ledger).toContain("C261");
+    expect(receives?.ledger).toContain("C262");
+    expect(receives?.text.en).toMatch(/500 characters/);
+    expect(receives?.text.en).toMatch(/can be older than 7 days/);
+    expect(receives?.text.pl).toMatch(/500 znaków/);
+  });
+
+  // The shared 7-day scan reads a whole text, so another sentence with "context" and "classif" would hide a dropped one: each sentence is pinned here.
+  test("the claim ai-provider-receives keeps each sentence of what is sent, in both languages", () => {
+    const receives = publicClaims.find((claim) => claim.id === "ai-provider-receives");
+    const { en, pl } = receives?.text ?? { en: "", pl: "" };
+    // The 7-day rule and its exceptions: the one-off backfill and the history check.
+    expect(en).toMatch(
+      /does not classify a mail that is older than 7 days, unless the operator loads old mail once or the optional history check runs/
+    );
+    expect(pl).toMatch(
+      /nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii/
+    );
+    // A context mail can be older than 7 days.
+    expect(en).toMatch(/can be older than 7 days/);
+    expect(pl).toMatch(/może być starsza niż 7 dni/);
+    // The history check: size, window, off by default.
+    expect(en).toMatch(/off by default, classifies up to 500 mails of the last 30 days/);
+    expect(pl).toMatch(/domyślnie wyłączona, klasyfikuje do 500 wiadomości z ostatnich 30 dni/);
+    // Up to three earlier mails of the thread go along as context.
+    expect(en).toMatch(/up to three earlier mails of the same thread as context/);
+    expect(pl).toMatch(/do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst/);
+    // The operator can start the check by hand, also with the feature off.
+    expect(en).toMatch(
+      /operator of the install can also start that check by hand, and it then runs when the feature is off/
+    );
+    expect(pl).toMatch(
+      /Operator instalacji może też uruchomić tę kontrolę ręcznie, a wtedy działa ona także przy wyłączonej funkcji/
+    );
+    // The sender marks.
+    expect(en).toMatch(/whether the sender is on the whitelist or the VIP list or looks automatic/);
+    expect(pl).toMatch(/czy nadawca jest na białej liście lub liście VIP albo wygląda na automatyczny/);
+  });
+
+  test("the short-list line of the claim names the two exceptions of the 7-day rule, in both languages", () => {
+    const [en, pl] = PAGES.map(
+      ({ file }) =>
+        readPage(file)
+          .split("\n")
+          .find((line) => line.includes("#claim-ai-provider-receives")) ?? ""
+    );
+    expect(en).toMatch(/unless the operator loads old mail once or the optional history check runs/);
+    expect(pl).toMatch(
+      /chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii/
+    );
+  });
+
+  test("the section of what the product does not promise holds no line about the 7-day limit, in either language", () => {
+    for (const { file, heading } of PAGES) {
+      const lines = readPage(file).split("\n");
+      const start = lines.findIndex((line) => line.trim() === heading);
+      expect(start).toBeGreaterThanOrEqual(0);
+      const rest = lines.slice(start + 1);
+      const end = rest.findIndex((line) => line.startsWith("## "));
+      const section = end === -1 ? rest : rest.slice(0, end);
+      expect(section.length).toBeGreaterThan(0);
+      expect(section.filter((line) => /\b7\b|siedem|seven/i.test(line))).toEqual([]);
+    }
   });
 });

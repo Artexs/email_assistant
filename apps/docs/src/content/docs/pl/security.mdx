@@ -11,7 +11,7 @@ capabilities:
   - account-data
   - actions-and-undo
   - digest-and-notices
-sourceHash: "6fb1d43da7843106"
+sourceHash: "ca5d06ebf2d470d1"
 ---
 
 import ClaimsTable from "../../../components/ClaimsTable.astro";
@@ -24,7 +24,7 @@ Twierdzenia, którego żaden plik nie potwierdza, na tej stronie nie ma. Sekcja 
 ## Krótka lista
 
 - [Asystent nigdy sam nie wysyła wiadomości z Twojej skrzynki](#claim-never-sends-alone): właściciel zatwierdza każdy szkic.
-- [Co dostaje dostawca AI](#claim-ai-provider-receives): treść, temat i nadawcę wiadomości oraz do trzech wcześniejszych wiadomości z jej wątku jako kontekst. Asystent nie klasyfikuje wiadomości starszej niż 7 dni, ale wiadomości kontekstowe mogą być starsze.
+- [Co dostaje dostawca AI](#claim-ai-provider-receives): treść, temat i nadawcę wiadomości oraz do trzech wcześniejszych wiadomości z jej wątku jako kontekst. Asystent nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii; wiadomości kontekstowe mogą być starsze.
 - [Co dostaje Telegram](#claim-telegram): tylko pozycje, które wymienia tekst zgody.
 - [Kopie zapasowe](#claim-backups): szyfrowane, zanim opuszczą serwer.
 - [Eksport i usunięcie](#claim-export-and-delete): operator eksportuje, usuwa i kasuje dane na prośbę.
@@ -55,7 +55,6 @@ GitHub hostuje wyłącznie tę publiczną stronę. Nie dostaje od asystenta żad
 - Brak przeglądu prawnego. Prawnik nie sprawdził tekstów prawnych produktu.
 - Brak przetwarzania AI wyłącznie w UE jako ustawienia domyślnego. Domyślna konfiguracja wysyła treść wiadomości do dostawcy AI bez ustawienia „tylko UE”.
 - Brak szyfrowania end-to-end powiadomień Telegrama. Telegram może przeczytać to, co wysyła do niego asystent.
-- Limit 7 dni obejmuje wiadomość, którą asystent klasyfikuje, a nie kontekst wątku. Do trzech wcześniejszych wiadomości z tego samego wątku trafia do AI jako kontekst. Mogą być starsze niż 7 dni. Każda zawiera nadawcę, temat i do 500 znaków treści.
 - Szkice mogą być błędne. Zatwierdzasz każdy szkic, zanim asystent go wyśle.
 - Fakty, które pochodzą tylko od dostawcy AI:
   - Dostawca podaje, że nie używa danych ze swojego płatnego API do trenowania modeli ([jego strona o kontroli danych](https://platform.openai.com/docs/guides/your-data), stan na 2026-11-17). Ten projekt nie sprawdził umowy.

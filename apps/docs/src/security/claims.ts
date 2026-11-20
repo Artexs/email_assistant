@@ -45,13 +45,15 @@ export const publicClaims: readonly PublicClaim[] = [
   {
     id: "ai-provider-receives",
     text: {
-      en: 'This install uses OpenAI as the AI model. For each mail that it classifies, the assistant sends the text, subject and sender, the delegates, and up to three earlier mails of the same thread as context. It does not classify a mail that is older than 7 days, unless the operator loads old mail once. The 7-day limit is about the mail that the assistant classifies. The section "What this product does not promise" says what goes along as thread context.',
-      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat i nadawcę, wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę. Limit 7 dni dotyczy klasyfikowanej wiadomości. Sekcja „Czego ten produkt nie obiecuje” mówi, co trafia do AI jako kontekst wątku.",
+      en: "This install uses OpenAI as the AI model. For each mail that it classifies, the assistant sends the text, subject, sender, To and Cc addresses and date, whether the sender is on the whitelist or the VIP list or looks automatic, the delegates, and up to three earlier mails of the same thread as context. Each context mail carries its sender, subject, date and up to 500 characters of its body, and it can be older than 7 days. The assistant does not classify a mail that is older than 7 days, unless the operator loads old mail once or the optional history check runs. That check, off by default, classifies up to 500 mails of the last 30 days when it is turned on, when a mailbox is connected, on request and after a change of the AI model. The operator of the install can also start that check by hand, and it then runs when the feature is off.",
+      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat, nadawcę, adresy Do i DW oraz datę, informację, czy nadawca jest na białej liście lub liście VIP albo wygląda na automatyczny, wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Każda wiadomość kontekstowa zawiera nadawcę, temat, datę i do 500 znaków treści, a może być starsza niż 7 dni. Asystent nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii. Ta kontrola, domyślnie wyłączona, klasyfikuje do 500 wiadomości z ostatnich 30 dni po jej włączeniu, po podłączeniu skrzynki, na żądanie i po zmianie modelu AI. Operator instalacji może też uruchomić tę kontrolę ręcznie, a wtedy działa ona także przy wyłączonej funkcji.",
     },
-    ledger: ["C030", "C031", "C032"],
+    ledger: ["C030", "C031", "C032", "C261", "C262"],
     proofs: [
       "docs/capabilities/triage.md",
       "docs/capabilities/sync.md",
+      "apps/server/src/modules/mail/repo/lookup.ts",
+      "docs/capabilities/trust.md",
       "docs/decisions/0015-llm-provider-switch.md",
       "docs/architecture.md",
     ],
