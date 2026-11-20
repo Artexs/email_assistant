@@ -527,21 +527,21 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "a draft (original) is claimed",
     then: "one of its sends must be `awaiting_approval`; else the draft ends `expired` (`send_closed`)",
     enforcedBy: ["sendWaits (repo/claims.ts)", "drafts.ts (E8)", "expiry.ts (E14c)"],
-    test: "actions-repo.test.ts › 3: a draft waits for its send to wait too; actions-drafts.test.ts › a dead send: no APPEND, the draft expires with send_closed",
+    test: "actions-repo.test.ts › 3: a draft waits for its send to wait too; actions-drafts-apply.test.ts › a dead send: no APPEND, the draft expires with send_closed",
   },
   {
     id: "P3",
     when: "a draft ends `failed`",
     then: "its `awaiting_approval` sends expire (`draft_missing`)",
     enforcedBy: ["drafts.ts", "listExpiredApprovals (hourly job)"],
-    test: "actions-drafts.test.ts › three hard APPEND errors fail the draft and expire its send; actions-expiry.test.ts › (3) failed draft: draft_missing",
+    test: "actions-drafts-apply.test.ts › three hard APPEND errors fail the draft and expire its send; actions-expiry.test.ts › (3) failed draft: draft_missing",
   },
   {
     id: "P4",
     when: "a send ends (`applied`, `rejected`, `expired`)",
     then: "its draft: `ready` -> `expired`; `applied` with UIDPLUS -> a reverse row; the applied reverse row -> the draft `undone`",
     enforcedBy: ["closeDraftOfSend (expiry.ts)", "send-close.ts", "send-finish.ts", "drafts.ts"],
-    test: "actions-send.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts.test.ts › the reverse row removes the draft and marks the original undone with the reason; actions-drafts.test.ts › a reverse row with the reason expired marks the original undone with that reason",
+    test: "actions-send.test.ts › (1) the happy path; actions-approvals.test.ts › rejected, a reverse draft row; actions-drafts-remove.test.ts › the reverse row removes the draft and marks the original undone with the reason; actions-drafts-remove.test.ts › a reverse row with the reason expired marks the original undone with that reason",
   },
   {
     id: "P5",
@@ -555,7 +555,7 @@ export const PAIR_RULES: readonly PairRule[] = [
     when: "a reverse row is `applied`",
     then: "its original goes `applied` -> `undone`",
     enforcedBy: ["markUndone in apply.ts", "markUndone in drafts.ts"],
-    test: "actions-apply.test.ts › a reverse flag removes the flag and marks the original undone; actions-move.test.ts › (8)",
+    test: "actions-apply.test.ts › a reverse flag removes the flag and marks the original undone; actions-move-reverse.test.ts › (8)",
   },
   {
     id: "P7",

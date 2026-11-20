@@ -141,9 +141,14 @@ actions.status:  (code map: apps/server/src/modules/actions/transitions.ts; the 
 
 ## Tests
 
-- `apps/server/test/integration/actions-committer.test.ts`
+- `apps/server/test/integration/actions-committer-job.test.ts`
+- `apps/server/test/integration/actions-committer-refusals.test.ts`
+- `apps/server/test/integration/actions-committer-sends.test.ts`
+- `apps/server/test/integration/actions-committer-undo-move.test.ts`
 - `apps/server/test/integration/actions-apply.test.ts`
-- `apps/server/test/integration/actions-move.test.ts`
+- `apps/server/test/integration/actions-move-ensure.test.ts`
+- `apps/server/test/integration/actions-move-reverse.test.ts`
+- `apps/server/test/integration/actions-move-rescue.test.ts`
 - `apps/server/test/integration/actions-undo.test.ts`
 - `apps/server/test/integration/actions-transitions.test.ts`
 - `apps/server/test/integration/actions-expiry.test.ts`

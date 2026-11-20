@@ -319,7 +319,8 @@ Rows of `actions` with `type` `create_draft` or `send` (the status flow is in `a
 
 ## Tests
 
-- `apps/server/test/integration/actions-drafts.test.ts`
+- `apps/server/test/integration/actions-drafts-apply.test.ts`
+- `apps/server/test/integration/actions-drafts-remove.test.ts`
 - `apps/server/test/integration/actions-send.test.ts`
 - `apps/server/test/integration/actions-approvals.test.ts`
 - `apps/server/test/integration/actions-edit.test.ts`
