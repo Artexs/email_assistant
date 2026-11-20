@@ -34,7 +34,7 @@ Data and method: `data/` (static scan, JUnit timings, coverage, core mutation ru
 
 **Core mutation score:** 86.45 % (21,250 mutants: 11,535 killed, 76 timeout, 1,483 survived, 337 no coverage, 7,819 error or ignored). Source: `data/mutation-summary.md`.
 
-**Open branches.** 13 `limen/*` branches are unmerged; 10 change test files (33 files). Two groups have rows in those files: `G04` (1 row) and `G09` (4 rows), 5 rows in all. They wait for phase B (Cut stage rule 3).
+**Open branches.** 13 `limen/*` branches are unmerged; 10 change test files (33 files). Two groups have rows in those files: `G04` (1 row) and `G09` (3 rows), 4 rows in all. They wait for phase B (Cut stage rule 3). One more row (`G09`, `time-rewrite-check.test.ts:43`) is stale: its file was deleted on master after the review (checked at master `17497c5a`); no other key of the 101 rows changed its file.
 
 **Checks of this stage.** Kept-key conflicts: 0 (no `Kept key` of a `DELETE-DUP` or `MOVE-TO-UNIT` row is a key of a cut row). Pairs file: `data/unit-int-pairs.tsv` holds only its header, and stage 06 wrote no `int-unit-pairs.tsv`, so nothing merged; each unit twin is named in the `Kept key` and `Evidence` of its row.
 
@@ -52,7 +52,7 @@ Columns: `Rows` = items; `Lines` = test lines the action removes (estimate for t
 | G06 | `FIX-NEVER-RUNS` | F6 | `apps/server/test/integration` | 2 | 0 | 0 s | [`int/e2e-seed.test.ts:91`](review-int-e2e.md#L37) | `describe.skipIf` on the E2E database URLs: the `ci` job sets none, the `e2e` job sets them but runs only Playwright. The 2 cases run nowhere. Proposal: run the file in the `e2e` job, or delete it. | |
 | G07 | `FIX-NEVER-RUNS` | K3 | `tools/mail-oauth-spike` | 20 | 0 | 0 s | [`probe.test.ts:54`](review-core-web-tools.md#L803) | `test:unit` does not list `tools/mail-oauth-spike`, so CI never runs its tests. They pass now (23 of 23, 0.45 s). 20 rows guard secrets, addresses and send targets (K3). Proposal: add the folder to `test:unit`, or delete the kit with its tests. Same decision as G08. | |
 | G08 | `FIX-NEVER-RUNS` | none | `tools/mail-oauth-spike` | 3 | 0 | 0 s | [`probe.test.ts:146`](review-core-web-tools.md#L808) | The 3 rows of the same kit without a K rule (timeout, argument parsing, a large `LIST` reply). `spec/quality/2026-11-20-pass-2.md` already asks the owner to keep or drop the spike. Answer G07 and G08 alike. | |
-| G09 | `REWRITE-WEAK` | none | `apps/server/src` | 21 | 0 | 0 s | [`deploy-logging.test.ts:372`](review-server-unit.md#L51) | The case checks too little (6 have no `expect`, 12 use only `toBeDefined`, `toBeTruthy`, `not.toThrow` or `not.toBeNull`, 3 are regexes over source text). Each row holds the exact assertion to write; no case is removed. 4 rows wait for open branches: `config.test.ts` ×3 and `time-rewrite-check.test.ts:43` (that tool and test are deleted by an open branch, so reject that row). 3 rows (`main.test.ts:42`, `:52`, `:61`) need a new seam in product code: see the prose-pin questions below. | |
+| G09 | `REWRITE-WEAK` | none | `apps/server/src` | 21 | 0 | 0 s | [`deploy-logging.test.ts:372`](review-server-unit.md#L51) | The case checks too little (6 have no `expect`, 12 use only `toBeDefined`, `toBeTruthy`, `not.toThrow` or `not.toBeNull`, 3 are regexes over source text). Each row holds the exact assertion to write; no case is removed. 3 rows wait for an open branch (`config.test.ts` ×3). 1 row is stale: `time-rewrite-check.test.ts:43` is gone, because the time-spelling ticket landed on master and deleted that tool and its test; reject it in section 3. 3 rows (`main.test.ts:42`, `:52`, `:61`) need a new seam in product code: see the prose-pin questions below. | |
 | G10 | `REWRITE-WEAK` | none | `packages/core`, `tools/fake-telegram`, `apps/server/test/integration` | 7 | 0 | 0 s | [`notices/encode.test.ts:100`](review-core-web-tools.md#L156) | Same: `not.toThrow` or no `expect` only (2 core, 1 fake-telegram, 4 int). Each row holds the exact assertion. | |
 
 **Advice (a recommendation, not a decision).** `ok` for G01, G02, G03, G04, G05, G09 (not the three `main.test.ts` rows) and G10: every row names its evidence and keeps its inputs. For G06, G07 and G08 the owner decides whether to run or delete: this is a product choice, so the audit proposes no default. A cut stage re-checks the proof of `plan.md` D9 before any group is changed.
@@ -65,9 +65,9 @@ Columns: `Rows` = items; `Lines` = test lines the action removes (estimate for t
 
 ## 3. Reject list
 
-Name single `file:line` keys that stay untouched inside an `ok` group. The list starts empty.
+Name single `file:line` keys that stay untouched inside an `ok` group. The list starts with one stale key.
 
-- (empty)
+- `apps/server/src/scripts/time-rewrite-check.test.ts:43` (G09): the file no longer exists; the author of this report put it here so that no cut stage looks for it.
 
 ## 4. Gaps and follow-up proposals
 
