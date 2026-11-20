@@ -1,4 +1,4 @@
-import { TERMS_HISTORY } from "@ea/core/web";
+import { nextLegalVersion, TERMS_HISTORY, TERMS_VERSION } from "@ea/core/web";
 import { describe, expect, test } from "bun:test";
 
 import { legalTextParts, legalTextsDigest } from "./legal-checks";
@@ -30,9 +30,10 @@ describe("the version guard", () => {
     const last = TERMS_HISTORY[TERMS_HISTORY.length - 1];
     const digest = legalTextsDigest(legalTextParts());
     // A mismatch: a legal text, a registry, a legal_* key or tg_consent_text changed since the last entry.
+    const next = nextLegalVersion(TERMS_VERSION, new Date().toISOString().slice(0, 10));
     expect(
       last?.sha256,
-      `append a new TERMS_HISTORY entry in packages/core/src/web/terms.ts (digest of the current texts: ${digest})`
+      `append { version: "${next}", sha256: "${digest}" } to TERMS_HISTORY in packages/core/src/web/terms.ts. When tg_consent_text changed, TELEGRAM_CONSENT_VERSION moves too (docs/code-patterns.md, the consent version).`
     ).toBe(digest);
   });
 });

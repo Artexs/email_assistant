@@ -1,13 +1,14 @@
 import { z } from "./zod";
 
 export interface TermsHistoryEntry {
-  /** `YYYY-MM-DD` (UTC date of the change), `-2`, `-3`, … for a second change on the same day. */
+  /** The format and the parser are in `legal-version.ts`: new entries use `YYYY-MM-DD` or `YYYY-MM-DD.N`. The hyphen entries (`2026-11-18-2`) are the legacy spelling of the same counter. */
   version: string;
   /** SHA-256 of the legal texts and registries at this version (`legalTextsDigest` in `apps/web/src/lib/legal-checks.ts`); `null` for the stub era. */
   sha256: string | null;
 }
 
-// Append-only. A change of a legal text (the six pages, the two registries, the `legal_*` keys, `tg_consent_text`) needs a
+// Append-only. The format is in `legal-version.ts`: new entries use the dot (`YYYY-MM-DD.2`). The two hyphen entries are the legacy
+// spelling of `.2`; they stay as written because stored acceptance rows hold these strings. A change of a legal text (the six pages, the two registries, the `legal_*` keys, `tg_consent_text`) needs a
 // new entry: the unit test `apps/web/src/lib/legal-version.test.ts` fails until the last digest matches the files. A new
 // version makes every member accept the terms again at the next sign-in (the version guard of
 // `apps/web/src/lib/legal-version.test.ts`).
