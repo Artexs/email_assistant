@@ -41,8 +41,8 @@ export const subprocessors: readonly Subprocessor[] = [
       pl: "Model AI, który sortuje pocztę i pisze szkice odpowiedzi",
     },
     dataReceived: {
-      en: "mail text, subject, sender for triage and drafts; for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization",
-      pl: "treść, temat i nadawca wiadomości do sortowania i szkiców; do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji",
+      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender, and for a reply draft also the display name, signature and writing style of the mailbox, the one line of instruction that the member typed and the time zone of the organization",
+      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca, a do szkicu odpowiedzi także nazwa wyświetlana, podpis i styl pisania skrzynki, jedna linia polecenia wpisana przez członka organizacji i strefa czasowa organizacji",
     },
     location: {
       en: "No EU region is used (standard endpoint, ADR 0015). <to confirm: country>",
@@ -60,8 +60,8 @@ export const subprocessors: readonly Subprocessor[] = [
       pl: "Model AI, który sortuje pocztę i pisze szkice odpowiedzi",
     },
     dataReceived: {
-      en: "mail text, subject, sender for triage and drafts",
-      pl: "treść, temat i nadawca wiadomości do sortowania i szkiców",
+      en: "for triage: mail text, subject, sender, To and Cc addresses, date, sender marks (whitelist, VIP, looks automatic), delegates and up to three earlier thread mails; for drafts: mail text, subject, sender",
+      pl: "do sortowania: treść, temat, nadawca, adresy Do i DW, data, oznaczenia nadawcy (biała lista, VIP, wygląda na automatyczny), wykonawcy i do trzech wcześniejszych wiadomości wątku; do szkiców: treść, temat, nadawca",
     },
     location: {
       en: "No EU location (docs/architecture.md §6). <to confirm: country>",
