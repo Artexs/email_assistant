@@ -16,14 +16,6 @@
     "apps/server/src/scripts/mailbox-seed.ts",
     "apps/server/src/scripts/mailbox-signals.ts"
   ],
-  "delegation": [
-    "apps/server/src/scripts/delegates.ts",
-    "apps/server/src/scripts/delegations.ts",
-    "apps/server/src/scripts/digest-times.ts",
-    "apps/server/src/scripts/reply-check-copy.ts",
-    "apps/server/src/scripts/rules.ts",
-    "apps/server/src/scripts/trust-history-check.ts"
-  ],
   "eval": [
     "apps/server/src/scripts/eval.ts",
     "apps/server/src/scripts/lib/eval-drafter.ts",

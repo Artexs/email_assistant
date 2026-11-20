@@ -1,126 +1,53 @@
-import { parseArgs } from "node:util";
-
-import {
-  isValidSenderPattern,
-  storedAddressForm,
-  SENDER_RULE_LIMIT,
-  senderRuleKinds,
-  type SenderRuleKind,
-} from "@ea/core";
-import { z } from "zod";
+import { SENDER_RULE_LIMIT } from "@ea/core";
 
 import { addSenderRule, listSenderRules } from "../modules/config";
-import { createCliOutput } from "../platform/cli";
-import { loadConfig } from "../platform/config";
-import { assertAppRole, createDb } from "../platform/db";
-import { describeError } from "../platform/errors";
+import { runCli, type CliRawOutput, type CliSpec } from "../platform/cli";
+import type { Db } from "../platform/db";
 
-const cli = createCliOutput("rules");
-
-const usage = [
-  `usage: bun run rules:add --org-id <uuid> [--mailbox-id <uuid>] --pattern <address or domain> --kind ${senderRuleKinds.join("|")}`,
-  "       bun run rules:list --org-id <uuid> [--mailbox-id <uuid>]",
-].join("\n");
+import { withDb } from "./lib/with-db";
+import { cliDescriptions, parseRulesArgs, type RulesCommand } from "./rules-args";
 
 // No mailbox has this id: `listSenderRules` then returns the org-wide rules only.
 const noMailboxId = "00000000-0000-0000-0000-000000000000";
 
-type Options =
-  | { command: "add"; orgId: string; mailboxId: string | null; pattern: string; kind: SenderRuleKind }
-  | { command: "list"; orgId: string; mailboxId: string | null };
-
-function readOptions(): Options | undefined {
-  try {
-    const { values, positionals } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        "mailbox-id": { type: "string" },
-        pattern: { type: "string" },
-        kind: { type: "string" },
-      },
-      allowPositionals: true,
-      strict: true,
-    });
-    const uuid = z.uuid();
-    const orgId = values["org-id"];
-    const mailboxId = values["mailbox-id"];
-    if (orgId === undefined || !uuid.safeParse(orgId).success) return undefined;
-    if (mailboxId !== undefined && !uuid.safeParse(mailboxId).success) return undefined;
-    if (positionals.length !== 1) return undefined;
-
-    if (positionals[0] === "list") {
-      if (values.pattern !== undefined || values.kind !== undefined) return undefined;
-      return { command: "list", orgId, mailboxId: mailboxId ?? null };
-    }
-    if (positionals[0] === "add") {
-      const kind = z.enum(senderRuleKinds).safeParse(values.kind);
-      if (!kind.success || values.pattern === undefined) return undefined;
-      const pattern = storedAddressForm(values.pattern);
-      if (!isValidSenderPattern(pattern)) return undefined;
-      return { command: "add", orgId, mailboxId: mailboxId ?? null, pattern, kind: kind.data };
-    }
-    return undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 // The rules are the user's own settings: they go to stdout for the user, not through `log`.
-function out(line: string): void {
-  process.stdout.write(`${line}\n`);
-}
+async function run(out: CliRawOutput, command: RulesCommand, db: Db): Promise<number> {
+  const ctx = { orgId: command.orgId };
 
-async function main(): Promise<number> {
-  const options = readOptions();
-  if (!options) {
-    cli.fail(usage);
-    return 1;
-  }
-
-  const config = loadConfig();
-  const db = createDb(config.DATABASE_URL);
-  try {
-    await assertAppRole(db);
-    const ctx = { orgId: options.orgId };
-
-    if (options.command === "add") {
-      const result = await addSenderRule(db, ctx, {
-        mailboxId: options.mailboxId,
-        pattern: options.pattern,
-        kind: options.kind,
-        actor: "cli",
-        now: new Date(),
-      });
-      if (result.kind === "added") out(`added ${options.kind} ${options.pattern}`);
-      if (result.kind === "exists") out(`already there: ${options.kind} ${options.pattern}`);
-      if (result.kind === "limit") {
-        cli.fail(`refused: rule limit reached (${SENDER_RULE_LIMIT})`);
-        return 1;
-      }
-      if (result.kind === "mailbox_not_found") {
-        cli.fail("refused: mailbox not found");
-        return 1;
-      }
-      return 0;
+  if (command.command === "add") {
+    const result = await addSenderRule(db, ctx, {
+      mailboxId: command.mailboxId,
+      pattern: command.pattern,
+      kind: command.kind,
+      actor: "cli",
+      now: new Date(),
+    });
+    if (result.kind === "added") out.raw(`added ${command.kind} ${command.pattern}`);
+    if (result.kind === "exists") out.raw(`already there: ${command.kind} ${command.pattern}`);
+    if (result.kind === "limit") {
+      out.fail(`refused: rule limit reached (${SENDER_RULE_LIMIT})`);
+      return 1;
     }
-
-    out(options.mailboxId ? `scope: org-wide + mailbox ${options.mailboxId}` : "scope: org-wide");
-    const rules = await listSenderRules(db, ctx, options.mailboxId ?? noMailboxId);
-    if (rules.length === 0) out("no rules");
-    for (const rule of rules) out(`${rule.kind}\t${rule.pattern}`);
+    if (result.kind === "mailbox_not_found") {
+      out.fail("refused: mailbox not found");
+      return 1;
+    }
     return 0;
-  } catch (error) {
-    cli.fail(`failed: ${describeError(error)}`);
-    return 1;
-  } finally {
-    await db.destroy();
   }
+
+  out.raw(command.mailboxId ? `scope: org-wide + mailbox ${command.mailboxId}` : "scope: org-wide");
+  const rules = await listSenderRules(db, ctx, command.mailboxId ?? noMailboxId);
+  if (rules.length === 0) out.raw("no rules");
+  for (const rule of rules) out.raw(`${rule.kind}\t${rule.pattern}`);
+  return 0;
 }
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    cli.fail(`failed: ${describeError(error)}`);
-    process.exit(1);
-  });
+// Parse first: a bad argument is a usage error (exit 2) before any config or DB.
+const main: CliSpec["main"] = async (argv, out) => {
+  const command = parseRulesArgs(argv);
+  return withDb(out, (db) => run(out, command, db));
+};
+
+if (import.meta.main) {
+  await runCli({ prefix: "rules", descriptions: cliDescriptions, main });
+}

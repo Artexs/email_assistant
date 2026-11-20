@@ -1,3 +1,4 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 
 import { parseDelegationsArgs } from "./delegations-args";
@@ -25,21 +26,21 @@ describe("parseDelegationsArgs", () => {
   });
 
   test("list fails on a bad status or limit", () => {
-    expect(parseDelegationsArgs(["list", "--org-id", org, "--status", "nope"])).toBeUndefined();
-    expect(parseDelegationsArgs(["list", "--org-id", org, "--limit", "0"])).toBeUndefined();
-    expect(parseDelegationsArgs(["list", "--org-id", org, "--limit", "abc"])).toBeUndefined();
-    expect(parseDelegationsArgs(["list", "--org-id", org, "--limit", "-3"])).toBeUndefined();
+    expect(() => parseDelegationsArgs(["list", "--org-id", org, "--status", "nope"])).toThrow(UsageError);
+    expect(() => parseDelegationsArgs(["list", "--org-id", org, "--limit", "0"])).toThrow(UsageError);
+    expect(() => parseDelegationsArgs(["list", "--org-id", org, "--limit", "abc"])).toThrow(UsageError);
+    expect(() => parseDelegationsArgs(["list", "--org-id", org, "--limit", "-3"])).toThrow(UsageError);
   });
 
   test("done", () => {
     expect(parseDelegationsArgs(["done", "--org-id", org, "--id", id])).toEqual({ kind: "done", orgId: org, id });
-    expect(parseDelegationsArgs(["done", "--org-id", org])).toBeUndefined();
-    expect(parseDelegationsArgs(["done", "--org-id", org, "--id", id, "--status", "sent"])).toBeUndefined();
+    expect(() => parseDelegationsArgs(["done", "--org-id", org])).toThrow(UsageError);
+    expect(() => parseDelegationsArgs(["done", "--org-id", org, "--id", id, "--status", "sent"])).toThrow(UsageError);
   });
 
   test("bad input", () => {
-    expect(parseDelegationsArgs([])).toBeUndefined();
-    expect(parseDelegationsArgs(["nope", "--org-id", org])).toBeUndefined();
-    expect(parseDelegationsArgs(["list"])).toBeUndefined();
+    expect(() => parseDelegationsArgs([])).toThrow(UsageError);
+    expect(() => parseDelegationsArgs(["nope", "--org-id", org])).toThrow(UsageError);
+    expect(() => parseDelegationsArgs(["list"])).toThrow(UsageError);
   });
 });
