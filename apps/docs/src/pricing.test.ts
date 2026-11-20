@@ -4,12 +4,22 @@ import { join } from "node:path";
 
 import { costModel, costToRun, PLACEHOLDER_PRICE_USD_PER_MAILBOX_MONTH, pilotCost, type PilotCost } from "@ea/core";
 
-import { basisNote, costBasis, costRows, formatUsd, hostSizeNote, ROUNDING_NOTE } from "./pricing";
+import {
+  basisNote,
+  costBasis,
+  costRows,
+  formatUsd,
+  hostSizeNote,
+  placeholderPrice,
+  ROUNDING_NOTE,
+  roundingNote,
+} from "./pricing";
 
 const ROOT = join(import.meta.dir, "../../..");
 const COST_DOC = readFileSync(join(ROOT, "docs/cost-model.md"), "utf8");
 const PAGE_SOURCE = readFileSync(join(import.meta.dir, "content/docs/pricing.mdx"), "utf8");
 const BUILT_PAGE = join(import.meta.dir, "../dist/pricing/index.html");
+const BUILT_PAGE_PL = join(import.meta.dir, "../dist/pl/pricing/index.html");
 
 const pilotAtBase: PilotCost = { ...pilotCost, triagedMails: 87, llmUsd: 0.0914, llmCalls: 276, unpricedCalls: 0 };
 const pilotMeasured: PilotCost = { ...pilotCost, triagedMails: 1000, llmUsd: 1, llmCalls: 1000, unpricedCalls: 0 };
@@ -127,7 +137,7 @@ describe("the pricing page", () => {
     expect(bodyRows(html)).toEqual(
       costRows().map((row) => [
         String(row.mailsPerDay),
-        ...[row.llmUsd, row.hostingUsd, row.backupUsd, row.totalUsd, row.marginUsd].map(formatUsd),
+        ...[row.llmUsd, row.hostingUsd, row.backupUsd, row.totalUsd, row.marginUsd].map((value) => formatUsd(value)),
       ])
     );
     const text = pageText(html);
@@ -138,6 +148,28 @@ describe("the pricing page", () => {
     expect(text).toContain(
       "Not for sale. This is a placeholder price for a product that is built to a sale standard; there is no checkout."
     );
+    expect(geminiOutsideCondition(text)).toEqual([]);
+    expect(html).not.toMatch(/<form[\s>]/i);
+    expect(html).not.toMatch(/<input[\s>]/i);
+  });
+
+  test("5pl. the built Polish page shows every cell of costRows in Polish format, and holds no English label (runs after docs:build)", () => {
+    if (!existsSync(BUILT_PAGE_PL)) return;
+    const html = readFileSync(BUILT_PAGE_PL, "utf8");
+    expect(bodyRows(html)).toEqual(
+      costRows().map((row) => [
+        String(row.mailsPerDay),
+        ...[row.llmUsd, row.hostingUsd, row.backupUsd, row.totalUsd, row.marginUsd].map((value) => formatUsd(value, "pl")),
+      ])
+    );
+    const text = pageText(html);
+    expect(text).toContain(hostSizeNote("pl"));
+    expect(text).toContain(roundingNote("pl"));
+    expect(text).toContain(basisNote(costBasis(), undefined, "pl"));
+    expect(text).toContain("Nie na sprzedaż.");
+    expect(text).toContain(placeholderPrice("pl"));
+    expect(text).not.toContain("Not for sale");
+    expect(text).not.toContain("Mails a day");
     expect(geminiOutsideCondition(text)).toEqual([]);
     expect(html).not.toMatch(/<form[\s>]/i);
     expect(html).not.toMatch(/<input[\s>]/i);

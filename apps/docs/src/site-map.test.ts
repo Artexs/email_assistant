@@ -66,6 +66,8 @@ const EXPECTED_PAGE_IDS = [
   "pl/how-to/two-factor",
   "pl/how-to/undo-a-move",
   "pl/index",
+  "pl/pricing",
+  "pl/security",
   "pl/start",
   "pricing",
   "reference/categories",

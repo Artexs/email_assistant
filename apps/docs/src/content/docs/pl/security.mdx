@@ -1,0 +1,62 @@
+---
+title: Bezpieczeństwo i dane
+description: "Co asystent robi z Twoją pocztą i danymi. Każde twierdzenie ma link do dowodu: pliku w repozytorium."
+source: security
+capabilities:
+  - drafts-and-send
+  - triage
+  - backups
+  - retention
+  - logs
+  - account-data
+  - actions-and-undo
+  - digest-and-notices
+sourceHash: "6fb1d43da7843106"
+---
+
+import ClaimsTable from "../../../components/ClaimsTable.astro";
+import Subprocessors from "../../../components/Subprocessors.astro";
+
+Ta strona mówi, co asystent robi z Twoją pocztą i danymi.
+Każde twierdzenie ma link do pliku w repozytorium, który je dowodzi, oraz warunek, gdy twierdzenie zależy od instalacji.
+Twierdzenia, którego żaden plik nie dowodzi, na tej stronie nie ma. Sekcja „Czego ten produkt nie obiecuje” wymienia to, czego nie wolno Ci zakładać.
+
+## Krótka lista
+
+- [Asystent nigdy sam nie wysyła wiadomości z Twojej skrzynki](#claim-never-sends-alone): właściciel zatwierdza każdy szkic.
+- [Co dostaje dostawca AI](#claim-ai-provider-receives): treść, temat i nadawcę wiadomości oraz do trzech wcześniejszych wiadomości z jej wątku jako kontekst. Asystent nie klasyfikuje wiadomości starszej niż 7 dni, ale wiadomości kontekstowe mogą być starsze.
+- [Co dostaje Telegram](#claim-telegram): tylko pozycje, które wymienia tekst zgody.
+- [Kopie zapasowe](#claim-backups): szyfrowane, zanim opuszczą serwer.
+- [Eksport i usunięcie](#claim-export-and-delete): operator eksportuje, usuwa i kasuje dane na prośbę.
+- [Cofnij](#claim-undo): automatyczne przeniesienie możesz cofnąć przez 7 dni.
+
+## Twierdzenia
+
+<ClaimsTable lang="pl" />
+
+## Usługi, które dostają dane
+
+Tabela wymienia zewnętrzne usługi, które mogą dostać dane od asystenta. Kolumna „Używana, gdy” podaje warunek dla każdej z nich: jedne działają zawsze, inne tylko wtedy, gdy operator je skonfiguruje.
+Gdy operator konfiguruje dostawcę SMTP, asystent wysyła przez niego własne wiadomości logowania (linki do resetu hasła i zaproszenia). To nie są wiadomości z Twojej skrzynki.
+Instalacja może używać innego dostawcy AI; dokumenty prawne instalacji wymieniają usługi, których ona używa.
+„Jeszcze nie potwierdzone” znaczy, że projekt nie zapisał jeszcze i nie sprawdził tego faktu.
+
+<Subprocessors lang="pl" />
+
+## Hosty tej strony
+
+Ta strona działa na GitHub Pages. GitHub zapisuje adres IP każdego odwiedzającego.
+Strona nie ustawia plików cookie, nie ma analityki i nie przechowuje danych użytkowników.
+GitHub hostuje wyłącznie tę publiczną stronę. Nie dostaje od asystenta żadnych danych z poczty.
+
+## Czego ten produkt nie obiecuje
+
+- Brak certyfikatu i audytu. Projekt nie ma raportu SOC 2 ani ISO 27001.
+- Brak przeglądu prawnego. Prawnik nie sprawdził tekstów prawnych produktu.
+- Brak przetwarzania AI wyłącznie w UE jako ustawienia domyślnego. Domyślna konfiguracja wysyła treść wiadomości do dostawcy AI bez ustawienia „tylko UE”.
+- Brak szyfrowania end-to-end powiadomień Telegrama. Telegram może przeczytać to, co wysyła do niego asystent.
+- Limit 7 dni obejmuje wiadomość, którą asystent klasyfikuje, a nie kontekst wątku. Do trzech wcześniejszych wiadomości z tego samego wątku trafia do AI jako kontekst. Mogą być starsze niż 7 dni. Każda niesie nadawcę, temat i do 500 znaków treści.
+- Szkice mogą być błędne. Zatwierdzasz każdy szkic, zanim asystent go wyśle.
+- Fakty, które pochodzą tylko od dostawcy AI:
+  - Dostawca twierdzi, że nie używa danych ze swojego płatnego API do trenowania modeli ([jego strona o kontroli danych](https://platform.openai.com/docs/guides/your-data), odczytana 2026-11-17). Ten projekt nie sprawdził umowy.
+  - Dostawca twierdzi, że oferuje region UE jako ustawienie projektu ([jego strona o lokalizacji danych](https://platform.openai.com/docs/guides/data-residency), odczytana 2026-11-17). Ten projekt nie sprawdził ustawienia regionu w projekcie, którego używa instalacja.

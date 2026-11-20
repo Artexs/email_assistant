@@ -14,6 +14,7 @@ const WORK_ROOT = join(DOCS, "dist-security-test");
 setDefaultTimeout(60_000);
 
 let html = "";
+let plHtml = "";
 
 beforeAll(() => {
   mkdirSync(WORK_ROOT, { recursive: true });
@@ -26,6 +27,7 @@ beforeAll(() => {
   });
   if (run.exitCode !== 0) throw new Error(`docs build failed:\n${run.stdout.toString()}${run.stderr.toString()}`);
   html = readFileSync(join(out, "security/index.html"), "utf8");
+  plHtml = readFileSync(join(out, "pl/security/index.html"), "utf8");
 });
 afterAll(() => rmSync(WORK_ROOT, { recursive: true, force: true }));
 
@@ -53,6 +55,37 @@ export function blocksWithText(source: string): string[] {
 export function geminiOutsideCondition(blocks: readonly string[]): string[] {
   return blocks.filter((block) => /gemini/i.test(block) && !/optional, off by default/i.test(block));
 }
+
+describe("the built /pl/security/ page", () => {
+  const plMain = (): string => /<main[\s\S]*<\/main>/.exec(plHtml)?.[0] ?? "";
+  const plRows = (prefix: string): string[] =>
+    [...plMain().matchAll(new RegExp(`<tr id="${prefix}-[^"]*"[\\s\\S]*?</tr>`, "g"))].map((match) => match[0]);
+
+  test("one claim row for each public claim, in order, with the Polish claim text", () => {
+    const claimRows = plRows("claim");
+    expect(claimRows.map((row) => /<tr id="claim-([^"]*)"/.exec(row)?.[1])).toEqual(
+      publicClaims.map((claim) => claim.id)
+    );
+    claimRows.forEach((row, index) => {
+      expect(decode(cells(row)[0] ?? "")).toBe(publicClaims[index]?.text.pl as string);
+    });
+  });
+
+  test("one service row for each row of the registry that the page shows, with no placeholder and no English label", () => {
+    const shown = publicSubprocessors(subprocessors).map((row) => row.id);
+    expect(plRows("subprocessor").map((row) => /<tr id="subprocessor-([^"]*)"/.exec(row)?.[1])).toEqual(shown);
+    expect(plHtml).not.toContain("&lt;to confirm");
+    expect(plMain()).toContain("Jeszcze nie potwierdzone");
+    expect(plMain()).not.toContain("Not confirmed yet");
+  });
+
+  test("the checklist links reach claim anchors and the page holds no Gemini text outside its condition", () => {
+    const hrefs = [...plMain().matchAll(/href="(#claim-[^"]*)"/g)].map((match) => match[1] ?? "");
+    expect(hrefs.length).toBeGreaterThanOrEqual(5);
+    for (const href of hrefs) expect(plMain()).toContain(`<tr id="${href.slice(1)}"`);
+    expect(/gemini/i.test(plMain())).toBe(false);
+  });
+});
 
 describe("the built /security/ page", () => {
   test("T5 one claim row for each public claim, in order, with the claim text", () => {
