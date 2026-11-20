@@ -1,52 +1,15 @@
-import { parseArgs } from "node:util";
-
-import { z } from "zod";
-
 import { getMembership, getUserAuthProfile } from "../modules/tenancy";
-import { createCliOutput } from "../platform/cli";
+import { type CliSpec, runCli } from "../platform/cli";
 import { loadConfig } from "../platform/config";
 import { assertAppRole, createDb } from "../platform/db";
-import { describeError, HardError } from "../platform/errors";
+import { HardError } from "../platform/errors";
 
 import { deliverInvite } from "./lib/invite-delivery";
 import { pickMemberId } from "./lib/pick-member";
+import { cliDescriptions, parseWebInviteArgs } from "./web-invite-args";
 
-const out = createCliOutput("web-invite");
-
-const usage = "usage: bun run web:invite --org-id <uuid> [--user-id <uuid>] [--print]";
-
-function readOptions() {
-  try {
-    const { values } = parseArgs({
-      args: process.argv.slice(2),
-      options: {
-        "org-id": { type: "string" },
-        "user-id": { type: "string" },
-        print: { type: "boolean", default: false },
-      },
-      strict: true,
-    });
-    const orgId = values["org-id"];
-    const userId = values["user-id"];
-    if (orgId === undefined || !z.uuid().safeParse(orgId).success) return undefined;
-    if (userId !== undefined && !z.uuid().safeParse(userId).success) return undefined;
-    return { orgId, userId, print: values.print };
-  } catch {
-    return undefined;
-  }
-}
-
-function describeFailure(error: unknown): string {
-  if (error instanceof HardError) return error.message;
-  return `failed: ${describeError(error)}`;
-}
-
-async function main(): Promise<number> {
-  const options = readOptions();
-  if (!options) {
-    out.fail(usage);
-    return 1;
-  }
+const main: CliSpec["main"] = async (argv, out) => {
+  const options = parseWebInviteArgs(argv);
 
   const config = loadConfig();
   const baseUrl = config.WEB_BASE_URL;
@@ -79,16 +42,15 @@ async function main(): Promise<number> {
       out,
     });
   } catch (error) {
-    out.fail(describeFailure(error));
+    // Any other error goes to `runCli`: `failed:` (exit 1) or `unreachable:` (exit 3).
+    if (!(error instanceof HardError)) throw error;
+    out.fail(error.message);
     return 1;
   } finally {
     await db.destroy();
   }
-}
+};
 
-main()
-  .then((code) => process.exit(code))
-  .catch((error) => {
-    out.fail(describeFailure(error));
-    process.exit(1);
-  });
+if (import.meta.main) {
+  await runCli({ prefix: "web-invite", descriptions: cliDescriptions, main });
+}

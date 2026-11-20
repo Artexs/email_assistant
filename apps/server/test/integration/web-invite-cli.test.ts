@@ -181,9 +181,9 @@ describe("web:invite CLI", () => {
     expect(stranger.stderr).toContain("user is not a member of this organization");
   });
 
-  test("a bad argument prints the usage", async () => {
+  test("a bad argument prints the usage and exits 2", async () => {
     const result = await runInvite(["--org-id", "nope"], webEnv);
-    expect(result.code).toBe(1);
+    expect(result.code).toBe(2);
     expect(result.stderr).toContain("usage: bun run web:invite --org-id <uuid> [--user-id <uuid>]");
   });
 
