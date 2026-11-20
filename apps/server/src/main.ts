@@ -71,8 +71,8 @@ import { createLog, installConsoleGuard, setLogFormat, setLogLevel, setLogReleas
 import { installProcessGuard } from "./platform/process-guard";
 import { createScheduler } from "./platform/scheduler";
 import { createRetentionJob } from "./retention";
-import { createShutdown } from "./start/shutdown";
 import { createRunTracker } from "./start/runs";
+import { createShutdown } from "./start/shutdown";
 import { webDeps } from "./web";
 
 const log = createLog("main");

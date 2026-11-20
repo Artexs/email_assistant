@@ -35,7 +35,7 @@ describe("the run tracker", () => {
     const first = deferred();
     const second = deferred();
     const queue = [first, second];
-    const callback = runs.track("a", () => queue.shift()!.promise);
+    const callback = runs.track("a", () => (queue.shift() ?? first).promise);
     void callback();
     void callback();
     second.resolve();

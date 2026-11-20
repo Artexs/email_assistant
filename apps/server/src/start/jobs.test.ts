@@ -31,7 +31,7 @@ const NOT_WAITED_FOR = ["mail.sync", "platform.heartbeat"];
 
 const main = readFileSync(join(import.meta.dir, "../main.ts"), "utf8");
 
-const namesOf = (pattern: RegExp) => [...main.matchAll(pattern)].map((match) => match[1]!).sort();
+const namesOf = (pattern: RegExp) => [...main.matchAll(pattern)].map((match) => match[1] ?? "").sort();
 
 describe("the jobs of main.ts", () => {
   test("the scheduled names are the 22 jobs", () => {

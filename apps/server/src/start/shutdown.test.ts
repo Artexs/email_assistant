@@ -19,7 +19,7 @@ function fakeSteps(over: Partial<ShutdownSteps> = {}) {
     sleep: (ms) => new Promise<void>((resolve) => sleeps.set(ms, resolve)),
     ...over,
   };
-  return { steps, calls, release: (ms: number) => sleeps.get(ms)!() };
+  return { steps, calls, release: (ms: number) => sleeps.get(ms)?.() };
 }
 
 const macrotask = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
