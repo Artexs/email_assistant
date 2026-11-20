@@ -1,5 +1,6 @@
 import {
   senderRuleKinds,
+  storedAddressForm,
   type CategoryPolicy,
   type MailboxMode,
   type SenderRule,
@@ -10,7 +11,7 @@ import {
 import { sql, type Selectable, type Transaction } from "kysely";
 import { z } from "zod";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
+import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
 
 type DbOrTrx = Db | Transaction<DB>;
 
@@ -198,13 +199,33 @@ export async function insertSenderRule(
     .values({
       org_id: ctx.orgId,
       mailbox_id: input.mailboxId,
-      pattern: input.pattern.trim().toLowerCase(),
+      pattern: storedAddressForm(input.pattern),
       kind: input.kind,
     })
     .onConflict((oc) => oc.doNothing())
     .returning(senderRuleColumns)
     .executeTakeFirst();
   return row ? toSenderRuleRow(row) : null;
+}
+
+// True when a rule of the same mailbox (or both organization-wide) and kind has a pattern that the one address rule
+// (`normalizeAddress`) folds to `foldedPattern`. The unique key sees only the stored form, so `İlker@…` and `ilker@…` are two
+// keys for one person; this read finds the pair.
+export async function senderRuleWithFoldedPattern(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  input: { mailboxId: string | null; kind: SenderRuleKind; foldedPattern: string }
+): Promise<boolean> {
+  const row = await db
+    .selectFrom("sender_rules")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where("kind", "=", input.kind)
+    .where((eb) => (input.mailboxId === null ? eb("mailbox_id", "is", null) : eb("mailbox_id", "=", input.mailboxId)))
+    .where(sql<boolean>`${normalizedAddress("pattern")} = ${input.foldedPattern}`)
+    .limit(1)
+    .executeTakeFirst();
+  return row !== undefined;
 }
 
 // Org-wide and per-mailbox rules; with a mailbox id: the org-wide rules and that mailbox's rules.

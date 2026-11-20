@@ -1,5 +1,4 @@
-import type { Db } from "../../platform/db";
-import { divergentCodePoints, type DivergentCodePoint } from "../contacts";
+import { divergentCodePoints, type Db, type DivergentCodePoint } from "../../platform/db";
 
 export type AddressRuleCheck = { ok: true } | { ok: false; codePoints: number[] };
 
