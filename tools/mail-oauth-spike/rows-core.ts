@@ -323,7 +323,7 @@ export async function appendTest(
     from: login,
     to: login,
     subject: spec.subject,
-    text: "Test mail of the F117 spike. Delete it.",
+    text: "Test mail of the mail OAuth spike. Delete it.",
     messageId: spec.messageId,
     ...(spec.inReplyTo === undefined ? {} : { inReplyTo: spec.inReplyTo }),
     ...(spec.references === undefined ? {} : { references: spec.references }),

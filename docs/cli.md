@@ -133,4 +133,4 @@ Output text stays byte for byte, except usage lines, the exit codes of this page
 
 ## Outside the standard
 
-`scripts/one-off/`, the shell scripts in `scripts/*.sh` and `apps/docs/scripts/`.
+The shell scripts in `scripts/*.sh` and `apps/docs/scripts/`.
