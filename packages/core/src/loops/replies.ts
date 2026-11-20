@@ -1,3 +1,4 @@
+import { normalizeAddress } from "../contacts/address";
 import { DAY_MS } from "../time";
 
 // Pure close rules of the open loops. A later mail from a person who is not the user ends a wait for a reply.
@@ -31,6 +32,7 @@ export function normalizeSubject(subject: string | null | undefined): string {
   const collapsed = plainText(subject ?? "")
     .replace(/ +/g, " ")
     .trim()
+    // not an address: a subject is compared as text, not as a mailbox
     .toLowerCase();
   // A closing dot or space is not part of the subject.
   return collapsed
@@ -85,15 +87,17 @@ export function isAutoReply(input: {
   fromAddress: string | null;
   subject?: string | null;
 }): boolean {
+  // not an address: a header value is a keyword (RFC 3834)
   const autoSubmitted = (input.autoSubmitted ?? "").trim().toLowerCase();
   if (autoSubmitted !== "") {
     const token = autoSubmitted.split(/[\s;(]/)[0] ?? "";
     if (token !== "no") return true;
   }
+  // not an address: a header value is a keyword
   const precedence = (input.precedence ?? "").trim().toLowerCase();
   if (AUTO_PRECEDENCE.has(precedence)) return true;
   if (AUTO_SUBJECTS.test(normalizeSubject(input.subject))) return true;
-  const from = (input.fromAddress ?? "").trim().toLowerCase();
+  const from = normalizeAddress(input.fromAddress ?? "");
   return from !== "" && NO_REPLY_LOCAL_PARTS.has(localPartOf(from));
 }
 
@@ -119,8 +123,6 @@ export interface ReplyMail {
 
 export type ReplyMatch = "thread" | "subject" | "auto";
 
-const lower = (address: string): string => address.trim().toLowerCase();
-
 // Does the mail answer the loop, and how? A mail counts only when it came after the wait began and its sender is not an
 // own address. `auto`: an automatic mail that would match by thread or subject; it never closes.
 export function replyMatch(
@@ -129,8 +131,8 @@ export function replyMatch(
   opts: { ownAddresses: readonly string[] }
 ): ReplyMatch | null {
   if (mail.fromAddress === null) return null;
-  const from = lower(mail.fromAddress);
-  if (from === "" || opts.ownAddresses.some((own) => lower(own) === from)) return null;
+  const from = normalizeAddress(mail.fromAddress);
+  if (from === "" || opts.ownAddresses.some((own) => normalizeAddress(own) === from)) return null;
   const waitFrom = loop.waitFromAt.getTime();
   const received = mail.receivedAt.getTime();
   if (Number.isNaN(waitFrom) || Number.isNaN(received) || received <= waitFrom) return null;
@@ -144,7 +146,7 @@ export function replyMatch(
   let bySubject = false;
   if (!inThread && received <= waitFrom + SUBJECT_MATCH_DAYS * DAY_MS) {
     const subject = normalizeSubject(loop.subject);
-    const recipients = [...loop.toAddresses, ...loop.ccAddresses].map(lower);
+    const recipients = [...loop.toAddresses, ...loop.ccAddresses].map(normalizeAddress);
     bySubject = subject !== "" && normalizeSubject(mail.subject) === subject && recipients.includes(from);
   }
   if (!inThread && !bySubject) return null;
