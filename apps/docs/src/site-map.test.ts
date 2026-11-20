@@ -72,6 +72,7 @@ const EXPECTED_PAGE_IDS = [
   "reference/limits",
   "reference/settings",
   "reference/telegram",
+  "security",
   "start",
 ];
 
@@ -108,6 +109,7 @@ describe("site map", () => {
       "reference/limits",
       "reference/settings",
       "reference/telegram",
+      "security",
       "start",
     ]);
     for (const id of userPages)

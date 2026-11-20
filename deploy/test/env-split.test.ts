@@ -192,4 +192,86 @@ describe("deploy/env-split.sh", () => {
     expect(lastLine(rerun.stdout)).toBe("env split ok finished=4");
     expect(lines(".env")).toEqual(AFTER_ENV);
   });
+
+  // Hardening tests (F108 stage 02 review notes N1–N5).
+  test("11. N1: an export-prefixed, indented or spaced D5 line is refused with names only and changes no file", () => {
+    // The three passwords stay valid, so only the odd line would be left behind in .env.
+    const url = "MIGRATOR_DATABASE_URL";
+    const odd = [
+      `export ${url}=postgres://migrator:sentinel-u-71@h/x`,
+      `  ${url}=postgres://migrator:sentinel-u-71@h/x`,
+      `${url} =postgres://migrator:sentinel-u-71@h/x`,
+    ];
+    for (const line of odd) {
+      write(".env", [...FIXTURE.filter((item) => !item.startsWith(`${url}=`)), line]);
+      const before = read(".env");
+      const result = run();
+      expect(result.code).toBe(2);
+      expect(result.stderr).toContain(url);
+      expect(existsSync(join(root, "deploy", "db.env"))).toBe(false);
+      expect(read(".env")).toBe(before);
+    }
+  });
+
+  test("12. N1: an indented twin of a D5 line counts as a duplicate, and a split state does not hide an export line", () => {
+    write(".env", [...FIXTURE, "  APP_PASSWORD=sentinel-a-71"]);
+    const twin = run();
+    expect(twin.code).toBe(2);
+    expect(twin.stderr).toContain("APP_PASSWORD");
+    expect(existsSync(join(root, "deploy", "db.env"))).toBe(false);
+    write(".env", FIXTURE);
+    run();
+    write(".env", [...AFTER_ENV, "export APP_PASSWORD=sentinel-a-71"]);
+    const hidden = run();
+    expect(hidden.code).toBe(2);
+    expect(hidden.stderr).toContain("APP_PASSWORD");
+  });
+
+  test("13. N2: the new .env keeps the mode of the old .env (640) and the stub chown copies its owner; db.env stays 600", () => {
+    const calls = join(root, "chown.calls");
+    const file = join(stubs, "chown");
+    writeFileSync(file, `#!/usr/bin/env bash\necho "$*" >>"${calls}"\nPATH="\${PATH#${stubs}:}"\nexec chown "$@"\n`);
+    chmodSync(file, 0o755);
+    write(".env", FIXTURE);
+    chmodSync(join(root, ".env"), 0o640);
+    const result = run();
+    expect(result.code).toBe(0);
+    expect((statSync(join(root, ".env")).mode & 0o777).toString(8)).toBe("640");
+    expect((statSync(join(root, "deploy", "db.env")).mode & 0o777).toString(8)).toBe("600");
+    expect(readFileSync(calls, "utf8")).toContain("--reference=.env");
+    // --undo keeps the mode of the .env it replaces
+    chmodSync(join(root, ".env"), 0o660);
+    expect(run("--undo").code).toBe(0);
+    expect((statSync(join(root, ".env")).mode & 0o777).toString(8)).toBe("660");
+  });
+
+  test("14. N3: no argument of any grep call holds a password in the half-done path", () => {
+    const argv = join(root, "grep.argv");
+    const file = join(stubs, "grep");
+    writeFileSync(
+      file,
+      `#!/usr/bin/env bash\nprintf '%s\\n' "$@" >>"${argv}"\nPATH="\${PATH#${stubs}:}"\nexec grep "$@"\n`
+    );
+    chmodSync(file, 0o755);
+    write(".env", FIXTURE);
+    run();
+    write(".env", FIXTURE);
+    const result = run();
+    expect(result.code).toBe(0);
+    expect(lastLine(result.stdout)).toBe("env split ok finished=4");
+    const recorded = readFileSync(argv, "utf8");
+    expect(recorded.length).toBeGreaterThan(0);
+    for (const sentinel of SENTINELS) expect(recorded).not.toContain(sentinel);
+  });
+
+  test("15. N5: a half-done split whose db.env lacks a password is refused, names the missing keys and changes no file", () => {
+    write("deploy/db.env", ["APP_PASSWORD=sentinel-a-71"]);
+    write(".env", ["A=1", "APP_PASSWORD=sentinel-a-71"]);
+    const [env, db] = [read(".env"), read("deploy/db.env")];
+    const result = run();
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain("POSTGRES_PASSWORD,MIGRATOR_PASSWORD");
+    expect([read(".env"), read("deploy/db.env")]).toEqual([env, db]);
+    expect(leftovers()).toEqual([]);
+  });
 });

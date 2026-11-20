@@ -4,7 +4,7 @@
 # It reads the key names of `docker compose exec -T server env` and prints names only, never a value.
 #   server env ok keys=<n>               exit 0
 #   server env bad: <names>   (stderr)   exit 1; names sorted, comma list
-#   Compose or exec failure              exit 2
+#   Compose or exec failure, or no key   exit 2
 set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -21,6 +21,10 @@ listing="$("${EA_COMPOSE[@]}" exec -T server env)" || {
 names="$(printf '%s\n' "$listing" | grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' | sed 's/=$//' || true)"
 keys=0
 [[ -n "$names" ]] && keys="$(printf '%s\n' "$names" | grep -c '')"
+if ((keys == 0)); then
+  echo "server env check failed: the server env has no keys" >&2
+  exit 2
+fi
 
 bad=()
 for key in "${EA_D5_KEYS[@]}"; do
