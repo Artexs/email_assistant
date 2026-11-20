@@ -15,7 +15,7 @@ import {
   seedActivityProfiles,
   seedActivityRows,
   seedOtherOrgMail,
-} from "../../src/scripts/e2e-activity-rows";
+} from "../../src/scripts/lib/e2e-activity-rows";
 
 import { createOrgWithMailbox } from "./fixtures";
 import { testDb, withRollback } from "./helpers";

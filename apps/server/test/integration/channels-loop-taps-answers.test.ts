@@ -168,6 +168,8 @@ describe("Reopen", () => {
   });
 });
 
+const MAIL_AT = new Date("2026-11-19T12:00:00Z");
+
 async function delegationOf(
   trx: Transaction<DB>,
   org: BriefOrg,
@@ -178,6 +180,9 @@ async function delegationOf(
   const row = await insertDraftAndSend(trx, org.ctx, org.mailboxId, {
     delegateId: delegate,
     subject: "DELEGATION-SUBJECT",
+    // The digest of the test is at 2026-11-20T07:00Z and lists the mail triaged before it: a mail made with the
+    // real clock falls outside the period of the digest after that hour of the day.
+    createdAt: MAIL_AT,
   });
   const id = await insertDelegation(trx, org.ctx, {
     mailboxId: org.mailboxId,

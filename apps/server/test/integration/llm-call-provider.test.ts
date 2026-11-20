@@ -15,7 +15,7 @@ import {
 import type { DB, TenantContext } from "../../src/platform/db";
 import { LlmSoftError } from "../../src/platform/llm";
 import { createFixedLlmClient } from "../../src/platform/llm/testing";
-import { groupUsage, modelReportLines } from "../../src/scripts/triage-cost-report";
+import { groupUsage, modelReportLines } from "../../src/scripts/lib/triage-cost-report";
 
 import { createOrgWithMailbox, insertTestEmail, noSuspiciousContext } from "./fixtures";
 import { testDb, withRollback } from "./helpers";

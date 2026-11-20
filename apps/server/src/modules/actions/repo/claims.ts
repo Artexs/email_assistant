@@ -1,4 +1,4 @@
-import { MAILBOX_ACTION_TYPES, type ActionType } from "@ea/core";
+import { MAILBOX_ACTION_TYPES, type ActionType, DAY_MS } from "@ea/core";
 import { sql, type Expression, type ExpressionBuilder, type SelectQueryBuilder, type SqlBool } from "kysely";
 
 import type { DB, TenantContext } from "../../../platform/db";
@@ -59,8 +59,8 @@ export function mailOf(action: ClaimedAction): NonNullable<ClaimedAction["email"
   return action.email;
 }
 // Age of the action row and of the mail.
-export const CLAIM_MAX_AGE_MS = 24 * 3_600_000;
-export const CLAIM_MAX_MAIL_AGE_MS = 7 * 24 * 3_600_000;
+export const CLAIM_MAX_AGE_MS = DAY_MS;
+export const CLAIM_MAX_MAIL_AGE_MS = 7 * DAY_MS;
 // save_summary first, the move last (a move can change the UID); a draft before its send.
 const TYPE_RANK: Record<ActionType, number> = {
   save_summary: 0,

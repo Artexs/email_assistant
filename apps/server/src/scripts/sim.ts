@@ -1,7 +1,7 @@
 import { describeError } from "../platform/errors";
 
+import { runSim } from "./lib/sim-commands";
 import { parseSimArgs, usage } from "./sim-args";
-import { runSim } from "./sim-commands";
 
 // The output is for the agent, not a log line: it goes to stdout and holds counts, ids and codes only.
 async function main() {
