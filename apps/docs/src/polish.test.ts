@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { frontMatterValue } from "../scripts/stale";
-import { POLISH_SET } from "./front-matter";
+import { bodyHash, frontMatterValue } from "../scripts/stale";
+import { POLISH_SET, SOURCE_HASH_SHAPE } from "./front-matter";
 import { isShotPage } from "./shots";
 
 const CONTENT_DIR = join(import.meta.dir, "content/docs");
@@ -136,6 +136,23 @@ describe("Polish pages", () => {
       expect({ id, source: frontMatterValue(polish, "source") }).toEqual({ id, source: id });
       const capabilities = (text: string) => /^capabilities:\n((?: {2}- .+\n)+)/m.exec(text)?.[1] ?? "";
       expect({ id, capabilities: capabilities(polish) }).toEqual({ id, capabilities: capabilities(english) });
+    }
+  });
+  test("the Polish security and pricing pages have `source`, a 16-hex `sourceHash` that matches the English body, and the pair shape", () => {
+    for (const id of ["security", "pricing"]) {
+      const english = readFileSync(pageFile(CONTENT_DIR, id) ?? "", "utf8");
+      const polish = readFileSync(pageFile(join(CONTENT_DIR, "pl"), id) ?? "", "utf8");
+      expect({ id, source: frontMatterValue(polish, "source") }).toEqual({ id, source: id });
+      const hash = frontMatterValue(polish, "sourceHash") ?? "";
+      expect({ id, shape: SOURCE_HASH_SHAPE.test(hash) }).toEqual({ id, shape: true });
+      expect({ id, current: hash === bodyHash(english) }).toEqual({ id, current: true });
+      expect({ id, problems: pairProblems(english, polish) }).toEqual({ id, problems: [] });
+    }
+  });
+  test("the Polish security and pricing pages hold no Gemini text at all (a mention would need its condition: optional, off by default)", () => {
+    for (const id of ["security", "pricing"]) {
+      const text = readFileSync(pageFile(join(CONTENT_DIR, "pl"), id) ?? "", "utf8");
+      expect({ id, gemini: /gemini/i.test(text) }).toEqual({ id, gemini: false });
     }
   });
   test("each rule of the pair check finds its difference", () => {

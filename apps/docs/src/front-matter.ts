@@ -10,8 +10,9 @@ import { repoRoot } from "./in-place";
 // A page whose id starts with one of these (also under `pl/`) is a user page.
 export const USER_SECTIONS = ["start", "how-to", "reference", "explanation", "faq"] as const;
 
-// The English page ids that need a Polish page: the landing page, the tutorial, every how-to guide, the FAQ and
-// "How a mail is sorted". The reference and the operator pages stay English only (Starlight fallback).
+// The English page ids that need a Polish page: the landing page, the tutorial, every how-to guide, the FAQ,
+// "How a mail is sorted", the security page and the pricing page. The reference and the operator pages stay English only
+// (Starlight fallback).
 export const POLISH_SET: readonly string[] = [
   "index",
   "start",
@@ -27,7 +28,18 @@ export const POLISH_SET: readonly string[] = [
   "how-to/undo-a-move",
   "faq",
   "explanation/how-a-mail-is-sorted",
+  "security",
+  "pricing",
 ];
+
+// The strict set of `bun run docs:stale --strict`: a stale Polish page of one of these sources blocks a release.
+// The sources are the public pages: the home page, the tutorial pages (`start`, `start/…`), the security page and the pricing page.
+export const STRICT_SOURCES: readonly string[] = ["index", "security", "pricing"];
+export const STRICT_SOURCE_PREFIX = "start";
+
+export function isStrictSource(source: string): boolean {
+  return STRICT_SOURCES.includes(source) || source.startsWith(STRICT_SOURCE_PREFIX);
+}
 
 export const SOURCE_HASH_SHAPE = /^[0-9a-f]{16}$/;
 
