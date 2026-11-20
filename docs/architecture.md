@@ -372,7 +372,7 @@ Tenancy:
   An RFC server puts a returned mail above the cursor; the rule above marks it first, and this check then does nothing.
   Mail that the flag refresh does not find in its folder is looked for at the same UID in the other synced folders below their cursors (the move finder, `mail/moves.ts`; `docs/capabilities/sync.md` rule 6).
 - **First connect:** only mail of the last 24 hours, in INBOX and in every new synced folder (a folder with no cursor yet, also one that is switched on again).
-- **After an outage:** the next sync takes all UIDs above the cursor (IMAP keeps them). Mail older than 7 days is stored but not sent to the LLM.
+- **After an outage:** the next sync takes all UIDs above the cursor (IMAP keeps them). Mail older than 7 days is stored but not classified (the context mails of a thread that go along with a classified mail can be older; `docs/capabilities/triage.md` rule 3).
 - **Backfill (S1b, one-off):** `bun run mailbox:backfill --org-id <uuid> --mailbox-id <uuid> [--days 1-180]` reads INBOX mail of the last days.
   It stores the missing mail with `emails.backfilled_at` set and never moves the cursor. It changes nothing in the mailbox.
   It refuses a window of more than 180 days. Then it re-queues real mail of the window that the worker
@@ -688,7 +688,7 @@ Detail, scope, sizes and dependencies: `docs/roadmap.md`. Goal, done-when, plan 
 | `ImapEmailProvider`                                                                                 | Deleted in S0. S1a reads it from git if needed: `git show 29e9522:backend/src/adapters/providers/email.provider.ts`.                                            |
 | `get_provider.ts` (`Providers` factory)                                                             | Removed. It turns off the TLS check for Interia (line 35).                                                                                                      |
 | `OpenAIAdapter` / `ILLMProvider`                                                                    | Replaced by `platform/llm/` (Gemini and OpenAI adapters; ADR 0015).                                                                                             |
-| `backend/src/scripts/gemini_test.ts`                                                                | Moved in S0, replaced by `apps/server/src/scripts/llm-check.ts`; `bun run llm:check --provider <id>` runs from the repo root (`gemini:test` stays as an alias). |
+| `backend/src/scripts/gemini_test.ts`                                                                | Moved in S0, replaced by `apps/server/src/scripts/llm-check.ts`; `bun run llm:check --provider <id>` runs from the repo root. |
 | Dependencies `openai`, `express`, `helmet`, `cors`, `googleapis`, `@supabase/supabase-js`, `dotenv` | Removed in S0 (Bun reads `.env`). `imapflow` and `@google/genai` stay.                                                                                          |
 | `utils/log.ts`                                                                                      | Kept and extended (levels, module prefix).                                                                                                                      |
 | `.ai/` docs                                                                                         | Kept as history. Code rules for agents: `docs/code-patterns.md`.                                                                                                |

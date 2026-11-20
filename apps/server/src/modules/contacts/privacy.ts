@@ -1,4 +1,4 @@
-import { normalizeSenderAddress } from "@ea/core";
+import { normalizeAddress } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 
 import { senderKeyHash } from "../../platform/crypto";
@@ -117,7 +117,7 @@ export async function senderContextRowsOf(
   credentialsKey: string,
   address: string
 ): Promise<SenderContextRows> {
-  const hash = senderKeyHash(credentialsKey, ctx.orgId, normalizeSenderAddress(address));
+  const hash = senderKeyHash(credentialsKey, ctx.orgId, normalizeAddress(address));
   const profiles = await sql<{ id: string }>`
     SELECT id::text AS id FROM sender_profiles WHERE org_id = ${ctx.orgId} AND key_hash = ${hash} ORDER BY id
   `.execute(db);
@@ -135,7 +135,7 @@ export async function deleteSenderContextRowsOf(
   credentialsKey: string,
   address: string
 ): Promise<{ profiles: number; suggestions: number }> {
-  const hash = senderKeyHash(credentialsKey, ctx.orgId, normalizeSenderAddress(address));
+  const hash = senderKeyHash(credentialsKey, ctx.orgId, normalizeAddress(address));
   const profiles = await sql`
     DELETE FROM sender_profiles WHERE org_id = ${ctx.orgId} AND key_hash = ${hash}
   `.execute(trx);
@@ -166,7 +166,7 @@ export async function senderAddressesOfProfiles(
   if (keys.size === 0) return found;
   const take = (raw: string | null): void => {
     if (raw === null || !raw.includes("@") || raw.startsWith("@")) return;
-    const address = normalizeSenderAddress(raw);
+    const address = normalizeAddress(raw);
     const hash = senderKeyHash(credentialsKey, ctx.orgId, address);
     if (keys.has(hash)) found.set(hash, address);
   };

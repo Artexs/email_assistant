@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { normalizeSenderAddress } from "@ea/core";
+import { normalizeAddress } from "@ea/core";
 import { afterAll, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
 import { readProfiles, readSenderActivity } from "../../src/modules/contacts";
-import { normalizedAddress } from "../../src/modules/contacts/address-sql";
+import { normalizedAddress } from "../../src/platform/db";
 
 import {
   ago,
@@ -147,7 +147,7 @@ describe("one lower-case rule on every path", () => {
     for (const row of rows)
       expect({ value: row.value, normalized: row.normalized }).toEqual({
         value: row.value,
-        normalized: normalizeSenderAddress(row.value),
+        normalized: normalizeAddress(row.value),
       });
   });
 

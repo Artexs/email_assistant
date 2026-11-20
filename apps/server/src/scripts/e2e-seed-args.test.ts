@@ -30,13 +30,16 @@ describe("databaseNameOf", () => {
 });
 
 describe("isE2eDatabaseName", () => {
-  test("accepts only names that end in _e2e", () => {
+  test("accepts only names that end in _e2e or _demo", () => {
     expect(isE2eDatabaseName("email_assistant_e2e")).toBe(true);
     expect(isE2eDatabaseName("other_e2e")).toBe(true);
     expect(isE2eDatabaseName("email_assistant")).toBe(false);
     expect(isE2eDatabaseName("email_assistant_s5b")).toBe(false);
     expect(isE2eDatabaseName(null)).toBe(false);
     expect(isE2eDatabaseName("_e2e")).toBe(false);
+    expect(isE2eDatabaseName("email_assistant_f121_demo")).toBe(true);
+    expect(isE2eDatabaseName("_demo")).toBe(false);
+    expect(isE2eDatabaseName("email_assistant_demo_old")).toBe(false);
     expect(isE2eDatabaseName("a-b_e2e")).toBe(false);
   });
 });
