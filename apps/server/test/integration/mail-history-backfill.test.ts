@@ -255,6 +255,7 @@ describe("history purpose: backfillInbox", () => {
         batchSize: 10,
         testMail: NO_TEST_SENDERS,
         dailyCap: 1000,
+        junkDailyCap: 1000,
         now: () => NOW,
       }).run();
 
@@ -471,6 +472,7 @@ describe("history purpose: only mail of before the connect", () => {
         batchSize: 10,
         testMail: NO_TEST_SENDERS,
         dailyCap: 1000,
+        junkDailyCap: 1000,
         now: () => NOW,
       }).run();
       const rows = await rowsOf(trx, s.mailboxId);

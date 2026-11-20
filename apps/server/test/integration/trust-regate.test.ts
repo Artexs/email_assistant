@@ -228,6 +228,7 @@ function triageOf(conn: Db | Transaction<DB>, runningKey: EvidenceKey, llm: LlmC
     batchSize: 5,
     testMail: NO_TEST_SENDERS,
     dailyCap: 1000,
+    junkDailyCap: 1000,
     now: () => NOW,
   });
 }

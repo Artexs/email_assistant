@@ -173,6 +173,29 @@ export async function countLlmCallsSince(
   const row = await query.executeTakeFirstOrThrow();
   return Number(row.count);
 }
+// The `llm.call` rows of one mailbox, written at or after `since`, for mail stored in one folder (`emails.source_folder`).
+// Like `countLlmCallsSince`, it leaves out the calls of history checks. A mail that is gone has no row left to count.
+export async function countLlmCallsOfFolderSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  mailboxId: string,
+  since: Date,
+  sourceFolder: string
+): Promise<number> {
+  const row = await db
+    .selectFrom("audit_log")
+    .innerJoin("emails", "emails.id", "audit_log.email_id")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("audit_log.org_id", "=", ctx.orgId)
+    .where("audit_log.event", "=", auditEvents.llmCall)
+    .where(sql<string>`audit_log.data->>'mailbox_id'`, "=", mailboxId)
+    .where(sql<string | null>`audit_log.data->>${sql.lit(HISTORY_CHECK_KEY)}`, "is", null)
+    .where("audit_log.created_at", ">=", since)
+    .where("emails.org_id", "=", ctx.orgId)
+    .where("emails.source_folder", "=", sourceFolder)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
 // The `llm.call` rows of the history checks of one mailbox, written at or after `since`: the calls that `countLlmCallsSince` leaves out.
 // The operator reads them next to the daily count, because the daily cap does not hold them (a check has its own cap).
 export async function countHistoryLlmCallsSince(

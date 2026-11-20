@@ -39,6 +39,10 @@ What the cut stages (09 to 20) learned:
 - **Copies of a test path list.** The `test:unit` paths live in `package.json` and in `scripts/check-job.sh`. A path added to one goes to the other.
 - **A never-run test in CI.** A `skipIf` file that needs the e2e URLs runs in the `e2e` job, in a step that fails on a skip line (`grep -Eq '^ *[0-9]+ skip'`). The step runs before the browser tests, so a failed browser run cannot hide the skip.
 
+## Split proof
+
+`bun scripts/test-audit/split-proof.ts --before <xml> --after <xml> [--after <xml> …]` compares the JUnit cases of an old test file with those of its parts as a multiset keyed by class name, name and skipped state, one `--after` XML per part. It prints `missing`, `extra` and `assertions` lines, then `split-proof PASS cases=<n>` or `FAIL`; exit 0 pass, 1 fail, 2 bad argument. A changed assertion count alone does not fail it: stop unless a cause is known.
+
 ## Mutation notes
 
 - Two runs on 4ce3f351: 21,250 mutants each; 6 status differences (0.03 %), all between `Killed` and `Survived`: `replies/digits.ts` 297:21, 368:17, 372:23 (two regex mutants) killed in run 1, survived in run 2; `testmail/batch.ts` 107:5 survived then killed; `triage/suspicious.ts` 342:7 killed then survived. A guess, not verified: the digit-budget test of `replies/digits.test.ts` hits its 5 s timeout on a loaded machine (it did in the dry run of an earlier attempt). Phase B compares `Killed` against `Survived` and `NoCoverage` for every mutant outside these 6 places, and never `Timeout`.
