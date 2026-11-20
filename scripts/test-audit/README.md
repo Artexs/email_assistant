@@ -13,6 +13,17 @@ Maintenance tools of the test audit (not product code, not run in CI). Own `tsco
 - **Mutation run lock** (`mutation.sh`): one Stryker run at a time, through `flock` on `/tmp/email-assistant-mutation.lock` (taken before the sources are copied). A run that finds the lock held prints `mutation.sh: waiting for the mutation lock`, waits up to 2 hours, then exits 3 with `mutation.sh: mutation lock busy for 2 hours`.
 - **Mutation summary** (`mutation-summary.ts`): `bun scripts/test-audit/mutation-summary.ts --in <out dir>/mutation.json --data <ticket folder>/audit/data` writes `mutation-tests.tsv` (per Stryker test: scan `key`, kills, unique kills, `in_cover`, flags `S10`/`S11`; `unjoined` when no JUnit row matches), `mutation-files.tsv`, `mutation-survived.tsv`, `mutation-baseline.tsv` and `mutation-summary.md`. Reads `junit-cases.tsv`. `bun scripts/test-audit/mutation-summary.ts --compare <run-1>/mutation.json <run-2>/mutation.json` lists the mutants whose status differs between two runs (by file, line, column, mutator, replacement).
 
+## Cut proof
+
+Order of one cut stage (plan § Cut stage rules): re-scan the keys at the stage base; check the open `limen/*` branches for files in the way; `cut-run.sh <out>/before <files>` once or twice (two `--before` runs make a line hit in only one of them noise); edit the tests; `cut-run.sh <out>/after <files>`; `cut-proof.ts` with `--expect` set to the change of the case counts; commit when it exits 0. A stage that cuts in `packages/core` also runs `mutation.sh` before and after into the same folders (`mutation.json`).
+
+Checks of `cut-proof.ts`:
+
+1. JUnit case count per lane: `after − before` equals `--expect` exactly; a lane that is not named must not change; a lane with no XML file counts as 0 cases.
+2. Union lcov (unit ∪ int) hit lines per source file: no line hit in every `--before` run is unhit after. A line hit in only some `--before` runs is noise, and so is every line of a file in `coverage-noise.tsv`. Test files and `apps/server/test/` helpers are left out.
+3. Mutants (only with `mutation.json` on both sides): a `Killed` mutant before that is `Survived` or `NoCoverage` after fails (compare by file, line, column, mutator, replacement). `Timeout` is no change; the places of `mutation-unstable.tsv` are not checked; a mutant on one side only is listed, not failed.
+4. The serial time per lane (the `time` of the JUnit root element) before and after is printed.
+
 ## Mutation notes
 
 - Two runs on 4ce3f351: 21,250 mutants each; 6 status differences (0.03 %), all between `Killed` and `Survived`: `replies/digits.ts` 297:21, 368:17, 372:23 (two regex mutants) killed in run 1, survived in run 2; `testmail/batch.ts` 107:5 survived then killed; `triage/suspicious.ts` 342:7 killed then survived. A guess, not verified: the digit-budget test of `replies/digits.test.ts` hits its 5 s timeout on a loaded machine (it did in the dry run of an earlier attempt). Phase B compares `Killed` against `Survived` and `NoCoverage` for every mutant outside these 6 places, and never `Timeout`.
