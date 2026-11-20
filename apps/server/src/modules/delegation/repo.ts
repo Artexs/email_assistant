@@ -1,8 +1,8 @@
-import { DELEGATION_REMINDER_LIMIT } from "@ea/core";
+import { DELEGATION_REMINDER_LIMIT, normalizeAddress } from "@ea/core";
 import { sql, type Transaction } from "kysely";
 import { z } from "zod";
 
-import type { DB, Db, TenantContext } from "../../platform/db";
+import { normalizedAddress, type DB, type Db, type TenantContext } from "../../platform/db";
 import type { PayloadKeepRule } from "../actions";
 
 type DbOrTrx = Db | Transaction<DB>;
@@ -44,6 +44,25 @@ export interface DelegateRow {
   active: boolean;
   created_at: Date;
   updated_at: Date;
+}
+
+// The delegate of the organization whose address is the same person by the one address rule (`normalizeAddress`), in any
+// status. The stored form keeps today's lower case; both sides fold here.
+export async function findDelegateIdByAddress(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  address: string
+): Promise<string | undefined> {
+  const row = await db
+    .selectFrom("delegates")
+    .select("id")
+    .where("org_id", "=", ctx.orgId)
+    .where(normalizedAddress("email"), "=", normalizeAddress(address))
+    .orderBy("created_at")
+    .orderBy("id")
+    .limit(1)
+    .executeTakeFirst();
+  return row?.id;
 }
 
 // null = the email exists in this organization (the unique index on org_id and email).
@@ -334,7 +353,7 @@ export async function findOpenDelegationByMessageIds(
     .where("g.org_id", "=", ctx.orgId)
     .where("d.mailbox_id", "=", mailboxId)
     .where("d.status", "in", ["sent", "overdue"])
-    .where(sql<string>`lower(g.email)`, "=", fromAddress.toLowerCase())
+    .where(normalizedAddress("g.email"), "=", normalizeAddress(fromAddress))
     .where((eb) =>
       eb.or([
         eb(sql<string>`d.sent_message_id`, "=", sql<string>`ANY(${idList}::text[])`),
