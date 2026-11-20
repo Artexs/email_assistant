@@ -81,6 +81,26 @@ describe("parseLlmBaseUrl", () => {
     expect(bad("https://openai.com/v1", true)).toContain("cannot relabel");
   });
 
+  test("8b: the DeepSeek host is refused for every kind; the text names the key and holds no value", () => {
+    for (const raw of [
+      "https://api.deepseek.com",
+      "https://api.deepseek.com/v1",
+      "https://API.DeepSeek.com./v1/",
+      "https://eu.api.deepseek.com/v1",
+    ]) {
+      for (const ownKind of [false, true]) {
+        const text = bad(raw, ownKind);
+        expect(text).toContain("OPENAI_BASE_URL");
+        expect(text).toContain("DeepSeek");
+        expect(text).not.toContain("https");
+        expect(text).not.toContain("/v1");
+      }
+    }
+    // A look-alike host is not the DeepSeek host: it follows the normal rules.
+    expect(bad("https://api.deepseek.com.example.org/v1")).toContain("hosted OpenAI-compatible API not supported");
+    expect(ok("https://notdeepseek.com/v1", true).endpoint).toBe("own");
+  });
+
   test("9: user info, query, fragment and a non-URL are refused without the value in the text", () => {
     const texts = [
       bad("https://user:pw@llm.example.com/v1", true),

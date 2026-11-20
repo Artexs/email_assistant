@@ -3,13 +3,12 @@ import type { GenerateFn } from "../client";
 import { classifyOpenAiError, createOpenAiGenerate, type OpenAiLike } from "./openai";
 import type { openAiClientOptions } from "./openai";
 
+import { DEEPSEEK_BASE_URL } from "./deepseek-host";
 import type { LlmProvider } from "./index";
 
-/**
- * DeepSeek speaks the Responses API with strict `json_schema` like OpenAI, so this row reuses the OpenAI adapter.
- * The host is fixed: no env key moves it, so the DeepSeek key can reach no other host.
- */
-export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
+// DeepSeek speaks the Responses API with strict `json_schema` like OpenAI, so this row reuses the OpenAI adapter.
+// The host is fixed (`deepseek-host.ts`): no env key moves it, so the DeepSeek key can reach no other host.
+export { DEEPSEEK_BASE_URL };
 
 /** The role's effort goes into `reasoning.effort` as it is: DeepSeek takes none, low, high and max. */
 export function createDeepseekGenerate(opts: {
