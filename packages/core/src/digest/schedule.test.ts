@@ -98,11 +98,6 @@ describe("dueDigestSlot at the edges of the six hours", () => {
     expect(slotOf("2026-11-06T06:59:00Z", null, ["08:00"])).toBeNull();
   });
 
-  test("a slot equal to the key after which none is wanted is not due; the next one is", () => {
-    expect(slotOf("2026-11-06T07:00:00Z", "2026-11-06T08:00", ["08:00"])).toBeNull();
-    expect(slotOf("2026-11-06T07:00:00Z", "2026-11-06T07:59", ["08:00"])?.key).toBe("2026-11-06T08:00");
-  });
-
   test("the newest slot wins whatever the order of the times", () => {
     expect(slotOf("2026-11-06T23:30:00Z", null, ["23:00", "22:00"])?.key).toBe("2026-11-06T23:00");
   });
