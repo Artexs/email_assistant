@@ -120,6 +120,26 @@ export async function countMailboxEventsBetween(
     .executeTakeFirstOrThrow();
   return Number(row.count);
 }
+// The rows of one event of one mailbox (`data.mailbox_id`) at or after `since` whose `data.outcome` is one of `outcomes`.
+export async function countMailboxOutcomesSince(
+  db: DbOrTrx,
+  ctx: TenantContext,
+  event: string,
+  mailboxId: string,
+  since: Date,
+  outcomes: readonly string[]
+): Promise<number> {
+  const row = await db
+    .selectFrom("audit_log")
+    .select((eb) => eb.fn.countAll<string>().as("count"))
+    .where("org_id", "=", ctx.orgId)
+    .where("event", "=", event)
+    .where(sql<string>`data->>'mailbox_id'`, "=", mailboxId)
+    .where(sql<string>`data->>'outcome'`, "in", [...outcomes])
+    .where("created_at", ">=", since)
+    .executeTakeFirstOrThrow();
+  return Number(row.count);
+}
 // The actor of the newest row of one event on one action; undefined when there is none.
 export async function findActionActor(
   db: DbOrTrx,

@@ -38,6 +38,7 @@ export const auditEvents = {
   mailboxPolicyChanged: "mailbox.policy_changed",
   mailboxSwitchChanged: "mailbox.switch_changed",
   mailboxProfileChanged: "mailbox.profile_changed", // data: mailbox_id, fields (the names of the changed fields in one string, comma between), via; never the text
+  mailboxStyleSuggested: "mailbox.style_suggested", // data: mailbox_id, count (samples sent), outcome (suggestion | checks | output | provider with a model call; too_few | sent_off | llm_off | llm_cap without), via; actor: the user; never a text
   replyRequested: "reply.requested", // data: via, trigger (tap | redraft | sample), reply_request_id; actor: the user; never the instruction
   mailboxSentSyncChanged: "mailbox.sent_sync_changed", // data: mailbox_id, enabled, count (sent rows deleted)
   settingsUrgencySet: "settings.urgency_set", // data: mailbox_id, topics, deadlines (counts), via

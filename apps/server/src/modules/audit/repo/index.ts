@@ -3,6 +3,7 @@ export {
   countActorEventsSince,
   countEventsBetween,
   countMailboxEventsBetween,
+  countMailboxOutcomesSince,
   findActionActor,
   hasAuditEvent,
   hasAuditKey,

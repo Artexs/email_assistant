@@ -1,4 +1,4 @@
-import { nextQuotaDayStart, QUOTA_TIMEZONE, quotaDayStart, type ReplyTrigger } from "@ea/core";
+import { nextQuotaDayStart, QUOTA_TIMEZONE, quotaDayStart, type LlmRole, type ReplyTrigger } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -52,9 +52,16 @@ export async function recordAttempts(
   db: DbOrTrx,
   ctx: TenantContext,
   llm: LlmClient,
-  input: { mailboxId: string; emailId: string | null; attempts: readonly DrafterAttempt[]; at: Date }
+  input: {
+    mailboxId: string;
+    emailId: string | null;
+    attempts: readonly DrafterAttempt[];
+    at: Date;
+    // The prompt of the calls; the drafter prompt when left out.
+    prompt?: { role: LlmRole; version: string };
+  }
 ): Promise<void> {
-  const prompt = prompts.drafter;
+  const prompt = input.prompt ?? prompts.drafter;
   for (const attempt of input.attempts) {
     try {
       await recordLlmCall(db, ctx, {

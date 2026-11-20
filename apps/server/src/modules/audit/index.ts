@@ -12,6 +12,7 @@ export {
   sumLlmCallsByModelSince,
   sumLlmCallsByModelSinceOfAll,
   countMailboxEventsBetween,
+  countMailboxOutcomesSince,
   findActionActor,
   hasAuditEvent,
   hasAuditKey,

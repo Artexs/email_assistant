@@ -1,8 +1,7 @@
-import { DAY_MS, normalizeAddress, SENT_MAX_AGE_DAYS, type SentSkipReason } from "@ea/core";
-import { sql } from "kysely";
+import { DAY_MS, SENT_MAX_AGE_DAYS, type SentSkipReason } from "@ea/core";
 
-import { normalizedAddress, type TenantContext } from "../../platform/db";
-import { SYNTHETIC_MESSAGE_ID_LIKE, type TestMailRule } from "../mail";
+import type { TenantContext } from "../../platform/db";
+import { sentTestMailFilter, type TestMailRule } from "../mail";
 
 import type { DbOrTrx } from "./repo";
 
@@ -79,16 +78,7 @@ export async function listSentCandidates(
         ]),
       ])
     );
-  if (opts.testOnly !== null) {
-    const senders = opts.testOnly.senders.map(normalizeAddress);
-    query = query.where((eb) =>
-      eb.or([
-        // not an address: the synthetic message id marker
-        eb(sql<string>`lower(s.message_id)`, "like", SYNTHETIC_MESSAGE_ID_LIKE),
-        ...(senders.length === 0 ? [] : [eb(normalizedAddress("s.from_address"), "in", senders)]),
-      ])
-    );
-  }
+  if (opts.testOnly !== null) query = query.where(sentTestMailFilter(opts.testOnly));
   const rows = await query.orderBy("s.sent_at").orderBy("s.id").limit(opts.limit).execute();
   return rows.map((row) => ({
     id: row.id,
