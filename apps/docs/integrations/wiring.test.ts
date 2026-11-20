@@ -47,7 +47,7 @@ afterAll(() => {
 });
 
 describe("astro.config.mjs", () => {
-  test("the integrations run in this order: Starlight, CSP, public content, in-place pages, links, claims, images", () => {
+  test("the integrations run in this order: Starlight, CSP, public content, in-place pages, links, claims, images, shots, demo video", () => {
     expect(integrations.map((integration) => integration.name)).toEqual([
       "@astrojs/starlight",
       "ea-csp-finalize",
@@ -57,6 +57,7 @@ describe("astro.config.mjs", () => {
       "ea-claim-check",
       "ea-image-check",
       "ea-shots",
+      "ea-demo-video",
     ]);
   });
   test("the shots integration tells <Shot> where the PNG files are and logs the mode once", () => {
@@ -79,6 +80,26 @@ describe("astro.config.mjs", () => {
       else process.env.EA_DOCS_SHOTS_DIR = saved.dir;
       if (saved.mode === undefined) delete process.env.DOCS_SHOTS;
       else process.env.DOCS_SHOTS = saved.mode;
+    }
+  });
+  test("the demo video integration points <DemoVideo> at the public folder and logs the mode once", () => {
+    const saved = process.env.EA_DOCS_DEMO_DIR;
+    const folder = mkdtempSync(join(tmpdir(), "docs-wiring-public-"));
+    try {
+      delete process.env.EA_DOCS_DEMO_DIR;
+      const run = hook("ea-demo-video", "astro:config:done");
+      const off = logger();
+      run({ config: { publicDir: pathToFileURL(`${folder}/`) }, logger: off.logger });
+      expect(off.lines).toEqual(["demo_video: off"]);
+      expect(process.env.EA_DOCS_DEMO_DIR as string | undefined).toBe(join(folder, "demo"));
+      for (const name of ["demo.mp4", "demo.en.vtt", "demo.pl.vtt"]) put(folder, `demo/${name}`, "x");
+      const on = logger();
+      run({ config: { publicDir: pathToFileURL(`${folder}/`) }, logger: on.logger });
+      expect(on.lines).toEqual(["demo_video: on"]);
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+      if (saved === undefined) delete process.env.EA_DOCS_DEMO_DIR;
+      else process.env.EA_DOCS_DEMO_DIR = saved;
     }
   });
   test("the content-script check reads the in-place sources", () => {
