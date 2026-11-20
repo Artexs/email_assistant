@@ -1,5 +1,7 @@
 # F151 stage 01 — Replay model
 
+Landed: `0df5bec69`.
+
 Needs: nothing. May run next to 03.
 
 Part of [`../plan.md`](../plan.md). Decisions P3, D2, D3, D11.

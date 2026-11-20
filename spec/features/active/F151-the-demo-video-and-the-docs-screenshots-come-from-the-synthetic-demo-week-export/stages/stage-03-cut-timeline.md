@@ -1,5 +1,7 @@
 # F151 stage 03 — Cut timeline and per-source steps
 
+Landed: `08ed7ce79`.
+
 Needs: nothing. May run next to 01 and 02.
 
 Part of [`../plan.md`](../plan.md). Decisions P2, P5, D9.
