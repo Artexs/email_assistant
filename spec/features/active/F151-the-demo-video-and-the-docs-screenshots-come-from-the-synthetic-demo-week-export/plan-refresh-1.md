@@ -58,3 +58,35 @@ The task asked that stages 02 and 04 can build without the demo export. They nee
 - `telegram:link`, `PATCH /api/me/notify`, `mail/seed.ts` exist.
 - The `deploy/README.md` drift (env split, Telegram check) does not touch § Docs site or § Sim stack step 12 that the plan uses.
 - The C1 run (`notes/2026-11-15-vps-deploy-queue.md` § Demo run for F151) uses `openai`, `gpt-6-luna`, `classifier-v2`, as C1 requires.
+
+## Review 2 (2026-11-20): repair of refresh 1
+
+Review: [plan-review-2.md](plan-review-2.md), FAIL on `57391e9fb` (one blocking finding, eight others). The coordinator starts the one re-review.
+
+| Finding | Fix |
+| --- | --- |
+| B1 verdict not last | D14 (new): fixed output order; the verdict is the last log line of every run, also a failed or refused one. D10: the verdict reads the exit code and the model check; reason `run_failed` first, `llm_unchecked` new. The old line `demo_source e2e: not for upload` goes; `not for upload: e2e_source` replaces it. Stage 08 test 1 has the "perfect inputs, exit 1 → `run_failed`" row; its Proof checks `tail -n1` on a refused run and on the e2e run. |
+| F1 ticket and board gate | Coordinator text, below. |
+| F2 final take has no owner | `followup-final-take.md` (new): draft ticket with scope, stop-and-ask rules, new `*_demo` database, preconditions. C3 and § How to run: the coordinator opens it at the last F151 land, before C2. Stage 05: an auto-off probe on a copy of the seed with one `auto` category on A; `@setup` also checks that no `autonomy_paused` notice is in the chat. |
+| F3 day not ended | C1a: "newest ended run day". D12: the procedural guard (export only an ended day; at G3 the owner compares `exported_at`, now printed in the `demo_seed_day` line, with the end of that day). Stage 07 G3 note says so. |
+| F4 day 5 or ≥ 5 | D10 and Q6: seed day ≥ 5 is final (an ended day 5, 6 or 7 export). Stage 08 test row "day 7 → candidate". |
+| F6 D8 primary path dead | D8: step 7 always reminds the step-6 delegation; no branch uses `plan.overdueDelegation`. Fact added (lab switches A with `keepSwitches: false`, never sets `create_draft`). Stage 06 step table and decision. |
+| F5 alt text on a trial seed | D13 and stage 07 step 1: alt texts and captions describe the day-5 seed; a trial-only difference goes into the note. |
+| F7 prompt and sim stack not pinned | Q7 [important: production] (new): hold the sim-stack classifier and the production prompt pointer until the final take. C1a names it; the follow-up draft lists both as preconditions. |
+| F8 stage 06 too full | Stage 08 (new, `[risky]`, Opus review): `uploadVerdict`, `modelCheck`, `DemoPrepared.seedDay` and `exportedAt`, the output order, the `llm_settings` capture. Needs only stage 04 (landed), no export: it can build now. Stage 06 Needs it; stage 06 is 646 words now. Numbered 08, not inserted as 05, so the reviews, notes and board lines that name stages 05–07 stay true. |
+
+Word counts after the repair: plan 1499; stages 05–08: 700, 646, 698, 675.
+
+### F1: proposed text for the coordinator (not edited by this job)
+
+`ticket.md`, § Slices, replace the sentence "Stages 01–04 need no export; 05–07 need the C1 export." with:
+
+> Eight stages. Stages 01–04 and 08 need no export; 05–07 need an export of an ended run day 1 or later; the day-5 export is only for the final take, a follow-up ticket.
+
+`ticket.md`, § Sequenced, `Build after:` line, replace "Gate: the C1 demo-week export at `~/.local/share/email-assistant/demo/demo-seed-day5.json` and the `*_demo` database of F121 C3, for stages 05–07 only." with:
+
+> Gate: for stages 05–07 only, an export of an ended run day 1 or later (plan C1a) in `~/.local/share/email-assistant/demo/` and a `*_demo` database; the day-5 export (C1) only for the final take (C3, follow-up ticket).
+
+`spec/build.md`, the F151 line, replace "7 stages, no migration, [risky] 04–06): … 01 ∥ 03, then 02, 04, 05 (needs the C1 export), 06, 07." with:
+
+> 8 stages, no migration, [risky] 04–06, 08): … 01–04 landed; 08 now (no export); 05 after a trial export of an ended run day 1 or later (C1a, from 2026-11-23T23:00Z), then 06 (needs 05 and 08), 07; the day-5 take is a follow-up ticket.
