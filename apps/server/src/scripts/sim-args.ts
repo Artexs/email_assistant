@@ -1,24 +1,43 @@
-import { parseArgs } from "node:util";
+import {
+  type CliDescription,
+  defaultFreezeFloors,
+  sentFreezeFloors,
+  sentParts,
+  simParts,
+  type SentPart,
+  type SimPart,
+  UsageError,
+} from "@ea/core";
 
-import { defaultFreezeFloors, sentFreezeFloors, sentParts, simParts, type SentPart, type SimPart } from "@ea/core";
+import { parseFlags } from "./lib/parse-flags";
 
 export const usage = [
-  "usage:",
-  "  bun run sim plan <scenario> [--bank sent] [--root <dir>] [--force]",
-  "  bun run sim status <scenario> [--part sent-dev|sent-holdout] [--root <dir>]",
-  "  bun run sim brief <scenario> --part dev|holdout|week|sent-dev|sent-holdout --batch <NNN> [--root <dir>]",
-  "  bun run sim check <scenario> [--part dev|holdout|week|sent-dev|sent-holdout] [--batches <from>-<to>] [--root <dir>]",
-  "  bun run sim blind-export <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
-  "  bun run sim label-import <scenario> --part <part> --batch <NNN> --checker <model id> --file <path> [--root <dir>]",
-  "  bun run sim stale <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
-  "  bun run sim reconcile <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
-  "  bun run sim freeze <scenario> --version <v> --date <YYYY-MM-DD> [--min-dev 50] [--min-holdout 200] [--root <dir>]",
-  "  bun run sim freeze <scenario> --bank sent [--date <YYYY-MM-DD>] [--min-dev 49] [--min-holdout 245] [--root <dir>]",
+  "bun run sim plan <scenario> [--bank sent] [--root <dir>] [--force]",
+  "       bun run sim status <scenario> [--part sent-dev|sent-holdout] [--root <dir>]",
+  "       bun run sim brief <scenario> --part dev|holdout|week|sent-dev|sent-holdout --batch <NNN> [--root <dir>]",
+  "       bun run sim check <scenario> [--part dev|holdout|week|sent-dev|sent-holdout] [--batches <from>-<to>] [--root <dir>]",
+  "       bun run sim blind-export <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
+  "       bun run sim label-import <scenario> --part <part> --batch <NNN> --checker <model id> --file <path> [--root <dir>]",
+  "       bun run sim stale <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
+  "       bun run sim reconcile <scenario> --part <part> --batches <from>-<to> [--root <dir>]",
+  "       bun run sim freeze <scenario> --version <v> --date <YYYY-MM-DD> [--min-dev 50] [--min-holdout 200] [--root <dir>]",
+  "       bun run sim freeze <scenario> --bank sent [--date <YYYY-MM-DD>] [--min-dev 49] [--min-holdout 245] [--root <dir>]",
+  "       bun run sim audit-list <scenario> --version <v> [--root <dir>]",
+  "       bun run sim audit-apply <scenario> --version <v> --date <YYYY-MM-DD> [--root <dir>]",
   "  A sent part (sent-dev, sent-holdout) runs the sent-bank form of a command; the sent bank freezes into sent-manifest.json.",
-  "  bun run sim audit-list <scenario> --version <v> [--root <dir>]",
-  "  bun run sim audit-apply <scenario> --version <v> --date <YYYY-MM-DD> [--root <dir>]",
-  "  Exit 0: ok. Exit 1: usage error, refusal or an issue found.",
 ].join("\n");
+
+export const cliDescriptions = [
+  {
+    name: "sim",
+    summary: "Plans, checks, labels and freezes the sim corpus files of a scenario under evals/sim/.",
+    risk: "write",
+    needs: ["none"],
+    usage,
+    exits: { 1: "a refusal (a frozen part, a missing file) or an issue found in the corpus" },
+    outputNote: "counts, ids and codes only",
+  },
+] satisfies readonly CliDescription[];
 
 export interface BatchRange {
   from: number;
@@ -168,85 +187,87 @@ function parseSent(input: SentInput): SentSimCommand | undefined {
   }
 }
 
-// Returns undefined on any bad argument; the script prints the usage.
-export function parseSimArgs(argv: string[]): SimCommand | undefined {
-  try {
-    const { values, positionals } = parseArgs({
-      args: argv,
-      options: {
-        root: { type: "string" },
-        force: { type: "boolean" },
-        part: { type: "string" },
-        batch: { type: "string" },
-        batches: { type: "string" },
-        checker: { type: "string" },
-        file: { type: "string" },
-        version: { type: "string" },
-        date: { type: "string" },
-        "min-dev": { type: "string" },
-        "min-holdout": { type: "string" },
-        bank: { type: "string" },
-      },
-      allowPositionals: true,
-      strict: true,
-    });
-    const [kind, scenario, ...rest] = positionals;
-    if (values.bank !== undefined && values.bank !== "sent" && values.bank !== "incoming") return undefined;
-    const sentBank = values.bank === "sent";
-    const own = kind === "freeze" && sentBank ? sentFreezeFlags : allowed[kind ?? ""];
-    if (kind === undefined || own === undefined || scenario === undefined || rest.length > 0) return undefined;
-    if (!SCENARIO_ID.test(scenario)) return undefined;
-    if (Object.keys(values).some((key) => key !== "root" && !own.includes(key))) return undefined;
-    if (values.root !== undefined && values.root === "") return undefined;
-    const base: Base = values.root === undefined ? { scenario } : { scenario, root: values.root };
+// Throws `UsageError` on any bad argument; `runCli` prints the usage.
+export function parseSimArgs(argv: string[]): SimCommand {
+  const cmd = parseSimCommand(argv);
+  if (cmd === undefined) throw new UsageError("bad or missing sim command or option");
+  return cmd;
+}
 
-    const part = parsePart(values.part);
-    const sentPart = parseSentPart(values.part);
-    if (values.part !== undefined && part === undefined && sentPart === undefined) return undefined;
-    const range = parseRange(values.batches);
-    if (values.batches !== undefined && range === undefined) return undefined;
-    const batch = parseBatch(values.batch);
-    if (values.batch !== undefined && batch === undefined) return undefined;
+// Undefined on a bad value or a bad combination; an unknown flag throws `UsageError`.
+function parseSimCommand(argv: string[]): SimCommand | undefined {
+  const { values, positionals } = parseFlags({
+    args: argv,
+    options: {
+      root: { type: "string" },
+      force: { type: "boolean" },
+      part: { type: "string" },
+      batch: { type: "string" },
+      batches: { type: "string" },
+      checker: { type: "string" },
+      file: { type: "string" },
+      version: { type: "string" },
+      date: { type: "string" },
+      "min-dev": { type: "string" },
+      "min-holdout": { type: "string" },
+      bank: { type: "string" },
+    },
+    allowPositionals: true,
+  });
+  const [kind, scenario, ...rest] = positionals;
+  if (values.bank !== undefined && values.bank !== "sent" && values.bank !== "incoming") return undefined;
+  const sentBank = values.bank === "sent";
+  const own = kind === "freeze" && sentBank ? sentFreezeFlags : allowed[kind ?? ""];
+  if (kind === undefined || own === undefined || scenario === undefined || rest.length > 0) return undefined;
+  if (!SCENARIO_ID.test(scenario)) return undefined;
+  if (Object.keys(values).some((key) => key !== "root" && !own.includes(key))) return undefined;
+  if (values.root !== undefined && values.root === "") return undefined;
+  const base: Base = values.root === undefined ? { scenario } : { scenario, root: values.root };
 
-    const version = values.version !== undefined && VERSION.test(values.version) ? values.version : undefined;
-    const date = parseDate(values.date);
-    const floors = sentBank ? sentFreezeFloors : defaultFreezeFloors;
-    const minDev = parseCount(values["min-dev"], floors.minDev);
-    const minHoldout = parseCount(values["min-holdout"], floors.minHoldout);
+  const part = parsePart(values.part);
+  const sentPart = parseSentPart(values.part);
+  if (values.part !== undefined && part === undefined && sentPart === undefined) return undefined;
+  const range = parseRange(values.batches);
+  if (values.batches !== undefined && range === undefined) return undefined;
+  const batch = parseBatch(values.batch);
+  if (values.batch !== undefined && batch === undefined) return undefined;
 
-    if (sentBank || sentPart !== undefined) {
-      return parseSent({ base, kind, sentBank, sentPart, values, range, batch, date, minDev, minHoldout });
-    }
-    switch (kind) {
-      case "freeze":
-        return version === undefined || date === undefined || minDev === undefined || minHoldout === undefined
-          ? undefined
-          : { ...base, kind, version, date, minDev, minHoldout };
-      case "audit-list":
-        return version === undefined ? undefined : { ...base, kind, version };
-      case "audit-apply":
-        return version === undefined || date === undefined ? undefined : { ...base, kind, version, date };
-      case "plan":
-        return { ...base, kind, force: values.force ?? false };
-      case "status":
-        // Only a sent part shows a part status.
-        return part === undefined ? { ...base, kind } : undefined;
-      case "brief":
-        return part === undefined || batch === undefined ? undefined : { ...base, kind, part, batch };
-      case "check":
-        return { ...base, kind, ...(part === undefined ? {} : { part }), ...(range === undefined ? {} : { range }) };
-      case "label-import":
-        return part === undefined || batch === undefined || !values.checker || !values.file
-          ? undefined
-          : { ...base, kind, part, batch, checker: values.checker, file: values.file };
-      case "blind-export":
-      case "stale":
-      case "reconcile":
-        return part === undefined || range === undefined ? undefined : { ...base, kind, part, range };
-      default:
-        return undefined;
-    }
-  } catch {
-    return undefined;
+  const version = values.version !== undefined && VERSION.test(values.version) ? values.version : undefined;
+  const date = parseDate(values.date);
+  const floors = sentBank ? sentFreezeFloors : defaultFreezeFloors;
+  const minDev = parseCount(values["min-dev"], floors.minDev);
+  const minHoldout = parseCount(values["min-holdout"], floors.minHoldout);
+
+  if (sentBank || sentPart !== undefined) {
+    return parseSent({ base, kind, sentBank, sentPart, values, range, batch, date, minDev, minHoldout });
+  }
+  switch (kind) {
+    case "freeze":
+      return version === undefined || date === undefined || minDev === undefined || minHoldout === undefined
+        ? undefined
+        : { ...base, kind, version, date, minDev, minHoldout };
+    case "audit-list":
+      return version === undefined ? undefined : { ...base, kind, version };
+    case "audit-apply":
+      return version === undefined || date === undefined ? undefined : { ...base, kind, version, date };
+    case "plan":
+      return { ...base, kind, force: values.force ?? false };
+    case "status":
+      // Only a sent part shows a part status.
+      return part === undefined ? { ...base, kind } : undefined;
+    case "brief":
+      return part === undefined || batch === undefined ? undefined : { ...base, kind, part, batch };
+    case "check":
+      return { ...base, kind, ...(part === undefined ? {} : { part }), ...(range === undefined ? {} : { range }) };
+    case "label-import":
+      return part === undefined || batch === undefined || !values.checker || !values.file
+        ? undefined
+        : { ...base, kind, part, batch, checker: values.checker, file: values.file };
+    case "blind-export":
+    case "stale":
+    case "reconcile":
+      return part === undefined || range === undefined ? undefined : { ...base, kind, part, range };
+    default:
+      return undefined;
   }
 }

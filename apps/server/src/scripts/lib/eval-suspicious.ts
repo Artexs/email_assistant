@@ -14,6 +14,7 @@ import { HOLDOUT_NEEDS_FREEZE, loadSimCases } from "./eval-sim-load";
 // `eval --suspicious`: the suspicious-mail rules on a sim corpus part. No LLM, no key, no spend.
 
 const log = createLog("eval");
+const cli = createCliOutput("eval");
 
 const simRoot = resolve(import.meta.dir, "../../../../../evals/sim");
 
@@ -33,8 +34,7 @@ export async function runSuspicious(options: EvalOptions, deps: SuspiciousDeps =
     loaded = await loadSimCases({ root, scenario: scenarioId, part, requireManifest: part === "holdout" });
     scenario = readScenario(corpusDir(scenarioId, root));
   } catch (error) {
-    if (error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE)
-      createCliOutput("eval").fail(HOLDOUT_NEEDS_FREEZE);
+    if (error instanceof Error && error.message === HOLDOUT_NEEDS_FREEZE) cli.fail(HOLDOUT_NEEDS_FREEZE);
     else log.error("corpus_load_failed");
     return 1;
   }
@@ -50,7 +50,7 @@ export async function runSuspicious(options: EvalOptions, deps: SuspiciousDeps =
     date: (deps.now ?? (() => new Date()))().toISOString().slice(0, 10),
     listIds: part === "dev",
   });
-  (deps.write ?? ((text: string) => process.stdout.write(`${text}\n`)))(markdown);
+  (deps.write ?? ((text: string) => cli.write(`${text}\n`)))(markdown);
   if (options.out !== undefined) writeFileSync(options.out, markdown);
   return 0;
 }

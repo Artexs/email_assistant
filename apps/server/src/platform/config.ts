@@ -14,6 +14,7 @@ export {
   llmRoleTable,
   type LlmRunFlags,
   runFlagError,
+  runFlagExitCode,
   runOverrides,
 } from "./config-llm";
 export {

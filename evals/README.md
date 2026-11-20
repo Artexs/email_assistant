@@ -69,9 +69,9 @@ Flags (all optional):
 
 `bun run eval --real --org-id <uuid> --mailbox-id <uuid> [--synthetic] [--model <id>]` reads the labels from `triage_feedback`. It makes no LLM call. With `--model` the report uses only the rows of that model; rows without a model (rules, errors, blocked calls) drop out. The header always shows the rows per model, with `none` for rows without a model.
 
-- `--json <file>`: also write the counts per category (`tp`, `fp`, `fn`, `support`, from the final category with no threshold), the label count and the date. Counts only: no mail id, no address, no text. Keep this file out of git.
+- `--json-out <file>`: also write the counts per category (`tp`, `fp`, `fn`, `support`, from the final category with no threshold), the label count and the date. Counts only: no mail id, no address, no text. Keep this file out of git.
 
-`bun run eval --gap --sim-json <gate file> --real-json <file> [--out <file.md>]` compares sim and real numbers for `notification` and `spam` at the same operating point: the final category, no confidence threshold. It needs no DB and no LLM key. The sim side is `categories.<c>.metrics` of a gate file; the real side is the `--real --json` file. The verdict is `gap` when the two 95 % Wilson precision intervals do not overlap, `no gap` when they overlap, and `too few real labels` when real `tp + fp` is under 30. A gate file from before stage 14 has no `metrics`: the command names the missing field and exits 1. `--gap` takes no other option.
+`bun run eval --gap --sim-json <gate file> --real-json <file> [--out <file.md>]` compares sim and real numbers for `notification` and `spam` at the same operating point: the final category, no confidence threshold. It needs no DB and no LLM key. The sim side is `categories.<c>.metrics` of a gate file; the real side is the `--real --json-out` file. The verdict is `gap` when the two 95 % Wilson precision intervals do not overlap, `no gap` when they overlap, and `too few real labels` when real `tp + fp` is under 30. A gate file from before stage 14 has no `metrics`: the command names the missing field and exits 1. `--gap` takes no other option.
 
 ### Resume
 
@@ -82,9 +82,9 @@ A line holds ids, categories, numbers and codes only, no mail text.
 - Cases that ended in an error run again. The report shows "N error cases: run again with the same command to retry them".
 - The default state file name holds the model, the effort (OpenAI), the prompt version and the set, and `-eu` or `-own` at the end for a run on that endpoint (F111). After a change of the expected labels in `evals/cases`, use `--fresh`.
 - An explicit `--state <file>` path gets no endpoint suffix. Keep one endpoint per file: a resume reads the results as they are.
-- After 3 cases in a row end in an error (retries used up), the run stops. The report says "run not complete" and the exit code is 2.
+- After 3 cases in a row end in an error (retries used up), the run stops. The report says "run not complete" and the exit code is 4.
   Run the same command again later (for example after the daily quota reset at midnight Pacific time).
-- Exit codes: 0 = pass, 1 = a check failed (whitelist below 100%, an injection case failed, or more than 10% errors in a complete run), 2 = run not complete.
+- Exit codes: 0 = pass, 1 = a check failed (whitelist below 100%, an injection case failed, or more than 10% errors in a complete run), 4 = run not complete (resume with the same command; 2 is only bad arguments, `docs/cli.md`).
 
 ### Quota (Gemini)
 
@@ -122,7 +122,7 @@ The state file is `evals/.runs/<model>[-<effort>]-<prompt-version>-sim-<scenario
 
 - Scoring: a skipped case counts as `expects_reply` false; `promise` is a promise text with a valid date; `due` and `promiseDue` are exact when the resolved local day equals the label day, counted only on cases whose label has that date. The report has the confusion counts with the Wilson 95 % lower bounds, the shares per language and per hard-case tag, the injection leaks (a planted string in `ask` or `promise`) and a `Second pass input` section.
 - Gate bars: `expects_reply` recall bound ≥ 0.90 and precision bound ≥ 0.80, `promise` precision bound ≥ 0.90, `due` exact share ≥ 0.90, injection leaks 0. They count only on `sent-holdout`. A full run of that part (no `--limit`) writes `evals/results/gate/extractor-<promptVersion>-<model>-<effort>-<scenario>-v<sentVersion>[-eu|-own].json`; `passed` is false when a bar fails. `apps/server/src/modules/loops/extractor-gate-evidence.test.ts` needs a passing standard-endpoint file for `prompts.extractor.version`.
-- Spend: the same cap and ledger as the classifier sim run (`--budget-usd`, default 1, month cap $20). A run that hits the cap exits 2 and resumes with the same command. Exit codes: 0 done (and, on the holdout, the gate passed), 1 setup error, failed gate or over 10 % error cases, 2 stopped.
+- Spend: the same cap and ledger as the classifier sim run (`--budget-usd`, default 1, month cap $20). A run that hits the cap exits 4 and resumes with the same command. Exit codes: 0 done (and, on the holdout, the gate passed), 1 setup error, failed gate or over 10 % error cases, 2 bad arguments, 3 the LLM or the database did not answer, 4 stopped.
 - State file `evals/.runs/<model>-<effort>-<promptVersion>-sent-<scenario>-v<version>-<part>.jsonl`: ids, flags, resolved days and codes. It holds no mail text, `ask` or `promise`. After a prompt change the name changes, so a new prompt version never reuses old results.
 - The holdout report prints counts and rates only: no case id. Tune the prompt on `sent-dev` only. A prompt change after a holdout run is a new prompt version and needs a new holdout run.
 
@@ -146,7 +146,7 @@ The run goes to the endpoint of `OPENAI_BASE_URL` (default `https://api.openai.c
 - Report `## Reply drafts`: counts (drafted, `no_draft` per reason, `failed`), the code checks that passed after the one retry, the judge means, the checks that were false, the count of `no_invented_commitment` false and "send as is or small edit" (all scores ≥ 1, all checks true). `## Second pass input`: the PD-083 numbers against their bars, the `needs_facts` share against the 30 % line, the cost per draft. A holdout report holds counts only. A dev report lists case ids to tune on. Tune the prompt on `dev` only; a prompt change after the holdout run is `drafter-v2` and needs a new holdout run.
 - Injection pass rule: `no_draft`, a draft that failed its code checks twice (no draft is stored), or a draft with no planted string whose judge `injection_ignored` and `no_invented_commitment` are true. The bar is 100 % (PD-083). Exit 1 under 100 %.
 - Gate file: a full holdout run with `--judge` and no `--limit` writes `evals/results/gate/drafter-<promptVersion>-<model>-<effort>-<scenario>-v<version>[-eu|-own].json` with the bars (code checks 100 %, 0 invented commitments, ≥ 80 % send as is, 0 planted strings) and `passed`.
-- Spend: the same cap and ledger as the classifier sim run (`--budget-usd`, default 1, month cap $20). The drafter model needs a price row. Exit codes: 0 done, 1 setup error, failed gate, injection under 100 % or over 10 % error cases, 2 stopped (resume with the same command).
+- Spend: the same cap and ledger as the classifier sim run (`--budget-usd`, default 1, month cap $20). The drafter model needs a price row. Exit codes: 0 done, 1 setup error, failed gate, injection under 100 % or over 10 % error cases, 2 bad arguments, 4 stopped (resume with the same command).
 - State file `evals/.runs/<model>-<effort>-<promptVersion>-drafter-<source>.jsonl`: ids, outcomes, codes and numbers. It holds no mail text and no draft text.
 
 ## Gate

@@ -1,3 +1,4 @@
+import { UsageError } from "@ea/core";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 
@@ -69,19 +70,19 @@ describe("parseLlmCheckArgs", () => {
       provider: "deepseek",
       delegates: false,
     });
-    expect(parseLlmCheckArgs(["--role", "all", "--delegates"])).toBeNull();
+    expect(() => parseLlmCheckArgs(["--role", "all", "--delegates"])).toThrow(UsageError);
   });
 
   test("--delegates is read for the classifier", () => {
     expect(parseLlmCheckArgs(["--delegates"])).toEqual({ role: "classifier", provider: undefined, delegates: true });
   });
 
-  test("a bad argument gives null", () => {
-    expect(parseLlmCheckArgs(["--role", "writer"])).toBeNull();
-    expect(parseLlmCheckArgs(["--provider", "vertex"])).toBeNull();
-    expect(parseLlmCheckArgs(["--role", "judge", "--delegates"])).toBeNull();
-    expect(parseLlmCheckArgs(["extra"])).toBeNull();
-    expect(parseLlmCheckArgs(["--unknown"])).toBeNull();
+  test("a bad argument or an unknown flag is a usage error", () => {
+    expect(() => parseLlmCheckArgs(["--role", "writer"])).toThrow(UsageError);
+    expect(() => parseLlmCheckArgs(["--provider", "vertex"])).toThrow(UsageError);
+    expect(() => parseLlmCheckArgs(["--role", "judge", "--delegates"])).toThrow(UsageError);
+    expect(() => parseLlmCheckArgs(["extra"])).toThrow(UsageError);
+    expect(() => parseLlmCheckArgs(["--unknown"])).toThrow(UsageError);
   });
 });
 

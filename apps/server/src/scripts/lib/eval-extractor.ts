@@ -26,8 +26,8 @@ export interface ExtractorEvalCliDeps {
 }
 
 // `eval --sim <scenario> --part sent-dev|sent-holdout --extractor`: load the config, call `runExtractorEvalRun`, print.
-// Exit 0: done (and the gate passed, on the holdout); 1: a usage or setup error, a failed gate, or over 10% error cases;
-// 2: the run stopped (cap or errors), resume it.
+// Exit 0: done (and the gate passed, on the holdout); 1: a setup error, a failed gate, or over 10% error cases;
+// 2: a run flag the provider does not take; 4: the run stopped (cap or errors), resume it.
 export async function runExtractorEval(options: EvalOptions, deps: ExtractorEvalCliDeps = {}): Promise<number> {
   const config = deps.config ?? loadEvalConfig();
   if (config === null) return 1;
@@ -47,7 +47,7 @@ export async function runExtractorEval(options: EvalOptions, deps: ExtractorEval
     {
       print: (text) => cli.print(text),
       fail: (text) => cli.fail(text),
-      raw: (text) => process.stdout.write(`${text}\n`),
+      raw: (text) => cli.write(`${text}\n`),
     }
   );
 }

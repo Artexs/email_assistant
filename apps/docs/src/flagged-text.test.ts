@@ -109,6 +109,15 @@ describe("flaggedTextProblems", () => {
     expect(flaggedTextProblems("Track my sent mail", FLAGGED_TEXT, (flag) => flag === "sent_sync")).toEqual([]);
     expect(flaggedTextProblems("Press the Pause button on the Mailboxes page.")).toEqual([]);
   });
+  test.each([
+    [`Open "${en.dla_title}" on a mail.`, `delegate_button: ${en.dla_title}`],
+    [`The page says: ${en.rep_intro}`, `trust_ladder: ${en.rep_intro}`],
+    [`Turn on ${en.switch_reply_drafts} in Settings.`, `reply_drafts: ${en.switch_reply_drafts}`],
+    [`Open ${en.push_title} in Settings.`, `web_push: ${en.push_title}`],
+    ["You can edit and send in your mail client.", "draft_copy_check: edit and send in your mail client"],
+  ])("a page sentence that quotes a moved flag text fails: %s", (sentence, problem) => {
+    expect(flaggedTextProblems(sentence)).toContainEqual(problem);
+  });
   test("a short word that is a part of a longer panel text is not flagged on its own", () => {
     expect(flaggedTextProblems("Stats and delegations are words in plain prose.")).toEqual([]);
   });

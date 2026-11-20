@@ -480,7 +480,7 @@ describe("runEval", () => {
       expect(report.metrics.info.support).toBe(3);
     });
 
-    test("3 soft-error cases in a row stop the run with exit code 2", async () => {
+    test("3 soft-error cases in a row stop the run with exit code 4", async () => {
       const cases = ["a", "b", "c", "d", "e"].map((id) => makeCase({ id }));
       const { llm, calls } = fakeLlm([soft()]);
       const report = await runEval(harness().deps(llm), { ...opts, retries: 0, cases });
@@ -490,7 +490,7 @@ describe("runEval", () => {
       expect(report.doneCount).toBe(0);
       expect(report.errors).toBe(3);
       expect(report.totalCount).toBe(5);
-      expect(evalExitCode(report)).toBe(2);
+      expect(evalExitCode(report)).toBe(4);
     });
 
     test("after the stop, later cases with an earlier result are still in the report", async () => {

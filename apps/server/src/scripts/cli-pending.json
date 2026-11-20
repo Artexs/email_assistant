@@ -1,13 +1,4 @@
 {
-  "eval": [
-    "apps/server/src/scripts/eval.ts",
-    "apps/server/src/scripts/lib/eval-drafter.ts",
-    "apps/server/src/scripts/lib/eval-extractor.ts",
-    "apps/server/src/scripts/lib/eval-sim.ts",
-    "apps/server/src/scripts/lib/eval-suspicious.ts",
-    "apps/server/src/scripts/llm-check.ts",
-    "apps/server/src/scripts/sim.ts"
-  ],
   "e2e-dev": [
     "apps/server/src/scripts/db-worktree.ts",
     "apps/server/src/scripts/demo-org-setup.ts",
