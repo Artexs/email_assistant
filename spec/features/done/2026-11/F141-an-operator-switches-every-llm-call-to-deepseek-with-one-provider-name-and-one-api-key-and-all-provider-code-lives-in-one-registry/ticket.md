@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-19
+landed: 2026-11-20
 ---
 
 # F141 · One variable picks the LLM provider for the whole application: OpenAI, Gemini or DeepSeek, with one API key

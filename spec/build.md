@@ -18,7 +18,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 - `F147-one-operator-alert-path-with-texts-in-core-and-one-locale-type-exist` (🟠 ACTIVE): One operator alert path with texts in core and one locale type exist
 - `F143-the-files-that-the-last-tickets-grew-past-400-lines-are-split-by-aggregate-and-a-lint-check-warns-over-400-and-fails-over-800` (🟠 ACTIVE): The files that the last tickets grew past 400 lines are split by aggregate, and a lint check warns over 400 and fails over 800
-- `F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry` (🟠 ACTIVE): One variable picks the LLM provider for the whole application: OpenAI, Gemini or DeepSeek, with one API key
 - `F136-every-limen-job-runs-the-playwright-suites-in-parallel-with-no-shared-lock` (🟠 ACTIVE): Every Limen job runs the Playwright suites in parallel with no shared lock
 - `F129-every-command-line-tool-follows-one-standard-and-agents-find-each-tool-its-risk-and-its-exit-codes-in-one-generated-list` (🟠 ACTIVE): Every command-line tool follows one standard, and agents find each tool, its risk and its exit codes in one generated list
 - `F125-every-test-file-is-measured-and-classified-and-only-owner-approved-weak-stale-or-duplicate-tests-are-cut-or-merged` (🟠 ACTIVE): Every test file is measured and classified, and only owner-approved weak, stale or duplicate tests are cut or merged
@@ -69,7 +68,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F145-one-time-ts-spelling-minute-ms-hour-ms-day-ms-is-used-everywhere-and-a-lint-rule-bans-the-literals` (🟢 PROVEN): One time.ts spelling MINUTE_MS HOUR_MS DAY_MS is used everywhere and a lint rule bans the literals; landed 2026-11-20
 - `F144-the-sender-activity-read-is-split-into-readers-owned-by-the-modules-that-own-the-tables` (🟢 PROVEN): The sender activity read is split into readers owned by the modules that own the tables; landed 2026-11-20
 - `F142-loops-delegation-and-the-send-limit-compare-addresses-with-the-one-address-rule-and-a-scan-test-keeps-it-so` (🟢 PROVEN): Loops, delegation and the send limit compare addresses with the one address rule, and a scan test keeps it so; landed 2026-11-20
-- 2026-11: 116 landed. spec/features/done/2026-11/
+- 2026-11: 117 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
