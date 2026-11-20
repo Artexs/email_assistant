@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { isReservedHost } from "../testmail/batch";
-import { DAY_MS } from "../time";
+import { DAY_MS, HOUR_MS, MINUTE_MS } from "../time";
 import { urgencyProfileSchema } from "../triage/urgency-profile";
 
 export const simPersonaGroups = [
@@ -138,7 +138,7 @@ function isMonday(date: string): boolean {
 
 // The UTC offset in minutes of Europe/Warsaw at local noon of the given day.
 function warsawNoonOffsetMinutes(ms: number): number {
-  const noonUtc = ms + 11 * 3_600_000;
+  const noonUtc = ms + 11 * HOUR_MS;
   const parts = Object.fromEntries(
     WARSAW_OFFSET_FORMAT.formatToParts(new Date(noonUtc)).map((part) => [part.type, part.value])
   );
@@ -149,7 +149,7 @@ function warsawNoonOffsetMinutes(ms: number): number {
     Number(parts.hour),
     Number(parts.minute)
   );
-  return Math.round((localAsUtc - noonUtc) / 60_000);
+  return Math.round((localAsUtc - noonUtc) / MINUTE_MS);
 }
 
 // Lists every rule violation of a scenario (never throws); an empty list means valid.

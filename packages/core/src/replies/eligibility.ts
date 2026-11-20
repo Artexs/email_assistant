@@ -1,3 +1,4 @@
+import { DAY_MS } from "../time";
 import type { Category, Suspicion } from "../triage";
 import { isNoreplyAddress } from "../triage";
 
@@ -23,7 +24,7 @@ export type ReplyTrigger = "auto" | "tap" | "redraft" | "sample";
 export type ReplyLanguage = "pl" | "en";
 
 // An automatic draft waits for mail of the last 7 days only.
-export const REPLY_AUTO_MAX_AGE_MS = 7 * 86_400_000;
+export const REPLY_AUTO_MAX_AGE_MS = 7 * DAY_MS;
 
 export interface ReplyHeaderFacts {
   listId: string | null;
