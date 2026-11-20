@@ -219,9 +219,13 @@ const sloChecks: SloCheckEntry[] = [
   // null when BACKUP_STATUS_FILE is empty: the check is off and an open alert of this kind stays as it is.
   { kind: "slo_backup_age", run: (now) => checkBackupAge((path) => readFile(path, "utf8"), now, slo) },
 ];
-const sloTick = () =>
-  runSloTick({ db, checks: sloChecks, send: operatorSend, cfg: slo, log, locale: config.OPERATOR_LOCALE }, new Date());
-scheduler.add("ops.slo", "30 */5 * * * *", runs.track("ops.slo", sloTick));
+// prettier-ignore
+scheduler.add("ops.slo", "30 */5 * * * *", runs.track("ops.slo", () =>
+  runSloTick(
+    { db, checks: sloChecks, send: operatorSend, cfg: slo, log, locale: config.OPERATOR_LOCALE },
+    new Date()
+  )
+));
 
 // One pause object for the triage worker and the `not_triaged` notice job: they run in this process.
 let degraded: { pause: LlmPause; scope: TriageScope } | undefined;
