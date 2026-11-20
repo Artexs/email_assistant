@@ -768,3 +768,10 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - Why: plan defaults, taken by the coordinator after the cold review.
 - Undo: edit the question and the stage; none ships before stage 04.
 - Source: `spec/features/active/F141-*/questions.md`.
+
+### 2026-11-20 · F124 stage 02: dev Postgres max_connections 200; one database per test worker; one weaker assertion · rule-exception · new
+
+- Decision: (1) `deploy/compose.dev.yaml` sets `max_connections=200` (applies at the next restart of the dev Postgres); a job peaked at 19–22 connections and two race files need 16 at once. (2) Each `test:int` worker gets its own database (`apps/server/test/worker-db.ts`, `EA_TEST_WORKER_DB=1`); `db:worktree --drop` also drops `<name>_w1..w4`. (3) The `channels-operator` "send null" case uses `toContainEqual`, not an exact event list.
+- Why: removes the 8 deadlocks (4 of 5 traced to DDL in the schema Down/Up tests) without a serial exception list.
+- Undo: remove the `command:` line in `deploy/compose.dev.yaml`; delete `worker-db.ts`, its call in `preload.ts` and `EA_TEST_WORKER_DB=1` in `test:int`; restore `expectEvent` in `channels-operator.test.ts`.
+- Source: `spec/features/active/F124-*/stage-02-open.md`.

@@ -148,7 +148,11 @@ describe("the draft language follows the language of the mail", () => {
         .where("type", "=", "create_draft")
         .executeTakeFirstOrThrow();
       expect(draft.payload).toMatchObject({ kind: "delegation", language: "pl", task: "(bez tematu)" });
-      const [delegation] = await trx.selectFrom("delegations").select("task_summary").execute();
+      const [delegation] = await trx
+        .selectFrom("delegations")
+        .select("task_summary")
+        .where("org_id", "=", s.ctx.orgId)
+        .execute();
       expect(delegation?.task_summary).toBe("(bez tematu)");
     });
   });
