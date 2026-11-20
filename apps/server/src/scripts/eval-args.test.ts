@@ -359,6 +359,15 @@ describe("--drafter", () => {
     expect(() => parseEvalArgs(["--drafter-prompt", "drafter-v1"])).toThrow(UsageError);
   });
 
+  test("--style takes none, scenario or a path with --drafter; the classifier run refuses it", () => {
+    expect(parseEvalArgs([...sim, "--style", "none"])).toMatchObject({ style: "none" });
+    expect(parseEvalArgs([...set, "--style", "evals/results/styles/s.json"])).toMatchObject({
+      style: "evals/results/styles/s.json",
+    });
+    expect(() => parseEvalArgs([...sim, "--style"])).toThrow(UsageError);
+    expect(() => parseEvalArgs(["--sim", "lab-01", "--part", "dev", "--style", "none"])).toThrow(UsageError);
+  });
+
   test("--judge-prompt takes a known judge version and needs --judge; the classifier run refuses it", () => {
     expect(parseEvalArgs([...sim, "--judge", "--judge-prompt", "judge-v1"])).toMatchObject({
       "judge-prompt": "judge-v1",

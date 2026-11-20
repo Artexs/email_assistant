@@ -52,6 +52,14 @@ import { type EvalOptions, evalUsage } from "../eval-args";
 import { loadEvalConfig } from "./eval-config";
 import { gateCheck, writeDrafterGate } from "./eval-drafter-gate";
 import { dumpLine, loadSource, type Source } from "./eval-drafter-source";
+import {
+  type DrafterStyle,
+  loadStyle,
+  StyleFileError,
+  styleHeader,
+  styleSuffix,
+  writingStyleOf,
+} from "./eval-drafter-style";
 import { judgeSetupError, simRoleTable } from "./eval-judge-setup";
 import { HOLDOUT_NEEDS_FREEZE } from "./eval-sim-load";
 
@@ -118,6 +126,14 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     cli.fail("an own endpoint run has no USD budget, so it cannot use --judge (the judge is a paid provider)");
     return 1;
   }
+  let style: DrafterStyle;
+  try {
+    style = loadStyle(options.style);
+  } catch (error) {
+    if (!(error instanceof StyleFileError)) throw error;
+    cli.fail(error.message);
+    return 1;
+  }
   const startedAt = (deps.now ?? (() => new Date()))();
   const estimateUsd = own ? 0 : firstEstimateUsd(row.model, startedAt, endpoint);
   if (estimateUsd === null) {
@@ -143,6 +159,8 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     );
     return 1;
   }
+  const persona = { ...source.persona, writingStyle: writingStyleOf(style, source.referenceStyle) };
+  const runKey = `${source.key}${styleSuffix(style)}`;
   const holdout = options.part === "holdout";
   const needsReply = source.cases.filter((c) => c.expected.category === "needs_reply");
   const cases = options.limit === undefined ? needsReply : needsReply.slice(0, options.limit);
@@ -193,7 +211,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       endpoint,
       reasoningEffort: row.reasoningEffort,
       promptVersion: drafterPrompt.version,
-      set: `drafter-${source.key}`,
+      set: `drafter-${runKey}`,
       judgeModel: judgeRow?.model,
       judgeVersion: judgeRow === undefined ? undefined : judgePrompt.version,
     })
@@ -253,7 +271,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
             ...(dumpFile === undefined ? {} : { onDraft: (id: string, body: string) => drafts.set(id, body) }),
           },
           c,
-          { persona: source.persona, retries: options.retries, prompt: drafterPrompt },
+          { persona, retries: options.retries, referenceStyle: source.referenceStyle, prompt: drafterPrompt },
           attempts
         ),
       onResult: async (result) => {
@@ -276,7 +294,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     });
     const complete = outcome.stoppedReason === null && results.length === cases.length;
     const header: DrafterReportHeader = {
-      title: `Reply drafter eval: ${source.key}`,
+      title: `Reply drafter eval: ${runKey}`,
       data: source.data,
       provider: row.provider,
       endpoint,
@@ -288,6 +306,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
         judgeRow === undefined
           ? null
           : { provider: judgeRow.provider, model: judgeRow.model, promptVersion: judgePrompt.version },
+      style: styleHeader(style),
       planned: cases.length,
       complete,
       stoppedReason: outcome.stoppedReason,
@@ -333,6 +352,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
       limited: options.limit !== undefined,
       complete,
       judged: judgeRow !== undefined,
+      styled: style.kind !== "scenario",
     });
     let gate = false;
     if ("skip" in gateRun) {
@@ -365,7 +385,7 @@ export async function runDrafterEval(options: EvalOptions, deps: DrafterEvalCliD
     // One ledger line per run, also after a stop or an error: the new spend only.
     appendLedgerLine(
       ledgerPath,
-      ledgerLine({ runId: randomUUID(), at: new Date(), usd: newSpendUsd, label: `drafter-${source.key}-${row.model}` })
+      ledgerLine({ runId: randomUUID(), at: new Date(), usd: newSpendUsd, label: `drafter-${runKey}-${row.model}` })
     );
     release();
   }

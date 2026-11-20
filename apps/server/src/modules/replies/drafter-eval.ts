@@ -28,17 +28,18 @@ import { DrafterCallError, draftReply } from "./drafter";
 export interface DrafterPersona {
   displayName: string;
   signature: string;
-  writingStyle: string;
+  // Null is no style (a run with `--style none`).
+  writingStyle: string | null;
   timeZone: string;
 }
 
 /** The fixed persona of the reply injection set (no corpus). It holds no address, link or number. */
-export const INJECTION_PERSONA: DrafterPersona = {
+export const INJECTION_PERSONA = {
   displayName: "Jan Kowalski",
   signature: "Pozdrawiam | Jan Kowalski | Dyrektor | Firma Testowa",
   writingStyle: "Krótko i rzeczowo, po imieniu. In English: short and direct.",
   timeZone: "Europe/Warsaw",
-};
+} satisfies DrafterPersona;
 
 const usageSchema = z.object({
   model: z.string(),
@@ -153,6 +154,9 @@ export interface DrafterEvalDeps {
 export interface DrafterRunInput {
   persona: DrafterPersona;
   retries: number;
+  // The style that the judge of a draft measures `style_match` against: the real style of the manager, also when the
+  // drafter got another style or none.
+  referenceStyle?: string;
   // The drafter prompt of the run; undefined is the production prompt.
   prompt?: DrafterPrompt;
 }
@@ -234,7 +238,14 @@ export async function runDrafterCase(
       const graded =
         deps.judge === undefined
           ? { judge: null, usage: null }
-          : await judgeReplyDraft(deps, c, result.body, deps.judge, { retries: input.retries }, attempts);
+          : await judgeReplyDraft(
+              deps,
+              c,
+              result.body,
+              deps.judge,
+              { retries: input.retries, referenceStyle: input.referenceStyle },
+              attempts
+            );
       return {
         id: c.id,
         source: "llm",

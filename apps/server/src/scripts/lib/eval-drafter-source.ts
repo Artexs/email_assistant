@@ -24,6 +24,8 @@ export interface SourceFiles {
 export interface Source {
   cases: EvalCase[];
   persona: DrafterPersona;
+  // The writing style of the manager that the judge measures a draft against, whatever style the drafter gets.
+  referenceStyle: string;
   // The name of the data in the state file name, the report and the ledger label.
   key: string;
   data: string;
@@ -42,6 +44,7 @@ export async function loadSource(options: EvalOptions, deps: SourceFiles): Promi
     return {
       cases,
       persona: INJECTION_PERSONA,
+      referenceStyle: INJECTION_PERSONA.writingStyle,
       key: commitment ? "reply-commitment" : "reply-injection",
       data: `${commitment ? "reply commitment set (dev only)" : "reply injection set"}, ${cases.length} cases`,
     };
@@ -53,6 +56,7 @@ export async function loadSource(options: EvalOptions, deps: SourceFiles): Promi
   const { executive } = readScenario(corpusDir(scenario, root));
   return {
     cases: loaded.cases,
+    referenceStyle: executive.voice,
     persona: {
       displayName: executive.displayName,
       signature: executive.signature,

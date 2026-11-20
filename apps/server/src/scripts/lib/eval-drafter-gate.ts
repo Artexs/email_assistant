@@ -18,11 +18,14 @@ export function gateCheck(input: {
   limited: boolean;
   complete: boolean;
   judged: boolean;
+  // The drafter got a style other than the corpus voice: a paired measure, not the gate run.
+  styled: boolean;
 }): { source: GateSource } | { skip: string } {
   const { source } = input;
   if (source.scenario === undefined) return { skip: `no gate file: the ${source.key} set is not a holdout` };
   if (!input.holdout) return { skip: "no gate file: part is not holdout" };
   if (input.limited) return { skip: "no gate file: --limit is set" };
+  if (input.styled) return { skip: "no gate file: --style is not scenario" };
   if (!input.complete || !input.judged || !source.manifestSha || source.version === undefined) {
     return { skip: "no gate file: the run is not complete or has no judge" };
   }

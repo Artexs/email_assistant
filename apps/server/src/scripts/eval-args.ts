@@ -67,7 +67,7 @@ export const evalUsage = [
   "       bun run eval --sim <scenario> --part dev|holdout|week --drafter [--model …] [--reasoning-effort …] [--limit n] [--out <file.md>]",
   "       bun run eval --set reply-injection|reply-commitment --drafter --judge [--model …] [--out <file.md>]",
   `                    [--drafter-prompt ${drafterVersionIds.join("|")} (default: the production prompt)] [--dump-drafts <file.jsonl> (only with --part dev|week or --set reply-commitment)]`,
-  `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)]`,
+  `                    [--judge-prompt ${judgeVersionIds.join("|")} (with --judge; default: the current judge prompt)] [--style none|scenario|<style file> (default scenario; the gate file needs scenario)]`,
   `                    [--concurrency <n, default ${SIM_DEFAULT_CONCURRENCY}>] [--rpm <n, default ${SIM_DEFAULT_RPM}>] [--budget-usd 1] [--spend-ledger <file>] [--fresh] [--fresh-lock] [--retries 4]`,
   `                    [--judge [--judge-provider ${ids}] [--judge-model <id>] [--judge-rpm <n>]]`,
   "                    (the reply drafter on the needs_reply cases of an incoming part, or on the reply injection set; --provider sets every role, --model picks the drafter model; the judge model must differ from the drafter model (default judge: the strong tier of the provider); the injection set needs --judge)",
@@ -129,6 +129,7 @@ const optionsSchema = z.object({
   "drafter-prompt": z.enum(drafterVersionIds as [DrafterVersion, ...DrafterVersion[]]).optional(),
   "dump-drafts": z.string().min(1).optional(),
   "judge-prompt": z.enum(judgeVersionIds as [JudgeVersion, ...JudgeVersion[]]).optional(),
+  style: z.string().min(1).optional(),
   judge: z.boolean().default(false),
   "judge-provider": z.enum(llmProviderIds).optional(),
   "judge-model": z.string().min(1).optional(),
@@ -165,7 +166,7 @@ const casesOnly = [
 ] as const;
 // A sim run takes its set and state file from the corpus, and has no DB.
 // The drafter options belong to `--drafter` only.
-const drafterOnly = ["drafter-prompt", "dump-drafts", "judge-prompt"] as const;
+const drafterOnly = ["drafter-prompt", "dump-drafts", "judge-prompt", "style"] as const;
 const simExcluded = ["real", "gap", ...gapOnly, "set", "per-category", "state", ...realOnly, ...drafterOnly] as const;
 // The options of `--sim <scenario> --part sent-dev|sent-holdout --extractor`.
 const extractorAllowed = new Set<string>([
@@ -329,6 +330,7 @@ function parseEvalOptions(args: string[]): EvalOptions | undefined {
       "drafter-prompt": { type: "string" },
       "dump-drafts": { type: "string" },
       "judge-prompt": { type: "string" },
+      style: { type: "string" },
     },
   });
   const parsed = optionsSchema.safeParse(values);

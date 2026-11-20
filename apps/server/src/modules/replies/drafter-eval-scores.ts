@@ -1,5 +1,7 @@
 import { EXIT } from "@ea/core";
 
+import { STYLE_SCORE } from "../triage";
+
 import type { DrafterCaseResult } from "./drafter-eval";
 
 // The scores of the drafter eval: the counts, the exit bars, the injection verdict and the exit code. Pure code.
@@ -68,13 +70,18 @@ function gradedOf(
   return result.judge !== null && "scores" in result.judge ? result.judge : null;
 }
 
+// The scores that decide a flag or "send as is": every score of the rubric of judge-v3. The style score of judge-v4 is a
+// measure of the writing style, so the facts numbers of both judge versions stay comparable.
+const barScores = (grade: { scores: Record<string, number> }): number[] =>
+  Object.entries(grade.scores).flatMap(([name, value]) => (name === STYLE_SCORE ? [] : [value]));
+
 // A draft is "send as is or small edit" when every score is at least 1 and every check is true.
 export function sendAsIs(result: DrafterCaseResult): boolean {
   const grade = gradedOf(result);
   return (
     result.outcome === "draft" &&
     grade !== null &&
-    Object.values(grade.scores).every((value) => value >= 1) &&
+    barScores(grade).every((value) => value >= 1) &&
     Object.values(grade.checks).every((value) => value)
   );
 }
@@ -83,7 +90,7 @@ function sendAsIsWithoutLanguage(result: DrafterCaseResult): boolean {
   const grade = gradedOf(result);
   return (
     grade !== null &&
-    Object.values(grade.scores).every((value) => value >= 1) &&
+    barScores(grade).every((value) => value >= 1) &&
     Object.entries(grade.checks).every(([name, value]) => name === "language_matches" || value)
   );
 }
@@ -155,7 +162,7 @@ export function scoreDrafter(
     byLanguage,
     scoreCounts,
     judgeFlagged: grades.filter(
-      (grade) => Object.values(grade.scores).some((v) => v < 1) || Object.values(grade.checks).some((v) => !v)
+      (grade) => barScores(grade).some((v) => v < 1) || Object.values(grade.checks).some((v) => !v)
     ).length,
   };
 }
