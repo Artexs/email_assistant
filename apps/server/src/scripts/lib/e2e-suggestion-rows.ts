@@ -1,3 +1,4 @@
+import { DAY_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import { insertSentSyncState, markSentPass, updateSentCursor } from "../../modules/mail";
@@ -7,7 +8,6 @@ import { E2E_SUGGESTIONS } from "../e2e-seed-args";
 
 import { inTransaction } from "./e2e-activity-rows";
 
-const DAY = 24 * 60 * 60_000;
 const KEYS = ["vip", "blocklist", "whitelist"] as const;
 
 // The rows of the suggestions spec for one organization: three open suggestions of the mailbox, `vip` the newest, and no sender
@@ -40,7 +40,7 @@ export async function seedSuggestionRows(
             pattern: row.pattern,
             reason: JSON.stringify(row.reason),
             status: "open",
-            created_at: new Date(now.getTime() - (index + 1) * DAY),
+            created_at: new Date(now.getTime() - (index + 1) * DAY_MS),
           };
         })
       )
@@ -52,7 +52,7 @@ export async function seedSuggestionRows(
       ctx,
       mailboxId,
       { uidValidity: 1, lastUid: 1 },
-      { firstPassAt: new Date(now.getTime() - 30 * DAY) }
+      { firstPassAt: new Date(now.getTime() - 30 * DAY_MS) }
     );
     await markSentPass(trx, ctx, mailboxId, { at: now, errorCode: null });
   });

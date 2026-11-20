@@ -1,3 +1,4 @@
+import { DAY_MS, HOUR_MS } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
@@ -5,8 +6,6 @@ import { E2E_AUTHSERV_ID, E2E_NEWSLETTER_LINK, E2E_NEWSLETTER_SENDERS } from "..
 
 import { insertMails, inTransaction } from "./e2e-activity-rows";
 
-const HOUR = 60 * 60_000;
-const DAY = 24 * HOUR;
 const FIRST_UID = 940_001;
 
 type SenderKey = keyof typeof E2E_NEWSLETTER_SENDERS;
@@ -35,7 +34,7 @@ export async function seedNewsletterRows(db: Db, ctx: TenantContext, mailboxId: 
       const mails = Array.from({ length: sender.count }, (_, index) => ({
         uid: uid++,
         // The newest mail first: 3 hours ago, then one more day for each older mail.
-        receivedAt: new Date(now.getTime() - 3 * HOUR - index * DAY),
+        receivedAt: new Date(now.getTime() - 3 * HOUR_MS - index * DAY_MS),
         subject: `E2E newsletter ${key} ${index + 1}`,
         from: sender.address,
         category: "notification" as const,
@@ -56,8 +55,8 @@ export async function seedNewsletterRows(db: Db, ctx: TenantContext, mailboxId: 
         method: "one_click",
         status: "failed",
         code: "http_error",
-        created_at: new Date(now.getTime() - 2 * HOUR),
-        finished_at: new Date(now.getTime() - 2 * HOUR + 5_000),
+        created_at: new Date(now.getTime() - 2 * HOUR_MS),
+        finished_at: new Date(now.getTime() - 2 * HOUR_MS + 5_000),
       })
       .execute();
   });

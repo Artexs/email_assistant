@@ -1,4 +1,4 @@
-import { HOUR_MS } from "@ea/core";
+import { DAY_MS, HOUR_MS } from "@ea/core";
 
 import type { TenantContext } from "../../platform/db";
 import type { Db } from "../../platform/db";
@@ -38,7 +38,7 @@ export async function seedTrustRows(db: Db, ctx: TenantContext, mailboxId: strin
         org_id: ctx.orgId,
         mailbox_id: mailboxId,
         category: "info",
-        granted_at: new Date(now.getTime() - 5 * 24 * HOUR_MS),
+        granted_at: new Date(now.getTime() - 5 * DAY_MS),
         reason: "corrections",
         counts: JSON.stringify({ corrections: 2 }),
       })
@@ -67,7 +67,7 @@ export async function seedReportRows(
         reason: "connect",
         status: "classifying",
         created_at: new Date(now.getTime() - HOUR_MS),
-        next_attempt_at: new Date(now.getTime() + 365 * 24 * HOUR_MS),
+        next_attempt_at: new Date(now.getTime() + 365 * DAY_MS),
       })
       .execute();
     await trx

@@ -1,7 +1,7 @@
 // The queue side of the history job: claim, lock, wait, advance, fail and end one check. Every write after a claim
 // holds the lock of the claim (`locked_at` equal to the claimed value): a run whose lock was taken back after 10 minutes
 // writes nothing. Codes, ids, counts and times only: no mail text and no address.
-import type { EvidenceKey } from "@ea/core";
+import { type EvidenceKey, MINUTE_MS } from "@ea/core";
 import { sql, type Transaction, type UpdateObject } from "kysely";
 
 import type { DB, Db, TenantContext } from "../../platform/db";
@@ -21,9 +21,9 @@ const log = createLog("trust");
 /** The window of the check: the last 30 days of INBOX mail. */
 export const HISTORY_WINDOW_DAYS = 30;
 /** A lock older than this is stale: the next run takes the check again and counts one attempt. */
-export const HISTORY_LOCK_STALE_MS = 10 * 60_000;
+export const HISTORY_LOCK_STALE_MS = 10 * MINUTE_MS;
 /** A step error or a wait reschedules the check by this much. */
-export const HISTORY_RETRY_MS = 5 * 60_000;
+export const HISTORY_RETRY_MS = 5 * MINUTE_MS;
 /** The third attempt ends the check as `no_result` / `stopped`. */
 export const HISTORY_MAX_ATTEMPTS = 3;
 
