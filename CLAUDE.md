@@ -30,7 +30,7 @@ Before you diagnose an alert, grep docs/known-alerts.md.
 - Owner decisions log: `docs/owner-decisions.md`. Agents took these defaults for the owner; only the coordinator writes it. A session with the owner tells them the count of `new` entries (`grep -c ' · new$' docs/owner-decisions.md`).
 - Detailed implementation plans: the `plan-task` skill writes them as a Limen feature folder (`ticket.md`, `plan.md`, `stages/`); the coordinator builds them stage by stage.
 - Stage 2 order: `docs/product/stage-2/05-execution-plan.md` §2 (ticket table, `## Sequenced` rule, coordinator start rule). A `plan-task` run for a Stage 2 ticket does the four steps of its §2.3.
-- The old S6 files left in `tasks/` are history: `s6-pre-sale` (active), `s6b` (done), `s6f` (planned; F108).
+- The old S6 files in `tasks/done/` are history: `s6-pre-sale`, `s6b`, `s6f` (S6 done 2026-11-20).
 
 ## Notes
 
