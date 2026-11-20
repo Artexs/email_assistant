@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 
-import { type GateEvidenceDeps, type GateView, normalizeSenderAddress, type SendLimits } from "@ea/core";
+import { type GateEvidenceDeps, type GateView, normalizeAddress, type SendLimits } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import {
@@ -107,7 +107,7 @@ export function senderProfileReader(input: {
 }): NonNullable<ClassifierExtrasInput["readProfile"]> {
   return async (ctx, mailboxId, senderLower) => {
     if (!(await senderFlags(input.db, ctx)).context) return null;
-    const address = normalizeSenderAddress(senderLower);
+    const address = normalizeAddress(senderLower);
     const profiles = await readProfiles(
       { db: input.db, credentialsKey: input.credentialsKey },
       ctx,

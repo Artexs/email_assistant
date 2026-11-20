@@ -48,7 +48,7 @@ Dev URLs in `.env.example` use port 5433.
 | `bun run db:rollback`                                        | Rolls back the last migration                                                                                                  |
 | `bun run db:types`                                           | Generates the Kysely types from the database                                                                                   |
 | `bun run org:create --org-name … --email … --display-name …` | Creates an organization and its first user                                                                                     |
-| `bun run llm:check --provider <id>`                          | Checks the LLM key and model (`gemini:test` = alias)                                                                           |
+| `bun run llm:check --provider <id>`                          | Checks the LLM key and model                                                                                                   |
 | `bun run web:dev`                                            | Starts the Astro dev server (in an agent session Astro runs it in the background: `bunx astro dev stop` in `apps/web` ends it) |
 | `bun run web:build`                                          | Builds the Astro app                                                                                                           |
 

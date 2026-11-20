@@ -74,6 +74,7 @@ function fakeClient(slots: Slot[], model: string, endpoint: LlmEndpointKind) {
   const client: LlmClient = {
     modelOf: () => model,
     endpointOf: () => endpoint,
+    providerOf: () => "openai",
     async generate<T, R extends LlmRole>(req: LlmCall<T, R>) {
       calls += 1;
       const id = /Temat ([a-z0-9-]+)/.exec(req.prompt)?.[1] ?? "";
@@ -89,6 +90,7 @@ function fakeClient(slots: Slot[], model: string, endpoint: LlmEndpointKind) {
           tokensOut: 20,
           latencyMs: 5,
           endpoint,
+          provider: "openai" as const,
         },
       };
     },
@@ -293,6 +295,7 @@ describe("runClassifier state file by endpoint (D8)", () => {
   const failing = (endpoint: LlmEndpointKind): LlmClient => ({
     modelOf: () => OWN_MODEL,
     endpointOf: () => endpoint,
+    providerOf: () => "openai",
     generate: () => Promise.reject(new LlmSoftError("http_503", OWN_MODEL)),
   });
 

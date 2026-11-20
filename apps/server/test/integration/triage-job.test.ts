@@ -67,6 +67,7 @@ function fakeLlm(): FakeLlm {
   return {
     modelOf: () => "fake-model",
     endpointOf: () => "standard",
+    providerOf: () => "openai",
     prompts,
     allowed,
     async generate(req) {
@@ -82,6 +83,7 @@ function fakeLlm(): FakeLlm {
           tokensOut: 20,
           latencyMs: 300,
           endpoint: "standard",
+          provider: "openai" as const,
         },
       };
     },
@@ -150,6 +152,7 @@ describe("createTriageJob", () => {
       const spamLlm = {
         modelOf: () => "fake-model",
         endpointOf: () => "standard",
+        providerOf: () => "openai",
         async generate(req) {
           return {
             data: req.schema.parse({ ...infoAnswer, category: "spam", summary: null }),
@@ -161,6 +164,7 @@ describe("createTriageJob", () => {
               tokensOut: 20,
               latencyMs: 300,
               endpoint: "standard",
+              provider: "openai" as const,
             },
           };
         },

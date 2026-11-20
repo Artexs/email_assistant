@@ -26,7 +26,16 @@ import { assessEmail } from "./suspicious-context";
 /** What `classifyStored` tells the caller about one model call: the caller writes the `llm.call` row from it. */
 export type StoredCall = Pick<
   LlmCallRecord,
-  "role" | "promptVersion" | "model" | "endpoint" | "outcome" | "tokensIn" | "tokensOut" | "latencyMs" | "at"
+  | "role"
+  | "promptVersion"
+  | "model"
+  | "endpoint"
+  | "provider"
+  | "outcome"
+  | "tokensIn"
+  | "tokensOut"
+  | "latencyMs"
+  | "at"
 >;
 
 export interface ClassifyStoredDeps {
@@ -113,6 +122,7 @@ export async function classifyStored(
   const llm: LlmClient = {
     modelOf: (role) => deps.llm.modelOf(role),
     endpointOf: (role) => deps.llm.endpointOf(role),
+    providerOf: (role) => deps.llm.providerOf(role),
     async generate(call) {
       const reply = await deps.llm.generate(call);
       answered.usage = reply.usage;
@@ -136,6 +146,7 @@ export async function classifyStored(
         promptVersion: choice.version,
         model: answered.usage?.model ?? deps.llm.modelOf("classifier"),
         endpoint: answered.usage?.endpoint ?? deps.llm.endpointOf("classifier"),
+        provider: answered.usage?.provider ?? deps.llm.providerOf("classifier"),
         outcome: llmErrorCode(error),
         tokensIn: answered.usage?.tokensIn ?? null,
         tokensOut: answered.usage?.tokensOut ?? null,
@@ -153,6 +164,7 @@ export async function classifyStored(
     promptVersion: usage.promptVersion,
     model: usage.model,
     endpoint: usage.endpoint,
+    provider: usage.provider,
     outcome: "ok",
     tokensIn: usage.tokensIn,
     tokensOut: usage.tokensOut,

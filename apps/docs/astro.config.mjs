@@ -1,9 +1,11 @@
 // @ts-check
+import process from "node:process";
 import starlight from "@astrojs/starlight";
 import { DOCS_BASE, DOCS_ORIGIN, PRODUCT_NAME } from "@ea/core";
 import { defineConfig } from "astro/config";
 import claimCheck from "./integrations/claim-check";
 import cspFinalize from "./integrations/csp-finalize";
+import demoVideo from "./integrations/demo-video";
 import inPlaceCheck from "./integrations/in-place-check";
 import imageCheck from "./integrations/image-check";
 import linkCheck from "./integrations/link-check";
@@ -14,6 +16,8 @@ import { IN_PLACE_PAGES, IN_PLACE_SECTION, inOperate, inPlaceSourcePaths } from 
 // The public docs site (ADR 0030). Starlight's own Expressive Code highlights code, so `markdown.syntaxHighlight` stays on.
 export default defineConfig({
   output: "static",
+  // Tests only: a folder that holds the `demo/` files of a build (the fixture video). Unset: `apps/docs/public`.
+  ...(process.env.EA_DOCS_PUBLIC_DIR ? { publicDir: process.env.EA_DOCS_PUBLIC_DIR } : {}),
   site: DOCS_ORIGIN,
   base: DOCS_BASE,
   integrations: [
@@ -87,6 +91,8 @@ export default defineConfig({
     imageCheck(),
     // Where the screenshot files are, and the log line `shots: on|off`.
     shots(),
+    // Where the demo video files are, and the log line `demo_video: on|off`.
+    demoVideo(),
   ],
   // Astro hashes its own scripts and styles. `cspFinalize` hashes the rest and relaxes `style-src`.
   // No `frame-ancestors`: a meta CSP ignores it. No `'unsafe-eval'` or `'wasm-unsafe-eval'`: Pagefind needs neither.
