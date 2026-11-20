@@ -20,7 +20,7 @@ export const TERMS_HISTORY: readonly TermsHistoryEntry[] = [
   { version: "2026-11-19", sha256: "0d28bb37aa989259d6f2660fc4a7fb1402418a5e8ffdb5d87938cf1c2f78df8d" }, // sub-processor web-push, Telegram levels
   { version: "2026-11-19-2", sha256: "b78d2c1c9e5c0f00422e21a2c4ce9ceb68b546676e1baed1408c405dd9a823fa" }, // reply drafts: consent text, privacy text, row openai
   { version: "2026-11-20", sha256: "6ed7e71ad979a4cc646faf90a6ecd170eadf1c6d20e0966c2dcf8132940aae67" }, // AI provider: thread context, history check
-  { version: "2026-11-20.2", sha256: "757e7aa3f4e39ed785989719a58fb4b4dc52aa71ac208955a2a213461aa1ddcf" }, // papers: open-loops extractor, one-click unsubscribe request, report mail, shadow-mode exception
+  { version: "2026-11-20.2", sha256: "9af128497b8c53e7411951d80f5d1865356c645dc1fd9dee3fbd7e882c84bd28" }, // papers: open-loops extractor, one-click unsubscribe request, report mail, shadow-mode exception
 ];
 
 function lastVersion(history: readonly TermsHistoryEntry[]): string {
