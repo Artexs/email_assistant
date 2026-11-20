@@ -10,7 +10,7 @@ import { testDb } from "./helpers";
 
 // The confirm guard of the danger tools that had none (docs/cli.md § Risk classes): `org:break-glass` set and `--clear`,
 // and `web:two-factor-reset`, spawned as the operator runs them. `org:delete` and `org:dsr --erase` keep their own
-// confirm tests (`org-delete-cli.test.ts`, `privacy-dsr-erase.test.ts`).
+// confirm tests (`org-delete-cli.test.ts`, `privacy-dsr-erase-cli.test.ts`).
 const db = testDb();
 const repoRoot = resolve(import.meta.dir, "../../../..");
 const scripts = resolve(import.meta.dir, "../../src/scripts");

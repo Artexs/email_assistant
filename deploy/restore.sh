@@ -108,6 +108,10 @@ set_compose() {
     C=(docker compose -p "$DRILL_PROJECT" -f deploy/compose.yaml -f deploy/compose.drill.yaml --env-file "$DRILL_ENV")
   else
     [[ -f deploy/db.env || -f .env ]] || refuse ".env does not exist; make it first (deploy/README.md § First install)"
+    # Before any docker call: a new host that is not split would start the server with the database keys in `.env`.
+    local split_state
+    split_state="$(ea_env_split_state)"
+    [[ "$split_state" == split ]] || refuse "run deploy/env-split.sh first (state $split_state)"
     ea_compose_init || exit 2
     C=("${EA_COMPOSE[@]}")
   fi
