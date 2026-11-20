@@ -164,7 +164,7 @@ describe("sender pattern rule", () => {
   test("the web schema stores trim and lower case, and the match folds by the one address rule", () => {
     const parse = (pattern: string) => ruleBodySchema.parse({ kind: "whitelist", pattern }).pattern;
     expect(parse("  Boss@Firma.TEST ")).toBe("boss@firma.test");
-    // 01-T5 pin: the stored form keeps the final sigma; the match still finds the folded sender.
+    // The stored form keeps the final sigma; the match still finds the folded sender.
     const stored = parse("ΝΊΚΟΣ@example.gr");
     expect(stored).toBe("νίκος@example.gr");
     expect(matchSender("νίκοσ@example.gr", [{ pattern: stored, kind: "whitelist" }]).whitelisted).toBe(true);

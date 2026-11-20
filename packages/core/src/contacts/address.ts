@@ -26,7 +26,7 @@ export function normalizeAddress(address: string): string {
 }
 
 // The form of an address that is stored, shown and sent: trim and lower case, no fold. The rule form (`normalizeAddress`)
-// is a compare key only: it turns `νίκος` into `νίκοσ`, which is another mailbox for a strict mail server (plan D5).
+// is a compare key only: it turns `νίκος` into `νίκοσ`, which is another mailbox for a strict mail server.
 export function storedAddressForm(address: string): string {
   return address.trim().toLowerCase();
 }
