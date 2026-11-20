@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { categories, type Category } from "./categories";
+import { draftPayloadSchema } from "./payloads";
 import {
   AI_FOLDER_NAMES,
   delegationInputOf,
@@ -80,6 +81,12 @@ describe("planActions", () => {
     test("a due date is copied", () => {
       const [draft] = planActions("delegation", null, delegationInput({ dueDate: "2026-11-10" }));
       expect(draft).toMatchObject({ type: "create_draft", draft: { due_date: "2026-11-10" } });
+    });
+
+    test("an impossible due date gives an empty due date that the draft schema accepts", () => {
+      const [draft] = planActions("delegation", null, delegationInput({ dueDate: "2026-02-30" }));
+      expect(draft).toMatchObject({ type: "create_draft", draft: { due_date: "" } });
+      expect(draftPayloadSchema.safeParse(draft?.type === "create_draft" ? draft.draft : null).success).toBe(true);
     });
 
     test("no delegate but a clarification gives the clarification pair", () => {
