@@ -90,6 +90,13 @@ describe("parseSendLog", () => {
     expect(result.partialLast).toBe(false);
   });
 
+  test("skips a blank line and a whitespace-only line between lines", () => {
+    const valid = text(intent(1));
+    const result = parseSendLog(`${valid}\n  \n${valid}`);
+    expect(result.badLines).toEqual([]);
+    expect(result.lines).toHaveLength(2);
+  });
+
   test("reports bad lines with 1-based numbers", () => {
     const valid = text(intent(1));
     const result = parseSendLog(`${valid}not json\n${valid}`);
@@ -161,6 +168,40 @@ describe("caseStates", () => {
   });
 });
 
+describe("caseStates, exact states", () => {
+  const all = (...lines: SendLogLine[]) => caseStates(BATCH, ["c1", "c2"], lines);
+  const atIntent = new Date("2026-11-08T10:00:00.000Z");
+
+  test("two sent lines at the same time: the first one in the log wins", () => {
+    const same = "2026-11-08T10:00:01.000Z";
+    expect(all(sent(1, same), sent(2, same)).get("c1")).toMatchObject({ kind: "sent", attempt: 1 });
+    expect(all(sent(2, same), sent(1, same)).get("c1")).toMatchObject({ kind: "sent", attempt: 2 });
+  });
+
+  test("the earliest sent wins, whatever the log order", () => {
+    const early = "2026-11-08T10:00:00.000Z";
+    const late = "2026-11-08T10:00:05.000Z";
+    expect(all(sent(1, early), sent(2, late)).get("c1")).toMatchObject({ kind: "sent", attempt: 1 });
+    expect(all(sent(2, late), sent(1, early)).get("c1")).toMatchObject({ kind: "sent", attempt: 1 });
+  });
+
+  test("a higher attempt wins over a lower one, whatever the log order", () => {
+    expect(all(failed(1), intent(2)).get("c1")).toMatchObject({ kind: "open", attempt: 2 });
+    expect(all(intent(2), failed(1)).get("c1")).toMatchObject({ kind: "open", attempt: 2 });
+    expect(all(intent(1), failed(2)).get("c1")).toEqual({ kind: "failed", attempt: 2, code: "http_500" });
+  });
+
+  test("within one attempt a failed line wins over its intent, whatever the log order", () => {
+    expect(all(intent(1), failed(1)).get("c1")).toMatchObject({ kind: "failed" });
+    expect(all(failed(1), intent(1)).get("c1")).toMatchObject({ kind: "failed" });
+  });
+
+  test("the later intent of an equal attempt does not replace the first", () => {
+    const second = { ...intent(1), key: "k2", hash: "b".repeat(64), at: "2026-11-08T10:30:00.000Z" } as SendLogLine;
+    expect(all(intent(1), second).get("c1")).toMatchObject({ key: "ea-2026-11-08-a-c1-a1", hash: HASH });
+  });
+});
+
 describe("sentInWindow", () => {
   const now = new Date("2026-11-08T12:00:00Z");
   const day = 24 * 3_600_000;
@@ -168,6 +209,10 @@ describe("sentInWindow", () => {
   test("counts only sends inside the window", () => {
     expect(sentInWindow([sent(1, "2026-11-07T12:00:01Z")], now, day)).toBe(1);
     expect(sentInWindow([sent(1, "2026-11-07T11:59:59Z")], now, day)).toBe(0);
+  });
+
+  test("a send exactly at the start of the window is outside it", () => {
+    expect(sentInWindow([sent(1, "2026-11-07T12:00:00Z")], now, day)).toBe(0);
   });
 
   test("ignores label recoveries and other types", () => {
@@ -183,6 +228,11 @@ describe("keys and labels", () => {
 
   test("caseLabel", () => {
     expect(caseLabel("2026-11-08-a", "c1")).toBe("ea-2026-11-08-a-c1");
-    expect(() => caseLabel("b", "x".repeat(300))).toThrow();
+    expect(() => caseLabel("b", "x".repeat(300))).toThrow("Invalid id for key or label");
+  });
+
+  test("a label of 256 characters is valid and one of 257 is not", () => {
+    expect(caseLabel("b", "x".repeat(251))).toHaveLength(256);
+    expect(() => caseLabel("b", "x".repeat(252))).toThrow("Invalid id for key or label");
   });
 });

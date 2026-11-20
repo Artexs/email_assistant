@@ -997,3 +997,26 @@ describe("the long sequence: 12 digits or more that nobody typed (owner answer, 
     expect(failuresOf(say("konto 61 1090 1014 0000 0712 1981 2875"), [], mail)).toEqual(["account_number"]);
   });
 });
+
+describe("the typed number keys and the IBAN stream", () => {
+  test("a typed number written with dashes is known as one number", () => {
+    expect(digitVerdict("Zadzwoń 123456789", { allowed: ["tel. 123-456-789"] })).toEqual({
+      account: false,
+      phone: false,
+    });
+    expect(digitVerdict("Zadzwoń 123456789", { allowed: [] })).toEqual({ account: false, phone: true });
+  });
+
+  test("typed groups that follow each other after two spaces are one number", () => {
+    expect(digitVerdict("Konto 1234 5678 9012", { allowed: ["Konto 1234  5678  9012"] })).toEqual({
+      account: false,
+      phone: false,
+    });
+    expect(digitVerdict("Konto 1234 5678 9012", { allowed: [] })).toEqual({ account: true, phone: false });
+  });
+
+  test("a letter of another script breaks the stream even when its capital is an ASCII letter", () => {
+    expect(ibansOf("Konto IE29AIBK93115212345678.")).toEqual(["IE29AIBK93115212345678"]);
+    expect(ibansOf("Konto IE29AıBK93115212345678.")).toEqual([]);
+  });
+});

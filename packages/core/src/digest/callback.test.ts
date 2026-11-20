@@ -173,3 +173,27 @@ describe("answered check callback data", () => {
     expect(parseCallback(data)).toBeNull();
   });
 });
+
+describe("the delegate pick data holds each id as 22 characters of base64url", () => {
+  const ZERO = "00000000-0000-4000-8000-000000000001";
+  const FULL = "ffffffff-ffff-4fff-bfff-ffffffffffff";
+
+  test.each([
+    { mail: ZERO, delegate: FULL, data: "dp:AAAAAAAAQACAAAAAAAAAAQ:________T_-__________w" },
+    { mail: FULL, delegate: ZERO, data: "dp:________T_-__________w:AAAAAAAAQACAAAAAAAAAAQ" },
+  ])("$mail and $delegate encode to $data and parse back", ({ mail, delegate, data }) => {
+    const callback: Callback = { kind: "delegate_pick", emailId: mail, delegateId: delegate };
+    expect(encodeCallback(callback)).toBe(data);
+    expect(parseCallback(data)).toEqual(callback);
+  });
+
+  test("a last character that is not the canonical one of its 16 bytes gives null, in either part", () => {
+    const part = "AAAAAAAAQACAAAAAAAAAAQ";
+    const other = part.slice(0, 21);
+    for (const last of ["B", "C", "E"]) {
+      expect(parseCallback(`dp:${other}${last}:${part}`)).toBeNull();
+      expect(parseCallback(`dp:${part}:${other}${last}`)).toBeNull();
+    }
+    expect(parseCallback(`dp:${part}:${part}`)).toEqual({ kind: "delegate_pick", emailId: ZERO, delegateId: ZERO });
+  });
+});

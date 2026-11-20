@@ -238,3 +238,37 @@ describe("extractorInputOf", () => {
     expect(extractorInputOf({ ...mail, subject: null }, "Europe/Warsaw").subject).toBe("");
   });
 });
+
+describe("extractorOutputSchema on answers that are not an object", () => {
+  test.each([
+    ["null", null, "null"],
+    ["an array", [answer], "array"],
+    ["a string", "text", "string"],
+    ["a number", 5, "number"],
+  ])("%s is refused as a whole, with the type of the input", (_label, value, received) => {
+    const result = extractorOutputSchema.safeParse(value);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toEqual([
+      {
+        expected: "object",
+        code: "invalid_type",
+        path: [],
+        message: `Invalid input: expected object, received ${received}`,
+      },
+    ]);
+  });
+
+  test.each(["ask", "promise"] as const)("a missing %s is a schema failure; the code adds no null for it", (key) => {
+    const { [key]: _removed, ...rest } = answer;
+    const result = extractorOutputSchema.safeParse(rest);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues).toEqual([
+      {
+        expected: "string",
+        code: "invalid_type",
+        path: [key],
+        message: "Invalid input: expected string, received undefined",
+      },
+    ]);
+  });
+});

@@ -12,7 +12,8 @@ import type { Db } from "../../platform/db";
 import { errorFields } from "../../platform/errors";
 import type { Log } from "../../platform/log";
 
-import { getActiveAlert, markAlertSent, openAlert, resolveAlert, type AlertPhase } from "./alerts-repo";
+import { getActiveAlert, markAlertSent, openAlert, resolveAlert } from "./alerts-repo";
+import type { AlertStatus, OperatorDelivery } from "./deliver";
 import type { SloReading } from "./slo-checks";
 
 // One tick of the `ops.slo` job. For each kind it reads the check, asks `nextAlertStep` what to do, sends the
@@ -31,10 +32,10 @@ export interface SloCheckEntry {
 export interface SloTickDeps {
   db: Db;
   checks: SloCheckEntry[];
-  // The operator direct send. null = no operator chat: the `info` line `slo_alert_sent` counts as the send.
-  send: ((text: string) => Promise<void>) | null;
+  // The one delivery of the operator texts. No operator chat counts as delivered.
+  delivery: OperatorDelivery;
   cfg: Pick<SloThresholds, "repeatH">;
-  log: Pick<Log, "info" | "warn">;
+  log: Pick<Log, "error">;
   locale: UserLocale;
 }
 
@@ -45,7 +46,7 @@ export async function runSloTick(deps: SloTickDeps, now: Date): Promise<void> {
     try {
       reading = await entry.run(now);
     } catch (error) {
-      deps.log.warn("slo_check_failed", { kind: entry.kind, ...errorFields(error) });
+      deps.log.error("operator_check_failed", { kind: entry.kind, ...errorFields(error) });
       continue;
     }
     if (reading === null) continue;
@@ -53,7 +54,7 @@ export async function runSloTick(deps: SloTickDeps, now: Date): Promise<void> {
       await applyReading(deps, reading, now);
     } catch (error) {
       // A state read or write failed. The next tick asks again; the other kinds go on.
-      deps.log.warn("slo_check_failed", { kind: entry.kind, ...errorFields(error) });
+      deps.log.error("operator_alert_failed", { kind: entry.kind, ...errorFields(error) });
     }
   }
 }
@@ -76,7 +77,8 @@ async function applyReading(deps: SloTickDeps, reading: SloReading, now: Date): 
       { kind: check.kind, phase: step, facts: check.facts, ids, openedAt: active.openedAt, now },
       deps.locale
     );
-    if (await deliver(deps, check.kind, step, text)) await markAlertSent(db, active.id, step, now, check.facts);
+    if (await deliver(deps, check.kind, step, active.id, text))
+      await markAlertSent(db, active.id, step, now, check.facts);
     return;
   }
   // `resolve`: the row exists, because only a row can be open.
@@ -87,19 +89,17 @@ async function applyReading(deps: SloTickDeps, reading: SloReading, now: Date): 
     { kind: check.kind, phase: "resolved", facts: check.facts, ids, openedAt: row.openedAt, now: resolvedAt },
     deps.locale
   );
-  if (await deliver(deps, check.kind, "resolved", text)) await markAlertSent(db, row.id, "resolved", now, check.facts);
+  if (await deliver(deps, check.kind, "resolved", row.id, text))
+    await markAlertSent(db, row.id, "resolved", now, check.facts);
 }
 
 // true = the notice counts as sent. A failed send writes no mark: the next tick tries again.
-async function deliver(deps: SloTickDeps, kind: SloKind, phase: AlertPhase, text: string): Promise<boolean> {
-  if (deps.send !== null) {
-    try {
-      await deps.send(text);
-    } catch (error) {
-      deps.log.warn("slo_alert_send_failed", { kind, status: phase, ...errorFields(error) });
-      return false;
-    }
-  }
-  deps.log.info("slo_alert_sent", { kind, status: phase });
-  return true;
+function deliver(
+  deps: SloTickDeps,
+  kind: SloKind,
+  status: AlertStatus,
+  alertId: string,
+  text: string
+): Promise<boolean> {
+  return deps.delivery.deliver({ kind, status, key: `${kind}:${status}:${alertId}` }, text);
 }

@@ -4,18 +4,22 @@ import { join, resolve } from "node:path";
 
 import { loadRepoDotEnv } from "../../../server/src/scripts/e2e-job-env-args";
 import { cutPlan, ffmpegArgs } from "../lib/demo/encode";
-import { parseRecordArgs, preflightProblem, videoProblem } from "../lib/demo/record-args";
+import { type DemoPrepared, prepareDemoRun } from "../lib/demo/prepare";
+import { parseRecordArgs, preflightProblem, type RecordArgs, videoProblem } from "../lib/demo/record-args";
 import { shotSource, type ShotSource } from "../lib/shot-source";
 import { DEMO_STEPS, stepView, toVtt, type DemoCue } from "../lib/demo/steps";
 import { resetDemoDb } from "./db-reset";
 
 // `bun run demo:record [--seed <file>] [--out <dir>]`: records the demo video on the e2e servers and the demo database, then encodes it.
 //
-// 1. Checks, before any server starts or any database changes: ffmpeg, a named seed file, the demo database keys and name.
+// 1. Checks, before any server starts or any database changes: ffmpeg, a named seed file, the demo database keys and name. On the
+//    demo source also the seed (`planDemoRun`), the gate copy and the replay server of the demo week's classifier answers.
 // 2. Rebuilds the demo database (drop every object, `db:migrate`), so a second run starts from the same state.
 // 3. Runs `demo.config.ts` (Playwright): servers, seed, the eight steps in one recorded page; it writes the raw video and the cue times.
 // 4. Encodes `demo.mp4` (`cutPlan`: only the steps stay; the lead-in and every gap of 1 s or more between two steps are cut), writes
 //    `demo.en.vtt` and `demo.pl.vtt` with the cue times on the cut timeline, and prints the duration, the size and the sha256 of `demo.mp4` and of both caption files (the owner pins the three hashes when the video goes public).
+// On the demo source the run ends with `demo_replay hits=<n> misses=<n>` and `demo_gate final|provisional`, and exits 1 on a replay
+// miss or when the replay answered nothing.
 // Exit 1 on a refusal, a failed run, an MP4 over 15 MB, or a length outside 100 to 130 seconds. Run it under
 // `flock /tmp/email-assistant-shared-tests.lock` (fixed ports, one shared mail server, one shared demo database).
 const repoRoot = resolve(import.meta.dirname, "../../../..");
@@ -72,6 +76,48 @@ async function main(): Promise<number> {
     ...(source.kind === "demo" ? { DEMO_SEED_FILE: source.file } : {}),
   };
 
+  let demo: DemoPrepared | null = null;
+  if (source.kind === "demo") {
+    const prepared = await prepareDemoRun(source.file, work);
+    if (typeof prepared === "string") return fail(prepared);
+    demo = prepared;
+    env.DEMO_PLAN_FILE = prepared.planFile;
+    env.DEMO_REPLAY_PORT = `${prepared.replay.port}`;
+    env.DEMO_GATE_DIR = prepared.gateDir;
+  }
+  if (demo === null) return recordSteps({ args, source, work, env, migratorUrl });
+  let code: number;
+  try {
+    code = await recordSteps({ args, source, work, env, migratorUrl });
+  } catch (error) {
+    await demo.replay.stop();
+    throw error;
+  }
+  const replayCode = await closeReplay(demo, code === 0);
+  return code !== 0 ? code : replayCode;
+}
+
+// Prints the replay counts and the gate line, stops the replay server. A miss is a failure at any time; an unused replay is one only
+// after a recording that passed (a failed run may stop before the first mail).
+async function closeReplay(demo: DemoPrepared, recorded: boolean): Promise<number> {
+  const { hits, misses } = demo.replay.stats();
+  await demo.replay.stop();
+  print(`demo_replay hits=${hits} misses=${misses}`);
+  print(`demo_gate ${demo.gateProvisional ? "provisional" : "final"}`);
+  if (misses > 0) return fail(`demo_replay_miss ${misses}`);
+  if (recorded && hits === 0) return fail("demo_replay_unused");
+  return 0;
+}
+
+interface RecordContext {
+  args: RecordArgs;
+  source: ShotSource;
+  work: string;
+  env: Record<string, string | undefined>;
+  migratorUrl: string;
+}
+
+async function recordSteps({ args, source, work, env, migratorUrl }: RecordContext): Promise<number> {
   print("rebuilding the demo database");
   await resetDemoDb(migratorUrl);
   const migrated = await run(["bun", "run", "db:migrate"], { ...env, MIGRATOR_DATABASE_URL: migratorUrl });
