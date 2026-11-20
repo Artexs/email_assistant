@@ -1,6 +1,17 @@
 import { describe, expect, test } from "bun:test";
 
-import { type CliDescription, cliDescriptionSchema, renderHelp, renderToolTable, UsageError } from "./index";
+import {
+  CLI_NEEDS,
+  CLI_RISKS,
+  CLI_SUMMARY_MAX,
+  type CliDescription,
+  cliDescriptionSchema,
+  type CliToolRow,
+  EXIT,
+  renderHelp,
+  renderToolTable,
+  UsageError,
+} from "./index";
 
 const orgStatus: CliDescription = {
   name: "org:status",
@@ -73,6 +84,170 @@ describe("cliDescriptionSchema", () => {
   });
 });
 
+describe("the vocabulary of the standard", () => {
+  test("lists the risks, the needs, the exit codes and the summary limit", () => {
+    expect([...CLI_RISKS]).toEqual(["read", "dev", "write", "cost", "outside", "danger"]);
+    expect([...CLI_NEEDS]).toEqual([
+      "none",
+      "db",
+      "greenmail",
+      "imap",
+      "smtp",
+      "telegram",
+      "llm",
+      "agentmail",
+      "dns",
+      "vps",
+      "docker",
+      "git",
+    ]);
+    expect(EXIT).toEqual({ ok: 0, failed: 1, usage: 2, unreachable: 3, incomplete: 4 });
+    expect(CLI_SUMMARY_MAX).toBe(100);
+  });
+});
+
+describe("cliDescriptionSchema issues and edges", () => {
+  const issuesOf = (change: Record<string, unknown>) => {
+    const result = cliDescriptionSchema.safeParse({ ...orgStatus, ...change });
+    if (result.success) return [];
+    return result.error.issues.map((issue) => ({ code: issue.code, path: issue.path, message: issue.message }));
+  };
+
+  test.each([
+    ["org:status", true],
+    ["a", true],
+    ["a1:b2-c3", true],
+    ["a:b:c", true],
+    ["Org:status", false],
+    ["org:", false],
+    [":org", false],
+    ["org::status", false],
+    ["org-:status", false],
+    ["-org", false],
+    ["org_status", false],
+    ["org status", false],
+    ["org:status\n", false],
+    ["x org:status", false],
+  ])("the name %j is ok = %s", (name, ok) => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, name, usage: `bun run ${name}` }).success).toBe(ok);
+  });
+
+  test.each([
+    ["add", true],
+    ["add-user", true],
+    ["a1", true],
+    ["Add", false],
+    ["add:user", false],
+    ["add-", false],
+    ["-add", false],
+    ["add user", false],
+    ["", false],
+    ["add\n", false],
+  ])("the subcommand %j is ok = %s", (subcommand, ok) => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, subcommand }).success).toBe(ok);
+  });
+
+  test("a name that breaks the pattern gets the package.json message", () => {
+    expect(issuesOf({ name: "Org", usage: "bun run Org" })).toEqual([
+      {
+        code: "invalid_format",
+        path: ["name"],
+        message: "name is a package.json key: kebab-case parts joined by ':'",
+      },
+    ]);
+  });
+
+  test.each([
+    {
+      name: "a summary over the limit",
+      change: { summary: `${"a".repeat(100)}.` },
+      issues: [{ code: "too_big", path: ["summary"], message: "summary is at most 100 characters" }],
+    },
+    {
+      name: "a summary with no final dot",
+      change: { summary: "Prints one organization" },
+      issues: [{ code: "invalid_format", path: ["summary"], message: "summary is one sentence that ends with '.'" }],
+    },
+    {
+      name: "a summary that starts with a space",
+      change: { summary: " Prints one organization." },
+      issues: [{ code: "invalid_format", path: ["summary"], message: "summary is one sentence that ends with '.'" }],
+    },
+    {
+      name: "a summary of two lines",
+      change: { summary: "Prints one.\nPrints two." },
+      issues: [
+        { code: "invalid_format", path: ["summary"], message: "summary is one sentence that ends with '.'" },
+        { code: "custom", path: ["summary"], message: "summary is one line" },
+      ],
+    },
+    {
+      name: "needs with a duplicate",
+      change: { needs: ["db", "db"] },
+      issues: [{ code: "custom", path: ["needs"], message: "needs has no duplicate" }],
+    },
+    {
+      name: "none next to another need",
+      change: { needs: ["none", "db"] },
+      issues: [{ code: "custom", path: ["needs"], message: "'none' stands alone" }],
+    },
+    {
+      name: "a usage that does not start with bun run",
+      change: { usage: "bun org:status" },
+      issues: [
+        { code: "custom", path: ["usage"], message: "usage starts with 'bun run <name>'" },
+        { code: "custom", path: ["usage"], message: "usage first line names the tool" },
+      ],
+    },
+    {
+      name: "a usage with text before bun run",
+      change: { usage: "x bun run org:status" },
+      issues: [
+        { code: "custom", path: ["usage"], message: "usage starts with 'bun run <name>'" },
+        { code: "custom", path: ["usage"], message: "usage first line names the tool" },
+      ],
+    },
+    {
+      name: "a usage for another tool",
+      change: { usage: "bun run org:delete" },
+      issues: [{ code: "custom", path: ["usage"], message: "usage first line names the tool" }],
+    },
+  ])("refuses $name with its exact issues", ({ change, issues }) => {
+    expect<unknown>(issuesOf(change)).toEqual(issues);
+  });
+
+  test.each([
+    ["an empty needs list", { needs: [] }],
+    ["an exit text of 0 characters", { exits: { 1: "" } }],
+    ["an exit text of 101 characters", { exits: { 3: "e".repeat(101) } }],
+    ["an empty output note", { outputNote: "" }],
+    ["a key the standard does not know", { owner: "me" }],
+    ["a usage of bun run and a space", { usage: "bun run " }],
+  ])("refuses %s", (_label, change) => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, ...change }).success).toBe(false);
+  });
+
+  test.each([
+    ["an exit text of 1 character", { exits: { 4: "x" } }],
+    ["an exit text of 100 characters", { exits: { 1: "e".repeat(100), 3: "e".repeat(100) } }],
+    ["every need but none", { needs: CLI_NEEDS.filter((need) => need !== "none") }],
+    ["a one-character output note", { outputNote: "x" }],
+    ["none as the only need", { needs: ["none"] }],
+    ["a usage with a later line", { usage: "bun run org:status\n  --org-id <uuid>" }],
+    ["each risk", { risk: "danger" }],
+  ])("accepts %s", (_label, change) => {
+    expect(cliDescriptionSchema.safeParse({ ...orgStatus, ...change }).success).toBe(true);
+  });
+
+  test("parses to the same value", () => {
+    expect<unknown>(cliDescriptionSchema.parse(orgStatus)).toEqual(orgStatus);
+  });
+
+  test("a usage whose first line names a longer tool is refused only when it breaks the prefix rule", () => {
+    expect(issuesOf({ usage: "bun run org:status-more" })).toEqual([]);
+  });
+});
+
 describe("renderToolTable", () => {
   const row = (name: string, summary: string, available = true) => ({
     name,
@@ -92,6 +267,70 @@ describe("renderToolTable", () => {
     const table = renderToolTable([row("fake-tg", "Hidden.", false), row("job:run", "One.")]);
     expect(table).toContain("fake-tg  -     -   not in this install");
     expect(table).not.toContain("Hidden.");
+  });
+});
+
+describe("renderToolTable columns and order", () => {
+  const tool = (name: string, risk: CliToolRow["risk"], needs: CliToolRow["needs"], summary: string) => ({
+    name,
+    risk,
+    needs,
+    summary,
+    available: true,
+  });
+
+  test("pads each of the three first columns to its widest cell plus two spaces and leaves the summary unpadded", () => {
+    expect(
+      renderToolTable([
+        tool("b", "outside", ["db", "imap"], "Second."),
+        tool("long-name", "read", ["none"], "Third."),
+        tool("a", "danger", ["llm"], "First."),
+      ])
+    ).toBe(
+      [
+        "a          danger   llm       First.",
+        "b          outside  db, imap  Second.",
+        "long-name  read     none      Third.",
+        "",
+      ].join("\n")
+    );
+  });
+
+  test("sorts by name whatever the input order", () => {
+    const names = (rows: readonly string[]) =>
+      renderToolTable(rows.map((name) => tool(name, "read", ["db"], "S.")))
+        .trimEnd()
+        .split("\n")
+        .map((line) => line.split(" ")[0]);
+    expect(names(["c", "a", "b"])).toEqual(["a", "b", "c"]);
+    expect(names(["a", "b", "c"])).toEqual(["a", "b", "c"]);
+    expect(names(["b", "c", "a"])).toEqual(["a", "b", "c"]);
+  });
+
+  test("keeps the input order of two rows with the same name", () => {
+    const lines = renderToolTable([tool("x", "read", ["db"], "One."), tool("x", "read", ["db"], "Two.")])
+      .trimEnd()
+      .split("\n");
+    expect(lines).toEqual(["x  read  db  One.", "x  read  db  Two."]);
+  });
+
+  test("an unavailable row counts in the widths with its dashes and name", () => {
+    expect(
+      renderToolTable([
+        tool("a", "read", ["db"], "One."),
+        { ...tool("zzzz", "danger", ["vps"], "Hidden."), available: false },
+      ])
+    ).toBe(["a     read  db  One.", "zzzz  -     -   not in this install", ""].join("\n"));
+  });
+
+  test("a list with no rows prints an empty string", () => {
+    expect(renderToolTable([])).toBe("");
+  });
+
+  test("does not reorder the array of the caller", () => {
+    const rows = [tool("b", "read", ["db"], "B."), tool("a", "read", ["db"], "A.")];
+    renderToolTable(rows);
+    expect(rows.map((row) => row.name)).toEqual(["b", "a"]);
   });
 });
 

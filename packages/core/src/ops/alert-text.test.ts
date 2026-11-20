@@ -3,13 +3,14 @@ import { describe, expect, test } from "bun:test";
 import type { UserLocale } from "../tenancy";
 
 import {
+  operatorEventSample,
   renderSloAlert,
   renderTestAlert,
   SLO_TEST_FACTS as TEST_FACTS,
   SLO_TEST_IDS as TEST_IDS,
   type SloTextInput,
 } from "./alert-text";
-import { SLO_KINDS } from "./kinds";
+import { OPERATOR_EVENT_KINDS, SLO_KINDS } from "./kinds";
 
 // The alert text. Plain text, numbers and ids only.
 const OPENED = new Date("2026-11-20T10:00:00Z");
@@ -196,5 +197,55 @@ describe("renderTestAlert", () => {
         "en"
       )
     );
+  });
+});
+
+describe("operatorEventSample", () => {
+  const NOW_SAMPLE = new Date("2026-11-18T10:00:00.000Z");
+  const ORG = "00000000-0000-4000-8000-000000000006";
+  const BOX = "00000000-0000-4000-8000-000000000007";
+
+  test("each kind has a fixed sample with test ids and dates from `now`", () => {
+    expect(operatorEventSample("trial_ending", NOW_SAMPLE)).toEqual({
+      kind: "trial_ending",
+      orgId: ORG,
+      endsAt: new Date("2026-11-21T10:00:00.000Z"),
+      ended: false,
+    });
+    expect(operatorEventSample("auth_error_24h", NOW_SAMPLE)).toEqual({
+      kind: "auth_error_24h",
+      orgId: ORG,
+      mailboxId: BOX,
+      since: new Date("2026-11-17T10:00:00.000Z"),
+    });
+    expect(operatorEventSample("llm_cap", NOW_SAMPLE)).toEqual({
+      kind: "llm_cap",
+      orgId: ORG,
+      mailboxId: BOX,
+      cap: 300,
+      dayStart: NOW_SAMPLE,
+    });
+    expect(operatorEventSample("auth_mail_failed", NOW_SAMPLE)).toEqual({
+      kind: "auth_mail_failed",
+      orgId: ORG,
+      userId: "00000000-0000-4000-8000-000000000008",
+      mail: "reset",
+      code: "EAUTH",
+      at: NOW_SAMPLE,
+    });
+    expect(operatorEventSample("send_limit", NOW_SAMPLE)).toEqual({
+      kind: "send_limit",
+      orgId: ORG,
+      mailboxId: BOX,
+      limit: "mailbox_hour",
+      at: NOW_SAMPLE,
+      until: new Date("2026-11-18T11:00:00.000Z"),
+    });
+  });
+
+  test("every event kind has a sample of its own kind", () => {
+    expect(OPERATOR_EVENT_KINDS.map((kind) => operatorEventSample(kind, NOW_SAMPLE).kind)).toEqual([
+      ...OPERATOR_EVENT_KINDS,
+    ]);
   });
 });

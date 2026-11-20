@@ -46,3 +46,94 @@ describe("operator notice texts", () => {
     expect(pl.llmCap(BOX, ORG, 22, AT)).toContain("(22 wywołania)");
   });
 });
+
+// A fact reader like the one of `renderSloAlert`, with fixed values.
+const reader =
+  (values: Record<string, number>) =>
+  (key: string, decimals = 0): string =>
+    (values[key] ?? 0).toFixed(decimals);
+
+describe("the urgent latency fact line", () => {
+  test.each([
+    { locale: "en", mails: 0, line: "No urgent mail waits too long" },
+    { locale: "en", mails: 1, line: "1 urgent mail not told in time, longest wait 25 min" },
+    { locale: "en", mails: 2, line: "2 urgent mails not told in time, longest wait 25 min" },
+    { locale: "pl", mails: 0, line: "Brak pilnych wiadomości czekających zbyt długo" },
+    {
+      locale: "pl",
+      mails: 3,
+      line: "Pilne wiadomości bez powiadomienia na czas: 3; najdłuższe oczekiwanie 25 min",
+    },
+  ] as const)("$locale with $mails mails: $line", ({ locale, mails, line }) => {
+    const facts = operatorTexts[locale].slo.facts.slo_urgent_latency;
+    expect(facts(reader({ mails, max_wait_min: 25 }))).toBe(line);
+  });
+});
+
+describe("the LLM errors fact line", () => {
+  test.each([
+    { locale: "en", calls: 0, quota: 0, line: "No LLM calls in the window" },
+    { locale: "en", calls: 10, quota: 0, line: "3 of 10 LLM calls failed (30.0 %)" },
+    {
+      locale: "en",
+      calls: 10,
+      quota: 1,
+      line: "3 of 10 LLM calls failed (30.0 %), 1 organization paused by a spent quota",
+    },
+    {
+      locale: "en",
+      calls: 0,
+      quota: 2,
+      line: "No LLM calls in the window, 2 organizations paused by a spent quota",
+    },
+    { locale: "pl", calls: 0, quota: 0, line: "Brak wywołań LLM w oknie" },
+    { locale: "pl", calls: 10, quota: 0, line: "Nieudane wywołania LLM: 3 z 10 (30.0%)" },
+    {
+      locale: "pl",
+      calls: 10,
+      quota: 2,
+      line: "Nieudane wywołania LLM: 3 z 10 (30.0%); organizacje z wyczerpanym limitem: 2",
+    },
+    {
+      locale: "pl",
+      calls: 0,
+      quota: 1,
+      line: "Brak wywołań LLM w oknie; organizacje z wyczerpanym limitem: 1",
+    },
+  ] as const)("$locale with $calls calls and $quota paused: $line", ({ locale, calls, quota, line }) => {
+    const facts = operatorTexts[locale].slo.facts.slo_llm_errors;
+    expect(facts(reader({ calls, failed: 3, pct: 30, quota_orgs: quota }))).toBe(line);
+  });
+});
+
+describe("the backup age fact line", () => {
+  test.each([
+    { locale: "en", age: 30, failed: 0, missing: 1, line: "No backup status file" },
+    { locale: "en", age: 30, failed: 0, missing: 0, line: "Last good backup 30 h ago" },
+    { locale: "en", age: 0, failed: 0, missing: 0, line: "Last good backup 0 h ago" },
+    { locale: "en", age: -1, failed: 0, missing: 0, line: "No good backup on record" },
+    { locale: "en", age: 30, failed: 1, missing: 0, line: "Last backup run failed; last good backup 30 h ago" },
+    { locale: "en", age: -1, failed: 1, missing: 0, line: "Last backup run failed; no good backup on record" },
+    { locale: "pl", age: 30, failed: 0, missing: 1, line: "Brak pliku statusu kopii zapasowej" },
+    { locale: "pl", age: 30, failed: 0, missing: 0, line: "Ostatnia udana kopia sprzed 30 h" },
+    { locale: "pl", age: 0, failed: 0, missing: 0, line: "Ostatnia udana kopia sprzed 0 h" },
+    { locale: "pl", age: -1, failed: 0, missing: 0, line: "Brak udanej kopii w historii" },
+    {
+      locale: "pl",
+      age: 30,
+      failed: 1,
+      missing: 0,
+      line: "Ostatnia kopia nie powiodła się; ostatnia udana kopia sprzed 30 h",
+    },
+    {
+      locale: "pl",
+      age: -1,
+      failed: 1,
+      missing: 0,
+      line: "Ostatnia kopia nie powiodła się; brak udanej kopii w historii",
+    },
+  ] as const)("$locale age $age failed $failed missing $missing: $line", ({ locale, age, failed, missing, line }) => {
+    const facts = operatorTexts[locale].slo.facts.slo_backup_age;
+    expect(facts(reader({ age_h: age, failed, missing }))).toBe(line);
+  });
+});
