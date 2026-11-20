@@ -12,6 +12,8 @@ import {
   shownIds,
   type BriefDelegation,
   type BriefInput,
+  type BriefLine,
+  type BriefLoop,
 } from "./brief";
 import {
   briefInput,
@@ -25,6 +27,7 @@ import {
   NOW,
   part,
   textTables,
+  uuid,
   ZONE,
 } from "./brief-fixtures.test-helper";
 
@@ -601,5 +604,40 @@ describe("the brief inside the digest", () => {
       en
     );
     expect(uncovered.shown).toEqual({ surfaced: [], stale: [], lineOf: {} });
+  });
+});
+
+describe("the order of the lines: oldest first, ties by id", () => {
+  const ids = (lines: readonly BriefLine[]) =>
+    lines.map((line) => ("loop" in line ? line.loop.id : "mail" in line ? line.mail.emailId : "?"));
+
+  test("rows of the same time go by id, whatever the order of the rows", () => {
+    const at = new Date("2026-11-19T07:00:00Z");
+    const a = mail(1, { receivedAt: at });
+    const b = mail(2, { receivedAt: at });
+    expect(ids(loopSections(briefInput({ reply: part([b, a]) })).reply.lines)).toEqual([uuid(1), uuid(2)]);
+    expect(ids(loopSections(briefInput({ reply: part([a, b]) })).reply.lines)).toEqual([uuid(1), uuid(2)]);
+  });
+
+  test("promises of the same due time go by id, whatever the order of the rows", () => {
+    const dueAt = new Date("2026-11-20T10:00:00Z");
+    const rows = [loop(2, { kind: "promised", dueAt }), loop(1, { kind: "promised", dueAt })];
+    expect(ids(loopSections(briefInput({ promised: part(rows) })).promised.lines)).toEqual([uuid(101), uuid(102)]);
+    expect(ids(loopSections(briefInput({ promised: part([...rows].reverse()) })).promised.lines)).toEqual([
+      uuid(101),
+      uuid(102),
+    ]);
+  });
+
+  test("two rows with the same time and the same id keep the order that they came in", () => {
+    const dueAt = new Date("2026-11-20T10:00:00Z");
+    const first = loop(1, { kind: "promised", dueAt, text: "first" });
+    const second = { ...first, text: "second" };
+    const texts = (rows: BriefLoop[]) =>
+      loopSections(briefInput({ promised: part(rows) })).promised.lines.map((line) =>
+        "loop" in line ? line.loop.text : null
+      );
+    expect(texts([first, second])).toEqual(["first", "second"]);
+    expect(texts([second, first])).toEqual(["second", "first"]);
   });
 });

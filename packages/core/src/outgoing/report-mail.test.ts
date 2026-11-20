@@ -124,3 +124,24 @@ describe("the Polish paused notice (review N14)", () => {
     expect(body).not.toContain("wyłączone");
   });
 });
+
+describe("isLinkOfBase on the edges of the origin", () => {
+  test.each([
+    ["a query after the origin", "https://app.example.test?x=1", BASE, true],
+    ["a base with two closing slashes", "https://app.example.test/r/1", `${BASE}//`, true],
+    ["an empty url and an empty base", "", "", false],
+    ["an empty url and a base of slashes", "", "//", false],
+  ])("%s", (_label, url, base, expected) => {
+    expect(isLinkOfBase(url, base)).toBe(expected);
+  });
+});
+
+describe("the HTML part of a line with text around the links", () => {
+  test("the text before, between and after two links is kept, and each anchor stands alone", () => {
+    const html = reportMailHtml("Open https://app.example.test/a, then https://evil.test/b and done <b>.", BASE);
+    const anchor = '<a href="https://app.example.test/a">https://app.example.test/a</a>';
+    expect(html).toBe(
+      `<html><body><div style="font-family:sans-serif">Open ${anchor}, then https://evil.test/b and done &lt;b&gt;.</div></body></html>`
+    );
+  });
+});
