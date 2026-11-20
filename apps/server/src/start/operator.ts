@@ -1,12 +1,12 @@
 import { readFile, statfs } from "node:fs/promises";
 
-import { createOperatorNotices } from "../modules/channels";
 import {
   checkBackupAge,
   checkDisk,
   checkLlmErrors,
   checkSyncLag,
   checkUrgentLatency,
+  createOperatorNotices,
   runSloTick,
   type SloCheckEntry,
 } from "../modules/operator";
