@@ -2,17 +2,8 @@ import { describe, expect, test } from "bun:test";
 
 import { rejectReasons } from "../metrics/m3";
 
-import {
-  type Callback,
-  encodeCallback,
-  isDelegateCallback,
-  isFeedbackCallback,
-  isLoopCallback,
-  isReplyCallback,
-  labelCategories,
-  parseCallback,
-  reviewLabelCategories,
-} from "./callback";
+import { type Callback, encodeCallback, labelCategories, parseCallback, reviewLabelCategories } from "./callback";
+import { isCallbackOfFamily } from "./callback-kinds";
 import { CALLBACK_MAX_BYTES } from "./message";
 
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
@@ -81,8 +72,8 @@ describe("loop callback data", () => {
     const callback: Callback = { kind, loopId: ID };
     expect(encodeCallback(callback)).toBe(`${prefix}:${ID}`);
     expect(parseCallback(`${prefix}:${ID}`)).toEqual(callback);
-    expect(isLoopCallback(callback)).toBe(true);
-    expect(isFeedbackCallback(callback)).toBe(false);
+    expect(isCallbackOfFamily(callback, "loop")).toBe(true);
+    expect(isCallbackOfFamily(callback, "feedback")).toBe(false);
   });
 
   test.each([`lf:${ID.toUpperCase()}`, `lf:${ID}:x`, "lc:not-a-uuid", `lz:${ID}`, `ll:${ID.slice(1)}`])(
@@ -102,8 +93,8 @@ describe("delegate callback data", () => {
     const callback: Callback = { kind: "delegate_open", emailId: ID };
     expect(encodeCallback(callback)).toBe(`dg:${ID}`);
     expect(parseCallback(`dg:${ID}`)).toEqual(callback);
-    expect(isDelegateCallback(callback)).toBe(true);
-    expect(isFeedbackCallback(callback)).toBe(false);
+    expect(isCallbackOfFamily(callback, "delegate")).toBe(true);
+    expect(isCallbackOfFamily(callback, "feedback")).toBe(false);
   });
 
   test("dp: holds two UUIDs as 22 characters each, 48 bytes, and parses back to the same ids", () => {
@@ -112,7 +103,7 @@ describe("delegate callback data", () => {
     expect(Buffer.byteLength(data)).toBe(48);
     expect(data).toMatch(/^dp:[A-Za-z0-9_-]{22}:[A-Za-z0-9_-]{22}$/);
     expect(parseCallback(data)).toEqual(callback);
-    expect(isFeedbackCallback(callback)).toBe(false);
+    expect(isCallbackOfFamily(callback, "feedback")).toBe(false);
   });
 
   test("dp: with a part of another length is null", () => {
@@ -153,8 +144,8 @@ describe("the reply review callbacks", () => {
       const callback = everyKind.find((entry) => entry.kind === kind) as Callback;
       expect(encodeCallback(callback)).toBe(`${prefix}:${ID}`);
       expect(parseCallback(`${prefix}:${ID}`)).toEqual(callback);
-      expect(isReplyCallback(callback)).toBe(true);
-      expect(isFeedbackCallback(callback)).toBe(false);
+      expect(isCallbackOfFamily(callback, "reply")).toBe(true);
+      expect(isCallbackOfFamily(callback, "feedback")).toBe(false);
     }
     // A prefix of the reply kinds is used by no other kind.
     const others = everyKind.filter((callback) => !callback.kind.startsWith("reply_"));

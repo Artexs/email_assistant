@@ -4,12 +4,11 @@ import {
   type Callback,
   encodeCallback,
   type FeedbackCallback,
-  isFeedbackCallback,
-  isReviewCallback,
   labelCategories,
   parseCallback,
   reviewLabelCategories,
 } from "./callback";
+import { callbackFamilyOf, isCallbackOfFamily } from "./callback-kinds";
 import { CALLBACK_MAX_BYTES } from "./message";
 
 const ID = "0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b";
@@ -122,8 +121,8 @@ describe("review callback data", () => {
     const data = encodeCallback(callback);
     expect(Buffer.byteLength(data)).toBeLessThanOrEqual(CALLBACK_MAX_BYTES);
     expect(parseCallback(data)).toEqual(callback);
-    expect(isReviewCallback(callback)).toBe(true);
-    expect(isFeedbackCallback(callback)).toBe(true);
+    expect(callback.kind.startsWith("review_")).toBe(true);
+    expect(callbackFamilyOf(callback)).toBe("feedback");
   });
 
   test("uses the documented formats", () => {
@@ -148,8 +147,8 @@ describe("review callback data", () => {
   );
 
   test("only the four review kinds are review callbacks", () => {
-    for (const callback of all) expect(isReviewCallback(callback)).toBe(false);
-    expect(isReviewCallback({ kind: "approve", actionId: ID })).toBe(false);
+    for (const callback of all) expect(callback.kind.startsWith("review_")).toBe(false);
+    expect(({ kind: "approve", actionId: ID } as Callback).kind.startsWith("review_")).toBe(false);
   });
 });
 
@@ -164,8 +163,8 @@ describe("answered check callback data", () => {
   });
 
   test("they are not feedback callbacks; old prefixes parse as before", () => {
-    expect(isFeedbackCallback({ kind: "answered_yes", emailId: ID })).toBe(false);
-    expect(isFeedbackCallback({ kind: "answered_no", emailId: ID })).toBe(false);
+    expect(isCallbackOfFamily({ kind: "answered_yes", emailId: ID }, "feedback")).toBe(false);
+    expect(isCallbackOfFamily({ kind: "answered_no", emailId: ID }, "feedback")).toBe(false);
     expect(parseCallback(`fe:${ID}`)).toEqual({ kind: "edit", emailId: ID });
     expect(parseCallback(`mk:${ID}`)).toEqual({ kind: "mistake", actionId: ID });
   });
