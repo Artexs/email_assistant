@@ -37,7 +37,7 @@ Part of [plan.md](plan.md). These names are the contract between stages. A stage
 
 - Style file (written by stage 06, read by stage 07), JSON at `evals/results/styles/<scenario>-<part>-<promptVersion>-<model>-<effort>.json`: `{ scenario, part, promptVersion, model, effort, sampleCount, text, checks: { ok: boolean, failures: string[] }, usd }`. Synthetic text only.
 - `bun run eval --sim lab-01 --part sent-dev|sent-holdout --stylist [--stylist-prompt <v>] [--model …] [--reasoning-effort …] [--budget-usd …] --out <report.md>`: writes the report and the style file.
-- `bun run eval --set style-injection --stylist`: the injection set (stage 06).
+- `bun run eval --set style-injection --stylist`: the injection set (stage 06). It writes the injection result file `evals/results/styles/style-injection-<promptVersion>-<model>-<effort>.json`: `{ promptVersion, model, effort, passed, total, usd }`.
 - Drafter eval option `--style none|scenario|<style file path>` (default `scenario`, today's behaviour). The style key (`none`, `scenario` or the style file's `promptVersion`) is part of the state file name, the report name and the dump name.
 - `judge-v4` in `judgeVersions`: the reply rubric of `judge-v3` plus score `style_match` (0–2); its user prompt gets `referenceStyle` (scenario `executive.voice`; injection set: its persona voice). The default judge stays `judge-v3`.
 - `bun run eval:style-gate --a <state file> --b <state file> --style <style file> --out <report.md>`: the paired comparison; writes the gate file of D15 only when both runs are full judged holdout runs with `judge-v4` and the same drafter prompt, model and effort.
