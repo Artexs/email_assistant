@@ -26,7 +26,8 @@ describe("runEval worker pool", () => {
 
   test("onResult follows the finish order, the report the input order", async () => {
     const cases = idCases(4);
-    const { llm } = delayedLlm((id) => ({ ms: 40 - Number(id.slice(1)) * 10, step: answer("info") }));
+    // The delays are 40 ms apart, so a loaded runner does not reorder the finishes.
+    const { llm } = delayedLlm((id) => ({ ms: 160 - Number(id.slice(1)) * 40, step: answer("info") }));
     const finished: string[] = [];
     const deps = {
       ...harness().deps(llm),
