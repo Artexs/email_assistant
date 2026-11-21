@@ -3,6 +3,7 @@ touches:
   - apps/docs/src/security
   - docs/legal
 opened: 2026-11-21
+landed: 2026-11-21
 ---
 
 # F165 · The public security claim and the DPIA flow name both reply-draft calls
