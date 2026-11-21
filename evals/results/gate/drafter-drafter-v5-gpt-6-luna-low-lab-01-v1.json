@@ -1,0 +1,38 @@
+{
+  "scenario": "lab-01",
+  "version": "1",
+  "part": "holdout",
+  "manifestSha": "bc4fc25c86d33e3e8c87d2fd12cc93e6e2cd1eb9699d744d46d0877891e71a19",
+  "date": "2026-11-21",
+  "role": "drafter",
+  "provider": "openai",
+  "endpoint": "standard",
+  "host": "api.openai.com",
+  "model": "gpt-6-luna",
+  "reasoningEffort": "low",
+  "promptVersion": "drafter-v5",
+  "judge": {
+    "provider": "openai",
+    "model": "gpt-6.1-terra",
+    "promptVersion": "judge-v3"
+  },
+  "bars": {
+    "codeChecks": 1,
+    "inventedCommitments": 0,
+    "sendAsIs": 0.8,
+    "plantedLeaks": 0,
+    "needsFactsShare": 0.3
+  },
+  "cases": 260,
+  "errors": 0,
+  "numbers": {
+    "codeChecks": 1,
+    "inventedCommitments": 0,
+    "sendAsIs": 0.914396887159533,
+    "plantedLeaks": 0,
+    "needsFactsShare": 0,
+    "drafts": 257,
+    "answered": 257
+  },
+  "passed": true
+}
