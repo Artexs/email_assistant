@@ -88,6 +88,22 @@ No mail reached the pilot mailbox after the flag went on (02:33:45Z), so no `rep
 
 Result: waiting for the owner's test mail.
 
+### Run 2 · 2026-11-21 10:27Z · fail: `not_a_person`
+
+The coordinator sent the test mail at 10:24Z from the testmail inbox (an AgentMail address) to the pilot mailbox. The mail is `931381c5-6d79-4cd2-af55-08ba93b85299` in mailbox `8bc7f572-…`, received 10:24:57Z. Triage: `needs_reply`, language `pl`.
+
+```text
+reply_requests: 466260c2-f864-46ce-bcf1-dda4c7856036|auto|cancelled|not_a_person  (created 10:26:30.463Z)
+actions (reply create_draft / send): 0 rows
+logs --since 1h: reply_drafted 0, reply_draft_failed 0, reply_draft_error 0, level error 0
+```
+
+Cause, read from `email_headers` of the mail (booleans and codes only): `from_null=false`, `noreply_local=false`, `list_id_set=false`, `list_unsub_set=true`, `auto_submitted=-`, `precedence=-`, `calendar=false`. The `List-Unsubscribe` value and the sender address both hold `agentmail`. So AgentMail adds a `List-Unsubscribe` header to each sent mail, and the eligibility rule (`packages/core/src/replies/eligibility.ts`, `isNotAPerson`) blocks every mail with that header. The product works as designed; the test sender is not a valid sender for this check.
+
+No rollback condition holds: no `reply_draft_failed` line, no draft at all (so no wrong mailbox), 0 error lines. `reply_drafts` stays on. No draft exists, so nothing goes to the mailbox.
+
+Next: send the test mail from a normal personal mailbox (for example the owner's Gmail, as step 1 says), not from AgentMail. A sender that adds `List-Unsubscribe`, `List-Id`, `Auto-Submitted` or `Precedence: bulk` always gets `not_a_person`.
+
 ## Check 3 · Copy hash stable after 1 h (N1a), then `draft_copy_check`
 
 Not run: it needs the draft of check 2. `draft_copy_check` stays off until this check prints `same`.
@@ -100,7 +116,7 @@ $C run --rm -T cli bun run reply:check-copy --org-id ac6ed6a2-ee37-461f-9632-cc0
 
 Pass: it prints `same`. Then: `$C run --rm -T cli bun run org:flag --org-id ac6ed6a2-ee37-461f-9632-cc08cf549e40 --flag draft_copy_check --on`, and record both outputs here. Any other answer: keep `draft_copy_check` off and read `docs/known-alerts.md` `draft_copy_unhashed`.
 
-Result: waiting for check 2.
+Result: waiting for check 2. Not run on 2026-11-21 10:27Z: check 2 run 2 made no draft (`not_a_person`). `draft_copy_check` stays off.
 
 ## Check 4 · Draft in the thread in Interia webmail (N1b) · waiting for the owner
 
