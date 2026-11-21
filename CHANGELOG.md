@@ -21,8 +21,8 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ### For users
 
-- en: The privacy page and the data processing agreement now name the AI calls that write reply drafts and reply-style suggestions. You accept the terms again at your next sign-in.
-  pl: Strona prywatności i umowa powierzenia nazywają teraz wywołania AI, które piszą szkice odpowiedzi i podpowiedzi stylu. Przy najbliższym logowaniu ponownie akceptujesz regulamin.
+- en: The privacy page and the data processing agreement now name the AI calls that write answers to your mail and suggestions for your writing style. You accept the terms again at your next sign-in.
+  pl: Strona prywatności i umowa powierzenia nazywają teraz wywołania AI, które piszą odpowiedzi na Twoją pocztę i podpowiedzi dotyczące stylu pisania. Przy najbliższym logowaniu ponownie akceptujesz regulamin.
 
 ### Changed
 
