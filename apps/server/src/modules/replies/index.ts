@@ -1,4 +1,4 @@
-export { DrafterCallError, draftReply } from "./drafter";
+export { DRAFTER_MAX_CALLS, DrafterCallError, draftReply } from "./drafter";
 export { STYLIST_MAX_CALLS, StylistCallError, suggestStyle } from "./stylist";
 export type { StylistAttempt, StylistInput, StylistResult } from "./stylist";
 export { renderStyleReport, STYLE_EVAL_WINDOW_DAYS, styleSourcesOf } from "./style-eval";

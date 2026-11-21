@@ -119,10 +119,10 @@ describe("parseLedger", () => {
     expect(rows.get("C005")).toEqual({ id: "C005", source: "a/b.ts", condition: "LLM_PROVIDER" });
   });
 
-  test("the real ledger has 273 rows, each with a source", () => {
+  test("the real ledger has 276 rows, each with a source", () => {
     const text = readFileSync(join(import.meta.dir, "../../../../docs/legal/claims.md"), "utf8");
     const rows = parseLedger(text);
-    expect(rows.size).toBe(273);
+    expect(rows.size).toBe(276);
     for (const row of rows.values()) expect(row.source).not.toBe("");
   });
 });
@@ -166,6 +166,8 @@ describe("the public claims of the security page", () => {
       "never-sends-alone",
       "mail-storage",
       "ai-provider-receives",
+      "ai-provider-reply-drafts",
+      "ai-provider-style-suggestion",
       "ai-provider-keeps",
       "telegram",
       "backups",

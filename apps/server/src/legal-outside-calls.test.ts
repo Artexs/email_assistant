@@ -5,6 +5,7 @@ import {
   buildStyleSamples,
   dataCategories,
   DAY_MS,
+  DRAFTER_MAIL_BODY_MAX,
   EXTRACT_BODY_MAX,
   EXTRACT_TEXT_MAX,
   extractorInputOf,
@@ -20,13 +21,18 @@ import {
 import { describe, expect, test } from "bun:test";
 
 import { MAX_ATTEMPTS } from "./modules/loops";
-import { STYLE_SUGGEST_DAILY_LIMIT, STYLE_SUGGEST_WINDOW_MS, STYLIST_MAX_CALLS } from "./modules/replies";
+import {
+  DRAFTER_MAX_CALLS,
+  STYLE_SUGGEST_DAILY_LIMIT,
+  STYLE_SUGGEST_WINDOW_MS,
+  STYLIST_MAX_CALLS,
+} from "./modules/replies";
 import { prompts } from "./modules/triage";
 import { ONE_CLICK_BODY, ONE_CLICK_USER_AGENT } from "./platform/public-http";
 
-// The privacy pages, the claims list and the sub-processor registry name three outside calls that no other test reads: the
-// extractor call to the AI provider (open loops), the style call to the AI provider (cut sent mail) and the one-click
-// unsubscribe request to a newsletter sender. Each limit,
+// The privacy pages, the claims list, the public security claims and the sub-processor registry name four outside calls
+// that no other test reads: the extractor call to the AI provider (open loops), the draft call and the style call to the
+// AI provider (reply drafts and cut sent mail) and the one-click unsubscribe request to a newsletter sender. Each limit,
 // field and fixed value of these calls is pinned here. A change of the code fails a test until the papers follow; the
 // papers then get a new legal version.
 
@@ -35,6 +41,24 @@ const read = (file: string): string => readFileSync(path.join(ROOT, file), "utf8
 const privacy = { en: read("apps/web/src/legal/en/privacy.md"), pl: read("apps/web/src/legal/pl/privacy.md") };
 const claims = read("docs/legal/claims.md");
 const dpia = read("docs/legal/dpia.md");
+const securityClaims = read("apps/docs/src/security/claims.ts");
+
+/** The source of one public claim of the security page: from its id line to the id line of the next claim. */
+function publicClaimSource(id: string): string {
+  const from = securityClaims.indexOf(`id: "${id}"`);
+  if (from === -1) throw new Error(`no public claim ${id}`);
+  const next = securityClaims.indexOf('\n    id: "', from + 1);
+  return securityClaims.slice(from, next === -1 ? undefined : next);
+}
+
+/** The text of one language of a public claim: the string after `en: "` or `pl: "` up to the closing quote. */
+function publicClaimText(id: string, lang: "en" | "pl"): string {
+  const source = publicClaimSource(id);
+  const from = source.indexOf(`${lang}: "`);
+  const to = from === -1 ? -1 : source.indexOf('",\n', from);
+  if (from === -1 || to === -1) throw new Error(`no ${lang} text in public claim ${id}`);
+  return source.slice(from, to);
+}
 
 /** The table line of a claim: the line whose first cell is the id. */
 function claimLine(id: string): string {
@@ -238,6 +262,24 @@ describe("style suggestion", () => {
     expect(bullet).toContain(styleWindow.en);
   });
 
+  test.each(["en", "pl"] as const)(
+    "the %s text of the public claim of the style call names the caps, the window and the answer cap",
+    (lang) => {
+      const text = publicClaimText("ai-provider-style-suggestion", lang);
+      expect(text).toContain(styleCaps.sample[lang]);
+      expect(text).toContain(styleCaps.total[lang]);
+      expect(text).toContain(styleCaps.answer[lang]);
+      expect(text).toContain(styleWindow[lang]);
+      expect(text).toContain(`${STYLE_MAX_SOURCES}`);
+    }
+  );
+
+  test("the public claim of the style call names the call limit and cites the style rows of the ledger", () => {
+    const claim = publicClaimSource("ai-provider-style-suggestion");
+    expect(claim).toContain("at most two calls");
+    expect(claim).toContain('ledger: ["C030", "C271", "C272"]');
+  });
+
   test("the claim of the DPIA text of the style call names the total cap", () => {
     expect(claimLine("C273")).toContain(styleCaps.total.en);
   });
@@ -249,6 +291,63 @@ describe("style suggestion", () => {
       expect(service?.dataReceived[lang]).toContain(styleCaps.total[lang]);
     }
     if (id === "gemini") expect(service?.dataReceived.en).toContain("writing style");
+  });
+});
+
+// The draft call: the mail that a reply draft answers, with the profile texts of the mailbox, goes to the AI provider.
+const draftCap = {
+  en: `${DRAFTER_MAIL_BODY_MAX.toLocaleString("en-US")} characters`,
+  pl: `${DRAFTER_MAIL_BODY_MAX} znaków`,
+};
+
+/** The bullet of the DPIA section "Is the data needed?" for the reply draft. */
+function dpiaDraftBullet(): string {
+  const bullet = dpia.split("\n").find((line) => line.startsWith("  - Reply draft (flag `reply_drafts`"));
+  if (bullet === undefined) throw new Error("the DPIA has no bullet for the reply draft");
+  return bullet;
+}
+
+describe("reply draft call", () => {
+  test.each([
+    { name: "body cap of the draft input", actual: DRAFTER_MAIL_BODY_MAX, expected: 8000 },
+    { name: "call limit of one draft request", actual: DRAFTER_MAX_CALLS, expected: 2 },
+    { name: "draft prompt version", actual: prompts.drafter.version, expected: "drafter-v4" },
+    { name: "draft prompt role", actual: prompts.drafter.role, expected: "drafter" },
+  ])("the $name is pinned: if it changes, re-check the privacy papers", ({ actual, expected }) => {
+    expect(actual).toEqual(expected);
+  });
+
+  test.each(["en", "pl"] as const)("the %s text of the public claim of the draft call names the body cap", (lang) => {
+    expect(publicClaimText("ai-provider-reply-drafts", lang)).toContain(draftCap[lang]);
+  });
+
+  test("the public claim of the draft call names the call limit, the profile texts, the instruction and the ledger rows", () => {
+    const claim = publicClaimSource("ai-provider-reply-drafts");
+    const text = publicClaimText("ai-provider-reply-drafts", "en");
+    expect(text).toContain("at most two calls");
+    for (const part of ["display name", "signature", "writing style", "one line of instruction", "time zone"]) {
+      expect(text).toContain(part);
+    }
+    expect(claim).toContain('ledger: ["C030", "C274", "C275"]');
+  });
+
+  test("the claims of the draft call name the body cap, the prompt version and the call limit", () => {
+    const input = claimLine("C274");
+    expect(input).toContain(draftCap.en);
+    expect(input).toContain(prompts.drafter.version);
+    expect(claimLine("C275")).toContain("at most two calls");
+  });
+
+  test("the DPIA names the body cap and the call limit of the draft call in the flow, the bullet and the risk measures", () => {
+    const flow = dpia.split("\n").find((line) => line.startsWith("- **Flow.**")) ?? "";
+    const measures = dpia.split("\n").find((line) => line.startsWith("| R1   |")) ?? "";
+    for (const text of [flow, dpiaDraftBullet(), measures]) {
+      expect(text).toContain(draftCap.en);
+    }
+    expect(flow).toContain("at most two calls");
+    expect(dpiaDraftBullet()).toContain("at most two calls");
+    expect(measures).toContain("at most two calls");
+    expect(claimLine("C276")).toContain(draftCap.en);
   });
 });
 

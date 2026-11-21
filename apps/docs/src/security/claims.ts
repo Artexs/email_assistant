@@ -65,6 +65,42 @@ export const publicClaims: readonly PublicClaim[] = [
     },
   },
   {
+    id: "ai-provider-reply-drafts",
+    text: {
+      en: "An optional feature, off by default, writes a draft of a reply to a mail with the same AI model. For each draft, the assistant sends the subject, the sender name and address, the date and the text of the mail that it answers with its quoted older mail, up to 8,000 characters of the text. It also sends the display name, the signature and the writing style of the mailbox, the one line of instruction that the member typed, if any, and the time zone of the organization. No other mail, file, calendar or contact goes. The text goes as written, so it can hold names, addresses and quoted mail of other people. A request for a draft makes at most two calls with the same texts, and when the AI service times out, the request is tried again later. The system stores the answer as a draft that waits for an owner's approval.",
+      pl: "Opcjonalna funkcja, domyślnie wyłączona, pisze dla wiadomości szkic odpowiedzi tym samym modelem AI. Dla każdego szkicu asystent wysyła temat, nazwę i adres nadawcy, datę oraz treść wiadomości, na którą odpowiada, razem z cytowaną starszą pocztą, do 8000 znaków treści. Wysyła też wyświetlaną nazwę, podpis i styl pisania skrzynki, jedną linię polecenia, którą wpisał członek zespołu, jeśli jest, oraz strefę czasową organizacji. Żadna inna wiadomość, plik, kalendarz ani kontakt nie jest wysyłany. Treść idzie tak, jak została napisana, więc może zawierać imiona, adresy i cytowaną pocztę innych osób. Prośba o szkic powoduje co najwyżej dwa wywołania z tymi samymi tekstami, a gdy usługa AI przekroczy czas, prośba jest ponawiana później. System zapisuje odpowiedź jako szkic, który czeka na zatwierdzenie przez właściciela.",
+    },
+    ledger: ["C030", "C274", "C275"],
+    proofs: [
+      "packages/core/src/replies/input.ts",
+      "apps/server/src/modules/triage/prompts/drafter-v4.ts",
+      "apps/server/src/modules/replies/drafter.ts",
+      "docs/capabilities/reply-drafts.md",
+    ],
+    condition: {
+      en: "The install uses the OpenAI provider, and the reply-draft feature is on for the mailbox.",
+      pl: "Instalacja używa dostawcy OpenAI, a funkcja szkiców odpowiedzi jest włączona dla skrzynki.",
+    },
+  },
+  {
+    id: "ai-provider-style-suggestion",
+    text: {
+      en: "A second optional feature, off by default, suggests a writing style from the user's own sent mail, only when an owner taps a button. Then the assistant sends the text of up to 100 own sent mails of one mailbox from the last 14 days, at most 1,500 characters of each and 60,000 characters in all, with no subject and no address from the headers. It tries to cut off quoted older mail, the forwarded part and the signature, and only where the code finds them, so the text can still hold names, addresses and quoted mail of other people. A tap makes at most two calls with the same texts and no new try after an AI service error. The answer has at most 1,000 characters, and the server does not store it.",
+      pl: "Druga opcjonalna funkcja, domyślnie wyłączona, podpowiada styl pisania na podstawie własnych wysłanych wiadomości użytkownika, tylko gdy właściciel kliknie przycisk. Wtedy asystent wysyła treść do 100 własnych wysłanych wiadomości jednej skrzynki z ostatnich 14 dni, po najwyżej 1500 znaków z każdej i 60000 znaków łącznie, bez tematu i bez adresu z nagłówków. Próbuje odciąć cytowaną starszą pocztę, przesyłaną część i podpis, i tylko tam, gdzie kod je znajdzie, więc treść nadal może zawierać imiona, adresy i cytowaną pocztę innych osób. Jedno kliknięcie powoduje co najwyżej dwa wywołania z tymi samymi tekstami i brak nowej próby po błędzie usługi AI. Odpowiedź ma co najwyżej 1000 znaków, a serwer jej nie przechowuje.",
+    },
+    ledger: ["C030", "C271", "C272"],
+    proofs: [
+      "packages/core/src/replies/style-samples.ts",
+      "apps/server/src/modules/triage/prompts/stylist-v1.ts",
+      "apps/server/src/modules/replies/stylist.ts",
+      "docs/capabilities/reply-drafts.md",
+    ],
+    condition: {
+      en: "The install uses the OpenAI provider, and the style suggestion is on.",
+      pl: "Instalacja używa dostawcy OpenAI, a podpowiedź stylu jest włączona.",
+    },
+  },
+  {
     id: "ai-provider-keeps",
     text: {
       en: "The assistant asks OpenAI not to store the data. OpenAI keeps abuse logs for up to 30 days (its data-controls page, read 2026-11-17).",
