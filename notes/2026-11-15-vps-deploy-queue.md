@@ -227,6 +227,22 @@ Release N+1 is `v0.4.4` (`fb1df6d64`, "Release v0.4.4"). It holds two migrations
 - `ea-sim` containers untouched (up 27 h at 21:24Z). Crontab 2 lines (unchanged).
 - Not changed: the DB beyond the release migrations (no restore, no `down -v`), `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack (not rebuilt).
 
+## Release v0.4.5 (2026-11-21, 01:58 UTC; job `2026-11-21-release-v0-4-5-retry-with-the-pr-0c1d46d6`): release ok v0.4.5, server env ok
+
+Release N+1 is `v0.4.5` (`f43f78777`, "Release v0.4.5: reword the user line so it holds no flag text"; package.json 0.4.5). It holds one migration: `20261120120001_drop_style_text.sql` (contract step of v0.4.4: drops `organizations.style_text`; v0.4.4 copied the data). It also moves the legal version to `2026-11-20.3` (every member accepts the terms again) and brings new public claims and papers. No flag changes. Logs on the VPS: `~/ea-logs/v0.4.5/` (`00-pre-counts.log`, `release.log`, `01-after.log`, `02-watch.log`, `03-end.log`; `watch.sh` is the v0.4.4 watch script with a new header).
+
+- First try (job `2026-11-21-release-v0-4-5-with-the-privacy-5588034e`): stopped before the tag. CI on the first release commit `92fbb69c2` was red: `apps/docs/src/flagged-text.test.ts` "the changelog page > T10" found the text of the default-off flag `reply_drafts` in a CHANGELOG user line. `f43f78777` rewords that line. No VPS change in that try.
+- Rollback: `deploy/rollback.sh` alone goes to `v0.4.4` (no SQL; v0.4.4 stopped using `style_text`, CHANGELOG 0.4.5). An older release needs a restore of the backup `ea-20261121T015050Z.dump.age` that `release.sh` took before the migration (`deploy/README.md` § Backups). Rollback target now `v0.4.4` (image `ea-server:v0.4.4` kept).
+- CI: run 44850500777 (workflow CI: ci, image, docs, e2e) on `f43f78777` success at 01:50Z; the only workflow on that commit. Tag `git tag -a v0.4.5 -m v0.4.5 f43f78777`, pushed 01:50Z; `git ls-remote origin 'refs/tags/v0.4.5^{}'` → `f43f787773a2…`. The tag push ran "Docs deploy": success.
+- Pre-checks (01:4xZ): `ea_env_split_state` → `split`; state `current=v0.4.4 previous=v0.4.3 pending=` empty; checkout at `v0.4.4`, `git status` clean; 17 G free; terms served `2026-11-20`. Far from the 03:30 backup cron.
+- Pre counts (`00-pre-counts.log`, 01:50:40Z): `style_text` columns on `organizations` 1; organizations with non-blank `style_text` 0; `org_features` rows 10 and an md5 of all its rows (`9e13386b…`).
+- Release (01:50:51Z, `nohup bash -c 'deploy/release.sh v0.4.5; echo RELEASE_RC=$?'`): `backup ok ea-20261121T015050Z.dump.age 722597`; `Applying: 20261120120001_drop_style_text.sql` (169 ms); server recreated, started 01:58:08Z; `server env ok keys=38`; old image `ea-server:v0.4.3` untagged; `release ok v0.4.5 previous v0.4.4`; `RELEASE_RC=0`. State now `current=v0.4.5 previous=v0.4.4 pending=` empty; checkout at `v0.4.5`, `git status` clean.
+- After (01:58:53Z, `01-after.log`): `bash deploy/check-server-env.sh` → `server env ok keys=38`, rc 0. `information_schema.columns` count of `organizations.style_text`: 0. Terms version served on `/legal/en/terms` and `/legal/pl/terms`: `2026-11-20.3`. Health 200, `EA_RELEASE=v0.4.5`. `org_features` md5 unchanged.
+- Start log (first 10 minutes): `sync_done` 2, `sent_sync_done` 2, `sync_folder_done` 10, 0 `error`. Warns: the same 5 start-up config warns as v0.4.4 (`actions_scope`, `operator_contact_empty`, `scope_targets`, `send_scope`, `triage_scope`).
+- 30-minute watch (checklist step 10), 01:59:01Z–02:29:17Z (`02-watch.log`, a tick each 5 minutes over `deploy/logs.sh --since 40m`): `EA_RELEASE=v0.4.5`; each of 6 ticks `error_40m=0`, health 200, container `healthy restarts=0`; `sync_done` count grew 3 → 15. Error events in the window: none. Warn events: the 5 start-up warns once each. `ops:alerts` rc 0: only resolved alerts (`slo_backup_age` 2026-11-20 16:35Z–16:45Z and 2026-11-18–19; `slo_sync_lag` 2026-11-17–19). No rollback.
+- End (02:29:57Z, `03-end.log`): `org_features` md5 unchanged (`9e13386b…`): no flag changed. `ea-sim` containers untouched (5, up 31 h). Crontab 2 lines (unchanged).
+- Not changed: the DB beyond the release migration (no restore, no `down -v`), the feature flags, `.env`, `deploy/db.env`, `deploy/backup.env`, `deploy/sim.env`, the crontab, the `ea-sim` stack (not rebuilt).
+
 ## Demo run for F151 (C1)
 
 Started 2026-11-20 16:36 UTC on the VPS sim stack (`ea-sim`) by `demo-reset --yes`, beside the live lab day run (owner decision 2026-11-20: do not wait for it).
