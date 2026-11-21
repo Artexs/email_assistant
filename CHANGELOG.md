@@ -17,6 +17,18 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-11-21
+
+### For users
+
+- en: The privacy page and the data processing agreement now name the AI calls that write reply drafts and reply-style suggestions. You accept the terms again at your next sign-in.
+  pl: Strona prywatności i umowa powierzenia nazywają teraz wywołania AI, które piszą szkice odpowiedzi i podpowiedzi stylu. Przy najbliższym logowaniu ponownie akceptujesz regulamin.
+
+### Changed
+
+- Legal versions `2026-11-20.2` and `2026-11-20.3` (privacy page, DPA, DPIA, record of processing, ledger and public security claims name the open-loops extractor, the one-click unsubscribe request, members in `unsubscribe-data`, report mail, the reply-draft call and the reply-style call). Every member accepts the terms once. Feature flags `bulk_unsubscribe`, `report_mail` and `style_from_sent` stay off until the owner turns them on.
+- The job check runs the docs-reading tests when a docs file changes.
+
 ### Removed
 
 - The old organization signature column `organizations.style_text`. Release v0.4.4 already copied it into the mailbox signatures and stopped using it. A rollback of this release goes to v0.4.4 with `deploy/rollback.sh` alone; an older release needs a restore from the backup that `deploy/release.sh` took before the migration.
