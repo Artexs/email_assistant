@@ -33,11 +33,11 @@ The setup and control pages have the Pebble look. Onboarding shows its progress 
 
 ## Slices
 
-Stages come from the plan, by the programme page § Rules for width. Settings is the largest part and is split by section.
+Ten stages, one worker job each: [`plan.md`](plan.md) § Stages. Settings has a frame stage and four section stages. Eight stages start at once; the settings mailbox cards and onboarding wait for the settings frame. No stage changes a migration or `bun.lock`. No owner checkpoint.
 
 ## Sequenced
 
-- Plan after: F166 (its `interfaces.md`).
+- Plan after: F166, the design system (its `interfaces.md` and stages 03, 06, 09, 10).
 - Build after: none. Gate: the stages need F166 stages 03 (tokens), 06 and 10 (patterns) and 09 (page head contract). May build next to F167, F168 and F169.
 
 ## Notes
