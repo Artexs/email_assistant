@@ -32,12 +32,12 @@ The frame around every page has the Pebble look: a floating sidebar on a desktop
 
 ## Slices
 
-Stages come from the plan, by the programme page § Rules for width. The frame, the brand assets and the pages before sign-in own different files and run next to each other.
+Seven stages: [`plan.md`](plan.md) § Stages and § How to run. The brand assets, the banners and the offline cache start first; the desktop frame then the phone frame, and the sign-in pages then the other public pages, run next to each other. No owner step.
 
 ## Sequenced
 
 - Plan after: F166 (its `interfaces.md`).
-- Build after: none. Gate: the stages need F166 stages 03 (tokens), 09 (page head contract) and 10 (`StickyActions`, tab bar height). May build next to F168, F169 and F170.
+- Build after: none. Gate: the stages need F166 stages 03 (tokens), 06 (`InitialsAvatar`) and 09 (page head contract) only; `StickyActions` (F166 stage 10) reads the tab bar height token of stage 03, so no F167 stage waits for stage 10. May build next to F168, F169 and F170.
 
 ## Notes
 

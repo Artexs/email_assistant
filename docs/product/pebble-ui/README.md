@@ -86,7 +86,7 @@ F166 design system                      ┌► F167 shell, brand, sign-in pages 
   wave 4: dark scan for every page
 ```
 
-F167, F168, F169 and F170 run next to each other. They wait for four stages of F166 only: 03 (tokens), 06 and 10 (patterns), 09 (the page head contract). Their planner jobs start together, when the review fixes of the F166 plan are committed. The demo video and docs shots ticket (F151) finishes its tool stages now; its takes are made again in F171.
+F167, F168, F169 and F170 run next to each other. They wait for four stages of F166 only: 03 (tokens), 06 and 10 (patterns), 08 (the pattern page and its proof command), 09 (the page head contract). Their planner jobs start together, when the review fixes of the F166 plan are committed. The demo video and docs shots ticket (F151) finishes its tool stages now; its takes are made again in F171.
 
 ## Rules for width
 
