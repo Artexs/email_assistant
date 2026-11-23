@@ -864,3 +864,5 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - 2026-11-24 · F168 plan · user-visible · A review correction from the "It is something else" menu saves with one tap; a mis-tap after a grant can feed the tripwire. Undo: add a confirm step in F168 stage 08. · new
 - 2026-11-24 · F168 plan · rule-exception · Activity texts lose their emoji; the test that ties them to the Telegram texts compares the words only. Undo: restore the emoji and the strict test. · new
 - 2026-11-24 · F168 plan · scope · No user docs page for approvals in this ticket (the page is behind a default-off flag; the docs rule forbids its strings). Undo: add the section when the flag goes on. · new
+- 2026-11-24 · F170 plan · user-visible · In a shadow week the Stats ring shows the would-handle share, labelled "Would handle (shadow)". Undo: show the handled share (0 % in shadow weeks). · new
+- 2026-11-24 · F170 plan · user-visible · The onboarding mode step keeps today's text rule: an owner reads "open", a member reads the assistant text; only an owner who can write gets buttons. Undo: change in F170 stage 06. · new
