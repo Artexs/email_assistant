@@ -87,7 +87,7 @@ A Sonnet review before each land. Its task adds: "Open the worker's pictures and
 | 09 | [Shadow report](stages/stage-09-report.md) | F166 06, 09, 10 |
 | 10 | [Operator console](stages/stage-10-operator.md) | F166 03, 09 |
 
-Eight stages start at once (01, 03, 04, 05, 07, 08, 09, 10); 02 and 06 start when 01 lands.
+Eight start at once; 02 and 06 start when 01 lands.
 
 ## How to run (coordinator)
 
@@ -95,7 +95,7 @@ As for F166: folder in `active/` and committed first; one job per stage with the
 
 ## Planning progress
 
-Stages 01–10 [written]. Scouts: 0 (the job instruction forbids waiting for or polling a job; the planner read the code itself). Word counts: § Log.
+Stages 01–10 [written]. Scouts: 0 (no waiting allowed; the planner read the code). Words: plan 1,484; stages 396–675 (`wc -w`).
 
 ## Cold review
 

@@ -1,6 +1,6 @@
 # F170 stage 10 — The operator console: theme and dense tables
 
-Needs F166 stage 03: the tokens and the `Table` sizes. Needs F166 stage 09: `AppShell` `lead`. May run next to 01–09.
+Needs F166 stage 03: the tokens. Needs F166 stage 09: `AppShell` `lead`. May run next to 01–09.
 
 Part of [`../plan.md`](../plan.md). Decisions: P8, P9, D5, D7.
 
