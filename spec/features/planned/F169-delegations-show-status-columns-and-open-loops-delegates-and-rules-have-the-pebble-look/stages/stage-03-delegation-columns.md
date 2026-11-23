@@ -6,7 +6,7 @@ Mockup: screen `delegations`, shots `08-delegations-*`. Do not take its delegate
 
 ## Step 1 — The columns
 
-- **Files:** `components/delegation/Delegations.tsx` (on the stage 01 hook), a new `DelegationColumn.tsx`, `DelegationRow.tsx` (card look), `DelegationCancelDialog.tsx` (look only). Delete `DelegationFilterTabs.tsx`, `lib/use-delegation-filter.ts`, `lib/use-delegation-list.ts` when nothing reads them, and the helpers and keys only they read (`FILTER_LABELS`, `FILTER_EMPTY`, `filterHref`, `dgn_filter_*`, `dgn_filters_label`, `dgn_empty_*`, `dgn_list_label`).
+- **Files:** `components/delegation/Delegations.tsx` (on the stage 01 hook), a new `DelegationColumn.tsx`, `DelegationRow.tsx` (card look), `DelegationCancelDialog.tsx` (look only). Delete `DelegationFilterTabs.tsx`, `lib/use-delegation-filter.ts`, `lib/use-delegation-list.ts` when nothing reads them, and the helpers and keys only they read (`FILTER_LABELS`, `FILTER_EMPTY`, `filterHref`, the `dgn_filter_*` keys except `dgn_filter_open` and `dgn_filter_closed` (`lib/loops-view.ts` reads them), `dgn_filters_label`, `dgn_empty_*`, `dgn_list_label`).
 - **Decisions:** D1–D11, D18.
   - Layout D6. A column: a muted group with radius `xl`, an `h2` with icon and title in its tone, the count chip (D5), a `ul` named by the `h2` (`aria-labelledby`), then its empty line or "Show more" (`dgn_more`) with `dgn_more_error`.
   - A card: the task (bold; the retention dash stays), the subject, the delegate name, the due date, the buttons. The status badge shows only in the closed list (`showStatus` prop). Remind now `soft` at full card width, Done `outline`, Cancel `ghost`. The drafted card keeps its draft link (`dgn_open_draft`).
@@ -22,7 +22,7 @@ Mockup: screen `delegations`, shots `08-delegations-*`. Do not take its delegate
 ## Tests
 
 1. `DelegationColumn` render test: 2 rows give an `h2` with the title and a list of that name with 2 items; 0 rows give the `empty` text; `next` set gives the count `2+`.
-2. `delegations.spec.ts`, the tab cases rewritten to columns on today's seed (one delegation per status, `e2e-seed/args-delegations.ts`): each seeded row is in the column of its status; done and cancelled show only after `dgn_closed_show`; `/delegations?filter=closed` opens the closed list.
+2. `delegations.spec.ts`, the tab cases rewritten to columns on today's seed (one delegation per status; its org has `delegation_pages`, `approvals_page`, `stats_page` and not `open_loops`, `e2e-seed/seed-delegations.ts`): each seeded row is in the column of its status; done and cancelled show only after `dgn_closed_show`; `/delegations?filter=closed` opens the closed list.
 3. The same spec keeps today's action cases from column cards: remind with its link and its block reasons, done, cancel with the dialog and its focus, the status line, "Show more" with focus on the first new row, member, suspended and flag-off views.
 4. Mobile project, en and pl (`test.use({ locale: "pl-PL" })`): the four column headings follow each other top to bottom, and `scrollWidth <= innerWidth` (ticket acceptance 2).
 5. `open-loops.spec.ts`, Delegated cases only: the columns show; the delegated loops show under `lp_list_delegated` with the filter links; `?tab=delegated&filter=closed` shows closed loops and the open closed list.
