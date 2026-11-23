@@ -31,6 +31,7 @@
     "docs:test": "bunx playwright test -c apps/docs/e2e/playwright.config.ts",
     "docs:stale": "bun apps/docs/scripts/stale.ts",
     "docs:shots": "bunx playwright test -c apps/web/e2e/docs-shots.config.ts",
+    "ui:sheet": "bunx playwright test -c apps/web/e2e/ui-sheet.config.ts && bun apps/web/e2e/ui-sheet/summary.ts",
     "demo:record": "bun apps/web/e2e/demo/record.ts",
     "test:e2e": "bunx playwright test -c apps/web/e2e/playwright.config.ts",
     "rules:add": "bun apps/server/src/scripts/rules.ts add",
