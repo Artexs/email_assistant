@@ -1,6 +1,6 @@
 # F168 stage 04 — The queue decision flow `[risky]`
 
-Needs stage 01: `ApprovalCard`, `WaitingList`. Needs stage 02: `reply-panel.spec.ts` (shared file). Needs stage 03: `lib/approvals-queue.ts`. Needs F166 stage 10: `StickyActions`. Needs F166 stage 06: `StepDots`. May run next to 07, 08.
+Needs stage 01: `ApprovalCard`, `WaitingList`. Needs stage 02: `reply-panel.spec.ts` (shared file). Needs stage 03: `lib/approvals-queue.ts`. Needs F166 stage 10: `StickyActions`. Needs F166 stage 06: `StepDots`. May run next to 06, 07, 08.
 
 Part of [`../plan.md`](../plan.md): P1–P9, D3–D6, D9. It sends mail to people: an Opus review before the land.
 
