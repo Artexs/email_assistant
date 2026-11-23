@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pebble · Email Assistant mockup</title>
+<style>
+/* Pebble: soft and friendly. Large radius, one saturated teal, generous space, big touch targets.
+   Approvals become a focus queue: one draft at a time, decide, next. Token names follow shadcn (global.css). */
+:root {
+  --background: #f3f6f5; --foreground: #13201d; --card: #ffffff; --muted: #e8efed; --muted-foreground: #586b66; --border: #dbe5e2;
+  --primary: #0a7a6c; --primary-foreground: #fff; --primary-soft: #d5f0ea; --accent: #fff1e0; --accent-foreground: #8a4b00;
+  --destructive: #c23a3a; --radius: 22px; --sidebar: #ffffff;
+  --shadow: 0 1px 2px rgb(16 40 34 / .05), 0 12px 32px -8px rgb(16 40 34 / .12);
+  --c-urgent: #c23a3a; --c-reply: #2563c9; --c-delegation: #7a45c9; --c-info: #4b5d73; --c-notification: #0a7a6c; --c-spam: #8a5a1c; --c-unsure: #a35f00;
+}
+[data-theme=dark] {
+  --background: #0d1513; --foreground: #e4efec; --card: #16211e; --muted: #1d2b27; --muted-foreground: #95aba5; --border: #24332f;
+  --primary: #3fd1b9; --primary-foreground: #04201b; --primary-soft: #133b34; --accent: #3a2a14; --accent-foreground: #ffc983;
+  --destructive: #ff7c7c; --sidebar: #121c19; --shadow: 0 1px 2px #0006, 0 12px 32px -8px #0008;
+  --c-urgent: #ff7c7c; --c-reply: #7fb0ff; --c-delegation: #c3a0ff; --c-info: #a8b6c7; --c-notification: #3fd1b9; --c-spam: #e0ad6b; --c-unsure: #ffc46b;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--background); color: var(--foreground); font: 16px/1.5 ui-rounded, "SF Pro Rounded", "Nunito", ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+button { font: inherit; cursor: pointer; color: inherit; }
+:focus-visible { outline: 3px solid color-mix(in oklab, var(--primary) 60%, transparent); outline-offset: 2px; }
+h1 { font-size: 30px; line-height: 1.2; margin: 0; font-weight: 750; letter-spacing: -.02em; }
+h2 { font-size: 20px; margin: 0; font-weight: 700; }
+.muted { color: var(--muted-foreground); }
+.num { font-variant-numeric: tabular-nums; }
+
+.app { display: grid; grid-template-columns: 248px 1fr; gap: 20px; padding: 20px; min-height: 100vh; }
+.side { background: var(--sidebar); border-radius: 28px; box-shadow: var(--shadow); padding: 22px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 20px; height: calc(100vh - 40px); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; padding: 0 10px 18px; }
+.brand .pb { width: 36px; height: 36px; border-radius: 12px 12px 12px 4px; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; }
+.side a { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 16px; text-decoration: none; color: var(--muted-foreground); font-weight: 600; font-size: 15px; }
+.side a:hover { background: var(--muted); }
+.side a[aria-current] { background: var(--primary-soft); color: var(--primary); }
+.side a .b { margin-left: auto; background: var(--primary); color: var(--primary-foreground); font-size: 12px; border-radius: 999px; padding: 1px 8px; }
+.side .help { margin-top: auto; background: var(--accent); color: var(--accent-foreground); border-radius: 18px; padding: 14px; font-size: 13.5px; }
+.side .help b { display: block; margin-bottom: 4px; }
+.main { min-width: 0; padding: 12px 12px 60px; }
+.pagehead { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 22px; }
+.pagehead p { margin: 6px 0 0; color: var(--muted-foreground); }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 999px; padding: 12px 22px; font-weight: 700; min-height: 48px; background: var(--muted); }
+.btn.primary { background: var(--primary); color: var(--primary-foreground); box-shadow: 0 6px 16px -6px color-mix(in oklab, var(--primary) 70%, transparent); }
+.btn.soft { background: var(--primary-soft); color: var(--primary); }
+.btn.ghost { background: transparent; color: var(--muted-foreground); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; background: color-mix(in oklab, var(--c, var(--muted-foreground)) 14%, transparent); color: var(--c, var(--muted-foreground)); }
+.avatar { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff; flex: none; }
+
+/* Approvals focus queue */
+.queue { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; }
+.focus { padding: 30px 34px 28px; }
+.focus .who { display: flex; align-items: center; gap: 14px; }
+.focus .who .name { font-weight: 750; font-size: 18px; }
+.steps { display: flex; gap: 6px; }
+.steps i { width: 26px; height: 6px; border-radius: 3px; background: var(--muted); }
+.steps i.on { background: var(--primary); }
+.whybox { display: flex; gap: 12px; align-items: start; background: var(--accent); color: var(--accent-foreground); border-radius: 18px; padding: 14px 16px; margin: 22px 0; font-size: 15px; }
+.letter { background: var(--background); border-radius: 18px; padding: 20px 22px; font-size: 16px; line-height: 1.65; }
+.letter .subj { font-weight: 750; margin-bottom: 10px; font-size: 15px; color: var(--muted-foreground); }
+.orig { margin-top: 14px; font-size: 14px; color: var(--muted-foreground); padding: 0 6px; }
+.orig summary { cursor: pointer; font-weight: 700; color: var(--primary); }
+.decide { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+.decide .btn.primary { padding: 14px 30px; font-size: 17px; }
+.decide .safe { margin-left: auto; font-size: 13.5px; color: var(--muted-foreground); display: flex; gap: 6px; align-items: center; max-width: 230px; }
+.next { padding: 20px; }
+.next h2 { font-size: 15px; color: var(--muted-foreground); margin-bottom: 12px; }
+.mini { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 16px; }
+.mini + .mini { margin-top: 4px; }
+.mini:hover { background: var(--muted); }
+.mini .t { font-weight: 700; font-size: 14.5px; }
+.mini .s { font-size: 13px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+.done-today { margin-top: 18px; padding: 18px 20px; display: flex; gap: 14px; align-items: center; }
+.done-today .ring { width: 54px; height: 54px; flex: none; }
+
+/* Review */
+.rgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.rcard { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+.rcard .top { display: flex; justify-content: space-between; align-items: center; }
+.rcard .subj { font-weight: 750; font-size: 16.5px; line-height: 1.35; }
+.rcard .why { font-size: 14px; color: var(--muted-foreground); }
+.rcard .q { margin-top: auto; padding-top: 6px; display: flex; gap: 8px; flex-wrap: wrap; }
+.rcard .q .btn { min-height: 44px; padding: 8px 16px; font-size: 14.5px; }
+.rcard.answered { background: var(--primary-soft); box-shadow: none; }
+.conf { font-size: 13px; color: var(--muted-foreground); display: flex; align-items: center; gap: 6px; }
+.dots { display: inline-flex; gap: 3px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+.dots i.on { background: var(--primary); }
+.progress { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+.progress .ring { width: 48px; height: 48px; }
+
+/* Stats */
+.sgrid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
+.hero { padding: 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.hero .big { font-size: 44px; font-weight: 800; letter-spacing: -.03em; }
+.ringwrap { position: relative; width: 170px; height: 170px; }
+.ringwrap .ring { width: 170px; height: 170px; }
+.ringwrap .big { position: absolute; inset: 0; display: grid; place-items: center; font-size: 44px; font-weight: 800; letter-spacing: -.03em; }
+.pagehead b.num { white-space: nowrap; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.fact { padding: 18px 20px; }
+.fact .v { font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+.fact .l { color: var(--muted-foreground); font-size: 14px; }
+.cols { padding: 22px 24px; }
+.cols .bars { display: flex; align-items: end; gap: 16px; height: 190px; margin-top: 16px; }
+.cols .bars div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: end; font-size: 12.5px; color: var(--muted-foreground); }
+.cols .bars span.col { width: 100%; max-width: 46px; border-radius: 14px 14px 6px 6px; background: var(--primary-soft); position: relative; }
+.cols .bars span.col i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 14px 14px 6px 6px; background: var(--primary); }
+.cols .bars b { color: var(--foreground); font-size: 13px; }
+
+/* Shared form parts */
+.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 14px; }
+.field input, .field select, .field textarea { font: inherit; font-weight: 500; font-size: 16px; padding: 12px 16px; border-radius: 16px; border: 2px solid var(--border); background: var(--card); color: var(--foreground); min-height: 50px; }
+.field textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
+.switch { width: 52px; height: 30px; border-radius: 15px; background: var(--border); border: 0; position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 4px; left: 4px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0003; transition: left .15s; }
+.switch[aria-checked=true] { background: var(--primary); }
+.switch[aria-checked=true]::after { left: 26px; }
+.tabsp { display: inline-flex; background: var(--muted); border-radius: 999px; padding: 4px; gap: 2px; }
+.tabsp button { border: 0; background: none; padding: 9px 18px; border-radius: 999px; font-weight: 700; color: var(--muted-foreground); min-height: 42px; }
+.tabsp button[aria-pressed=true] { background: var(--card); color: var(--foreground); box-shadow: var(--shadow); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.sec { padding: 24px; }
+.sec h2 { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.sec h2 .ic { width: 36px; height: 36px; border-radius: 12px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; }
+.sec .lead { color: var(--muted-foreground); margin: 0 0 16px; font-size: 14.5px; }
+.line { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-top: 1px solid var(--border); }
+.line:first-of-type { border-top: 0; }
+.line .grow { flex: 1; }
+.line .t { font-weight: 700; }
+.line .s { font-size: 13.5px; color: var(--muted-foreground); }
+.timechip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-weight: 800; }
+
+/* Login */
+.login { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+.login .art { border-radius: 32px; background: linear-gradient(160deg, var(--primary) 0%, color-mix(in oklab, var(--primary) 70%, #0f3d5c) 100%); color: #fff; padding: 44px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+[data-theme=dark] .login .art { color: #04201b; }
+.login .art h1 { font-size: 44px; max-width: 12ch; }
+.login .art p { font-size: 17px; max-width: 34ch; opacity: .9; }
+.stackart { position: relative; height: 230px; }
+.stackart .m { position: absolute; left: 0; width: 300px; background: #fff; color: #13201d; border-radius: 22px; padding: 14px 18px; box-shadow: 0 18px 40px -14px #0007; display: flex; gap: 12px; align-items: center; font-size: 14px; }
+.stackart .m b { display: block; }
+.stackart .m .avatar { width: 38px; height: 38px; }
+.login .form { display: grid; place-items: center; }
+.login form { width: 100%; max-width: 400px; display: grid; gap: 16px; }
+.login .links { display: flex; justify-content: space-between; font-weight: 700; font-size: 14.5px; }
+.login a { color: var(--primary); }
+.login .legal { font-size: 13px; color: var(--muted-foreground); display: flex; gap: 14px; flex-wrap: wrap; }
+.or { display: flex; align-items: center; gap: 12px; color: var(--muted-foreground); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+/* Onboarding */
+.obgrid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; align-items: start; }
+.obside { padding: 26px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.steplist { display: flex; flex-direction: column; gap: 12px; }
+.step { padding: 18px 22px; display: flex; gap: 16px; align-items: center; }
+.step .n { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; background: var(--muted); color: var(--muted-foreground); flex: none; }
+.step.done .n { background: var(--primary); color: var(--primary-foreground); }
+.step.now { outline: 3px solid var(--primary); outline-offset: -3px; flex-direction: column; align-items: stretch; }
+.step.now .head { display: flex; gap: 16px; align-items: center; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+.mode { border: 2px solid var(--border); border-radius: 20px; padding: 18px; text-align: left; background: var(--card); }
+.mode[aria-pressed=true] { border-color: var(--primary); background: var(--primary-soft); }
+.mode .ic { width: 44px; height: 44px; border-radius: 14px; background: var(--muted); display: grid; place-items: center; margin-bottom: 10px; }
+.mode[aria-pressed=true] .ic { background: var(--primary); color: var(--primary-foreground); }
+.mode b { display: block; font-size: 17px; }
+.mode span { font-size: 14px; color: var(--muted-foreground); }
+
+/* Empty state */
+.empty { padding: 56px 32px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 640px; margin: 30px auto 0; }
+.blob { width: 150px; height: 150px; border-radius: 48% 52% 45% 55% / 55% 45% 55% 45%; background: var(--primary-soft); display: grid; place-items: center; color: var(--primary); margin-bottom: 8px; position: relative; }
+.blob::after { content: ""; position: absolute; right: -6px; top: 10px; width: 34px; height: 34px; border-radius: 50%; background: var(--accent); }
+.empty .tips { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+
+/* Report */
+.rep { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.repc { padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+.repc .ringwrap2 { position: relative; width: 110px; height: 110px; align-self: center; }
+.repc .ringwrap2 .ring { width: 110px; height: 110px; }
+.repc .ringwrap2 b { position: absolute; inset: 0; display: grid; place-items: center; font-size: 24px; font-weight: 800; }
+.repc .facts2 { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 14px; }
+.repc .facts2 span:nth-child(odd) { color: var(--muted-foreground); }
+.repc.rec { outline: 3px solid var(--primary); outline-offset: -3px; }
+.cta { margin-top: 20px; padding: 22px 26px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+
+/* Activity */
+.flt { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.flt button { flex: none; white-space: nowrap; border: 2px solid var(--border); background: var(--card); border-radius: 999px; padding: 8px 16px; font-weight: 700; font-size: 14px; color: var(--muted-foreground); min-height: 42px; }
+.flt button[aria-pressed=true] { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+.dayh { font-weight: 800; font-size: 15px; color: var(--muted-foreground); margin: 22px 4px 10px; }
+.acts { display: flex; flex-direction: column; gap: 10px; }
+.act { padding: 14px 18px; display: grid; grid-template-columns: 46px 1fr auto; gap: 2px 14px; align-items: center; }
+.act .ib { width: 46px; height: 46px; border-radius: 16px; display: grid; place-items: center; grid-row: 1 / 3; background: color-mix(in oklab, var(--c) 15%, transparent); color: var(--c); }
+.act .t { font-weight: 750; }
+.act .s { font-size: 14px; color: var(--muted-foreground); }
+.act .r { grid-row: 1 / 3; grid-column: 3; display: flex; gap: 8px; align-items: center; }
+.act .tm { font-size: 13px; color: var(--muted-foreground); font-weight: 700; }
+.act .btn { min-height: 42px; padding: 8px 16px; }
+
+/* Delegations */
+.people { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; padding: 4px 2px 10px; margin-bottom: 8px; }
+.person { padding: 16px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.person .top2 { display: flex; gap: 10px; align-items: center; }
+.person .late { color: var(--destructive); font-weight: 800; font-size: 13px; }
+.groups { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+.group { background: var(--muted); border-radius: 24px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.group h3 { margin: 4px 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.group h3 .c { margin-left: auto; background: var(--card); border-radius: 999px; padding: 0 9px; font-size: 13px; }
+.dcard { padding: 14px 16px; border-radius: 18px; }
+.dcard .t { font-weight: 750; font-size: 14.5px; line-height: 1.35; }
+.dcard .s { font-size: 13px; color: var(--muted-foreground); margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Rules */
+.builder { padding: 22px 26px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.builder .slot { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed var(--border); border-radius: 16px; padding: 8px 14px; color: var(--muted-foreground); font-weight: 600; font-size: 16px; min-height: 48px; }
+.builder .slot.sel { border-style: solid; border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+.rulecols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.rc { padding: 22px; }
+.rc .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.rc .chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 999px; background: var(--muted); font-weight: 600; font-size: 14px; }
+.rc .chip button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--card); display: grid; place-items: center; padding: 0; }
+
+/* Mailboxes */
+.mbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 20px; }
+.mbc { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.mbc .addr { font-weight: 800; font-size: 15.5px; line-height: 1.3; }
+.mbc .st { display: inline-flex; gap: 6px; align-items: center; font-weight: 700; font-size: 13.5px; color: var(--primary); }
+.mbc .st.err { color: var(--destructive); }
+.mbc.err { outline: 3px solid color-mix(in oklab, var(--destructive) 45%, transparent); outline-offset: -3px; }
+.mtoggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mtoggle button { border: 2px solid var(--border); background: var(--card); border-radius: 16px; padding: 10px; font-weight: 750; display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 64px; color: var(--muted-foreground); }
+.mtoggle button[aria-pressed=true] { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.mtoggle small { font-weight: 600; font-size: 11.5px; }
+.bigstat { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+
+/* Settings */
+.danger { border: 2px solid color-mix(in oklab, var(--destructive) 35%, transparent); box-shadow: none; }
+.danger h2 .ic { background: color-mix(in oklab, var(--destructive) 15%, transparent); color: var(--destructive); }
+.btn.bad { background: color-mix(in oklab, var(--destructive) 14%, transparent); color: var(--destructive); }
+.sec .stack3 { display: flex; flex-direction: column; gap: 14px; }
+
+/* Phone */
+.mhead, .mtabs { display: none; }
+@media (max-width: 760px) {
+  .app { display: block; padding: 0; }
+  .side { display: none; }
+  .mhead { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 6px; }
+  .mhead .brand { padding: 0; }
+  .main { padding: 6px 14px 110px; }
+  h1 { font-size: 26px; }
+  .pagehead { margin-bottom: 14px; }
+  .pagehead p { display: none; }
+  .pagehead { flex-direction: column; align-items: start; gap: 10px; }
+  .queue, .sgrid, .facts { grid-template-columns: 1fr; }
+  .next, .done-today, .decide .safe { display: none; }
+  .focus { padding: 22px 18px; border-radius: 26px; }
+  .whybox { margin: 16px 0; }
+  .letter { padding: 16px; font-size: 15.5px; }
+  .decide { position: fixed; left: 0; right: 0; bottom: 64px; background: var(--card); padding: 12px 14px; margin: 0; box-shadow: 0 -8px 24px -10px #0003; z-index: 3; flex-wrap: nowrap; }
+  .decide .btn { flex: 1; padding: 12px 8px; min-height: 52px; }
+  .decide .btn.primary { flex: 1.6; font-size: 16px; padding: 12px; }
+  .mtabs { display: flex; position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: var(--card); border-top: 1px solid var(--border); z-index: 4; }
+  .mtabs a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11.5px; font-weight: 700; color: var(--muted-foreground); text-decoration: none; position: relative; }
+  .mtabs a[aria-current] { color: var(--primary); }
+  .mtabs .b { position: absolute; top: 6px; left: calc(50% + 6px); background: var(--primary); color: var(--primary-foreground); font-size: 10.5px; border-radius: 999px; padding: 0 6px; }
+  .rgrid { grid-template-columns: 1fr; }
+  .login { grid-template-columns: 1fr; padding: 12px; }
+  .login .art { padding: 26px; border-radius: 26px; }
+  .login .art h1 { font-size: 30px; }
+  .stackart { display: none; }
+  .login .form { padding: 10px 6px 30px; }
+  .obgrid, .row2, .rep, .groups, .rulecols, .mbs, .modes { grid-template-columns: 1fr; }
+  .obside { display: none; }
+  .act { grid-template-columns: 42px 1fr; }
+  .act .ib { width: 42px; height: 42px; }
+  .act .r { grid-row: auto; grid-column: 2; margin-top: 6px; }
+  .builder { font-size: 16px; padding: 18px; }
+  .flt { flex-wrap: nowrap; overflow-x: auto; }
+  .group { border-radius: 20px; }
+  .people { display: flex; overflow-x: auto; }
+  .person { min-width: 180px; }
+  .empty { padding: 40px 18px; margin-top: 10px; }
+  .cta .btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../_shared/data.js"></script>
+<script src="../_shared/kit.js"></script>
+<script>
+const D = DATA, { icon, esc, nl, cat, initials } = KIT;
+const C = { urgent: "urgent", needs_reply: "reply", delegation: "delegation", info: "info", notification: "notification", spam: "spam", unsure: "unsure" };
+const pill = (c) => `<span class="pill" style="--c:var(--c-${C[c]})">${icon(cat(c).icon, 14)}${cat(c).label}</span>`;
+const AV = ["#0a7a6c", "#7a45c9", "#2563c9", "#c25a1a", "#b3366b"];
+const ring = (pct, size = 54, stroke = 7) => { const r = (size - stroke) / 2, c = 2 * Math.PI * r; return `<svg class="ring" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--muted)" stroke-width="${stroke}"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="var(--primary)" stroke-width="${stroke}" stroke-linecap="round" stroke-dasharray="${(pct / 100) * c} ${c}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`; };
+
+function app(active, body) {
+  const nav = D.nav.map((n) => `<a href="#${n.id}" ${n.id === active ? 'aria-current="page"' : ""}>${icon(n.icon, 19)}${n.label}${n.badge ? `<span class="b">${n.badge}</span>` : ""}</a>`).join("");
+  const tabs = ["approvals", "review", "activity", "stats", "settings"].map((id) => { const n = D.nav.find((x) => x.id === id); return `<a href="#${id}" ${id === active ? 'aria-current="page"' : ""}>${icon(n.icon, 22)}${n.label}${n.badge ? `<span class="b">${n.badge}</span>` : ""}</a>`; }).join("");
+  return `<div class="app"><nav class="side" aria-label="Main"><div class="brand"><span class="pb">${icon("mail", 19)}</span>Email Assistant</div>${nav}
+      <div class="help"><b>${icon("shield", 14)} You stay in charge</b>Nothing is sent without your tap. Every move has an Undo for 7 days.</div></nav>
+    <header class="mhead"><div class="brand"><span class="pb">${icon("mail", 18)}</span>Email Assistant</div><div class="avatar" style="background:${AV[0]}">${D.owner.initials}</div></header>
+    <main class="main">${body}</main><nav class="mtabs" aria-label="Main">${tabs}</nav></div>`;
+}
+
+const screens = {
+  approvals: () => {
+    const a = D.approvals[0];
+    const nextList = D.approvals.slice(1).map((x, i) => `<div class="mini"><div class="avatar" style="background:${AV[(i + 1) % 5]}">${initials(x.toName)}</div><div><div class="t">${esc(x.title)}</div><div class="s">${esc(x.subject)}</div></div></div>`).join("");
+    return app("approvals", `<div class="pagehead"><div><h1>Good morning, Marta</h1><p>5 drafts wait for a yes or no. It takes about two minutes.</p></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="steps" aria-label="Draft 1 of 5"><i class="on"></i><i></i><i></i><i></i><i></i></span><b class="num">1 of 5</b></div></div>
+      <div class="queue"><article class="card focus" aria-label="Draft details">
+        <div class="who"><div class="avatar" style="background:${AV[0]}">${initials(a.toName)}</div><div><div class="name">${esc(a.title)}</div><div class="muted" style="font-size:14px">${esc(a.fromName)} · ${a.received}</div></div><span style="margin-left:auto">${pill(a.category)}</span></div>
+        <div class="whybox">${icon("sparkle", 20)}<div><b>Why I wrote this:</b> ${esc(a.why)}</div></div>
+        <div class="letter"><div class="subj">${esc(a.subject)}</div>${nl(a.draft)}</div>
+        <details class="orig"><summary>Show what Piotr wrote</summary><p>${esc(a.quote)}</p></details>
+        <div class="decide"><button class="btn primary">${icon("send", 18)}Yes, send it</button><button class="btn soft">${icon("pencil", 17)}Change</button><button class="btn ghost">${icon("x", 18)}No</button>
+          <span class="safe">${icon("clock", 15)}Expires in ${a.expires}. If you do nothing, nothing is sent.</span></div></article>
+      <aside><div class="card next"><h2>Up next</h2>${nextList}</div>
+        <div class="card done-today">${ring(80)}<div><b>12 approved this week</b><div class="muted" style="font-size:14px">You answer in 3 min on average.</div></div></div></aside></div>`);
+  },
+
+  review: () => {
+    const cats = ["urgent", "needs_reply", "info", "notification", "spam"];
+    const cards = D.review.slice(0, 9).map((r, i) => {
+      const dots = Math.round(r.confidence / 20);
+      return `<article class="card rcard ${i < 2 ? "answered" : ""}"><div class="top">${pill(r.category)}<span class="conf"><span class="dots" aria-hidden="true">${[1, 2, 3, 4, 5].map((d) => `<i class="${d <= dots ? "on" : ""}"></i>`).join("")}</span>${r.confidence} % sure</span></div>
+        <div class="muted" style="font-size:13.5px">${esc(r.sender)} · ${r.time}</div><div class="subj">${esc(r.subject)}</div><div class="why">${esc(r.why)} ${esc(r.did)}.</div>
+        <div class="q">${i < 2 ? `<span class="pill" style="--c:var(--primary)">${icon("check", 14)}You said: right</span>` : `<button class="btn primary">${icon("check", 16)}Right</button><button class="btn">It is something else ${icon("chevronDown", 15)}</button>`}</div></article>`;
+    }).join("");
+    return app("review", `<div class="pagehead"><div><h1>Was I right?</h1><p>10 decisions from the last 30 days. Your answers teach the assistant. Nothing in your mailbox changes.</p></div>
+      <div class="progress">${ring(20, 48, 6)}<span class="num">2 of 10</span></div></div><div class="rgrid">${cards}</div>`);
+  },
+
+  stats: () => {
+    const s = D.stats;
+    return app("stats", `<div class="pagehead"><div><h1>Your week</h1><p>${s.week}. Here is what the assistant took off your plate.</p></div><button class="btn soft">${icon("inbox", 17)}All mailboxes ${icon("chevronDown", 15)}</button></div>
+      <div class="sgrid"><div class="card hero"><div class="ringwrap">${ring(s.handledPct, 170, 18)}<div class="big num">${s.handledPct}%</div></div>
+          <h2>${s.handled} of ${s.total} mails handled for you</h2><p class="muted" style="margin:0">That is about <b style="color:var(--foreground)">${s.savedHours} hours</b> of reading you did not do.</p></div>
+        <div><div class="facts"><div class="card fact"><div class="v num">${s.mistakes}</div><div class="l">serious mistakes</div></div><div class="card fact"><div class="v num">${s.urgentP90}</div><div class="l">to tell you about urgent mail (p90)</div></div><div class="card fact"><div class="v num">${s.delegationsOnTime}</div><div class="l">delegations closed on time</div></div></div>
+          <div class="card cols"><h2>Handled for you, week by week</h2><div class="bars">${s.handledSeries.map((v, i) => `<div><b class="num">${v}</b><span class="col" style="height:${(s.totalSeries[i] / 560) * 140}px"><i style="height:${(v / 560) * 140}px"></i></span>${s.weeks[i]}</div>`).join("")}</div>
+          <p class="muted" style="font-size:13.5px;margin:12px 0 0">Dark part: handled for you. Light part: all mail that week.</p></div></div></div>`);
+  },
+};
+const sw = (on, label) => `<button class="switch" role="switch" aria-checked="${on}" aria-label="${esc(label)}"></button>`;
+const SC = { drafted: ["Waiting for your approval", "send", "var(--primary)"], sent: ["Sent, waiting for an answer", "clock", "var(--c-reply)"], overdue: ["Overdue", "alert", "var(--c-urgent)"], answered: ["Answered or done", "check", "var(--c-notification)"] };
+
+Object.assign(screens, {
+  login: () => `<div class="login"><section class="art"><div class="brand" style="padding:0;color:inherit"><span class="pb" style="background:#fff;color:var(--primary)">${icon("mail", 19)}</span>Email Assistant</div>
+      <div class="stackart" aria-hidden="true"><div class="m" style="top:0;transform:rotate(-4deg)"><div class="avatar" style="background:${AV[1]}">TN</div><div><b>Delegation to Tomasz</b>Invoice FV/11/2026/482</div></div>
+        <div class="m" style="top:70px;left:40px;transform:rotate(2deg)"><div class="avatar" style="background:${AV[0]}">PZ</div><div><b>Reply to Piotr</b>Berth slot change, 3 Dec</div></div>
+        <div class="m" style="top:142px;left:10px;transform:rotate(-1deg)"><div class="avatar" style="background:${AV[3]}">✓</div><div><b>14 notifications moved</b>Undo any of them for 7 days</div></div></div>
+      <div><h1>Your inbox, already sorted.</h1><p>The assistant reads, sorts and drafts. You only say yes or no. Nothing is sent without your tap.</p></div></section>
+    <section class="form"><form onsubmit="return false"><h1>Hello again</h1><p class="muted" style="margin:-8px 0 4px">Sign in to see what waits for you.</p>
+      <label class="field">E-mail<input type="email" value="${D.owner.email}"></label><label class="field">Password<input type="password" value="••••••••••••"></label>
+      <button class="btn primary" style="width:100%">Sign in</button><div class="or">or</div><button class="btn soft" style="width:100%">${icon("key", 17)}Sign in with your company account</button>
+      <div class="links"><a href="#">Forgot your password?</a><a href="#">No password yet?</a></div>
+      <div class="legal"><a href="#" style="color:inherit">Terms of service</a><a href="#" style="color:inherit">Privacy policy</a><a href="#" style="color:inherit">Data processing agreement</a></div></form></section></div>`,
+
+  onboarding: () => {
+    const st = D.onboarding;
+    const step = (x, i) => i === 2 ? `<div class="card step now"><div class="head"><span class="n">${i + 1}</span><div><h2>${x.title}</h2><div class="muted" style="font-size:14.5px">${x.text}</div></div></div>
+        <div class="modes"><button class="mode" aria-pressed="true"><span class="ic">${icon("eye", 22)}</span><b>Shadow</b><span>I only watch and report what I would do. Your mailbox does not change. Good for the first week.</span></button>
+          <button class="mode"><span class="ic">${icon("sparkle", 22)}</span><b>Assist</b><span>I move mail and prepare drafts. Each automatic action needs its own switch, and drafts always wait for you.</span></button></div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap"><button class="btn primary">Keep shadow mode for now</button><button class="btn ghost">Open Settings</button></div></div>`
+      : `<div class="card step ${x.done ? "done" : ""}"><span class="n">${x.done ? icon("check", 20) : i + 1}</span><div style="flex:1"><h2 style="font-size:17px">${x.title}</h2><div class="muted" style="font-size:14px">${x.text}</div></div>${x.done ? `<span class="pill" style="--c:var(--primary)">${icon("check", 13)}Done</span>` : `<button class="btn soft">Open Rules</button>`}</div>`;
+    return app("onboarding", `<div class="pagehead"><div><h1>Let us set you up</h1><p>Four short steps. You can change everything later.</p></div></div>
+      <div class="obgrid"><aside class="card obside"><div class="ringwrap">${ring(50, 170, 18)}<div class="big num">2/4</div></div><h2>Halfway there</h2><p class="muted" style="margin:0;font-size:14.5px">Your mailbox and Telegram are ready. Choose how much I may do.</p></aside>
+      <div class="steplist">${st.map(step).join("")}</div></div>`);
+  },
+
+  empty: () => app("approvals", `<div class="pagehead"><div><h1>Approvals</h1><p>Drafts that wait for your yes or no.</p></div></div>
+    <div class="card empty"><div class="blob">${icon("check", 64)}</div><h1 style="font-size:26px">Nothing waits for your approval.</h1>
+      <p class="muted" style="margin:0;font-size:16px;max-width:42ch">You are done for now. New drafts come with the next mail. I tell you in Telegram when one is urgent.</p>
+      <div class="tips"><button class="btn primary" data-go="activity">${icon("activity", 17)}See what I did today</button><button class="btn soft" data-go="review">${icon("eye", 17)}Check my decisions</button></div>
+      <p class="muted" style="font-size:13.5px;margin:12px 0 0">${icon("clock", 13)} Next digest at 18:00</p></div>`),
+
+  report: () => {
+    const r = D.report;
+    return app("review", `<div class="pagehead"><div><h1>What I would have done</h1><p>I read the last 30 days of your INBOX, read-only. Nothing changed.</p></div><span class="pill" style="--c:var(--primary)">${icon("mail", 14)}${r.checked} mails checked</span></div>
+      <div class="rep">${r.rows.map((x) => `<article class="card repc ${x.recommend ? "rec" : ""}"><div style="display:flex;justify-content:space-between;align-items:center">${pill(x.category)}${x.recommend ? `<span class="pill" style="--c:var(--primary)">${icon("sparkle", 13)}Recommended</span>` : `<span class="pill">${icon("clock", 13)}Not yet</span>`}</div>
+        <div class="ringwrap2">${ring(Math.round((x.moved / x.checked) * 100), 110, 12)}<b class="num">${x.moved}</b></div><div style="text-align:center;font-weight:700">of ${x.checked} mails would be moved</div>
+        <div class="facts2"><span>Proof</span><span>${x.proof}</span><span>Your mail</span><span>${x.yours}</span></div>
+        ${x.recommend ? `<button class="btn primary" style="margin-top:6px">Turn on</button>` : `<button class="btn" style="margin-top:6px" data-go="review">Rate more mail</button>`}</article>`).join("")}</div>
+      <div class="card cta"><div style="flex:1;min-width:240px"><h2>Turn on the recommended ones?</h2><div class="muted">Spam and Notifications passed on your own mail. You can turn each one off at any time.</div></div>
+        <button class="btn primary">${icon("check", 17)}Turn on Spam and Notifications</button><button class="btn soft" data-go="review">Check 10 decisions first</button></div>`);
+  },
+
+  activity: () => {
+    const row = (x) => `<div class="card act" style="--c:var(--c-${C[x.category]})"><span class="ib">${icon(cat(x.category).icon, 21)}</span><span class="t">${x.actor === "you" ? "You: " : ""}${esc(x.action)}</span><span class="s">${esc(x.subject)} · ${esc(x.reason)}</span>
+      <span class="r"><span class="tm num">${x.time.replace("Yesterday ", "")}</span>${x.undo ? `<button class="btn soft">${icon("undo", 16)}Undo</button>` : ""}</span></div>`;
+    const t = D.activity.filter((x) => !x.time.startsWith("Yesterday")), y = D.activity.filter((x) => x.time.startsWith("Yesterday"));
+    return app("activity", `<div class="pagehead"><div><h1>What I did</h1><p>Every change, with the reason. Tap Undo to put a mail back, for up to 7 days.</p></div><button class="btn soft">${icon("inbox", 17)}All mailboxes ${icon("chevronDown", 15)}</button></div>
+      <div class="flt"><button aria-pressed="true">Last 7 days</button><button>All categories</button><button>Only not rated</button><button>Can undo</button><button>By you</button></div>
+      <div class="dayh">Today</div><div class="acts">${t.map(row).join("")}</div><div class="dayh">Yesterday</div><div class="acts">${y.map(row).join("")}</div>`);
+  },
+
+  delegations: () => {
+    const g = { drafted: [], sent: [], overdue: [], answered: [] };
+    D.delegations.forEach((d) => (g[d.status === "done" ? "answered" : d.status] || g.answered).push(d));
+    const people = D.delegates.map((p, i) => `<div class="card person"><div class="top2"><div class="avatar" style="background:${AV[(i + 1) % 5]}">${initials(p.name)}</div><div><b>${p.name}</b><div class="muted" style="font-size:13px">${p.area}</div></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:14px"><span>${p.open} open</span>${p.overdue ? `<span class="late">${p.overdue} overdue</span>` : `<span class="muted">on time</span>`}</div></div>`).join("");
+    const col = (k) => `<section class="group"><h3 style="color:${SC[k][2]}">${icon(SC[k][1], 17)}${SC[k][0]}<span class="c num">${g[k].length}</span></h3>${g[k].map((d) => `<div class="card dcard"><div class="t">${esc(d.subject)}</div><div class="s"><span>${icon("users", 12)} ${d.to}</span><span>${icon("clock", 12)} due ${d.due}</span></div>${k === "overdue" ? `<button class="btn soft" style="margin-top:10px;min-height:40px;width:100%">Draft a reminder</button>` : ""}</div>`).join("")}</section>`;
+    return app("delegations", `<div class="pagehead"><div><h1>Waiting on others</h1><p>Work you handed to your team, and who answers on time.</p></div><div class="tabsp" role="group" aria-label="Delegation pages"><button aria-pressed="true">Delegations</button><button>Delegates</button></div></div>
+      <div class="people">${people}<button class="card person" style="border:2px dashed var(--border);box-shadow:none;align-items:center;justify-content:center;color:var(--primary);font-weight:800">${icon("plus", 22)}Add a delegate</button></div>
+      <div class="groups">${["overdue", "drafted", "sent", "answered"].map(col).join("")}</div>`);
+  },
+
+  rules: () => app("rules", `<div class="pagehead"><div><h1>Sender rules</h1><p>Rules run before the AI and always win.</p></div></div>
+    <div class="card builder">Always treat <span class="slot">${icon("pencil", 16)}anna@firma.pl or firma.pl</span> as <span class="slot sel">${icon("shield", 16)}VIP ${icon("chevronDown", 14)}</span> in <span class="slot sel">${icon("inbox", 16)}all mailboxes ${icon("chevronDown", 14)}</span><button class="btn primary" style="margin-left:auto">${icon("plus", 17)}Add rule</button></div>
+    <div class="rulecols">${Object.entries(D.rules).map(([k, r]) => `<section class="card rc"><h2 style="display:flex;align-items:center;gap:10px">${icon({ vip: "shield", whitelist: "check", blocklist: "ban" }[k], 20)}${r.label}<span class="pill" style="margin-left:auto">${r.items.length}</span></h2><p class="muted" style="margin:6px 0 0;font-size:14.5px">${r.help}</p>
+      <div class="chips">${r.items.map((x) => `<span class="chip">${esc(x)}<button aria-label="Remove ${esc(x)}">${icon("x", 14)}</button></span>`).join("")}</div></section>`).join("")}</div>`),
+
+  mailboxes: () => app("mailboxes", `<div class="pagehead"><div><h1>Your mailboxes</h1><p>Choose for each mailbox: I only watch (shadow), or I help (assist).</p></div><button class="btn primary">${icon("plus", 17)}Connect mailbox</button></div>
+    <div class="mbs">${D.mailboxes.map((m) => `<article class="card mbc ${m.state === "ok" ? "" : "err"}"><div style="display:flex;gap:12px;align-items:center"><div class="avatar" style="background:${m.state === "ok" ? AV[0] : "var(--destructive)"}">${icon("inbox", 18)}</div><div><div class="addr">${esc(m.address).replace("@", "<wbr>@")}</div><div class="muted" style="font-size:13px">${m.provider}</div></div></div>
+      ${m.state === "ok" ? `<span class="st">${icon("check", 15)}Connected · ${m.sync.toLowerCase()}</span>` : `<span class="st err">${icon("alert", 15)}The login failed. Change the password to start again.</span>`}
+      <div class="mtoggle" role="group" aria-label="Mode"><button aria-pressed="${m.mode === "shadow"}">${icon("eye", 18)}Shadow<small>only watch</small></button><button aria-pressed="${m.mode === "assist"}">${icon("sparkle", 18)}Assist<small>move and draft</small></button></div>
+      <div style="display:flex;justify-content:space-between;align-items:end"><div><div class="bigstat num">${m.today}</div><div class="muted" style="font-size:13px">mails today</div></div>${m.state === "ok" ? `<button class="btn soft">${icon("pause", 15)}Pause</button>` : `<button class="btn primary">${icon("key", 16)}Change password</button>`}</div></article>`).join("")}</div>
+    <section class="card sec"><h2><span class="ic">${icon("sparkle", 18)}</span>Automatic actions</h2><p class="lead">An action can only turn on after it proves itself on your own rated mail.</p>
+      ${D.autoActions.map((x) => `<div class="line">${pill(x.category)}<div class="grow"><div class="t">${x.action}</div><div class="s">${x.passed ? icon("shield", 12) : icon("clock", 12)} ${x.evidence}</div></div>${sw(x.on, x.action)}</div>`).join("")}</section>`),
+
+  settings: () => {
+    const s = D.settings;
+    return app("settings", `<div class="pagehead"><div><h1>Settings</h1><p>How and when I talk to you, and what I may do.</p></div><button class="btn soft">${icon("inbox", 17)}marta.wieczorek@… ${icon("chevronDown", 15)}</button></div>
+      <div class="row2"><div class="stack3" style="display:flex;flex-direction:column;gap:20px">
+        <section class="card sec"><h2><span class="ic">${icon("bell", 18)}</span>Digests and notices</h2><p class="lead">When I send you a summary of your mail.</p>
+          <div class="line"><div class="grow"><div class="t">Digest times</div><div class="s">A summary of the mail since the last one.</div></div>${s.digest.map((t) => `<span class="timechip">${icon("clock", 14)}${t}</span>`).join("")}<button class="btn soft" aria-label="Add a time" style="min-height:40px;padding:8px 12px">${icon("plus", 16)}</button></div>
+          <div class="line"><div class="grow"><div class="t">Quiet hours (yours)</div><div class="s">No notices in this time. Urgent mail waits too.</div></div><span class="timechip">${s.quiet[0]} – ${s.quiet[1]}</span></div>
+          <div class="line"><div class="grow"><div class="t">Where your reports go</div><div class="s">${icon("telegram", 12)} Telegram is linked.</div></div><span class="pill" style="--c:var(--primary)">${s.channel}</span></div>
+          <div class="line"><div class="grow"><div class="t">Timezone</div><div class="s">Times in digests and here.</div></div><b>${s.timezone}</b></div></section>
+        <section class="card sec"><h2><span class="ic">${icon("pencil", 18)}</span>Reply style</h2><p class="lead">How my reply drafts should sound.</p><label class="field">Style guide<textarea>${esc(s.replyStyle)}</textarea></label>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap"><button class="btn primary">Save</button><button class="btn soft">${icon("sparkle", 16)}Suggest from my sent mail</button></div></section></div>
+      <div style="display:flex;flex-direction:column;gap:20px"><section class="card sec"><h2><span class="ic">${icon("filter", 18)}</span>What I do per category</h2><p class="lead">Mode: assist. Each switch is one kind of change.</p>
+          ${s.categories.map((x) => `<div class="line">${pill(x.category)}<div class="grow"><div class="t">${x.text}</div></div>${sw(x.on, x.text)}</div>`).join("")}</section>
+        <section class="card sec"><h2><span class="ic">${icon("lock", 18)}</span>Security</h2><div class="line"><div class="grow"><div class="t">Two-factor sign-in</div><div class="s">A code from your phone at each sign-in.</div></div><span class="pill" style="--c:var(--primary)">${icon("check", 13)}On</span></div>
+          ${s.security.map((x) => `<div class="line"><span class="muted num" style="font-size:13px;width:96px">${x.when}</span><div class="grow">${x.what}</div><span class="muted" style="font-size:13px">${x.who}</span></div>`).join("")}</section>
+        <section class="card sec danger"><h2><span class="ic">${icon("alert", 18)}</span>Delete organization</h2><p class="lead">Deletes all mail data, rules and members. This cannot be undone.</p><button class="btn bad">Delete everything…</button></section></div></div>`);
+  },
+});
+const ORDER = ["login", "onboarding", "approvals", "empty", "review", "report", "activity", "delegations", "rules", "mailboxes", "settings", "stats"];
+const ordered = Object.fromEntries(ORDER.map((k) => [k, screens[k]]));
+KIT.start({ screens: ordered, home: "approvals" });
+</script>
+</body>
+</html>

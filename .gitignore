@@ -72,3 +72,12 @@ deploy/release-state/state.tmp
 
 # VPS database keys (deploy/env-split.sh)
 deploy/db.env
+
+# Design study of the web panel: only the chosen Pebble mockup is in the repository (docs/product/pebble-ui/README.md, PB-13)
+/design/ui-proposals/*
+!/design/ui-proposals/analysis.md
+!/design/ui-proposals/tools/
+!/design/ui-proposals/proposals/
+/design/ui-proposals/proposals/*
+!/design/ui-proposals/proposals/03-pebble/
+!/design/ui-proposals/proposals/_shared/
