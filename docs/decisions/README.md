@@ -52,3 +52,4 @@ Template:
 | 0034 | Sender profiles hold counts under a keyed hash, never mail text                  | accepted with amendments (F120)                     |
 | 0035 | LLM calls can go to an EU endpoint or to the buyer's own model; no PII sanitizer | accepted for decisions 1–5; decision 6 waits        |
 | 0036 | Open loops: one module, one chaser, a loop anchor for actions                    | accepted                                            |
+| 0037 | The panel has one design system: Pebble tokens, primitives and patterns          | accepted                                          |

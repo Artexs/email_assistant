@@ -15,6 +15,7 @@ Checks (owner, 2026-11-20): the pre-commit hook (`scripts/pre-commit.sh`) lints 
 - Routes are thin: parse with `parseBody` and a `@ea/core` schema, call one service or repo function, map to JSON. The tenant comes from the session (`requireTenant`), never from the request.
 - `/api/operator/*` is the only cross-organization web path; `requireOperator` in `createApp` guards the prefix (users in `OPERATOR_USER_IDS`, everyone else 404).
 - Web: one island per page; every visible string is a key in `apps/web/src/i18n/en.ts` and `pl.ts` through `t()` or `tp()`; data through `lib/api.ts` and `@ea/core/web` schemas.
+- Web look: tokens, primitives and patterns of the design system ADR (`docs/decisions/0037-panel-design-system.md`).
 
 ## Prefer
 
@@ -52,6 +53,7 @@ Checks (owner, 2026-11-20): the pre-commit hook (`scripts/pre-commit.sh`) lints 
 - Locating mail by `SEARCH HEADER` (Interia finds nothing by `Message-ID`); use `locateMessage`.
 - `console.log`; a template literal, free text or `error.message` in a log call; secrets, mail text, addresses or paths from mail data in logs.
 - Literal text in web components, inline `<script>`, hand-written `<style>`, hand-made shadcn components.
+- A palette class, a hex colour or an inline style in a web component; an island with its own `h1`.
 - Committing `.env`, keys, passwords or tokens.
 - A fixed sleep over 100 ms in a test; `test.skip`, a CI retry or a longer timeout as a fix. A test that fails twice in CI without a code change is quarantined the same day with a ticket (`docs/code-patterns.md` § Tests); only the coordinator quarantines.
 - A test with no exact assertion (`toBeDefined`, `toBeTruthy`, `not.toThrow` or a bare `toHaveBeenCalled()` alone), a near copy of an existing case, or a case that passes when its code breaks (`docs/code-patterns.md` § Tests).
