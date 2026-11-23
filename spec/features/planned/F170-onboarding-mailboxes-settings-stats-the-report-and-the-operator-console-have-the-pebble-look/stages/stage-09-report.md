@@ -1,6 +1,6 @@
 # F170 stage 09 — The shadow report: one card per category
 
-Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 06: `ProgressRing`, `CategoryPill`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `SectionCard`, `EmptyState`, `FactBox`. May run next to 01–08, 10. It uses `MailboxSelector` (stage 02) unchanged.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stage 04: `Button` `soft` and `destructive-soft`, 48 px fields. Needs F166 stage 05: `Dialog`, `Table`, `Skeleton`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 06: `ProgressRing`, `CategoryPill`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `SectionCard`, `EmptyState`, `FactBox`. May run next to 01–08, 10. It uses `MailboxSelector` (stage 02) unchanged.
 
 Part of [`../plan.md`](../plan.md). Decisions: P7, P9, D1, D5, D6.
 

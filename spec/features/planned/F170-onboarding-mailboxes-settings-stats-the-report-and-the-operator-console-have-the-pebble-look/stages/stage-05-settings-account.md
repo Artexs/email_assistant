@@ -1,6 +1,6 @@
 # F170 stage 05 — Settings: account and security
 
-Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 10: `SectionCard` (with `tone="danger"`), `RowList`, `Row`, `FactBox`. May run next to 01, 02, 03, 04, 06, 07, 08, 09, 10 (`SettingsPage.tsx` keeps rendering `<AccountCard />`).
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stage 04: `Button` `soft` and `destructive-soft`, 48 px fields. Needs F166 stage 05: `Dialog`, `Table`, `Skeleton`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 10: `SectionCard` (with `tone="danger"`), `RowList`, `Row`, `FactBox`. May run next to 01, 02, 03, 04, 06, 07, 08, 09, 10 (`SettingsPage.tsx` keeps rendering `<AccountCard />`).
 
 Part of [`../plan.md`](../plan.md). Decisions: D1, D4, D5; questions.md item 5.
 

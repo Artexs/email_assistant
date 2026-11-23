@@ -1,8 +1,8 @@
 # F170 plan — the Pebble look for the setup and control pages
 
-> **Status 2026-11-24 — planned.** Plan base: 8ae05d319. Ten stages; nothing built. No owner step is open. Review 1 fixed (§ Cold review).
+> **Status 2026-11-24 — planned.** Plan base: 8ae05d319. Ten stages; nothing built; no owner step open. Review 1 fixed (§ Cold review).
 
-Shared decisions (PB-1…13, DB-1…11, § Rules for width): [`docs/product/pebble-ui/README.md`](../../../../docs/product/pebble-ui/README.md). Design system names: `spec/features/*/F166-*/interfaces.md`. The drawing: `design/ui-proposals/proposals/03-pebble/` (shots `07-*`, `04b-*`, `04c-*`, `06a-*`, `06b-*`).
+Shared decisions (PB, DB, § Rules for width): [`docs/product/pebble-ui/README.md`](../../../../docs/product/pebble-ui/README.md). Design names: `spec/features/*/F166-*/interfaces.md`. The drawing: `design/ui-proposals/proposals/03-pebble/` (shots `07-*`, `04b-*`, `04c-*`, `06a-*`, `06b-*`).
 
 ## Input
 
@@ -17,7 +17,7 @@ The owner's words are on the programme page; this ticket adds none. Defaults: [`
 - **P5 Settings sections.** Four groups in this order: This mailbox (`#mailbox`), Digests and notices (`#notices`), Organization (`#organization`), Account and security (`#account`). A row of four links under the page head; on a phone it wraps and does not stick; from `lg` it is a sticky side column. Rejected: a sticky phone row (it needs the shell's top bar height).
 - **P6 Stats head.** Above the table: a ring of the handled share and three `StatTile`s, all from `weeks[0]` (the newest week): handled = `m4.handled` of `m4.triaged`; serious mistakes = `m3.total`; urgent p90 = `m5.p90Minutes`; closed on time = `m2.closedOnTime` of `m2.due` (the label is the loops label while `m2.byKind` is set, as in the table). A dash where the table shows one. No hours saved, no bar chart (PB-7).
 - **P7 Report.** One card per category: `CategoryPill`, a status `Badge`, a ring of `wouldMove` of `total`. The one "Turn on recommended" button stays; no button per card (PB-5).
-- **P8 Operator** (PB-11). Tokens and primitives only; tables stay dense (36 px controls). No layout change.
+- **P8 Operator** (PB-11). Tokens and primitives only; dense tables (36 px controls); no layout change.
 - **P9 Page head** (DB-9, PB-8). Each stage file fixes the English lead; the Polish has no gendered form. Only Mailboxes passes an action ("Connect mailbox").
 
 ### Design decisions
@@ -27,7 +27,7 @@ The owner's words are on the programme page; this ticket adds none. Defaults: [`
   `useModeChange(mailboxId: string, handlers: { onChanged(change: SettingsWebChange, mode: "shadow" | "assist"): void; onFail(error: unknown): void }): { pending: boolean; change(mode: "shadow" | "assist", keepSwitches: boolean): Promise<void> }`. It calls `patchSettings(mailboxId, "/mode", …)` as `ModeCard` does today; every failure goes to `onFail` (the caller maps a 404).
 - **D3 Settings frame** (stage 01). A group is a named region; its label is not a heading; the cards stay the `h2`.
 - **D4 Each settings card is one `SectionCard`** with its `data-card` name unchanged; no card merges with another. The `id="two-factor"` and `?two_factor=required` stay. New `data-card` names: `security` and `delete-organization` (stage 05).
-- **D5 Text keys.** A new key goes next to the keys of its page in its group file (`texts/en-<group>.ts`, `pl-<group>.ts`); lead keys are `set_lead`, `mb_lead`, `ob_lead`, `stats_lead`, `rep_lead`, `op_lead`. A key no file reads any more goes in the same stage (DB-10).
+- **D5 Text keys.** A new key goes next to the keys of its page in its group file (`texts/en-<group>.ts`, `pl-<group>.ts`); lead keys are `set_lead`, `mb_lead`, `ob_lead`, `stats_lead`, `rep_lead`, `op_lead`. A key no file reads any more goes in the same stage (DB-10). F168 stage 07 owns the value of `cat_help`.
 - **D6 Load and empty states.** Skeletons keep `aria-busy="true"`. An error keeps its text and Retry. "Nothing here" is an `EmptyState`; a flag-off text (`stats_off`, `rep_off`) is a `FactBox`.
 - **D7 Contact sheet.** No F170 stage edits `apps/web/e2e/ui-sheet/routes.ts` (parallel stages would conflict). A stage compares the existing rows its stage file names; a state with no row is a picture that the stage's own e2e spec saves under `<UI_SHEET_DIR>/f170-NN/`. Rejected: new rows and seed flag states (shared seed files).
 - **D8** A gap or a deviation is a question in the final message.
@@ -86,7 +86,7 @@ A Sonnet review before each land. Its task adds: "Open the worker's pictures and
 | 09 | [Shadow report](stages/stage-09-report.md) | F166 06, 09, 10 |
 | 10 | [Operator console](stages/stage-10-operator.md) | F166 03, 04, 05, 09, 10 |
 
-Every stage also needs F166 02 (`ui:sheet`), 04 and 05 (primitives) and 08 (`web:build:dev`, `patterns.spec.ts`). Eight start at once; 02 and 06 start when 01 lands.
+Every stage also needs F166 02, 04, 05 and 08 (its Needs line names what). Eight start at once; 02 and 06 start when 01 lands.
 
 ## How to run (coordinator)
 
@@ -94,12 +94,12 @@ As for F166: folder in `active/` first; one job per stage with the board's worke
 
 ## Planning progress
 
-Stages 01–10 [written]. Scouts: 0 (no waiting allowed). Words after review 1 (`wc -w`): plan 1497; stages 415–699.
+Stages 01–10 [written]. Scouts: 0 (no waiting allowed). Words after review 1 (`wc -w`): plan 1500; stages 426–700.
 
 ## Cold review
 
-Round 1 (`claude-sonnet-5-5`: no `[risky]` stage or risk area; run by the coordinator): [`plan-review-1.md`](plan-review-1.md). All 7 findings fixed: (1) Reconnect with `mailboxId`, P3 and stage 07; (2, 3) Needs lines name F166 02, 04, 05, 08, 10; (4) stage 01 moves the `set_section_general` readers; (5) D7; (6) D2, stages 01, 02; (7) questions.md items 7, 8.
+Round 1 (`claude-sonnet-5-5`: no `[risky]` stage or risk area): [`plan-review-1.md`](plan-review-1.md). All 7 findings fixed: (1) Reconnect with `mailboxId`, P3 and stage 07; (2, 3) Needs lines name F166 02, 04, 05, 08, 10; (4) stage 01 moves the `set_section_general` readers; (5) D7; (6) D2, stages 01, 02; (7) questions.md items 7, 8.
 
 ## Log
 
-- 2026-11-24: plan written at 8ae05d319; review 1 fixed.
+- 2026-11-24: plan written at 8ae05d319; review 1 and steer fixed.

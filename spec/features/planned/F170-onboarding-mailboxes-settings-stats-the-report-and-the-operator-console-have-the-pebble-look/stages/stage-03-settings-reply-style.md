@@ -1,6 +1,6 @@
 # F170 stage 03 — Settings: the reply style card
 
-Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 01, 02, 04, 05, 06, 07, 08, 09, 10 (it does not touch `SettingsPage.tsx`).
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stage 04: `Button` `soft` and `destructive-soft`, 48 px fields. Needs F166 stage 05: `Dialog`, `Table`, `Skeleton`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 01, 02, 04, 05, 06, 07, 08, 09, 10 (it does not touch `SettingsPage.tsx`).
 
 Part of [`../plan.md`](../plan.md). Decisions: D1, D4, D5.
 

@@ -1,6 +1,6 @@
 # F170 stage 07 — Mailboxes: cards with a clear state
 
-Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 06: `InitialsAvatar`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 09: `AppShell` `lead` and `action`. Needs F166 stage 10: `SectionCard`, `EmptyState`, `FactBox`. May run next to 01–06, 08, 09, 10.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stage 04: `Button` `soft` and `destructive-soft`, 48 px fields. Needs F166 stage 05: `Dialog`, `Skeleton`. Needs F166 stage 06: `InitialsAvatar`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 09: `AppShell` `lead` and `action`. Needs F166 stage 10: `SectionCard`, `EmptyState`, `FactBox`. May run next to 01–06, 08, 09, 10.
 
 Part of [`../plan.md`](../plan.md). Decisions: P2, P3, P4, P9, D1, D5, D6, D7; questions.md items 2, 3.
 
@@ -14,16 +14,16 @@ Owns: `apps/web/src/islands/MailboxesPage.tsx`, `components/mailboxes/`, `compon
 - **Buttons (owner who can write):** Pause (connected, never synced), Resume (paused), Change password (login error), Reconnect (access revoked), More → Change password (password mailboxes) and Remove. Host refused: only More.
 - **Reconnect (P3).** A new connect of a known address is refused (`mailbox_exists`, `oauth/apply.ts`); a start call with `mailboxId` reaches the server's Reconnect (flag off too; another account gives `oauth_wrong_account`).
   - **Interface:** `startOAuth(provider, deps = browserDeps(), mailboxId?: string)` in `lib/mail-oauth.ts`: the body is `{ mailboxId }` when given, else `{}` as today.
-  - The button `mb_reconnect` ("Reconnect") calls `startOAuth(mailbox.oauthProvider, undefined, mailbox.id)`. Disabled while the call runs; a failure toasts the returned key; `watchPageRestore` clears the pending state. The return shows today's banner. No button when `oauthProvider` is `null`.
-- **Test (unit, `test.each`):** (1) the six rows: `{ status: "active", lastSyncedAt: "2026-11-20T08:00:00.000Z" }` → connected; `{ status: "active", lastSyncedAt: null }` → never_synced; `paused` → paused; `host_blocked` → host_refused; `{ status: "auth_error", authMethod: "password" }` → login_error; `{ status: "auth_error", authMethod: "oauth", authReason: "oauth_revoked" }` → access_revoked. (2) Render test: an `auth_error` OAuth card for an owner has no button named `mb_change_password` and one named `mb_reconnect`. (2b) `mail-oauth.test.tsx`: `startOAuth("google", deps, <fixed uuid>)` posts `{ mailboxId: <that uuid> }`; without it, `{}`.
+  - The button `mb_reconnect` ("Reconnect") calls `startOAuth(mailbox.oauthProvider, undefined, mailbox.id)`. Disabled while it runs; a failure toasts the key; `watchPageRestore` clears the pending state. No button when `oauthProvider` is `null`.
+- **Test (unit, `test.each`):** (1) the six rows: `{ status: "active", lastSyncedAt: "2026-11-20T08:00:00.000Z" }` → connected; `{ status: "active", lastSyncedAt: null }` → never_synced; `paused` → paused; `host_blocked` → host_refused; `{ status: "auth_error", authMethod: "password" }` → login_error; `{ status: "auth_error", authMethod: "oauth", authReason: "oauth_revoked" }` → access_revoked. (2) Render test: an `auth_error` OAuth card for an owner has no button named `mb_change_password` and one named `mb_reconnect`. (2b) `mail-oauth.test.tsx`: `startOAuth("google", deps, <fixed uuid>)` posts `{ mailboxId: <it> }`; without it, `{}`.
 
 ## Step 2 — The page
 
 - **Look (shot `04b-*`):** a grid of cards (one column below `lg`, two from `lg`). A card: `InitialsAvatar`, the address (breaks at `@`, full in `title`), the provider line if OAuth, the status line, the mode `Badge` (P4), the scope badges, the hint, the buttons. No "mails today" (PB-7).
 - **Page head:** `lead="mb_lead"`: "Your connected mailboxes and their state."; `action`: "Connect mailbox" for an owner who can write (opens the dialog; the in-page button goes). "Updated at" and Refresh stay.
 - **Other parts:** no mailbox → `EmptyState` (icon `Inbox`, `mb_empty`, Connect). The OAuth banner keeps `data-block="oauth-banner"`, its `role` and Close. The Telegram card is a `SectionCard` (icon `Send`, `tg_title`); its flow stays. `mb_scopes_note` is a `FactBox`. The dialogs keep every field id, error id and the remove dialog's access-page links.
-- **Edge cases:** `?connect=1` opens the dialog once; `?oauth=<code>` shows one banner. A member sees no button and no page action.
-- **Test:** (3) e2e `mailboxes.spec.ts`: `page.route` on `/api/mailboxes` answers the six states of test 1; each card has its `data-state`, the a11y scan passes; the spec saves phone and desktop pictures under `<UI_SHEET_DIR>/f170-07/` (D7). (4) `mailbox-oauth.spec.ts`, the connect step of `onboarding.spec.ts` and `polish.spec.ts` pass.
+- **Edge cases:** `?connect=1` opens the dialog once; `?oauth=` shows one banner. A member sees no button and no page action.
+- **Test:** (3) e2e `mailboxes.spec.ts`: `page.route` on `/api/mailboxes` answers the six states of test 1; each card has its `data-state`, the a11y scan passes; it saves phone and desktop pictures under `<UI_SHEET_DIR>/f170-07/` (D7). (4) `mailbox-oauth.spec.ts`, the connect step of `onboarding.spec.ts` and `polish.spec.ts` pass.
 
 ## Step 3 — Docs
 

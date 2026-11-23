@@ -1,6 +1,6 @@
 # F170 stage 08 — Stats: the week at a glance above the table
 
-Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 06: `ProgressRing`, `StatTile`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`, `FactBox`. May run next to 01–07, 09, 10.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stage 04: `Button` `soft` and `destructive-soft`, 48 px fields. Needs F166 stage 05: `Dialog`, `Table`, `Skeleton`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 06: `ProgressRing`, `StatTile`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`, `FactBox`. May run next to 01–07, 09, 10.
 
 Part of [`../plan.md`](../plan.md). Decisions: P6, P9, D5, D6; questions.md items 6, 7.
 
