@@ -1,6 +1,6 @@
 # F170 stage 10 — The operator console: theme and dense tables
 
-Needs F166 stage 03: the tokens. Needs F166 stage 09: `AppShell` `lead`. May run next to 01–09.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option, `UI_SHEET_DIR`. Needs F166 stage 03: the tokens. Needs F166 stage 04: `Button` `xs` (36 px). Needs F166 stage 05: `Dialog`, `Table`, `Skeleton`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `FactBox`. May run next to 01–09.
 
 Part of [`../plan.md`](../plan.md). Decisions: P8, P9, D5, D7.
 
