@@ -317,7 +317,12 @@ An id in a body or a query that fails the schema is 400. An unknown or foreign i
 
 - Every user-visible string is a key in `apps/web/src/i18n/en.ts` and in `pl.ts` (the keys sit in the group files of `apps/web/src/i18n/texts/`) and reaches a component through `t()` or `tp()` (`## Texts carry a locale`). A component never holds a literal text (`react/jsx-no-literals` on the islands and the shell and auth components).
 - No inline `<script>` and no hand-written `<style>`: the build hashes the scripts (D5), and styles come from Tailwind classes.
-- shadcn components come from the shadcn CLI, never by hand.
+- Look: the values of the panel (colour, radius, shadow, font, sizes) are tokens in `apps/web/src/styles/global.css`; ADR 0037 holds them. A component uses token classes only (`bg-primary`, `text-muted-foreground`). Three things are banned in a component file: a palette class (`bg-amber-50`), a hex colour and an inline `style`. A scan test fails on each. A new value goes into the ADR and `global.css` first.
+- A new shadcn primitive comes from the shadcn CLI, never by hand. The variants, sizes and classes of an existing file in `components/ui/` may be edited: that is how the theme reaches the primitives.
+- Patterns live in `components/patterns/`, one file per pattern, no index file. A page uses a pattern before it builds its own markup. The pattern page (`/dev/patterns`, `bun run web:build:dev`) shows each one.
+- The shell renders the page head (title, lead line, one action) from the props an island passes. An island renders no `h1`.
+- A category look (icon and colour token) comes from `lib/category-look.ts`, never from a local map or an emoji.
+- A text key that no source file reads is deleted in the same change; a test fails on an unused key.
 - One island per page. The shell is a React component inside the island.
 - Data comes from `/api/*` through `lib/api.ts`; only the auth paths (`/api/auth/*`) go through `lib/auth-client.ts`. The request and response shapes are the `@ea/core/web` schemas. The web imports core only through that subpath.
 - A form that sits under polling (`useResource` reloads every 30 s) keeps the user's typing with `lib/draft.ts` (`nextDraft`) and the hook `lib/use-draft.ts`: a new server value moves in only while the form has no change.
