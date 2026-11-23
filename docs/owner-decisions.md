@@ -859,3 +859,4 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - 2026-11-24 · F170 plan · user-visible · Onboarding Assist card opens the Settings mode dialog with one mailbox and links to Settings with two or more. Undo: always link to Settings. · new
 - 2026-11-24 · F170 plan · scope · Mailbox Pause and Resume stay (the programme page said cut). Undo: remove the buttons in F170 stage 07. · new
 - 2026-11-24 · F170 plan · user-visible · An OAuth mailbox with a login error shows "access revoked" and the connect dialog, with no "Change password". Undo: change the card state in F170 stage 07. · new
+- 2026-11-24 · F170 plan review · user-visible · An OAuth mailbox with a login error gets a Reconnect button that sends the mailbox id (the server already supports it), not a remove-and-connect hint. Undo: show the hint in F170 stage 07. · new
