@@ -50,7 +50,7 @@ export const SHEET_ROUTES: readonly SheetRoute[] = [
   // No session.
   row("login", "public", "/login", "title_login"),
   row("setup", "public", "/setup", "title_setup"),
-  row("forgot", "public", "/forgot", "title_forgot"),
+  row("forgot", "public", "/forgot", "forgot_title"),
   ...(["en", "pl"] as const).flatMap((lang) =>
     LEGAL_DOCS.map((doc) => row(`legal-${lang}-${doc}`, "public", `/legal/${lang}/${doc}`, null))
   ),

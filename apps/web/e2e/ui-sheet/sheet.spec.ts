@@ -68,9 +68,15 @@ async function openRoute(page: Page, route: SheetRoute, locale: (typeof LOCALES)
   const response = await page.goto(path);
   expect(response?.status(), `${route.name} status`).toBeLessThan(400);
   if (route.ready !== null) {
-    await expect(page.getByRole("heading", { name: TEXTS[locale][route.ready], exact: true }).first()).toBeVisible();
+    // A public page may show its title as a card title, not a heading.
+    const text = TEXTS[locale][route.ready];
+    const ready =
+      route.state === "public"
+        ? page.locator("body").getByText(text, { exact: true }).first()
+        : page.getByRole("heading", { name: text, exact: true }).first();
+    await expect(ready).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
   }
-  await expect(page.locator("html")).toHaveAttribute("lang", locale);
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   if (route.open !== null) {
     await page.getByRole("button", { name: TEXTS[locale][route.open], exact: true }).first().click();
