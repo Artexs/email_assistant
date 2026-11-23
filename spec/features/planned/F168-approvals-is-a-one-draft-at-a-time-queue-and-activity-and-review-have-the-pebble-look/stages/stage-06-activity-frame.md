@@ -1,6 +1,6 @@
 # F168 stage 06 — Activity frame: filter chips, day groups, empty states
 
-Needs F166 stage 06: `FilterChips`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`. May run next to 01, 02, 03, 04, 05, 08.
+Needs F166 stage 06: `FilterChips`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`. May run next to 01, 02, 03, 04, 08.
 
 Part of [`../plan.md`](../plan.md): P10, P11, P12. This stage fixes the frame of the Activity page; stage 07 restyles the rows inside it.
 
@@ -8,8 +8,8 @@ Part of [`../plan.md`](../plan.md): P10, P11, P12. This stage fixes the frame of
 
 - **Files:** `islands/ActivityPage.tsx`, `components/activity/ActivityFilterBar.tsx`, `i18n/texts/en-activity.ts`, `pl-activity.ts`.
 - **Decisions:**
-  - Title and nav name stay (PB-4; the mockup's "What I did" is first-person past tense, PB-8). The island passes `lead`: one line that says each change shows its reason and Undo works for `{days}` days, with `days` from `UNDO_WINDOW_MS` of `@ea/core` (7). No `action`.
-  - Range: `FilterChips` with `single`, the four values of `activityRanges`, labelled as today. "Only not rated": a `FilterChips` of one option (a toggle). Category and mailbox stay `Select`s (P10); the mailbox select shows only with 2 or more mailboxes, as today.
+  - Title and nav name stay (PB-4; the mockup's "What I did" is first-person past tense, PB-8). The island passes `lead`: one line that says the page lists what the assistant did with each mail, and that Undo works for `{days}` days (`UNDO_WINDOW_MS` of `@ea/core`, 7). It promises no reason: a row can have none (`act_no_reason`, PB-8). No `action`.
+  - Range: `FilterChips` with `single`, the four values of `activityRanges`, labelled as today. "Only not rated": a `FilterChips` of one option (a toggle). Category and mailbox stay `Select`s (P10); the mailbox select shows only with 2 or more mailboxes, as today. The category options use the names (`act_cat_*`), not the `act_tag_*` texts (D7).
   - The "updated at" line and Refresh stay at the end of the filter row; below `lg` they wrap under the chips.
   - `ActivityFilters`, `filtersFromSearch`, `filtersToSearch` and the URL do not change (DB-1).
 - **Test:** (1) the existing `lib/activity-filters.test.ts` passes unchanged. (2) e2e: a tap on the `30d` chip puts `range=30d` in the URL and reloads the list; a tap on "Only not rated" puts `notRated=1` in the URL.

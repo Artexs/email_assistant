@@ -17,7 +17,7 @@ Part of [`../plan.md`](../plan.md). This stage changes the look of the "Change" 
 
 ## Step 2 — Reply-draft controls
 
-- **Files:** `components/approvals/ReplyControls.tsx`, `i18n/texts/en-reply-panel.ts`, `pl-reply-panel.ts` (only the keys these controls read).
+- **Files:** `components/approvals/ReplyControls.tsx`. This stage adds, changes and deletes no text key: stages 01 and 07 edit the text files at the same time (programme rule 1). A string this stage needs is a question.
 - **Decisions:**
   - The controls sit in a `RowList` inside the card, under the draft body: row 1 "Redraft with a line" (the instruction field, then the Redraft button, `secondary`); row 2 the recipient buttons of today (`rp_reply_all`, `rp_use_reply_to`), shown only as today's rules say. The `replyAllAdds` addresses show in the row hint before the tap, as today.
   - The redraft limit (`redraftsLeft`) is a row hint; at 0 the field and the button are off and the hint says why (today's key).

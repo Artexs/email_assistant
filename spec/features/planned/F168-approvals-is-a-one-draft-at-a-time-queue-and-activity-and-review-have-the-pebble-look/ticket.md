@@ -33,7 +33,7 @@ Approvals shows one draft at a time: the user reads it, taps "Yes, send it", "Ch
 
 ## Slices
 
-Eight stages, one worker job each: [`plan.md`](plan.md) § Stages. Approvals frame, edit and reply controls, queue model, Activity frame and Review start together; then the queue flow (`[risky]`, sending to people, Opus review) and the Activity rows; then the approvals docs and demo step. No owner stop.
+Eight stages, one worker job each: [`plan.md`](plan.md) § Stages. Approvals frame, edit and reply controls, queue model, Activity frame and Review start together; then the queue flow (`[risky]`, sending to people, Opus review) and the Activity rows; then the demo steps. No owner stop.
 
 ## Sequenced
 

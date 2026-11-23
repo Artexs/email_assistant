@@ -1,8 +1,8 @@
 # F168 stage 08 — The review page ("Was I right?")
 
-Needs F166 stage 06: `CategoryPill`, `ProgressRing`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`. May run next to 01–07.
+Needs F166 stage 06: `CategoryPill`, `ProgressRing`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`. May run next to 01, 02, 03, 04, 06.
 
-Part of [`../plan.md`](../plan.md): P14, D7. The page reached from the report ("Check 10 decisions" today) gets the Pebble look: cards, a progress ring, category pills and a one-tap correction menu.
+Part of [`../plan.md`](../plan.md): P14, D7. Stage 07 waits for this stage. The page reached from the report ("Check 10 decisions" today) gets the Pebble look: cards, a progress ring, category pills and a one-tap correction menu.
 
 ## Step 1 — Head, progress and states
 
@@ -24,12 +24,12 @@ Part of [`../plan.md`](../plan.md): P14, D7. The page reached from the report ("
   - "Right" (`default`, `Check` icon; `rv_right` loses its emoji) shows under today's `canConfirm` rule.
   - "It is something else" (`secondary`, a chevron) opens a `DropdownMenu` of `pickCategories()` (today's list, with today's delegation rule). Each item shows its `CategoryPill`. A pick saves at once (P14; `questions.md` Q1); the menu closes and the card shows its answer line (`data-review="answer"`, `role="status"`). `rv_pick_label` names the menu button for screen readers; `rv_pick_none` and the Save button go (no reader).
   - An answered card gets the soft teal tint (`bg-primary-soft`) and locks, as today. The "Done" button (`rv_done`) and its rule stay.
-  - D7: this stage reads `categoryName`, not `categoryTagText`. If no reader of `categoryTagText` and `act_tag_*` is left after your merge of `master`, delete them.
+  - D7: this stage reads `categoryName` (`act_cat_*`), not `categoryTagText`. It edits no Activity file and deletes nothing there (stage 07 does).
 - **Test:** (3) in `lib/review-view.test.tsx`: no value of a `rv_*` key or of `title_review` in `en` or `pl` matches `/\p{Extended_Pictographic}/u`; break one value once and see it fail. (4) A render test: an item with category `unsure` has no "Right" button; the menu of a sample with `delegation: false` and a non-delegation item lists 5 categories without `delegation`.
 
 ## Spec, docs
 
-`e2e/tests/review.spec.ts`: RV1–RV7 keep their meaning; the correction steps use the menu (`menuitem` named by the category) in place of the select and Save. `report.spec.ts` (the link to the page) passes unchanged. `docs/capabilities/web-panel.md`: the review rules. No user docs page covers this page today; add none (`questions.md` Q4).
+`e2e/tests/review.spec.ts`: RV1–RV7 keep their meaning; the correction steps use the menu (`menuitem` named by the category) in place of the select and Save. `report.spec.ts` (the link to the page) passes unchanged. `docs/capabilities/web-panel.md`: the review rules. The new page name also replaces "Check 10 decisions" in `docs/capabilities/trust.md` and `triage.md`. No user docs page covers this page today; add none (`questions.md` Q4).
 
 ## Out of scope
 
