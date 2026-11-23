@@ -1,8 +1,8 @@
 # F168 stage 02 — Edit dialog and reply-draft controls
 
-Needs F166 stage 03: tokens. Needs F166 stage 10: `FactBox`, `RowList`, `Row`. May run next to 01, 05, 06, 07.
+Needs F166 stage 03: tokens. Needs F166 stage 10: `FactBox`, `RowList`, `Row`. May run next to 01, 03, 06, 07, 08.
 
-Part of [`../plan.md`](../plan.md). This stage changes the look of the "Change" dialog and of the controls of a reply draft. Their props, their requests and their rules do not change: the page (stage 01 and 03) mounts them as today.
+Part of [`../plan.md`](../plan.md). This stage changes the look of the "Change" dialog and of the controls of a reply draft. Their props, their requests and their rules do not change: the page (stages 01 and 04) mounts them as today.
 
 ## Step 1 — The edit dialog
 
@@ -27,12 +27,12 @@ Part of [`../plan.md`](../plan.md). This stage changes the look of the "Change" 
 
 ## Spec
 
-- **Files:** `e2e/tests/reply-panel.spec.ts` (this stage owns it until stage 03 lands).
+- **Files:** `e2e/tests/reply-panel.spec.ts` (this stage owns it until stage 04 takes it over).
 - Change locators only where the look changed the role or the name. T5–T7 (the Draft reply action on an Activity row) do not change here.
 
 ## Out of scope
 
-The card, the list, the decision bar (stages 01 and 03). The props of both components and `use-reply-actions.ts`. The Activity `DraftReplyAction` (stage 06).
+The card, the list, the decision bar (stages 01 and 04). The props of both components and `use-reply-actions.ts`. The Activity `DraftReplyAction` (stage 07).
 
 ## Done when
 
