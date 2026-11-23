@@ -25,20 +25,20 @@ The panel has one design system for the Pebble look: colour, radius, shadow and 
 ## Acceptance
 
 - `bun run ui:sheet` writes one PNG per route, viewport, scheme, language and organization state, and one `index.html` that shows them.
-- The a11y scan of every existing e2e spec passes in the light and in the dark scheme.
-- The pattern page shows every primitive variant and every pattern; it answers 404 in a production build.
+- The a11y scan of every existing e2e spec passes in the light scheme on both projects and in the dark scheme on the desktop project.
+- The pattern page shows every primitive variant and every pattern to a signed-in user of the dev build; the production build does not hold it.
 - A component file with `bg-amber-50` or a hex colour fails `bun run test:unit`; a text key that no source file reads fails it too.
 - The text of the panel renders in Nunito with Polish letters, with no request to another host.
 - `docs/decisions/` holds the design system ADR with the final token values.
 
 ## Slices
 
-Ten stages in three waves: [`plan.md`](plan.md) § Stages and § How to run. Waves 1 and 2 need no owner step; four stages of wave 3 need the owner step O1 (the mockup commit).
+Eleven stages in four waves: [`plan.md`](plan.md) § Stages and § How to run. No owner step is open.
 
 ## Sequenced
 
 - Plan after: none.
-- Build after: none. Gate: owner step O1 of `plan.md` (commit of the Pebble mockup to the public repo).
+- Build after: none. Gate: none.
 
 ## Notes
 

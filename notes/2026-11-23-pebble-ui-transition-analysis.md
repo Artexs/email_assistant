@@ -164,3 +164,10 @@ P2 staging, P3 structure, P4 design completion, P5 queue safety, P6 brand reach,
 - The owner's first look moved to the landing of F166 (pattern page): a correction there is cheap, before four tickets build on it.
 - Planner rules for width: `docs/product/pebble-ui/README.md` § Rules for width.
 - Not taken: stub patterns for an earlier page start; a split of the approvals decision flow.
+
+## 13. Cold review fixed, mockup published (2026-11-23)
+
+- The cold review of the design system plan returned 3 blocking findings, 11 gaps and 8 notes; all 22 are fixed (`plan-review-1.md` and `plan-review-1-fixes.md` in the F166 folder). The plan now has 11 stages in 4 waves.
+- The owner said yes to the mockup in the public repo ("it will end up there anyway after implementation"). It is committed (`94092626b`): `design/ui-proposals/proposals/03-pebble/`, `proposals/_shared/`, `tools/`, `analysis.md`. The rest of the design study is in `.gitignore`; `design/**` is in the ESLint ignores. The cleanup ticket (F172) removes all three.
+- No owner step is open. The next actor is the coordinator: move F166 to `active/`, start wave 1 (stages 01 ∥ 02), and start the four planner jobs of F167–F170 together (`spec/build.md` NEXT, the Pebble line).
+- Still running on this machine from the design study: two `python3 -m http.server 8700` processes (the gallery) and the scratch worktree `/tmp/ea-ui-shots` with its two DBs. Cleanup commands: the handoff note § Current state.

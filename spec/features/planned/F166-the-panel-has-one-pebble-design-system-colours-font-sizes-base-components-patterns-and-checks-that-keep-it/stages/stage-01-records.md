@@ -6,7 +6,7 @@ Part of [`../plan.md`](../plan.md). Needs: nothing. May run next to 02.
 
 - **Goal:** one accepted record of the design system that outlives the mockup (PB-13).
 - **Files:** `docs/decisions/0037-panel-design-system.md` (new; take the next free number if 0037 is used), `docs/decisions/README.md`.
-- **Content:** context (the stock look, the owner's choice of Pebble on 2026-11-23); the decision: the token table and the type, size and radius scales of `../interfaces.md` (copy the values: after F172 the ADR is the reference); DB-2 to DB-10 of the programme page; the dark-mode policy (D3); the font and its licence (D6); the allowed raw colour (D10); the pattern page and its text exception (D8); the a11y bar (4.5:1 text, 3:1 control edge, both schemes). Rejected options: a new component library, a manual theme switch, a redesign flag.
+- **Content:** context (the stock look, the owner's choice of Pebble on 2026-11-23); the decision: the token table and the type, size and radius scales of `../interfaces.md` (copy the values: after F172 the ADR is the reference); DB-2 to DB-10 of the programme page; the dark-mode policy (D3); the font and its licence (D6); the allowed raw colours (D10); the two builds (D8); the pattern page and its text exception (D8); the a11y bar (4.5:1 text, 3:1 control edge, both schemes). Rejected options: a new component library, a manual theme switch, a redesign flag.
 - **Done when:** the ADR follows the form of `docs/decisions/0036-*.md` and names no ticket by a bare code (write the folder path).
 
 ## Step 2 — Web rules
@@ -21,7 +21,7 @@ Part of [`../plan.md`](../plan.md). Needs: nothing. May run next to 02.
 ## Test
 
 1. `bun run lint` passes on the changed files (the bare-code scan covers docs strings).
-2. Every token of `../interfaces.md` § Tokens is in the ADR with the same value (compare by eye; list the count in the final message: 17 token rows, 7 category rows).
+2. Every row of the token table and of the category table of `../interfaces.md` is in the ADR with the same value, with the soft rule and the focus rule (compare each row; give the two row counts in the final message).
 
 ## Done when
 

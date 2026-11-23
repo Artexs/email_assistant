@@ -10,7 +10,7 @@ Nothing of the old look is left in the repository, and production gets the Pebbl
 
 ## Scope
 
-- A leftover sweep: unused tokens, primitives, variants, text keys, components and dependencies; emoji in panel texts; the mockup folder `design/`; scratch files of the design study.
+- A leftover sweep: unused tokens, primitives, variants, text keys, components and dependencies; emoji in panel texts; the mockup folder `design/` with its ESLint ignore line and its `.gitignore` lines; scratch files of the design study.
 - The full contact sheet for the owner's last look.
 - The changelog entry "For users" and the "what is new" card.
 - The release and the check of the installed app.
@@ -21,7 +21,7 @@ Nothing of the old look is left in the repository, and production gets the Pebbl
 
 ## Acceptance
 
-- The guard tests of the design system pass with no allow-list entry.
+- The guard tests of the design system pass, and their allow list holds only the entries that the design system ADR names.
 - `design/` is not in the repository; the design system ADR and the pattern page are the reference.
 - The owner said "go" on the full contact sheet, and the 20-draft check of the reply-draft pilot is recorded (programme decision PB-12).
 - Production runs the release; the panel shows the "what is new" card once per user.
