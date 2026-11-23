@@ -11,7 +11,7 @@ The frame around every page has the Pebble look: a floating sidebar on a desktop
 ## Scope
 
 - `apps/web/src/layouts/`, `apps/web/src/components/shell/` (sidebar, phone header and menu, tabs, user menu, banners, terms dialog, "what is new" card, toasts, loading and error states).
-- The page head contract: the island passes `lead` and `action` to the shell (programme decision DB-9).
+- The look of the page head inside the frame. Its contract (the island passes `lead` and `action` to the shell) is built by the design system ticket and does not change here.
 - Brand assets: favicon, the three app icons, `manifest.webmanifest`, `theme-color` for both schemes, the brand mark component.
 - Login, forgot, setup, the legal reading layout, 404, offline, the `/` redirect page.
 
@@ -25,19 +25,19 @@ The frame around every page has the Pebble look: a floating sidebar on a desktop
 
 - On a 1280 px screen the sidebar floats as a rounded card and the active item has the soft teal fill; on a Pixel 7 the tab bar shows the same items as before this ticket.
 - Every item that does not fit in the tab bar is reachable from the phone header, also in Polish.
-- Each signed-in page shows its title and a lead line from the shell, and has exactly one `h1`.
+- Each signed-in page has exactly one `h1`, the page title, in every width; the phone header shows the brand mark, not a second title.
 - The login page shows the brand panel on a desktop and only the form on a phone; every sign-in state (wrong password, code step, SSO, rate limit) keeps its text and its test.
 - The installed app shows the teal icon; `theme-color` differs between light and dark.
 - The offline page renders with the new look with no network.
 
 ## Slices
 
-Stages come from the plan. The shell frame and the page head contract are the first stage; the page tickets wait for it.
+Stages come from the plan, by the programme page § Rules for width. The frame, the brand assets and the pages before sign-in own different files and run next to each other.
 
 ## Sequenced
 
 - Plan after: F166 (its `interfaces.md`).
-- Build after: F166. Gate: none.
+- Build after: none. Gate: the stages need F166 stages 03 (tokens), 09 (page head contract) and 10 (`StickyActions`, tab bar height). May build next to F168, F169 and F170.
 
 ## Notes
 

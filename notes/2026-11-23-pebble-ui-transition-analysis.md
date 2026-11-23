@@ -154,3 +154,13 @@ P2 staging, P3 structure, P4 design completion, P5 queue safety, P6 brand reach,
 - P3, P5, P6, P7 were taken as defaults. P12 (the mockup commit into the public repo) still needs the owner's yes: it is owner step O1 of the design system ticket.
 - Written: the programme page `docs/product/pebble-ui/README.md` (decisions PB-1…13, DB-1…11, the pattern names, the proof tools, the ticket order); seven tickets `spec/features/planned/F166-…` to `F172-…`; the full plan of the design system ticket (F166: `plan.md`, `interfaces.md`, seven stage files).
 - Next: the cold review of the F166 plan (a scout job), then planner jobs for F167–F170 (they read `interfaces.md` of F166), then F171 and F172.
+
+## 12. Reshaped for width (2026-11-23, owner: "any possibility to run more work in parallel")
+
+- Measured: the full e2e suite takes about 19 min in CI; a Playwright run takes about 2.1 GB; this machine has 16 cores and about 15 GB free, so about five UI jobs fit at once. This is the real cap on width.
+- The design system ticket (F166) now has 10 stages in 3 waves (depth 3, was 5): the pattern page finds its sections by itself, the patterns are split in two, parallel stages share no file.
+- The page head contract of the shell moved into F166 (stage 09). The shell ticket (F167) no longer blocks the page tickets: F167–F170 build next to each other after F166 stages 03, 06, 09, 10.
+- The owner step O1 (mockup commit) now gates only stages 04, 05, 06, 10; waves 1 and 2 need no owner.
+- The owner's first look moved to the landing of F166 (pattern page): a correction there is cheap, before four tickets build on it.
+- Planner rules for width: `docs/product/pebble-ui/README.md` § Rules for width.
+- Not taken: stub patterns for an earlier page start; a split of the approvals decision flow.

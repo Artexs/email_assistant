@@ -1,6 +1,6 @@
 # F166 stage 05 — Primitives B
 
-Part of [`../plan.md`](../plan.md). Needs: stage 04 (the pattern page, `Button`, `Card`). May run next to 06.
+Part of [`../plan.md`](../plan.md). Needs: stage 03 (tokens); stage 08 (the pattern page and its spec); owner step O1 (the mockup). May run next to 04, 06, 07, 09, 10.
 
 ## Step 1 — Tabs and Alert
 
@@ -20,9 +20,9 @@ Part of [`../plan.md`](../plan.md). Needs: stage 04 (the pattern page, `Button`,
 ## Test
 
 1. Existing component tests and e2e specs pass with no edit of a selector.
-2. `apps/web/e2e/tests/patterns.spec.ts` (from stage 04) also opens one dialog, one sheet and one menu on the pattern page and scans each with `expectNoA11yViolations({ include: … })` in both schemes.
-3. On the Pixel 7 project, the pattern page has no sideways scroll with six tabs in one `Tabs` group (assert `scrollWidth <= clientWidth` on `html`).
-4. With `reducedMotion: "reduce"` the dialog opens with `document.getAnimations().length === 0`.
+2. The section files of the dialog, the sheet and the menu each have a `data-open-demo` button; the generic spec of stage 08 opens and scans each in both schemes. Do not edit `patterns.spec.ts`.
+3. The `Tabs` section holds a group of six tabs; the generic spec's sideways-scroll check passes on the Pixel 7 project.
+4. The generic spec's reduced-motion check passes for each overlay.
 
 ## Out of scope
 
@@ -30,4 +30,4 @@ A new primitive from the CLI (a page ticket asks for it when it needs one). Feat
 
 ## Done when
 
-You opened the pattern page pictures (phone and desktop, both schemes) and one real dialog in the sheet (for example the connect dialog of mailboxes) next to the mockup; the Proof of `../plan.md` (stages 03–06) prints `PROOF_OK`.
+You opened the pattern page pictures (phone and desktop, both schemes) and one real dialog in the sheet (for example the connect dialog of mailboxes) next to the mockup; Proof B of `../plan.md` prints `PROOF_OK`.

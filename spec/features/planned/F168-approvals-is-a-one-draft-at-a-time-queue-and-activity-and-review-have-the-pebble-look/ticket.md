@@ -33,12 +33,12 @@ Approvals shows one draft at a time: the user reads it, taps "Yes, send it", "Ch
 
 ## Slices
 
-Stages come from the plan. The approvals stages are `[risky]` (sending to people) and get an Opus review.
+Stages come from the plan, by the programme page § Rules for width. The approvals stages are `[risky]` (sending to people) and get an Opus review.
 
 ## Sequenced
 
-- Plan after: F166 (its `interfaces.md`), F167 (its plan: the page head contract).
-- Build after: F166; F167 stage 01. Gate: none. May build next to F169 and F170.
+- Plan after: F166 (its `interfaces.md`).
+- Build after: none. Gate: the stages need F166 stages 03 (tokens), 06 and 10 (patterns) and 09 (page head contract). May build next to F167, F169 and F170.
 
 ## Notes
 

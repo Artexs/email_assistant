@@ -25,4 +25,4 @@ Part of [`../plan.md`](../plan.md). Needs: nothing. May run next to 02.
 
 ## Done when
 
-Both steps are committed and the Proof of `../plan.md` (stages 01, 02, 07) prints `PROOF_OK`.
+Both steps are committed and Proof A of `../plan.md` prints `PROOF_OK`.

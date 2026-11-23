@@ -55,10 +55,10 @@ Existing names and props stay valid: no feature file must change in F166.
 - `Alert` variants: `default`, `destructive`, `accent` (new: the warm box).
 - `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip`, `Table`, `Skeleton`, `Toaster`: tokens and radius only; their props do not change.
 
-## Patterns (`apps/web/src/components/patterns/`, one file per pattern)
+## Patterns (`apps/web/src/components/patterns/`, one file per pattern, no index file: import from the pattern's file)
 
 ```ts
-PageHead({ title: string; lead?: string; action?: ReactNode })            // the only h1 of a page; F167 calls it from the shell
+PageHead({ title: string; lead?: string; action?: ReactNode })            // the only h1 of a page; the shell calls it (stage 09)
 SectionCard({ icon: LucideIcon; title: string; lead?: string; tone?: "default" | "danger"; children: ReactNode; ...div props })  // renders h2
 RowList({ children })   Row({ title: string; hint?: ReactNode; leading?: ReactNode; children?: ReactNode })  // children = the control at the end
 CategoryPill({ category: Category; label: string })                       // icon and colour from categoryLook
@@ -68,13 +68,23 @@ StepDots({ current: number; total: number; label: string })               // dot
 FilterChips<T extends string>({ label: string; options: { value: T; label: string }[]; value: T[]; onChange(next: T[]): void; single?: boolean })
 EmptyState({ icon: LucideIcon; title: string; text?: string; children?: ReactNode })  // children = the next-step buttons
 StatTile({ value: string; label: string })
-FactBox({ icon?: LucideIcon; children: ReactNode })                        // the Alert variant "accent"
+FactBox({ icon?: LucideIcon; children: ReactNode })                        // own markup with the accent tokens; same look as Alert "accent"
 StickyActions({ children: ReactNode })                                     // fixed above the tab bar below lg; in the flow from lg
 ```
 
 `apps/web/src/lib/category-look.ts`: `categoryLook: Record<Category, { icon: LucideIcon; tone: string }>` where `tone` is the class that sets the pill colours. Patterns take ready strings: the caller calls `t()`.
 
+## Shell contract (stage 09)
+
+```ts
+AppShell({ active: NavKey; title: TextKey; lead?: TextKey; action?: ReactNode; children: ReactNode })
+```
+
+The shell renders one `PageHead` at the top of `main` for every width. An island passes the lead key and the one main action of its page (for example "Connect mailbox"); it renders no `h1` and no page title of its own. The shell ticket (F167) changes how the frame looks, not these props.
+
 ## Tools
+
+- Pattern page sections: one file per item in `apps/web/src/dev/sections/`, each with `export const section = { title: string; order: number; render: () => ReactNode }`. The page finds them with `import.meta.glob`. A button with `data-open-demo` opens an overlay that the generic spec opens and scans.
 
 - `bun run ui:sheet` → `test-results/ui-sheet/index.html` and PNG files `<state>/<route>-<phone|desktop>-<light|dark>-<en|pl>.png`. `UI_SHEET_ROUTES=approvals,rules` limits the routes.
 - Pattern page: `/dev/patterns`, only in a build with `EA_DEV_PAGES=1` (the dev server and the e2e build set it).

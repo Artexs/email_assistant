@@ -32,12 +32,12 @@ Delegations show the user's handed-over work as status columns (overdue, waiting
 
 ## Slices
 
-Stages come from the plan.
+Stages come from the plan, by the programme page § Rules for width.
 
 ## Sequenced
 
-- Plan after: F166 (its `interfaces.md`), F167 (its plan: the page head contract).
-- Build after: F166; F167 stage 01. Gate: none. May build next to F168 and F170.
+- Plan after: F166 (its `interfaces.md`).
+- Build after: none. Gate: the stages need F166 stages 03 (tokens), 06 and 10 (patterns) and 09 (page head contract). May build next to F167, F168 and F170.
 
 ## Notes
 

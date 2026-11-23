@@ -33,7 +33,7 @@ The panel has one design system for the Pebble look: colour, radius, shadow and 
 
 ## Slices
 
-Seven stages: [`plan.md`](plan.md) § Stages and § How to run. Stage 01 needs the owner step O1 (the mockup commit).
+Ten stages in three waves: [`plan.md`](plan.md) § Stages and § How to run. Waves 1 and 2 need no owner step; four stages of wave 3 need the owner step O1 (the mockup commit).
 
 ## Sequenced
 

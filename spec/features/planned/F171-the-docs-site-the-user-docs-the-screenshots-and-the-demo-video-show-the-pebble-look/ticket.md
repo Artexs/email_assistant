@@ -34,7 +34,7 @@ Stages come from the plan.
 ## Sequenced
 
 - Plan after: F168, F169, F170 (their plans name the changed texts and flows).
-- Build after: F168, F169, F170. Gate: none.
+- Build after: none. Gate: the docs site theme stage needs only F166 stage 03 (tokens, font) and builds next to the page tickets; the user docs stage of a page needs that page's stages; the shots and the video need F167, F168, F169 and F170 in `done/`.
 
 ## Notes
 

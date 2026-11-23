@@ -1,6 +1,6 @@
 # F166 stage 07 — Guards against the old look
 
-Part of [`../plan.md`](../plan.md). Needs: stage 03 (tokens; the three raw-colour files fixed). May run next to 04–06.
+Part of [`../plan.md`](../plan.md). Needs: stage 03 (tokens; the three raw-colour files fixed). May run next to 04, 05, 06, 09, 10.
 
 ## Step 1 — The colour scan
 
@@ -24,4 +24,4 @@ An ESLint rule (the scan test is enough and needs no plugin work). Emoji in text
 
 ## Done when
 
-Both tests are in `test:unit` and pass; the final message gives the count of deleted keys and the allow list; the Proof of `../plan.md` (stages 01, 02, 07) prints `PROOF_OK`.
+Both tests are in `test:unit` and pass; the final message gives the count of deleted keys and the allow list; Proof A of `../plan.md` prints `PROOF_OK`.

@@ -32,4 +32,4 @@ Part of [`../plan.md`](../plan.md). Needs: nothing. May run next to 01.
 
 ## Done when
 
-`bun run ui:sheet` (with `bun run web:build` first) writes the index for today's look; the final message gives the count of pictures and of overflow marks. Proof of `../plan.md` (stages 01, 02, 07) prints `PROOF_OK`.
+`bun run ui:sheet` (with `bun run web:build` first) writes the index for today's look; the final message gives the count of pictures and of overflow marks. Proof A of `../plan.md` prints `PROOF_OK`.

@@ -1,6 +1,6 @@
 # F166 stage 03 — Tokens, font and scales
 
-Part of [`../plan.md`](../plan.md). Needs: owner step O1 (the mockup in the repo); stage 02 (`ui:sheet`, `A11Y_SCHEMES`).
+Part of [`../plan.md`](../plan.md). Needs: stage 02 (`ui:sheet`, `A11Y_SCHEMES`). May run next to 08. Every value is in `../interfaces.md`: this stage does not need the mockup.
 
 ## Step 1 — Tokens
 
@@ -35,4 +35,4 @@ Part of [`../plan.md`](../plan.md). Needs: owner step O1 (the mockup in the repo
 
 ## Done when
 
-The Proof of `../plan.md` (stages 03–06) prints `PROOF_OK`, and the final message lists the font sizes, the e2e time and the pictures you opened.
+Proof B of `../plan.md` prints `PROOF_OK`, and the final message lists the font sizes, the e2e time and the pictures you opened.

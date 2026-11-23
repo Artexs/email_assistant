@@ -32,7 +32,7 @@ The web panel (`apps/web`) moves from the stock shadcn look to the Pebble design
 | PB-9 | Brand: the name "Email Assistant" stays. Favicon, app icons, manifest colours and `theme-color` move from navy to teal. The docs site takes the teal accent, the mark and the font. The report mail does not change. | default |
 | PB-10 | Font: Nunito, self-hosted, Latin and Latin Extended. Dark mode follows the system setting; no manual switch. | default |
 | PB-11 | The operator console gets the theme and keeps dense tables. | default |
-| PB-12 | The owner looks twice at the contact sheet (§ Proof): after F166 and F167 land (a look, not a stop), and before the release in F172 (a stop: the release waits for "go"). The release also waits for the 20-draft check of the reply-draft pilot. | default |
+| PB-12 | The owner looks twice: at the pattern page and the contact sheet when F166 lands (a look, not a stop: a correction of a pattern there reaches every page), and at the full contact sheet before the release in F172 (a stop: the release waits for "go"). The release also waits for the 20-draft check of the reply-draft pilot. | default |
 | PB-13 | The mockup is committed for the build and deleted in F172. After that the design system ADR, the pattern page and the code are the truth. | owner step: the repo is public |
 
 ## Design decisions
@@ -53,7 +53,7 @@ The web panel (`apps/web`) moves from the stock shadcn look to the Pebble design
 
 ## Patterns
 
-Names are fixed here; F166 builds them and defines their props in its `interfaces.md`.
+Names are fixed here; F166 builds them and defines their props in its `interfaces.md`. F166 also builds the shell contract: an island passes `lead` and `action` to `AppShell`, and the shell renders the one `PageHead`.
 
 | Pattern | Use it for |
 | --- | --- |
@@ -78,9 +78,26 @@ Names are fixed here; F166 builds them and defines their props in its `interface
 ## Tickets and order
 
 ```
-F166 design system ─► F167 shell, brand, sign-in pages ─► F168 approvals, activity, review        ─┐
-                                                      ├► F169 delegations, open loops, rules       ├► F171 docs, shots, video ─► F172 cleanup, release
-                                                      └► F170 onboarding, mailboxes, settings, …   ─┘
+F166 design system                      ┌► F167 shell, brand, sign-in pages          ─┐
+  wave 1: records ∥ tools               ├► F168 approvals, activity, review          ─┤
+  wave 2: tokens ∥ pattern page    ─────┼► F169 delegations, open loops, rules       ─┼► F171 shots, video ─► F172 cleanup, release
+  wave 3: primitives ∥ patterns         ├► F170 onboarding, mailboxes, settings, …   ─┤
+          ∥ page head contract ∥ guards └► F171 docs site theme (needs tokens only)  ─┘
 ```
 
-F168, F169 and F170 run next to each other. They share the text group files, `nav-items.ts` and `docs/capabilities/web-panel.md`; a land conflict is solved by "merge `master`, prove again". The plan of F167–F170 needs the `interfaces.md` of F166. The demo video and docs shots ticket (F151) finishes its tool stages now; its takes are made again in F171.
+F167, F168, F169 and F170 run next to each other. They wait for four stages of F166 only: 03 (tokens), 06 and 10 (patterns), 09 (the page head contract). Their planner jobs start together, when the review fixes of the F166 plan are committed. The demo video and docs shots ticket (F151) finishes its tool stages now; its takes are made again in F171.
+
+## Rules for width
+
+For the planner of each ticket F167–F171 (owner, 2026-11-23: as much work in parallel as the work permits).
+
+1. **One stage owns its files.** A stage is one page, or one section of a large page: its island, its component folder, its e2e spec, its part of `docs/capabilities/web-panel.md` and its user docs page. Two stages that may run together own no common file. Write `May run next to …` on every stage where that holds.
+2. **A frame stage first, then width.** A page with many parts (Settings, Approvals, Rules) gets one first stage that fixes its frame (layout, in-page navigation, shared hooks, the `lead` and `action` of the page head). Its sections then run next to each other.
+3. **Shared files have one owner.** `global.css`, `components/ui/`, `components/patterns/` belong to F166; `components/shell/`, `nav-items.ts` and the layouts belong to F167. A page stage that needs a change there stops and asks: it is a contract change.
+4. **Text keys.** A stage adds a key next to the keys of its page, never at the end of a group file (two additions at one place conflict). A page that gets more than 20 new keys and has no group file of its own gets one, named for the page, in its frame stage.
+5. **Needs lines name stages**, for example `Needs F166 stage 09: AppShell lead and action`. Never "F166 landed".
+6. **Proof of a page stage:** `bun run check:job`, `bun run web:build`, then only the e2e specs of its page and `patterns.spec.ts`. The full e2e suite (about 19 minutes, about 2.1 GB of memory) runs in CI on `master`; only a stage that changes every page runs it itself.
+7. **Do not split a `[risky]` stage for speed.** The approvals queue decision flow is one careful stage with an Opus review.
+8. **Know the cap.** About five Playwright runs fit this machine's free memory at once (16 cores, about 15 GB free); the Limen start queue holds the rest. More than about six UI stages ready at one time gains nothing, so do not cut stages smaller for width alone.
+
+A land conflict is solved by "merge `master`, prove again".
