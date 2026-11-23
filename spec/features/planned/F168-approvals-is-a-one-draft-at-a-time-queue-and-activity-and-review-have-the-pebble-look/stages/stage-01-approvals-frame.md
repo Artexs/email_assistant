@@ -21,9 +21,9 @@ Part of [`../plan.md`](../plan.md). The page keeps today's flow (list and detail
 - **Files:** `components/approvals/WaitingList.tsx` (new; it takes the place of `ApprovalList.tsx`), `islands/ApprovalsPage.tsx` (layout and head only), `i18n/texts/en-approvals.ts`, `pl-approvals.ts`.
 - **Interface (D1):** `WaitingList({ items: readonly ApprovalItem[]; focusId: string | null; now: Date; onPick(id: string): void })`. A `list` with the name `appr_list_label`; each item is a link `/approvals?id=<id>` (plain click calls `onPick`, a modifier click keeps the link) with `aria-current` on the focus. Two groups: waiting drafts, then held sends under the heading "Approved, not sent yet" (P1). Each row: `InitialsAvatar`, the title, the subject, one line of state and time left.
 - **Frame:** from `lg` two columns: the card (wide) and an "Up next" card with the `WaitingList` (narrow). Below `lg` one column, as today. The island passes `lead` to `AppShell`: the count of waiting drafts (P8): `tp` with `{n}`, the form "100 or more" when the list has 100 items, and "Nothing waits for you" at 0. No `action`.
-- **Empty list:** `EmptyState` with an icon, "Nothing waits for you", one line, and a button to `/activity`. The flag-off text `appr_off` is an `EmptyState` with no button.
+- **Empty list:** `EmptyState` with an icon, "Nothing waits for you", one line, and a button to `/activity`. The flag-off text `appr_off`: an `EmptyState`, no button.
 - **Text keys:** new keys next to the `appr_*` keys. Delete the keys this stage stops reading.
-- **Test:** (5) `WaitingList` with 2 waiting and 1 held item renders 3 links and the held heading once, after the waiting links. (6) The lead text for n = 1, 5, 100 in `en` and n = 2, 5 in `pl` (Polish plural forms).
+- **Test:** (5) `WaitingList` with 2 waiting and 1 held item renders 3 links and the held heading once, after the waiting links. (6) The lead text for n = 1, 5, 100 in `en` and n = 2, 5 in `pl` (plural forms).
 
 ## Out of scope
 
