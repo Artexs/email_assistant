@@ -1,6 +1,6 @@
 # F170 stage 02 — Settings: the mailbox cards
 
-Needs stage 01: `useModeChange` in `ModeCard.tsx` and the mailbox group of `SettingsPage.tsx`. Needs F166 stage 06: `CategoryPill`, `categoryLook`. Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 03, 04, 05, 06, 07, 08, 09, 10.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs stage 01: `useModeChange` (`apps/web/src/lib/use-mode-change.ts`, used by `ModeCard.tsx`) and the mailbox group of `SettingsPage.tsx`. Needs F166 stage 06: `CategoryPill`, `categoryLook`. Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 03, 04, 05, 06, 07, 08, 09, 10.
 
 Part of [`../plan.md`](../plan.md). Decisions: P4, D1, D4, D5.
 
@@ -27,4 +27,4 @@ The frame and the nav (stage 01). The reply style card (stage 03). The status an
 
 ## Done when
 
-The pictures of `settings` with the trust and the open-loops seed states match the mockup's "What I do per category" card; the Proof of `../plan.md` with `settings.spec.ts trust-card.spec.ts loops-panel.spec.ts plan.spec.ts reply-style.spec.ts` prints `PROOF_OK`.
+The sheet row `settings-trust` and pictures of the loops card that `loops-panel.spec.ts` saves under `<UI_SHEET_DIR>/f170-02/` (D7) match the mockup's "What I do per category" card; the Proof of `../plan.md` with `settings.spec.ts trust-card.spec.ts loops-panel.spec.ts plan.spec.ts reply-style.spec.ts` prints `PROOF_OK`.

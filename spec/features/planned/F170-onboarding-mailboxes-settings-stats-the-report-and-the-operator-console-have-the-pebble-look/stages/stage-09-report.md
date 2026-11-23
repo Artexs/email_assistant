@@ -1,6 +1,6 @@
 # F170 stage 09 — The shadow report: one card per category
 
-Needs F166 stage 06: `ProgressRing`, `CategoryPill`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `SectionCard`, `EmptyState`, `FactBox`. May run next to 01–08, 10. It uses `MailboxSelector` (stage 02) unchanged.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 06: `ProgressRing`, `CategoryPill`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `SectionCard`, `EmptyState`, `FactBox`. May run next to 01–08, 10. It uses `MailboxSelector` (stage 02) unchanged.
 
 Part of [`../plan.md`](../plan.md). Decisions: P7, P9, D1, D5, D6.
 
@@ -34,4 +34,4 @@ Any trust rule, check or recommendation logic (`report-view.ts` keeps its functi
 
 ## Done when
 
-The pictures of `report` (trust seed states: done, running, no result) match shot `06b-*` with one action card; the Proof of `../plan.md` with `report.spec.ts onboarding.spec.ts` prints `PROOF_OK`.
+The sheet rows `report` and `report-off`, and the running and no-result pictures that `report.spec.ts` saves under `<UI_SHEET_DIR>/f170-09/` (D7), match shot `06b-*` with one action card; the Proof of `../plan.md` with `report.spec.ts onboarding.spec.ts` prints `PROOF_OK`.

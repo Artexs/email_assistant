@@ -1,8 +1,8 @@
 # F170 stage 06 — Onboarding: steps, progress ring, mode cards
 
-Needs stage 01: `useModeChange` (`apps/web/src/lib/use-mode-change.ts`). Needs F166 stage 06: `ProgressRing`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `SectionCard`, `FactBox`. May run next to 02, 03, 04, 05, 07, 08, 09, 10.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs stage 01: `useModeChange` (`apps/web/src/lib/use-mode-change.ts`). Needs F166 stage 06: `ProgressRing`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `SectionCard`, `FactBox`. May run next to 02, 03, 04, 05, 07, 08, 09, 10.
 
-Part of [`../plan.md`](../plan.md). Decisions: P1, P9, D1, D5, D6; questions.md item 1.
+Part of [`../plan.md`](../plan.md). Decisions: P1, P9, D1, D5, D6, D7; questions.md items 1, 8.
 
 Owns: `apps/web/src/islands/OnboardingPage.tsx`, `components/onboarding/`, `apps/web/src/lib/onboarding-view.ts` (new), `onboarding.spec.ts`, the `ob_*` keys (in `texts/*-mailboxes.ts`, next to the other `ob_*` keys). It uses `TelegramLink` (stage 07) and `AssistDialog` (stage 02) unchanged.
 
@@ -16,12 +16,12 @@ Owns: `apps/web/src/islands/OnboardingPage.tsx`, `components/onboarding/`, `apps
 
 ## Step 2 — Mode cards
 
-- **Decisions (P1):** shown in the mode step (trust off) while it is open, for every role. Two cards side by side from `sm`, stacked below: Shadow (icon `Eye`, `mode_shadow`, `mode_shadow_text`) and Assist (icon `Sparkles`, `mode_assist`, `mode_assist_text`; the Settings keys, not new copies). A card is a `div`, not a button.
+- **Decisions (P1):** shown in the mode step (trust off) while it is open, for every role. Two cards side by side from `sm`, stacked below: Shadow (icon `Eye`, `mode_shadow`, `mode_shadow_text`) and Assist (icon `Sparkles`, `mode_assist`, `mode_assist_text`; the Settings keys). A card is a `div`.
   - Shadow holds `ob_keep_shadow` (today's `POST /api/onboarding/keep-mode`, today's error toast).
-  - Assist holds `ob_use_assist` ("Use assist…"). Its action depends on the mailbox list (`GET /api/mailboxes`, loaded only while the mode step is open): one mailbox → on tap, load `GET /api/settings/:id` (`settingsViewSchema`), then open `AssistDialog` with that mailbox and its `toolSwitches`; a choice calls `useModeChange(id).change("assist", keepSwitches)`; on success toast `mode_assist_toast`, close the dialog, reload `me`. Two or more mailboxes → a link to `/settings`. No mailbox → no button, the line `ob_mode_need_mailbox` ("Connect a mailbox first.").
-  - A member, or an owner of a read-only organization (`canWrite` false), sees both cards with no button and `ob_mode_assistant`.
-  - "Open Settings" (`ob_open_settings`) stays below the cards.
-- **Edge cases:** a failed settings load shows the error toast and no dialog. The Assist button is disabled while the load or the mode call runs. A 404 (mailbox removed in another tab) toasts the error and reloads the list.
+  - Assist holds `ob_use_assist` ("Use assist…"). By the mailbox list (`GET /api/mailboxes`, loaded only while the step is open): one mailbox → on tap, load `GET /api/settings/:id` (`settingsViewSchema`), then open `AssistDialog` with that mailbox and its `toolSwitches`; a choice calls `useModeChange(id).change("assist", keepSwitches)`; on success toast `mode_assist_toast`, close the dialog, reload `me`. Two or more mailboxes → a link to `/settings`. No mailbox → no button, the line `ob_mode_need_mailbox` ("Connect a mailbox first.").
+  - The step text above the cards keeps today's rule (questions.md item 8): `ob_mode_open` for the owner role, `ob_mode_assistant` for a member. A member and a read-only owner (`canWrite` false) see no button.
+  - `ob_open_settings` stays below the cards.
+- **Edge cases:** a failed settings load toasts the error; no dialog. The Assist button is disabled while a call runs. A 404 (mailbox removed in another tab) toasts the error and reloads the list.
 - **Test:** (5) e2e `onboarding.spec.ts`, today's flow still passes. (6) e2e: with one connected mailbox, a tap on "Use assist…" opens the dialog with the title `assist_title`; Cancel closes it, the step stays open, and a `page.on("request")` counter saw 0 requests to `/mode`. (7) A11y scan of `/onboarding` with the mode cards, both projects.
 
 ## Out of scope
@@ -30,4 +30,4 @@ The Telegram link block (stage 07). The trust-path steps' texts. Any onboarding 
 
 ## Done when
 
-The pictures of `onboarding` (main owner, and the trust seed state) match shot `07-*`; the Proof of `../plan.md` with `onboarding.spec.ts report.spec.ts` prints `PROOF_OK`.
+The sheet row `onboarding` and the mode-card pictures that `onboarding.spec.ts` saves under `<UI_SHEET_DIR>/f170-06/` (D7) match shot `07-*`; the Proof of `../plan.md` with `onboarding.spec.ts report.spec.ts` prints `PROOF_OK`.

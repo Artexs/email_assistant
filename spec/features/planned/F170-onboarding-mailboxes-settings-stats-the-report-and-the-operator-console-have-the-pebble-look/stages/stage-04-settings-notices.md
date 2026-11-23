@@ -1,10 +1,10 @@
 # F170 stage 04 — Settings: notices and organization cards
 
-Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 01, 02, 03, 05, 06, 07, 08, 09, 10 (it does not touch `SettingsPage.tsx`).
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 01, 02, 03, 05, 06, 07, 08, 09, 10 (it does not touch `SettingsPage.tsx`).
 
 Part of [`../plan.md`](../plan.md). Decisions: D1, D4, D5.
 
-Owns: `DigestTimesCard.tsx`, `NotifyCards.tsx`, `NoticeRoutesCard.tsx`, `PushDevicesCard.tsx`, `TimezoneCard.tsx`, `TelegramLockCard.tsx` (in `components/settings/`), `notify.spec.ts`, `push-devices.spec.ts`, `telegram-detail.spec.ts`.
+Owns: `DigestTimesCard.tsx`, `NotifyCards.tsx`, `NoticeRoutesCard.tsx`, `PushDevicesCard.tsx`, `TimezoneCard.tsx`, `TelegramLockCard.tsx` (in `components/settings/`), `notify.spec.ts`, `push-devices.spec.ts`, `telegram-detail.spec.ts` (stage 01 changes their `set_section_general` waits; keep those lines).
 
 ## Step 1 — Digests and notices group
 
@@ -31,4 +31,4 @@ The order of the groups (stage 01). The Telegram link block (`components/telegra
 
 ## Done when
 
-The pictures of `settings` in the seed states with `web_push`, `user_quiet_hours`, `report_mail` and `telegram_minimal` match the mockup's "Digests and notices" card; the Proof of `../plan.md` with `notify.spec.ts push-devices.spec.ts telegram-detail.spec.ts settings.spec.ts` prints `PROOF_OK`.
+The sheet rows `settings` and `settings-trial`, and the pictures of the flag cards that `notify.spec.ts` and `push-devices.spec.ts` save under `<UI_SHEET_DIR>/f170-04/` (D7), match the mockup's "Digests and notices" card; the Proof of `../plan.md` with `notify.spec.ts push-devices.spec.ts telegram-detail.spec.ts settings.spec.ts` prints `PROOF_OK`.

@@ -1,8 +1,8 @@
 # F170 stage 08 — Stats: the week at a glance above the table
 
-Needs F166 stage 06: `ProgressRing`, `StatTile`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`, `FactBox`. May run next to 01–07, 09, 10.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 06: `ProgressRing`, `StatTile`. Needs F166 stage 09: `AppShell` `lead`. Needs F166 stage 10: `EmptyState`, `FactBox`. May run next to 01–07, 09, 10.
 
-Part of [`../plan.md`](../plan.md). Decisions: P6, P9, D5, D6; questions.md item 6.
+Part of [`../plan.md`](../plan.md). Decisions: P6, P9, D5, D6; questions.md items 6, 7.
 
 Owns: `apps/web/src/islands/StatsPage.tsx`, `components/stats/`, `apps/web/src/lib/stats-view.ts`, `stats.spec.ts`, the `stats_*` keys (in `texts/*-activity.ts`, next to the other `stats_*` keys).
 
@@ -36,4 +36,4 @@ A new metric, a new field of `weekStatsSchema`, the cost row's rules, a chart.
 
 ## Done when
 
-The pictures of `stats` (the stats seed state) match shot `06a-*` without the bar chart; the Proof of `../plan.md` with `stats.spec.ts` prints `PROOF_OK`.
+The sheet row `stats` matches shot `06a-*` without the bar chart; the Proof of `../plan.md` with `stats.spec.ts` prints `PROOF_OK`.

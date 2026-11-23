@@ -1,6 +1,6 @@
 # F170 stage 05 — Settings: account and security
 
-Needs F166 stage 10: `SectionCard` (with `tone="danger"`), `RowList`, `Row`, `FactBox`. May run next to 01, 02, 03, 04, 06, 07, 08, 09, 10 (`SettingsPage.tsx` keeps rendering `<AccountCard />`).
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stages 04, 05: the primitives. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs F166 stage 10: `SectionCard` (with `tone="danger"`), `RowList`, `Row`, `FactBox`. May run next to 01, 02, 03, 04, 06, 07, 08, 09, 10 (`SettingsPage.tsx` keeps rendering `<AccountCard />`).
 
 Part of [`../plan.md`](../plan.md). Decisions: D1, D4, D5; questions.md item 5.
 
@@ -34,4 +34,4 @@ Any auth rule, any two-factor or session API. The sign-in pages (the shell ticke
 
 ## Done when
 
-The pictures of `settings` (main owner, and an organization with `org_delete` and `security_log`) match the mockup's "Security" and "Delete organization" cards; the Proof of `../plan.md` with `account.spec.ts account-delete.spec.ts two-factor.spec.ts alert-layout.spec.ts language.spec.ts docs-links.spec.ts settings.spec.ts` prints `PROOF_OK`.
+The sheet row `settings`, and the pictures of the flag cards that `account-delete.spec.ts` and `account.spec.ts` save under `<UI_SHEET_DIR>/f170-05/` (D7), match the mockup's "Security" and "Delete organization" cards; the Proof of `../plan.md` with `account.spec.ts account-delete.spec.ts two-factor.spec.ts alert-layout.spec.ts language.spec.ts docs-links.spec.ts settings.spec.ts` prints `PROOF_OK`.
