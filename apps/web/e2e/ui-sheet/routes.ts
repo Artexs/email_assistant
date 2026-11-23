@@ -70,6 +70,8 @@ export const SHEET_ROUTES: readonly SheetRoute[] = [
   row("stats-off", "main", "/stats", "title_stats"),
   row("review-off", "main", "/review", "title_review"),
   row("report-off", "main", "/report", "title_report"),
+  // The pattern page of the dev build (`bun run web:build:dev`). Its heading is a literal, so there is no key to wait for.
+  row("patterns", "main", "/dev/patterns", null),
 
   // An organization on a trial, and one that is paused.
   row("settings-trial", "trial", "/settings", "title_settings"),
