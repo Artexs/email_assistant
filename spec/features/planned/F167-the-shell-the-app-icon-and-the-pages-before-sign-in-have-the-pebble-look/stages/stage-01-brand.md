@@ -1,6 +1,6 @@
 # F167 stage 01 — Brand mark, app icons and browser colour
 
-Part of [`../plan.md`](../plan.md). Needs F166 stage 03: the light and dark token values in `apps/web/src/styles/global.css` (test 2 compares against them). May run next to 03.
+Part of [`../plan.md`](../plan.md). Needs F166 stage 03: the light and dark token values in `apps/web/src/styles/global.css` (test 2 compares against them). Needs F166 stage 08: `web:build:dev` and `patterns.spec.ts` (the Proof). May run next to 04, 07.
 
 ## Step 1 — The mark
 
@@ -27,14 +27,14 @@ Part of [`../plan.md`](../plan.md). Needs F166 stage 03: the light and dark toke
 
 ## Step 3 — Manifest and browser colour
 
-- **Files:** `apps/web/public/manifest.webmanifest`, `apps/web/src/layouts/App.astro`, `apps/web/src/layouts/Public.astro` (the head tags only; stage 04 changes the body of `Public.astro`).
+- **Files:** `apps/web/public/manifest.webmanifest`, `apps/web/src/layouts/App.astro`, `apps/web/src/layouts/Public.astro` (the head tags only; stage 05 changes the body of `Public.astro`).
 - **Decisions:** D6. Each layout has two `theme-color` tags, `media="(prefers-color-scheme: light)"` `#0a7568` and `media="(prefers-color-scheme: dark)"` `#0d1513`, and the apple-touch link points at `/icons/apple-touch-icon.png`. Manifest `theme_color` `#0a7568`, `background_color` `#f3f6f5`; the icon list does not change. If the F166 colour scan names the old single `theme-color` in its allow list, update that entry to the two new values in this stage.
 - **Test:** (2b) in `pwa-shell.test.ts`: both layouts hold exactly these two `theme-color` tags; the light value equals light `--primary` of `global.css`, the dark value equals dark `--background`; the manifest `theme_color` equals light `--primary`, `background_color` light `--background`. Break check: set the dark tag to `#0a7568`; the test fails; restore.
 - **Test:** (4) e2e in `pwa.spec.ts`: draw each icon in a canvas on the page and read pixels: `icon-192.png` at (96, 12) is `rgb(10, 117, 104)` ±2 per channel and at (1, 1) has alpha 0; `icon-512-maskable.png` and `apple-touch-icon.png` at (2, 2) are `rgb(10, 117, 104)` ±2 with alpha 255; `favicon.png` at (16, 2) is the teal ±2. `/icons/apple-touch-icon.png` answers 200 with no session.
 
 ## Step 4 — Capability page
 
-`docs/capabilities/web-panel.md`: one line on the brand (the mark, the icon source and `bun run --filter @ea/web icons`, the two browser colours).
+`docs/capabilities/web-panel.md` rule 10 (the static build), and only there (D16): one sentence on the brand (the mark, the icon source and `bun run --filter @ea/web icons`, the two browser colours).
 
 ## Out of scope
 

@@ -32,7 +32,7 @@ The frame around every page has the Pebble look: a floating sidebar on a desktop
 
 ## Slices
 
-Five stages: [`plan.md`](plan.md) § Stages and § How to run. The brand assets come first; then the frame, the shell parts and the sign-in pages run next to each other; the other public pages follow the sign-in pages. No owner step.
+Seven stages: [`plan.md`](plan.md) § Stages and § How to run. The brand assets, the banners and the offline cache start first; the desktop frame then the phone frame, and the sign-in pages then the other public pages, run next to each other. No owner step.
 
 ## Sequenced
 

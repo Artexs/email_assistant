@@ -1,6 +1,6 @@
-# F167 stage 03 — Shell parts: banners, terms dialog, "what is new" card, placeholder
+# F167 stage 04 — Shell parts: banners, terms dialog, "what is new" card, placeholder
 
-Part of [`../plan.md`](../plan.md). Needs F166 stage 03: the tokens `bg-destructive-soft`, `text-destructive`, `bg-accent`, `text-accent-foreground`, radius `lg`, `shadow-card` (and its class changes in the two banner files). May run next to 01, 02, 04, 05.
+Part of [`../plan.md`](../plan.md). Needs F166 stage 03: the tokens `bg-destructive-soft`, `text-destructive`, `bg-accent`, `text-accent-foreground`, radius `lg`, `shadow-card` (and its class changes in the two banner files). Needs F166 stage 08: `web:build:dev` (the Proof). May run next to 01, 02, 03, 05, 06, 07. The restyled `Dialog` and `Card` (F166 stages 04 and 05) are not a need: until they land, the pictures show the old primitives.
 
 This stage owns `AuthErrorBanner.tsx`, `PausedBanner.tsx`, `TrialLine.tsx`, `TermsDialog.tsx`, `WhatsNew.tsx` and `Placeholder.tsx` in `components/shell/`. It does not edit `AppShell.tsx` or `Nav.tsx` (stage 02 places these parts; D7 of `../plan.md`).
 
@@ -20,7 +20,7 @@ This stage owns `AuthErrorBanner.tsx`, `PausedBanner.tsx`, `TrialLine.tsx`, `Ter
 
 ## Step 3 — Capability page
 
-`docs/capabilities/web-panel.md`: the line that describes the banners says how each one looks and that each keeps `role="status"`.
+`docs/capabilities/web-panel.md` rule 9, the banner sentence only (D16): it says how each one looks and that each keeps `role="status"`.
 
 ## Test
 
