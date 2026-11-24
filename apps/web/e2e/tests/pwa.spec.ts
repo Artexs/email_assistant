@@ -47,6 +47,47 @@ test("the manifest, the worker and the offline page are public; a page still nee
   await expectNoA11yViolations(page);
 });
 
+test("the app icons are teal, the corners of the round icons are clear, and the touch icon is public", async ({
+  page,
+  request,
+}) => {
+  expect((await request.get("/icons/apple-touch-icon.png")).status()).toBe(200);
+  await page.goto("/login");
+  // Each probe reads one pixel of the icon drawn in a canvas on the page: [path, x, y, expected alpha].
+  const probes: [string, number, number, number][] = [
+    ["/icons/icon-192.png", 96, 12, 255],
+    ["/icons/icon-192.png", 1, 1, 0],
+    ["/icons/icon-512-maskable.png", 2, 2, 255],
+    ["/icons/apple-touch-icon.png", 2, 2, 255],
+    ["/favicon.png", 16, 2, 255],
+  ];
+  for (const [path, x, y, alpha] of probes) {
+    const pixel = await page.evaluate(
+      async ([src, px, py]) => {
+        const image = new Image();
+        image.src = src as string;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d");
+        context?.drawImage(image, 0, 0);
+        return Array.from(context?.getImageData(px as number, py as number, 1, 1).data ?? []);
+      },
+      [path, x, y]
+    );
+    expect(pixel[3], `${path} alpha at ${x},${y}`).toBe(alpha);
+    if (alpha === 255) {
+      const teal = [10, 117, 104];
+      for (const [channel, value] of teal.entries()) {
+        expect(Math.abs((pixel[channel] ?? 0) - value), `${path} channel ${channel} at ${x},${y}`).toBeLessThanOrEqual(
+          2
+        );
+      }
+    }
+  }
+});
+
 test("the manifest parses in Chromium and the page links it", async ({ page }) => {
   await page.goto("/login");
   const href = await page.locator('link[rel="manifest"]').getAttribute("href");

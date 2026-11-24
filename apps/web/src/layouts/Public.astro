@@ -25,8 +25,9 @@ const pageTitle = title ?? (titleKey === undefined ? en.brand : en[titleKey]);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <meta name="theme-color" content="#000832" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#0a7568" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1513" />
     <title>{pageTitle} · {en.brand}</title>
     <slot name="head" />
   </head>
