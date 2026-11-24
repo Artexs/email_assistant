@@ -99,6 +99,8 @@ function scopeOf(run: LabRun, events: LabEvent[], org: Org, now = NOW): SectionS
 interface DelegationFixture {
   slot: Slot;
   sentAt?: Date;
+  // The row order of a mail with more than one delegation; without it the database clock sets it.
+  createdAt?: Date;
   dueAt?: Date | null;
   status?: string;
   remindersSent?: number;
@@ -132,6 +134,7 @@ async function addDelegation(
     sendActionId: sendId,
     status: fixture.status ?? "sent",
     sentAt,
+    createdAt: fixture.createdAt,
     dueAt: fixture.dueAt ?? null,
     remindersSent: fixture.remindersSent ?? 0,
     answeredAt: fixture.answeredAt ?? null,
@@ -325,6 +328,7 @@ describe("review fixes of stage 13", () => {
         slot,
         status: "cancelled",
         sentAt: new Date("2026-11-23T09:00:00.000Z"),
+        createdAt: new Date("2026-11-23T08:30:00.000Z"),
       });
       const delegateId = await insertDelegate(trx, ctx);
       const approved = {
