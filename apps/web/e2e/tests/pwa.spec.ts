@@ -131,8 +131,10 @@ test("signed in: the worker registers, takes the pages from the network and cach
     }
     return result;
   });
-  expect(Object.keys(caches)).toEqual(["ea-shell-v1"]);
-  const stored = caches["ea-shell-v1"] ?? [];
+  const names = Object.keys(caches);
+  expect(names).toHaveLength(1);
+  expect(names[0]).toMatch(/^ea-shell-v2-[0-9a-f]{8}$/);
+  const stored = caches[names[0] ?? ""] ?? [];
   expect(stored).toContain("/offline.html");
   for (const path of stored) expect(path === "/offline.html" || path.startsWith("/_astro/")).toBe(true);
 
@@ -154,4 +156,36 @@ test("signed in: the worker registers, takes the pages from the network and cach
   );
   expect(apiOffline).toBe("failed");
   await context.setOffline(false);
+});
+
+// The files of the offline page come from the install, not from a run-time cache: the page loads `/login` before any worker exists, so
+// the worker has seen no `/_astro/` request of it. Offline, the page still has its style sheet and its font.
+test("the offline page keeps its look with no network: the worker precaches the style sheet and the font", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    extraHTTPHeaders: { "x-forwarded-for": nextAddress(onMobile() ? 86 : 186) },
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto("/login");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+      await navigator.serviceWorker.ready;
+    });
+
+    // The server marks `/_astro/` files as immutable, so the browser's HTTP cache would answer them offline and hide a missing precache.
+    const session = await context.newCDPSession(page);
+    await session.send("Network.clearBrowserCache");
+    await context.setOffline(true);
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { level: 1, name: pl.offline_title })).toBeVisible();
+    expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toMatch(/^"?Nunito Variable"?/);
+    expect(await page.evaluate(() => document.fonts.check('16px "Nunito Variable"'))).toBe(true);
+    await context.setOffline(false);
+  } finally {
+    await context.close();
+  }
 });
