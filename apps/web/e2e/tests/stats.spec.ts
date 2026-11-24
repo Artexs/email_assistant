@@ -34,6 +34,7 @@ test("the Stats page shows an empty state and no ring when no week is finished",
   const address = testInfo.project.name === "mobile" ? "198.51.100.8" : "198.51.100.9";
   await context.setExtraHTTPHeaders({ "x-forwarded-for": address });
   await signInAs(page, readSeed().statsOwner);
+  await expect(page).toHaveURL(/\/onboarding$/);
   await page.route("**/api/stats?*", (route) => route.fulfill({ json: { weeks: [] } }));
 
   await page.goto("/stats");
