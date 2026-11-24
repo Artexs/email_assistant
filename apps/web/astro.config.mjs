@@ -1,15 +1,19 @@
 // @ts-check
+import process from "node:process";
+
 import { defineConfig } from "astro/config";
 
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import changelogReleases from "./integrations/changelog-releases";
 import cspStyleSrc from "./integrations/csp-style-src";
+import devPages from "./integrations/dev-pages";
 
 // https://astro.build/config
 export default defineConfig({
   output: "static",
-  integrations: [react(), changelogReleases(), cspStyleSrc()],
+  // The pattern page is a route only when `EA_DEV_PAGES=1` (`bun run web:build:dev`, `bun run web:dev`).
+  integrations: [react(), changelogReleases(), cspStyleSrc(), devPages(process.env)],
   build: { inlineStylesheets: "never" },
   // No Markdown in the panel; Shiki inline styles clash with the CSP.
   markdown: { syntaxHighlight: false },
