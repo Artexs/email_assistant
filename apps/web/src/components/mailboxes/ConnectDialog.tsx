@@ -320,7 +320,7 @@ export function ConnectDialog({ open, onOpenChange, onConnected, sentSyncLine }:
 
   return (
     <Dialog open={open} onOpenChange={changeOpen}>
-      <DialogContent showCloseButton={!pending}>
+      <DialogContent showCloseButton={!pending} className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("connect_title")}</DialogTitle>
         </DialogHeader>
