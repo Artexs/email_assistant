@@ -1,88 +1,131 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Nunito (variable weight), self-hosted: Latin and Latin Extended. The unicode ranges are those of the Fontsource package. */
+@font-face {
+  font-family: "Nunito Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url("../assets/fonts/nunito-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F,
+    U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Nunito Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url("../assets/fonts/nunito-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 22px;
+  --background: #f3f6f5;
+  --foreground: #13201d;
+  --card: #ffffff;
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --primary: #0a7568;
+  --primary-foreground: #ffffff;
+  --primary-soft: #d5f0ea;
+  --secondary: #e8efed;
+  --secondary-foreground: var(--foreground);
+  --muted: #e8efed;
+  --muted-foreground: #586b66;
+  --accent: #fff1e0;
+  --accent-foreground: #8a4b00;
+  --destructive: #af3434;
+  --destructive-foreground: #ffffff;
+  --border: #dbe5e2;
+  --input: #6e968a;
+  --ring: var(--primary);
+  --sidebar: #ffffff;
+  --shadow-card: 0 1px 2px rgb(16 40 34 / 0.05), 0 12px 32px -8px rgb(16 40 34 / 0.12);
+  --avatar-1: #0a7568;
+  --avatar-2: #7741c8;
+  --avatar-3: #235ebf;
+  --avatar-4: #a8500f;
+  --avatar-5: #b3366b;
+  --avatar-foreground: #ffffff;
+  --cat-urgent: #af3434;
+  --cat-needs-reply: #235ebf;
+  --cat-delegation: #7741c8;
+  --cat-info: #4b5d73;
+  --cat-notification: #096e61;
+  --cat-spam: #87581b;
+  --cat-unsure: #8f5400;
+  --tabbar-height: 4rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: #0d1513;
+    --foreground: #e4efec;
+    --card: #16211e;
+    --popover: #16211e;
+    --primary: #3fd1b9;
+    --primary-foreground: #04201b;
+    --primary-soft: #133b34;
+    --secondary: #1d2b27;
+    --muted: #1d2b27;
+    --muted-foreground: #95aba5;
+    --accent: #3a2a14;
+    --accent-foreground: #ffc983;
+    --destructive: #ff7c7c;
+    --destructive-foreground: #2b0707;
+    --border: #24332f;
+    --input: #4f7067;
+    --sidebar: #121c19;
+    --shadow-card: 0 1px 2px #0006, 0 12px 32px -8px #0008;
+    --avatar-1: #3fd1b9;
+    --avatar-2: #c3a0ff;
+    --avatar-3: #7fb0ff;
+    --avatar-4: #e0ad6b;
+    --avatar-5: #ff9cc2;
+    --avatar-foreground: #0d1513;
+    --cat-urgent: #ff7c7c;
+    --cat-needs-reply: #7fb0ff;
+    --cat-delegation: #c3a0ff;
+    --cat-info: #a8b6c7;
+    --cat-notification: #3fd1b9;
+    --cat-spam: #e0ad6b;
+    --cat-unsure: #ffc46b;
   }
 }
 
-/* Tailwind 4.1 font stack: Tailwind 4.3 changed the default. */
+/* A soft token is its colour at 14 % over the card colour: opaque, whatever is under the pill. */
+:root {
+  --destructive-soft: color-mix(in srgb, var(--destructive) 14%, var(--card));
+  --cat-urgent-soft: color-mix(in srgb, var(--cat-urgent) 14%, var(--card));
+  --cat-needs-reply-soft: color-mix(in srgb, var(--cat-needs-reply) 14%, var(--card));
+  --cat-delegation-soft: color-mix(in srgb, var(--cat-delegation) 14%, var(--card));
+  --cat-info-soft: color-mix(in srgb, var(--cat-info) 14%, var(--card));
+  --cat-notification-soft: color-mix(in srgb, var(--cat-notification) 14%, var(--card));
+  --cat-spam-soft: color-mix(in srgb, var(--cat-spam) 14%, var(--card));
+  --cat-unsure-soft: color-mix(in srgb, var(--cat-unsure) 14%, var(--card));
+}
+
+/* Tailwind 4.1 font stack: Tailwind 4.3 changed the default. Nunito comes first. */
 @theme {
   --font-sans:
-    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "Nunito Variable", ui-rounded, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: calc(1.125 / 0.8125);
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: 10px;
+  --radius-md: 16px;
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: 28px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -91,6 +134,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -98,27 +142,42 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --color-avatar-1: var(--avatar-1);
+  --color-avatar-2: var(--avatar-2);
+  --color-avatar-3: var(--avatar-3);
+  --color-avatar-4: var(--avatar-4);
+  --color-avatar-5: var(--avatar-5);
+  --color-avatar-foreground: var(--avatar-foreground);
+  --color-cat-urgent: var(--cat-urgent);
+  --color-cat-urgent-soft: var(--cat-urgent-soft);
+  --color-cat-needs-reply: var(--cat-needs-reply);
+  --color-cat-needs-reply-soft: var(--cat-needs-reply-soft);
+  --color-cat-delegation: var(--cat-delegation);
+  --color-cat-delegation-soft: var(--cat-delegation-soft);
+  --color-cat-info: var(--cat-info);
+  --color-cat-info-soft: var(--cat-info-soft);
+  --color-cat-notification: var(--cat-notification);
+  --color-cat-notification-soft: var(--cat-notification-soft);
+  --color-cat-spam: var(--cat-spam);
+  --color-cat-spam-soft: var(--cat-spam-soft);
+  --color-cat-unsure: var(--cat-unsure);
+  --color-cat-unsure-soft: var(--cat-unsure-soft);
+}
+
+/* The card shadow changes with the scheme, so it is a utility over the token, not a theme value. */
+@utility shadow-card {
+  box-shadow: var(--shadow-card);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   body {
     @apply bg-background text-foreground;

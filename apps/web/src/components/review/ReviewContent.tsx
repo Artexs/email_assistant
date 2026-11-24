@@ -22,7 +22,7 @@ export interface ReviewContentProps {
 }
 
 const selectClass =
-  "h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50";
+  "h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50";
 
 interface ItemProps {
   item: PanelReviewItem;

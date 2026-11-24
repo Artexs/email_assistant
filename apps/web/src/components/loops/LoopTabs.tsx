@@ -32,7 +32,7 @@ export function LoopTabs({ current, onSelect }: { current: LoopTab; onSelect(tab
             onSelect(tab);
           }}
           className={cn(
-            "-mb-px inline-flex min-h-9 items-center border-b-2 px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+            "-mb-px inline-flex min-h-9 items-center border-b-2 px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
             tab === current
               ? "border-primary font-semibold text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground"
@@ -68,7 +68,7 @@ export function LoopFilterTabs({
             onSelect(filter);
           }}
           className={cn(
-            "inline-flex min-h-9 items-center rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+            "inline-flex min-h-9 items-center rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
             filter === current
               ? "border-foreground font-semibold text-foreground"
               : "border-transparent text-muted-foreground hover:text-foreground"
