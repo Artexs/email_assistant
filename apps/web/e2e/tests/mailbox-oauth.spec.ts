@@ -13,6 +13,7 @@ import { readSeed } from "../seed";
 // file runs; Google stays off.
 // The browser never reaches Microsoft: the spec answers the authorize URL itself.
 
+const CARD = '[data-slot="card"][data-state]';
 const AUTHORIZE = "https://login.microsoftonline.com/**";
 
 // The CLI of the platform (`bun run org:flag`), with the e2e env: no psql in the spec, and the same code path as an operator.
@@ -166,4 +167,54 @@ test("a restored page (bfcache) enables the buttons again after a tap that left 
   await fire(true);
   await expect(button).toBeEnabled();
   release();
+});
+
+test("Reconnect on a card with withdrawn access starts the sign-in for that mailbox", async ({ page }) => {
+  const mailboxId = "6f1d0b3c-8a2e-4f7a-9d55-3b1c2a4e5f60";
+  const bodies: unknown[] = [];
+  await page.route("**/api/mailboxes", async (route) => {
+    if (route.request().method() !== "GET") {
+      await route.continue();
+      return;
+    }
+    const scope = { state: "on", reason: "all_mailboxes" };
+    await route.fulfill({
+      json: [
+        {
+          id: mailboxId,
+          address: "anna@example.com",
+          status: "auth_error",
+          statusChangedAt: "2026-11-20T08:00:00.000Z",
+          createdAt: "2026-11-20T08:00:00.000Z",
+          lastSyncedAt: "2026-11-20T08:00:00.000Z",
+          mode: "shadow",
+          movesSupported: true,
+          secretKind: "password",
+          authMethod: "oauth",
+          oauthProvider: "microsoft",
+          authReason: "oauth_revoked",
+          scopes: { triage: scope, actions: scope, send: scope },
+        },
+      ],
+    });
+  });
+  await page.route("**/api/mailboxes/oauth/microsoft/start", async (route) => {
+    bodies.push(route.request().postDataJSON());
+    await route.fulfill({ json: { url: "https://login.microsoftonline.com/authorize?state=x" } });
+  });
+  await page.route(AUTHORIZE, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<!doctype html><title>provider</title><p>provider</p>",
+    })
+  );
+
+  await page.goto("/mailboxes");
+  const card = page.locator(`${CARD}[data-state="access_revoked"]`);
+  await expect(card.getByRole("button", { name: en.mb_change_password })).toHaveCount(0);
+  await expectNoA11yViolations(page);
+  await card.getByRole("button", { name: en.mb_reconnect }).click();
+  await page.waitForURL(/^https:\/\/login\.microsoftonline\.com\//);
+  expect(bodies).toEqual([{ mailboxId }]);
 });
