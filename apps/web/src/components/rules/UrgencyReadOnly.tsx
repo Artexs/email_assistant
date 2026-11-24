@@ -3,6 +3,8 @@ import type { SettingsWebView } from "@ea/core/web";
 import { t } from "../../i18n";
 import { vipCardId } from "../../lib/rules-view";
 import { isEnded } from "../../lib/urgency-form";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
 
 // VIP people are sender rules of kind `vip`: the card keeps no second list.
 export function VipLine() {
@@ -30,46 +32,48 @@ export function UrgencyReadOnly({ settings, timeZone, now }: ReadOnlyProps) {
   return (
     <div className="flex flex-col gap-6">
       <section aria-labelledby="urg-topics-title" className="flex flex-col gap-2">
-        <h3 id="urg-topics-title" className="font-medium">
+        <h3 id="urg-topics-title" className="text-base font-bold">
           {t("urg_topics_title")}
         </h3>
         {topics.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("urg_topics_empty")}</p>
         ) : (
-          <ul className="flex flex-col gap-1">
+          <RowList>
             {topics.map((topic, index) => (
-              <li key={index}>
-                <span className="font-medium">{topic.label}</span>
-                {topic.keywords.length > 0 && (
-                  <span className="text-sm text-muted-foreground"> · {topic.keywords.join(", ")}</span>
-                )}
-              </li>
+              <Row
+                key={index}
+                title={topic.label}
+                hint={topic.keywords.length > 0 ? topic.keywords.join(", ") : undefined}
+              />
             ))}
-          </ul>
+          </RowList>
         )}
       </section>
       <section aria-labelledby="urg-deadlines-title" className="flex flex-col gap-2">
-        <h3 id="urg-deadlines-title" className="font-medium">
+        <h3 id="urg-deadlines-title" className="text-base font-bold">
           {t("urg_deadlines_title")}
         </h3>
         {deadlines.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("urg_deadlines_empty")}</p>
         ) : (
-          <ul className="flex flex-col gap-1">
+          <RowList>
             {deadlines.map((deadline, index) => {
               const ended = isEnded(deadline.due, now, timeZone);
               return (
-                <li key={index} data-ended={ended ? "true" : undefined}>
-                  <span className={`font-medium ${ended ? "line-through" : ""}`}>{deadline.label}</span>
-                  <span className={`text-sm text-muted-foreground ${ended ? "line-through" : ""}`}>
-                    {" "}
-                    · {deadline.due}
-                  </span>
-                  {ended && <span className="text-sm text-muted-foreground"> · {t("urg_ended")}</span>}
-                </li>
+                <div key={index} data-ended={ended ? "true" : undefined}>
+                  <Row
+                    title={deadline.label}
+                    hint={
+                      <>
+                        <span className={ended ? "line-through" : ""}>{deadline.due}</span>
+                        {ended && <span> · {t("urg_ended")}</span>}
+                      </>
+                    }
+                  />
+                </div>
               );
             })}
-          </ul>
+          </RowList>
         )}
       </section>
       <VipLine />

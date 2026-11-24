@@ -75,8 +75,10 @@ const ALLOWED: { file: string; match: string; reason: string }[] = [
   { file: "components/ui/sheet.tsx", match: "bg-black/50", reason: "the scrim behind a sheet" },
   { file: "components/settings/TotpQr.tsx", match: "bg-white", reason: "a QR code needs a light ground to scan" },
   { file: "components/settings/TotpQr.tsx", match: "#000", reason: "a QR code needs dark modules to scan" },
-  { file: "layouts/App.astro", match: "#000832", reason: "the theme-color of the browser bar" },
-  { file: "layouts/Public.astro", match: "#000832", reason: "the theme-color of the browser bar" },
+  { file: "layouts/App.astro", match: "#0a7568", reason: "the light theme-color of the browser bar" },
+  { file: "layouts/App.astro", match: "#0d1513", reason: "the dark theme-color of the browser bar" },
+  { file: "layouts/Public.astro", match: "#0a7568", reason: "the light theme-color of the browser bar" },
+  { file: "layouts/Public.astro", match: "#0d1513", reason: "the dark theme-color of the browser bar" },
 ];
 
 function isAllowed(file: string, hit: Hit): boolean {

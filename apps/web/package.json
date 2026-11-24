@@ -11,7 +11,8 @@
     "dev": "astro dev",
     "build": "astro build && bun scripts/build-sw.ts",
     "preview": "astro preview",
-    "typecheck": "astro check"
+    "typecheck": "astro check",
+    "icons": "bun scripts/build-icons.ts"
   },
   "dependencies": {
     "@astrojs/react": "7.1.9",
