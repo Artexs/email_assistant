@@ -66,7 +66,7 @@ describe("the page", () => {
 });
 
 describe("the worker bundle", () => {
-  test("it is one file with no import left, and it holds the push and the offline code", async () => {
+  test("it is one file with no import left, and it holds the push code, the offline code and the files of the build", async () => {
     const outdir = mkdtempSync(join(tmpdir(), "ea-sw-"));
     try {
       const result = await Bun.build({
@@ -76,12 +76,16 @@ describe("the worker bundle", () => {
         target: "browser",
         format: "esm",
         minify: true,
+        define: { __EA_SHELL__: JSON.stringify({ assets: ["/_astro/a.css"], version: "v2-00000000" }) },
       });
       expect(result.success).toBe(true);
       expect(result.outputs).toHaveLength(1);
       const code = readFileSync(join(outdir, "sw.js"), "utf8");
       expect(code).toContain("showNotification");
       expect(code).toContain("/offline.html");
+      expect(code).toContain("/_astro/a.css");
+      expect(code).toContain("ea-shell-");
+      expect(code).toContain("v2-00000000");
       expect(code).not.toMatch(/(^|[;}])import[\s{"']/);
       expect(code).not.toContain("node:");
     } finally {
