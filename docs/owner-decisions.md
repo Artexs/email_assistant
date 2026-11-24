@@ -866,3 +866,5 @@ Decisions that agents took for the owner with a default, so the work did not sto
 - 2026-11-24 · F168 plan · scope · No user docs page for approvals in this ticket (the page is behind a default-off flag; the docs rule forbids its strings). Undo: add the section when the flag goes on. · new
 - 2026-11-24 · F170 plan · user-visible · In a shadow week the Stats ring shows the would-handle share, labelled "Would handle (shadow)". Undo: show the handled share (0 % in shadow weeks). · new
 - 2026-11-24 · F170 plan · user-visible · The onboarding mode step keeps today's text rule: an owner reads "open", a member reads the assistant text; only an owner who can write gets buttons. Undo: change in F170 stage 06. · new
+- 2026-11-24 · F169 plan · user-visible · Old delegation addresses `?filter=open|overdue|answered` change nothing; `?filter=closed` opens the closed list. Undo: map the old filters to columns in F169 stage 03. · new
+- 2026-11-24 · F169 plan · user-visible · A sender rule for all mailboxes no longer shows an "All mailboxes" line. Undo: keep the line in F169 stage 08. · new

@@ -37,7 +37,7 @@ Stages come from the plan, by the programme page § Rules for width.
 ## Sequenced
 
 - Plan after: F166 (its `interfaces.md`).
-- Build after: none. Gate: the stages need F166 stages 03 (tokens), 06 and 10 (patterns) and 09 (page head contract). May build next to F167, F168 and F170.
+- Build after: none. Gate: the stages need F166 stages 03 (tokens), 04 (Button `soft` and `destructive-soft`, 48 px fields), 06 and 10 (patterns), 08 (pattern page and its spec) and 09 (page head contract). May build next to F167, F168 and F170.
 
 ## Notes
 

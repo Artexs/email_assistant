@@ -1,6 +1,6 @@
 # F169 stage 09 — The urgency card in the Pebble look
 
-Part of [`../plan.md`](../plan.md). Needs F166 stage 03 (tokens) and stage 10 (`SectionCard`, `RowList`, `Row`). May run next to every other stage of this ticket: it owns only the urgency files.
+Part of [`../plan.md`](../plan.md). Needs F166 stage 03 (tokens), stage 04 (Button `soft`, `destructive-soft`, 48 px fields) and stage 10 (`SectionCard`, `RowList`, `Row`). May run next to every other stage of this ticket: it owns only the urgency files.
 
 The mockup has no urgency card (PB-3): use the `.sec` cards and `.line` rows of screen `settings`.
 
