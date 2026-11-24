@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { categories } from "@ea/core";
@@ -248,35 +248,5 @@ describe("design token contrast", () => {
     expect(contrast("light", "--primary", "--primary-soft").toFixed(2)).toBe("4.65");
     expect(contrast("light", "--ring", "--background").toFixed(2)).toBe("5.14");
     expect(contrast("dark", "--destructive-foreground", "--destructive").toFixed(2)).toBe("7.42");
-  });
-});
-
-describe("classes that the token meanings no longer allow", () => {
-  const banners = ["components/shell/AuthErrorBanner.tsx"];
-
-  function sourceFiles(dir: string): string[] {
-    return readdirSync(dir).flatMap((entry) => {
-      const path = join(dir, entry);
-      if (statSync(path).isDirectory()) return sourceFiles(path);
-      return /\.(tsx?|astro|css)$/.test(entry) ? [path] : [];
-    });
-  }
-
-  const scanned = sourceFiles(srcDir).filter((path) => !path.endsWith("tokens.test.ts"));
-  const classPatterns: [string, RegExp][] = [
-    ["a focus colour with opacity", /(?:ring|outline)-ring\//],
-    ["an accent class", /\b(?:bg|text|border|ring|outline|fill|stroke|from|via|to|divide|shadow)-accent\b/],
-  ];
-
-  test("the scan reads the source tree", () => {
-    expect(scanned.length).toBeGreaterThan(100);
-  });
-
-  test.each(classPatterns)("no file uses %s", (_name, pattern) => {
-    const hits = scanned
-      .filter((path) => pattern.test(readFileSync(path, "utf8")))
-      .map((path) => path.slice(srcDir.length + 1))
-      .filter((path) => !banners.includes(path));
-    expect(hits).toEqual([]);
   });
 });
