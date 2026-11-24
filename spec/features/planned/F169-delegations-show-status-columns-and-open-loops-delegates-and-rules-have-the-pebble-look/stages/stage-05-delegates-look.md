@@ -1,6 +1,6 @@
 # F169 stage 05 — The Delegates page in the Pebble look
 
-Part of [`../plan.md`](../plan.md). Needs stage 02: the flag check of `DelegationTabs`. Needs F166 stage 03 (tokens), stage 06 (`InitialsAvatar`), stage 09 (`AppShell` `lead` and `action`), stage 10 (`SectionCard`, `EmptyState`). May run next to 01, 03, 04 and 06–10. It reads `DelegationTabs` and does not edit it (stage 02 owns it).
+Part of [`../plan.md`](../plan.md). Needs stage 02: `DelegationSwitch`. Needs F166 stage 03 (tokens), stage 06 (`InitialsAvatar`), stage 09 (`AppShell` `lead` and `action`), stage 10 (`SectionCard`, `EmptyState`). May run next to 01, 03, 04 and 06–10. It reads `DelegationTabs.tsx` and does not edit it (stage 02 owns it).
 
 Mockup: the delegate strip and the "Add a delegate" card of screen `delegations`, without the counts (PB-7).
 
@@ -8,7 +8,7 @@ Mockup: the delegate strip and the "Add a delegate" card of screen `delegations`
 
 - **Files:** `islands/DelegatesPage.tsx`, `components/delegation/DelegateList.tsx`.
 - **Decisions:** D13, D15.
-  - Page head: lead `dlg_lead` "The people you can hand work to." / "Osoby, którym możesz przekazać pracę."; the action is `<DelegationTabs current="delegates" />`. The island no longer renders `DelegationTabs` in its body.
+  - Page head: lead `dlg_lead` "The people you can hand work to." / "Osoby, którym możesz przekazać pracę."; the action is `<DelegationSwitch current="delegates" />` (it hides itself with the flag off, as the body tabs do today). The island no longer renders `DelegationTabs` in its body.
   - The list stays one `ul` named `dlg_list_label`, active delegates first as today. Each `li` is a card: `InitialsAvatar` of the name, the name, the address (wraps, never widens the page), the tags as `Badge` `outline` in a list named `dlg_tags` (or `dlg_tags_none`), the state badge (`dlg_state_active` / `dlg_state_off`), then Edit and the switch. The card grid uses `auto-fit` columns of at least 16 rem from `lg`, one column below (DB-6).
   - Ids and names stay: `editButtonId`, `switchId`, `dlg_edit_for`, `dlg_switch_label`; the member sees a disabled switch and no Edit.
   - An empty list (owner or member) is `EmptyState` (icon `Users`, title `dlg_empty`, text `dlg_empty_text` "Add a delegate with the form above." / "Dodaj osobę formularzem powyżej." for an owner who can write; no text for others). The flag-off text `dlg_off` stays a plain card line.

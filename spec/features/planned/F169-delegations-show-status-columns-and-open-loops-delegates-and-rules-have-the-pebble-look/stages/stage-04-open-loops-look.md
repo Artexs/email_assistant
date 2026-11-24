@@ -1,6 +1,6 @@
 # F169 stage 04 — The Open loops board in the Pebble look
 
-Part of [`../plan.md`](../plan.md). Needs stage 02: `PillNav.tsx`. Needs stage 03: the Delegated-tab wiring in `OpenLoops.tsx`. Needs F166 stage 03 (tokens), stage 06 (`InitialsAvatar`), stage 10 (`EmptyState`). May run next to 05–10.
+Part of [`../plan.md`](../plan.md). Needs stage 02: `PillNav.tsx`. Needs stage 03: the Delegated-tab wiring in `OpenLoops.tsx`. Needs F166 stage 03 (tokens), stage 04 (Button `soft`), stage 06 (`InitialsAvatar`), stage 10 (`EmptyState`). May run next to 05–10.
 
 The mockup has no Open loops screen (PB-3): use the cards of the `delegations` screen and the tabs of the `activity` screen.
 

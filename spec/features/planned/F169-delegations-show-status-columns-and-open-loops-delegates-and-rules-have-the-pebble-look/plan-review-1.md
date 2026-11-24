@@ -26,3 +26,18 @@ Stages 01, 04, 05, 09 and 10 have no blocking finding.
 - Review job runs no test suite, lint or typecheck: followed. I only read files and ran `git status`, `git log`, `ls`, `grep` and `sed`.
 - Never delete `node_modules/.cache/`: followed. I did not touch it.
 - Never commit with `--no-verify`: followed. I made no commit.
+
+## Response (planner, 2026-11-24)
+
+The reviewer's full list is the last message of job `2026-11-23-f169-cold-review-of-the-plan-6e711632` (its `log`). Each claim was checked at HEAD `81bb583d3`.
+
+1. **Fixed, one part rejected.** True: `DelegationTabs.tsx` has no flag check and no `useMe`; its tests are in `lib/delegates-components.test.tsx` and render it bare. Rejected: "with the flag off the pages lose their tabs". Today `Delegations.tsx` and `DelegatesPage.tsx` return `dlg_off` before the tabs (`delegations.spec.ts` T16, `delegates.spec.ts` T8 assert no tabs). Stage 02 now keeps `DelegationTabs` pure and adds `DelegationSwitch` (reads `useMe`, renders the tabs only with `delegation_pages`) as the page head action. Stage 05 uses it. No user-visible change.
+2. **Fixed.** True: `rules.spec.ts` asserts `rule_kind_vip` and `rules_all_mailboxes` on the comboboxes and `rules_all_mailboxes` on the list row, and the delete uses the rule the add step makes. Stage 06 now lists which assertion goes to which file, moves the row's scope assertion to `rules-lists.spec.ts`, and creates the rule there through `POST /api/rules` (`cleanUpOrg` deletes every rule after each test). Stage 07 changes the two combobox texts; stage 08 changes the scope assertion. The lost "All mailboxes" line is a user-visible default: `questions.md` Q4.
+3. **Fixed.** Stages 02 and 06 and the plan table name F166 stage 08. The plan's input line now says the "03, 06, 09, 10 only" rule holds for the ticket, not for each stage.
+4. **Fixed.** True: `lib/loops-view.ts` reads `dgn_filter_open` and `dgn_filter_closed`. Stage 03 keeps both.
+5. **Fixed.** True: `sender-rules.mdx` has no text on the cards and one sentence on remove. Stage 06 renames "Steps" to "Add a rule" and moves the remove sentence to "Remove a rule"; no "Cards" section (D19 changed). Stage 07 counts `apps/docs` `UiText` reads before it deletes a key; `rules_all_mailboxes` goes with whichever of stages 07 and 08 lands second.
+6. **Fixed.** F166 `interfaces.md` says only "div props". Stage 08 now has the stage 10 fallback (a focusable heading).
+7. **Fixed.** Q1 is `[important: user-visible]`; Q4 (scope line) and Q5 (old `?filter=` addresses, D7) are new `[important: user-visible]` items. The flag-off tabs need no question (see 1).
+8. **Fixed.** Q1 cites stage 08, Q2 stage 07.
+9. **Fixed.** `seed-delegations.ts` turns on `delegation_pages`, `approvals_page`, `stats_page`, not `open_loops`. Stage 03 test 2 says so.
+10. **Fixed.** Stage 01 adds the pure `reloadPlan(feeds, closedOpen)` and test 10 (page counts kept, `closed` only while open).
