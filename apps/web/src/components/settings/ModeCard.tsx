@@ -7,6 +7,7 @@ import { ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { replySwitchBlocked } from "../../lib/reply-style";
 import { patchSettings } from "../../lib/settings-api";
+import { useModeChange } from "../../lib/use-mode-change";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
@@ -29,7 +30,6 @@ const modeTexts = {
 
 export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: ModeCardProps) {
   const [assistOpen, setAssistOpen] = useState(false);
-  const [modePending, setModePending] = useState(false);
   const [pendingSwitches, setPendingSwitches] = useState<ReadonlySet<string>>(new Set());
 
   const fail = (error: unknown) => {
@@ -37,18 +37,13 @@ export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: M
     if (error instanceof ApiError && error.status === 404) onMissing?.();
   };
 
-  const changeMode = async (mode: "shadow" | "assist", keepSwitches: boolean) => {
-    setModePending(true);
-    try {
-      const change = await patchSettings(mailbox.id, "/mode", { mode, keepSwitches });
+  const { pending: modePending, change: changeMode } = useModeChange(mailbox.id, {
+    onChanged: (change, mode) => {
       setAssistOpen(false);
       onChanged(change, mode === "assist" ? "mode_assist_toast" : "mode_shadow_toast");
-    } catch (error) {
-      fail(error);
-    } finally {
-      setModePending(false);
-    }
-  };
+    },
+    onFail: fail,
+  });
 
   const changeSwitch = async (name: (typeof toolSwitchNames)[number] | "reply_drafts", value: boolean) => {
     setPendingSwitches((prev) => new Set(prev).add(name));

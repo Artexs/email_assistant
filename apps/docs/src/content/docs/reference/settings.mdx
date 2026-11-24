@@ -9,8 +9,12 @@ capabilities:
 
 import UiText from "../../../components/UiText.astro";
 
-The page **<UiText k="nav_settings" />** has two parts. The first part belongs to one mailbox. Choose the mailbox at the top.
-The second part is the section **<UiText k="set_section_general" />**.
+The page **<UiText k="nav_settings" />** has four sections. A row of links under the page title jumps to each one. On a wide screen the links stay in a column at the left.
+
+- **<UiText k="set_group_mailbox" />**: the mailbox choice and the cards of that mailbox. Choose the mailbox at the top.
+- **<UiText k="set_group_notices" />**: your digest times, your notice settings and the phone notices.
+- **<UiText k="set_group_organization" />**: the time zone and the Telegram lock.
+- **<UiText k="set_group_account" />**: your language, password, two-factor sign-in and sessions.
 
 Only an owner can change the settings of a mailbox, the time zone and the signature. Other members see them and cannot change them.
 Each member changes their own digest times and their own account settings.
