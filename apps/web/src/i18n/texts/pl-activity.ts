@@ -86,6 +86,7 @@ export const plActivity = {
   nav_operator: "Operator",
   op_not_found: "Nie znaleziono.",
   op_load_error: "Nie udało się wczytać danych operatora.",
+  op_lead: "Organizacje, plany i powiadomienia.",
   op_reload: "Odśwież",
   op_orgs_title: "Organizacje",
   op_orgs_empty: "Brak organizacji.",
