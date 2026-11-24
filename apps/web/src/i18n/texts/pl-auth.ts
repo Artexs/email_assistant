@@ -38,6 +38,8 @@ export const plAuth = {
   loading: "Wczytywanie",
   // login
   login_title: "Zaloguj się",
+  login_panel_title: "Asystent sortuje pocztę i przygotowuje szkice.",
+  login_panel_text: "Nic nie zostanie wysłane bez zatwierdzenia właściciela.",
   email_label: "Adres e-mail",
   password_label: "Hasło",
   sign_in: "Zaloguj się",
