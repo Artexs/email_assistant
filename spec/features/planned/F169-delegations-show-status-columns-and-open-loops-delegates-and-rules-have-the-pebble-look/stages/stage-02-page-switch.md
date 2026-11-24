@@ -26,7 +26,7 @@ Mockup: the `.tabsp` pill group in the page head of screen `delegations`.
 
 ## Tests
 
-1. `PillNav` render test: two items, the `current` one has `aria-current="page"`, the other none; a plain click calls `onSelect` with the key and prevents the default; a ctrl-click does not call it.
+1. `PillNav` render test (`renderToStaticMarkup`, as every web unit test; no DOM library and no `bun.lock` change): two items, the `current` one has `aria-current="page"`, the other none. A `test.each` of `isPlainClick` on plain event objects: a left click with no modifier is `true`; ctrl, meta, shift, alt or `button: 1` is `false`.
 2. `lib/delegates-components.test.tsx`: the two `DelegationTabs` cases pass unchanged. New: `DelegationSwitch` inside a `MeContext.Provider` (as `lib/notify-cards.test.tsx` does) with `features: []` renders an empty string; with `["delegation_pages"]`, a `nav` named `dlg_tabs_label` with two links.
 3. `delegations.spec.ts`: the header case finds the `nav` `dlg_tabs_label` with `aria-current` on Delegations and `href="/delegates"` on Delegates; it now sits in the page head (no locator change expected).
 4. `open-loops.spec.ts`: the link `dlg_tab_delegates` still shows with both flags on. `delegations.spec.ts` T16 and `delegates.spec.ts` T8 (flag off, no tabs) pass unchanged.

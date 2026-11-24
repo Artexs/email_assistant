@@ -6,17 +6,17 @@ Shared decisions, § Rules for width: [`docs/product/pebble-ui/README.md`](../..
 
 ## Input
 
-Owner's words: the programme page. This job's task (2026-11-23): "Its stages need F166 stages 03, 06, 09 and 10 only, so the four Pebble tickets build next to each other." Stages 02 and 06 also need F166 08 (Proof B tools); the rest get it through F166 06 or 10.
+Owner's words: the programme page. This job's task (2026-11-23): "Its stages need F166 stages 03, 06, 09 and 10 only, so the four Pebble tickets build next to each other." Per stage, more: 02 and 06 need F166 08 (Proof B tools); 03, 04, 07, 09, 10 need F166 04 (Button `soft`, `destructive-soft`, 48 px fields).
 
 ### Decisions
 
 - **D1 Columns from today's filters.** Overdue = `filter=overdue`; Waiting for approval (`drafted`) and Sent = `filter=open`, split by status on the client; Answered = `filter=answered`; the closed list = `filter=closed`. Rejected: a new API filter per status (DB-1; ticket out of scope).
 - **D2 One record per status** (`lib/delegation-columns.ts`, DB-8), tested against the core enum. Stage 01.
 - **D3 A row shows once,** in the group of its status; an id in two feeds goes to the first group in page order.
-- **D4 Paging.** Overdue, Answered and closed page on their own cursor. Drafted and Sent share the open cursor: "Show more" in either loads open pages until the clicked column gains a row or the cursor ends, at most 4 pages a click; the focus goes to its first new row, else to the status line (`dgn_col_no_more`). The 30 s reload keeps each feed's page count.
+- **D4 Paging.** Overdue, Answered and closed page on their own cursor. Drafted and Sent share the open cursor: "Show more" in either loads open pages until the clicked column gains a row or the cursor ends, at most 4 pages a click; focus to its first new row; at the cursor end to the status line (`dgn_col_no_more`); at the cap it stays on the button (`dgn_col_capped`). A column with 0 rows shows its empty line only when its feed ended. The 30 s reload keeps each feed's page count.
 - **D5 Column head:** icon, title, the loaded count, `N+` while more pages exist. No other number (PB-7; `questions.md` Q3).
 - **D6 Layout.** Below `lg` one stack: overdue, drafted, sent, answered, then the closed list. From `lg` an `auto-fit` grid of columns of at least 16 rem (two to four columns; no new breakpoint, DB-6). A column has an `h2` and a list named by it.
-- **D7 URL.** `?filter=` is read once at load: `closed` opens the closed list; other values change nothing (default: Q5). The page writes no URL (DB-1).
+- **D7 URL.** `?filter=` is read once at load: `closed` opens the closed list; other values change nothing (default: Q5). The page writes no URL. This is the columns change of the ticket (PB-5), not a DB-1 break: no address goes away.
 - **D8 Closed list** under the columns, behind an `aria-expanded` button; rows keep the status badge.
 - **D9 Focus after a reload.** A focused row that moved to another column keeps the focus on its new card. A row gone from every group gives `dgn_moved` and the focus on the status line, as today.
 - **D10 Errors.** A 404 from any feed shows `dlg_off`; another failure, a Retry in that feed's columns only.
@@ -32,12 +32,9 @@ Owner's words: the programme page. This job's task (2026-11-23): "Its stages nee
 - **D20 The demo.** Stage 03 changes only the locators of step 7 of `apps/web/e2e/demo/record.spec.ts`; it records nothing (F171 records).
 - **D21** A gap or a deviation is a question in the final message.
 
-## Facts checked (2026-11-23, at 8c9acfc1e)
+## Facts checked
 
-- Statuses `drafted, sent, answered, overdue, done, cancelled` (core `web/delegation.ts`, DB CHECK). Server map `open → drafted+sent`, `closed → done+cancelled` (`delegation/list.ts`); page size 50; the e2e seed has every status (`e2e-seed/args-delegations.ts`).
-- Only the web writes `/delegations?filter=`; server links use `?tab=`.
-- `MeProvider` sits inside `AppShell`, so an `action` node can call `useMe()`.
-- Rules remove today: `DELETE` at once, a toast, no Undo, no question. `POST /api/rules` answers 409 `rule_exists` and `rule_limit`; `RuleView.mailboxId` is nullable.
+At 8c9acfc1e in `scouts.md`; again at 81bb583d3 in § Response of both review files.
 
 ## Not verified
 
@@ -46,7 +43,7 @@ Owner's words: the programme page. This job's task (2026-11-23): "Its stages nee
 
 ## Done when
 
-The six acceptance items of [`ticket.md`](ticket.md) hold: item 1 by stage 01 tests 1–2; item 2 by stage 03 test 4; item 3 by stage 03 test 3; item 4 by stage 03 tests 2 and 5; item 5 by stage 07 tests 1 and 4; item 6 by stage 08 tests 4–5.
+The six acceptance items of [`ticket.md`](ticket.md) hold: item 1 by stage 01 tests 1–2; item 2 by stage 03 test 4; item 3 by stage 03 test 3; item 4 by stage 03 tests 2 and 5 and stage 04 tests 1–3; item 5 by stage 07 tests 1 and 4; item 6 by stage 08 tests 4–5.
 
 ## Rules for every stage
 
@@ -67,7 +64,7 @@ None. The owner sees the full contact sheet before the release (PB-12, F172).
 
 ## Review
 
-A review job before the land of stages 02–10. Opus where the stage adds Polish text (02, 03, 05, 06, 07, 08; board rule), Sonnet for 04, 09, 10. The task adds the picture check of F166 § Review. Stage 01 lands on its proof.
+A review job before the land of each stage. Opus where the stage adds Polish text (01, 02, 03, 05, 06, 07, 08; board rule), Sonnet for 04, 09, 10. The task adds the picture check of F166 § Review.
 
 ## Stages
 
@@ -75,14 +72,14 @@ A review job before the land of stages 02–10. Opus where the stage adds Polish
 | --- | --- | --- | --- |
 | 01 | [Columns model and feeds](stages/stage-01-columns-model.md) | F166 03 | 02, 05–10 |
 | 02 | [Page head and page switch](stages/stage-02-page-switch.md) | F166 03, 08, 09 | 01, 06–10 |
-| 03 | [Delegations as columns](stages/stage-03-delegation-columns.md) | 01, 02; F166 03, 10 | 05–10 |
-| 04 | [Open loops board look](stages/stage-04-open-loops-look.md) | 02, 03; F166 03, 06, 10 | 05–10 |
+| 03 | [Delegations as columns](stages/stage-03-delegation-columns.md) | 01, 02; F166 03, 04, 10 | 05–10 |
+| 04 | [Open loops board look](stages/stage-04-open-loops-look.md) | 02, 03; F166 03, 04, 06, 10 | 05–10 |
 | 05 | [Delegates look](stages/stage-05-delegates-look.md) | 02; F166 03, 06, 09, 10 | 01, 03, 04, 06–10 |
 | 06 | [Rules frame](stages/stage-06-rules-frame.md) | F166 03, 08, 09 | 01–05, 09, 10 |
-| 07 | [Rule sentence form](stages/stage-07-rule-sentence.md) | 06; F166 03, 10 | 01–05, 08–10 |
+| 07 | [Rule sentence form](stages/stage-07-rule-sentence.md) | 06; F166 03, 04, 10 | 01–05, 08–10 |
 | 08 | [Rule chips and Undo](stages/stage-08-rule-chips.md) | 06; F166 03, 10 | 01–05, 07, 09, 10 |
-| 09 | [Urgency card look](stages/stage-09-urgency-card.md) | F166 03, 10 | all |
-| 10 | [Suggestions and newsletters look](stages/stage-10-suggestion-cards.md) | F166 03, 10 | all |
+| 09 | [Urgency card look](stages/stage-09-urgency-card.md) | F166 03, 04, 10 | all |
+| 10 | [Suggestions and newsletters look](stages/stage-10-suggestion-cards.md) | F166 03, 04, 10 | all |
 
 No stage is `[risky]`.
 
@@ -92,13 +89,13 @@ As F166 § How to run (one job per stage, board worker flags, `--prepare 'bash s
 
 ## Planning progress
 
-Scouts: 4 (`scouts.md`). Stages 01–10 [written]. Words (`wc -w`, after review 1): plan 1,497; stages 415–700.
+Scouts: 4 (`scouts.md`). Stages 01–10 [written]. Words (`wc -w`, after review 2): plan 1,489; stages 423–700.
 
 ## Cold review
 
-Sonnet (no `[risky]` stage). Fix before build (3 blocking, 7 minor); answers: `plan-review-1.md` § Response.
+Sonnet (no `[risky]` stage). Review 1: 3 blocking, 7 minor. Review 2: 2 blocking, 16 notes. Answers: § Response of `plan-review-1.md`, `plan-review-2.md`.
 
 ## Log
 
 - 2026-11-24: plan written.
-- 2026-11-24: review 1 fixed (`plan-review-1.md` § Response).
+- 2026-11-24: reviews 1 and 2 fixed.

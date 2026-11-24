@@ -1,6 +1,6 @@
 # F169 stage 10 — The suggestions and newsletters cards in the Pebble look
 
-Part of [`../plan.md`](../plan.md). Needs F166 stage 03 (tokens) and stage 10 (`SectionCard`, `RowList`, `Row`, `EmptyState`). May run next to every other stage of this ticket: it owns only these two cards.
+Part of [`../plan.md`](../plan.md). Needs F166 stage 03 (tokens), stage 04 (Button `soft`) and stage 10 (`SectionCard`, `RowList`, `Row`, `EmptyState`). May run next to every other stage of this ticket: it owns only these two cards.
 
 The mockup has neither card (PB-3): use the `.sec` cards and `.line` rows of screen `settings`.
 

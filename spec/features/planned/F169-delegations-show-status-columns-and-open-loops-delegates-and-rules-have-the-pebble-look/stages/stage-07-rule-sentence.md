@@ -1,6 +1,6 @@
 # F169 stage 07 — The sentence form for a sender rule
 
-Part of [`../plan.md`](../plan.md). Needs stage 06: `rules-form.spec.ts` and the "Add a rule" section of `sender-rules.mdx`. Needs F166 stage 03 (tokens) and stage 10 (`SectionCard`). May run next to 01–05 and 08–10.
+Part of [`../plan.md`](../plan.md). Needs stage 06: `rules-form.spec.ts`, the "Add a rule" section of `sender-rules.mdx`. Needs F166 stage 03 (tokens), stage 04 (48 px `Input` and `SelectTrigger`) and stage 10 (`SectionCard`). May run next to 01–05 and 08–10.
 
 Mockup: the `.builder` card of screen `rules`. PB-5: the same API call, checks and errors as today.
 
@@ -43,7 +43,7 @@ Mockup: the `.builder` card of screen `rules`. PB-5: the same API call, checks a
   - Delete a key only when nothing reads it after `check:job` merged master: count `apps/web` and `apps/docs` (the docs page reads keys through `UiText`, for example `rules_scope_label`). `rules_all_mailboxes` goes in whichever of stages 07 and 08 lands second.
 - **Test:**
   4. A unit render test: in `en` the three controls follow in the DOM order pattern, kind, scope; in `pl`, pattern, scope, kind; each control has its accessible name from the label key.
-  5. `rules-form.spec.ts` keeps its steps and locators (the labels, `data-card="add-rule"`, `role="alert"`, the toast). Only the two combobox texts change: `rules_sentence_kind_vip`, `rules_sentence_scope_all` (stage 06 step 2).
+  5. `rules-form.spec.ts` keeps its steps and locators (the labels, `data-card="add-rule"`, `role="alert"`, the toast). Only the two combobox texts change: `rules_sentence_kind_vip`, `rules_sentence_scope_all` (stage 06).
   6. The same spec, `test.use({ locale: "pl-PL" })`: add a VIP rule for `pl-${random}@example.com`; the toast shows `pl.rule_added_toast`; the a11y scan passes.
   7. Mobile project, en and pl: `scrollWidth <= innerWidth`.
   8. `suggestions.spec.ts` still finds the pattern field by `rules_pattern_label` and its half-typed text survives an Accept.
