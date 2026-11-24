@@ -65,17 +65,19 @@ export interface StartDeps {
 
 const browserDeps = (): StartDeps => ({ api: realApi, assign: (url) => location.assign(url) });
 
-// A tap on a sign-in button: `POST /api/mailboxes/oauth/:provider/start` with the body `{}`, then the browser goes to the
-// `{ url }` of the answer. On `{ ok: true }` the page is leaving. On a failure nothing was assigned.
+// A tap on a sign-in button: `POST /api/mailboxes/oauth/:provider/start` with the body `{}` (a new connect) or `{ mailboxId }`
+// (a Reconnect of that mailbox), then the browser goes to the `{ url }` of the answer. On `{ ok: true }` the page is leaving.
+// On a failure nothing was assigned.
 export async function startOAuth(
   provider: MailOAuthProviderKey,
-  deps: StartDeps = browserDeps()
+  deps: StartDeps = browserDeps(),
+  mailboxId?: string
 ): Promise<StartResult> {
   try {
     const { url } = await deps.api(`/api/mailboxes/oauth/${provider}/start`, mailOAuthStartResultSchema, {
       method: "POST",
       // The route parses JSON: an empty body is a 400 `invalid_json`.
-      body: {},
+      body: mailboxId === undefined ? {} : { mailboxId },
     });
     if (!isBrowsableUrl(url)) return { ok: false, key: "error_generic" };
     deps.assign(url);
