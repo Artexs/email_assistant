@@ -281,6 +281,7 @@ export const enApprovals = {
   title_mailboxes: "Mailboxes",
   title_settings: "Settings",
   title_rules: "Rules",
+  rules_lead: "Sender rules run before the AI.",
   title_login: "Sign in",
   title_setup: "Set your password",
   title_forgot: "Reset password",
