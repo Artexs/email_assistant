@@ -104,7 +104,7 @@ Stages 01–05 [written]. Scouts: 0 (the job task forbids `limen wait` and polli
 
 ## Cold review
 
-Model: Opus (the plan adds user-facing Polish text). Started detached on this branch; not awaited (the job task forbids `limen wait`). The coordinator files its message as `plan-review-1.md` and continues this job for the fixes.
+Model: Opus (the plan adds user-facing Polish text). Job `2026-11-24-f171-plan-review-77e8bf26`, started detached on this branch at `ad9e17294`; not awaited (the job task forbids `limen wait`). The coordinator files its message as `plan-review-1.md` and continues this job for the fixes.
 
 ## Log
 
