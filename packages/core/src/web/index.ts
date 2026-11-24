@@ -51,6 +51,6 @@ export {
   urgencyProfileSchema,
   type UrgencyProfile,
 } from "../triage/urgency-profile";
-export { formatClock, localDateTime } from "../digest/local-time";
+export { formatClock, formatDay, localDateTime } from "../digest/local-time";
 export { bareAddress, ownAddressKey } from "../triage/payloads";
 export { z } from "./zod";
