@@ -29,11 +29,11 @@ Everything outside the panel shows the same product: the docs site has the teal 
 
 ## Slices
 
-Stages come from the plan.
+Five stages, one worker job each: [`plan.md`](plan.md) § Stages and § How to run. The docs accent and font stage can start now; the mark stage waits for the panel's brand mark; the text check, the shots and the video wait for the page stages they name. No owner checkpoint.
 
 ## Sequenced
 
-- Plan after: F168, F169, F170 (their plans name the changed texts and flows).
+- Plan after: F166 (tokens, fonts, the unused-key test), F167 (the brand mark), F168, F169, F170 (their plans name the changed texts and flows).
 - Build after: none. Gate: the docs site theme stage needs only F166 stage 03 (tokens, font) and builds next to the page tickets; the user docs stage of a page needs that page's stages; the shots and the video need F167, F168, F169 and F170 in `done/`.
 
 ## Notes
