@@ -1,10 +1,11 @@
 import { docsUrl } from "@ea/core/web";
-import { X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { useState } from "react";
 
 import { getLocale, t, useLocale } from "../../i18n";
 import { readSeen, whatsNew, writeSeen, type CardRelease } from "../../lib/whats-new";
 import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 
 type Storage = Pick<globalThis.Storage, "getItem" | "setItem">;
 
@@ -65,22 +66,25 @@ export function WhatsNewCard({
     setCard(null);
   };
   return (
-    <section aria-labelledby="whats-new-title" className="mx-4 mt-4 rounded-lg border bg-card p-4 text-sm">
-      <div className="flex items-start justify-between gap-2">
-        <h2 id="whats-new-title" className="font-semibold">
+    <Card role="region" aria-labelledby="whats-new-title" className="gap-0 p-4 text-sm shadow-card">
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary-soft text-primary">
+          <Sparkles aria-hidden="true" className="size-5" />
+        </span>
+        <h2 id="whats-new-title" className="min-w-0 flex-1 pt-2 text-base font-semibold">
           {t("whats_new_title")}
         </h2>
         <Button
           variant="ghost"
-          size="icon"
-          className="-mt-2 -mr-2"
+          size="icon-sm"
+          className="-mt-1 -mr-1"
           aria-label={t("whats_new_dismiss")}
           onClick={onDismiss}
         >
           <X aria-hidden="true" />
         </Button>
       </div>
-      <ul className="mt-1 list-disc space-y-1 pl-5">
+      <ul className="mt-2 list-disc space-y-1 pl-5">
         {card.show.flatMap((release) =>
           release.forUsers.map((item) => <li key={`${release.version}:${item.en}`}>{item[locale]}</li>)
         )}
@@ -89,11 +93,11 @@ export function WhatsNewCard({
         href={docsUrl("/changelog/", "en")}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 inline-block font-medium underline"
+        className="mt-2 inline-block font-bold text-primary underline"
       >
         {t("whats_new_all")}
       </a>
-    </section>
+    </Card>
   );
 }
 
