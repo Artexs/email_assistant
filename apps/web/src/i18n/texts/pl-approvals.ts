@@ -3,7 +3,13 @@ import type { TextKey } from "../en";
 export const plApprovals = {
   // approvals page
   appr_off: "Ta strona jest wyłączona w Twojej organizacji.",
-  appr_empty: "Nic nie czeka na Twoje zatwierdzenie.",
+  appr_none: "Nic na Ciebie nie czeka",
+  appr_empty_text: "Nowy szkic pojawi się tutaj, gdy asystent przygotuje coś do sprawdzenia.",
+  appr_empty_action: "Zobacz aktywność",
+  appr_lead_cap: "{n} lub więcej szkiców czeka na Ciebie",
+  appr_up_next: "Następne",
+  appr_held_heading: "Zatwierdzone, jeszcze niewysłane",
+  appr_about: "O tym szkicu",
   appr_list_label: "Szkice czekające na zatwierdzenie",
   appr_detail_label: "Szczegóły szkicu",
   appr_load_error: "Nie udało się wczytać szkiców.",

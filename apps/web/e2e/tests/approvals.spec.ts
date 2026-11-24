@@ -86,7 +86,8 @@ test("T5: the page of a send shows the recipient, the subject, the body, the quo
   await expect(detail).toContainText(E2E_APPROVALS.waiting.subject);
   await expect(detail.getByRole("heading", { level: 3, name: en.appr_draft })).toBeVisible();
   await expect(detail).toContainText(E2E_APPROVALS.waiting.task);
-  await expect(detail.getByRole("heading", { level: 3, name: en.appr_quote })).toBeVisible();
+  // The quote is a closed disclosure; its text is in the page.
+  await expect(detail.locator("summary", { hasText: en.appr_quote })).toBeVisible();
   await expect(detail).toContainText(E2E_APPROVALS.waiting.body);
   await expect(detail).toContainText(en.appr_external);
   await expect(detail).toContainText(en.appr_send_note);
