@@ -39,8 +39,12 @@ const RULES: Rule[] = [
   },
 ];
 
-// The warm box and the warning banner are the only files that read the accent tokens.
-const ACCENT_FILES = ["components/patterns/FactBox.tsx", "components/shell/AuthErrorBanner.tsx"];
+// The warm box, the warning banner and the warm dot of the empty-state picture are the only files that read the accent tokens.
+const ACCENT_FILES = [
+  "components/patterns/FactBox.tsx",
+  "components/patterns/EmptyState.tsx",
+  "components/shell/AuthErrorBanner.tsx",
+];
 
 interface Hit {
   line: number;
@@ -71,7 +75,6 @@ const ALLOWED: { file: string; match: string; reason: string }[] = [
   { file: "components/ui/sheet.tsx", match: "bg-black/50", reason: "the scrim behind a sheet" },
   { file: "components/settings/TotpQr.tsx", match: "bg-white", reason: "a QR code needs a light ground to scan" },
   { file: "components/settings/TotpQr.tsx", match: "#000", reason: "a QR code needs dark modules to scan" },
-  { file: "components/ui/sonner.tsx", match: "style=", reason: "maps the toast variables to tokens" },
   { file: "layouts/App.astro", match: "#000832", reason: "the theme-color of the browser bar" },
   { file: "layouts/Public.astro", match: "#000832", reason: "the theme-color of the browser bar" },
 ];
