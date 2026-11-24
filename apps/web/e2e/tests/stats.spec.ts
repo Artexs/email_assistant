@@ -18,7 +18,28 @@ test("the Stats page loads its table and has no axe violation", async ({ context
   await page.goto("/stats");
   await expect(page.getByRole("heading", { level: 1, name: en.title_stats })).toBeVisible();
   await expect(page.getByText(en.stats_note)).toBeVisible();
+  await expect(page.getByText(en.stats_lead)).toBeVisible();
   await expect(page.getByRole("table")).toBeVisible();
+  // The head: the ring with its name and the three tiles of the newest week.
+  await expect(page.getByRole("img", { name: /^(Handled for you|Would handle \(shadow\))$/ })).toBeVisible();
+  await expect(page.locator('[data-slot="stat-tile"]')).toHaveCount(3);
   await expectNoA11yViolations(page);
   expect(errors).toEqual([]);
+});
+
+test("the Stats page shows an empty state and no ring when no week is finished", async ({
+  context,
+  page,
+}, testInfo) => {
+  const address = testInfo.project.name === "mobile" ? "198.51.100.8" : "198.51.100.9";
+  await context.setExtraHTTPHeaders({ "x-forwarded-for": address });
+  await signInAs(page, readSeed().statsOwner);
+  await page.route("**/api/stats?*", (route) => route.fulfill({ json: { weeks: [] } }));
+
+  await page.goto("/stats");
+  await expect(page.getByRole("heading", { level: 2, name: en.stats_empty })).toBeVisible();
+  await expect(page.getByRole("img", { name: en.stats_m4 })).toHaveCount(0);
+  await expect(page.locator('[data-slot="stat-tile"]')).toHaveCount(0);
+  await expect(page.getByRole("table")).toHaveCount(0);
+  await expectNoA11yViolations(page);
 });
