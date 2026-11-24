@@ -1,6 +1,6 @@
 # F170 stage 02 — Settings: the mailbox cards
 
-Needs stage 01: `useModeChange` in `ModeCard.tsx` and the mailbox group of `SettingsPage.tsx`. Needs F166 stage 06: `CategoryPill`, `categoryLook`. Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 03, 04, 05, 06, 07, 08, 09, 10.
+Needs F166 stage 02: `ui:sheet`, the a11y `schemes` option. Needs F166 stage 04: `Button` `soft` and `destructive-soft`, 48 px fields. Needs F166 stage 05: `Dialog`, `Table`, `Skeleton`. Needs F166 stage 08: `web:build:dev`, `patterns.spec.ts` (the Proof). Needs stage 01: `useModeChange` (`apps/web/src/lib/use-mode-change.ts`, used by `ModeCard.tsx`) and the mailbox group of `SettingsPage.tsx`. Needs F166 stage 06: `CategoryPill`, `categoryLook`. Needs F166 stage 10: `SectionCard`, `RowList`, `Row`, `FactBox`. May run next to 03, 04, 05, 06, 07, 08, 09, 10.
 
 Part of [`../plan.md`](../plan.md). Decisions: P4, D1, D4, D5.
 
@@ -18,8 +18,9 @@ Owns: `ModeCard.tsx` (look), `AssistDialog.tsx`, `CategoriesCard.tsx`, `SetAnywa
   - `CategoriesCard` (`data-card="categories"`): one `Row` per category with a `CategoryPill` as `leading` (DB-8: no emoji), the switch at the end, the three evidence lines (Proof, Your mail, Paused) as the `hint`. "Set anyway" and its dialog (`SetAnywayDialog`) do not change their flow; the dialog lists the blocks as a list.
   - `SyncFoldersCard` (`folders`), `SentMailCard` (`sent`), `LoopSettingsCard` (`loops`): `SectionCard` + `Row`s; every control keeps its `id` and its `aria-describedby`. The "paused" state of the Sent card and the "turn on Track my sent mail" line are a `FactBox`.
   - Icons: categories `Filter`, folders `FolderSync`, sent `Send`, loops `Repeat`.
+- **Shared text:** F168 stage 07 changes the value of `cat_help` (en and pl); this stage keeps that key and its value.
 - **Edge cases:** a member sees every control disabled, as today; a suspended organization the same (`canWrite`). The Sent card shows only on today's condition (`sentSync !== null`); the loops card only while `toolSwitches.auto_follow_up` is in the answer.
-- **Test:** (3) render test: `CategoriesCard` renders one `CategoryPill` per category of the settings view and no emoji character (a regex over the text). (4) e2e `trust-card.spec.ts`: the evidence lines and "Set anyway" work as before and the a11y scan passes. (5) e2e `loops-panel.spec.ts`: the loops card controls are disabled while sent tracking is off.
+- **Test:** (3) render test: `CategoriesCard` renders one `CategoryPill` per category and no emoji in the category rows (a regex over the rows, not `cat_help`). (4) e2e `trust-card.spec.ts`: the evidence lines and "Set anyway" work as before and the a11y scan passes. (5) e2e `loops-panel.spec.ts`: the loops card controls are disabled while sent tracking is off.
 
 ## Out of scope
 
@@ -27,4 +28,4 @@ The frame and the nav (stage 01). The reply style card (stage 03). The status an
 
 ## Done when
 
-The pictures of `settings` with the trust and the open-loops seed states match the mockup's "What I do per category" card; the Proof of `../plan.md` with `settings.spec.ts trust-card.spec.ts loops-panel.spec.ts plan.spec.ts reply-style.spec.ts` prints `PROOF_OK`.
+The sheet row `settings-trust` and pictures of the loops card that `loops-panel.spec.ts` saves under `<UI_SHEET_DIR>/f170-02/` (D7) match the mockup's "What I do per category" card; the Proof of `../plan.md` with `settings.spec.ts trust-card.spec.ts loops-panel.spec.ts plan.spec.ts reply-style.spec.ts` prints `PROOF_OK`.
