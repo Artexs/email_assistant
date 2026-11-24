@@ -256,3 +256,10 @@ test("an assistant member rates mail", async ({ browser }, testInfo) => {
     await member.close();
   }
 });
+
+test("the page has one visible h1 and it is the page title", async ({ page }) => {
+  const headings = page.getByRole("heading", { level: 1 });
+  await expect(headings).toHaveCount(1);
+  await expect(headings).toHaveText(en.title_activity);
+  await expect(headings).toBeVisible();
+});

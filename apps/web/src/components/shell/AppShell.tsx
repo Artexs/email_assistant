@@ -6,6 +6,7 @@ import { authClient } from "../../lib/auth-client";
 import { ApiError } from "../../lib/api";
 import { useRebindPush } from "../../lib/use-rebind-push";
 import { setLocale, t, useLocale, type TextKey } from "../../i18n";
+import { PageHead } from "../patterns/PageHead";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { Toaster } from "../ui/sonner";
@@ -21,6 +22,8 @@ import { browserStorage, WhatsNewSlot } from "./WhatsNew";
 export interface AppShellProps {
   active: NavKey;
   title: TextKey;
+  lead?: TextKey;
+  action?: ReactNode;
   children: ReactNode;
 }
 
@@ -37,7 +40,7 @@ function onLogOut() {
   void logOut();
 }
 
-function Frame({ active, title, children }: AppShellProps) {
+function Frame({ active, title, lead, action, children }: AppShellProps) {
   const { me, error, loading, reload } = useMe();
 
   // After a sign-in on any device the panel follows the stored choice, else the browser. The same locale changes nothing.
@@ -98,7 +101,7 @@ function Frame({ active, title, children }: AppShellProps) {
       <Sidebar {...navProps} />
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background px-4 py-3 lg:hidden">
-          <h1 className="text-lg font-semibold">{t(heading)}</h1>
+          <p className="text-lg font-semibold">{t("brand")}</p>
           <MenuSheet {...navProps} />
         </header>
         <AuthErrorBanner count={me?.mailboxesInAuthError ?? 0} />
@@ -113,7 +116,7 @@ function Frame({ active, title, children }: AppShellProps) {
           <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
         )}
         <main className="px-4 py-4 pb-24 lg:pb-8">
-          <h1 className="mb-4 hidden text-xl font-semibold lg:block">{t(heading)}</h1>
+          <PageHead title={t(heading)} lead={lead === undefined ? undefined : t(lead)} action={action} />
           {content}
         </main>
       </div>
