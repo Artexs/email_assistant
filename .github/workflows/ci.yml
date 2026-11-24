@@ -119,7 +119,7 @@ jobs:
           log=$(mktemp)
           bun test apps/server/test/integration/e2e-seed.test.ts 2>&1 | tee "$log"
           if grep -Eq '^ *[0-9]+ skip' "$log"; then echo "e2e seed cases were skipped"; exit 1; fi
-      - run: bun run web:build
+      - run: bun run web:build:dev
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
       - uses: actions/upload-artifact@v4
