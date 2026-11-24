@@ -5,10 +5,9 @@ import { noticePath, pushPayloadSchema, pushTexts, type PushPayload } from "@ea/
 // shows a push (kind and count, no mail text) and opens the page of its kind on a tap.
 // The logic here is pure or takes the scope as an argument, so a unit test runs it without a browser. `sw/sw.ts` wires it to `self`.
 
-/** Change it with every change of the cached files: `activate` deletes the caches of other versions. */
-export const SW_VERSION = "v1";
+/** The format of the cache name. The build adds a hash of the cached files (`shell-precache.ts`): `activate` deletes the other caches. */
+export const SW_VERSION = "v2";
 export const SHELL_CACHE_PREFIX = "ea-shell-";
-export const SHELL_CACHE = `${SHELL_CACHE_PREFIX}${SW_VERSION}`;
 export const OFFLINE_PATH = "/offline.html";
 /** The page that a tap opens when the notification holds no valid path. */
 export const FALLBACK_PATH = "/activity";
@@ -40,7 +39,7 @@ export function fetchRule(request: RequestFacts, origin: string): FetchRule {
 }
 
 /** The caches that `activate` deletes: ours from another version. A cache of another owner is never touched. */
-export function staleCaches(names: readonly string[], current: string = SHELL_CACHE): string[] {
+export function staleCaches(names: readonly string[], current: string): string[] {
   return names.filter((name) => name.startsWith(SHELL_CACHE_PREFIX) && name !== current);
 }
 
@@ -106,18 +105,27 @@ export interface WorkerScope {
   addEventListener(type: string, listener: (event: never) => void): void;
 }
 
-export function installWorker(scope: WorkerScope): void {
+/** What the build puts into the worker: the files of the offline page and the hash of their bytes. */
+export interface ShellFiles {
+  assets: readonly string[];
+  version: string;
+}
+
+// The install stores the offline page and every file it needs, so the page keeps its look with no network. A file that fails makes the
+// install fail: the old worker stays.
+export function installWorker(scope: WorkerScope, shell: ShellFiles): void {
   const origin = scope.location.origin;
+  const cacheName = `${SHELL_CACHE_PREFIX}${shell.version}`;
 
   scope.addEventListener("install", ((event: WorkerEvent) => {
-    event.waitUntil(scope.caches.open(SHELL_CACHE).then((cache) => cache.add(OFFLINE_PATH)));
+    event.waitUntil(scope.caches.open(cacheName).then((cache) => cache.addAll([OFFLINE_PATH, ...shell.assets])));
   }) as (event: never) => void);
 
   scope.addEventListener("activate", ((event: WorkerEvent) => {
     event.waitUntil(
       scope.caches
         .keys()
-        .then((names) => Promise.all(staleCaches(names).map((name) => scope.caches.delete(name))))
+        .then((names) => Promise.all(staleCaches(names, cacheName).map((name) => scope.caches.delete(name))))
         .then(() => scope.clients.claim())
     );
   }) as (event: never) => void);
@@ -126,7 +134,7 @@ export function installWorker(scope: WorkerScope): void {
     const rule = fetchRule(event.request, origin);
     if (rule === "not-handled") return;
     if (rule === "cache-first") {
-      event.respondWith(cacheFirst(scope, event.request));
+      event.respondWith(cacheFirst(scope, cacheName, event.request));
       return;
     }
     // A page: always from the network. Only a network error shows the offline page; a 4xx or 5xx answer passes through.
@@ -155,8 +163,8 @@ export function installWorker(scope: WorkerScope): void {
 }
 
 // A hashed file never changes, so a stored answer is final. Only a complete 200 answer is stored.
-async function cacheFirst(scope: WorkerScope, request: Request): Promise<Response> {
-  const cache = await scope.caches.open(SHELL_CACHE);
+async function cacheFirst(scope: WorkerScope, cacheName: string, request: Request): Promise<Response> {
+  const cache = await scope.caches.open(cacheName);
   const hit = await cache.match(request);
   if (hit) return hit;
   const response = await fetch(request);
