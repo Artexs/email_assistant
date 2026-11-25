@@ -173,4 +173,8 @@ export const plMailboxes = {
   ob_go_activity: "Przejdź do Aktywności",
   ob_item_done: "Zrobione",
   ob_item_open: "Do zrobienia",
+  ob_lead: "Kilka krótkich kroków. Wszystko zmienisz później.",
+  ob_use_assist: "Użyj asysty…",
+  ob_assist_settings: "Wybierz skrzynkę w Ustawieniach",
+  ob_mode_need_mailbox: "Najpierw połącz skrzynkę.",
 } satisfies Partial<Record<TextKey, string>>;
