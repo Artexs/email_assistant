@@ -140,7 +140,7 @@ test("flag off: no card and no re-bind request, even with a subscription in the 
   await signInAs(page, readSeed().owner);
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.goto("/settings");
-  await expect(page.getByRole("heading", { name: en.set_section_general })).toBeVisible();
+  await expect(page.getByRole("region", { name: en.set_group_notices })).toBeVisible();
   await expect(page.locator("[data-card=push-devices]")).toHaveCount(0);
   await page.waitForLoadState("networkidle");
   expect(fake.puts).toEqual([]);

@@ -1,13 +1,15 @@
 import type { Delegate } from "@ea/core/web";
 import { useRef, useState, type FormEvent, type RefObject } from "react";
 
+import { UserPlus } from "lucide-react";
+
 import { t, type TextKey } from "../../i18n";
 import { postDelegate } from "../../lib/delegates-api";
 import { addOutcome, checkAdd, FIELD_LIMITS, type DelegateField } from "../../lib/delegates-form";
 import { singleFlight } from "../../lib/single-flight";
+import { SectionCard } from "../patterns/SectionCard";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { TextField } from "./TextField";
 
 export interface DelegateAddFormProps {
@@ -74,57 +76,52 @@ export function DelegateAddForm({ onAdded }: DelegateAddFormProps) {
     problem?.field === field ? t(problem.key, FIELD_LIMITS) : null;
 
   return (
-    <Card data-card="add-delegate">
-      <CardHeader>
-        <CardTitle>{t("dlg_add_title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form className="flex flex-col gap-4" noValidate aria-busy={busy} onSubmit={submit}>
-          <TextField
-            id="delegate-name"
-            label={t("dlg_name")}
-            value={name}
-            error={errorOf("name")}
-            inputRef={refs.name}
-            onChange={(value) => {
-              setName(value);
-              if (problem?.field === "name") setProblem(null);
-            }}
-          />
-          <TextField
-            id="delegate-email"
-            label={t("dlg_email")}
-            type="email"
-            value={email}
-            error={errorOf("email")}
-            inputRef={refs.email}
-            onChange={(value) => {
-              setEmail(value);
-              if (problem?.field === "email") setProblem(null);
-            }}
-          />
-          <TextField
-            id="delegate-tags"
-            label={t("dlg_tags")}
-            help={t("dlg_tags_help")}
-            value={tags}
-            error={errorOf("tags")}
-            inputRef={refs.tags}
-            onChange={(value) => {
-              setTags(value);
-              if (problem?.field === "tags") setProblem(null);
-            }}
-          />
-          {failure !== null && (
-            <Alert variant="destructive">
-              <AlertDescription>{t(failure)}</AlertDescription>
-            </Alert>
-          )}
-          <div>
-            <Button type="submit">{t("dlg_add")}</Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+    <SectionCard icon={UserPlus} title={t("dlg_add_title")} data-card="add-delegate" className="max-w-3xl">
+      <form className="flex flex-col gap-4" noValidate aria-busy={busy} onSubmit={submit}>
+        <TextField
+          id="delegate-name"
+          label={t("dlg_name")}
+          value={name}
+          error={errorOf("name")}
+          inputRef={refs.name}
+          onChange={(value) => {
+            setName(value);
+            if (problem?.field === "name") setProblem(null);
+          }}
+        />
+        <TextField
+          id="delegate-email"
+          label={t("dlg_email")}
+          type="email"
+          value={email}
+          error={errorOf("email")}
+          inputRef={refs.email}
+          onChange={(value) => {
+            setEmail(value);
+            if (problem?.field === "email") setProblem(null);
+          }}
+        />
+        <TextField
+          id="delegate-tags"
+          label={t("dlg_tags")}
+          help={t("dlg_tags_help")}
+          value={tags}
+          error={errorOf("tags")}
+          inputRef={refs.tags}
+          onChange={(value) => {
+            setTags(value);
+            if (problem?.field === "tags") setProblem(null);
+          }}
+        />
+        {failure !== null && (
+          <Alert variant="destructive">
+            <AlertDescription>{t(failure)}</AlertDescription>
+          </Alert>
+        )}
+        <div>
+          <Button type="submit">{t("dlg_add")}</Button>
+        </div>
+      </form>
+    </SectionCard>
   );
 }

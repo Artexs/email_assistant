@@ -2,9 +2,14 @@
 import Public from "../layouts/Public.astro";
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
+
+const button =
+  "inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground";
 ---
 
 <Public titleKey="brand">
   <meta http-equiv="refresh" content="0; url=/onboarding" slot="head" />
-  <a href="/onboarding">{pl.continue} / {en.continue}</a>
+  <div class="rounded-lg bg-card p-6 text-card-foreground shadow-card">
+    <a href="/onboarding" class={button}>{pl.continue} / {en.continue}</a>
+  </div>
 </Public>

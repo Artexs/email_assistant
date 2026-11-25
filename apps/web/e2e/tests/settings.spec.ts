@@ -117,14 +117,59 @@ test("mode, switch and auto", async ({ page }, testInfo) => {
   await expect(mode.getByText(en.mode_shadow, { exact: true })).toBeVisible();
 });
 
+test("frame: four sections, section links, one h1", async ({ page }, testInfo) => {
+  test.setTimeout(MINUTE_MS);
+  const project = testInfo.project.name;
+  await page.goto("/mailboxes?connect=1");
+  await connectGreenMail(page, project);
+  await expect(page.getByText(mailboxAddress(project))).toBeVisible();
+
+  await page.goto("/settings");
+  await expect(page.locator("[data-card=mode]")).toBeVisible();
+  await expect(page.locator("h1")).toHaveCount(1);
+  await expect(page.getByText(en.set_lead)).toBeVisible();
+  // The owner sees no read-only line.
+  await expect(page.getByText(en.set_owner_only)).toHaveCount(0);
+  for (const name of ["mode", "categories", "folders", "reply-style", "digest", "timezone", "account"]) {
+    await expect(page.locator(`[data-card=${name}]`)).toBeVisible();
+  }
+  for (const label of [en.set_group_mailbox, en.set_group_notices, en.set_group_organization, en.set_group_account]) {
+    await expect(page.getByRole("region", { name: label })).toBeVisible();
+  }
+  await expectNoA11yViolations(page);
+
+  const nav = page.getByRole("navigation", { name: en.set_nav_label });
+  await expect(nav.getByRole("link")).toHaveCount(4);
+  await expect(page.locator("#account")).not.toBeInViewport();
+  await nav.getByRole("link", { name: en.set_group_account }).click();
+  await expect(page.locator("#account")).toBeInViewport();
+  await expect(page).toHaveURL(/\/settings(\?[^#]*)?#account$/);
+
+  // A cold load with a group id in the hash scrolls to that group once the mailbox cards are there.
+  await page.goto("about:blank");
+  await page.goto("/settings#notices");
+  await expect(page.locator("[data-card=mode]")).toBeVisible();
+  await expect(page.locator("#notices")).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  // An unknown hash scrolls nowhere.
+  await page.goto("about:blank");
+  await page.goto("/settings#nothing");
+  await expect(page.locator("[data-card=mode]")).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
 test("general: digest time, signature, timezone", async ({ page }) => {
   logged.length = 0;
   await page.goto("/settings");
   const digest = page.locator("[data-card=digest]");
   await expect(digest).toBeVisible();
   await expect(page.locator("[data-card=timezone]")).toBeVisible();
-  // No mailbox: the page says so, and the general section works without one.
-  await expect(page.getByText(en.set_no_mailbox)).toBeVisible();
+  // No mailbox: the mailbox group says so, and the other three groups work without one.
+  await expect(page.getByRole("heading", { name: en.set_no_mailbox })).toBeVisible();
+  await expect(page.getByRole("link", { name: en.set_open_mailboxes })).toHaveAttribute("href", "/mailboxes");
+  for (const label of [en.set_group_notices, en.set_group_organization, en.set_group_account]) {
+    await expect(page.getByRole("region", { name: label })).toBeVisible();
+  }
   expect(logged).toEqual([]);
 
   await digest.getByRole("button", { name: en.digest_add }).click();
