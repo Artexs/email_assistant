@@ -31,8 +31,16 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
 
 // The panel language follows the account: the page reads it from `/api/me` after it loads.
 async function setLocale(page: Page, locale: "en" | "pl"): Promise<void> {
-  const answer = await page.request.patch("/api/me/locale", { data: { locale } });
-  expect(answer.ok()).toBe(true);
+  // From the page: the server refuses a write that carries no `Origin` of the panel.
+  const status = await page.evaluate(async (value) => {
+    const answer = await fetch("/api/me/locale", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ locale: value }),
+    });
+    return answer.status;
+  }, locale);
+  expect(status).toBe(204);
 }
 
 // Saves the loops card in both schemes and both languages under `<UI_SHEET_DIR>/settings-mailbox/`, for the look next to the mockup. The page
