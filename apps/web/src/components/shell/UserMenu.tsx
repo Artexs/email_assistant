@@ -31,7 +31,7 @@ export function UserMenu({ name, email, onLogOut }: UserMenuProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="h-auto min-h-12 w-full justify-start gap-3 rounded-md py-2 pr-3 pl-14 text-left font-normal"
+            className="h-auto min-h-12 w-full justify-start gap-3 rounded-md py-2 pr-3 pl-14 text-left font-normal has-[>svg]:pr-3 has-[>svg]:pl-14"
             aria-label={t("user_menu_named", { name: shownName, email })}
           >
             <span className="flex min-w-0 flex-1 flex-col">
