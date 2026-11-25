@@ -7,7 +7,7 @@ import { setLocaleForTest, t } from "../i18n";
 import { en } from "../i18n/en";
 
 import { ModeCard } from "../components/settings/ModeCard";
-import { ReplyStyleForm } from "../components/settings/ReplyStyleCard";
+import { PreviewResult, ReplyStyleForm } from "../components/settings/ReplyStyleCard";
 
 afterEach(() => setLocaleForTest("en"));
 
@@ -41,7 +41,7 @@ function form(
 const buttons = (html: string): string[] =>
   [...html.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map((match) => match[1] ?? "");
 
-describe("the style card (F115 stage 11)", () => {
+describe("the style card", () => {
   setLocaleForTest("en");
 
   test("the owner with the flag on gets every field, the guided form, Apply, Save and Preview", () => {
@@ -118,6 +118,47 @@ describe("the style card (F115 stage 11)", () => {
     const html = form({ view: profile({ signature: "<img src=x onerror=alert(1)>" }) });
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+  });
+});
+
+describe("the answer of Preview", () => {
+  setLocaleForTest("en");
+
+  test("a body with markup shows as the literal text in a calm box, with the sample note", () => {
+    const html = renderToStaticMarkup(
+      <PreviewResult preview={{ state: "done", answer: { kind: "body", body: "<b>Hi</b>" } }} />
+    );
+    expect(html).toContain("&lt;b&gt;Hi&lt;/b&gt;");
+    expect(html).not.toContain("<b>");
+    expect(html).toContain('data-slot="fact-box"');
+    expect(html).toContain(t("rs_preview_note"));
+    expect(html).not.toContain("role=");
+  });
+
+  test("a failed answer is an alert with its own text; idle and running show nothing", () => {
+    const failed = renderToStaticMarkup(
+      <PreviewResult preview={{ state: "done", answer: { kind: "failed", key: "rs_preview_limit" } }} />
+    );
+    expect(failed).toContain('role="alert"');
+    expect(failed).toContain(t("rs_preview_limit"));
+    for (const state of ["idle", "running"] as const) {
+      expect(renderToStaticMarkup(<PreviewResult preview={{ state }} />)).toBe(
+        `<div aria-live="polite" data-preview="${state}"></div>`
+      );
+    }
+  });
+});
+
+describe("the guided form", () => {
+  setLocaleForTest("en");
+
+  test("each of its four rows labels its control with a for attribute that matches the control id", () => {
+    const html = form();
+    for (const key of ["rs_form_address", "rs_form_greeting", "rs_form_sign_off", "rs_form_length"] as const) {
+      const label = new RegExp(`<label[^>]*for="([^"]+)"[^>]*>${t(key)}</label>`).exec(html);
+      expect(label).not.toBeNull();
+      expect(html).toContain(`id="${label?.[1] ?? "missing"}"`);
+    }
   });
 });
 

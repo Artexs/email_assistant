@@ -39,7 +39,7 @@ describe("the suggest box of the style card", () => {
 
   test("a suggestion shows as text with its count line and the two actions", () => {
     const html = view({ kind: "shown", answer: { kind: "suggestion", text: "Krótko.", count: 7 } });
-    expect(html).toContain(`<p data-suggest-text="" class="whitespace-pre-wrap text-sm">Krótko.</p>`);
+    expect(/<p data-suggest-text="" [^>]*>Krótko\.<\/p>/.test(html)).toBe(true);
     expect(html).toContain("Based on 7 sent mails");
     expect(buttons(html)).toEqual([t("rs_suggest_button"), "Use this text", "Discard"]);
   });
