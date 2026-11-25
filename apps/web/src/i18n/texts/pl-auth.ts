@@ -90,8 +90,10 @@ export const plAuth = {
     "Wystąpił problem z logowaniem dwuetapowym. Użyj kodu zapasowego albo poproś operatora o jego wyłączenie.",
   tf_qr_label: "Kod QR dla aplikacji uwierzytelniającej",
   tf_title: "Logowanie dwuetapowe",
-  tf_off_text: "Wyłączone. Włącz je, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej.",
-  tf_on_text: "Włączone. Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej.",
+  tf_status_on: "Włączone",
+  tf_status_off: "Wyłączone",
+  tf_off_text: "Włącz, aby przy każdym logowaniu podawać kod z aplikacji uwierzytelniającej.",
+  tf_on_text: "Przy każdym logowaniu podajesz kod z aplikacji uwierzytelniającej.",
   tf_required_operator: "Twoja rola wymaga logowania dwuetapowego: bez niego konsola operatora się nie otworzy.",
   tf_required_break_glass: "Jesteś właścicielem awaryjnym organizacji: logowanie dwuetapowe musi pozostać włączone.",
   tf_break_glass_note: "Jesteś właścicielem awaryjnym, więc nie możesz go wyłączyć.",
@@ -124,6 +126,7 @@ export const plAuth = {
   tf_copy_failed: "Nie udało się skopiować kodów. Zapisz je.",
   // delete organization
   del_title: "Usuń organizację",
+  del_card_lead: "Usuwa organizację ze wszystkimi danymi poczty, regułami i członkami. Tego nie da się cofnąć.",
   del_text:
     "To od razu usunie organizację {name} i wszystkie jej dane w aplikacji: skrzynki, wiadomości, wyniki klasyfikacji, działania, zlecenia, reguły, połączenia z Telegramem, historię i konta jej członków. Tego nie można cofnąć. Kopie zapasowe zachowują dane, dopóki nie wygasną; okres określa polityka prywatności.",
   del_imap_note:

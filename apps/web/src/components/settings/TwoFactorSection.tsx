@@ -16,7 +16,9 @@ import {
 } from "../../lib/two-factor-errors";
 import { disableWithCode, newCodesWithCode } from "../../lib/two-factor-confirm";
 import { useResource } from "../../lib/use-resource";
+import { FactBox } from "../patterns/FactBox";
 import { Alert } from "../ui/alert";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -245,10 +247,10 @@ export function TwoFactorSection() {
           <p className="text-muted-foreground text-sm">{t("tf_break_glass_note")}</p>
         ) : null}
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" onClick={() => start("codes")}>
+          <Button type="button" variant="soft" onClick={() => start("codes")}>
             {t("tf_new_codes")}
           </Button>
-          <Button type="button" variant="outline" className="text-destructive" onClick={() => start("disable")}>
+          <Button type="button" variant="destructive-soft" onClick={() => start("disable")}>
             {t("tf_turn_off")}
           </Button>
         </div>
@@ -260,7 +262,14 @@ export function TwoFactorSection() {
 
   return (
     <section id="two-factor" data-section="two-factor" className="flex flex-col gap-3">
-      <h3 className="text-sm font-medium">{t("tf_title")}</h3>
+      <div className="flex items-center gap-2.5">
+        <h3 className="text-base font-bold">{t("tf_title")}</h3>
+        {view === "status" && status.data !== null ? (
+          <Badge variant={status.data.enabled ? "default" : "secondary"} data-badge="two-factor">
+            {t(status.data.enabled ? "tf_status_on" : "tf_status_off")}
+          </Badge>
+        ) : null}
+      </div>
       {view === "status" ? (
         status.data === null && status.error !== null ? (
           <div className="flex flex-col items-start gap-2">
@@ -337,7 +346,7 @@ export function TwoFactorSection() {
       ) : null}
       {view === "scan" && setup !== null && secret !== null ? (
         <form method="post" onSubmit={(event) => void submitCode(event)} noValidate className="flex flex-col gap-3">
-          <h4 className="text-sm font-medium">{t("tf_scan_title")}</h4>
+          <h4 className="text-base font-bold">{t("tf_scan_title")}</h4>
           <p className="text-muted-foreground text-sm">{t("tf_scan_step_app")}</p>
           <TotpQr uri={setup.uri} />
           <p className="text-muted-foreground text-sm">{t("tf_scan_key")}</p>
@@ -384,15 +393,17 @@ export function TwoFactorSection() {
       ) : null}
       {view === "codes" && codes !== null ? (
         <div className="flex flex-col gap-3">
-          <h4 ref={codesHeading} tabIndex={-1} className="text-sm font-medium outline-none">
+          <h4 ref={codesHeading} tabIndex={-1} className="text-base font-bold outline-none">
             {t("tf_codes_title")}
           </h4>
           <p className="text-muted-foreground text-sm">{t("tf_codes_help")}</p>
-          <ul data-backup-codes className="grid grid-cols-2 gap-1 font-mono text-sm">
-            {codes.map((backupCode) => (
-              <li key={backupCode}>{backupCode}</li>
-            ))}
-          </ul>
+          <FactBox>
+            <ul data-backup-codes className="grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-base">
+              {codes.map((backupCode) => (
+                <li key={backupCode}>{backupCode}</li>
+              ))}
+            </ul>
+          </FactBox>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => void copyCodes()}>
               {t("tf_copy")}

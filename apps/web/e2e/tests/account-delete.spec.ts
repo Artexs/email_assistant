@@ -1,3 +1,6 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { expect, test, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
@@ -5,6 +8,7 @@ import { pl } from "../../src/i18n/pl";
 import { E2E_BASE_URL } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { sheetDir } from "../ui-sheet/dir";
 
 // The delete flow in a real browser: the dialog (focus, errors), the buttons that must not show, the one
 // DELETE request, the login notice and the data that must not stay in the page. The spec deletes the organization of its own
@@ -81,27 +85,30 @@ async function signInAndOpenSettings(
   page: Page,
   user: { email: string; password: string },
   texts: PageTexts = en
-): Promise<Locator> {
+): Promise<void> {
   await signInAs(page, user, texts);
   await expect(page).not.toHaveURL(/\/login/);
   await page.goto("/settings");
-  const account = page.locator("[data-card=account]");
-  await expect(account.getByText(texts.acct_sessions_title)).toBeVisible();
-  return account;
+  await expect(page.locator("[data-card=account]").getByText(texts.acct_sessions_title)).toBeVisible();
 }
 
-// The blocks of the Account card that have a top border and no content.
-async function emptyBorderedBlocks(account: Locator): Promise<number> {
-  return account
-    .locator("div.border-t")
-    .evaluateAll(
-      (blocks) =>
-        blocks.filter((block) => block.textContent?.trim() === "" && block.querySelector("button, input, a") === null)
-          .length
-    );
+const DELETE_CARD = "[data-card=delete-organization]";
+
+// The delete card in both colour schemes, saved in the folder of the contact sheet.
+async function saveDeleteCard(page: Page, project: string, locale: "en" | "pl"): Promise<void> {
+  const folder = join(sheetDir(), "f170-05");
+  mkdirSync(folder, { recursive: true });
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.locator(DELETE_CARD).screenshot({
+      path: join(folder, `delete-card-${project}-${scheme}-${locale}.png`),
+      animations: "disabled",
+    });
+  }
+  await page.emulateMedia({ colorScheme: "light" });
 }
 
-const deleteButton = (account: Locator): Locator => account.locator("[data-action=delete-organization]");
+const deleteButton = (page: Page): Locator => page.locator(`${DELETE_CARD} [data-action=delete-organization]`);
 
 // True when the focused element is inside the open dialog.
 const focusInDialog = (page: Page): Promise<boolean> =>
@@ -120,7 +127,7 @@ async function pageHolds(page: Page): Promise<{ state: string; document: string 
   }));
 }
 
-test("no delete button and no empty block for an assistant and for an owner with the flag off", async ({
+test("the delete card shows only for the owner with the flag, and it has the danger look", async ({
   browser,
 }, testInfo) => {
   const project = projectOf(testInfo.project.name);
@@ -128,26 +135,30 @@ test("no delete button and no empty block for an assistant and for an owner with
 
   // The flag is on in this organization, but an assistant is not the owner.
   const assistantPage = await newSession(browser, project);
-  const assistantAccount = await signInAndOpenSettings(assistantPage, seed.deleteOrgs[project].assistant);
-  await expect(deleteButton(assistantAccount)).toHaveCount(0);
+  await signInAndOpenSettings(assistantPage, seed.deleteOrgs[project].assistant);
+  await expect(assistantPage.locator(DELETE_CARD)).toHaveCount(0);
   await expect(assistantPage.getByRole("button", { name: en.del_title })).toHaveCount(0);
-  expect(await emptyBorderedBlocks(assistantAccount)).toBe(0);
-  const assistantBlocks = await assistantAccount.locator("div.border-t").count();
 
   // The owner of the main seed organization: the flag is off.
   const ownerPage = await newSession(browser, project);
-  const ownerAccount = await signInAndOpenSettings(ownerPage, seed.owner);
-  await expect(deleteButton(ownerAccount)).toHaveCount(0);
+  await signInAndOpenSettings(ownerPage, seed.owner);
+  await expect(ownerPage.locator(DELETE_CARD)).toHaveCount(0);
   await expect(ownerPage.getByRole("button", { name: en.del_title })).toHaveCount(0);
-  expect(await emptyBorderedBlocks(ownerAccount)).toBe(0);
 
-  // The owner of the delete organization (flag on): one block more, and it holds the button.
+  // The owner of the delete organization (flag on): a card of its own, with the button and the danger edge.
   const deleteOwnerPage = await newSession(browser, project);
-  const deleteOwnerAccount = await signInAndOpenSettings(deleteOwnerPage, seed.deleteOrgs[project].owner);
-  await expect(deleteButton(deleteOwnerAccount)).toHaveCount(1);
-  await expect(deleteOwnerPage.getByRole("button", { name: en.del_title })).toBeVisible();
-  expect(await emptyBorderedBlocks(deleteOwnerAccount)).toBe(0);
-  expect(await deleteOwnerAccount.locator("div.border-t").count()).toBe(assistantBlocks + 1);
+  await signInAndOpenSettings(deleteOwnerPage, seed.deleteOrgs[project].owner);
+  await expect(deleteOwnerPage.locator(DELETE_CARD)).toHaveCount(1);
+  await expect(deleteButton(deleteOwnerPage)).toHaveCount(1);
+  await expect(
+    deleteOwnerPage.locator(DELETE_CARD).getByRole("heading", { level: 2, name: en.del_title })
+  ).toBeVisible();
+  await expect(deleteOwnerPage.locator(DELETE_CARD)).toHaveAttribute("data-tone", "danger");
+  const edge = (selector: string) =>
+    deleteOwnerPage.locator(selector).evaluate((card) => getComputedStyle(card).borderTopWidth);
+  expect(await edge(DELETE_CARD)).toBe("1px");
+  expect(await edge("[data-card=account]")).toBe("0px");
+  await saveDeleteCard(deleteOwnerPage, project, "en");
 });
 
 test("the dialog traps the focus, returns it, and shows a wrong password in a linked error", async ({
@@ -156,8 +167,8 @@ test("the dialog traps the focus, returns it, and shows a wrong password in a li
   const project = projectOf(testInfo.project.name);
   const org = readSeed().deleteOrgs[project];
   const page = await newSession(browser, project);
-  const account = await signInAndOpenSettings(page, org.owner);
-  const trigger = deleteButton(account);
+  await signInAndOpenSettings(page, org.owner);
+  const trigger = deleteButton(page);
   await expect(trigger).toHaveText(en.del_title);
 
   const dialog = page.getByRole("dialog");
@@ -224,17 +235,18 @@ test("the dialog traps the focus, returns it, and shows a wrong password in a li
   expect((await page.request.get("/api/me")).status()).toBe(200);
   await page.reload();
   await expect(page.locator("[data-card=account]").getByText(en.acct_sessions_title)).toBeVisible();
-  await expect(deleteButton(page.locator("[data-card=account]"))).toHaveCount(1);
+  await expect(deleteButton(page)).toHaveCount(1);
 });
 
 test("the Polish panel shows the Polish delete texts", async ({ browser }, testInfo) => {
   const project = projectOf(testInfo.project.name);
   const org = readSeed().deleteOrgs[project];
   const page = await newSession(browser, project, "pl-PL");
-  const account = await signInAndOpenSettings(page, org.owner, pl);
-  const trigger = account.getByRole("button", { name: "Usuń organizację" });
+  await signInAndOpenSettings(page, org.owner, pl);
+  const trigger = page.locator(DELETE_CARD).getByRole("button", { name: "Usuń organizację" });
   await expect(trigger).toBeVisible();
   await expect(trigger).toHaveText(pl.del_title);
+  await saveDeleteCard(page, project, "pl");
   await trigger.click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: pl.del_title })).toBeVisible();
@@ -248,7 +260,7 @@ test("a double click sends one delete request and the login page lists the mailb
   const project = projectOf(testInfo.project.name);
   const org = readSeed().deleteOrgs[project];
   const page = await newSession(browser, project);
-  const account = await signInAndOpenSettings(page, org.owner);
+  await signInAndOpenSettings(page, org.owner);
 
   // Count the DELETE requests. The request waits until the test lets it go, so the second click meets a running request.
   let deletes = 0;
@@ -266,7 +278,7 @@ test("a double click sends one delete request and the login page lists the mailb
     await route.continue();
   });
 
-  await deleteButton(account).click();
+  await deleteButton(page).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel(en.del_password_label).fill(org.owner.password);
   typed.push(org.owner.password, org.name);
