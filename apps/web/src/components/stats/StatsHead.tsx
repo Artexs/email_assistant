@@ -24,7 +24,7 @@ export function StatsHead({ week, split }: { week: WeekStats; split: boolean }) 
           </div>
         </CardContent>
       </Card>
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(6.5rem,1fr))] gap-3">
         {tiles.map((tile) => (
           <StatTile key={tile.label} value={tile.value} label={t(tile.label)} />
         ))}
