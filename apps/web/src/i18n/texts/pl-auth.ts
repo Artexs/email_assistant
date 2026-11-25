@@ -19,7 +19,7 @@ export const plAuth = {
   menu_open: "Otwórz menu",
   menu_title: "Menu",
   user_menu: "Menu konta",
-  user_menu_named: "Menu konta: {email}",
+  user_menu_named: "Menu konta: {name}, {email}",
   help_link: "Pomoc i poradniki",
   whats_new_title: "Co nowego",
   whats_new_all: "Wszystkie zmiany dla użytkowników",
