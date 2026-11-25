@@ -91,9 +91,9 @@ const PL_TEXTS = {
   rp_end_draft_missing:
     "Szkicu nie ma w folderze Drafts (nie powstał albo został usunięty, przeniesiony lub wysłany w programie pocztowym). System nic nie wysłał.",
   // The Draft reply button of an activity row
-  rp_draft_reply: "✍️ Szkic odpowiedzi",
+  rp_draft_reply: "Szkic odpowiedzi",
   rp_open_draft: "Otwórz szkic",
-  rp_draft_reply_for: "✍️ Szkic odpowiedzi: {subject}",
+  rp_draft_reply_for: "Szkic odpowiedzi: {subject}",
   rp_open_draft_for: "Otwórz szkic: {subject}",
 } as const;
 
