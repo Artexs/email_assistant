@@ -110,6 +110,7 @@ export const plApprovals = {
   dlg_tab_delegates: "Wykonawcy",
   dlg_list_label: "Wykonawcy",
   dlg_empty: "Nie ma jeszcze wykonawców.",
+  dlg_empty_text: "Dodaj osobę formularzem powyżej.",
   dlg_list_full: "Pokazano pierwszych {n} wykonawców. Pozostałych nie widać.",
   dlg_load_error: "Nie udało się wczytać wykonawców.",
   dlg_owner_only: "Tylko właściciel może zmieniać wykonawców.",
@@ -301,6 +302,7 @@ export const plApprovals = {
   title_stats: "Statystyki",
   title_approvals: "Zatwierdzenia",
   title_delegates: "Wykonawcy",
+  dlg_lead: "Osoby, którym możesz przekazać pracę.",
   title_delegations: "Zlecenia",
   dgn_lead: "Praca przekazana innym i to, co czeka na odpowiedź.",
   // The Delegate action on a mail row, the open-loop settings and the new Telegram terms

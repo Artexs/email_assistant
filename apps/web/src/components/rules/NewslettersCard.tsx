@@ -5,6 +5,7 @@ import {
   type MailboxView,
   type NewsletterItem,
 } from "@ea/core/web";
+import { Newspaper } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -13,8 +14,11 @@ import { api } from "../../lib/api";
 import { actionOf, newslettersPath, unsubscribeFailureKey, unsubscribePath } from "../../lib/newsletters-view";
 import { useNow } from "../../lib/use-now";
 import { useResource } from "../../lib/use-resource";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Skeleton } from "../ui/skeleton";
@@ -33,11 +37,14 @@ function RequestState({ item, hasLink }: { item: NewsletterItem; hasLink: boolea
           ? t("nl_refused")
           : t(hasLink ? "nl_failed_open" : "nl_failed");
   return (
-    <span role="status">
-      {text}
-      {code !== null && status !== "requested" && (
-        <span className="text-muted-foreground"> · {t("nl_code", { code })}</span>
-      )}
+    <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+      <Badge
+        role="status"
+        variant={status === "done" ? "default" : status === "requested" ? "secondary" : "destructive"}
+      >
+        {text}
+      </Badge>
+      {code !== null && status !== "requested" && <span>{t("nl_code", { code })}</span>}
     </span>
   );
 }
@@ -69,6 +76,7 @@ function UnsubscribeButton({ item, mailboxId, onChanged }: { item: NewsletterIte
   return (
     <Button
       size="sm"
+      variant="soft"
       disabled={pending}
       aria-label={t("nl_unsubscribe_for", { sender: item.senderLower })}
       onClick={tap}
@@ -78,24 +86,43 @@ function UnsubscribeButton({ item, mailboxId, onChanged }: { item: NewsletterIte
   );
 }
 
-function Row({ item, timeZone, now, tap }: { item: NewsletterItem; timeZone: string; now: Date; tap: TapProps }) {
+function NewsletterRow({
+  item,
+  timeZone,
+  now,
+  tap,
+}: {
+  item: NewsletterItem;
+  timeZone: string;
+  now: Date;
+  tap: TapProps;
+}) {
   const action = actionOf(item, tap.canTap);
+  const hasState = item.request !== null;
   return (
-    <li className="flex flex-col gap-1 py-3" data-sender={item.senderLower} data-method={item.method}>
-      <span className="break-all font-medium">{item.senderLower}</span>
-      {item.fromName !== null && item.fromName !== "" && (
-        <span className="truncate text-sm text-muted-foreground">{item.fromName}</span>
-      )}
-      <span className="text-sm text-muted-foreground">
-        {tp("nl_count", item.count)} ·{" "}
-        {t("nl_latest", { time: formatClock(new Date(item.latestAt), timeZone, now, getLocale()) })}
-      </span>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <RequestState item={item} hasLink={action.kind === "open"} />
-        {action.kind === "open" && (
+    <div className="contents break-words" data-sender={item.senderLower} data-method={item.method}>
+      <Row
+        title={item.senderLower}
+        hint={
           <>
+            {item.fromName !== null && item.fromName !== "" && <span className="block truncate">{item.fromName}</span>}
+            <span className="block">
+              {tp("nl_count", item.count)} ·{" "}
+              {t("nl_latest", { time: formatClock(new Date(item.latestAt), timeZone, now, getLocale()) })}
+            </span>
+            {(hasState || action.kind === "open" || action.kind === "none") && (
+              <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <RequestState item={item} hasLink={action.kind === "open"} />
+                {action.kind === "open" && <span>{action.host}</span>}
+                {action.kind === "none" && <span>{t("nl_none")}</span>}
+              </span>
+            )}
+          </>
+        }
+      >
+        {action.kind === "open" && (
+          <Button asChild size="sm" variant="soft">
             <a
-              className="underline"
               href={action.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -103,15 +130,13 @@ function Row({ item, timeZone, now, tap }: { item: NewsletterItem; timeZone: str
             >
               {t("nl_open_link")}
             </a>
-            <span className="text-muted-foreground">{action.host}</span>
-          </>
+          </Button>
         )}
-        {action.kind === "none" && <span className="text-muted-foreground">{t("nl_none")}</span>}
         {action.kind === "unsubscribe" && (
           <UnsubscribeButton item={item} mailboxId={tap.mailboxId} onChanged={tap.onChanged} />
         )}
-      </div>
-    </li>
+      </Row>
+    </div>
   );
 }
 
@@ -172,11 +197,11 @@ export function NewsletterRows({
   const tap: TapProps = { mailboxId, canTap, onChanged: onChanged ?? (() => undefined) };
   if (senders.length === 0) return <p className="text-sm text-muted-foreground">{t("nl_empty")}</p>;
   return (
-    <ul className="flex flex-col divide-y">
+    <RowList>
       {senders.map((item) => (
-        <Row key={item.senderLower} item={item} timeZone={timeZone} now={now} tap={tap} />
+        <NewsletterRow key={item.senderLower} item={item} timeZone={timeZone} now={now} tap={tap} />
       ))}
-    </ul>
+    </RowList>
   );
 }
 
@@ -194,32 +219,26 @@ export function NewslettersCard({ mailboxes, timeZone, isOwner }: NewslettersCar
   if (mailbox === undefined) return null;
 
   return (
-    <Card data-card="newsletters">
-      <CardHeader>
-        <CardTitle>{t("nl_title")}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t("nl_help")}</p>
-        {isOwner && <p className="text-sm text-muted-foreground">{t("nl_one_click_help")}</p>}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {mailboxes.length > 1 && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="newsletters-mailbox">{t("nl_mailbox_label")}</Label>
-            <Select value={mailbox.id} onValueChange={setChosen}>
-              <SelectTrigger id="newsletters-mailbox" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {mailboxes.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        <MailboxNewsletters key={mailbox.id} mailbox={mailbox} timeZone={timeZone} canTap={isOwner} />
-      </CardContent>
-    </Card>
+    <SectionCard icon={Newspaper} title={t("nl_title")} lead={t("nl_help")} data-card="newsletters">
+      {isOwner && <p className="text-sm text-muted-foreground">{t("nl_one_click_help")}</p>}
+      {mailboxes.length > 1 && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="newsletters-mailbox">{t("nl_mailbox_label")}</Label>
+          <Select value={mailbox.id} onValueChange={setChosen}>
+            <SelectTrigger id="newsletters-mailbox" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {mailboxes.map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      <MailboxNewsletters key={mailbox.id} mailbox={mailbox} timeZone={timeZone} canTap={isOwner} />
+    </SectionCard>
   );
 }

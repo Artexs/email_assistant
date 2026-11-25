@@ -5,7 +5,7 @@ import { DelegateAddForm } from "../components/delegation/DelegateAddForm";
 import { DelegateEditDialog } from "../components/delegation/DelegateEditDialog";
 import { DelegateList, editButtonId, switchId } from "../components/delegation/DelegateList";
 import { DelegateOffDialog } from "../components/delegation/DelegateOffDialog";
-import { DelegationTabs } from "../components/delegation/DelegationTabs";
+import { DelegationSwitch } from "../components/delegation/DelegationTabs";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Button } from "../components/ui/button";
@@ -19,7 +19,7 @@ import { patchOutcome } from "../lib/delegates-form";
 import { singleFlight } from "../lib/single-flight";
 import { useResource } from "../lib/use-resource";
 
-// The line under the tabs, one live region that holds the text of a result (`info`) or of a failure (`error`). The focus goes to this
+// The line under the page head, one live region that holds the text of a result (`info`) or of a failure (`error`). The focus goes to this
 // element after a gone delegate, so the text must sit inside it. `name` fills the text.
 interface Notice {
   tone: "info" | "error";
@@ -162,8 +162,7 @@ function Delegates() {
   const editingDelegate = delegateOf(editing);
   const offDelegate = delegateOf(confirmOff);
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <DelegationTabs current="delegates" />
+    <div className="flex flex-col gap-4">
       <div
         role="status"
         tabIndex={-1}
@@ -206,7 +205,12 @@ function Delegates() {
 export default function DelegatesPage() {
   useLocale();
   return (
-    <AppShell active="delegations" title="title_delegates">
+    <AppShell
+      active="delegations"
+      title="title_delegates"
+      lead="dlg_lead"
+      action={<DelegationSwitch current="delegates" />}
+    >
       <Delegates />
     </AppShell>
   );
