@@ -234,6 +234,7 @@ export const plSettings = {
   rules_whitelist_text: "Nigdy spam.",
   rules_blocklist_text: "Zawsze spam, chyba że nadawca jest też na liście dozwolonych lub VIP.",
   rules_pattern_label: "Adres lub domena",
+  rules_pattern_placeholder: "anna@firma.pl lub firma.pl",
   rules_pattern_help: "Adres (anna@firma.pl) albo domena (firma.pl). Domena obejmuje też swoje poddomeny.",
   pattern_invalid: "Wpisz adres, np. anna@firma.pl, albo domenę, np. firma.pl.",
   rules_scope_label: "Dotyczy",
