@@ -167,8 +167,10 @@ test("R5: a no_result check shows its sentence and the button; the tap turns the
   for (const name of ["info", "notification", "spam"]) {
     expect(view.categories[name]).toMatchObject({ auto: true, grantBy: "recommended" });
   }
-  // Nothing is due any more: no button, and the note says why.
+  // Nothing is due any more: no button. The result line says what changed; the amber already-on note is for a later visit.
   await expect(page.getByRole("button", { name: /^Turn on recommended/ })).toHaveCount(0);
+  await expect(page.getByText(en.rep_all_on)).toHaveCount(0);
+  await page.reload();
   await expect(page.getByText(en.rep_all_on)).toBeVisible();
   expect(errors).toEqual([]);
 });
