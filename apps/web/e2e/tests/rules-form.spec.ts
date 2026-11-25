@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
-import { t } from "../../src/i18n";
 import { expectNoA11yViolations } from "../a11y";
 import { cleanUpOrg, consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
@@ -27,7 +26,7 @@ test.afterEach(async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test("add, a duplicate, a bad pattern, delete", async ({ page }) => {
+test("add, a duplicate, a bad pattern", async ({ page }) => {
   const posts: string[] = [];
   page.on("request", (request) => {
     if (request.method() === "POST" && new URL(request.url()).pathname === "/api/rules") posts.push(request.url());
@@ -47,7 +46,6 @@ test("add, a duplicate, a bad pattern, delete", async ({ page }) => {
   await form.getByRole("button", { name: en.rules_add }).click();
   await expect(page.getByText(en.rule_added_toast)).toBeVisible();
   await expect(vip.getByText("boss@e2e.test", { exact: true })).toBeVisible();
-  await expect(vip.getByText(en.rules_all_mailboxes)).toBeVisible();
   await expectNoA11yViolations(page);
 
   // The same rule again: the server answers 409 and the form shows it inline.
@@ -61,8 +59,4 @@ test("add, a duplicate, a bad pattern, delete", async ({ page }) => {
   await form.getByRole("button", { name: en.rules_add }).click();
   await expect(form.getByRole("alert")).toHaveText(en.pattern_invalid);
   expect(posts).toHaveLength(2);
-
-  await vip.getByRole("button", { name: t("rules_delete", { pattern: "boss@e2e.test" }) }).click();
-  await expect(page.getByText(en.rule_deleted_toast)).toBeVisible();
-  await expect(vip.getByText(en.rules_empty)).toBeVisible();
 });

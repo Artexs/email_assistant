@@ -298,6 +298,7 @@ export const plApprovals = {
   title_mailboxes: "Skrzynki",
   title_settings: "Ustawienia",
   title_rules: "Reguły",
+  rules_lead: "Reguły nadawców działają przed AI.",
   title_login: "Zaloguj się",
   title_setup: "Ustaw hasło",
   title_forgot: "Zresetuj hasło",
