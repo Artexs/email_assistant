@@ -73,7 +73,7 @@ export function ActionButtons({ item, onPatch, onGone }: ActionButtonsProps) {
   const rightCategory = isLabelCategory(item.category) ? item.category : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 max-sm:max-w-24">
       {rightCategory !== null && (
         <IconAction
           icon={Check}

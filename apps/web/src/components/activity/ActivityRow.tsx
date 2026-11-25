@@ -26,11 +26,12 @@ export interface ActivityRowProps {
 }
 
 // One mail: the category tile, the subject and time, the sender and what the assistant did, the category pill and the badges.
-// The actions sit beside the text from `sm` and wrap under it on a phone. A click on the text opens the panel; a click on an action does not.
+// The actions sit beside the text; on a phone their column is two icon buttons wide and wraps downwards. A click on the
+// text opens the panel; a click on an action does not.
 export function ActivityRow({ item, timeZone, now, mailboxAddress, onOpen, onPatch, onGone }: ActivityRowProps) {
   const { icon: Icon, tone } = categoryLook[item.category];
   return (
-    <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex min-w-0 items-start gap-3 sm:items-center">
       <button
         type="button"
         aria-haspopup="dialog"
