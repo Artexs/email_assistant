@@ -40,9 +40,11 @@ function ConnectAction({ onOpen }: { onOpen: () => void }) {
 interface MailboxesProps {
   connectOpen: boolean;
   setConnectOpen: (open: boolean) => void;
+  // Tells the page whether the list holds a mailbox: with none, the empty state holds the one connect button.
+  onHasMailbox: (has: boolean) => void;
 }
 
-function Mailboxes({ connectOpen, setConnectOpen }: MailboxesProps) {
+function Mailboxes({ connectOpen, setConnectOpen, onHasMailbox }: MailboxesProps) {
   const { me, reload: reloadMe } = useMe();
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
@@ -53,6 +55,9 @@ function Mailboxes({ connectOpen, setConnectOpen }: MailboxesProps) {
     setLastLoad(new Date());
     return list;
   });
+
+  const hasMailbox = data !== null && data.length > 0;
+  useEffect(() => onHasMailbox(hasMailbox), [hasMailbox, onHasMailbox]);
 
   // `?connect=1` opens the dialog once; dropping the parameter keeps a reload from reopening it.
   useEffect(() => {
@@ -151,14 +156,15 @@ export default function MailboxesPage() {
   useLocale();
   // The dialog opens from the page head (inside the shell) and from the empty state: its state lives above both.
   const [connectOpen, setConnectOpen] = useState(false);
+  const [hasMailbox, setHasMailbox] = useState(false);
   return (
     <AppShell
       active="mailboxes"
       title="title_mailboxes"
       lead="mb_lead"
-      action={<ConnectAction onOpen={() => setConnectOpen(true)} />}
+      action={hasMailbox ? <ConnectAction onOpen={() => setConnectOpen(true)} /> : undefined}
     >
-      <Mailboxes connectOpen={connectOpen} setConnectOpen={setConnectOpen} />
+      <Mailboxes connectOpen={connectOpen} setConnectOpen={setConnectOpen} onHasMailbox={setHasMailbox} />
     </AppShell>
   );
 }
