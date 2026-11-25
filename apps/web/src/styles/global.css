@@ -196,6 +196,12 @@
   :root {
     color-scheme: light dark;
   }
+  /* Below `lg` the tab bar covers the bottom of the page: a focused control scrolls into view above it. */
+  @media (width < 64rem) {
+    :root {
+      scroll-padding-bottom: calc(var(--tabbar-height) + env(safe-area-inset-bottom) + 1.5rem);
+    }
+  }
   * {
     @apply border-border outline-ring;
   }

@@ -101,7 +101,7 @@ function Actions({ item, owner, canWrite, onAction }: LoopRowProps) {
                 aria-label={t(BUTTON_TEXTS[action].label, { name })}
                 aria-disabled={isBlocked ? true : undefined}
                 aria-describedby={isBlocked ? reasonId(item.id) : undefined}
-                className="scroll-mb-[calc(var(--tabbar-height)+1.5rem)] aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
+                className="aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
                 onClick={() => {
                   if (!isBlocked) onAction(item, action);
                 }}
