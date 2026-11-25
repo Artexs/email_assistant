@@ -31,7 +31,7 @@ const { Content } = source;
 ---
 
 <Public title={title} lang={lang} frame="reading">
-  <h1 class="text-2xl font-semibold">{title}</h1>
+  <h1 class="text-2xl font-bold tracking-tight lg:text-3xl">{title}</h1>
   <p role="note" data-legal="draft" class="legal-draft">{texts.legal_draft_line}</p>
   <p data-legal="version" class="text-muted-foreground text-sm">
     {fillSlots(texts.legal_version, { version: TERMS_VERSION })}
@@ -40,5 +40,5 @@ const { Content } = source;
   {doc === "privacy" ? <DataCategoriesTable lang={lang} /> : null}
   {doc === "privacy" ? <SubprocessorsTables lang={lang} title="subprocessors" /> : null}
   {doc === "dpa" ? <SubprocessorsTables lang={lang} title="annex2" /> : null}
-  <a href="/login" class="underline">{texts.go_to_sign_in}</a>
+  <a href="/login" class="font-bold text-primary underline">{texts.go_to_sign_in}</a>
 </Public>

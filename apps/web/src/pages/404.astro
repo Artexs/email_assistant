@@ -1,14 +1,16 @@
 ---
+import { SearchX } from "lucide-react";
+
+import NoticeCard from "../components/shell/NoticeCard.astro";
 import Public from "../layouts/Public.astro";
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
 ---
 
 <Public titleKey="title_not_found">
-  <h1 lang="pl" class="text-xl font-semibold">{pl.not_found_title}</h1>
-  <p lang="pl">{pl.not_found_text}</p>
-  <a href="/" lang="pl" class="underline">{pl.not_found_link}</a>
-  <p class="font-semibold">{en.not_found_title}</p>
-  <p>{en.not_found_text}</p>
-  <a href="/" class="underline">{en.not_found_link}</a>
+  <NoticeCard
+    icon={SearchX}
+    pl={{ title: pl.not_found_title, text: pl.not_found_text, link: pl.not_found_link }}
+    en={{ title: en.not_found_title, text: en.not_found_text, link: en.not_found_link }}
+  />
 </Public>
