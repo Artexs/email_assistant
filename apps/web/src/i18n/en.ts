@@ -36,6 +36,8 @@ export const enPlurals = {
   lp_working_days: { one: "1 working day", other: "{count} working days" },
   // Loop settings
   lset_wait_days: { one: "1 working day", other: "{count} working days" },
+  // The lead of the approvals page
+  appr_lead: { one: "1 draft waits for you", other: "{count} drafts wait for you" },
   // Mails of a newsletter sender
   nl_count: { one: "1 mail in 30 days", other: "{count} mails in 30 days" },
   // The push device card: the test notice
