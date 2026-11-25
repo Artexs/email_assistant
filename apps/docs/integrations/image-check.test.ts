@@ -80,6 +80,14 @@ describe("checkImages", () => {
     put("_astro/site.css", `a{background:url(/email_assistant/x.png)}`);
     expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/x.png in _astro/site.css");
   });
+  test("the hashed header logo of the build passes, another svg of _astro with a different name fails", () => {
+    put("index.html", html(`<img alt src="/email_assistant/_astro/mark.Ct04jRiB.svg">`));
+    expect(checkImages(dir).checked).toBe(1);
+    put("index.html", html(`<img src="/email_assistant/_astro/mark.Ct04jRiB.svg.png">`));
+    expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/_astro/mark.Ct04jRiB.svg.png");
+    put("index.html", html(`<img src="/email_assistant/x/_astro/mark.Ct04jRiB.svg">`));
+    expect(() => checkImages(dir)).toThrow("image_outside /email_assistant/x/_astro/mark.Ct04jRiB.svg");
+  });
   test("an _astro image that comes from content fails: a webp in a page, an svg, a srcset entry and a CSS url() of the folder", () => {
     for (const body of [
       `<img src="/email_assistant/_astro/photo.AbC123.webp">`,
