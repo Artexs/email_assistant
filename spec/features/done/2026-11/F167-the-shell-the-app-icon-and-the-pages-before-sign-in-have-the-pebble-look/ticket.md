@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-25
 ---
 
 # F167 · The shell, the app icon and the pages before sign-in have the Pebble look
