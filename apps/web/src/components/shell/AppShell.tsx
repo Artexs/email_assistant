@@ -8,9 +8,11 @@ import { useRebindPush } from "../../lib/use-rebind-push";
 import { setLocale, t, useLocale, type TextKey } from "../../i18n";
 import { PageHead } from "../patterns/PageHead";
 import { Button } from "../ui/button";
+import { Card } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { Toaster } from "../ui/sonner";
 import { AuthErrorBanner } from "./AuthErrorBanner";
+import { BrandMark } from "./BrandMark";
 import { useMe, MeProvider } from "./MeProvider";
 import { BottomTabs, MenuSheet, Sidebar } from "./Nav";
 import { pageTitle, type NavKey } from "./nav-items";
@@ -64,60 +66,66 @@ function Frame({ active, title, lead, leadVars, action, children }: AppShellProp
 
   if (error instanceof ApiError && error.code === "no_organization") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-4 p-6">
-        <h1 className="text-xl font-semibold">{t("no_organization_title")}</h1>
-        <p>{t("no_organization_text")}</p>
-        <Button onClick={onLogOut}>{t("log_out")}</Button>
+      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center p-4">
+        <Card className="items-start gap-4 px-6">
+          <BrandMark size="lg" />
+          <h1 className="text-xl font-bold">{t("no_organization_title")}</h1>
+          <p>{t("no_organization_text")}</p>
+          <Button onClick={onLogOut}>{t("log_out")}</Button>
+        </Card>
       </main>
     );
   }
 
+  const name = me?.user.displayName ?? null;
   const email = me?.user.email ?? null;
   const onboardingOpen = me === null || !me.onboarding.done;
   const operator = me?.operator === true;
   const approvalsWaiting = me?.approvalsWaiting ?? 0;
-  const navProps = { active, onboardingOpen, operator, features, approvalsWaiting, email, loading, onLogOut };
+  const navProps = { active, onboardingOpen, operator, features, approvalsWaiting, name, email, loading, onLogOut };
 
   let content: ReactNode;
   if (me !== null) {
     content = children;
   } else if (loading) {
     content = (
-      <div aria-busy="true" className="flex flex-col gap-3">
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-5/6" />
-        <Skeleton className="h-6 w-2/3" />
+      <div aria-busy="true" className="flex flex-col gap-3.5">
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
+        <Skeleton className="h-24 w-full rounded-lg" />
       </div>
     );
   } else {
     content = (
-      <div className="flex flex-col items-start gap-3">
+      <Card className="items-start gap-3 px-6">
         <p>{t("load_error_text")}</p>
         <Button onClick={reload}>{t("retry")}</Button>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[16rem_1fr]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[248px_1fr] lg:items-start lg:gap-5 lg:p-5">
       <Sidebar {...navProps} />
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background px-4 py-3 lg:hidden">
           <p className="text-lg font-semibold">{t("brand")}</p>
           <MenuSheet {...navProps} />
         </header>
-        <AuthErrorBanner count={me?.mailboxesInAuthError ?? 0} />
-        {me?.organization.plan === "suspended" && <PausedBanner contact={me.operatorContact} />}
-        {me?.organization.plan === "trial" && me.role === "owner" && me.organization.trialEndsAt !== null && (
-          <TrialLine endsAt={me.organization.trialEndsAt} timeZone={me.organization.timezone} />
-        )}
+        <div className="flex flex-col gap-3 px-3.5 pt-3 empty:hidden lg:px-3">
+          <AuthErrorBanner count={me?.mailboxesInAuthError ?? 0} />
+          {me?.organization.plan === "suspended" && <PausedBanner contact={me.operatorContact} />}
+          {me?.organization.plan === "trial" && me.role === "owner" && me.organization.trialEndsAt !== null && (
+            <TrialLine endsAt={me.organization.trialEndsAt} timeZone={me.organization.timezone} />
+          )}
+          {me !== null && (
+            <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
+          )}
+        </div>
         {me !== null && !me.terms.accepted && (
           <TermsDialog current={me.terms.current} onAccepted={reload} onLogOut={onLogOut} />
         )}
-        {me !== null && (
-          <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
-        )}
-        <main className="px-4 py-4 pb-24 lg:pb-8">
+        <main className="px-3.5 pt-3 pb-[calc(var(--tabbar-height)+env(safe-area-inset-bottom)+1.5rem)] lg:px-3 lg:pb-16">
           <PageHead
             title={t(heading)}
             lead={lead === undefined ? undefined : typeof lead === "string" ? t(lead, leadVars) : lead.text}

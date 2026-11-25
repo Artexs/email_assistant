@@ -17,7 +17,7 @@ export const enAuth = {
   menu_open: "Open menu",
   menu_title: "Menu",
   user_menu: "Account menu",
-  user_menu_named: "Account menu: {email}",
+  user_menu_named: "Account menu: {name}, {email}",
   help_link: "Help and guides",
   whats_new_title: "What is new",
   whats_new_all: "All changes for users",
