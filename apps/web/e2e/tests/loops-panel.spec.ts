@@ -29,13 +29,19 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
   return errors;
 }
 
+// The panel language follows the account: the page reads it from `/api/me` after it loads.
+async function setLocale(page: Page, locale: "en" | "pl"): Promise<void> {
+  const answer = await page.request.patch("/api/me/locale", { data: { locale } });
+  expect(answer.ok()).toBe(true);
+}
+
 // Saves the loops card in both schemes and both languages under `<UI_SHEET_DIR>/settings-mailbox/`, for the look next to the mockup. The page
 // returns to English and the light scheme.
 async function saveCardPictures(page: Page, card: Locator, state: "tracking-on" | "tracking-off"): Promise<void> {
   const dir = join(sheetDir(), "settings-mailbox");
   mkdirSync(dir, { recursive: true });
   for (const locale of ["en", "pl"] as const) {
-    await page.evaluate((value) => localStorage.setItem("ea.locale", value), locale);
+    await setLocale(page, locale);
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await expect(card).toBeVisible();
@@ -48,7 +54,7 @@ async function saveCardPictures(page: Page, card: Locator, state: "tracking-on" 
     }
   }
   await page.emulateMedia({ colorScheme: "light" });
-  await page.evaluate(() => localStorage.setItem("ea.locale", "en"));
+  await setLocale(page, "en");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 }
