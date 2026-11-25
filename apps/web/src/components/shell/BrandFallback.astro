@@ -1,0 +1,12 @@
+---
+import { en } from "../../i18n/en";
+import { BrandMark } from "./BrandMark";
+---
+
+<!-- What a split page shows before its island loads: the mark and the name, so the page is not blank. -->
+<div class="flex min-h-screen items-center justify-center p-5">
+  <p class="flex items-center gap-3 text-lg font-extrabold">
+    <BrandMark />
+    {en.brand}
+  </p>
+</div>

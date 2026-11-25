@@ -47,13 +47,18 @@ describe("DelegateList", () => {
     expect(html).not.toMatch(DISABLED);
   });
 
-  test("a member sees the list with no Edit button and a disabled switch", () => {
-    const html = list([delegate()], false);
-    expect(html).toContain("Anna Nowak");
-    expect(html).toContain("anna@example.com");
-    expect(html).not.toContain("Edit");
-    expect(html).toContain('aria-label="Active: Anna Nowak"');
+  test("a member sees a card with the initials, the address and the tags, a disabled switch and no Edit button", () => {
+    const html = list(
+      [delegate({ name: "Tomasz Nowak", email: "tomasz@example.com", tags: ["finance", "it"] })],
+      false
+    );
+    expect(html).toContain(">TN</span>");
+    expect(html).toContain("tomasz@example.com");
+    const tags = /<ul aria-label="Tags"[^>]*>(.*?)<\/ul>/.exec(html)?.[1] ?? "";
+    expect(tags.match(/<li/g)).toHaveLength(2);
+    expect(html).toContain('aria-label="Active: Tomasz Nowak"');
     expect(html).toMatch(DISABLED);
+    expect(html).not.toContain("Edit");
   });
 
   test("tags show as a labelled list of badges; no tag shows a word, not an empty list", () => {
@@ -66,10 +71,16 @@ describe("DelegateList", () => {
     expect(none).not.toContain('aria-label="Tags"');
   });
 
-  test("an empty list says so, in both languages", () => {
-    expect(list([], true)).toContain("There are no delegates yet.");
+  test("an empty list is a heading; an owner who can write also gets the line that points at the form", () => {
+    const owner = list([], true);
+    expect(owner).toMatch(/<h2[^>]*>There are no delegates yet\.<\/h2>/);
+    expect(owner).toContain("Add a delegate with the form above.");
+    const member = list([], false);
+    expect(member).toMatch(/<h2[^>]*>There are no delegates yet\.<\/h2>/);
+    expect(member).not.toContain("Add a delegate with the form above.");
     setLocaleForTest("pl");
     expect(list([], true)).toContain("Nie ma jeszcze wykonawców.");
+    expect(list([], true)).toContain("Dodaj osobę formularzem powyżej.");
   });
 
   test("a list of DELEGATE_LIST_MAX entries says that more may be hidden; a shorter list says nothing", () => {

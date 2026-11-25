@@ -1,4 +1,5 @@
 import { suggestionListSchema, suggestionResultSchema, type MailboxView, type SuggestionItem } from "@ea/core/web";
+import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -18,9 +19,11 @@ import {
   type SuggestionAction,
 } from "../../lib/suggestions-view";
 import { useResource } from "../../lib/use-resource";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
@@ -36,47 +39,53 @@ export interface SuggestionRowsProps {
 export function SuggestionRows({ items, canTap = false, pendingId = null, onAction }: SuggestionRowsProps) {
   if (items.length === 0) return <p className="text-sm text-muted-foreground">{t("sg_empty")}</p>;
   return (
-    <ul className="flex flex-col divide-y">
+    <RowList>
       {items.map((item) => (
-        <li
+        <div
           key={item.id}
-          className="flex flex-col gap-2 py-3"
+          className="contents break-words"
           data-pattern={item.pattern}
           data-suggestion-kind={item.kind}
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="break-all font-medium">{item.pattern}</span>
-            <Badge variant="secondary">{t(kindTitles[item.kind])}</Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {reasonLines(item)
-              .map((line) => t(line.key, line.vars))
-              .join(" ")}
-          </p>
-          {canTap && (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                size="sm"
-                disabled={pendingId !== null}
-                aria-label={t("sg_accept_for", { pattern: item.pattern })}
-                onClick={() => onAction?.(item, "accept")}
-              >
-                {t("sg_accept")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={pendingId !== null}
-                aria-label={t("sg_dismiss_for", { pattern: item.pattern })}
-                onClick={() => onAction?.(item, "dismiss")}
-              >
-                {t("sg_dismiss")}
-              </Button>
-            </div>
-          )}
-        </li>
+          <Row
+            title={item.pattern}
+            hint={
+              <span className="flex flex-col items-start gap-1.5">
+                <Badge variant="secondary">{t(kindTitles[item.kind])}</Badge>
+                <span>
+                  {reasonLines(item)
+                    .map((line) => t(line.key, line.vars))
+                    .join(" ")}
+                </span>
+              </span>
+            }
+          >
+            {canTap && (
+              <>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  disabled={pendingId !== null}
+                  aria-label={t("sg_accept_for", { pattern: item.pattern })}
+                  onClick={() => onAction?.(item, "accept")}
+                >
+                  {t("sg_accept")}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={pendingId !== null}
+                  aria-label={t("sg_dismiss_for", { pattern: item.pattern })}
+                  onClick={() => onAction?.(item, "dismiss")}
+                >
+                  {t("sg_dismiss")}
+                </Button>
+              </>
+            )}
+          </Row>
+        </div>
       ))}
-    </ul>
+    </RowList>
   );
 }
 
@@ -106,13 +115,13 @@ function MailboxSuggestions({
   useEffect(() => {
     if (gone) onGone(mailboxId);
   }, [gone, mailboxId, onGone]);
-  // After an Accept or a Dismiss the row that held the focus is gone: the focus moves to the heading of the card, not to the page.
-  const heading = useRef<HTMLDivElement>(null);
+  // After an Accept or a Dismiss the row that held the focus is gone: the focus moves to the card, not to the page.
+  const card = useRef<HTMLDivElement>(null);
   const moveFocus = useRef(false);
   useEffect(() => {
     const wanted = moveFocus.current;
     moveFocus.current = false;
-    if (focusHeadingAfterReload(wanted, error)) heading.current?.focus();
+    if (focusHeadingAfterReload(wanted, error)) card.current?.focus();
   }, [data, error]);
 
   // The card shows once the first answer is in: with the flag off it never shows, and it does not flash.
@@ -139,42 +148,44 @@ function MailboxSuggestions({
   };
 
   return (
-    <Card data-card="suggestions">
-      <CardHeader>
-        <CardTitle ref={heading} tabIndex={-1} className="outline-none">
-          {t("sg_title")}
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">{t("sg_help")}</p>
-        {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("sg_member_note")}</p>}
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {mailboxes.length > 1 && (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="suggestions-mailbox">{t("sg_mailbox_label")}</Label>
-            <Select value={mailbox.id} onValueChange={onChoose}>
-              <SelectTrigger id="suggestions-mailbox" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {mailboxes.map((item) => (
-                  <SelectItem key={item.id} value={item.id}>
-                    {item.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        {data === null ? (
-          <div className="flex flex-col items-start gap-3">
-            <p>{t("sg_load_error")}</p>
-            <Button onClick={reload}>{t("retry")}</Button>
-          </div>
-        ) : (
-          <SuggestionRows items={data} canTap={isOwner} pendingId={pendingId} onAction={act} />
-        )}
-      </CardContent>
-    </Card>
+    <SectionCard
+      ref={card}
+      icon={Sparkles}
+      title={t("sg_title")}
+      lead={t("sg_help")}
+      data-card="suggestions"
+      role="group"
+      aria-label={t("sg_title")}
+      tabIndex={-1}
+      className="outline-none"
+    >
+      {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("sg_member_note")}</p>}
+      {mailboxes.length > 1 && (
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="suggestions-mailbox">{t("sg_mailbox_label")}</Label>
+          <Select value={mailbox.id} onValueChange={onChoose}>
+            <SelectTrigger id="suggestions-mailbox" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {mailboxes.map((item) => (
+                <SelectItem key={item.id} value={item.id}>
+                  {item.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+      {data === null ? (
+        <div className="flex flex-col items-start gap-3">
+          <p>{t("sg_load_error")}</p>
+          <Button onClick={reload}>{t("retry")}</Button>
+        </div>
+      ) : (
+        <SuggestionRows items={data} canTap={isOwner} pendingId={pendingId} onAction={act} />
+      )}
+    </SectionCard>
   );
 }
 

@@ -3,7 +3,8 @@ import { EVIDENCE_MIN_LABELS, type WeekStats } from "@ea/core/web";
 
 import { en } from "../i18n/en";
 import { setLocaleForTest } from "../i18n";
-import { statsRows, weekLabel } from "./stats-view";
+import type { TextKey } from "../i18n";
+import { hasSplit, statsHead, statsRows, weekLabel, type StatsHead } from "./stats-view";
 
 afterEach(() => setLocaleForTest("en"));
 
@@ -280,5 +281,97 @@ describe("weekLabel", () => {
   test("the Polish label uses the Polish month", () => {
     setLocaleForTest("pl");
     expect(weekLabel("2026-11-16")).toBe("16 lis");
+  });
+});
+
+const ZERO_TALLY = { due: 0, closedOnTime: 0, surfacedOnTime: 0, pending: 0 };
+
+describe("statsHead", () => {
+  const rows: {
+    name: string;
+    patch: Partial<WeekStats>;
+    split: boolean;
+    ring: StatsHead["ring"];
+    tiles: string[];
+    thirdLabel: TextKey;
+  }[] = [
+    {
+      name: "a handled share",
+      patch: { m4: { triaged: 200, handled: 150, wouldHandle: 0 } },
+      split: false,
+      ring: { value: 150, max: 200, percent: "75%", label: "stats_m4" },
+      tiles: ["4", "3 min", "50%"],
+      thirdLabel: "stats_m2_closed",
+    },
+    {
+      name: "a shadow week shows the would-handle share",
+      patch: { m4: { triaged: 200, handled: 0, wouldHandle: 120 } },
+      split: false,
+      ring: { value: 120, max: 200, percent: "60%", label: "stats_m4_would" },
+      tiles: ["4", "3 min", "50%"],
+      thirdLabel: "stats_m2_closed",
+    },
+    {
+      name: "no triaged mail gives an empty ring and a dash",
+      patch: { m4: { triaged: 0, handled: 0, wouldHandle: 0 } },
+      split: false,
+      ring: { value: 0, max: 0, percent: "–", label: "stats_m4" },
+      tiles: ["4", "3 min", "50%"],
+      thirdLabel: "stats_m2_closed",
+    },
+    {
+      name: "no p90, no due loop and no mistake give 0 and two dashes",
+      patch: {
+        m3: { ...week().m3, total: 0 },
+        m5: { ...week().m5, p90Minutes: null },
+        m2: { ...ZERO_TALLY },
+      },
+      split: false,
+      ring: { value: 3, max: 9, percent: "33%", label: "stats_m4" },
+      tiles: ["0", "–", "–"],
+      thirdLabel: "stats_m2_closed",
+    },
+    {
+      name: "a split week uses the loops label and trims the p90 to one decimal",
+      patch: {
+        m3: { ...week().m3, total: 2 },
+        m5: { ...week().m5, p90Minutes: 12.4 },
+        m2: { due: 4, closedOnTime: 3, surfacedOnTime: 4, pending: 0 },
+      },
+      split: true,
+      ring: { value: 3, max: 9, percent: "33%", label: "stats_m4" },
+      tiles: ["2", "12.4 min", "75%"],
+      thirdLabel: "stats_m2_loops_closed",
+    },
+  ];
+
+  test.each(rows)("$name", ({ patch, split, ring, tiles, thirdLabel }) => {
+    const head = statsHead(week(patch), split);
+    expect(head.ring).toEqual(ring);
+    expect(head.tiles.map((tile) => tile.value)).toEqual(tiles);
+    expect(head.tiles.map((tile) => tile.label)).toEqual(["stats_m3", "stats_m5", thirdLabel]);
+  });
+
+  test.each(rows)("$name: the ring percent is the percent of the table cell", ({ patch, ring }) => {
+    const source = week(patch);
+    const cell = cellOf(statsRows([source]), ring.label) ?? "";
+    expect(ring.percent === "–" ? cell : cell.split(" ")[0]).toBe(ring.percent);
+  });
+
+  test("Polish writes the percent with a space and the minutes with a comma", () => {
+    setLocaleForTest("pl");
+    const head = statsHead(week({ m5: { ...week().m5, p90Minutes: 2.5 } }), false);
+    expect(head.ring.percent).toBe("33 %");
+    expect(head.tiles[1]?.value).toBe("2,5 min");
+  });
+
+  test("hasSplit is true when any week holds the split", () => {
+    const split = week({
+      m2: {
+        ...ZERO_TALLY,
+        byKind: { delegation: ZERO_TALLY, waiting: ZERO_TALLY, promised: ZERO_TALLY, delegated: ZERO_TALLY },
+      },
+    });
+    expect([hasSplit([week()]), hasSplit([week(), split])]).toEqual([false, true]);
   });
 });

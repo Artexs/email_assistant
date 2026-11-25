@@ -16,8 +16,8 @@ import { seedAssistMailbox } from "./seed-assist-mailbox";
 import type { SeedContext } from "./seed-context";
 
 export async function seedSuggestions({ db, config, secretBox }: SeedContext) {
-  // One organization per project for the suggestions spec. The flags `sender_context`, `sender_suggestions` and `sent_sync` are
-  // on; one mailbox with three open suggestions and Sent coverage. See `e2e-suggestion-rows.ts`.
+  // One organization per project for the suggestions spec. The flags `sender_context`, `sender_suggestions`, `sent_sync` and
+  // `bulk_unsubscribe` are on (the last one only so that the Rules page shows both cards, with no newsletter rows); one mailbox with three open suggestions and Sent coverage. See `e2e-suggestion-rows.ts`.
   const suggestionIds = {} as Record<
     E2eProject,
     { orgId: string; ownerId: string; memberId: string; mailboxId: string }
@@ -35,7 +35,7 @@ export async function seedSuggestions({ db, config, secretBox }: SeedContext) {
       displayName: `E2E Suggestions member ${project}`,
     });
     await insertMembership(db, ctx, { userId: member.id, role: "assistant" });
-    for (const flag of ["sender_context", "sender_suggestions", "sent_sync"] as const) {
+    for (const flag of ["sender_context", "sender_suggestions", "sent_sync", "bulk_unsubscribe"] as const) {
       await upsertOrgFeature(db, ctx, { flag, enabled: true, setBy: suggestionOwner.userId, setAt: new Date() });
     }
     const mailboxId = await seedAssistMailbox(db, secretBox, ctx, e2eSuggestionsMailbox(project));
