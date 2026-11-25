@@ -19,7 +19,7 @@ export function AddressList({ entries }: { entries: readonly string[] }) {
             {/* Isolated: a direction override in the text cannot reverse the text around it. */}
             <bdi>{text}</bdi>
             {unusual && (
-              <Badge variant="destructive" className="ml-2 align-middle">
+              <Badge variant="destructive" className="ml-2 max-w-full whitespace-normal text-left align-middle">
                 <TriangleAlert aria-hidden="true" />
                 {t("rp_address_unusual")}
               </Badge>
