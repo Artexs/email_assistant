@@ -50,7 +50,7 @@ You turn it on in **<UiText k="nav_settings" />**, in the Account card. See [Tur
 ## 4. Do the Onboarding checklist
 <Shot page="onboarding" />
 
-After the first sign-in the panel opens the page **<UiText k="nav_onboarding" />**. It shows a checklist.
+After the first sign-in the panel opens the page **<UiText k="nav_onboarding" />**. It shows a checklist as numbered step cards, with a progress ring that counts the required steps. The first step that is not done has a teal outline.
 The checklist is done when you have a mailbox, a Telegram link and a chosen mode. The last item is optional. The Telegram link counts only when the server has a Telegram bot.
 When it is done, the panel shows this text and opens Activity at each next sign-in:
 
@@ -104,7 +104,7 @@ A new mailbox starts in shadow mode. For an owner, the checklist item says:
 
 > <UiText k="ob_mode_open" />
 
-Press **<UiText k="ob_keep_shadow" />** to stay in shadow mode. You can switch a mailbox to assist mode later, in Settings.
+The step shows two cards, one for shadow mode and one for assist mode. A card explains its mode; it changes nothing by itself. Press **<UiText k="ob_keep_shadow" />** on the shadow card to stay in shadow mode. On the assist card, press **<UiText k="ob_use_assist" />** to open the same dialog as in Settings, and choose how to switch. With more than one mailbox, the assist card links to Settings. You can also switch a mailbox to assist mode later, in Settings.
 
 ### Add sender rules
 <Shot page="rules" />

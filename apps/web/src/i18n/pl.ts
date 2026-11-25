@@ -38,6 +38,11 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
     many: "Połączono {count} skrzynek.",
   },
   ob_rules: { one: "1 reguła", few: "{count} reguły", many: "{count} reguł" },
+  ob_steps_done: {
+    one: "Zrobiono {done} z 1 kroku",
+    few: "{done} z {count} kroków zrobione",
+    many: "Zrobiono {done} z {count} kroków",
+  },
   op_sso_linked: {
     one: "{count} połączona osoba",
     few: "{count} połączone osoby",

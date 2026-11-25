@@ -1,11 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
+import { expect, test, type Page } from "@playwright/test";
 import { createFakeTelegramClient } from "../../../../tools/fake-telegram/src/driver";
 
 import { en, enPlurals } from "../../src/i18n/en";
+import { pl } from "../../src/i18n/pl";
 import { expectNoA11yViolations } from "../a11y";
 import { E2E_TELEGRAM_URL } from "../env";
 import { cleanUpOrg, connectGreenMail, cspErrors, nextAddress, signIn } from "../helpers";
 import { readSeed } from "../seed";
+import { sheetDir } from "../ui-sheet/dir";
 import { MINUTE_MS } from "@ea/core";
 
 test.describe.configure({ mode: "serial" });
@@ -99,4 +104,97 @@ test("from open to done and back", async ({ page }, testInfo) => {
 
   await page.goto("/");
   await expect(page).toHaveURL(/\/onboarding$/);
+});
+
+interface MeAnswer {
+  role: string;
+  user: Record<string, unknown>;
+  onboarding: Record<string, unknown>;
+}
+
+// The answer of `/api/me` with a change. The mode step may be done already (an audit row stays), so a test of the open step sets it open.
+async function changeMe(page: Page, change: (me: MeAnswer) => MeAnswer): Promise<void> {
+  await page.route("**/api/me", async (route) => {
+    const me = (await (await route.fetch()).json()) as MeAnswer;
+    await route.fulfill({ json: change(me) });
+  });
+}
+
+const modeOpen = (me: MeAnswer): MeAnswer => ({ ...me, onboarding: { ...me.onboarding, mode: false, trust: false } });
+
+test("the mode cards explain both modes and a member sees no button", async ({ page }) => {
+  await changeMe(page, (me) => ({ ...modeOpen(me), role: "assistant" }));
+  await page.goto("/onboarding");
+  await expect(page.getByRole("heading", { level: 3, name: en.mode_shadow })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3, name: en.mode_assist })).toBeVisible();
+  await expect(page.getByText(en.ob_mode_assistant, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: en.ob_keep_shadow })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: en.ob_use_assist })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: en.ob_open_settings })).toHaveCount(0);
+});
+
+test("a tap on Use assist opens the mode dialog; Cancel sends no mode call; pictures go to the sheet folder", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(MINUTE_MS);
+  let panelLocale: "en" | "pl" = "en";
+  await changeMe(page, (me) => ({ ...modeOpen(me), user: { ...me.user, locale: panelLocale } }));
+  const modeCalls: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.endsWith("/mode")) modeCalls.push(`${request.method()} ${request.url()}`);
+  });
+  const folder = join(sheetDir(), "f170-06");
+  mkdirSync(folder, { recursive: true });
+
+  await page.goto("/onboarding");
+  await expect(page.getByText(en.ob_mode_need_mailbox, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: en.ob_use_assist })).toHaveCount(0);
+
+  await page.goto("/mailboxes?connect=1");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await connectGreenMail(page, testInfo.project.name);
+
+  await page.goto("/onboarding");
+  await expect(page.getByRole("heading", { level: 1, name: en.title_onboarding })).toBeVisible();
+  const keep = page.getByRole("button", { name: en.ob_keep_shadow });
+  await expect(keep).toBeEnabled();
+  await expect(page.getByRole("link", { name: en.ob_open_settings })).toBeVisible();
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  await expect(page.locator('[data-card="progress"]')).toBeVisible();
+  await expectNoA11yViolations(page);
+
+  const open = page.getByRole("button", { name: en.ob_use_assist });
+  await open.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: en.assist_title })).toBeVisible();
+  await expectNoA11yViolations(page, { include: '[role="dialog"]' });
+  await page.screenshot({
+    path: join(folder, `onboarding-assist-dialog-${testInfo.project.name}-light-en.png`),
+    animations: "disabled",
+  });
+  await dialog.getByRole("button", { name: en.cancel }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(open).toBeEnabled();
+  await expect(keep).toBeVisible();
+  expect(modeCalls).toEqual([]);
+
+  for (const [locale, texts] of [
+    ["en", en],
+    ["pl", pl],
+  ] as const) {
+    panelLocale = locale;
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: texts.title_onboarding })).toBeVisible();
+    await expect(page.getByRole("button", { name: texts.ob_use_assist })).toBeEnabled();
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.screenshot({
+        path: join(folder, `onboarding-mode-cards-${testInfo.project.name}-${scheme}-${locale}.png`),
+        fullPage: true,
+        animations: "disabled",
+      });
+    }
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  expect(modeCalls).toEqual([]);
 });

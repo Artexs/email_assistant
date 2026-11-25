@@ -30,6 +30,7 @@ export const enPlurals = {
   auth_error_banner: { one: "1 mailbox has a login error.", other: "{count} mailboxes have a login error." },
   ob_mailbox_done: { one: "1 mailbox connected.", other: "{count} mailboxes connected." },
   ob_rules: { one: "1 rule", other: "{count} rules" },
+  ob_steps_done: { one: "{done} of 1 step done", other: "{done} of {count} steps done" },
   op_sso_linked: { one: "{count} linked member", other: "{count} linked members" },
   expired_suffix: { one: "1 planned action was cancelled.", other: "{count} planned actions were cancelled." },
   // The wait of an open loop

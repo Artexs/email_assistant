@@ -167,4 +167,8 @@ export const enMailboxes = {
   ob_go_activity: "Go to Activity",
   ob_item_done: "Done",
   ob_item_open: "Not done",
+  ob_lead: "A few short steps. You can change everything later.",
+  ob_use_assist: "Use assist…",
+  ob_assist_settings: "Choose a mailbox in Settings",
+  ob_mode_need_mailbox: "Connect a mailbox first.",
 } as const;
