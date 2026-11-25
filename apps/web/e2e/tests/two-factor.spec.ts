@@ -118,6 +118,16 @@ test("a wrong password at the start of the set-up shows a linked error and keeps
   await expect(page.locator(`[id="${describedBy}"]`)).toHaveText(en.tf_error_password);
 });
 
+test("the two-factor required link scrolls the section into view", async ({ browser }, testInfo) => {
+  const user = readSeed().twoFactorOwners[projectOf(testInfo.project.name)];
+  const page = await newSession(browser, testInfo.project.name);
+  await signInAs(page, user);
+  await expect(page).toHaveURL(/\/onboarding$/);
+  await page.goto("/settings?two_factor=required");
+  await expect(page.locator("[data-card=security] #two-factor")).toBeVisible();
+  await expect(page.locator("#two-factor")).toBeInViewport();
+});
+
 test("turn on: password, QR code, code, backup codes", async ({ browser }, testInfo) => {
   const user = readSeed().twoFactorOwners[projectOf(testInfo.project.name)];
   const page = await newSession(browser, testInfo.project.name);

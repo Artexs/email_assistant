@@ -1,4 +1,5 @@
 import { changePasswordFormSchema, fieldErrors as toFieldErrors, sessionsSchema } from "@ea/core/web";
+import { ShieldCheck, TriangleAlert, UserRound } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -13,8 +14,11 @@ import { useResource } from "../../lib/use-resource";
 import { LegalLinks } from "../legal/LegalLinks";
 import { useMe } from "../shell/MeProvider";
 import { Badge } from "../ui/badge";
+import { FactBox } from "../patterns/FactBox";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -36,8 +40,8 @@ function dateFormat(): Intl.DateTimeFormat {
 function SessionsList({ ssoSession }: { ssoSession: boolean }) {
   const { data, error, loading, reload } = useResource(() => api("/api/me/sessions", sessionsSchema));
   return (
-    <section data-section="sessions" className="flex flex-col gap-3">
-      <h3 className="text-sm font-medium">{t("acct_sessions_title")}</h3>
+    <section data-section="sessions" className="flex flex-col gap-2">
+      <h3 className="text-base font-bold">{t("acct_sessions_title")}</h3>
       {data === null && error !== null ? (
         <div className="flex flex-col items-start gap-2">
           <p role="alert" className="text-destructive text-sm">
@@ -50,27 +54,28 @@ function SessionsList({ ssoSession }: { ssoSession: boolean }) {
       ) : data === null || loading ? (
         <Skeleton className="h-12 w-full" />
       ) : (
-        <ul className="flex flex-col gap-2">
+        <RowList>
           {data.sessions.map((session) => (
-            <li
-              key={session.id}
-              data-session={session.id}
-              className="flex flex-col gap-1 rounded-md border p-3 text-sm"
-            >
-              <span className="flex items-center gap-2 font-medium">
-                {t("device_on", {
+            <div key={session.id} data-session={session.id}>
+              <Row
+                title={t("device_on", {
                   browser: t(`browser_${session.device.browser}`),
                   os: t(`os_${session.device.os}`),
                 })}
+                hint={
+                  <>
+                    <span className="block">{session.address ?? t("acct_unknown_address")}</span>
+                    <span className="block">
+                      {t("acct_last_active", { date: dateFormat().format(new Date(session.lastUsedAt)) })}
+                    </span>
+                  </>
+                }
+              >
                 {session.current ? <Badge data-badge="this-device">{t("acct_this_device")}</Badge> : null}
-              </span>
-              <span className="text-muted-foreground">{session.address ?? t("acct_unknown_address")}</span>
-              <span className="text-muted-foreground">
-                {t("acct_last_active", { date: dateFormat().format(new Date(session.lastUsedAt)) })}
-              </span>
-            </li>
+              </Row>
+            </div>
           ))}
-        </ul>
+        </RowList>
       )}
       {ssoSession ? <p className="text-muted-foreground text-sm">{t("acct_sso_session")}</p> : null}
     </section>
@@ -99,18 +104,69 @@ function LanguageSelect() {
   }
 
   return (
+    <RowList>
+      <Row title={t("acct_language_label")} hint={t("acct_language_help")} htmlFor="acct-language">
+        <Select value={locale} onValueChange={(value) => void onChange(value)} disabled={saving}>
+          <SelectTrigger id="acct-language" className="w-36 sm:w-56">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pl">{t("acct_language_pl")}</SelectItem>
+            <SelectItem value="en">{t("acct_language_en")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Row>
+    </RowList>
+  );
+}
+
+// One labelled password field with its help and error lines. `help` and the error get their own ids, in the
+// `aria-describedby` of the field.
+function PasswordField({
+  id,
+  name,
+  autoComplete,
+  label,
+  value,
+  onChange,
+  error,
+  help,
+}: {
+  id: string;
+  name: string;
+  autoComplete: "current-password" | "new-password";
+  label: TextKey;
+  value: string;
+  onChange(next: string): void;
+  error: TextKey | undefined;
+  help?: TextKey;
+}) {
+  const described = [help === undefined ? null : `${id}-help`, error === undefined ? null : `${id}-error`].filter(
+    (part) => part !== null
+  );
+  return (
     <div className="flex flex-col gap-2">
-      <Label htmlFor="acct-language">{t("acct_language_label")}</Label>
-      <Select value={locale} onValueChange={(value) => void onChange(value)} disabled={saving}>
-        <SelectTrigger id="acct-language" className="w-full sm:w-64">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="pl">{t("acct_language_pl")}</SelectItem>
-          <SelectItem value="en">{t("acct_language_en")}</SelectItem>
-        </SelectContent>
-      </Select>
-      <p className="text-muted-foreground text-sm">{t("acct_language_help")}</p>
+      <Label htmlFor={id}>{t(label)}</Label>
+      <Input
+        id={id}
+        name={name}
+        type="password"
+        autoComplete={autoComplete}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-invalid={error !== undefined}
+        aria-describedby={described.length === 0 ? undefined : described.join(" ")}
+      />
+      {help === undefined ? null : (
+        <p id={`${id}-help`} className="text-muted-foreground text-sm">
+          {t(help)}
+        </p>
+      )}
+      {error === undefined ? null : (
+        <p id={`${id}-error`} role="alert" className="text-destructive text-sm">
+          {t(error)}
+        </p>
+      )}
     </div>
   );
 }
@@ -186,98 +242,66 @@ export function AccountCard() {
   }
 
   return (
-    <Card data-card="account">
-      <CardHeader>
-        <CardTitle>{t("acct_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+    <>
+      <SectionCard data-card="account" icon={UserRound} title={t("acct_title")}>
         <LanguageSelect />
         {sections.ssoOnlyHint ? (
-          <p data-hint="sso-only" className="text-muted-foreground text-sm">
-            {t("acct_sso_only")}
-          </p>
+          <FactBox>
+            <p data-hint="sso-only">{t("acct_sso_only")}</p>
+          </FactBox>
         ) : null}
         {sections.passwordControls ? (
-          <>
-            <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="acct-current">{t("acct_current_label")}</Label>
-                <Input
-                  id="acct-current"
-                  name="current-password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={current}
-                  onChange={(event) => setCurrent(event.target.value)}
-                  aria-invalid={fieldErrors.current !== undefined}
-                  aria-describedby={fieldErrors.current === undefined ? undefined : "acct-current-error"}
-                />
-                {fieldErrors.current === undefined ? null : (
-                  <p id="acct-current-error" role="alert" className="text-destructive text-sm">
-                    {t(fieldErrors.current)}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="acct-new">{t("new_password_label")}</Label>
-                <Input
-                  id="acct-new"
-                  name="new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  aria-invalid={fieldErrors.password !== undefined}
-                  aria-describedby={
-                    fieldErrors.password === undefined ? "acct-new-help" : "acct-new-help acct-new-error"
-                  }
-                />
-                <p id="acct-new-help" className="text-muted-foreground text-sm">
-                  {t("password_help")}
-                </p>
-                {fieldErrors.password === undefined ? null : (
-                  <p id="acct-new-error" role="alert" className="text-destructive text-sm">
-                    {t(fieldErrors.password)}
-                  </p>
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="acct-repeat">{t("repeat_password_label")}</Label>
-                <Input
-                  id="acct-repeat"
-                  name="repeat-password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={repeat}
-                  onChange={(event) => setRepeat(event.target.value)}
-                  aria-invalid={fieldErrors.repeat !== undefined}
-                  aria-describedby={fieldErrors.repeat === undefined ? undefined : "acct-repeat-error"}
-                />
-                {fieldErrors.repeat === undefined ? null : (
-                  <p id="acct-repeat-error" role="alert" className="text-destructive text-sm">
-                    {t(fieldErrors.repeat)}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
+          <form
+            method="post"
+            onSubmit={(event) => void onSubmit(event)}
+            noValidate
+            className="flex flex-col gap-4 border-t pt-4"
+          >
+            <h3 className="text-base font-bold">{t("acct_change")}</h3>
+            <PasswordField
+              id="acct-current"
+              name="current-password"
+              autoComplete="current-password"
+              label="acct_current_label"
+              value={current}
+              onChange={setCurrent}
+              error={fieldErrors.current}
+            />
+            <PasswordField
+              id="acct-new"
+              name="new-password"
+              autoComplete="new-password"
+              label="new_password_label"
+              value={password}
+              onChange={setPassword}
+              error={fieldErrors.password}
+              help="password_help"
+            />
+            <PasswordField
+              id="acct-repeat"
+              name="repeat-password"
+              autoComplete="new-password"
+              label="repeat_password_label"
+              value={repeat}
+              onChange={setRepeat}
+              error={fieldErrors.repeat}
+            />
+            <RowList>
+              <Row title={t("acct_revoke_others")} htmlFor="acct-revoke">
                 <Switch id="acct-revoke" checked={revokeOthers} onCheckedChange={setRevokeOthers} disabled={pending} />
-                <Label htmlFor="acct-revoke">{t("acct_revoke_others")}</Label>
-              </div>
-              <div>
-                <Button type="submit" disabled={pending}>
-                  {pending ? t("acct_changing") : t("acct_change")}
-                </Button>
-              </div>
-              {error === null ? null : (
-                <p role="alert" className="text-destructive text-sm">
-                  {t(error)}
-                </p>
-              )}
-            </form>
-            <div className="border-t pt-4">
-              <TwoFactorSection />
+              </Row>
+            </RowList>
+            <div>
+              <Button type="submit" disabled={pending}>
+                {pending ? t("acct_changing") : t("acct_change")}
+              </Button>
             </div>
-          </>
+            {error === null ? null : (
+              <p role="alert" className="text-destructive text-sm">
+                {t(error)}
+              </p>
+            )}
+          </form>
         ) : null}
         <div className="flex flex-col items-start gap-2 border-t pt-4">
           <div className="w-full">
@@ -285,8 +309,7 @@ export function AccountCard() {
           </div>
           <Button
             type="button"
-            variant="outline"
-            className="text-destructive"
+            variant="destructive-soft"
             disabled={signingOut}
             onClick={() => void signOutEverywhere()}
           >
@@ -299,21 +322,26 @@ export function AccountCard() {
             </p>
           )}
         </div>
-        {me !== null && me.role === "owner" && me.features.includes("security_log") ? (
-          <div className="border-t pt-4">
-            <SecurityLog timeZone={me.organization.timezone} />
-          </div>
-        ) : null}
         <div data-section="legal" className="flex flex-col gap-2 border-t pt-4">
-          <h3 className="text-sm font-medium">{t("docs_links_label")}</h3>
+          <h3 className="text-base font-bold">{t("docs_links_label")}</h3>
           <LegalLinks newTab />
         </div>
-        {sections.deleteBlock ? (
-          <div className="border-t pt-4">
-            <DeleteOrganization />
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+      </SectionCard>
+      {sections.securityCard ? (
+        <SectionCard data-card="security" icon={ShieldCheck} title={t("acct_security_title")}>
+          {sections.passwordControls ? <TwoFactorSection /> : null}
+          {sections.securityLog && me !== null ? (
+            <div className={sections.passwordControls ? "border-t pt-4" : undefined}>
+              <SecurityLog timeZone={me.organization.timezone} />
+            </div>
+          ) : null}
+        </SectionCard>
+      ) : null}
+      {sections.deleteBlock ? (
+        <SectionCard data-card="delete-organization" icon={TriangleAlert} title={t("del_title")} tone="danger">
+          <DeleteOrganization />
+        </SectionCard>
+      ) : null}
+    </>
   );
 }
