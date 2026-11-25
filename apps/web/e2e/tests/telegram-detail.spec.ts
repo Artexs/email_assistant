@@ -81,7 +81,7 @@ test("flag off: no choice in the link step, no lock card, no route card, and no 
   await expect(page.getByRole("button", { name: en.tg_link })).toBeEnabled();
 
   await page.goto("/settings");
-  await expect(page.getByRole("heading", { name: en.set_section_general })).toBeVisible();
+  await expect(page.getByRole("region", { name: en.set_group_notices })).toBeVisible();
   await expect(page.locator("[data-card=timezone]")).toBeVisible();
   await expect(page.locator("[data-card=telegram-lock]")).toHaveCount(0);
   await expect(page.locator("[data-card=notice-routes]")).toHaveCount(0);
