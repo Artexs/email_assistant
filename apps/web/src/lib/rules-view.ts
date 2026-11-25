@@ -1,4 +1,4 @@
-import type { RuleView, SenderRuleKind } from "@ea/core/web";
+import type { RuleBody, RuleView, SenderRuleKind } from "@ea/core/web";
 
 import type { TextKey } from "../i18n";
 
@@ -31,4 +31,11 @@ export function scopeLabel(
 
 export function rulesPath(mailboxId: string | null): string {
   return mailboxId === null ? "/api/rules" : `/api/rules?mailboxId=${encodeURIComponent(mailboxId)}`;
+}
+
+// The body of the add form that puts a removed rule back.
+export function undoBody(rule: RuleView): RuleBody {
+  return rule.mailboxId === null
+    ? { kind: rule.kind, pattern: rule.pattern }
+    : { kind: rule.kind, pattern: rule.pattern, mailboxId: rule.mailboxId };
 }

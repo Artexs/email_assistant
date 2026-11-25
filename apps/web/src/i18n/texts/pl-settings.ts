@@ -245,6 +245,8 @@ export const plSettings = {
   rules_load_error: "Nie udało się wczytać reguł.",
   rule_added_toast: "Reguła dodana.",
   rule_deleted_toast: "Reguła usunięta.",
+  rule_undo: "Cofnij",
+  rule_restored_toast: "Reguła przywrócona.",
   err_rule_exists: "Ta reguła już istnieje.",
   err_rule_limit: "Osiągnięto limit reguł: 1000.",
   // The urgency card on the Rules page

@@ -239,6 +239,8 @@ export const enSettings = {
   rules_load_error: "Could not load the rules.",
   rule_added_toast: "Rule added.",
   rule_deleted_toast: "Rule deleted.",
+  rule_undo: "Undo",
+  rule_restored_toast: "Rule put back.",
   err_rule_exists: "This rule exists already.",
   err_rule_limit: "You have reached the limit of 1000 rules.",
   // The urgency card on the Rules page

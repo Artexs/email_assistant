@@ -3,7 +3,9 @@ import type { RuleView } from "@ea/core/web";
 
 import { en } from "../i18n/en";
 
-import { groupRules, kindTitles, ruleKindOrder, rulesPath, scopeLabel } from "./rules-view";
+import { ruleBodySchema } from "@ea/core/web";
+
+import { groupRules, kindTitles, ruleKindOrder, rulesPath, scopeLabel, undoBody } from "./rules-view";
 
 const MAILBOX = "11111111-1111-4111-8111-111111111111";
 const GONE = "22222222-2222-4222-8222-222222222222";
@@ -67,5 +69,19 @@ describe("rulesPath", () => {
 describe("kindTitles", () => {
   test("names a text key for every kind of the order", () => {
     for (const kind of ruleKindOrder) expect(Object.hasOwn(en, kindTitles[kind])).toBe(true);
+  });
+});
+
+describe("undoBody", () => {
+  test("a rule for all mailboxes gives a body with no mailbox", () => {
+    const body = undoBody(rule("1", "blocklist"));
+    expect(body).toEqual({ kind: "blocklist", pattern: "p1.test" });
+    expect(ruleBodySchema.parse(body)).toEqual(body);
+  });
+
+  test("a rule for one mailbox keeps its mailbox", () => {
+    const body = undoBody(rule("2", "vip", MAILBOX));
+    expect(body).toEqual({ kind: "vip", pattern: "p2.test", mailboxId: MAILBOX });
+    expect(ruleBodySchema.parse(body)).toEqual(body);
   });
 });
