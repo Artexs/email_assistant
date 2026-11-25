@@ -1,0 +1,14 @@
+# F172 questions for the owner
+
+Defaults taken by the planner (2026-11-25). The stages build them; a different answer changes one stage, not the plan.
+
+1. [important: production] **Release gate (P1).** Default: the release needs no owner "go"; it goes when CI is green on the release commit (standing rule of 2026-11-24, restated in the planner task). If the board no longer holds that rule when stage 05 starts, the coordinator asks for "go" first. Other option: always wait for "go" on the full contact sheet. Stage 05.
+2. [important: production] **The 20-draft check (P2).** Default: the record of 2026-11-21 (the owner check of 20 drafts is "not done"; the judge stays) counts as "recorded" for PB-12. Other option: the release waits for the 20 answers in `spec/features/active/F115-e6a-reply-drafts/owner-check-20.md`. Stage 05.
+3. [important: user-visible] **The "what is new" card (P3).** Default: the card stays behind the flag `docs_links`, which this ticket does not turn on (the card and the Help link point to the docs site, whose publication is the owner's gate). Members see the card only where the flag is on. Other option: turn `docs_links` on for the pilot organization in stage 05. Stage 05.
+4. [important: rule-exception] **One `bun.lock` change (D3).** Default: stage 02 removes the unused `next-themes` dependency, the only `bun.lock` change of the programme, against the rule "no `bun.lock` change" of the programme page (DB-1) and ADR 0037 decision 15. Other option: keep the unused dependency. Stage 02.
+5. [important: user-visible] **Public release text (P6).** Default: the "For users" lines name only the new look (and the rule sentence if its page has no default-off flag); the approvals queue and the delegation columns go into the private operator group, because their pages are behind default-off flags. Other option: name every new flow (then the flags' texts become public). Stage 04.
+6. [important: user-visible] **Telegram buttons in the Settings help (P5).** Default: the help text names them in words ("the tick or pencil button"; pl "przyciskiem z ptaszkiem lub ołówkiem"), not as ✅ and ✏️. Other option: an emoji exception in the guard. Stage 01.
+7. [minor] **Version (P4).** Default: `v0.5.0`. Other option: `v0.4.6`. Stage 05.
+8. [minor] **Unused variants go (D4).** Default: a primitive variant or size with no user is removed, and ADR 0037 decision 8 changes. Other option: keep every name. Stage 02.
+9. [minor] **Visual review proposals (D6).** Default: a mockup difference that needs more than about 100 lines becomes a follow-up ticket proposal and does not block the release. Stage 03.
+10. [minor] **Design study files (D8).** Default: the ignored design study files move to `~/.local/share/email-assistant/design-study-2026-11/`; the scratch worktree `/tmp/ea-ui-shots` and its two seed DBs are removed; the full contact sheet folder stays 14 days after the release. Stage 06.

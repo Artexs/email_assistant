@@ -29,12 +29,12 @@ Nothing of the old look is left in the repository, and production gets the Pebbl
 
 ## Slices
 
-Stages come from the plan. The release stage is the coordinator's own run.
+Six stages: [`plan.md`](plan.md) § Stages and § How to run. The two sweep stages run next to each other; the visual review, the mockup removal and the release follow in order. The release and the local cleanup are the coordinator's own runs. No owner stop: the contact-sheet "go" is taken as given once CI is green (standing rule, `questions.md` 1).
 
 ## Sequenced
 
 - Plan after: F171.
-- Build after: F166, F167, F168, F169, F170, F171. Gate: the owner's "go" (programme decision PB-12).
+- Build after: F166, F167, F168, F169, F170, F171. Gate: the owner's "go" (programme decision PB-12), taken as given once CI is green on the release commit while the standing rule of 2026-11-24 holds.
 
 ## Notes
 
