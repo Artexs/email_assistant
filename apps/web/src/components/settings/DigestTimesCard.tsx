@@ -1,5 +1,5 @@
 import { digestTimesBodySchema, digestTimesSchema, MAX_DIGEST_TIMES } from "@ea/core/web";
-import { X } from "lucide-react";
+import { Clock, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -10,8 +10,9 @@ import { isDirty } from "../../lib/draft";
 import { errorText } from "../../lib/errors";
 import { useDraft } from "../../lib/use-draft";
 import { useMe } from "../shell/MeProvider";
+import { SectionCard } from "../patterns/SectionCard";
+import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 
 const timeErrors: readonly TextKey[] = ["time_invalid", "times_too_many", "times_duplicate"];
@@ -62,19 +63,18 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
   };
 
   return (
-    <Card data-card="digest">
-      <CardHeader>
-        <CardTitle>{t("digest_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">
-          {t("digest_help", { timezone: timeZone, max: MAX_DIGEST_TIMES })}
-        </p>
-        {rows.length === 0 && <p className="text-sm">{t("digest_none")}</p>}
-        <ul className="flex flex-col gap-2">
-          {rows.map((row, index) => (
-            // The rows have no id of their own; a controlled input row is safe to key by its place.
-            <li key={index} className="flex items-center gap-2">
+    <SectionCard
+      data-card="digest"
+      icon={Clock}
+      title={t("digest_title")}
+      lead={t("digest_help", { timezone: timeZone, max: MAX_DIGEST_TIMES })}
+    >
+      {rows.length === 0 && <p className="text-sm">{t("digest_none")}</p>}
+      <ul className="flex flex-wrap items-center gap-2">
+        {rows.map((row, index) => (
+          // The rows have no id of their own; a controlled input row is safe to key by its place.
+          <li key={index}>
+            <Badge className="h-12 gap-1 overflow-visible border-input py-0 pr-1 pl-2 text-base">
               <Input
                 type="time"
                 step={60}
@@ -82,41 +82,46 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
                 aria-label={t("digest_time_label", { n: index + 1 })}
                 disabled={pending}
                 aria-invalid={error !== null}
+                className="h-9 w-36 border-0 bg-transparent px-2 text-primary"
                 onChange={(event) => edit(rows.map((item, at) => (at === index ? event.target.value : item)))}
               />
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
+                size="icon-xs"
                 disabled={pending}
-                aria-label={t("digest_remove", { n: index + 1 })}
+                aria-label={row === "" ? t("digest_remove_new") : t("digest_remove", { time: row })}
                 onClick={() => edit(rows.filter((_, at) => at !== index))}
               >
                 <X aria-hidden="true" />
               </Button>
-            </li>
-          ))}
-        </ul>
-        {error !== null && (
-          <p role="alert" className="text-sm text-destructive">
-            {t(error)}
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground">{t("digest_new_time_note")}</p>
-        <div className="flex flex-wrap gap-2">
+            </Badge>
+          </li>
+        ))}
+        <li>
           <Button
             type="button"
-            variant="outline"
+            variant="soft"
+            size="icon"
             disabled={pending || rows.length >= MAX_DIGEST_TIMES}
+            aria-label={t("digest_add")}
             onClick={() => edit([...rows, ""])}
           >
-            {t("digest_add")}
+            <Plus aria-hidden="true" />
           </Button>
-          <Button type="button" disabled={pending || !isDirty(draft)} onClick={() => void save()}>
-            {t("save")}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </li>
+      </ul>
+      {error !== null && (
+        <p role="alert" className="text-sm text-destructive">
+          {t(error)}
+        </p>
+      )}
+      <p className="text-sm text-muted-foreground">{t("digest_new_time_note")}</p>
+      <div>
+        <Button type="button" disabled={pending || !isDirty(draft)} onClick={() => void save()}>
+          {t("save")}
+        </Button>
+      </div>
+    </SectionCard>
   );
 }
