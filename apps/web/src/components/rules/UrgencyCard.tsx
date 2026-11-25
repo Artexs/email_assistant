@@ -1,5 +1,5 @@
 import { settingsViewSchema, type MailboxView, type SettingsWebView, type UrgencyProfile } from "@ea/core/web";
-import { Trash2 } from "lucide-react";
+import { Flame, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,8 +20,10 @@ import {
 import { useDraft } from "../../lib/use-draft";
 import { useNow } from "../../lib/use-now";
 import { useResource } from "../../lib/use-resource";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
@@ -99,6 +101,11 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
     setValue(next);
   };
 
+  const editTopic = (index: number, patch: Partial<UrgencyDraft["topics"][number]>) =>
+    change({ ...value, topics: value.topics.map((item, at) => (at === index ? { ...item, ...patch } : item)) });
+  const editDeadline = (index: number, patch: Partial<UrgencyDraft["deadlines"][number]>) =>
+    change({ ...value, deadlines: value.deadlines.map((item, at) => (at === index ? { ...item, ...patch } : item)) });
+
   if (!isOwner) return <UrgencyReadOnly settings={settings} timeZone={timeZone} now={now} />;
 
   return (
@@ -112,66 +119,61 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
     >
       <section aria-labelledby="urg-topics-title" className="flex flex-col gap-3">
         <div>
-          <h3 id="urg-topics-title" className="font-medium">
+          <h3 id="urg-topics-title" className="text-base font-bold">
             {t("urg_topics_title")}
           </h3>
           <p className="text-sm text-muted-foreground">{t("urg_topics_help")}</p>
         </div>
         {value.topics.length === 0 && <p className="text-sm text-muted-foreground">{t("urg_topics_empty")}</p>}
-        <ul className="flex flex-col gap-3">
-          {value.topics.map((topic, index) => (
-            <li key={index} className="flex flex-wrap items-center gap-2">
-              <Input
-                id={`urg-topic-name-${index}`}
-                className="min-w-40 flex-1"
-                autoComplete="off"
-                aria-label={t("urg_topic_name_label", { n: index + 1 })}
-                aria-invalid={error?.key.startsWith("urg_err_topic") === true && error.n === index + 1}
-                value={topic.label}
-                onChange={(event) =>
-                  change({
-                    ...value,
-                    topics: value.topics.map((item, at) =>
-                      at === index ? { ...item, label: event.target.value } : item
-                    ),
-                  })
+        {value.topics.length > 0 && (
+          <RowList>
+            {value.topics.map((topic, index) => (
+              <Row
+                key={index}
+                title={t("urg_topic_row", { n: index + 1 })}
+                hint={
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      id={`urg-topic-name-${index}`}
+                      className="sm:flex-1"
+                      autoComplete="off"
+                      aria-label={t("urg_topic_name_label", { n: index + 1 })}
+                      aria-invalid={error?.key.startsWith("urg_err_topic") === true && error.n === index + 1}
+                      value={topic.label}
+                      onChange={(event) => editTopic(index, { label: event.target.value })}
+                    />
+                    <Input
+                      className="sm:flex-1"
+                      autoComplete="off"
+                      aria-label={t("urg_topic_keywords_label", { n: index + 1 })}
+                      aria-invalid={error?.key.startsWith("urg_err_keyword") === true && error.n === index + 1}
+                      value={topic.keywords}
+                      onChange={(event) => editTopic(index, { keywords: event.target.value })}
+                    />
+                  </div>
                 }
-              />
-              <Input
-                className="min-w-40 flex-1"
-                autoComplete="off"
-                aria-label={t("urg_topic_keywords_label", { n: index + 1 })}
-                aria-invalid={error?.key.startsWith("urg_err_keyword") === true && error.n === index + 1}
-                value={topic.keywords}
-                onChange={(event) =>
-                  change({
-                    ...value,
-                    topics: value.topics.map((item, at) =>
-                      at === index ? { ...item, keywords: event.target.value } : item
-                    ),
-                  })
-                }
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label={t("urg_topic_remove", { n: index + 1 })}
-                onClick={() => {
-                  change({ ...value, topics: value.topics.filter((_, at) => at !== index) });
-                  setFocusId("urg-topic-add");
-                }}
               >
-                <Trash2 aria-hidden="true" />
-              </Button>
-            </li>
-          ))}
-        </ul>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t("urg_topic_remove", { n: index + 1 })}
+                  onClick={() => {
+                    change({ ...value, topics: value.topics.filter((_, at) => at !== index) });
+                    setFocusId("urg-topic-add");
+                  }}
+                >
+                  <Trash2 aria-hidden="true" />
+                </Button>
+              </Row>
+            ))}
+          </RowList>
+        )}
         <div>
           <Button
             id="urg-topic-add"
             type="button"
-            variant="outline"
+            variant="soft"
             disabled={!canAddTopic(value)}
             onClick={() => {
               change({ ...value, topics: [...value.topics, { label: "", keywords: "" }] });
@@ -185,70 +187,68 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
 
       <section aria-labelledby="urg-deadlines-title" className="flex flex-col gap-3">
         <div>
-          <h3 id="urg-deadlines-title" className="font-medium">
+          <h3 id="urg-deadlines-title" className="text-base font-bold">
             {t("urg_deadlines_title")}
           </h3>
           <p className="text-sm text-muted-foreground">{t("urg_deadlines_help")}</p>
         </div>
         {value.deadlines.length === 0 && <p className="text-sm text-muted-foreground">{t("urg_deadlines_empty")}</p>}
-        <ul className="flex flex-col gap-3">
-          {value.deadlines.map((deadline, index) => {
-            const ended = isEnded(deadline.due, now, timeZone);
-            return (
-              <li key={index} data-ended={ended ? "true" : undefined} className="flex flex-wrap items-center gap-2">
-                <Input
-                  id={`urg-deadline-name-${index}`}
-                  className={`min-w-40 flex-1 ${ended ? "line-through" : ""}`}
-                  autoComplete="off"
-                  aria-label={t("urg_deadline_name_label", { n: index + 1 })}
-                  aria-invalid={error?.key === "urg_err_deadline_label" && error.n === index + 1}
-                  value={deadline.label}
-                  onChange={(event) =>
-                    change({
-                      ...value,
-                      deadlines: value.deadlines.map((item, at) =>
-                        at === index ? { ...item, label: event.target.value } : item
-                      ),
-                    })
-                  }
-                />
-                <Input
-                  type="date"
-                  className={`w-auto ${ended ? "line-through" : ""}`}
-                  aria-label={t("urg_deadline_date_label", { n: index + 1 })}
-                  aria-invalid={error?.key === "urg_err_deadline_date" && error.n === index + 1}
-                  value={deadline.due}
-                  onChange={(event) =>
-                    change({
-                      ...value,
-                      deadlines: value.deadlines.map((item, at) =>
-                        at === index ? { ...item, due: event.target.value } : item
-                      ),
-                    })
-                  }
-                />
-                {ended && <span className="text-sm text-muted-foreground">{t("urg_ended")}</span>}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  aria-label={t("urg_deadline_remove", { n: index + 1 })}
-                  onClick={() => {
-                    change({ ...value, deadlines: value.deadlines.filter((_, at) => at !== index) });
-                    setFocusId("urg-deadline-add");
-                  }}
-                >
-                  <Trash2 aria-hidden="true" />
-                </Button>
-              </li>
-            );
-          })}
-        </ul>
+        {value.deadlines.length > 0 && (
+          <RowList>
+            {value.deadlines.map((deadline, index) => {
+              const ended = isEnded(deadline.due, now, timeZone);
+              return (
+                <div key={index} data-ended={ended ? "true" : undefined}>
+                  <Row
+                    title={t("urg_deadline_row", { n: index + 1 })}
+                    hint={
+                      <>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input
+                            id={`urg-deadline-name-${index}`}
+                            className={`sm:flex-1 ${ended ? "line-through" : ""}`}
+                            autoComplete="off"
+                            aria-label={t("urg_deadline_name_label", { n: index + 1 })}
+                            aria-invalid={error?.key === "urg_err_deadline_label" && error.n === index + 1}
+                            value={deadline.label}
+                            onChange={(event) => editDeadline(index, { label: event.target.value })}
+                          />
+                          <Input
+                            type="date"
+                            className={`sm:w-auto ${ended ? "line-through" : ""}`}
+                            aria-label={t("urg_deadline_date_label", { n: index + 1 })}
+                            aria-invalid={error?.key === "urg_err_deadline_date" && error.n === index + 1}
+                            value={deadline.due}
+                            onChange={(event) => editDeadline(index, { due: event.target.value })}
+                          />
+                        </div>
+                        {ended && <p className="mt-1.5">{t("urg_ended")}</p>}
+                      </>
+                    }
+                  >
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={t("urg_deadline_remove", { n: index + 1 })}
+                      onClick={() => {
+                        change({ ...value, deadlines: value.deadlines.filter((_, at) => at !== index) });
+                        setFocusId("urg-deadline-add");
+                      }}
+                    >
+                      <Trash2 aria-hidden="true" />
+                    </Button>
+                  </Row>
+                </div>
+              );
+            })}
+          </RowList>
+        )}
         <div>
           <Button
             id="urg-deadline-add"
             type="button"
-            variant="outline"
+            variant="soft"
             disabled={!canAddDeadline(value)}
             onClick={() => {
               change({ ...value, deadlines: [...value.deadlines, { label: "", due: "" }] });
@@ -275,7 +275,7 @@ export function UrgencyForm({ settings, address, isOwner, timeZone, onSaved, onM
           <Button
             id="urg-clear"
             type="button"
-            variant="outline"
+            variant="destructive-soft"
             disabled={pending}
             onClick={() => setConfirmOpen(true)}
           >
@@ -363,12 +363,8 @@ export function UrgencyCard({ mailboxes, isOwner, timeZone, reloadMailboxes }: U
   if (mailbox === undefined) return null;
 
   return (
-    <Card data-card="urgency">
-      <CardHeader>
-        <CardTitle>{t("urg_title")}</CardTitle>
-        <p className="text-sm text-muted-foreground">{t("urg_help")}</p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <SectionCard data-card="urgency" icon={Flame} title={t("urg_title")} lead={t("urg_help")}>
+      <div className="flex flex-col gap-4">
         {mailboxes.length > 1 && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="urgency-mailbox">{t("urg_mailbox_label")}</Label>
@@ -393,7 +389,7 @@ export function UrgencyCard({ mailboxes, isOwner, timeZone, reloadMailboxes }: U
           timeZone={timeZone}
           reloadMailboxes={reloadMailboxes}
         />
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   );
 }

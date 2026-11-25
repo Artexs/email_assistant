@@ -122,3 +122,15 @@ describe("WhatsNewSlot and HelpLink", () => {
     setLocaleForTest("en");
   });
 });
+
+describe("WhatsNewCard frame", () => {
+  test("the card root has no outer margin class", () => {
+    setLocaleForTest("en");
+    const root = /<[a-z]+ [^>]*aria-labelledby="whats-new-title"[^>]*>/.exec(card(() => memoryStorage()));
+    expect(root).not.toBeNull();
+    const classes = /class="([^"]*)"/.exec(root?.[0] ?? "")?.[1] ?? "";
+    expect(
+      classes.split(" ").filter((name) => /^(?:m[trblxy]?|-m[trblxy]?)-/.test(name) || name.includes(":m"))
+    ).toEqual([]);
+  });
+});

@@ -62,10 +62,15 @@ export function TermsDialog({ current, onAccepted, onLogOut }: TermsDialogProps)
           <DialogTitle>{t("terms_dialog_title")}</DialogTitle>
         </DialogHeader>
         <p className="text-sm">{t("terms_dialog_text")}</p>
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <ul className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {legalDocs.map((doc) => (
             <li key={doc}>
-              <a href={legalPath(lang, doc)} target="_blank" rel="noopener noreferrer" className="underline">
+              <a
+                href={legalPath(lang, doc)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-primary underline"
+              >
                 {t(legalTitles[doc])}
               </a>
             </li>
@@ -76,11 +81,11 @@ export function TermsDialog({ current, onAccepted, onLogOut }: TermsDialogProps)
             {t("error_generic")}
           </p>
         )}
-        <DialogFooter>
-          <Button variant="outline" onClick={onLogOut}>
+        <DialogFooter className="sm:flex-col-reverse lg:flex-row">
+          <Button variant="ghost" onClick={onLogOut}>
             {t("log_out")}
           </Button>
-          <Button onClick={() => void accept()} disabled={pending}>
+          <Button className="w-full lg:w-auto" onClick={() => void accept()} disabled={pending}>
             {pending ? t("terms_dialog_accepting") : t("terms_dialog_accept")}
           </Button>
         </DialogFooter>

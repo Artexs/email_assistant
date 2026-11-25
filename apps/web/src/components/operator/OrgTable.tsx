@@ -3,6 +3,7 @@ import type { OperatorOrgRow } from "@ea/core/web";
 import { t, type TextKey } from "../../i18n";
 import { ageText, dayText, llmTodayText, shortId } from "../../lib/operator-view";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 
@@ -27,7 +28,7 @@ export interface OrgTableProps {
 
 export function OrgTable({ orgs, selected, now, onSelect }: OrgTableProps) {
   return (
-    <Card>
+    <Card data-section="orgs">
       <CardHeader>
         <CardTitle>{t("op_orgs_title")}</CardTitle>
       </CardHeader>
@@ -51,21 +52,33 @@ export function OrgTable({ orgs, selected, now, onSelect }: OrgTableProps) {
               {orgs.map((org) => (
                 <TableRow
                   key={org.orgId}
-                  className="cursor-pointer"
+                  className="h-9 cursor-pointer tabular-nums"
                   data-state={org.orgId === selected ? "selected" : undefined}
                   onClick={() => onSelect(org.orgId)}
                 >
-                  <TableCell className="font-mono" title={org.orgId}>
-                    {shortId(org.orgId)}
+                  <TableCell className="py-0 font-mono" title={org.orgId}>
+                    {/* The row click stays for a mouse; the button is how a keyboard reaches the row. */}
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="xs"
+                      className="font-mono"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onSelect(org.orgId);
+                      }}
+                    >
+                      {shortId(org.orgId)}
+                    </Button>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-0">
                     <PlanBadge plan={org.plan} />
                   </TableCell>
-                  <TableCell>{dayText(org.trialEndsAt)}</TableCell>
-                  <TableCell>{`${org.mailboxes.total} / ${org.mailboxes.authError} / ${org.mailboxes.hostBlocked}`}</TableCell>
-                  <TableCell>{ageText(org.lastSyncAt, now)}</TableCell>
-                  <TableCell>{`${org.failures24h.sends} / ${org.failures24h.outbox}`}</TableCell>
-                  <TableCell>{llmTodayText(org.llmToday)}</TableCell>
+                  <TableCell className="py-0">{dayText(org.trialEndsAt)}</TableCell>
+                  <TableCell className="py-0">{`${org.mailboxes.total} / ${org.mailboxes.authError} / ${org.mailboxes.hostBlocked}`}</TableCell>
+                  <TableCell className="py-0">{ageText(org.lastSyncAt, now)}</TableCell>
+                  <TableCell className="py-0">{`${org.failures24h.sends} / ${org.failures24h.outbox}`}</TableCell>
+                  <TableCell className="py-0">{llmTodayText(org.llmToday)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
