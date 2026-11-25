@@ -6,7 +6,7 @@ import { NoticeList, type NoticeDays } from "../components/operator/NoticeList";
 import { OrgDetail } from "../components/operator/OrgDetail";
 import { OrgTable } from "../components/operator/OrgTable";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
+import { FactBox } from "../components/patterns/FactBox";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
@@ -69,9 +69,9 @@ function Operator() {
   let detailContent: ReactNode;
   if (selected === null) {
     detailContent = (
-      <Card>
-        <CardContent className="text-sm text-muted-foreground">{t("op_detail_hint")}</CardContent>
-      </Card>
+      <div data-section="detail">
+        <FactBox>{t("op_detail_hint")}</FactBox>
+      </div>
     );
   } else if (detail.data !== null) {
     detailContent = <OrgDetail detail={detail.data} now={now} onChanged={reloadAll} />;
@@ -100,7 +100,7 @@ function Operator() {
 export default function OperatorPage() {
   useLocale();
   return (
-    <AppShell active="operator" title="title_operator">
+    <AppShell active="operator" title="title_operator" lead="op_lead">
       <Operator />
     </AppShell>
   );
