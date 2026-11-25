@@ -6,13 +6,14 @@ import {
   installWorker,
   notificationOf,
   OFFLINE_PATH,
-  SHELL_CACHE,
   staleCaches,
   type WorkerScope,
   type WorkerWindow,
 } from "./service-worker";
 
 const ORIGIN = "https://panel.example";
+const SHELL = { assets: ["/_astro/a.css"], version: "v2-abcd1234" };
+const SHELL_CACHE = `ea-shell-${SHELL.version}`;
 const req = (path: string, init: { method?: string; mode?: string } = {}) => ({
   method: init.method ?? "GET",
   url: `${ORIGIN}${path}`,
@@ -46,11 +47,10 @@ describe("fetchRule", () => {
 
 describe("staleCaches", () => {
   test("only caches of this app from another version go; the current one and a cache of another owner stay", () => {
-    expect(staleCaches(["ea-shell-v0", SHELL_CACHE, "ea-shell-v2", "other-cache", "workbox-1"])).toEqual([
-      "ea-shell-v0",
-      "ea-shell-v2",
-    ]);
-    expect(staleCaches([SHELL_CACHE])).toEqual([]);
+    expect(
+      staleCaches(["ea-shell-v1", SHELL_CACHE, "ea-shell-v2-00000000", "other-cache", "workbox-1"], SHELL_CACHE)
+    ).toEqual(["ea-shell-v1", "ea-shell-v2-00000000"]);
+    expect(staleCaches([SHELL_CACHE], SHELL_CACHE)).toEqual([]);
   });
 });
 
@@ -116,13 +116,14 @@ function harness() {
     deleted: [] as string[],
     notices: [] as unknown[],
     opened: [] as string[],
+    cacheOpened: [] as string[],
   };
   const windows: (WorkerWindow & { focused: boolean; navigated: string[] })[] = [];
   let network: (request: Request) => Promise<Response> = async () => basic("net");
   const keyOf = (r: Request | string) => (typeof r === "string" ? new URL(r, ORIGIN).href : r.url);
   const cache = {
-    add: async (r: Request | string) => {
-      store.set(keyOf(r), await network(new Request(keyOf(r))));
+    addAll: async (paths: readonly string[]) => {
+      for (const path of paths) store.set(keyOf(path), await network(new Request(keyOf(path))));
     },
     put: async (r: Request, response: Response) => void store.set(keyOf(r), response),
     match: async (r: Request | string) => store.get(keyOf(r))?.clone(),
@@ -130,7 +131,10 @@ function harness() {
   const scope = {
     location: { origin: ORIGIN },
     caches: {
-      open: async () => cache,
+      open: async (name: string) => {
+        log.cacheOpened.push(name);
+        return cache;
+      },
       keys: async () => log.cacheNames,
       delete: async (name: string) => {
         log.deleted.push(name);
@@ -154,7 +158,7 @@ function harness() {
     log.fetched.push(input.url);
     return network(input);
   }) as unknown as typeof fetch;
-  installWorker(scope);
+  installWorker(scope, SHELL);
   return {
     log,
     store,
@@ -233,18 +237,19 @@ describe("the worker", () => {
     });
   });
 
-  test("install stores the offline page; activate deletes the caches of other versions only", async () => {
+  test("install stores the offline page and its files in the cache of the build version; activate deletes the caches of other versions only", async () => {
     await withHarness(async (h) => {
       const work: Promise<unknown>[] = [];
       h.fire("install", { waitUntil: (p: Promise<unknown>) => work.push(p) });
       await Promise.all(work);
-      expect([...h.store.keys()]).toEqual([`${ORIGIN}${OFFLINE_PATH}`]);
+      expect(h.log.cacheOpened).toEqual([SHELL_CACHE]);
+      expect([...h.store.keys()]).toEqual([`${ORIGIN}${OFFLINE_PATH}`, `${ORIGIN}/_astro/a.css`]);
 
-      h.log.cacheNames.push("ea-shell-v0", "other");
+      h.log.cacheNames.push("ea-shell-v1", "other");
       const activation: Promise<unknown>[] = [];
       h.fire("activate", { waitUntil: (p: Promise<unknown>) => activation.push(p) });
       await Promise.all(activation);
-      expect(h.log.deleted).toEqual(["ea-shell-v0"]);
+      expect(h.log.deleted).toEqual(["ea-shell-v1"]);
     });
   });
 
