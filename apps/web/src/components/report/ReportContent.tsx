@@ -156,7 +156,7 @@ export function ReportContent({
             </p>
           )}
           {turnOnShows && (
-            <Button disabled={pending} onClick={onTurnOn}>
+            <Button className="h-auto min-h-12 max-w-full py-2 text-wrap" disabled={pending} onClick={onTurnOn}>
               {t("rep_turn_on", { categories: categoryNames(due) })}
             </Button>
           )}

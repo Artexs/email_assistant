@@ -118,7 +118,7 @@ test("R4: no mailbox in the address shows the newest mailbox; the selector switc
   expect(errors).toEqual([]);
 });
 
-test("pictures of a running check and of a no_result check are saved in the contact sheet folder", async ({
+test("pictures of a done, a running and a no_result check are saved in the contact sheet folder", async ({
   context,
   page,
 }, testInfo) => {
@@ -128,6 +128,7 @@ test("pictures of a running check and of a no_result check are saved in the cont
   const errors = await startSession(context, page, org().owner);
   const viewports = { phone: { width: 412, height: 915 }, desktop: { width: 1280, height: 800 } } as const;
   const states = [
+    { name: "done", id: boxes().done.id, ready: page.locator("[data-report-state=done]") },
     { name: "running", id: boxes().running.id, ready: page.locator("[data-report-state=running]") },
     { name: "no-result", id: boxes().noResult.id, ready: page.locator("[data-report-state=no_result]") },
   ];
