@@ -126,6 +126,7 @@ export const plAuth = {
   tf_copy_failed: "Nie udało się skopiować kodów. Zapisz je.",
   // delete organization
   del_title: "Usuń organizację",
+  del_card_lead: "Usuwa organizację ze wszystkimi danymi poczty, regułami i członkami. Tego nie da się cofnąć.",
   del_text:
     "To od razu usunie organizację {name} i wszystkie jej dane w aplikacji: skrzynki, wiadomości, wyniki klasyfikacji, działania, zlecenia, reguły, połączenia z Telegramem, historię i konta jej członków. Tego nie można cofnąć. Kopie zapasowe zachowują dane, dopóki nie wygasną; okres określa polityka prywatności.",
   del_imap_note:

@@ -338,7 +338,13 @@ export function AccountCard() {
         </SectionCard>
       ) : null}
       {sections.deleteBlock ? (
-        <SectionCard data-card="delete-organization" icon={TriangleAlert} title={t("del_title")} tone="danger">
+        <SectionCard
+          data-card="delete-organization"
+          icon={TriangleAlert}
+          title={t("del_title")}
+          lead={t("del_card_lead")}
+          tone="danger"
+        >
           <DeleteOrganization />
         </SectionCard>
       ) : null}

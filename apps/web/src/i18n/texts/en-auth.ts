@@ -122,6 +122,7 @@ export const enAuth = {
   tf_copy_failed: "The codes could not be copied. Write them down.",
   // delete organization
   del_title: "Delete organization",
+  del_card_lead: "Deletes the organization with all its mail data, rules and members. This cannot be undone.",
   del_text:
     "This deletes the organization {name} and all its data here at once: mailboxes, mail, triage results, actions, delegations, rules, Telegram links, history and the accounts of its members. It cannot be undone. Backups keep a copy until they expire; the privacy policy gives the period.",
   del_imap_note:
