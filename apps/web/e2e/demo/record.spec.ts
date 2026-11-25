@@ -152,7 +152,7 @@ test("the demo recording follows the eight steps of the script", async ({ browse
   await step("report", async () => {
     await page.goto(`/report?mailbox=${trust.reportMailboxes.done.id}`);
     await expect(page.locator("[data-report-state=done]")).toBeVisible();
-    await expect(page.locator("[data-category=notification]")).toBeVisible();
+    await expect(page.locator("article[data-category=notification]")).toBeVisible();
     await expect(page.getByRole("button", { name: en.rep_check_again })).toBeVisible();
   });
 
@@ -200,7 +200,7 @@ test("the demo recording follows the eight steps of the script", async ({ browse
   await step("approval", async () => {
     await page.goto(`/approvals?id=${seed.approvalsOrgs[project].editSendId}`);
     const detail = page.getByRole("region", { name: en.appr_detail_label });
-    await detail.getByRole("button", { name: en.appr_edit }).click();
+    await detail.getByRole("button", { name: en.appr_edit, exact: true }).click();
     const dialog = page.getByRole("dialog", { name: en.appr_edit_title });
     await expect(dialog).toBeVisible();
     await dialog
@@ -209,10 +209,11 @@ test("the demo recording follows the eight steps of the script", async ({ browse
     await dialog.getByRole("button", { name: en.save, exact: true }).click();
     await expect(page.getByText(en.appr_edit_saved.replace("{n}", "2"))).toBeVisible();
     // The new version has no copy in the mailbox yet: Approve is off until the committer made it (it runs every 15 seconds).
-    const approve = detail.getByRole("button", { name: en.appr_approve });
+    const approve = detail.getByRole("button", { name: en.appr_approve, exact: true });
     await expect(approve).toBeEnabled({ timeout: MINUTE_MS });
     await approve.click();
-    await expect(page.getByText(en.appr_done_sending)).toBeVisible();
+    // The outcome line names the recipient: "Sending to …" first, "Sent to …" once the committer has sent it.
+    await expect(page.getByRole("status").filter({ hasText: /^(Sending|Sent) to / })).toBeVisible();
   });
 
   // 7 delegation (live): the owner asks for the reminder of an overdue task.
