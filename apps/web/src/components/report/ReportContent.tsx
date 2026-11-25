@@ -76,7 +76,6 @@ export function ReportContent({
 
   return (
     <div className="flex flex-col gap-4" data-report-state={state.kind}>
-      <p>{t("rep_intro")}</p>
       {state.kind === "starting" && (
         <p aria-live="polite" data-report="starting">
           {t("rep_starting")}

@@ -111,7 +111,7 @@ describe("flaggedTextProblems", () => {
   });
   test.each([
     [`Open "${en.dla_title}" on a mail.`, `delegate_button: ${en.dla_title}`],
-    [`The page says: ${en.rep_intro}`, `trust_ladder: ${en.rep_intro}`],
+    [`The page says: ${en.rep_lead}`, `trust_ladder: ${en.rep_lead}`],
     [`Turn on ${en.switch_reply_drafts} in Settings.`, `reply_drafts: ${en.switch_reply_drafts}`],
     [`Open ${en.push_title} in Settings.`, `web_push: ${en.push_title}`],
     ["You can edit and send in your mail client.", "draft_copy_check: edit and send in your mail client"],

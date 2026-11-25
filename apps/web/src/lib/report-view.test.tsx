@@ -309,7 +309,6 @@ describe("the report content", () => {
   test("polish: the page renders the Polish phrases", () => {
     setLocaleForTest("pl");
     const markup = text(html(view()));
-    expect(markup).toContain(pl.rep_intro);
     expect(markup).toContain(t("rep_turn_on", { categories: pl.cat_notification }));
     expect(markup).toContain(pl.rep_read_only);
   });

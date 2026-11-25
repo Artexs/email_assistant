@@ -31,7 +31,7 @@ export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>>
   sender_suggestions: ["sg_help", "sg_member_note"],
   contact_wait: ["lp_usual_reply", "lp_usual_reply_one"],
   delegate_button: ["dla_title", "dla_select_placeholder"],
-  trust_ladder: ["rep_intro", "rep_recommended"],
+  trust_ladder: ["rep_lead", "rep_recommended"],
   reply_drafts: ["switch_reply_drafts"],
   web_push: ["push_title", "push_devices_title"],
 };
