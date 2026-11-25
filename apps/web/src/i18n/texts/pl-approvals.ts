@@ -301,6 +301,7 @@ export const plApprovals = {
   title_approvals: "Zatwierdzenia",
   title_delegates: "Wykonawcy",
   title_delegations: "Zlecenia",
+  dgn_lead: "Praca przekazana innym i to, co czeka na odpowiedź.",
   // The Delegate action on a mail row, the open-loop settings and the new Telegram terms
   dla_button: "Zleć",
   dla_title: "Zleć tę wiadomość",

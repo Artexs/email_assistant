@@ -5,7 +5,6 @@ import { cancelButtonId, ROW_ID_PREFIX, rowId } from "./DelegationRow";
 import { DelegationCancelDialog } from "./DelegationCancelDialog";
 import { DelegationFilterTabs } from "./DelegationFilterTabs";
 import { ROW_BY_KIND } from "./delegation-kinds";
-import { DelegationTabs } from "./DelegationTabs";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -58,13 +57,11 @@ function Loading() {
 type FocusTarget = "row" | "status";
 
 export interface DelegationsProps {
-  // On the "Open loops" page the header links and the tabs belong to the page: this list shows only its own part.
-  embedded?: boolean;
   // What the page shows under the list, given the filter that the list has now (the tracked loops of the Delegated tab).
   below?: (filter: DelegationFilter) => ReactNode;
 }
 
-export function Delegations({ embedded = false, below }: DelegationsProps = {}) {
+export function Delegations({ below }: DelegationsProps = {}) {
   const { me, reload: reloadMe } = useMe();
   const [filter, selectFilter] = useDelegationFilter();
   const list = useDelegationList(filter);
@@ -257,7 +254,6 @@ export function Delegations({ embedded = false, below }: DelegationsProps = {}) 
   const cancelling = confirmCancel;
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      {!embedded && <DelegationTabs current="delegations" />}
       <DelegationFilterTabs current={filter} onSelect={changeFilter} />
       <div
         role="status"

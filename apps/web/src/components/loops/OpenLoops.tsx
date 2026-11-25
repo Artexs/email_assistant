@@ -1,7 +1,6 @@
 import { LOOP_FILTER_OF_DELEGATION } from "../../lib/loops-view";
 import { useLoopView } from "../../lib/use-loop-view";
 import { Delegations } from "../delegation/Delegations";
-import { DelegationTabs } from "../delegation/DelegationTabs";
 import { useMe } from "../shell/MeProvider";
 import { LoopFilterTabs, LoopTabs } from "./LoopTabs";
 import { LoopsBoard } from "./LoopsBoard";
@@ -21,7 +20,6 @@ export function OpenLoops() {
   } else if (delegationsOn) {
     content = (
       <Delegations
-        embedded
         below={(delegationFilter) => {
           const loopFilter = LOOP_FILTER_OF_DELEGATION[delegationFilter];
           return loopFilter === null ? null : <LoopsBoard key={tab} kind="delegated" filter={loopFilter} showHeading />;
@@ -34,7 +32,6 @@ export function OpenLoops() {
 
   return (
     <div className="flex max-w-3xl flex-col gap-4">
-      {delegationsOn && <DelegationTabs current="delegations" />}
       <LoopTabs current={tab} onSelect={selectTab} />
       {content}
     </div>
