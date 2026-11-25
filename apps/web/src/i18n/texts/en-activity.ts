@@ -93,6 +93,7 @@ export const enActivity = {
   nav_operator: "Operator",
   op_not_found: "Not found.",
   op_load_error: "The operator data did not load.",
+  op_lead: "Organizations, plans and notices.",
   op_reload: "Reload",
   op_orgs_title: "Organizations",
   op_orgs_empty: "No organizations.",
