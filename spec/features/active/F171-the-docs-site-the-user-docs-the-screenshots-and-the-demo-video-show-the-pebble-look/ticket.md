@@ -34,7 +34,7 @@ Five stages, one worker job each: [`plan.md`](plan.md) § Stages and § How to r
 ## Sequenced
 
 - Plan after: F166 (tokens, fonts, the unused-key test), F167 (the brand mark), F168, F169, F170 (their plans name the changed texts and flows).
-- Build after: none. Gate: the docs site theme stage needs only F166 stage 03 (tokens, font) and builds next to the page tickets; the user docs stage of a page needs that page's stages; the shots and the video need F167, F168, F169 and F170 in `done/`.
+- Build after: none. Gate: the docs site theme stage needs only F166 stage 03 (tokens, font) and builds next to the page tickets; the user docs stage of a page needs that page's stages; the shots and the video need the page stages that their Needs lines name.
 
 ## Notes
 

@@ -304,6 +304,7 @@ export const enApprovals = {
   title_approvals: "Approvals",
   title_delegates: "Delegates",
   title_delegations: "Delegations",
+  dgn_lead: "Work you handed over, and what waits for an answer.",
   // The Delegate action on a mail row, the open-loop settings and the new Telegram terms
   dla_button: "Delegate",
   dla_title: "Delegate this mail",

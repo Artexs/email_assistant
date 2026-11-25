@@ -1,6 +1,9 @@
 ---
 import Public from "../layouts/Public.astro";
 import LoginPage from "../islands/LoginPage.tsx";
+import BrandFallback from "../components/shell/BrandFallback.astro";
 ---
 
-<Public titleKey="title_login"><LoginPage client:only="react" /></Public>
+<Public titleKey="title_login" frame="split">
+  <LoginPage client:only="react"><BrandFallback slot="fallback" /></LoginPage>
+</Public>

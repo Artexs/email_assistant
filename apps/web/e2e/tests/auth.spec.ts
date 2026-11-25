@@ -44,6 +44,32 @@ test("a wrong password is refused", async ({ page }) => {
   await expect(page.getByLabel(en.email_label)).toHaveValue(owner.email);
 });
 
+test("the login page shows the brand panel on a desktop and only the form on a phone", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.login_title);
+  if (onMobile()) {
+    await expect(page.getByText(en.login_panel_title)).toBeHidden();
+    await expect(page.getByText(en.login_panel_text)).toBeHidden();
+    await expect(page.getByText(en.brand, { exact: true }).filter({ visible: true })).toHaveCount(1);
+    return;
+  }
+  await expect(page.getByText(en.login_panel_title)).toBeVisible();
+  await expect(page.getByText(en.login_panel_text)).toBeVisible();
+  // The tab title is the page title.
+  await expect(page).toHaveTitle(`${en.login_title} · ${en.brand}`);
+  const panel = page.getByRole("complementary");
+  const colours = {
+    light: ["rgb(10, 117, 104)", "rgb(255, 255, 255)"],
+    dark: ["rgb(63, 209, 185)", "rgb(4, 32, 27)"],
+  } as const;
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await expect(panel).toHaveCSS("background-color", colours[scheme][0]);
+    await expect(panel).toHaveCSS("color", colours[scheme][1]);
+  }
+});
+
 test("a login opens the shell", async ({ page }) => {
   const { owner } = readSeed();
   await signIn(page, owner.email, owner.password);

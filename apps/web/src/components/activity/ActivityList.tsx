@@ -1,10 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { formatDay } from "@ea/core/web";
+import { Inbox, SearchX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { t } from "../../i18n";
-import { activityQueryString, type ActivityFilters } from "../../lib/activity-filters";
+import { getLocale, t } from "../../i18n";
+import { dayGroups, type DayGroup } from "../../lib/activity-days";
+import { activityQueryString, DEFAULT_FILTERS, type ActivityFilters } from "../../lib/activity-filters";
 import { useActivityList } from "../../lib/use-activity-list";
 import { useNow } from "../../lib/use-now";
+import { EmptyState } from "../patterns/EmptyState";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { ActivityPanel } from "./ActivityPanel";
@@ -12,6 +16,7 @@ import { ActivityRow } from "./ActivityRow";
 
 export interface ActivityListProps {
   filters: ActivityFilters;
+  onFiltersChange(next: ActivityFilters): void; // the empty states change the range or clear the filters
   timeZone: string;
   showMailbox: boolean; // two or more mailboxes
   mailboxAddress(id: string): string | null;
@@ -20,8 +25,57 @@ export interface ActivityListProps {
   refreshSignal: number; // the page's Refresh button increments it
 }
 
+function dayHeading(group: DayGroup, timeZone: string): string {
+  if (group.label === "today") return t("act_day_today");
+  if (group.label === "yesterday") return t("act_day_yesterday");
+  return formatDay(new Date(group.items[0]?.receivedAt ?? group.day), timeZone, getLocale());
+}
+
+// Only the range differs from the default filters: a longer range may help.
+function onlyRangeChanged(filters: ActivityFilters): boolean {
+  return (
+    filters.mailboxId === DEFAULT_FILTERS.mailboxId &&
+    filters.category === DEFAULT_FILTERS.category &&
+    filters.notRated === DEFAULT_FILTERS.notRated
+  );
+}
+
+function EmptyActivity({
+  filters,
+  hasMailbox,
+  onFiltersChange,
+}: {
+  filters: ActivityFilters;
+  hasMailbox: boolean;
+  onFiltersChange(next: ActivityFilters): void;
+}) {
+  if (!hasMailbox) {
+    return (
+      <EmptyState icon={Inbox} title={t("act_no_mailbox")} text={t("act_empty_nomailbox_text")}>
+        <Button asChild>
+          <a href="/mailboxes">{t("act_open_mailboxes")}</a>
+        </Button>
+      </EmptyState>
+    );
+  }
+  if (onlyRangeChanged(filters)) {
+    const canWiden = filters.range !== "90d";
+    return (
+      <EmptyState icon={Inbox} title={t("act_empty")} text={canWiden ? t("act_empty_range_text") : undefined}>
+        {canWiden && <Button onClick={() => onFiltersChange({ ...filters, range: "90d" })}>{t("act_show_90d")}</Button>}
+      </EmptyState>
+    );
+  }
+  return (
+    <EmptyState icon={SearchX} title={t("act_empty_filters_title")} text={t("act_empty_filters_text")}>
+      <Button onClick={() => onFiltersChange(DEFAULT_FILTERS)}>{t("act_clear_filters")}</Button>
+    </EmptyState>
+  );
+}
+
 export function ActivityList({
   filters,
+  onFiltersChange,
   timeZone,
   showMailbox,
   mailboxAddress,
@@ -49,6 +103,8 @@ export function ActivityList({
     refresh();
   }, [refreshSignal, refresh]);
 
+  const groups = useMemo(() => dayGroups(state.items, timeZone, now), [state.items, timeZone, now]);
+
   const { lastLoad } = state;
   useEffect(() => {
     if (lastLoad !== null) onLoaded(lastLoad);
@@ -64,19 +120,7 @@ export function ActivityList({
     );
   }
   if (state.items.length === 0) {
-    return (
-      <div className="flex flex-col items-start gap-3">
-        <p className="text-muted-foreground">{t("act_empty")}</p>
-        {!hasMailbox && (
-          <>
-            <p className="text-muted-foreground">{t("act_no_mailbox")}</p>
-            <Button asChild variant="outline">
-              <a href="/mailboxes">{t("act_open_mailboxes")}</a>
-            </Button>
-          </>
-        )}
-      </div>
-    );
+    return <EmptyActivity filters={filters} hasMailbox={hasMailbox} onFiltersChange={onFiltersChange} />;
   }
 
   return (
@@ -89,21 +133,28 @@ export function ActivityList({
           </Button>
         </p>
       )}
-      <ul className="flex flex-col divide-y rounded-md border">
-        {state.items.map((item) => (
-          <li key={item.emailId} data-email-id={item.emailId} className="px-3 py-3">
-            <ActivityRow
-              item={item}
-              timeZone={timeZone}
-              now={now}
-              mailboxAddress={showMailbox ? mailboxAddress(item.mailboxId) : null}
-              onOpen={setSelectedId}
-              onPatch={patch}
-              onGone={refresh}
-            />
-          </li>
-        ))}
-      </ul>
+      {groups.map((group) => (
+        <section key={group.day} aria-labelledby={`act-day-${group.day}`} className="flex flex-col gap-2">
+          <h2 id={`act-day-${group.day}`} className="text-sm font-bold text-muted-foreground">
+            {dayHeading(group, timeZone)}
+          </h2>
+          <ul className="flex flex-col divide-y rounded-md border">
+            {group.items.map((item) => (
+              <li key={item.emailId} data-email-id={item.emailId} className="px-3 py-3">
+                <ActivityRow
+                  item={item}
+                  timeZone={timeZone}
+                  now={now}
+                  mailboxAddress={showMailbox ? mailboxAddress(item.mailboxId) : null}
+                  onOpen={setSelectedId}
+                  onPatch={patch}
+                  onGone={refresh}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
       <ActivityPanel
         item={selected}
         timeZone={timeZone}

@@ -86,11 +86,11 @@ export function OrgDetail({
   };
 
   return (
-    <Card>
+    <Card data-section="detail">
       <CardHeader>
         <CardTitle title={detail.orgId}>{t("op_detail_title", { id: shortId(detail.orgId) })}</CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col gap-5 text-sm">
+      <CardContent className="flex flex-col gap-5 text-sm tabular-nums">
         <Section title="op_plan_state">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <PlanBadge plan={detail.plan} />
