@@ -217,6 +217,19 @@ test.describe("phone frame", () => {
       await sheet.getByRole("link", { name: pl.nav_stats }).click();
       await page.waitForURL("**/stats");
     });
+
+    test("at 320 px wide no tab label is wider than its tab", async ({ page }) => {
+      await page.setViewportSize({ width: 320, height: 740 });
+      await signInAs(page, readSeed().approvalsOrgs.mobile.owner, pl);
+      await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+      await page.goto("/approvals");
+      await expect(page.getByRole("navigation", { name: pl.nav_main }).getByRole("link")).toHaveCount(5);
+      const wide = await page
+        .getByRole("navigation", { name: pl.nav_main })
+        .getByRole("link")
+        .evaluateAll((links) => links.filter((link) => link.scrollWidth > link.clientWidth).length);
+      expect(wide).toBe(0);
+    });
   });
 
   test("the menu sheet shows the person with the name and the email", async ({ page }) => {
