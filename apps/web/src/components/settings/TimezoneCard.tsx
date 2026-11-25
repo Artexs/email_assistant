@@ -1,16 +1,20 @@
 import { organizationViewSchema, type OrganizationSettings, type OrganizationView } from "@ea/core/web";
+import { Globe } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "cn";
 
 import { t } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { filterTimeZones } from "../../lib/timezones";
 import { useDraft } from "../../lib/use-draft";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+import { selectClass } from "./NoticeRoutesCard";
 
 export interface TimezoneCardProps {
   organization: OrganizationSettings;
@@ -55,31 +59,26 @@ export function TimezoneCard({ organization, isOwner, onSaved }: TimezoneCardPro
   };
 
   return (
-    <Card data-card="timezone">
-      <CardHeader>
-        <CardTitle>{t("tz_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <p className="font-medium">{t("tz_current", { timezone: current })}</p>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="timezone-search">{t("tz_search_label")}</Label>
+    <SectionCard data-card="timezone" icon={Globe} title={t("tz_title")} lead={t("tz_current", { timezone: current })}>
+      <RowList>
+        <Row title={t("tz_search_label")} htmlFor="timezone-search">
           <Input
             id="timezone-search"
             type="search"
             value={query}
             disabled={!isOwner}
+            className="w-52 sm:w-64"
             onChange={(event) => setQuery(event.target.value)}
           />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="timezone">{t("tz_list_label")}</Label>
+        </Row>
+        <Row title={t("tz_list_label")} htmlFor="timezone">
           <select
             id="timezone"
             size={8}
             value={selected}
             disabled={!isOwner}
             aria-invalid={invalid}
-            className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30"
+            className={cn(selectClass, "h-auto w-52 py-1 sm:w-64")}
             onChange={(event) => {
               setInvalid(false);
               setValue(event.target.value);
@@ -91,23 +90,23 @@ export function TimezoneCard({ organization, isOwner, onSaved }: TimezoneCardPro
               </option>
             ))}
           </select>
-          {options.length === 0 && <p className="text-sm text-muted-foreground">{t("tz_no_match")}</p>}
-          {invalid && (
-            <p role="alert" className="text-sm text-destructive">
-              {t("timezone_invalid")}
-            </p>
-          )}
+        </Row>
+      </RowList>
+      {options.length === 0 && <p className="text-sm text-muted-foreground">{t("tz_no_match")}</p>}
+      {invalid && (
+        <p role="alert" className="text-sm text-destructive">
+          {t("timezone_invalid")}
+        </p>
+      )}
+      {isOwner && (
+        <div>
+          <Button type="button" disabled={!canSave} onClick={() => void save()}>
+            {t("save")}
+          </Button>
         </div>
-        {isOwner && (
-          <div>
-            <Button type="button" disabled={!canSave} onClick={() => void save()}>
-              {t("save")}
-            </Button>
-          </div>
-        )}
-        <p className="text-sm text-muted-foreground">{t("tz_note")}</p>
-        <p className="text-sm text-muted-foreground">{t("retention_line", { days: organization.retentionDays })}</p>
-      </CardContent>
-    </Card>
+      )}
+      <p className="text-sm text-muted-foreground">{t("tz_note")}</p>
+      <p className="text-sm text-muted-foreground">{t("retention_line", { days: organization.retentionDays })}</p>
+    </SectionCard>
   );
 }

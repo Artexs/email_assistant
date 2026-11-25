@@ -6,6 +6,7 @@ import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { e2eEnv, E2E_BASE_URL, repoRoot } from "../env";
 import { cleanUpOrg, cspErrors, nextAddress, signInAs } from "../helpers";
+import { saveCardPictures } from "../lib/card-pictures";
 import { readSeed } from "../seed";
 
 // The quiet hours card of Settings. The flag `user_quiet_hours` is on for the seed organization only while this file
@@ -46,7 +47,7 @@ test.afterEach(async ({ page }) => {
 
 test("10. the card saves quiet hours, shows them after a reload, and is axe clean; the channel card stays hidden", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.goto("/settings");
   const card = page.locator("[data-card=quiet-hours]");
   await expect(card).toBeVisible();
@@ -65,6 +66,10 @@ test("10. the card saves quiet hours, shows them after a reload, and is axe clea
   await expect(again.getByLabel(en.notify_quiet_end_label)).toHaveValue("06:00");
   await expect(again.getByText(en.notify_quiet_default_note)).toHaveCount(0);
   await expectNoA11yViolations(page, { include: "[data-card=quiet-hours]" });
+  await saveCardPictures(page, testInfo, "f170-04", {
+    "quiet-hours": again,
+    digest: page.locator("[data-card=digest]"),
+  });
 
   // The reset button brings the default hours back.
   await again.getByRole("button", { name: en.notify_quiet_use_default }).click();
