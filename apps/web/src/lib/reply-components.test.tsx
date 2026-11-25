@@ -255,7 +255,8 @@ describe("the controls of a reply", () => {
     );
   const controls = (d: ApprovalDetail, props: { waiting?: boolean; busy?: boolean; text?: string } = {}) =>
     plain(controlsRaw(d, props));
-  const buttonOf = (html: string, name: string) => new RegExp(`<button[^>]*>${name}</button>`).exec(html)?.[0] ?? "";
+  const buttonOf = (html: string, name: string) =>
+    new RegExp(`<button[^>]*>(?:<svg[^]*?</svg>)?${name}</button>`).exec(html)?.[0] ?? "";
 
   test("the line field has a label, a counter and the redrafts left; Redraft is off while the line is empty", () => {
     const html = controls(detail({ redraftsLeft: 4 }));
@@ -293,11 +294,13 @@ describe("the controls of a reply", () => {
     expect(html).toContain("The limit of new versions for this mail is used up.");
     expect(html).not.toContain("Redrafts left for this mail:");
     expect(buttonOf(html, "Redraft")).toMatch(OFF);
+    expect(/<input[^>]*>/.exec(html)?.[0]).toMatch(OFF);
   });
 
   test("while a request waits: Drafting… shows and the field and the button are off", () => {
     const html = controls(detail(), { waiting: true });
     expect(html).toContain("Drafting…");
+    expect(html).toContain("animate-spin");
     expect(buttonOf(html, "Redraft")).toMatch(OFF);
     expect(/<input[^>]*>/.exec(html)?.[0]).toMatch(OFF);
   });
@@ -312,6 +315,9 @@ describe("the controls of a reply", () => {
     expect(html).toContain("Reply all");
     expect(html).toContain("Cc adds:");
     expect(html).toContain("b@y.test, c@z.test");
+    // The hint stands before the button: the owner reads who is added before the tap.
+    expect(html.indexOf("c@z.test")).toBeLessThan(html.indexOf("<button", html.indexOf("c@z.test")));
+    expect(html.indexOf("Cc adds:")).toBeLessThan(html.indexOf(">Reply all</button>"));
     expect(html).toContain("Use Reply-To");
     expect(html).toContain("The reply goes to this address instead of the sender:");
     expect(html).toContain("office@client.test");
