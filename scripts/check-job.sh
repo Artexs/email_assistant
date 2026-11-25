@@ -37,11 +37,11 @@ mapfile -t changed < <(git diff --name-only --diff-filter=ACMR "$master" HEAD)
 mapfile -t code < <(printf '%s\n' "${changed[@]}" | grep -E '\.(ts|tsx|mts|js|mjs|astro)$' || true)
 full_re='^(db/migrations/|package\.json$|bun\.lock$|bunfig\.toml$|.*tsconfig[^/]*\.json$|apps/server/test/(preload|worker-db|db-script)\.ts$)'
 full=0
-printf '%s\n' "${changed[@]}" | grep -qE "$full_re" && full=1
+printf '%s\n' "${changed[@]}" | grep -E "$full_re" >/dev/null && full=1
 
 # A change under docs/ or apps/docs/ runs every test file that reads those folders at run time (found by its text).
 docs_changed=0
-printf '%s\n' "${changed[@]}" | grep -qE '^(docs/|apps/docs/)' && docs_changed=1
+printf '%s\n' "${changed[@]}" | grep -E '^(docs/|apps/docs/)' >/dev/null && docs_changed=1
 
 echo "check:job: lint ${#code[@]} changed code file(s)"
 bun run lint --files "${code[@]}"
@@ -62,7 +62,7 @@ else
 fi
 
 panel_changed=0
-printf '%s\n' "${changed[@]}" | grep -qE '^(apps/web/src/|packages/core/src/|apps/server/src/)' && panel_changed=1
+printf '%s\n' "${changed[@]}" | grep -E '^(apps/web/src/|packages/core/src/|apps/server/src/)' >/dev/null && panel_changed=1
 
 if [ "$panel_changed" = 1 ] && [ "$full" = 0 ]; then
   echo "check:job: panel changed: panel-keys.test.ts"
