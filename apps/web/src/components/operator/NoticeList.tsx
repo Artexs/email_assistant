@@ -20,7 +20,7 @@ export interface NoticeListProps {
 export function NoticeList({ notices, days, onDays }: NoticeListProps) {
   const format = new Intl.DateTimeFormat(dateLocale(), { dateStyle: "short", timeStyle: "medium", timeZone: "UTC" });
   return (
-    <Card>
+    <Card data-section="notices">
       <CardHeader className="flex flex-row flex-wrap items-end justify-between gap-3">
         <CardTitle>{t("op_notices_title")}</CardTitle>
         <div className="flex flex-col gap-1.5">
@@ -32,7 +32,7 @@ export function NoticeList({ notices, days, onDays }: NoticeListProps) {
               if (next !== undefined) onDays(next);
             }}
           >
-            <SelectTrigger id="op-notice-days">
+            <SelectTrigger id="op-notice-days" size="sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -49,7 +49,7 @@ export function NoticeList({ notices, days, onDays }: NoticeListProps) {
         {notices.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("op_notices_empty")}</p>
         ) : (
-          <ul className="flex flex-col gap-1 text-sm">
+          <ul className="flex flex-col gap-1 text-sm tabular-nums">
             {sortNotices(notices).map((notice) => (
               <li key={`${notice.at}:${notice.orgId}:${notice.key}`} className="font-mono">
                 {t("op_notice_line", {

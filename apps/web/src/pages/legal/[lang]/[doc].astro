@@ -30,7 +30,7 @@ if (source === undefined) throw new Error(`The legal source src/legal/${lang}/${
 const { Content } = source;
 ---
 
-<Public title={title} lang={lang} reading>
+<Public title={title} lang={lang} frame="reading">
   <h1 class="text-2xl font-semibold">{title}</h1>
   <p role="note" data-legal="draft" class="legal-draft">{texts.legal_draft_line}</p>
   <p data-legal="version" class="text-muted-foreground text-sm">

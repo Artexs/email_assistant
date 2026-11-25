@@ -166,7 +166,7 @@ export default function LoginPage({ initialOptions = null }: { initialOptions?: 
     const totp = method === "totp";
     const inputId = totp ? "tf-code" : "tf-backup";
     return (
-      <AuthCard title="tf_code_title">
+      <AuthCard title="tf_code_title" panel>
         <form method="post" onSubmit={(event) => void onCodeSubmit(event)} noValidate className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor={inputId}>{t(totp ? "tf_code_label" : "tf_backup_label")}</Label>
@@ -215,7 +215,7 @@ export default function LoginPage({ initialOptions = null }: { initialOptions?: 
   }
 
   return (
-    <AuthCard title="login_title">
+    <AuthCard title="login_title" panel>
       {setupDone ? <Alert variant="default">{t("login_setup_done")}</Alert> : null}
       {deletedNotice === null ? null : (
         <Alert variant="default" data-notice="org-deleted" className="flex flex-col gap-2">
@@ -293,14 +293,16 @@ export default function LoginPage({ initialOptions = null }: { initialOptions?: 
         )}
       </form>
       {loginSections(signInOptions).sso ? <SsoSignIn next={nextTarget()} /> : null}
-      <a href="/forgot" className="text-sm underline">
+      <a href="/forgot" className="text-primary text-sm font-bold underline">
         {t("login_forgot_link")}
       </a>
       <details>
-        <summary className="cursor-pointer text-sm">{t("login_help_summary")}</summary>
+        <summary className="text-primary cursor-pointer text-sm font-bold">{t("login_help_summary")}</summary>
         <p className="text-muted-foreground mt-2 text-sm">{t("login_help_text")}</p>
       </details>
-      <LegalLinks />
+      <div className="text-muted-foreground text-xs">
+        <LegalLinks className="flex flex-wrap gap-x-4 gap-y-1" />
+      </div>
     </AuthCard>
   );
 }
