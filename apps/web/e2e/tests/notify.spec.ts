@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 
 import { expect, test } from "@playwright/test";
 
+import { t } from "../../src/i18n";
 import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { e2eEnv, E2E_BASE_URL, repoRoot } from "../env";
@@ -66,9 +67,18 @@ test("10. the card saves quiet hours, shows them after a reload, and is axe clea
   await expect(again.getByLabel(en.notify_quiet_end_label)).toHaveValue("06:00");
   await expect(again.getByText(en.notify_quiet_default_note)).toHaveCount(0);
   await expectNoA11yViolations(page, { include: "[data-card=quiet-hours]" });
+  // Two unsaved digest times show the pills in the picture (the seed user may hold times of an earlier spec: clear them first).
+  const digest = page.locator("[data-card=digest]");
+  const removes = digest.getByRole("button", { name: /^Remove/ });
+  for (let left = await removes.count(); left > 0; left -= 1) await removes.first().click();
+  for (const [index, time] of ["08:00", "18:00"].entries()) {
+    await digest.getByRole("button", { name: en.digest_add }).click();
+    await digest.getByLabel(t("digest_time_label", { n: index + 1 }), { exact: true }).fill(time);
+  }
+  await expect(digest.getByRole("button", { name: t("digest_remove", { time: "18:00" }) })).toBeVisible();
   await saveCardPictures(page, testInfo, "f170-04", {
     "quiet-hours": again,
-    digest: page.locator("[data-card=digest]"),
+    digest,
   });
 
   // The reset button brings the default hours back.
