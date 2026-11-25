@@ -1,8 +1,8 @@
 /// <reference types="bun" />
 import { afterEach, beforeEach, describe, expect, jest, setSystemTime, test } from "bun:test";
 
-import { ARM_MS } from "../../lib/approvals-queue";
-import { scheduleArm } from "./queue-support";
+import { ARM_MS } from "./approvals-queue";
+import { scheduleArm } from "../components/approvals/queue-support";
 
 // The state that `useArmed` keeps, written by the same setter.
 function armState() {
