@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL, e2eEnv, repoRoot } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
@@ -164,6 +165,10 @@ test("sign in with a code: a wrong code, then the right one", async ({ browser }
   const user = readSeed().twoFactorOwners[projectOf(testInfo.project.name)];
   const page = await newSession(browser, testInfo.project.name);
   await toCodeStep(page, user);
+
+  // The brand panel stays at the code step: the frame does not jump (it is hidden below `lg`, so only the desktop shows it).
+  if (testInfo.project.name === "desktop") await expect(page.getByText(en.login_panel_title)).toBeVisible();
+  await expectNoA11yViolations(page);
 
   // Focus moves to the code field when the code step opens.
   const input = page.getByLabel(en.tf_code_label);

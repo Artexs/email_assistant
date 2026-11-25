@@ -1,5 +1,6 @@
 import { formatClock, mailboxListSchema, ruleListSchema, type MailboxView } from "@ea/core/web";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
@@ -32,6 +33,23 @@ interface RulesBodyProps {
   rulesVersion: number;
   reloadMe(): void;
   reloadMailboxes(): void;
+  // The element in the bar above the form that holds the "updated at" line and Refresh. The mailbox filter
+  // sits in the same bar and must keep its focus when the body loads again, so the body fills this slot.
+  statusSlot: HTMLElement | null;
+}
+
+// The shape of the page while it loads: the bar, the add form and the three lists.
+function RulesSkeleton({ withForm }: { withForm: boolean }) {
+  return (
+    <div aria-busy="true" className="flex flex-col gap-4">
+      {withForm && <Skeleton className="h-12 w-full" />}
+      <div className="grid items-start gap-4 lg:grid-cols-3">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    </div>
+  );
 }
 
 function RulesBody({
@@ -43,6 +61,7 @@ function RulesBody({
   rulesVersion,
   reloadMe,
   reloadMailboxes,
+  statusSlot,
 }: RulesBodyProps) {
   const now = useNow();
   const [lastLoad, setLastLoad] = useState<Date | null>(null);
@@ -69,11 +88,7 @@ function RulesBody({
   if (data === null) {
     content =
       error === null || loading ? (
-        <div aria-busy="true" className="flex flex-col gap-3">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-32 w-full" />
-        </div>
+        <RulesSkeleton withForm={false} />
       ) : (
         <div className="flex flex-col items-start gap-3">
           <p>{t("rules_load_error")}</p>
@@ -82,28 +97,36 @@ function RulesBody({
       );
   } else {
     const groups = groupRules(data);
-    content = ruleKindOrder.map((kind) => (
-      <RuleList
-        key={kind}
-        kind={kind}
-        rules={groups[kind]}
-        mailboxes={mailboxes}
-        isOwner={isOwner}
-        onDeleted={onChanged}
-      />
-    ));
+    content = (
+      <div className="grid items-start gap-4 lg:grid-cols-3 [&>*]:min-w-0">
+        {ruleKindOrder.map((kind) => (
+          <RuleList
+            key={kind}
+            kind={kind}
+            rules={groups[kind]}
+            mailboxes={mailboxes}
+            isOwner={isOwner}
+            onDeleted={onChanged}
+          />
+        ))}
+      </div>
+    );
   }
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
-        </p>
-        <Button variant="outline" onClick={reload}>
-          {t("refresh")}
-        </Button>
-      </div>
+      {statusSlot !== null &&
+        createPortal(
+          <>
+            <p className="text-sm text-muted-foreground">
+              {lastLoad !== null && t("updated_at", { time: formatClock(lastLoad, timeZone, now, getLocale()) })}
+            </p>
+            <Button variant="outline" onClick={reload}>
+              {t("refresh")}
+            </Button>
+          </>,
+          statusSlot
+        )}
       {isOwner ? (
         <AddRuleForm mailboxes={mailboxes} onAdded={onChanged} onMissingMailbox={reloadMailboxes} />
       ) : (
@@ -119,6 +142,7 @@ function Rules() {
   const [filter, setFilter] = useState(ALL);
   // An Accept in the suggestions card adds a rule: a new version makes the rule list load again.
   const [rulesVersion, setRulesVersion] = useState(0);
+  const [statusSlot, setStatusSlot] = useState<HTMLElement | null>(null);
   const {
     data: mailboxes,
     error,
@@ -132,12 +156,11 @@ function Rules() {
 
   if (mailboxes === null) {
     return (
-      <div className="flex max-w-3xl flex-col gap-3">
+      <div className="flex max-w-6xl flex-col gap-4">
         {error === null || loading ? (
-          <div aria-busy="true" className="flex flex-col gap-3">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
+          <div aria-busy="true" className="flex flex-col gap-4">
+            <Skeleton className="h-12 w-full" />
+            <RulesSkeleton withForm />
           </div>
         ) : (
           <div className="flex flex-col items-start gap-3">
@@ -153,22 +176,25 @@ function Rules() {
   const selected = mailboxes.some((mailbox) => mailbox.id === filter) ? filter : ALL;
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="rules-filter">{t("rules_filter_label")}</Label>
-        <Select value={selected} onValueChange={setFilter}>
-          <SelectTrigger id="rules-filter" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("rules_all_mailboxes")}</SelectItem>
-            {mailboxes.map((mailbox) => (
-              <SelectItem key={mailbox.id} value={mailbox.id}>
-                {mailbox.address}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="flex max-w-6xl flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1.5 sm:max-w-sm">
+          <Label htmlFor="rules-filter">{t("rules_filter_label")}</Label>
+          <Select value={selected} onValueChange={setFilter}>
+            <SelectTrigger id="rules-filter" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>{t("rules_all_mailboxes")}</SelectItem>
+              {mailboxes.map((mailbox) => (
+                <SelectItem key={mailbox.id} value={mailbox.id}>
+                  {mailbox.address}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div ref={setStatusSlot} className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:ml-auto" />
       </div>
       <RulesBody
         key={selected}
@@ -180,6 +206,7 @@ function Rules() {
         rulesVersion={rulesVersion}
         reloadMe={reloadMe}
         reloadMailboxes={reloadMailboxes}
+        statusSlot={statusSlot}
       />
       {me.features.includes("urgency_editor") && (
         <UrgencyCard
@@ -208,7 +235,7 @@ function Rules() {
 export default function RulesPage() {
   useLocale();
   return (
-    <AppShell active="rules" title="title_rules">
+    <AppShell active="rules" title="title_rules" lead="rules_lead">
       <Rules />
     </AppShell>
   );
