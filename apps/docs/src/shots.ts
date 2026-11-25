@@ -46,8 +46,8 @@ const E2E_ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
   },
   settings: {
     path: "/settings",
-    en: "The Settings page of the panel, with the digest times and the signature of the assistant's messages.",
-    pl: "Strona Ustawienia w panelu, z godzinami podsumowań i podpisem wiadomości asystenta.",
+    en: "The Settings page of the panel, with its sections (this mailbox, digests and notices, organization, account and security) and the digest times.",
+    pl: "Strona Ustawienia w panelu, z działami (ta skrzynka, podsumowania i powiadomienia, organizacja, konto i bezpieczeństwo) i godzinami podsumowań.",
   },
   rules: {
     path: "/rules",
@@ -76,8 +76,8 @@ const DEMO_ALT: Record<ShotPage, { path: string; en: string; pl: string }> = {
   },
   settings: {
     path: "/settings",
-    en: "The Settings page of the panel in a demo organization, with the digest times and the signature of the assistant's messages.",
-    pl: "Strona Ustawienia w panelu organizacji demo, z godzinami podsumowań i podpisem wiadomości asystenta.",
+    en: "The Settings page of the panel in a demo organization, with its sections (this mailbox, digests and notices, organization, account and security) and the digest times.",
+    pl: "Strona Ustawienia w panelu organizacji demo, z działami (ta skrzynka, podsumowania i powiadomienia, organizacja, konto i bezpieczeństwo) i godzinami podsumowań.",
   },
   rules: {
     path: "/rules",

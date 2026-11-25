@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { en } from "@ea/web/i18n/en";
 import { pl } from "@ea/web/i18n/pl";
 
+import { flaggedTextProblems } from "./flagged-text";
 import {
   isShotPage,
   SHOT_LOCALES,
@@ -117,6 +118,12 @@ describe("alt texts per source (stage 07)", () => {
     for (const [index, shot] of DEMO_SHOTS.entries()) {
       expect(shot.alt).not.toBe(SHOTS[index]?.alt);
       expect(shot.alt).toContain("demo");
+    }
+  });
+  test("each alt text of both sources passes the public-content check and names no default-off feature", () => {
+    for (const shot of [...SHOTS, ...DEMO_SHOTS]) {
+      expect(shotTextProblem(shot.alt, shot.name)).toBeNull();
+      expect(flaggedTextProblems(shot.alt)).toEqual([]);
     }
   });
   test("shotView gives the alt text of its source; no source is the e2e text", () => {
