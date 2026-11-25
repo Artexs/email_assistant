@@ -31,7 +31,7 @@ export function DelegateOffDialog({ delegate, onCancel, onConfirm, onReturnFocus
           <Button type="button" variant="outline" onClick={onCancel}>
             {t("cancel")}
           </Button>
-          <Button type="button" onClick={onConfirm}>
+          <Button type="button" variant="destructive" onClick={onConfirm}>
             {t("dlg_off_confirm")}
           </Button>
         </DialogFooter>

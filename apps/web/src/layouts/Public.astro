@@ -2,6 +2,7 @@
 import type { UserLocale } from "@ea/core/web";
 
 import "../styles/global.css";
+import { BrandMark } from "../components/shell/BrandMark";
 import { en, type TextKey } from "../i18n/en";
 
 interface Props {
@@ -10,11 +11,12 @@ interface Props {
   title?: string;
   // The language of the page text, printed in `<html lang>`.
   lang?: UserLocale;
-  // A reading page (the legal texts): wide, starts at the top, not a centred card.
-  reading?: boolean;
+  // `card`: a centred column with the brand line. `split`: the page is full width and its island draws the columns (login, setup).
+  // `reading`: a column of at most 768 px that starts at the top, with the text in one card (the legal texts).
+  frame?: "card" | "split" | "reading";
 }
 
-const { titleKey, title, lang = "en", reading = false } = Astro.props;
+const { titleKey, title, lang = "en", frame = "card" } = Astro.props;
 const pageTitle = title ?? (titleKey === undefined ? en.brand : en[titleKey]);
 ---
 
@@ -33,14 +35,30 @@ const pageTitle = title ?? (titleKey === undefined ? en.brand : en[titleKey]);
   </head>
   <body class="min-h-screen bg-background text-foreground">
     <noscript>{en.noscript}</noscript>
-    <main
-      class:list={[
-        "mx-auto flex min-h-screen w-full flex-col gap-6 p-6",
-        reading ? "max-w-3xl justify-start" : "max-w-md justify-center",
-      ]}
-    >
-      <p class="text-center text-lg font-semibold">{en.brand}</p>
-      <slot />
-    </main>
+    {
+      frame === "split" ? (
+        <main class="min-h-screen w-full">
+          <slot />
+        </main>
+      ) : frame === "reading" ? (
+        <main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+          <a href="/login" class="flex items-center gap-3 self-start text-lg font-extrabold">
+            <BrandMark />
+            {en.brand}
+          </a>
+          <div class="flex min-w-0 flex-col gap-6 rounded-lg bg-card p-4 text-card-foreground shadow-card break-words lg:p-6">
+            <slot />
+          </div>
+        </main>
+      ) : (
+        <main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 p-6">
+          <p class="flex items-center justify-center gap-3 text-lg font-extrabold">
+            <BrandMark />
+            {en.brand}
+          </p>
+          <slot />
+        </main>
+      )
+    }
   </body>
 </html>

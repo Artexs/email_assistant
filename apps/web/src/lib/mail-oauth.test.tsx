@@ -162,6 +162,18 @@ describe("a tap on a button (rule 2)", () => {
     expect(calls[1]?.path).toBe("/api/mailboxes/oauth/google/start");
   });
 
+  test("a Reconnect sends the mailbox id; a new connect sends none", async () => {
+    const bodies: unknown[] = [];
+    const api = (async (_path: string, _schema: unknown, init: { body?: unknown } = {}) => {
+      bodies.push(init.body);
+      return { url: "https://login.example.test/authorize?state=x" };
+    }) as never;
+    const mailboxId = "6f1d0b3c-8a2e-4f7a-9d55-3b1c2a4e5f60";
+    await startOAuth("google", { api, assign: () => undefined }, mailboxId);
+    await startOAuth("google", { api, assign: () => undefined });
+    expect(bodies).toEqual([{ mailboxId }, {}]);
+  });
+
   test("a start error shows the text of its code and assigns nothing", async () => {
     const assigned: string[] = [];
     const failWith = (status: number, code: string) =>

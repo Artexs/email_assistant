@@ -6,9 +6,11 @@ import {
   type OrganizationView,
   type SettingsWebChange,
 } from "@ea/core/web";
-import { useEffect, useState } from "react";
+import { Inbox } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { EmptyState } from "../components/patterns/EmptyState";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { ScopeBadges } from "../components/mailboxes/ScopeBadges";
@@ -21,6 +23,7 @@ import { NotifySection } from "../components/settings/NotifyCards";
 import { PushDevicesCard } from "../components/settings/PushDevicesCard";
 import { LoopSettingsCard } from "../components/settings/LoopSettingsCard";
 import { ModeCard } from "../components/settings/ModeCard";
+import { SettingsGroup, SettingsNav } from "../components/settings/SettingsNav";
 import { ReplyStyleCard } from "../components/settings/ReplyStyleCard";
 import { SentMailCard } from "../components/settings/SentMailCard";
 import { TelegramLockCard } from "../components/settings/TelegramLockCard";
@@ -32,6 +35,7 @@ import { t, tp, type TextKey, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { canWrite } from "../lib/can-write";
 import { selectedMailboxId, settingsPath } from "../lib/settings-api";
+import { groupIdFromHash } from "../lib/settings-groups";
 import { loadTrustView } from "../lib/trust-api";
 import { useResource } from "../lib/use-resource";
 
@@ -42,9 +46,19 @@ interface MailboxSettingsProps {
   listLoading: boolean;
   reloadMailboxes(): void;
   reloadMe(): void;
+  // Called once the settings have loaded or have failed for good: the height above the other groups is final.
+  onSettled(): void;
 }
 
-function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailboxes, reloadMe }: MailboxSettingsProps) {
+function MailboxSettings({
+  mailbox,
+  isOwner,
+  timeZone,
+  listLoading,
+  reloadMailboxes,
+  reloadMe,
+  onSettled,
+}: MailboxSettingsProps) {
   const { data, error, loading, reload, mutate } = useResource(() => api(settingsPath(mailbox.id), settingsViewSchema));
   // With the flag `trust_ladder` on, the card also reads the trust view. Flag off: no request, the card is as before.
   const { me } = useMe();
@@ -64,6 +78,10 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   }, [missing, asked, reloadMailboxes]);
   // The list reload is done and still holds this mailbox: show the error, not a skeleton for ever.
   const waitingForList = missing && (!asked || listLoading);
+  const settled = data !== null || (error !== null && !loading && !waitingForList);
+  useEffect(() => {
+    if (settled) onSettled();
+  }, [settled, onSettled]);
 
   if (data === null) {
     return error === null || loading || waitingForList ? (
@@ -120,15 +138,26 @@ function MailboxSettings({ mailbox, isOwner, timeZone, listLoading, reloadMailbo
   );
 }
 
-function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRole: boolean }) {
+function NoticesGroup() {
   const { me, reload: reloadMe } = useMe();
+  return (
+    <SettingsGroup id="notices">
+      {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
+      {me !== null && <NotifySection features={me.features} timeZone={me.organization.timezone} />}
+      {me?.features.includes("web_push") === true && <PushDevicesCard />}
+    </SettingsGroup>
+  );
+}
+
+function OrganizationGroup({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRole: boolean }) {
+  const { reload: reloadMe } = useMe();
   const { data, error, loading, reload, mutate } = useResource(() =>
     api("/api/organization", organizationSettingsSchema)
   );
 
-  let organizationCards;
+  let content;
   if (data === null) {
-    organizationCards =
+    content =
       error === null || loading ? (
         <div aria-busy="true" className="flex flex-col gap-3">
           <Skeleton className="h-40 w-full" />
@@ -146,7 +175,7 @@ function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRol
       mutate({ ...data, ...view });
       reloadMe();
     };
-    organizationCards = (
+    content = (
       <>
         <TimezoneCard organization={data} isOwner={isOwner} onSaved={saved} />
         {data.telegramMinimalLocked !== undefined && (
@@ -159,18 +188,20 @@ function GeneralSection({ isOwner, isOwnerRole }: { isOwner: boolean; isOwnerRol
       </>
     );
   }
+  return <SettingsGroup id="organization">{content}</SettingsGroup>;
+}
 
-  return (
-    <section className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold">{t("set_section_general")}</h2>
-      {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
-      {me !== null && <DigestTimesCard times={me.digestTimes} timeZone={me.organization.timezone} onSaved={reloadMe} />}
-      {me !== null && <NotifySection features={me.features} timeZone={me.organization.timezone} />}
-      {organizationCards}
-      {me?.features.includes("web_push") === true && <PushDevicesCard />}
-      <AccountCard />
-    </section>
-  );
+// After the first load the page scrolls to the group that the hash names, once. The page grows while it loads, so
+// the scroll waits for the mailbox group to settle. `?two_factor=required` has its own scroll and wins.
+function useScrollToGroup(ready: boolean) {
+  const done = useRef(false);
+  useEffect(() => {
+    if (!ready || done.current) return;
+    done.current = true;
+    if (new URLSearchParams(location.search).get("two_factor") === "required") return;
+    const id = groupIdFromHash(location.hash);
+    if (id !== null) document.getElementById(id)?.scrollIntoView();
+  }, [ready]);
 }
 
 function Settings() {
@@ -179,6 +210,8 @@ function Settings() {
   const { data, error, loading, reload } = useResource(() => api("/api/mailboxes", mailboxListSchema));
   const isOwner = me?.role === "owner" && canWrite(me);
   const isOwnerRole = me?.role === "owner";
+  const [mailboxSettled, setMailboxSettled] = useState(false);
+  const onSettled = useCallback(() => setMailboxSettled(true), []);
 
   // The selection is derived in render, so no frame shows "no mailbox" for a listed one (the first load reads `?mailbox=`).
   const current =
@@ -196,6 +229,11 @@ function Settings() {
     const search = params.toString();
     history.replaceState(null, "", `${location.pathname}${search === "" ? "" : `?${search}`}${location.hash}`);
   }, [data, current, selected]);
+
+  // With no mailbox (or a failed list) no settings card will load, so the list answer alone settles the group.
+  const listSettled = data !== null || (error !== null && !loading);
+  const noCards = listSettled && (data === null || current === null);
+  useScrollToGroup(me !== null && listSettled && (mailboxSettled || noCards));
 
   if (me === null) return null;
 
@@ -224,17 +262,15 @@ function Settings() {
       );
   } else if (mailbox === null) {
     content = (
-      <div className="flex flex-col items-start gap-3">
-        <p className="text-muted-foreground">{t("set_no_mailbox")}</p>
-        <Button asChild variant="outline">
+      <EmptyState icon={Inbox} title={t("set_no_mailbox")} headingLevel={2}>
+        <Button asChild>
           <a href="/mailboxes">{t("set_open_mailboxes")}</a>
         </Button>
-      </div>
+      </EmptyState>
     );
   } else {
     content = (
       <>
-        {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
         <MailboxSelector mailboxes={data} value={mailbox.id} onChange={choose} />
         <div className="flex flex-wrap items-start gap-2">
           <StatusBadge status={mailbox.status} />
@@ -248,15 +284,26 @@ function Settings() {
           listLoading={loading}
           reloadMailboxes={reload}
           reloadMe={reloadMe}
+          onSettled={onSettled}
         />
       </>
     );
   }
 
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
-      <div className="flex flex-col gap-4">{content}</div>
-      <GeneralSection isOwner={isOwner} isOwnerRole={isOwnerRole} />
+    <div className="flex flex-col gap-6">
+      {!isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <SettingsNav />
+        <div className="flex max-w-3xl min-w-0 flex-1 flex-col gap-8">
+          <SettingsGroup id="mailbox">{content}</SettingsGroup>
+          <NoticesGroup />
+          <OrganizationGroup isOwner={isOwner} isOwnerRole={isOwnerRole} />
+          <SettingsGroup id="account">
+            <AccountCard />
+          </SettingsGroup>
+        </div>
+      </div>
     </div>
   );
 }
@@ -264,7 +311,7 @@ function Settings() {
 export default function SettingsPage() {
   useLocale();
   return (
-    <AppShell active="settings" title="title_settings">
+    <AppShell active="settings" title="title_settings" lead="set_lead">
       <Settings />
     </AppShell>
   );

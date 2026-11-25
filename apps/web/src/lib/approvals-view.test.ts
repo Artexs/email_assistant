@@ -96,8 +96,8 @@ describe("the text maps", () => {
   test("fixed Polish and English values", () => {
     expect(pl.appr_dur_day).toBe("{n} dni");
     expect(pl.appr_preparing).toBe("Trwa przygotowywanie szkicu…");
-    expect(pl.appr_empty).toBe("Nic nie czeka na Twoje zatwierdzenie.");
-    expect(en.appr_empty).toBe("Nothing waits for your approval.");
+    expect(pl.appr_none).toBe("Nic na Ciebie nie czeka");
+    expect(en.appr_none).toBe("Nothing waits for you");
     expect(pl.appr_done_sending).toBe("Zatwierdzono, trwa wysyłanie.");
     expect(en.appr_state_held_soon).toBe("Approved, sending soon");
     expect(pl.appr_state_held_soon).toBe("Zatwierdzone, wkrótce zostanie wysłane");

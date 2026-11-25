@@ -19,7 +19,7 @@ export const plAuth = {
   menu_open: "Otwórz menu",
   menu_title: "Menu",
   user_menu: "Menu konta",
-  user_menu_named: "Menu konta: {email}",
+  user_menu_named: "Menu konta: {name}, {email}",
   help_link: "Pomoc i poradniki",
   whats_new_title: "Co nowego",
   whats_new_all: "Wszystkie zmiany dla użytkowników",
@@ -38,6 +38,8 @@ export const plAuth = {
   loading: "Wczytywanie",
   // login
   login_title: "Zaloguj się",
+  login_panel_title: "Asystent sortuje pocztę i przygotowuje szkice.",
+  login_panel_text: "Nic nie zostanie wysłane bez zatwierdzenia właściciela.",
   email_label: "Adres e-mail",
   password_label: "Hasło",
   sign_in: "Zaloguj się",

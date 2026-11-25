@@ -1,14 +1,16 @@
 ---
+import { WifiOff } from "lucide-react";
+
+import NoticeCard from "../components/shell/NoticeCard.astro";
 import Public from "../layouts/Public.astro";
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
 ---
 
 <Public titleKey="offline_title">
-  <h1 lang="pl" class="text-xl font-semibold">{pl.offline_title}</h1>
-  <p lang="pl">{pl.offline_text}</p>
-  <a href="/" lang="pl" class="underline">{pl.offline_retry}</a>
-  <p class="font-semibold">{en.offline_title}</p>
-  <p>{en.offline_text}</p>
-  <a href="/" class="underline">{en.offline_retry}</a>
+  <NoticeCard
+    icon={WifiOff}
+    pl={{ title: pl.offline_title, text: pl.offline_text, link: pl.offline_retry }}
+    en={{ title: en.offline_title, text: en.offline_text, link: en.offline_retry }}
+  />
 </Public>

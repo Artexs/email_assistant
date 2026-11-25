@@ -7,6 +7,7 @@ import {
   type ProfileView,
   type SentTracking,
 } from "@ea/core/web";
+import { PenLine } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -29,8 +30,9 @@ import {
 import { suggestButton, type SuggestButton } from "../../lib/style-suggest";
 import { useDraft } from "../../lib/use-draft";
 import { useResource } from "../../lib/use-resource";
+import { FactBox } from "../patterns/FactBox";
+import { SectionCard } from "../patterns/SectionCard";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Skeleton } from "../ui/skeleton";
@@ -40,7 +42,31 @@ import { ReplySamples } from "./ReplySamples";
 import { StyleGuide } from "./StyleGuide";
 import { StyleSuggest } from "./StyleSuggest";
 
-type Preview = { state: "idle" } | { state: "running" } | { state: "done"; answer: PreviewAnswer };
+export type Preview = { state: "idle" } | { state: "running" } | { state: "done"; answer: PreviewAnswer };
+
+// The answer of Preview. The body is text from a model: it shows as plain text, never as markup.
+export function PreviewResult({ preview }: { preview: Preview }) {
+  return (
+    <div aria-live="polite" data-preview={preview.state}>
+      {preview.state === "done" && preview.answer.kind === "body" && (
+        <FactBox>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-sm font-bold">{t("rs_preview_title")}</p>
+            <p data-preview-body="" className="text-base whitespace-pre-wrap">
+              {preview.answer.body}
+            </p>
+            <p className="text-sm">{t("rs_preview_note")}</p>
+          </div>
+        </FactBox>
+      )}
+      {preview.state === "done" && preview.answer.kind === "failed" && (
+        <p role="alert" className="text-sm text-destructive">
+          {t(preview.answer.key)}
+        </p>
+      )}
+    </div>
+  );
+}
 
 interface FormProps {
   mailboxId: string;
@@ -136,9 +162,7 @@ export function ReplyStyleForm({
   const showFallback = (field: "displayName" | "signature") => values[field].trim() === "";
 
   return (
-    <CardContent className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">{t("rs_help")}</p>
-
+    <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${ids}-name`}>{t("rs_name_label")}</Label>
         <Input
@@ -158,7 +182,6 @@ export function ReplyStyleForm({
         <Label htmlFor={`${ids}-signature`}>{t("rs_signature_label")}</Label>
         <Textarea
           id={`${ids}-signature`}
-          rows={4}
           value={values.signature}
           readOnly={!isOwner}
           disabled={pending}
@@ -191,7 +214,6 @@ export function ReplyStyleForm({
             <Textarea
               id={`${ids}-style`}
               ref={styleField}
-              rows={5}
               value={values.writingStyle}
               readOnly={!isOwner}
               disabled={pending}
@@ -221,14 +243,14 @@ export function ReplyStyleForm({
       )}
 
       {isOwner && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Button type="button" disabled={pending || !isDirty(draft)} onClick={() => void save()}>
             {t("save")}
           </Button>
           {replyDraftsOn && (
             <Button
               type="button"
-              variant="outline"
+              variant="soft"
               disabled={pending || running}
               aria-describedby={`${ids}-preview-help`}
               onClick={() => void runPreview()}
@@ -246,24 +268,8 @@ export function ReplyStyleForm({
 
       {isOwner && replyDraftsOn && <ReplySamples mailboxId={mailboxId} blocked={samplesBlocked} />}
 
-      {/* The answer of the preview is text from a model: it shows as plain text, never as markup. */}
-      <div aria-live="polite" data-preview={preview.state}>
-        {preview.state === "done" && preview.answer.kind === "body" && (
-          <div className="flex flex-col gap-1.5 rounded-md border p-3">
-            <p className="text-sm font-medium">{t("rs_preview_title")}</p>
-            <p data-preview-body="" className="whitespace-pre-wrap text-sm">
-              {preview.answer.body}
-            </p>
-            <p className="text-sm text-muted-foreground">{t("rs_preview_note")}</p>
-          </div>
-        )}
-        {preview.state === "done" && preview.answer.kind === "failed" && (
-          <p role="alert" className="text-sm text-destructive">
-            {t(preview.answer.key)}
-          </p>
-        )}
-      </div>
-    </CardContent>
+      <PreviewResult preview={preview} />
+    </div>
   );
 }
 
@@ -290,23 +296,18 @@ export function ReplyStyleCard({
   const { data, error, loading, reload, mutate } = useResource(() => loadProfile(mailbox.id));
 
   return (
-    <Card data-card="reply-style">
-      <CardHeader>
-        <CardTitle>{t("rs_title")}</CardTitle>
-      </CardHeader>
+    <SectionCard icon={PenLine} title={t("rs_title")} lead={t("rs_help")} data-card="reply-style">
       {data === null ? (
-        <CardContent>
-          {error === null || loading ? (
-            <div aria-busy="true">
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : (
-            <div className="flex flex-col items-start gap-3">
-              <p>{t("set_load_error")}</p>
-              <Button onClick={reload}>{t("retry")}</Button>
-            </div>
-          )}
-        </CardContent>
+        error === null || loading ? (
+          <div aria-busy="true">
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : (
+          <div className="flex flex-col items-start gap-3">
+            <p>{t("set_load_error")}</p>
+            <Button onClick={reload}>{t("retry")}</Button>
+          </div>
+        )
       ) : (
         <ReplyStyleForm
           mailboxId={mailbox.id}
@@ -324,6 +325,6 @@ export function ReplyStyleCard({
           onSaved={mutate}
         />
       )}
-    </Card>
+    </SectionCard>
   );
 }

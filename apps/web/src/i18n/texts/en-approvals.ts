@@ -1,7 +1,13 @@
 export const enApprovals = {
   // approvals page
   appr_off: "This page is off for your organization.",
-  appr_empty: "Nothing waits for your approval.",
+  appr_none: "Nothing waits for you",
+  appr_empty_text: "A new draft shows up here when the assistant has one for you to check.",
+  appr_empty_action: "See Activity",
+  appr_lead_cap: "{n} or more drafts wait for you",
+  appr_up_next: "Up next",
+  appr_held_heading: "Approved, not sent yet",
+  appr_about: "About this draft",
   appr_list_label: "Drafts that wait for approval",
   appr_detail_label: "Draft details",
   appr_load_error: "The drafts did not load.",
@@ -108,6 +114,7 @@ export const enApprovals = {
   dlg_tab_delegates: "Delegates",
   dlg_list_label: "Delegates",
   dlg_empty: "There are no delegates yet.",
+  dlg_empty_text: "Add a delegate with the form above.",
   dlg_list_full: "Showing the first {n} delegates. Others are not shown.",
   dlg_load_error: "The delegates did not load.",
   dlg_owner_only: "Only the owner can change delegates.",
@@ -289,6 +296,7 @@ export const enApprovals = {
   title_mailboxes: "Mailboxes",
   title_settings: "Settings",
   title_rules: "Rules",
+  rules_lead: "Sender rules run before the AI.",
   title_login: "Sign in",
   title_setup: "Set your password",
   title_forgot: "Reset password",
@@ -297,6 +305,7 @@ export const enApprovals = {
   title_stats: "Stats",
   title_approvals: "Approvals",
   title_delegates: "Delegates",
+  dlg_lead: "The people you can hand work to.",
   title_delegations: "Delegations",
   dgn_lead: "Work you handed over, and what waits for an answer.",
   // The Delegate action on a mail row, the open-loop settings and the new Telegram terms

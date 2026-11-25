@@ -3,7 +3,13 @@ import type { TextKey } from "../en";
 export const plApprovals = {
   // approvals page
   appr_off: "Ta strona jest wyłączona w Twojej organizacji.",
-  appr_empty: "Nic nie czeka na Twoje zatwierdzenie.",
+  appr_none: "Nic na Ciebie nie czeka",
+  appr_empty_text: "Nowy szkic pojawi się tutaj, gdy asystent przygotuje coś do sprawdzenia.",
+  appr_empty_action: "Zobacz aktywność",
+  appr_lead_cap: "{n} lub więcej szkiców czeka na Ciebie",
+  appr_up_next: "Następne",
+  appr_held_heading: "Zatwierdzone, jeszcze niewysłane",
+  appr_about: "O tym szkicu",
   appr_list_label: "Szkice czekające na zatwierdzenie",
   appr_detail_label: "Szczegóły szkicu",
   appr_load_error: "Nie udało się wczytać szkiców.",
@@ -110,6 +116,7 @@ export const plApprovals = {
   dlg_tab_delegates: "Wykonawcy",
   dlg_list_label: "Wykonawcy",
   dlg_empty: "Nie ma jeszcze wykonawców.",
+  dlg_empty_text: "Dodaj osobę formularzem powyżej.",
   dlg_list_full: "Pokazano pierwszych {n} wykonawców. Pozostałych nie widać.",
   dlg_load_error: "Nie udało się wczytać wykonawców.",
   dlg_owner_only: "Tylko właściciel może zmieniać wykonawców.",
@@ -292,6 +299,7 @@ export const plApprovals = {
   title_mailboxes: "Skrzynki",
   title_settings: "Ustawienia",
   title_rules: "Reguły",
+  rules_lead: "Reguły nadawców działają przed AI.",
   title_login: "Zaloguj się",
   title_setup: "Ustaw hasło",
   title_forgot: "Zresetuj hasło",
@@ -300,6 +308,7 @@ export const plApprovals = {
   title_stats: "Statystyki",
   title_approvals: "Zatwierdzenia",
   title_delegates: "Wykonawcy",
+  dlg_lead: "Osoby, którym możesz przekazać pracę.",
   title_delegations: "Zlecenia",
   dgn_lead: "Praca przekazana innym i to, co czeka na odpowiedź.",
   // The Delegate action on a mail row, the open-loop settings and the new Telegram terms

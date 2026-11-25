@@ -17,7 +17,7 @@ export const enAuth = {
   menu_open: "Open menu",
   menu_title: "Menu",
   user_menu: "Account menu",
-  user_menu_named: "Account menu: {email}",
+  user_menu_named: "Account menu: {name}, {email}",
   help_link: "Help and guides",
   whats_new_title: "What is new",
   whats_new_all: "All changes for users",
@@ -36,6 +36,8 @@ export const enAuth = {
   loading: "Loading",
   // login
   login_title: "Sign in",
+  login_panel_title: "The assistant sorts your mail and prepares drafts.",
+  login_panel_text: "Nothing is sent until an owner approves it.",
   email_label: "E-mail",
   password_label: "Password",
   sign_in: "Sign in",

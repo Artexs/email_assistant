@@ -44,6 +44,9 @@ test("the manifest, the worker and the offline page are public; a page still nee
   await page.goto("/offline.html");
   await expect(page.getByRole("heading", { level: 1, name: pl.offline_title })).toBeVisible();
   await expect(page.getByText(en.offline_text)).toBeVisible();
+  await page.emulateMedia({ colorScheme: "light" });
+  const card = page.locator("main > div").first();
+  await expect(card).toHaveCSS("background-color", "rgb(255, 255, 255)");
   await expectNoA11yViolations(page);
 });
 

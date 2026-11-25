@@ -50,6 +50,8 @@ for (const lang of userLocales) {
       await expect(page.getByRole("note")).toHaveText(texts.legal_draft_line);
       await expect(page.getByText(texts.legal_version.replace("{version}", TERMS_VERSION))).toBeVisible();
       await expect(page.getByRole("link", { name: texts.go_to_sign_in })).toHaveAttribute("href", "/login");
+      await expect(page.getByRole("link", { name: en.brand })).toHaveAttribute("href", "/login");
+      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
       expect(errors).toEqual([]);
       await expectNoA11yViolations(page);
     });
@@ -84,6 +86,16 @@ test("the privacy page and the DPA list OpenAI in a table; the terms have no sub
   await page.goto(legalPath("en", "terms"));
   await expect(page.getByRole("heading", { level: 1, name: en.legal_terms_title })).toBeVisible();
   await expect(page.locator("table")).toHaveCount(0);
+});
+
+test("the privacy page does not scroll sideways at 320 px; a wide table scrolls inside its own region", async ({
+  page,
+}) => {
+  test.skip(!onMobile(), "the width check runs once, on the phone project");
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto(legalPath("en", "privacy"));
+  await expect(page.locator(".legal-table").first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
 
 test("the sign-in page links the three documents in the browser language", async ({ page }) => {

@@ -2,7 +2,7 @@
 
 Needs F166 stage 03: the two font files in `apps/web/src/assets/fonts/` and their `@font-face` rules and `--font-sans` in `apps/web/src/styles/global.css`. May run next to 03, 04, 05. Stage 02 needs its `testMatch` change.
 
-Part of [`../plan.md`](../plan.md). Decisions P1, P2, D1, D2, D8.
+Part of [`../plan.md`](../plan.md). Decisions P1, P2, D1, D2, D8, D12.
 
 ## Step 1 — Accent
 
@@ -26,7 +26,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1, P2, D1, D2, D8.
 New unit test `apps/docs/src/theme.test.ts`. It reads `custom.css`, and the gray, white and black values of Starlight from `node_modules/@astrojs/starlight/dist/style/props.css` (a Starlight update then checks again).
 
 1. The six accent values equal D1 exactly.
-2. Contrast, two decimals, sRGB formula: light accent on white `5.59`, light accent on light gray-6 `4.82`, white on light accent `5.59`, light accent-high on light accent-low `9.07`; dark accent-high on dark black `9.32`, on dark gray-6 `7.94`; dark accent-low on dark accent-high `6.48`. Each pair also ≥ 4.5.
+2. Contrast under D12 (each `hsl()` channel rounded to 8 bits, then WCAG; two decimals): light accent on white `5.59`, light accent on light gray-6 `4.82`, white on light accent `5.59`, light accent-high on light accent-low `9.07`; dark accent-high on dark black `9.32`, on dark gray-6 `7.94`; dark accent-low on dark accent-high `6.48`. Each pair also ≥ 4.5.
 3. Break check: set light `--sl-color-accent` to `#13a08c`; test 2 fails on "light accent on white"; restore.
 4. Each `url()` in a `@font-face` rule of `custom.css` resolves (from the CSS file's folder) to an existing file in `apps/web/src/assets/fonts/`, the two files are both used, and the `unicode-range` of each rule equals that of the rule in `global.css` with the same file name.
 5. `--sl-font` begins with `"Nunito Variable"`.
