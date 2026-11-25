@@ -109,7 +109,7 @@ const main: CliSpec["main"] = async (argv, out) => {
       const { owner, assistantIds, memberIds, activityIds } = await seedMainOrg(ctx);
       const { termsIds, twoFactorIds } = await seedTermsTwoFactor(ctx);
       const { deleteIds } = await seedDelete(ctx);
-      const { approvalsIds } = await seedApprovals(ctx);
+      const { approvalsIds, queueIds } = await seedApprovals(ctx);
       const { delegatesIds } = await seedDelegates(ctx);
       const { delegationsIds } = await seedDelegations(ctx);
       const { openLoopsIds } = await seedOpenLoops(ctx);
@@ -129,7 +129,7 @@ const main: CliSpec["main"] = async (argv, out) => {
         activityIds,
       });
       const { deleteOrgs } = await finishDelete(ctx, { deleteIds });
-      const { approvalsOrgs } = await finishApprovals(ctx, { approvalsIds });
+      const { approvalsOrgs, queueOrgs } = await finishApprovals(ctx, { approvalsIds, queueIds });
       const { delegatesOrgs } = await finishDelegates(ctx, { delegatesIds });
       const { delegationsOrgs } = await finishDelegations(ctx, { delegationsIds });
       const { openLoopsOrgs } = await finishOpenLoops(ctx, { openLoopsIds });
@@ -184,6 +184,7 @@ const main: CliSpec["main"] = async (argv, out) => {
         suggestionOrgs,
         reviewOrgs,
         approvalsOrgs,
+        queueOrgs,
         loopsOrgs,
       };
       const path = seedFilePath(repoRoot);

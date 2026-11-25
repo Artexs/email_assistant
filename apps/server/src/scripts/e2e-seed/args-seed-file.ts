@@ -129,6 +129,16 @@ export interface SeedFile {
       mailIds: Record<"gap" | "clean" | "flagged", string>;
     }
   >;
+  // The queue spec: the waiting sends in list order (newest first) and the held one.
+  queueOrgs: Record<
+    E2eProject,
+    {
+      orgId: string;
+      owner: { userId: string; email: string; password: string };
+      waitingSendIds: string[];
+      heldSendId: string;
+    }
+  >;
   approvalsOrgs: Record<
     E2eProject,
     {

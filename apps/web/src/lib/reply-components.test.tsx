@@ -69,6 +69,8 @@ const panel = (d: ApprovalDetail) => plain(panelRaw(d));
 
 // The attribute, not the `disabled:` classes of the button styles.
 const OFF = /\sdisabled=""/;
+// The button "Yes, send it" with its icon.
+const YES = /<button[^>]*>(?:<svg.*?<\/svg>)?Yes, send it<\/button>/;
 
 const at = (html: string, text: string): number => {
   const index = html.indexOf(text);
@@ -212,7 +214,7 @@ describe("Approve and Edit of a reply", () => {
 
   test("with a gap Approve is off and the reason is in the page and linked to the button", () => {
     const html = actions("rp_approve_gaps");
-    const approve = /<button[^>]*>Approve<\/button>/.exec(html)?.[0] ?? "";
+    const approve = YES.exec(html)?.[0] ?? "";
     expect(approve).toMatch(OFF);
     expect(approve).toMatch(/aria-describedby="/);
     expect(html).toContain("Approve is off while the draft has gaps.");
@@ -223,7 +225,7 @@ describe("Approve and Edit of a reply", () => {
   test("with no gap Approve is on and no reason shows", () => {
     const html = actions(null);
     expect(html).not.toContain("Approve is off");
-    expect(/<button[^>]*>Approve<\/button>/.exec(html)?.[0]).not.toMatch(OFF);
+    expect(YES.exec(html)?.[0]).not.toMatch(OFF);
   });
 
   test("an owner may edit a waiting reply, not a held or an expired one", () => {

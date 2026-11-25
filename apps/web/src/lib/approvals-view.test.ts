@@ -98,7 +98,8 @@ describe("the text maps", () => {
     expect(pl.appr_preparing).toBe("Trwa przygotowywanie szkicu…");
     expect(pl.appr_none).toBe("Nic na Ciebie nie czeka");
     expect(en.appr_none).toBe("Nothing waits for you");
-    expect(pl.appr_done_sending).toBe("Zatwierdzono, trwa wysyłanie.");
+    expect(t("appr_done_sending", { to: "Anna" })).toBe("Sending to Anna.");
+    expect(pl.appr_done_sent).toBe("Wysłano do: {to}.");
     expect(en.appr_state_held_soon).toBe("Approved, sending soon");
     expect(pl.appr_state_held_soon).toBe("Zatwierdzone, wkrótce zostanie wysłane");
     expect(pl.nav_approvals_badge).toBe("Oczekuje: {n}");

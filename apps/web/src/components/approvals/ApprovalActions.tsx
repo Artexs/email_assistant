@@ -1,8 +1,10 @@
 import type { RejectReasonBody } from "@ea/core/web";
-import { useId, type Ref } from "react";
+import { Pencil, Send, X } from "lucide-react";
+import { useEffect, useId, useRef, type Ref } from "react";
 
 import { t, type TextKey } from "../../i18n";
 import { REASON_TEXTS, REJECT_REASONS, type Decisions } from "../../lib/approvals-view";
+import { StickyActions } from "../patterns/StickyActions";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -13,26 +15,31 @@ export interface ApprovalActionsProps {
   decisions: Decisions;
   // The draft is not ready (its mailbox copy is still made): the server would answer 409, so the button is off.
   draftReady: boolean;
+  // Every decision button is off: a request runs, the card was shown a moment ago, or the draft expired.
   busy: boolean;
   // A member reads only: the page says why there is no button.
   ownerOnly: boolean;
   // An owner may edit a waiting delegation, clarification, follow-up or reply (`canEdit`).
   canEdit: boolean;
+  // The draft is past its expiry time: it says so, and Yes and No stay off.
+  expired?: boolean;
   // The text that tells why Approve is off (a reply with a gap), or null.
   approveBlock?: TextKey | null;
-  // The Edit button, so the page can give the focus back to it when the dialog closes with no change.
+  // The Change button, so the page can give the focus back to it when the dialog closes with no change.
   editRef?: Ref<HTMLButtonElement>;
   onApprove(): void;
   onReject(): void;
   onEdit(): void;
 }
 
+// The decision bar: "Yes, send it", "Change" and "No" in the fixed bar of a phone.
 export function ApprovalActions({
   decisions,
   draftReady,
   busy,
   ownerOnly,
   canEdit,
+  expired = false,
   approveBlock = null,
   editRef,
   onApprove,
@@ -40,28 +47,38 @@ export function ApprovalActions({
   onEdit,
 }: ApprovalActionsProps) {
   const blockId = useId();
-  if (ownerOnly) return <p className="text-sm text-muted-foreground">{t("owner_only")}</p>;
+  if (ownerOnly) {
+    return (
+      <StickyActions>
+        <p className="text-sm text-muted-foreground">{t("owner_only")}</p>
+      </StickyActions>
+    );
+  }
   if (!decisions.approve && !decisions.reject) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <StickyActions>
       {decisions.approve && (
         <Button
           type="button"
-          disabled={busy || !draftReady || approveBlock !== null}
+          size="lg"
+          disabled={busy || expired || !draftReady || approveBlock !== null}
           aria-describedby={approveBlock === null ? undefined : blockId}
           onClick={onApprove}
         >
+          <Send aria-hidden="true" />
           {t("appr_approve")}
         </Button>
       )}
-      {decisions.reject && (
-        <Button type="button" variant="outline" disabled={busy} onClick={onReject}>
-          {t("appr_reject")}
+      {canEdit && (
+        <Button ref={editRef} type="button" variant="soft" disabled={busy} onClick={onEdit}>
+          <Pencil aria-hidden="true" />
+          {t("appr_edit")}
         </Button>
       )}
-      {canEdit && (
-        <Button ref={editRef} type="button" variant="outline" disabled={busy} onClick={onEdit}>
-          {t("appr_edit")}
+      {decisions.reject && (
+        <Button type="button" variant="ghost" disabled={busy || expired} onClick={onReject}>
+          <X aria-hidden="true" />
+          {t("appr_reject")}
         </Button>
       )}
       {approveBlock !== null && decisions.approve && (
@@ -69,7 +86,57 @@ export function ApprovalActions({
           {t(approveBlock)}
         </p>
       )}
-    </div>
+      {expired && <p className="w-full text-sm text-muted-foreground">{t("appr_expired_now")}</p>}
+    </StickyActions>
+  );
+}
+
+// The select that was open is gone: the focus goes to the saved line once, when it appears.
+function SavedLine() {
+  const line = useRef<HTMLParagraphElement>(null);
+  useEffect(() => line.current?.focus(), []);
+  return (
+    <p
+      role="status"
+      tabIndex={-1}
+      ref={line}
+      className="w-full rounded-md text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring"
+    >
+      {t("appr_reason_saved")}
+    </p>
+  );
+}
+
+export interface ApprovalOutcomeProps {
+  // The result line: "Sent to …". It takes the focus, so a screen reader reads it and the focus does not fall to the page start.
+  text: string;
+  statusRef: Ref<HTMLParagraphElement>;
+  // "Next draft": the card stays until the user moves on (a failed or unclear approve).
+  onNext?: () => void;
+  // The reason question after a "No": null once it ends.
+  reason?: { saved: boolean; busy: boolean; onPick(reason: RejectReasonBody["reason"] | null): void } | null;
+}
+
+// What the decision bar shows after an answer, in place of the three buttons.
+export function ApprovalOutcome({ text, statusRef, onNext, reason = null }: ApprovalOutcomeProps) {
+  return (
+    <StickyActions>
+      <p
+        role="status"
+        tabIndex={-1}
+        ref={statusRef}
+        className="w-full rounded-md text-base font-bold outline-none focus-visible:ring-3 focus-visible:ring-ring"
+      >
+        {text}
+      </p>
+      {onNext !== undefined && (
+        <Button type="button" size="lg" onClick={onNext}>
+          {t("appr_next")}
+        </Button>
+      )}
+      {reason !== null &&
+        (reason.saved ? <SavedLine /> : <RejectReason disabled={reason.busy} onPick={reason.onPick} />)}
+    </StickyActions>
   );
 }
 

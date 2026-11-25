@@ -30,7 +30,8 @@ export interface SummaryItem {
 export function stateLineText(item: SummaryItem, now: Date): string {
   const parts = [t(stateLabelKey(item.state, item.heldBy))];
   if (item.heldBy !== null) parts.push(t(HELD_TEXTS[item.heldBy]));
-  if (item.expiresAt !== null) {
+  // A draft that left the queue has no time left to show.
+  if (item.expiresAt !== null && (item.state === "waiting" || item.state === "held")) {
     const left = durationText(new Date(item.expiresAt).getTime() - now.getTime());
     parts.push(t("appr_expires_in", { time: t(left.key, { n: left.n }) }));
   }

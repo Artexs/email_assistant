@@ -3,7 +3,7 @@ import type { ApprovalDetail, ApprovalItem } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ApprovalActions, reasonChoice } from "../components/approvals/ApprovalActions";
+import { ApprovalActions, ApprovalOutcome, reasonChoice } from "../components/approvals/ApprovalActions";
 import { ApprovalCard } from "../components/approvals/ApprovalCard";
 import { ApprovalSummary, ApprovalTitle } from "../components/approvals/ApprovalSummary";
 import { WaitingList } from "../components/approvals/WaitingList";
@@ -285,6 +285,44 @@ describe("ApprovalCard", () => {
   });
 });
 
+describe("a closed send", () => {
+  test("shows its state and no time left, even when the route still sends a deadline", () => {
+    const html = renderToStaticMarkup(
+      <ApprovalSummary item={item({ state: "rejected", expiresAt: "2026-11-22T11:00:00.000Z" })} now={NOW} />
+    );
+    expect(html).toContain("Rejected");
+    expect(html).not.toContain("Expires in");
+  });
+});
+
+describe("ApprovalOutcome", () => {
+  const base = { statusRef: null, reason: null };
+  const buttons = (html: string) => [...html.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map((match) => match[1]);
+
+  test("the result line replaces the three buttons; a failed approve adds Next draft", () => {
+    const sent = renderToStaticMarkup(<ApprovalOutcome {...base} text="Sent to Anna Nowak." />);
+    expect(sent).toContain('role="status"');
+    expect(sent).toContain("Sent to Anna Nowak.");
+    expect(buttons(sent)).toEqual([]);
+    const failed = renderToStaticMarkup(
+      <ApprovalOutcome {...base} text="Approved, but sending failed." onNext={() => undefined} />
+    );
+    expect(buttons(failed)).toEqual(["Next draft"]);
+  });
+
+  test("after a No the reason question shows until it is answered, then the saved line", () => {
+    const asking = renderToStaticMarkup(
+      <ApprovalOutcome {...base} text="Rejected." reason={{ saved: false, busy: false, onPick: () => undefined }} />
+    );
+    expect(asking).toContain("Why?");
+    const saved = renderToStaticMarkup(
+      <ApprovalOutcome {...base} text="Rejected." reason={{ saved: true, busy: false, onPick: () => undefined }} />
+    );
+    expect(saved).toContain("Reason saved.");
+    expect(saved).not.toContain("Why?");
+  });
+});
+
 describe("RejectReason", () => {
   test("Skip saves no reason; a reason is passed on; an unknown value does nothing", () => {
     expect(reasonChoice("skip")).toBeNull();
@@ -304,28 +342,30 @@ describe("ApprovalActions", () => {
     onReject: () => undefined,
     onEdit: () => undefined,
   };
-  const buttons = (html: string) => [...html.matchAll(/<button[^>]*>([^<]*)<\/button>/g)].map((match) => match[1]);
+  // The text of each button, without its icon.
+  const buttons = (html: string) =>
+    [...html.matchAll(/<button[^>]*>(.*?)<\/button>/g)].map((match) => (match[1] ?? "").replace(/<svg.*?<\/svg>/g, ""));
 
-  test("an owner gets Approve and Reject on a waiting send, only Reject on a held one, none otherwise", () => {
+  test("an owner gets Yes and No on a waiting send, only No on a held one, none otherwise", () => {
     expect(
       buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={{ approve: true, reject: true }} />))
-    ).toEqual(["Approve", "Reject"]);
+    ).toEqual(["Yes, send it", "No"]);
     expect(
       buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={{ approve: false, reject: true }} />))
-    ).toEqual(["Reject"]);
+    ).toEqual(["No"]);
     expect(
       buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={{ approve: false, reject: false }} />))
     ).toEqual([]);
   });
 
-  test("Edit shows only when the page allows it, after Reject, and is off while a request runs", () => {
+  test("Change shows only when the page allows it, between Yes and No, and is off while a request runs", () => {
     const decisions = { approve: true, reject: true };
     expect(buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={decisions} canEdit />))).toEqual([
-      "Approve",
-      "Reject",
-      "Edit",
+      "Yes, send it",
+      "Change",
+      "No",
     ]);
-    expect(buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={decisions} />))).not.toContain("Edit");
+    expect(buttons(renderToStaticMarkup(<ApprovalActions {...props} decisions={decisions} />))).not.toContain("Change");
     const busy = renderToStaticMarkup(<ApprovalActions {...props} busy decisions={decisions} canEdit />);
     expect(busy.match(/disabled=""/g)).toHaveLength(3);
     // A member sees no Edit even when the flag is set by mistake: the owner note replaces every button.
@@ -342,7 +382,15 @@ describe("ApprovalActions", () => {
     expect(html).toContain("Only the owner can do this.");
   });
 
-  test("the buttons are disabled while a request runs; Approve is disabled while the draft is not ready", () => {
+  test("Yes and No are off for an expired draft and say why; Change stays on", () => {
+    const html = renderToStaticMarkup(
+      <ApprovalActions {...props} expired canEdit decisions={{ approve: true, reject: true }} />
+    );
+    expect(html.match(/disabled=""/g)).toHaveLength(2);
+    expect(html).toContain("This draft expired. Nothing was sent.");
+  });
+
+  test("the buttons are disabled while a request runs; Yes is disabled while the draft is not ready", () => {
     const decisions = { approve: true, reject: true };
     const busy = renderToStaticMarkup(<ApprovalActions {...props} busy decisions={decisions} />);
     expect(busy.match(/disabled=""/g)).toHaveLength(2);
