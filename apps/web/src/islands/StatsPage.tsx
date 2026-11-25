@@ -1,7 +1,11 @@
 import { mailboxListSchema, statsResponseSchema, type WeekStats } from "@ea/core/web";
+import { ChartColumn } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AppShell } from "../components/shell/AppShell";
+import { EmptyState } from "../components/patterns/EmptyState";
+import { FactBox } from "../components/patterns/FactBox";
+import { StatsHead } from "../components/stats/StatsHead";
 import { StatsTable } from "../components/stats/StatsTable";
 import { Card, CardContent } from "../components/ui/card";
 import { Label } from "../components/ui/label";
@@ -10,6 +14,7 @@ import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
 import { useReloadOn } from "../lib/use-reload-on";
+import { hasSplit } from "../lib/stats-view";
 import { useResource } from "../lib/use-resource";
 
 const ALL = "all";
@@ -36,6 +41,7 @@ async function loadStats(mailboxId: string | null): Promise<Loaded> {
 function Loading() {
   return (
     <div aria-busy="true" className="flex flex-col gap-3">
+      <Skeleton className="h-48 w-full" />
       <Skeleton className="h-8 w-full" />
       <Skeleton className="h-8 w-full" />
       <Skeleton className="h-8 w-full" />
@@ -62,23 +68,25 @@ function Stats() {
 
   // The flag is off: the API answers like for an unknown path.
   if (!stats.loading && stats.error instanceof ApiError && stats.error.status === 404) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("stats_off")}</p>
-        </CardContent>
-      </Card>
-    );
+    return <FactBox>{t("stats_off")}</FactBox>;
   }
 
   const list = mailboxes.data ?? [];
   let content;
   if (loaded !== null && loaded.weeks !== null) {
+    const [newest] = loaded.weeks;
     content =
-      loaded.weeks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("stats_empty")}</p>
+      newest === undefined ? (
+        <EmptyState icon={ChartColumn} title={t("stats_empty")} />
       ) : (
-        <StatsTable weeks={loaded.weeks} />
+        <>
+          <StatsHead week={newest} split={hasSplit(loaded.weeks)} />
+          <Card>
+            <CardContent>
+              <StatsTable weeks={loaded.weeks} />
+            </CardContent>
+          </Card>
+        </>
       );
   } else if (!stats.loading && !gone && stats.error !== null) {
     content = <p>{t("stats_load_error")}</p>;
@@ -121,7 +129,7 @@ function Stats() {
 export default function StatsPage() {
   useLocale();
   return (
-    <AppShell active="stats" title="title_stats">
+    <AppShell active="stats" title="title_stats" lead="stats_lead">
       <Stats />
     </AppShell>
   );
