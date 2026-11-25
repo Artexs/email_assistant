@@ -293,12 +293,26 @@ describe("the report content", () => {
     expect(markup).toContain(t("rep_turn_on", { categories: en.cat_notification }));
   });
 
+  test("done with no checked mail of the user's own: no summary line beside the counts of the cards", () => {
+    const markup = html(withCheck({ ...doneCheck, checked: 0 }));
+    expect(markup).not.toContain('data-report="summary"');
+    expect(markup).toContain(t("rep_counts", { total: 200, wouldMove: 40 }));
+  });
+
   test("nothing recommended: no button and the sentence why", () => {
     const v = view();
     v.categories.notification = row({ evidence: { eligible: false, recommended: false, blocks: ["no_global"] } });
     const markup = html(v);
     expect(text(markup)).toContain(en.rep_nothing);
     expect(markup).not.toContain(en.rep_turn_on.split("(")[0]?.trim() ?? "?");
+  });
+
+  test("after the tap that turned the last categories on: the result line and no amber already-on note", () => {
+    const v = view();
+    v.categories.notification = row({ auto: true, evidence: { eligible: true, recommended: true, blocks: [] } });
+    const after = text(html(v, { turnedOn: { categories: ["notification"], mode: "assist" } }));
+    expect(after).toContain(t("rep_turned_on", { categories: en.cat_notification }));
+    expect(after).not.toContain(en.rep_all_on);
   });
 
   test("after the tap: the categories turned on and the new mode", () => {
@@ -309,7 +323,6 @@ describe("the report content", () => {
   test("polish: the page renders the Polish phrases", () => {
     setLocaleForTest("pl");
     const markup = text(html(view()));
-    expect(markup).toContain(pl.rep_intro);
     expect(markup).toContain(t("rep_turn_on", { categories: pl.cat_notification }));
     expect(markup).toContain(pl.rep_read_only);
   });

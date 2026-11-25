@@ -73,8 +73,7 @@ export const plReply = {
   rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",
   rep_no_mailbox: "Najpierw połącz skrzynkę. Potem zacznie się sprawdzanie poczty.",
   rep_load_error: "Nie udało się wczytać raportu.",
-  rep_lead: "Co asystent zrobiłby z Twoją ostatnią pocztą. Nic się nie zmieniło.",
-  rep_intro: "Co asystent zrobiłby z Twoją pocztą z ostatnich 30 dni.",
+  rep_lead: "Co asystent zrobiłby z Twoją pocztą z ostatnich 30 dni. Nic się nie zmieniło.",
   rep_read_only:
     "Podczas sprawdzania asystent tylko odczytał wiadomości z ostatnich 30 dni w folderze INBOX. Niczego nie zmienił.",
   rep_starting: "Rozpoczynam sprawdzanie…",
@@ -86,6 +85,8 @@ export const plReply = {
   rep_auto_on: "Automatyczne przenoszenie: włączone",
   rep_recommended: "Zalecane: włącz",
   rep_not_recommended: "Jeszcze niezalecane",
+  rep_turn_on_title: "Włączyć zalecane?",
+  rep_next_title: "Co możesz zrobić dalej",
   rep_turn_on: "Włącz zalecane ({categories})",
   rep_turned_on: "Włączono: {categories}.",
   rep_mode_assist: "Skrzynka jest teraz w trybie asystenta.",

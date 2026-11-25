@@ -156,7 +156,7 @@ test("the delete card shows only for the owner with the flag, and it has the dan
   await expect(deleteOwnerPage.locator(DELETE_CARD)).toHaveAttribute("data-tone", "danger");
   const edge = (selector: string) =>
     deleteOwnerPage.locator(selector).evaluate((card) => getComputedStyle(card).borderTopWidth);
-  expect(await edge(DELETE_CARD)).toBe("1px");
+  expect(await edge(DELETE_CARD)).toBe("2px");
   expect(await edge("[data-card=account]")).toBe("0px");
   await saveDeleteCard(deleteOwnerPage, project, "en");
 });

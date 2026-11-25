@@ -221,9 +221,11 @@ describe("design token contrast", () => {
     ["--primary", "--card"],
     ["--primary", "--background"],
     ["--primary", "--primary-soft"],
+    ["--primary", "--primary-soft-hover"],
     ["--accent-foreground", "--accent"],
     ["--destructive", "--card"],
     ["--destructive", "--destructive-soft"],
+    ["--destructive", "--destructive-soft-hover"],
     ["--destructive-foreground", "--destructive"],
     ...categories.flatMap((category): [string, string][] => [
       [categoryToken(category), `${categoryToken(category)}-soft`],
@@ -243,6 +245,7 @@ describe("design token contrast", () => {
       ["--input", "--background"],
       ["--ring", "--card"],
       ["--ring", "--background"],
+      ["--destructive-edge", "--card"],
     ];
     for (const [colour, surface] of edgePairs) {
       expect(contrast(scheme, colour, surface), `${colour} on ${surface}`).toBeGreaterThanOrEqual(3);

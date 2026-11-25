@@ -86,7 +86,7 @@ export function AddRuleForm({ mailboxes, onAdded, onMissingMailbox }: AddRuleFor
       <Input
         id="rule-pattern"
         aria-label={t("rules_pattern_label")}
-        placeholder={t("rules_pattern_help")}
+        placeholder={t("rules_pattern_placeholder")}
         autoComplete="off"
         value={pattern}
         aria-invalid={error !== null}

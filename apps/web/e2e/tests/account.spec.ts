@@ -7,7 +7,7 @@ import { en } from "../../src/i18n/en";
 import { pl } from "../../src/i18n/pl";
 import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
-import { consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
+import { consoleErrors, cspErrors, dropSession, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 import { sheetDir } from "../ui-sheet/dir";
 
@@ -55,7 +55,7 @@ test("the security card has the two-factor section and the log; pictures go to t
   page,
   context,
 }, testInfo) => {
-  await context.clearCookies();
+  await dropSession(page, context);
   await signInAs(page, readSeed().owner);
   await expect(page).toHaveURL(/\/onboarding$/);
   let panelLocale: "en" | "pl" = "en";
@@ -188,7 +188,7 @@ test("change the password and sign out everywhere", async ({ page, context, brow
     await other.close();
   }
 
-  await context.clearCookies();
+  await dropSession(page, context);
   await signInAs(page, { email: member.email, password: newPassword });
   await expect(page).toHaveURL(/\/onboarding$/);
   expect((await page.request.get("/api/me")).status()).toBe(200);

@@ -42,11 +42,12 @@ function Rows({ items, focusId, now, onPick }: WaitingListProps) {
             )}
           >
             <InitialsAvatar name={recipientName(item.view)} size="sm" />
-            <span className="flex min-w-0 flex-col">
-              <span className="break-words text-sm font-bold">
+            {/* One line each for the title and the subject; the link text keeps the whole words for a screen reader. */}
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm font-bold">
                 <ApprovalTitle view={item.view} />
               </span>
-              <span className="break-words text-sm">{item.view.subject}</span>
+              <span className="truncate text-sm">{item.view.subject}</span>
               <span className="text-xs text-muted-foreground">{stateLineText(item, now)}</span>
             </span>
           </a>

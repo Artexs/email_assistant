@@ -6,10 +6,10 @@ import { cancelButtonId, ROW_ID_PREFIX, rowId } from "./DelegationRow";
 import { DelegationCancelDialog } from "./DelegationCancelDialog";
 import { DelegationColumn, type ColumnHint } from "./DelegationColumn";
 import { ROW_BY_KIND } from "./delegation-kinds";
+import { FactBox } from "../patterns/FactBox";
 import { EmptyState } from "../patterns/EmptyState";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { t, type TextKey } from "../../i18n";
 import { canWrite } from "../../lib/can-write";
@@ -134,13 +134,7 @@ export function Delegations() {
 
   // The flag is off: the API answers like for an unknown path.
   if (columns.flagOff) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("dlg_off")}</p>
-        </CardContent>
-      </Card>
-    );
+    return <FactBox>{t("dlg_off")}</FactBox>;
   }
 
   const owner = me?.role === "owner";

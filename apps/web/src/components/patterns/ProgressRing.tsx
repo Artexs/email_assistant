@@ -11,6 +11,7 @@ const VIEW = 100;
 
 // Progress of a count ("2 of 10") as a ring. `label` names the picture for a screen reader; `children` sit in the middle.
 // `value` above `max` draws a full ring; a `max` of 0 draws an empty one.
+// An empty share draws no arc: a round line end of length 0 still paints a dot.
 export function ProgressRing({
   value,
   max,
@@ -33,18 +34,20 @@ export function ProgressRing({
     <div data-slot="progress-ring" className={cn("relative inline-grid shrink-0 place-items-center", box)}>
       <svg role="img" aria-label={label} viewBox={`0 0 ${VIEW} ${VIEW}`} className="absolute inset-0 size-full">
         <circle cx={center} cy={center} r={radius} fill="none" strokeWidth={stroke} className="stroke-muted" />
-        <circle
-          data-part="arc"
-          cx={center}
-          cy={center}
-          r={radius}
-          fill="none"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${share * whole} ${whole}`}
-          transform={`rotate(-90 ${center} ${center})`}
-          className="stroke-primary"
-        />
+        {share > 0 ? (
+          <circle
+            data-part="arc"
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${share * whole} ${whole}`}
+            transform={`rotate(-90 ${center} ${center})`}
+            className="stroke-primary"
+          />
+        ) : null}
       </svg>
       {children === undefined ? null : <span className="relative font-extrabold tabular-nums">{children}</span>}
     </div>

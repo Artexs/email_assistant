@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { expect, type Locator, type Page } from "@playwright/test";
+import { type BrowserContext, expect, type Locator, type Page } from "@playwright/test";
 
 import { en } from "../src/i18n/en";
 import { mailTagFromEnv, taggedAddress } from "../../server/src/scripts/e2e-seed-args";
@@ -35,6 +35,13 @@ export async function signIn(page: Page, email: string, password: string, texts:
   await page.getByLabel(texts.email_label).fill(email);
   await page.getByLabel(texts.password_label, { exact: true }).fill(password);
   await page.getByRole("button", { name: texts.sign_in }).click();
+}
+
+// Ends the session of the context. The page leaves the panel first: a panel page whose cookies are gone answers its
+// next 401 with its own navigation to `/login?next=…`, and that navigation aborts the next `page.goto` of the test.
+export async function dropSession(page: Page, context: BrowserContext): Promise<void> {
+  await page.goto("about:blank");
+  await context.clearCookies();
 }
 
 export async function signInAs(

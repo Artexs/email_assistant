@@ -18,10 +18,13 @@ describe("EmptyState", () => {
     expect(html.indexOf("<button")).toBeGreaterThan(html.indexOf("Add one."));
   });
 
-  test("headingLevel 3 renders the title as h3", () => {
-    const html = renderToStaticMarkup(<EmptyState icon={Inbox} title="Nothing here" headingLevel={3} />);
-    expect(html).toContain("<h3");
-    expect(html).not.toContain("<h2");
+  test.each([
+    [2, "h2", true],
+    [3, "h3", false],
+  ] as const)("heading level %d renders an %s, in a card of its own: %p", (level, tag, inCard) => {
+    const html = renderToStaticMarkup(<EmptyState icon={Inbox} title="Nothing here" headingLevel={level} />);
+    expect(html.match(/<h[23]/g)).toEqual([`<${tag}`]);
+    expect(html.includes('data-slot="card"')).toBe(inCard);
   });
 
   test("the blob is hidden from assistive technology", () => {

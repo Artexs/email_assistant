@@ -4,7 +4,7 @@ import { t, tp } from "../../src/i18n";
 import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
-import { cspErrors, signInAs } from "../helpers";
+import { cspErrors, dropSession, signInAs } from "../helpers";
 import { readSeed } from "../seed";
 
 // The style card (name, signature, writing style, Preview, the style suggestion) and the reply drafts switch. The seed gives each project an
@@ -124,7 +124,7 @@ test("T3: a member sees the card and the switch and cannot change them", async (
   });
   expect(turned.ok()).toBe(true);
 
-  await context.clearCookies();
+  await dropSession(page, context);
   await startSession(context, page, "member");
   await expect(nameField(page)).toHaveValue("Anna Nowak");
   await expect(nameField(page)).not.toBeEditable();
@@ -142,7 +142,7 @@ test("T3: a member sees the card and the switch and cannot change them", async (
   expect(write.status()).toBe(403);
 
   // The owner signs in again, so that the reset can run.
-  await context.clearCookies();
+  await dropSession(page, context);
   await startSession(context, page, "owner");
 });
 
@@ -457,7 +457,7 @@ test("T13: with sent tracking off the owner reads why and sees no button; an OAu
   await expect(card(page).getByText(en.rs_switch_oauth).first()).toBeVisible();
   await expect(suggestButton(page)).toHaveCount(0);
 
-  await context.clearCookies();
+  await dropSession(page, context);
   await startSession(context, page, "member");
   await expect(card(page).getByText(en.rs_suggest_sent_off)).toHaveCount(0);
   await expect(suggestButton(page)).toHaveCount(0);

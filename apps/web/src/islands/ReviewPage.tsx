@@ -4,10 +4,11 @@ import {
   type PanelReviewLabelResult,
   type ReviewLabelCategory,
 } from "@ea/core/web";
-import { Inbox, EyeOff } from "lucide-react";
+import { Inbox } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { FactBox } from "../components/patterns/FactBox";
 import { EmptyState } from "../components/patterns/EmptyState";
 import { MailboxSelector } from "../components/settings/MailboxSelector";
 import { ReviewContent } from "../components/review/ReviewContent";
@@ -103,7 +104,7 @@ function Review() {
 
   // The flag is off: the page asks for nothing (the review routes would answer 404).
   if (!me.features.includes(PANEL_REVIEW_FLAG)) {
-    return <EmptyState icon={EyeOff} title={t("rep_off")} />;
+    return <FactBox>{t("rep_off")}</FactBox>;
   }
 
   const list = mailboxes.data;

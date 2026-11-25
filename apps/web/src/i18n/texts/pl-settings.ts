@@ -49,6 +49,11 @@ export const plSettings = {
   cat_info: "Info",
   cat_notification: "Powiadomienia",
   cat_spam: "Spam",
+  cat_action_urgent: "Flagowanie i powrót ze spamu",
+  cat_action_needs_reply: "Powrót z folderu spamu",
+  cat_action_info: "Przenoszenie z INBOX",
+  cat_action_notification: "Oznaczanie jako przeczytane i przenoszenie z INBOX",
+  cat_action_spam: "Przenoszenie z INBOX",
   cat_effect_urgent:
     "Automat nie przenosi pilnych wiadomości: tylko je flaguje (przełącznik flagowania). Przy włączonym automacie pilne wiadomości z folderu spamu wracają do INBOX.",
   cat_effect_needs_reply:
@@ -229,6 +234,7 @@ export const plSettings = {
   rules_whitelist_text: "Nigdy spam.",
   rules_blocklist_text: "Zawsze spam, chyba że nadawca jest też na liście dozwolonych lub VIP.",
   rules_pattern_label: "Adres lub domena",
+  rules_pattern_placeholder: "anna@firma.pl lub firma.pl",
   rules_pattern_help: "Adres (anna@firma.pl) albo domena (firma.pl). Domena obejmuje też swoje poddomeny.",
   pattern_invalid: "Wpisz adres, np. anna@firma.pl, albo domenę, np. firma.pl.",
   rules_scope_label: "Dotyczy",

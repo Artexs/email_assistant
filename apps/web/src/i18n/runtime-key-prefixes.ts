@@ -5,6 +5,7 @@ export const RUNTIME_KEY_PREFIXES: readonly { prefix: string; file: string }[] =
   { prefix: "legal_kept_until_", file: "apps/web/src/lib/legal-tables.ts" },
   { prefix: "cat_", file: "apps/web/src/components/report/ReportContent.tsx" },
   { prefix: "cat_effect_", file: "apps/web/src/components/settings/CategoriesCard.tsx" },
+  { prefix: "cat_action_", file: "apps/web/src/components/settings/CategoriesCard.tsx" },
   { prefix: "folder_", file: "apps/web/src/components/settings/SyncFoldersCard.tsx" },
   { prefix: "sec_kind_", file: "apps/web/src/lib/security-log-text.ts" },
   { prefix: "browser_", file: "apps/web/src/components/settings/AccountCard.tsx" },

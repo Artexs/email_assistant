@@ -17,7 +17,8 @@ export function SettingsGroup({ id, children }: { id: SettingsGroupId; children:
   );
 }
 
-// Links to the groups. Below `lg` the row wraps above the groups; from `lg` it is a sticky column on the left.
+// Links to the groups. Below `lg` the row wraps above the groups; from `lg` it is a sticky column on the left, and a long
+// name wraps inside its chip, so the chip never reaches into the groups.
 export function SettingsNav() {
   return (
     <nav
@@ -25,7 +26,13 @@ export function SettingsNav() {
       className="flex flex-wrap gap-2 lg:sticky lg:top-6 lg:w-56 lg:shrink-0 lg:flex-col lg:items-stretch"
     >
       {SETTINGS_GROUPS.map((group) => (
-        <Button key={group.id} asChild variant="soft" size="sm" className="lg:justify-start">
+        <Button
+          key={group.id}
+          asChild
+          variant="soft"
+          size="sm"
+          className="lg:h-auto lg:min-h-11 lg:justify-start lg:py-2 lg:text-left lg:whitespace-normal"
+        >
           <a href={`#${group.id}`}>{t(group.label)}</a>
         </Button>
       ))}

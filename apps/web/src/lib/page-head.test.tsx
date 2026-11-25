@@ -30,11 +30,18 @@ describe("PageHead", () => {
     expect(count(html, "<button")).toBe(0);
   });
 
-  test("hides the lead below lg only when an action is present", () => {
+  test("hides the lead below lg only while the action slot holds something", () => {
     expect(markup({ title: "A", lead: "Lead", action: <span>x</span> })).toContain(
-      'class="mt-1.5 text-muted-foreground hidden lg:block"'
+      'class="mt-1.5 text-muted-foreground max-lg:group-has-[[data-slot=page-head-action]:not(:empty)]/head:hidden"'
     );
-    expect(markup({ title: "A", lead: "Lead" })).toContain('class="mt-1.5 text-muted-foreground "');
+    expect(markup({ title: "A", lead: "Lead" })).toContain('class="mt-1.5 text-muted-foreground"');
+  });
+
+  test("an action component that renders nothing leaves an empty slot, so the lead stays", () => {
+    const Nothing = () => null;
+    expect(markup({ title: "A", lead: "Lead", action: <Nothing /> })).toContain(
+      '<div data-slot="page-head-action" class="flex shrink-0 items-center gap-3 empty:hidden"></div>'
+    );
   });
 });
 

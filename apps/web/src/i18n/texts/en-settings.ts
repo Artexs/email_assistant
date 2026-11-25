@@ -45,6 +45,11 @@ export const enSettings = {
   cat_info: "Info",
   cat_notification: "Notifications",
   cat_spam: "Spam",
+  cat_action_urgent: "Flag, and bring back from junk",
+  cat_action_needs_reply: "Bring back from junk",
+  cat_action_info: "Move out of INBOX",
+  cat_action_notification: "Mark read and move out of INBOX",
+  cat_action_spam: "Move out of INBOX",
   cat_effect_urgent:
     "Auto does not move urgent mail: it only gets a flag (the Flag switch). With auto on, urgent mail in the junk folder moves back to INBOX.",
   cat_effect_needs_reply:
@@ -223,6 +228,7 @@ export const enSettings = {
   rules_whitelist_text: "Never spam.",
   rules_blocklist_text: "Always spam, unless the sender is also on the whitelist or VIP.",
   rules_pattern_label: "Address or domain",
+  rules_pattern_placeholder: "anna@firma.pl or firma.pl",
   rules_pattern_help: "An address (anna@firma.pl) or a domain (firma.pl). A domain also covers its subdomains.",
   pattern_invalid: "Enter an address like anna@firma.pl or a domain like firma.pl.",
   rules_scope_label: "Applies to",
