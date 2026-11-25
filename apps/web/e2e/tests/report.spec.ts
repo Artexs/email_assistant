@@ -58,8 +58,8 @@ test("R1: a done check shows counts, the proof, the history line and the pause p
   const errors = await startSession(context, page, org().owner);
   await page.goto(reportPath(boxes().done.id));
   await expect(page.locator("[data-report-state=done]")).toBeVisible();
-  // The summary counts the stored items of the check (the seed stores none); the per-category counts come from the stored result.
-  await expect(page.getByText(t("rep_checked", { checked: 0 }), { exact: true })).toBeVisible();
+  // The summary counts the stored items of the check; the seed stores none, so no "0" shows beside the stored counts.
+  await expect(page.locator("[data-report=summary]")).toHaveCount(0);
   // Counts only: the seeded result holds 200 mails checked and 40 that the category would move.
   await expect(category(page, "notification").getByText(t("rep_counts", { total: 200, wouldMove: 40 }))).toBeVisible();
   await expect(category(page, "notification").getByText(proof, { exact: true })).toBeVisible();

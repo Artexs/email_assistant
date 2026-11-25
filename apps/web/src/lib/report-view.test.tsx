@@ -293,6 +293,12 @@ describe("the report content", () => {
     expect(markup).toContain(t("rep_turn_on", { categories: en.cat_notification }));
   });
 
+  test("done with no checked mail of the user's own: no summary line beside the counts of the cards", () => {
+    const markup = html(withCheck({ ...doneCheck, checked: 0 }));
+    expect(markup).not.toContain('data-report="summary"');
+    expect(markup).toContain(t("rep_counts", { total: 200, wouldMove: 40 }));
+  });
+
   test("nothing recommended: no button and the sentence why", () => {
     const v = view();
     v.categories.notification = row({ evidence: { eligible: false, recommended: false, blocks: ["no_global"] } });

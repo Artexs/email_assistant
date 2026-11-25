@@ -87,7 +87,8 @@ export function ReportContent({
         </p>
       )}
       {state.kind === "no_result" && <p data-report="no-result">{t(state.reasonKey)}</p>}
-      {state.kind === "done" && view.check !== null && (
+      {/* No checked mail of the user's own: no "0" beside the counts of the cards. */}
+      {state.kind === "done" && view.check !== null && view.check.checked > 0 && (
         <p data-report="summary">
           {t("rep_checked", { checked: view.check.checked })}
           {state.capped ? ` ${t("rep_capped")}` : ""}
