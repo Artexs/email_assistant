@@ -95,3 +95,24 @@ Decisions for the owner: none.
 - Reminder "check:job before the final message for product-code jobs": not applicable. This is a review job and committed nothing.
 - Reminder "A review job runs no test suite, lint or typecheck": followed. I ran no suite, lint or typecheck. The one-off probes proved specific doubts (B1, G1, D1 contrast, the font check).
 - Reminder "never delete node_modules/.cache": followed. I deleted only `apps/docs/dist`, my own build output.
+
+## Response (planner, 2026-11-25, at 41585d71d)
+
+Each claim was checked against the code before the fix. All 14 findings are accepted; none is rejected.
+
+- **B1 — fixed.** Confirmed: `unused-keys.test.ts` `BUILT_PREFIXES` has no `switch_`; `ModeCard.tsx` builds `` t(`switch_${name}`) ``. D4 and stage 03 step 1 add `{ prefix: "switch_", file: <the file that builds it at HEAD, today ModeCard.tsx> }`.
+- **G1 — fixed.** Confirmed with a probe: raw hsl gives 4.828 / 9.299 / 7.931, 8-bit rounded gives 4.824 / 9.319 / 7.938. New D12 (round each channel to 8 bits, then WCAG, two decimals); stage 01 test 2 names it. The values stay.
+- **G2 — fixed.** Confirmed: `check-job.sh` runs docs-reading tests only for `docs/` or `apps/docs/` changes. D5 and stage 03 step 3: `scripts/check-job.sh` runs `apps/docs/src/panel-keys.test.ts` when a file under `apps/web/src/`, `packages/core/src/` or `apps/server/src/` changes (test 10 checks the log line). The test also passes each docs key through `uiText` in both languages (test 9, with a break check), so a text change in `en.ts` / `pl.ts` triggers it through imports. D6: after the land, a stage that fails this check fixes the docs page itself.
+- **G3 — fixed.** Confirmed: `WEB_DIST` defaults to `apps/web/dist`; `record.ts` checks only `404.html`. The Proofs of stages 04 and 05 run `bun run web:build` after `check:job`; plan.md § Proof says why.
+- **G4 — fixed.** Confirmed: F167 stage 04 owns `PausedBanner.tsx`; four docs pages read `paused_banner_no_contact`. Stage 03 Needs adds F167 stage 04.
+- **G5 — fixed.** D7 and stage 03 test 8: `bun run docs:stale --strict` exits 0 and prints `stale: 0` for the whole site.
+- **G6 — fixed.** Confirmed: `IN_PLACE_PAGES` holds `CHANGELOG.md`, `deploy/README.md`, `docs/release-checklist.md`. D6 and stage 03 step 4: the sweep skips all three (default; `questions.md` item 6).
+- **G7 — fixed.** plan.md § Stages: stage 02 needs F167 01 and stage 01; stages 01 and 02 may run next to 03, 04, 05.
+- **N1 — fixed.** Confirmed in `record.spec.ts`: steps 1–2 open `/mailboxes`, 3–4 `/report`, 5 the fake Telegram view, 6 `/approvals`, 7 `/delegations`, 8 `/activity`. Stage 05 Needs drops F170 01, 02 and names F168 05 for steps 6 and 8, F168 06, 07 for step 8.
+- **N2 — fixed.** `ticket.md` § Sequenced: the shots and video need the page stages their Needs lines name (no `done/` gate).
+- **N3 — fixed.** D3 cites F167 D5 (the SVG source).
+- **N4 — accepted risk, written down.** D4 says so; `questions.md` item 7.
+- **N5 — fixed.** Rules for every stage: copy each picture to `/tmp/f171-NN/`. Stage 02 Look names `/tmp/f171-02/`; stage 04 copies the 20 PNG files to `/tmp/f171-04/shots/`.
+- **N6 — fixed.** P1 states that print stays Starlight blue; `questions.md` item 8.
+
+Words after the fixes (`wc -w`): plan.md 1497; stages 584, 344, 698, 550, 622.

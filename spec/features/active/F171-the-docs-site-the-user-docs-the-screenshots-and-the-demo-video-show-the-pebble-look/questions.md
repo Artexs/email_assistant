@@ -7,3 +7,6 @@ Defaults taken by the planner (2026-11-25). The stages build them; a different a
 3. [minor] **Theme select (P2).** Default: the docs site keeps Starlight's light / dark / auto select; PB-10 is a panel rule. Stage 01.
 4. [minor] **Shots light only (P3).** Default: 20 light shots, as today. Other option: dark shots too (40 files). Stage 04.
 5. [minor] **Demo-source alt texts (D9).** Default: `DEMO_ALT` changes only where the same words changed in `E2E_ALT`; the F151 final take checks the demo pictures. Stage 04.
+6. [minor] **Sweep skips the in-place pages (D6).** Default: stage 03 does not rewrite `CHANGELOG.md` (release history), `deploy/README.md` or `docs/release-checklist.md` (operator pages). Other option: sweep the two operator pages too. Stage 03.
+7. [minor] **Prefix keys are not checked one by one (D4).** Default: a docs key such as `switch_move` passes the docs text check through its prefix, also when the panel drops that one switch; the stage 03 sweep is the only guard (accepted risk). Other option: list each prefix key in the check. Stage 03.
+8. [minor] **Printed docs pages stay blue (P1).** Default: Starlight's `print.css` keeps its own blue accent; no print rule is added. Stage 01.
