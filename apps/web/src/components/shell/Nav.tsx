@@ -85,7 +85,7 @@ export function BottomTabs({
           href={item.href}
           aria-current={item.key === active ? "page" : undefined}
           className={cn(
-            "flex min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-center text-xs leading-tight font-bold wrap-anywhere hyphens-auto",
+            "flex min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-center text-xs leading-tight font-bold",
             item.key === active ? "text-primary" : "text-muted-foreground"
           )}
         >
@@ -93,7 +93,8 @@ export function BottomTabs({
             <item.icon className="size-5" aria-hidden="true" />
             <Badge item={item} count={approvalsWaiting} className="absolute -top-1 left-1.5" />
           </span>
-          <span>{t(item.label)}</span>
+          {/* A label breaks only between words; a word wider than the tab ends in an ellipsis. */}
+          <span className="max-w-full overflow-hidden text-ellipsis">{t(item.label)}</span>
           <BadgeText item={item} count={approvalsWaiting} />
         </a>
       ))}
