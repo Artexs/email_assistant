@@ -17,7 +17,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
 - `F171-the-docs-site-the-user-docs-the-screenshots-and-the-demo-video-show-the-pebble-look` (🟠 ACTIVE): The docs site, the user docs, the screenshots and the demo video show the Pebble look
-- `F170-onboarding-mailboxes-settings-stats-the-report-and-the-operator-console-have-the-pebble-look` (🟠 ACTIVE): Onboarding, Mailboxes, Settings, Stats, the report and the operator console have the Pebble look
 - `F169-delegations-show-status-columns-and-open-loops-delegates-and-rules-have-the-pebble-look` (🟠 ACTIVE): Delegations show status columns, and Open loops, Delegates and Rules have the Pebble look
 - `F168-approvals-is-a-one-draft-at-a-time-queue-and-activity-and-review-have-the-pebble-look` (🟠 ACTIVE): Approvals is a one-draft-at-a-time queue, and Activity and Review have the Pebble look
 - `F167-the-shell-the-app-icon-and-the-pages-before-sign-in-have-the-pebble-look` (🟠 ACTIVE): The shell, the app icon and the pages before sign-in have the Pebble look
@@ -58,6 +57,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F170-onboarding-mailboxes-settings-stats-the-report-and-the-operator-console-have-the-pebble-look` (🟢 PROVEN): Onboarding, Mailboxes, Settings, Stats, the report and the operator console have the Pebble look; landed 2026-11-25
 - `F166-the-panel-has-one-pebble-design-system-colours-font-sizes-base-components-patterns-and-checks-that-keep-it` (🟢 PROVEN): The panel has one Pebble design system (colours, font, sizes, base components, patterns) and checks that keep it; landed 2026-11-25
 - `F165-the-public-security-claim-and-the-dpia-flow-name-both-reply-draft-calls` (🟢 PROVEN): The public security claim and the DPIA flow name both reply-draft calls; landed 2026-11-21
 - `F163-the-privacy-papers-name-the-reply-style-call-that-sends-cut-sent-mail-to-the-ai` (🟢 PROVEN): The privacy papers name the reply-style call that sends cut Sent mail to the AI; landed 2026-11-21
@@ -67,8 +67,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F159-the-english-approval-text-says-1-time-an-empty-quote-shows-no-cut-note-and-the-dead-code-the-mutation-run-found-in-the-approval-card-is-removed` (🟢 PROVEN): The English approval text says "1 time", and an empty quote shows no false cut note; landed 2026-11-20
 - `F158-tmp-never-fills-up-from-job-caches-because-a-periodic-cleanup-removes-stale-cache-files` (🟢 PROVEN): /tmp never fills up from job caches because a periodic cleanup removes stale cache files; landed 2026-11-20
 - `F157-the-time-literal-rule-and-the-size-lint-cover-test-files-and-test-files-over-800-lines-are-split` (🟢 PROVEN): The time-literal rule and the size lint cover test files, and test files over 800 lines are split; landed 2026-11-20
-- `F156-the-draft-schema-refuses-an-impossible-date-such-as-2026-13-01` (🟢 PROVEN): The draft schema refuses an impossible date such as 2026-13-01; landed 2026-11-20
-- 2026-11: 138 landed. spec/features/done/2026-11/
+- 2026-11: 139 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
