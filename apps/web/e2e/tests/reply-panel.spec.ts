@@ -156,6 +156,8 @@ test("T4: the keyboard reaches the instruction field, Redraft and Approve in thi
   await expect(redraftButton(page)).toBeEnabled();
   await page.keyboard.press("Tab");
   await expect(redraftButton(page)).toBeFocused();
+  // A new card turns its decision buttons on after a moment; Tab skips a button that is still off.
+  await expect(detailOf(page).getByRole("button", { name: en.appr_approve, exact: true })).toBeEnabled();
   await page.keyboard.press("Tab");
   await expect(detailOf(page).getByRole("button", { name: en.appr_approve, exact: true })).toBeFocused();
   expect(errors).toEqual([]);

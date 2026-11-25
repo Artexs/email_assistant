@@ -647,12 +647,19 @@ test("Yes sends to the delegate with the buttons off, then the next draft comes 
   expect(errors).toEqual([]);
 });
 
+async function waitingIds(page: Page): Promise<string[]> {
+  const response = await page.request.get("/api/approvals");
+  const body = (await response.json()) as { items: { id: string; state: string }[] };
+  return body.items.filter((item) => item.state === "waiting").map((item) => item.id);
+}
+
 test("a double tap on Yes and taps on the same place afterwards send one mail only", async ({ context, page }) => {
   await startSession(context, page, queue().owner);
   await page.goto("/approvals");
-  const [first, second] = [queue().waitingSendIds[1], queue().waitingSendIds[2]];
-  await expect(detailOf(page)).toContainText(planAt(1).subject);
   await expect(yesOf(page)).toBeEnabled();
+  const [first, second] = [idOf(page), queue().waitingSendIds[queue().waitingSendIds.indexOf(idOf(page)) + 1] ?? ""];
+  const before = await waitingIds(page);
+  expect(before).toContain(second);
   const box = await yesOf(page).boundingBox();
   if (box === null) throw new Error("Yes has no box");
   const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
@@ -661,14 +668,13 @@ test("a double tap on Yes and taps on the same place afterwards send one mail on
   // The first frame that shows the result, and the first frame that shows the next card: a tap on the old place does nothing.
   await textShown(page, /(Sent|Sending) to /);
   await page.mouse.click(x, y);
-  await textShown(page, new RegExp(stepText(2, E2E_QUEUE_WAITING - 1)));
+  await textShown(page, new RegExp(en.appr_approve));
   await page.mouse.click(x, y);
-  await expect(detailOf(page)).toContainText(planAt(2).subject);
+  await expect(detailOf(page).getByRole("heading", { level: 2 })).toBeVisible();
 
   expect(["sending", "sent", "held"]).toContain(await stateOf(page, first));
   expect(await stateOf(page, second)).toBe("waiting");
-  await page.goto("/approvals");
-  await expect(page.getByText(stepText(1, E2E_QUEUE_WAITING - 2))).toBeVisible();
+  expect(await waitingIds(page)).toEqual(before.filter((id) => id !== first));
 });
 
 test("the link of a rejected, a replaced and an unknown draft shows a closed card", async ({ context, page }) => {

@@ -70,13 +70,13 @@ export function ApprovalActions({
         </Button>
       )}
       {canEdit && (
-        <Button ref={editRef} type="button" size="lg" variant="soft" disabled={busy} onClick={onEdit}>
+        <Button ref={editRef} type="button" variant="soft" disabled={busy} onClick={onEdit}>
           <Pencil aria-hidden="true" />
           {t("appr_edit")}
         </Button>
       )}
       {decisions.reject && (
-        <Button type="button" size="lg" variant="ghost" disabled={busy || expired} onClick={onReject}>
+        <Button type="button" variant="ghost" disabled={busy || expired} onClick={onReject}>
           <X aria-hidden="true" />
           {t("appr_reject")}
         </Button>
