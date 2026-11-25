@@ -1,9 +1,10 @@
 import { execFileSync } from "node:child_process";
 
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 import { E2E_DELEGATIONS } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
+import { pl } from "../../src/i18n/pl";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
@@ -34,69 +35,131 @@ type Key = keyof typeof E2E_DELEGATIONS;
 const nameOf = (key: Key): string => E2E_DELEGATIONS[key].delegateName;
 const fill = (text: string, name: string) => text.replace("{name}", name);
 
-const listOf = (page: Page) => page.getByRole("list", { name: en.dgn_list_label });
-const rowOf = (page: Page, key: Key) =>
-  listOf(page)
-    .getByRole("listitem")
-    .filter({ hasText: nameOf(key) });
+// The columns of the page, by the title of their heading; the closed list is named like its heading too.
+const COLUMN_TITLES = {
+  overdue: en.dgn_col_overdue,
+  drafted: en.dgn_col_drafted,
+  sent: en.dgn_col_sent,
+  answered: en.dgn_col_answered,
+  closed: en.dgn_col_closed,
+} as const;
+type Group = keyof typeof COLUMN_TITLES;
+const listOf = (page: Page, group: Group) => page.getByRole("list", { name: COLUMN_TITLES[group], exact: true });
+const headingOf = (page: Page, group: Group) =>
+  page.getByRole("heading", { level: 2, name: COLUMN_TITLES[group], exact: true });
+const columnBox = (page: Page, group: Group) =>
+  page.locator('[data-slot="delegation-column"]').filter({ has: headingOf(page, group) });
+const cardsOf = (page: Page, group: Group) => listOf(page, group).getByRole("listitem");
+// A delegation card, wherever it sits now: tests move rows from one column to another.
+const rowOf = (page: Page, key: Key) => page.getByRole("listitem").filter({ hasText: nameOf(key) });
+const inColumn = (page: Page, group: Group, key: Key) => cardsOf(page, group).filter({ hasText: nameOf(key) });
 const remindButton = (page: Page, key: Key) => page.getByRole("button", { name: fill(en.dgn_remind_for, nameOf(key)) });
 const doneButton = (page: Page, key: Key) => page.getByRole("button", { name: fill(en.dgn_done_for, nameOf(key)) });
 const cancelButton = (page: Page, key: Key) => page.getByRole("button", { name: fill(en.dgn_cancel_for, nameOf(key)) });
-const filterTabs = (page: Page) => page.getByRole("navigation", { name: en.dgn_filters_label });
-const filterLink = (page: Page, name: string) => filterTabs(page).getByRole("link", { name, exact: true });
+const closedButton = (page: Page) => page.getByRole("button", { name: en.dgn_closed_show });
+const closedHideButton = (page: Page) => page.getByRole("button", { name: en.dgn_closed_hide });
+// Opens the closed list and waits for its rows.
+async function showClosed(page: Page) {
+  await closedButton(page).click();
+  await expect(headingOf(page, "closed")).toBeVisible();
+}
 // The line of the result: the page announces the result here and moves the focus to it after an action.
 const status = (page: Page) => page.locator('[role="status"][tabindex="-1"]');
 const remindersText = (n: number) => en.dgn_reminders.replace("{n}", `${n}`).replace("{max}", "2");
 const cancelDialog = (page: Page) => page.getByRole("dialog", { name: en.dgn_cancel_title });
 
-const TABS = [
-  ["open", en.dgn_filter_open],
-  ["overdue", en.dgn_filter_overdue],
-  ["answered", en.dgn_filter_answered],
-  ["closed", en.dgn_filter_closed],
-] as const;
+// The headings sit one under the other, at the same left edge.
+async function expectStacked(headings: Locator[]) {
+  const tops: number[] = [];
+  const lefts: number[] = [];
+  for (const heading of headings) {
+    const box = await heading.boundingBox();
+    if (box === null) throw new Error("A column heading has no box.");
+    tops.push(box.y);
+    lefts.push(box.x);
+  }
+  expect(tops).toEqual([...tops].sort((a, b) => a - b));
+  expect(new Set(tops).size).toBe(tops.length);
+  expect(new Set(lefts).size).toBe(1);
+}
+const fitsWidth = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
-test("T4: Open shows the sent and the drafted rows; the drafted row links its draft to /approvals?id=", async ({
+// Where each seeded delegation sits on a fresh page (the reads run before the actions).
+const GROUP_OF: Record<Key, Group> = {
+  drafted: "drafted",
+  sent: "sent",
+  overdue: "overdue",
+  limit: "overdue",
+  inactive: "overdue",
+  answered: "answered",
+  answeredMember: "answered",
+  done: "closed",
+  cancelled: "closed",
+};
+
+test("T4: each seeded delegation is in the column of its status; the drafted card links its draft to /approvals?id=", async ({
   context,
   page,
 }) => {
   const errors = await startSession(context, page, org().owner);
   await page.goto("/delegations");
   await expect(page.getByRole("heading", { level: 1, name: en.title_delegations })).toBeVisible();
-  await expect(filterLink(page, en.dgn_filter_open)).toHaveAttribute("aria-current", "page");
   // The header tabs of the two delegation pages.
   const header = page.getByRole("navigation", { name: en.dlg_tabs_label });
   await expect(header.getByRole("link", { name: en.dlg_tab_delegations })).toHaveAttribute("aria-current", "page");
   await expect(header.getByRole("link", { name: en.dlg_tab_delegates })).toHaveAttribute("href", "/delegates");
 
-  const sent = rowOf(page, "sent");
+  // The four columns, in the page order, each with the count of its rows.
+  for (const group of ["overdue", "drafted", "sent", "answered"] as const)
+    await expect(headingOf(page, group)).toBeVisible();
+  const heads = await page.getByRole("heading", { level: 2 }).allTextContents();
+  expect(heads.filter((text) => Object.values(COLUMN_TITLES).includes(text as never))).toEqual([
+    en.dgn_col_overdue,
+    en.dgn_col_drafted,
+    en.dgn_col_sent,
+    en.dgn_col_answered,
+  ]);
+  for (const key of Object.keys(E2E_DELEGATIONS) as Key[]) {
+    const group = GROUP_OF[key];
+    // The closed rows wait behind their button.
+    if (group === "closed") await expect(rowOf(page, key)).toHaveCount(0);
+    else await expect(inColumn(page, group, key)).toHaveCount(1);
+  }
+  await expect(cardsOf(page, "overdue")).toHaveCount(3);
+  await expect(cardsOf(page, "answered")).toHaveCount(2);
+
+  const sent = inColumn(page, "sent", "sent");
   await expect(sent).toContainText(E2E_DELEGATIONS.sent.delegateEmail);
   await expect(sent).toContainText(E2E_DELEGATIONS.sent.task);
   await expect(sent).toContainText(`${en.dgn_subject}: ${E2E_DELEGATIONS.sent.subject}`);
-  await expect(sent).toContainText(en.act_dlg_sent);
   await expect(sent).toContainText(remindersText(0));
   await expect(sent).toContainText(/Due \d{1,2} \w{3,4} \d{4}/);
-  const drafted = rowOf(page, "drafted");
-  await expect(drafted).toContainText(en.act_dlg_drafted);
+  // The heading names the status, so a card in a column has no status badge.
+  await expect(sent).not.toContainText(en.act_dlg_sent);
+  const drafted = inColumn(page, "drafted", "drafted");
   await expect(drafted.getByRole("link", { name: en.dgn_open_draft })).toHaveAttribute(
     "href",
     `/approvals?id=${org().draftedSendId}`
   );
-  // A drafted delegation has Cancel only; the other states are on other tabs.
+  // A drafted delegation has Cancel only.
   await expect(cancelButton(page, "drafted")).toBeVisible();
   await expect(remindButton(page, "drafted")).toHaveCount(0);
-  await expect(rowOf(page, "overdue")).toHaveCount(0);
-  await expect(rowOf(page, "answered")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test("T9: /delegations?filter=closed opens on Closed; each tab has its own address; a retention-cleared task shows a dash", async ({
+test("T9: the closed list opens with its button or with ?filter=closed; a retention-cleared task shows a dash; other values change nothing", async ({
   context,
   page,
 }) => {
   await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=closed");
-  await expect(filterLink(page, en.dgn_filter_closed)).toHaveAttribute("aria-current", "page");
+  await page.goto("/delegations");
+  await expect(closedButton(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(listOf(page, "closed")).toHaveCount(0);
+  await showClosed(page);
+  await expect(closedHideButton(page)).toHaveAttribute("aria-expanded", "true");
+  const closed = listOf(page, "closed");
+  await expect(closed.getByRole("listitem")).toHaveCount(2);
+  // Closed rows keep the status badge.
   await expect(rowOf(page, "done")).toContainText(en.act_dlg_done);
   const cancelled = rowOf(page, "cancelled");
   await expect(cancelled).toContainText(en.act_dlg_cancelled);
@@ -104,21 +167,33 @@ test("T9: /delegations?filter=closed opens on Closed; each tab has its own addre
   await expect(cancelled).toContainText(en.dgn_task_removed);
   await expect(cancelled.getByText("—", { exact: true })).toBeVisible();
   await expect(cancelled.getByRole("button")).toHaveCount(0);
-  // The links keep the tab, a plain click changes it without a page load, and back returns.
-  for (const [filter, label] of TABS) {
-    await expect(filterLink(page, label)).toHaveAttribute("href", `/delegations?filter=${filter}`);
-  }
-  await filterLink(page, en.dgn_filter_overdue).click();
-  await expect(page).toHaveURL(/\/delegations\?filter=overdue$/);
-  await expect(filterLink(page, en.dgn_filter_overdue)).toHaveAttribute("aria-current", "page");
-  await expect(rowOf(page, "overdue")).toBeVisible();
-  await page.goBack();
-  await expect(page).toHaveURL(/filter=closed$/);
-  await expect(filterLink(page, en.dgn_filter_closed)).toHaveAttribute("aria-current", "page");
+  await closedHideButton(page).click();
+  await expect(closedButton(page)).toHaveAttribute("aria-expanded", "false");
+  await expect(rowOf(page, "done")).toHaveCount(0);
+  // The address opens the closed list at load and shows it.
+  await page.goto("/delegations?filter=closed");
+  await expect(closedHideButton(page)).toHaveAttribute("aria-expanded", "true");
   await expect(rowOf(page, "done")).toBeVisible();
-  // An unknown value opens on Open.
-  await page.goto("/delegations?filter=nope");
-  await expect(filterLink(page, en.dgn_filter_open)).toHaveAttribute("aria-current", "page");
+  await expect(headingOf(page, "closed")).toBeInViewport();
+  // The page writes no address.
+  await expect(page).toHaveURL(/\/delegations\?filter=closed$/);
+  // Every other value changes nothing: the closed list stays shut and all four columns show.
+  for (const search of ["?filter=overdue", "?filter=answered", "?filter=nope"]) {
+    await page.goto(`/delegations${search}`);
+    await expect(headingOf(page, "sent")).toBeVisible();
+    await expect(closedButton(page)).toHaveAttribute("aria-expanded", "false");
+    await expect(rowOf(page, "done")).toHaveCount(0);
+  }
+});
+
+test("a phone stacks the four columns top to bottom with no sideways scroll", async ({ context, page }) => {
+  test.skip(project() !== "mobile", "the stack is the phone layout");
+  await startSession(context, page, org().owner);
+  await page.goto("/delegations");
+  const groups = ["overdue", "drafted", "sent", "answered"] as const;
+  for (const group of groups) await expect(headingOf(page, group)).toBeVisible();
+  await expectStacked(groups.map((group) => headingOf(page, group)));
+  expect(await fitsWidth(page)).toBe(true);
 });
 
 test("T12: Remind now is off with the reason on screen for a limit, an inactive delegate; the keyboard reaches the button and the reason", async ({
@@ -126,7 +201,7 @@ test("T12: Remind now is off with the reason on screen for a limit, an inactive 
   page,
 }) => {
   await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=overdue");
+  await page.goto("/delegations");
   await expect(rowOf(page, "overdue")).toBeVisible();
   const ready = remindButton(page, "overdue");
   await expect(ready).not.toHaveAttribute("aria-disabled", "true");
@@ -172,7 +247,7 @@ test("T13: each 409 answer of Remind now gives its own text; `drafts_off` also t
     ["delegate_inactive", en.dgn_remind_delegate_inactive],
   ] as const;
   for (const [code, text] of codes) {
-    await page.goto("/delegations?filter=overdue");
+    await page.goto("/delegations");
     await expect(rowOf(page, "overdue")).toBeVisible();
     await page.route("**/api/delegations/*/remind", (route) =>
       route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ error: code }) })
@@ -188,7 +263,7 @@ test("T13: each 409 answer of Remind now gives its own text; `drafts_off` also t
     await page.unroute("**/api/delegations/*/remind");
   }
   // A 404 says that the delegation is gone; a 500 gives the general error.
-  await page.goto("/delegations?filter=overdue");
+  await page.goto("/delegations");
   await expect(rowOf(page, "overdue")).toBeVisible();
   await page.route("**/api/delegations/*/remind", (route) =>
     route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "not_found" }) })
@@ -208,7 +283,7 @@ test("T5: Overdue, Remind now: Reminder planned with a link; after the reload th
   page,
 }) => {
   const errors = await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=overdue");
+  await page.goto("/delegations");
   await expect(rowOf(page, "overdue")).toBeVisible();
   await remindButton(page, "overdue").click();
   await expect(status(page)).toContainText(en.dgn_reminded);
@@ -240,20 +315,18 @@ test("T8: the member sees Done on an answered row and no Remind now or Cancel; t
   page,
 }) => {
   const errors = await startSession(context, page, org().member);
-  await page.goto("/delegations?filter=answered");
-  await expect(rowOf(page, "answeredMember")).toBeVisible();
+  await page.goto("/delegations");
+  await expect(inColumn(page, "answered", "answeredMember")).toBeVisible();
   await expect(doneButton(page, "answeredMember")).toBeVisible();
   await expect(page.getByText(en.dgn_owner_only)).toBeVisible();
   await expect(page.getByRole("button", { name: en.dgn_remind })).toHaveCount(0);
   await expect(page.getByRole("button", { name: en.dgn_cancel })).toHaveCount(0);
-  await page.goto("/delegations?filter=overdue");
-  await expect(rowOf(page, "limit")).toBeVisible();
+  await expect(inColumn(page, "overdue", "limit")).toBeVisible();
   await expect(doneButton(page, "limit")).toBeVisible();
   await expect(remindButton(page, "limit")).toHaveCount(0);
   await expect(cancelButton(page, "limit")).toHaveCount(0);
-  await page.goto("/delegations");
-  await expect(rowOf(page, "sent")).toBeVisible();
-  await expect(rowOf(page, "sent").getByRole("button")).toHaveCount(0);
+  await expect(inColumn(page, "sent", "sent")).toBeVisible();
+  await expect(inColumn(page, "sent", "sent").getByRole("button")).toHaveCount(0);
   const origin = new URL(page.url()).origin;
   const delegations = await page.request.get("/api/delegations?filter=open");
   const id = (await delegations.json()).items[0].id as string;
@@ -264,28 +337,31 @@ test("T8: the member sees Done on an answered row and no Remind now or Cancel; t
   expect(errors).toEqual([]);
 });
 
-test("T6: Answered, Mark as done: the row leaves the tab and shows under Closed", async ({ context, page }) => {
-  const errors = await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=answered");
-  await expect(rowOf(page, "answered")).toBeVisible();
-  await doneButton(page, "answered").click();
-  await expect(status(page)).toContainText(fill(en.dgn_done_ok, nameOf("answered")));
-  await expect(status(page)).toBeFocused();
-  await expect(rowOf(page, "answered")).toHaveCount(0);
-  await expect(rowOf(page, "answeredMember")).toBeVisible();
-  await filterLink(page, en.dgn_filter_closed).click();
-  await expect(rowOf(page, "answered")).toContainText(en.act_dlg_done);
-  await expect(rowOf(page, "answered").getByRole("button")).toHaveCount(0);
-  expect(errors).toEqual([]);
-});
-
-test("T7: Cancel on the sent row asks first; Keep returns the focus to Cancel; confirm shows the row under Closed as cancelled", async ({
+test("T6: Answered, Mark as done: the card leaves its column and shows under the closed list", async ({
   context,
   page,
 }) => {
   const errors = await startSession(context, page, org().owner);
   await page.goto("/delegations");
-  await expect(rowOf(page, "sent")).toBeVisible();
+  await expect(inColumn(page, "answered", "answered")).toBeVisible();
+  await doneButton(page, "answered").click();
+  await expect(status(page)).toContainText(fill(en.dgn_done_ok, nameOf("answered")));
+  await expect(status(page)).toBeFocused();
+  await expect(rowOf(page, "answered")).toHaveCount(0);
+  await expect(inColumn(page, "answered", "answeredMember")).toBeVisible();
+  await showClosed(page);
+  await expect(rowOf(page, "answered")).toContainText(en.act_dlg_done);
+  await expect(rowOf(page, "answered").getByRole("button")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("T7: Cancel on the sent card asks first; Keep returns the focus to Cancel; confirm shows the card in the closed list as cancelled", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  await page.goto("/delegations");
+  await expect(inColumn(page, "sent", "sent")).toBeVisible();
   const cancel = cancelButton(page, "sent");
   await cancel.click();
   const dialog = cancelDialog(page);
@@ -296,7 +372,7 @@ test("T7: Cancel on the sent row asks first; Keep returns the focus to Cancel; c
   await dialog.getByRole("button", { name: en.dgn_keep }).click();
   await expect(dialog).toHaveCount(0);
   await expect(cancel).toBeFocused();
-  await expect(rowOf(page, "sent")).toContainText(en.act_dlg_sent);
+  await expect(inColumn(page, "sent", "sent")).toBeVisible();
   // Escape does the same.
   await cancel.click();
   await expect(dialog).toBeVisible();
@@ -310,8 +386,8 @@ test("T7: Cancel on the sent row asks first; Keep returns the focus to Cancel; c
   await expect(status(page)).toContainText(fill(en.dgn_cancelled, nameOf("sent")));
   await expect(status(page)).toBeFocused();
   await expect(rowOf(page, "sent")).toHaveCount(0);
-  await expect(rowOf(page, "drafted")).toBeVisible();
-  await filterLink(page, en.dgn_filter_closed).click();
+  await expect(inColumn(page, "drafted", "drafted")).toBeVisible();
+  await showClosed(page);
   await expect(rowOf(page, "sent")).toContainText(en.act_dlg_cancelled);
   expect(errors).toEqual([]);
 });
@@ -337,56 +413,6 @@ test("T14: the keyboard alone opens the cancel question, keeps the delegation, a
   await expect(rowOf(page, "drafted")).toHaveCount(0);
 });
 
-test("T15: Show more loads the next page with the cursor and puts the focus on the first new row", async ({
-  context,
-  page,
-}) => {
-  await startSession(context, page, org().owner);
-  const item = (n: number) => ({
-    kind: "delegation",
-    id: `0190f5a0-0000-7000-8000-${String(n).padStart(12, "0")}`,
-    status: "done",
-    delegate: {
-      id: "0190f5a0-0000-7000-8000-0000000000d1",
-      name: `Paged ${n}`,
-      email: `paged${n}@example.com`,
-      active: true,
-    },
-    task: `Paged task ${n}`,
-    subject: null,
-    dueAt: null,
-    sentAt: null,
-    answeredAt: null,
-    remindersSent: 0,
-    reminderWaiting: false,
-    sendId: null,
-  });
-  const requests: string[] = [];
-  await page.route(/\/api\/delegations\?/, (route) => {
-    const url = new URL(route.request().url());
-    requests.push(url.searchParams.get("before") ?? "");
-    const second = url.searchParams.get("before") === "cursor-2";
-    return route.fulfill({
-      contentType: "application/json",
-      body: JSON.stringify(
-        second ? { items: [item(3), item(4)], next: null } : { items: [item(1), item(2)], next: "cursor-2" }
-      ),
-    });
-  });
-  await page.goto("/delegations?filter=closed");
-  await expect(listOf(page).getByRole("listitem")).toHaveCount(2);
-  await page.getByRole("button", { name: en.dgn_more }).click();
-  await expect(listOf(page).getByRole("listitem")).toHaveCount(4);
-  await expect(page.getByRole("button", { name: en.dgn_more })).toHaveCount(0);
-  await expect(listOf(page).getByRole("listitem").filter({ hasText: "Paged 3" })).toBeFocused();
-  // No subject and no due date show words.
-  await expect(rowOf0(page, "Paged 3")).toContainText(`${en.dgn_subject}: ${en.dgn_no_subject}`);
-  await expect(rowOf0(page, "Paged 3")).toContainText(en.dgn_no_due);
-  expect(requests).toEqual(["", "cursor-2"]);
-});
-
-const rowOf0 = (page: Page, text: string) => listOf(page).getByRole("listitem").filter({ hasText: text });
-
 // The state of a delegation changes "elsewhere" (the delegate answers, another owner closes it): the test writes it into the database with the
 // migrator role, then makes the page reload. The 30 s timer would do the same; a `visibilitychange` event runs the reload at once.
 function sql(query: string): string {
@@ -406,20 +432,21 @@ async function reloadNow(page: Page): Promise<void> {
 }
 const activeTag = (page: Page) => page.evaluate(() => document.activeElement?.tagName ?? "null");
 
-test("T17: the delegation leaves the tab while the cancel question is open: the question stays; Confirm says it is closed and the status line has the focus", async ({
+test("T17: the delegation changes status while the cancel question is open: the question stays; Confirm says it is closed and the status line has the focus", async ({
   context,
   page,
 }) => {
   await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=overdue");
+  await page.goto("/delegations");
   await cancelButton(page, "limit").click();
   const dialog = cancelDialog(page);
   await expect(dialog).toBeVisible();
   try {
     setStatus("limit", "answered");
     await reloadNow(page);
-    await expect(rowOf(page, "limit")).toHaveCount(0);
-    // The reload dropped the row; the question stays, with its focus.
+    // The reload moved the card to the Answered column; the question stays, with its focus.
+    await expect(inColumn(page, "answered", "limit")).toBeVisible();
+    await expect(inColumn(page, "overdue", "limit")).toHaveCount(0);
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("button", { name: en.dgn_keep })).toBeFocused();
     await dialog.getByRole("button", { name: en.dgn_cancel_confirm }).click();
@@ -431,19 +458,20 @@ test("T17: the delegation leaves the tab while the cancel question is open: the 
   }
 });
 
-test("T18: the user closes the cancel question after the row left: the focus is on the status line with a text, never on the page body", async ({
+test("T18: the user closes the cancel question after the card moved: the focus is on the status line with a text, never on the page body", async ({
   context,
   page,
 }) => {
   await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=overdue");
+  await page.goto("/delegations");
   await cancelButton(page, "limit").click();
   const dialog = cancelDialog(page);
   await expect(dialog).toBeVisible();
   try {
     setStatus("limit", "answered");
     await reloadNow(page);
-    await expect(rowOf(page, "limit")).toHaveCount(0);
+    await expect(inColumn(page, "answered", "limit")).toBeVisible();
+    // An answered delegation has no Cancel button to return to.
     await dialog.getByRole("button", { name: en.dgn_keep }).click();
     await expect(dialog).toHaveCount(0);
     await expect(status(page)).toBeFocused();
@@ -454,12 +482,12 @@ test("T18: the user closes the cancel question after the row left: the focus is 
   }
 });
 
-test("T19: a reload removes the row whose button has the focus (Done, Remind now): the focus goes to the status line with a text, not to the page body", async ({
+test("T19: a reload takes the card whose button has the focus out of every column (Done, Remind now): the focus goes to the status line with a text, not to the page body", async ({
   context,
   page,
 }) => {
   await startSession(context, page, org().owner);
-  await page.goto("/delegations?filter=overdue");
+  await page.goto("/delegations");
   const cases = [
     ["limit", doneButton(page, "limit")],
     ["inactive", remindButton(page, "inactive")],
@@ -469,6 +497,7 @@ test("T19: a reload removes the row whose button has the focus (Done, Remind now
     await button.focus();
     await expect(button).toBeFocused();
     try {
+      // Closed delegations sit behind their button, so the card is in no column now.
       setStatus(key, "done");
       await reloadNow(page);
       await expect(rowOf(page, key)).toHaveCount(0);
@@ -477,38 +506,51 @@ test("T19: a reload removes the row whose button has the focus (Done, Remind now
     } finally {
       setStatus(key, "overdue");
     }
-    // The next round starts from a loaded page with the row back.
-    await page.goto("/delegations?filter=overdue");
+    // The next round starts from a loaded page with the card back.
+    await page.goto("/delegations");
   }
 });
 
-test("T10: every filter tab and the cancel question have no axe violation", async ({ context, page }) => {
+test("a reload moves the card whose button has the focus to another column: the focus stays on its new card", async ({
+  context,
+  page,
+}) => {
   await startSession(context, page, org().owner);
-  // Earlier tests moved rows, so a tab can be empty: the list or the empty text is the loaded page.
-  const empty = {
-    open: en.dgn_empty_open,
-    overdue: en.dgn_empty_overdue,
-    answered: en.dgn_empty_answered,
-    closed: en.dgn_empty_closed,
-  };
-  for (const [filter, label] of TABS) {
-    await page.goto(`/delegations?filter=${filter}`);
-    await expect(filterLink(page, label)).toHaveAttribute("aria-current", "page");
-    await expect(listOf(page).or(page.getByText(empty[filter]))).toBeVisible();
-    await expectNoA11yViolations(page);
+  await page.goto("/delegations");
+  await expect(inColumn(page, "overdue", "limit")).toBeVisible();
+  await doneButton(page, "limit").focus();
+  try {
+    setStatus("limit", "answered");
+    await reloadNow(page);
+    await expect(inColumn(page, "answered", "limit")).toBeVisible();
+    await expect(inColumn(page, "answered", "limit")).toBeFocused();
+    await expect(status(page)).not.toBeFocused();
+    await expect(status(page)).toHaveText("");
+  } finally {
+    setStatus("limit", "overdue");
   }
-  // The question: on Overdue, where the page also shows the off Remind now buttons and the reasons.
-  await page.goto("/delegations?filter=overdue");
-  await expect(rowOf(page, "limit")).toBeVisible();
+});
+
+test("T10: the columns, the closed list, an empty column and the cancel question have no axe violation", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, org().owner);
+  await page.goto("/delegations");
+  await expect(inColumn(page, "overdue", "limit")).toBeVisible();
+  await expectNoA11yViolations(page);
+  await showClosed(page);
+  await expect(rowOf(page, "done")).toBeVisible();
+  await expectNoA11yViolations(page);
+  // The question: the page also shows the off Remind now buttons and the reasons.
   await cancelButton(page, "limit").click();
   await expect(cancelDialog(page)).toBeVisible();
   await expectNoA11yViolations(page);
   await page.keyboard.press("Escape");
-  // The empty state and a result line.
-  await page.goto("/delegations?filter=answered");
+  // An empty column and a result line.
   await doneButton(page, "answeredMember").click();
   await expect(status(page)).toContainText(fill(en.dgn_done_ok, nameOf("answeredMember")));
-  await expect(page.getByText(en.dgn_empty_answered)).toBeVisible();
+  await expect(columnBox(page, "answered")).toContainText(en.dgn_col_empty_answered);
   await expectNoA11yViolations(page);
 });
 
@@ -562,6 +604,24 @@ test("T16: with the flag off, /delegations shows the flag-off text", async ({ co
   await page.waitForURL((url) => !url.pathname.startsWith("/login"));
   await page.goto("/delegations");
   await expect(page.getByText(en.dlg_off)).toBeVisible();
-  await expect(page.getByRole("list", { name: en.dgn_list_label })).toHaveCount(0);
+  await expect(headingOf(page, "overdue")).toHaveCount(0);
+  await expect(closedButton(page)).toHaveCount(0);
   await expectNoA11yViolations(page);
+});
+
+// The page is Polish for a Polish browser and a user with no stored choice: the four columns stack on a phone, and nothing scrolls sideways.
+test.describe("in Polish", () => {
+  test.use({ locale: "pl-PL" });
+
+  test("the four columns have Polish headings, stack on a phone and fit the screen", async ({ context, page }) => {
+    await startSession(context, page, org().owner);
+    await page.goto("/delegations");
+    const titles = [pl.dgn_col_overdue, pl.dgn_col_drafted, pl.dgn_col_sent, pl.dgn_col_answered];
+    const headings = titles.map((name) => page.getByRole("heading", { level: 2, name, exact: true }));
+    for (const heading of headings) await expect(heading).toBeVisible();
+    await expect(page.getByRole("button", { name: pl.dgn_closed_show })).toBeVisible();
+    if (project() === "mobile") await expectStacked(headings);
+    expect(await fitsWidth(page)).toBe(true);
+    await expectNoA11yViolations(page);
+  });
 });

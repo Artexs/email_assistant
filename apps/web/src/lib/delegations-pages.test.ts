@@ -1,7 +1,7 @@
 import type { DelegationItem } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 
-import { loadPages, restartPages } from "./use-delegation-list";
+import { loadPages } from "./use-delegation-columns";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -66,20 +66,5 @@ describe("loadPages", () => {
     expect(urls).toHaveLength(3);
     expect(loaded.next).toBeNull();
     expect(loaded.items).toHaveLength(4);
-  });
-});
-
-describe("restartPages", () => {
-  // A new tab starts at page 1 again.
-  test("sets the page count back to 1 and reloads once", () => {
-    const pages = { current: 3 };
-    let reloads = 0;
-    restartPages(pages, () => {
-      reloads += 1;
-      // The reload must already see page 1.
-      expect(pages.current).toBe(1);
-    });
-    expect(pages.current).toBe(1);
-    expect(reloads).toBe(1);
   });
 });

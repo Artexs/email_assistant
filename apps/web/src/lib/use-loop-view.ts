@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { loopFilterHref, loopFilterOf, tabHref, tabOf, type LoopTab } from "./loops-view";
 
 // The tab and the state filter of the "Open loops" page are the query parameters `tab` and `filter`. A choice pushes a history entry
-// (back returns to the earlier tab); browser back and forward update the values. The delegations list on the Delegated tab keeps its own
-// `filter` (see `useDelegationFilter`): it reads and writes the same parameter, and this hook rereads it on back and forward.
+// (back returns to the earlier tab); browser back and forward update the values. The delegation columns on the Delegated tab read the same
+// `filter` once at load (`closedOnLoad`) and write nothing.
 export function useLoopView() {
   const [view, setView] = useState(() => ({ tab: tabOf(location.search), filter: loopFilterOf(location.search) }));
 
