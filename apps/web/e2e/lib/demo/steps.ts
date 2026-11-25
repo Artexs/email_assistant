@@ -103,8 +103,8 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     seconds: 16,
     caption: {
       e2e: {
-        en: "A reply waits for approval.\nEdit the text in the panel, then approve.",
-        pl: "Odpowiedź czeka na zatwierdzenie.\nPopraw tekst w panelu i zatwierdź.",
+        en: "A draft waits for approval.\nEdit the text in the panel, then approve.",
+        pl: "Szkic czeka na zatwierdzenie.\nPopraw tekst w panelu i zatwierdź.",
       },
       demo: {
         en: "Nothing is sent without you.\nEdit the text in the panel, then approve.",
@@ -118,8 +118,8 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     seconds: 14,
     caption: {
       e2e: {
-        en: "A task goes to a delegate.\nThe assistant sends the chaser.",
-        pl: "Zadanie trafia do osoby delegowanej.\nAsystent wysyła ponaglenie.",
+        en: "A task goes to a delegate.\nThe assistant plans the chaser for your approval.",
+        pl: "Zadanie trafia do osoby delegowanej.\nAsystent przygotowuje ponaglenie do Twojej akceptacji.",
       },
       demo: {
         en: "A task goes to a delegate.\nThe assistant reminds that person.",
