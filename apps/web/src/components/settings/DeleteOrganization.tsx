@@ -80,8 +80,7 @@ export function DeleteOrganization() {
       <Button
         ref={trigger}
         type="button"
-        variant="outline"
-        className="text-destructive"
+        variant="destructive-soft"
         data-action="delete-organization"
         onClick={() => changeOpen(true)}
       >

@@ -4,7 +4,7 @@ import { securityEventKinds, type SecurityLogEntry } from "@ea/core/web";
 import { en } from "../i18n/en";
 import { pl } from "../i18n/pl";
 import { setLocaleForTest, t } from "../i18n";
-import { securityActorText, securityKindText, securityLineText } from "./security-log-text";
+import { securityActorText, securityKindText, securityEntryParts } from "./security-log-text";
 
 afterEach(() => setLocaleForTest("en"));
 
@@ -26,7 +26,7 @@ describe("security log text", () => {
     }
   });
 
-  test("the company sign-in kinds read right in Polish and English (F119 D12)", () => {
+  test("the company sign-in kinds read right in Polish and English", () => {
     const expected = {
       sso_sign_in: ["Signed in with the company account", "Zalogowano kontem firmowym"],
       sso_refused: ["Company sign-in refused", "Odmowa logowania kontem firmowym"],
@@ -61,26 +61,31 @@ describe("security log text", () => {
     expect(securityActorText({ kind: "system" })).toBe(t("sec_actor_system"));
   });
 
-  test("a locked line shows the unlock time in the organization time zone", () => {
+  test("a locked entry shows the unlock time in the organization time zone", () => {
     const entry: SecurityLogEntry = {
       at: "2026-11-20T08:00:00Z",
       kind: "locked",
       actor: { kind: "member", name: "Ala" },
       lockedUntil: "2026-11-20T08:15:00Z",
     };
-    const line = securityLineText(entry, timeZone);
-    expect(line).toContain("09:15");
-    expect(line).toContain(t("sec_kind_locked"));
-    expect(line).toContain("Ala");
+    expect(securityEntryParts(entry, timeZone)).toEqual({
+      when: "20 Nov 2026, 09:00",
+      what: t("sec_kind_locked"),
+      who: "Ala (locked until 09:15)",
+    });
   });
 
-  test("a line without a lock has no unlock part", () => {
+  test("an entry without a lock has no unlock part", () => {
     const entry: SecurityLogEntry = {
       at: "2026-11-20T08:00:00Z",
       kind: "sign_in",
       actor: { kind: "system" },
       lockedUntil: null,
     };
-    expect(securityLineText(entry, timeZone)).not.toContain("(");
+    expect(securityEntryParts(entry, timeZone)).toEqual({
+      when: "20 Nov 2026, 09:00",
+      what: t("sec_kind_sign_in"),
+      who: t("sec_actor_system"),
+    });
   });
 });

@@ -75,7 +75,6 @@ const SAME_IN_BOTH: TextKey[] = [
   "smtp_security_starttls",
   "act_action_at", // placeholders and a separator only
   "act_dlg_line",
-  "sec_line", // placeholders and a separator only
   "nav_operator", // "Operator" in both languages
   "op_col_plan", // "Plan" in both languages
   "op_plan_state",
