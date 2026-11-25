@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { trialDateText } from "../../src/lib/trial-date";
+import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL, e2eEnv } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
@@ -74,6 +75,13 @@ test("the paused owner sees the banner and a read-only panel", async ({ page }) 
     await expect(item).toBeDisabled();
   }
   await expect(page.locator("[data-card=digest]").getByRole("button", { name: en.digest_add })).toBeDisabled();
+});
+
+test("the paused banner passes the accessibility scan", async ({ page }) => {
+  await signInAndWait(page, readSeed().pausedOwner);
+  await page.goto("/activity");
+  await expect(page.getByText(pausedText())).toBeVisible();
+  await expectNoA11yViolations(page);
 });
 
 test("a write of the paused owner gets 403 org_suspended", async ({ page }) => {
