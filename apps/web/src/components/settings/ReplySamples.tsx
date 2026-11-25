@@ -12,6 +12,7 @@ import {
   showSamples,
   type SamplesState,
 } from "../../lib/reply-samples";
+import { FactBox } from "../patterns/FactBox";
 import { Button } from "../ui/button";
 
 // Sample drafts on the newest mails that need a reply (the owner, the flag `reply_drafts` on, a password mailbox). One run a day for
@@ -66,7 +67,7 @@ export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocke
       <div className="flex flex-col items-start gap-1.5">
         <Button
           type="button"
-          variant="outline"
+          variant="soft"
           disabled={samplesButtonOff(state)}
           aria-describedby={`${ids}-help`}
           onClick={() => void ask()}
@@ -98,18 +99,20 @@ export function ReplySamples({ mailboxId, blocked }: { mailboxId: string; blocke
           <div className="flex flex-col gap-3">
             <p className="text-sm font-medium">{t("rs_samples_title")}</p>
             {state.items.map((item) => (
-              <div key={item.requestId} data-sample="" className="flex flex-col gap-1.5 rounded-md border p-3">
-                <p className="text-sm text-muted-foreground">
-                  {t("rs_samples_mail", { subject: item.subject ?? t("rs_samples_no_subject") })}
-                </p>
-                {item.body !== null && !sampleInProgress(item) ? (
-                  <p data-sample-body="" className="whitespace-pre-wrap text-sm">
-                    {item.body}
+              <FactBox key={item.requestId}>
+                <div data-sample="" className="flex flex-col gap-1.5">
+                  <p className="text-sm font-bold">
+                    {t("rs_samples_mail", { subject: item.subject ?? t("rs_samples_no_subject") })}
                   </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">{t(sampleFailureKey(item))}</p>
-                )}
-              </div>
+                  {item.body !== null && !sampleInProgress(item) ? (
+                    <p data-sample-body="" className="text-base whitespace-pre-wrap">
+                      {item.body}
+                    </p>
+                  ) : (
+                    <p className="text-sm">{t(sampleFailureKey(item))}</p>
+                  )}
+                </div>
+              </FactBox>
             ))}
             <p className="text-sm text-muted-foreground">{t("rs_samples_note")}</p>
           </div>
