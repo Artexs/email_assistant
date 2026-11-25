@@ -22,7 +22,7 @@ describe("SectionCard", () => {
     expect(html).toContain("Daily mail");
   });
 
-  test("tone danger has the destructive edge and no shadow", () => {
+  test("tone danger has the soft destructive edge and no shadow", () => {
     const danger = classOf(
       rootTag(
         renderToStaticMarkup(
@@ -32,7 +32,7 @@ describe("SectionCard", () => {
         )
       )
     ).split(" ");
-    expect(danger).toContain("border-destructive");
+    expect(danger).toContain("border-destructive-edge");
     expect(danger).toContain("shadow-none");
     expect(danger.filter((name) => name.startsWith("shadow-") && name !== "shadow-none")).toEqual([]);
     const plain = classOf(

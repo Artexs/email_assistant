@@ -120,6 +120,11 @@
   --destructive-soft-hover: color-mix(in srgb, var(--destructive-soft) 70%, var(--card));
 }
 
+/* The edge of the destructive settings card: a softer red than the text, still 3:1 on the card. */
+:root {
+  --destructive-edge: color-mix(in srgb, var(--destructive) 65%, var(--card));
+}
+
 /* Tailwind 4.1 font stack: Tailwind 4.3 changed the default. Nunito comes first. */
 @theme {
   --font-sans:
@@ -154,6 +159,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive-soft: var(--destructive-soft);
   --color-destructive-soft-hover: var(--destructive-soft-hover);
+  --color-destructive-edge: var(--destructive-edge);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

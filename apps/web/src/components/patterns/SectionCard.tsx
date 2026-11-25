@@ -13,7 +13,7 @@ interface SectionCardProps extends Omit<ComponentProps<"div">, "title"> {
 }
 
 // A card for one group of settings: an icon tile, the `h2`, a lead line, then the content. `tone="danger"` is for the
-// destructive group: a red edge and no shadow. Extra `div` props (`id`, `data-card`, …) reach the card, so a link or a test can find it.
+// destructive group: a soft red edge and no shadow. Extra `div` props (`id`, `data-card`, …) reach the card, so a link or a test can find it.
 export function SectionCard({
   icon: Icon,
   title,
@@ -27,7 +27,7 @@ export function SectionCard({
   return (
     <Card
       data-tone={tone}
-      className={cn("gap-4 p-6", danger && "border border-destructive shadow-none", className)}
+      className={cn("gap-4 p-6", danger && "border-2 border-destructive-edge shadow-none", className)}
       {...props}
     >
       <div className="flex flex-col gap-1">

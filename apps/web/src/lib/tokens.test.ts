@@ -245,6 +245,7 @@ describe("design token contrast", () => {
       ["--input", "--background"],
       ["--ring", "--card"],
       ["--ring", "--background"],
+      ["--destructive-edge", "--card"],
     ];
     for (const [colour, surface] of edgePairs) {
       expect(contrast(scheme, colour, surface), `${colour} on ${surface}`).toBeGreaterThanOrEqual(3);
