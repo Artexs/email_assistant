@@ -143,7 +143,8 @@ export function ReportContent({
           <p data-report="nothing">{t("rep_nothing")}</p>
         </FactBox>
       )}
-      {showCategories(view) && note === "all_on" && (
+      {/* Right after a tap that turned categories on, the card below says what changed; the warm note is for a plain visit. */}
+      {showCategories(view) && note === "all_on" && turnedOn === null && (
         <FactBox>
           <p data-report="all-on">{t("rep_all_on")}</p>
         </FactBox>

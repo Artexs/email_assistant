@@ -307,6 +307,14 @@ describe("the report content", () => {
     expect(markup).not.toContain(en.rep_turn_on.split("(")[0]?.trim() ?? "?");
   });
 
+  test("after the tap that turned the last categories on: the result line and no amber already-on note", () => {
+    const v = view();
+    v.categories.notification = row({ auto: true, evidence: { eligible: true, recommended: true, blocks: [] } });
+    const after = text(html(v, { turnedOn: { categories: ["notification"], mode: "assist" } }));
+    expect(after).toContain(t("rep_turned_on", { categories: en.cat_notification }));
+    expect(after).not.toContain(en.rep_all_on);
+  });
+
   test("after the tap: the categories turned on and the new mode", () => {
     const markup = text(html(view(), { turnedOn: { categories: ["notification"], mode: "assist" } }));
     expect(markup).toContain(`${t("rep_turned_on", { categories: en.cat_notification })} ${en.rep_mode_assist}`);
