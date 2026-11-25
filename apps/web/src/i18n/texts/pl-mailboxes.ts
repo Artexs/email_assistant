@@ -11,8 +11,15 @@ export const plMailboxes = {
   status_paused: "Wstrzymana",
   status_auth_error: "Błąd logowania",
   status_host_blocked: "Serwer niedozwolony",
+  status_access_revoked: "Dostęp cofnięty",
   // mailboxes
   mb_connect: "Połącz skrzynkę",
+  mb_lead: "Twoje połączone skrzynki i ich stan.",
+  mb_reconnect: "Połącz ponownie",
+  mb_provider_microsoft: "Logowanie przez Microsoft",
+  mb_provider_google: "Logowanie przez Google",
+  mb_access_revoked_hint:
+    "Dostęp do tej skrzynki został cofnięty albo wygasł. Połącz ją ponownie, aby uruchomić ją jeszcze raz.",
   mb_empty: "Nie ma jeszcze skrzynki.",
   mb_load_error: "Nie udało się wczytać skrzynek.",
   mb_last_sync: "Ostatnia synchronizacja: {time}",

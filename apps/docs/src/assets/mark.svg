@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <path id="tile" fill="#0a7568" d="M171 0h170a171 171 0 0 1 171 171v170a171 171 0 0 1-171 171H57a57 57 0 0 1-57-57V171A171 171 0 0 1 171 0z"/>
+  <g id="envelope" transform="translate(128 128) scale(10.667)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect width="20" height="16" x="2" y="4" rx="2"/>
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+  </g>
+</svg>
