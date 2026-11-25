@@ -17,6 +17,8 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-25
+
 ### For users
 
 - en: The panel has a new look: one teal colour, larger text and buttons, rounded cards and, on a phone, a tab bar at the bottom of the screen. Light or dark follows the setting of your device.
