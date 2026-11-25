@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-25
 ---
 
 # F170 · Onboarding, Mailboxes, Settings, Stats, the report and the operator console have the Pebble look
