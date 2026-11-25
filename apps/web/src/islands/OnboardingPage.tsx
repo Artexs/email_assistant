@@ -147,7 +147,7 @@ function Onboarding() {
           </div>
         </FactBox>
       )}
-      <div className="grid gap-4 lg:grid-cols-[18rem_1fr] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
         <ProgressCard progress={progress} />
         <ol className="flex flex-col gap-3">
           {steps.map((step, index) => (

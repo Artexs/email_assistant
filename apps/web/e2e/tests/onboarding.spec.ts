@@ -163,6 +163,19 @@ test("a tap on Use assist opens the mode dialog; Cancel sends no mode call; pict
   await expect(page.locator('[data-card="progress"]')).toBeVisible();
   await expectNoA11yViolations(page);
 
+  // The page fits a 320 px screen with its longest step (the Telegram text) and the mode cards.
+  await page.setViewportSize({ width: 320, height: 800 });
+  const overflow = await page.evaluate(() => ({
+    wide: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth,
+    items: [...document.querySelectorAll("main *")]
+      .filter((element) => element.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+      .map((element) => `${element.tagName} ${element.getAttribute("class")?.slice(0, 50) ?? ""}`)
+      .slice(0, 8),
+  }));
+  expect(overflow).toEqual({ wide: 320, client: 320, items: [] });
+  await page.setViewportSize(testInfo.project.use.viewport ?? { width: 1280, height: 720 });
+
   const open = page.getByRole("button", { name: en.ob_use_assist });
   await open.click();
   const dialog = page.getByRole("dialog");

@@ -14,6 +14,9 @@ import { AssistDialog } from "../settings/AssistDialog";
 import { Button, buttonVariants } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 
+// A card is narrow on a phone: its button text may wrap instead of widening the page.
+const WRAPPING = "h-auto min-h-12 self-start text-center whitespace-normal";
+
 function ModeCardFrame({
   icon: Icon,
   name,
@@ -26,7 +29,7 @@ function ModeCardFrame({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-background p-4" data-mode-card={name}>
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg border bg-background p-4" data-mode-card={name}>
       <div className="flex flex-col gap-1.5">
         <h3 className="flex items-center gap-2 font-bold">
           <Icon aria-hidden="true" className="size-5 text-primary" />
@@ -82,7 +85,7 @@ function AssistOne({
 
   return (
     <>
-      <Button className="self-start" disabled={blocked || loading || pending} onClick={() => void open()}>
+      <Button className={WRAPPING} disabled={blocked || loading || pending} onClick={() => void open()}>
         {t("ob_use_assist")}
       </Button>
       {switches !== null && (
@@ -117,7 +120,7 @@ function AssistAction({ blocked, onChanged }: { blocked: boolean; onChanged(): v
   if (only === undefined) return <p className="text-sm text-muted-foreground">{t("ob_mode_need_mailbox")}</p>;
   if (list.length > 1) {
     return (
-      <a href="/settings" className={`${buttonVariants()} self-start`}>
+      <a href="/settings" className={`${buttonVariants()} ${WRAPPING}`}>
         {t("ob_assist_settings")}
       </a>
     );
@@ -143,10 +146,10 @@ export function ModeCards({ canAct, onDone }: { canAct: boolean; onDone(): void 
   };
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <ModeCardFrame icon={Eye} name="mode_shadow" text="mode_shadow_text">
         {canAct && (
-          <Button className="self-start" variant="outline" disabled={keeping} onClick={() => void keepShadow()}>
+          <Button className={WRAPPING} variant="outline" disabled={keeping} onClick={() => void keepShadow()}>
             {t("ob_keep_shadow")}
           </Button>
         )}
