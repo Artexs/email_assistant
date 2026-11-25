@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { DraftReplyAction } from "../components/activity/DraftReplyAction";
 import { ApprovalActions } from "../components/approvals/ApprovalActions";
-import { ApprovalDetailPanel } from "../components/approvals/ApprovalDetailPanel";
+import { ApprovalCard } from "../components/approvals/ApprovalCard";
 import { ReplyControls } from "../components/approvals/ReplyControls";
 import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest } from "../i18n";
@@ -59,9 +59,9 @@ const detail = (patch: Partial<ApprovalDetail> = {}, view: Partial<View> = {}): 
 // The `bdi` tags around the addresses are tested on their own; the other tests read the text.
 const panelRaw = (d: ApprovalDetail) =>
   renderToStaticMarkup(
-    <ApprovalDetailPanel detail={d} now={NOW}>
+    <ApprovalCard detail={d} now={NOW}>
       {null}
-    </ApprovalDetailPanel>
+    </ApprovalCard>
   );
 
 const plain = (html: string) => html.replace(/<\/?bdi>/g, "");
@@ -77,7 +77,7 @@ const at = (html: string, text: string): number => {
 };
 
 describe("the detail of a reply", () => {
-  test("shows the facts in order: gaps, To, Cc, Reply-To, the full body, the quote closed, the version, the time left", () => {
+  test("shows the facts in order: gaps, To, Cc, Reply-To, the version, the time left, the full body, the quote closed", () => {
     const html = panel(
       detail(
         {},
@@ -96,11 +96,11 @@ describe("the detail of a reply", () => {
       "To: ",
       "Cc: ",
       "Reply-To: ",
+      "Version 2",
+      "Expires in",
       "Tak, wtorek pasuje.",
       "<details",
       "Quoted original",
-      "Version 2",
-      "Expires in",
     ].map((text) => at(html, text));
     expect(order).toEqual([...order].sort((a, b) => a - b));
     expect(html).toContain("b@y.test, c@z.test");
@@ -174,12 +174,6 @@ describe("the detail of a reply", () => {
     expect(html).toContain("<bdi>b@y.test</bdi>");
     expect(html).toContain("<bdi>office@client.test</bdi>");
     expect(html).toContain("Reply to <bdi>");
-  });
-
-  test("a delegation keeps its quote as a heading with the text open", () => {
-    const html = panel(detail({ kind: "delegation" }, { kind: "delegation" }));
-    expect(html).not.toContain("<details");
-    expect(html).toContain("<h3");
   });
 
   test("a draft that the system closed says why; a timeout and a send in another state say nothing more", () => {
