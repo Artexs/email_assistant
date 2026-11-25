@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 import { en, enPlurals } from "./en";
 import { pl, plPlurals } from "./pl";
+import { RUNTIME_KEY_PREFIXES } from "./runtime-key-prefixes";
 
 // A text that no page shows must not stay in the dictionaries. A key is used when its name appears as a whole word in a source
 // file of the web app, its e2e specs, the docs site, `packages/core` or the server: the core schemas and the server send some keys
@@ -12,25 +13,6 @@ import { pl, plPlurals } from "./pl";
 const repoRoot = join(import.meta.dir, "../../../..");
 const SOURCE_DIRS = ["apps/web/src", "apps/web/e2e", "apps/docs/src", "packages/core/src", "apps/server/src"];
 const DEFINITIONS = /^apps\/web\/src\/i18n\/(?:texts\/|en\.ts$|pl\.ts$)/;
-
-// A key built at run time (a template such as `cat_${category}`) is found by its prefix. Each prefix is listed once with the
-// file that builds it; the last test fails when that file no longer builds a key with the prefix.
-const BUILT_PREFIXES: { prefix: string; file: string }[] = [
-  { prefix: "legal_kept_until_", file: "apps/web/src/lib/legal-tables.ts" },
-  { prefix: "cat_", file: "apps/web/src/components/report/ReportContent.tsx" },
-  { prefix: "cat_effect_", file: "apps/web/src/components/settings/CategoriesCard.tsx" },
-  { prefix: "folder_", file: "apps/web/src/components/settings/SyncFoldersCard.tsx" },
-  { prefix: "sec_kind_", file: "apps/web/src/lib/security-log-text.ts" },
-  { prefix: "browser_", file: "apps/web/src/components/settings/AccountCard.tsx" },
-  { prefix: "os_", file: "apps/web/src/components/settings/AccountCard.tsx" },
-  { prefix: "act_range_", file: "apps/web/src/components/activity/ActivityFilterBar.tsx" },
-  { prefix: "act_cat_", file: "apps/web/src/lib/activity-text.ts" },
-  { prefix: "act_rule_", file: "apps/web/src/lib/activity-text.ts" },
-  { prefix: "undo_", file: "apps/web/src/lib/activity-text.ts" },
-  { prefix: "sender_rel_", file: "apps/web/src/lib/activity-text.ts" },
-  { prefix: "stats_m8_", file: "apps/web/src/lib/stats-view.ts" },
-  { prefix: "rep_mode_", file: "apps/web/src/components/report/ReportContent.tsx" },
-];
 
 // The keys that no file names and no listed prefix covers.
 export function unusedKeys(keys: string[], sources: string[], prefixes: string[]): string[] {
@@ -51,7 +33,7 @@ function readSources(): Map<string, string> {
 }
 
 const sources = readSources();
-const prefixes = BUILT_PREFIXES.map((entry) => entry.prefix);
+const prefixes = RUNTIME_KEY_PREFIXES.map((entry) => entry.prefix);
 
 describe("unusedKeys", () => {
   test("a key that no source names is reported", () => {
@@ -85,7 +67,7 @@ describe("the dictionaries", () => {
     expect(unusedKeys([...textKeys, ...pluralKeys], [...sources.values()], prefixes)).toEqual([]);
   });
 
-  test.each(BUILT_PREFIXES)("$file still builds a key with the prefix $prefix", ({ prefix, file }) => {
+  test.each(RUNTIME_KEY_PREFIXES)("$file still builds a key with the prefix $prefix", ({ prefix, file }) => {
     expect(sources.get(file), `${file} is not a source file`).toContain(`${prefix}\${`);
   });
 });
