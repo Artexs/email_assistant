@@ -180,6 +180,18 @@ export async function buildFixture(name = "Kordelan demo"): Promise<Fixture> {
       .where("org_id", "=", orgId)
       .execute();
 
+    // The database stamps these rows with the real clock. A day cut that falls before the real date would drop them
+    // and every row that points at them, so each row gets the time of the run day it belongs to.
+    for (const table of ["mailboxes", "sender_rules", "delegates"] as const)
+      await trx
+        .updateTable(table)
+        .set({ created_at: dayAt(1) })
+        .where("org_id", "=", orgId)
+        .execute();
+    await sql`
+      update email_headers h set captured_at = e.created_at
+      from emails e where e.id = h.email_id and e.org_id = ${orgId}::uuid`.execute(trx);
+
     const delegationId = await insertDelegation(trx, ctx, {
       mailboxId,
       emailId,

@@ -212,8 +212,7 @@ describe("exportDemo (F113 stage 15)", () => {
     const day2 = await exportOf(fx, 2);
     const ids = (seed: DemoSeed) => seed.tables.emails.map((row) => row.id);
     expect(ids(day2)).toEqual([fx.emailIds[0], fx.emailIds[1]].sort());
-    // Rows made on day 1 and 2 stay; every later row is out, and so is every row of a cut mail (the headers carry
-    // today's time, so only the link to their mail removes them).
+    // Rows made on day 1 and 2 stay; every later row is out, and so is every row of a cut mail.
     expect(countsOf(day2)).toEqual({
       ...FIXTURE_COUNTS,
       emails: 2,
