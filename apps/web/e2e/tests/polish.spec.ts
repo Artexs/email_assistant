@@ -32,6 +32,7 @@ test("the login page is Polish and fits the screen", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading", { level: 1, name: pl.login_title })).toBeVisible();
   await expect(page.getByLabel(pl.email_label)).toBeVisible();
+  if (!onMobile()) await expect(page.getByText(pl.login_panel_title)).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.lang)).toBe("pl");
   expect(await fitsWidth(page)).toBe(true);
 });

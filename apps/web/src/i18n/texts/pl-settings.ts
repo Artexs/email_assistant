@@ -246,6 +246,8 @@ export const plSettings = {
   urg_topic_name_label: "Temat {n}: nazwa",
   urg_topic_keywords_label: "Temat {n}: słowa kluczowe",
   urg_topic_remove: "Usuń temat {n}",
+  urg_topic_row: "Temat {n}",
+  urg_deadline_row: "Termin {n}",
   urg_topic_add: "Dodaj temat",
   urg_deadlines_title: "Terminy",
   urg_deadlines_help: "Termin, który minął, zostaje na liście, dopóki go nie usuniesz.",

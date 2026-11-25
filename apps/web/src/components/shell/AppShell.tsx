@@ -25,6 +25,7 @@ export interface AppShellProps {
   active: NavKey;
   title: TextKey;
   lead?: TextKey;
+  leadVars?: Record<string, string | number>; // the values of `{name}` slots in the lead text
   action?: ReactNode;
   children: ReactNode;
 }
@@ -42,7 +43,7 @@ function onLogOut() {
   void logOut();
 }
 
-function Frame({ active, title, lead, action, children }: AppShellProps) {
+function Frame({ active, title, lead, leadVars, action, children }: AppShellProps) {
   const { me, error, loading, reload } = useMe();
 
   // After a sign-in on any device the panel follows the stored choice, else the browser. The same locale changes nothing.
@@ -124,7 +125,7 @@ function Frame({ active, title, lead, action, children }: AppShellProps) {
           <TermsDialog current={me.terms.current} onAccepted={reload} onLogOut={onLogOut} />
         )}
         <main className="px-3.5 pt-3 pb-[calc(var(--tabbar-height)+env(safe-area-inset-bottom)+1.5rem)] lg:px-3 lg:pb-16">
-          <PageHead title={t(heading)} lead={lead === undefined ? undefined : t(lead)} action={action} />
+          <PageHead title={t(heading)} lead={lead === undefined ? undefined : t(lead, leadVars)} action={action} />
           {content}
         </main>
       </div>
