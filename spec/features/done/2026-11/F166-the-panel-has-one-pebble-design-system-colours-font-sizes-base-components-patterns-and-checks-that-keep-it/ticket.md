@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-25
 ---
 
 # F166 · The panel has one Pebble design system (colours, font, sizes, base components, patterns) and checks that keep it
