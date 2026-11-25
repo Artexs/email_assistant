@@ -8,3 +8,4 @@
 6. [important: money] The gate runs spend at most $8 on the DeepSeek key: `--budget-usd 2` per run, one rerun at 4. (P10)
 7. [important: production] A failed gate changes no code: classifier fail keeps the VPS on OpenAI; drafter fail keeps `reply_drafts` off; extractor fail keeps `open_loops` off; `style_from_sent` stays off. (P9)
 8. [minor] The drafter gate run uses the tool's default judge (DeepSeek strong tier), not the OpenAI judge of the earlier gate files. (P8)
+9. [important: rule-exception] `spec/vision.md` says "EU location before any outside user's mail". DeepSeek processes in China. Default: the plan follows the owner decision of 2026-11-26 for the home VPS (owner and test organizations only) and adds no block; the vision rule still applies before any outside user's mail reaches DeepSeek. The owner may want to amend the vision line.
