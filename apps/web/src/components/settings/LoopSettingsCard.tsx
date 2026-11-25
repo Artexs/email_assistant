@@ -51,6 +51,7 @@ export function LoopSettingsCard({ settings, isOwner, onChanged, onMissing }: Lo
         <Row
           title={t("lset_wait_label")}
           htmlFor="loop-wait"
+          controlBelow
           hint={<span id="loop-wait-help">{t("lset_wait_help")}</span>}
         >
           <select
