@@ -4,7 +4,7 @@
 
 ## What changes
 
-The web panel (`apps/web`) moves from the stock shadcn look to the Pebble design: one teal brand colour, large radius, soft shadows, a rounded font, 16 px text, 48 px buttons, a floating sidebar on a desktop and a bottom tab bar on a phone. The drawing is `design/ui-proposals/proposals/03-pebble/index.html` (12 screens, phone and desktop, light and dark). It is a pattern, not a full specification: it shows about 40 % of what a user can see. Every other page, state and dialog follows the same patterns (owner, 2026-11-23).
+The web panel (`apps/web`) moves from the stock shadcn look to the Pebble design: one teal brand colour, large radius, soft shadows, a rounded font, 16 px text, 48 px buttons, a floating sidebar on a desktop and a bottom tab bar on a phone. The drawing was `design/ui-proposals/proposals/03-pebble/index.html` (12 screens, phone and desktop, light and dark). It was a pattern, not a full specification: it showed about 40 % of what a user can see. Every other page, state and dialog follows the same patterns (owner, 2026-11-23). The drawing was the source; it left the repository with the last ticket and is in Git history at `94092626b` (`design/ui-proposals/proposals/03-pebble/`). Now the design system ADR (`docs/decisions/0037-panel-design-system.md`), the pattern page (`/dev/patterns`) and the code are the reference.
 
 ## Owner's words (2026-11-23)
 
@@ -33,7 +33,7 @@ The web panel (`apps/web`) moves from the stock shadcn look to the Pebble design
 | PB-10 | Font: Nunito, self-hosted, Latin and Latin Extended. Dark mode follows the system setting; no manual switch. | default |
 | PB-11 | The operator console gets the theme and keeps dense tables. | default |
 | PB-12 | The owner looks twice: at the pattern page and the contact sheet when F166 lands (a look, not a stop: a correction of a pattern there reaches every page), and at the full contact sheet before the release in F172 (a stop: the release waits for "go"). The release also waits for the 20-draft check of the reply-draft pilot. | default |
-| PB-13 | The mockup is committed for the build (done 2026-11-23) and deleted in F172. After that the design system ADR, the pattern page and the code are the truth. | owner ("it will end up there anyway after implementation") |
+| PB-13 | The mockup is committed for the build (done 2026-11-23) and deleted in F172 (done 2026-11-25). Now the design system ADR, the pattern page and the code are the truth. | owner ("it will end up there anyway after implementation") |
 
 ## Design decisions
 
@@ -87,6 +87,13 @@ F166 design system                      ┌► F167 shell, brand, sign-in pages 
 ```
 
 F167, F168, F169 and F170 run next to each other. They wait for four stages of F166 only: 03 (tokens), 06 and 10 (patterns), 04 (Button variants soft and destructive-soft, 48 px fields), 08 (the pattern page and its proof command), 09 (the page head contract). Their planner jobs start together, when the review fixes of the F166 plan are committed. The demo video and docs shots ticket (F151) finishes its tool stages now; its takes are made again in F171.
+
+## Follow-ups
+
+Proposals from the visual review before the release. Each one is a follow-up ticket for the owner to choose; none blocks the release.
+
+- **Delegation card buttons on a desktop** (route `delegations`): a card column is about 245 px wide at 1280 px, so "Remind now", "Mark as done" and "Cancel delegation" stack one per line and a card is about twice as high as the drawn one. Proposal: "Remind now" stays a button; "Mark as done" and "Cancel delegation" move into a menu on the card. It moves two controls into a menu (decision PB-4 keeps each control on its page), so it is a change of its own and not a class fix.
+- **Stats table on a phone** (route `stats`): proposal: a phone shows one finished week at a time, with a week picker over a two-column list of metrics, in place of the eight-column table that scrolls inside its card.
 
 ## Rules for width
 

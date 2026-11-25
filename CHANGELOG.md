@@ -17,6 +17,21 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+### For users
+
+- en: The panel has a new look: one teal colour, larger text and buttons, rounded cards and, on a phone, a tab bar at the bottom of the screen. Light or dark follows the setting of your device.
+  pl: Panel ma nowy wygląd: jeden turkusowy kolor, większy tekst i przyciski, zaokrąglone karty, a na telefonie pasek kart na dole ekranu. Jasny lub ciemny wygląd wynika z ustawienia Twojego urządzenia.
+
+### Changed
+
+- The web panel follows the design system of ADR 0037 (tokens, primitives, patterns, Nunito font, light and dark by the system setting) on every page, state and dialog; guard tests fail on a leftover of the old look (a palette class, a stock shadow, an emoji in a panel text, an unused file, token or text key).
+- Approvals is a queue of one draft at a time, with a "sent to" state after "Yes, send it" and a "Later" button.
+- Delegations show status columns (Overdue, Waiting for your approval, Sent, Answered) and a closed list.
+- The docs site has the teal accent, the new mark and the Nunito font.
+- The mockup folder `design/` is removed from the repository; ADR 0037, the pattern page (`/dev/patterns`) and the code are the reference.
+- The unused dependency `next-themes` is removed.
+- No migration: `deploy/rollback.sh` alone returns to `v0.4.5`.
+
 ## [0.4.5] - 2026-11-21
 
 ### For users

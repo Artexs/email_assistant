@@ -7,9 +7,9 @@
 
 The web panel (`apps/web`) has the stock shadcn look: grey neutrals, small radius, 14 px text, 36 px controls and no brand colour. Each page picked its own colours and spacing. Palette classes (`bg-amber-50`) and hex values sit in component files, and the category colours exist in several copies.
 
-On 2026-11-23 the owner chose the Pebble drawing (`design/ui-proposals/proposals/03-pebble/`): one teal brand colour, a large radius, soft shadows, a rounded font, 16 px text and 48 px controls. The drawing shows about 40 % of what a user sees. Every other page, state and dialog follows its patterns. The owner also said that the old look is replaced and not kept beside the new one, and that no feature flag is needed. The programme page is `docs/product/pebble-ui/README.md`.
+On 2026-11-23 the owner chose the Pebble drawing (`design/ui-proposals/proposals/03-pebble/`; it is in Git history at `94092626b`): one teal brand colour, a large radius, soft shadows, a rounded font, 16 px text and 48 px controls. The drawing shows about 40 % of what a user sees. Every other page, state and dialog follows its patterns. The owner also said that the old look is replaced and not kept beside the new one, and that no feature flag is needed. The programme page is `docs/product/pebble-ui/README.md`.
 
-The mockup is deleted at the end of the programme. After that, this record, the pattern page and the code are the reference for values and names.
+The drawing was the source of the values. It left the repository with the last ticket of the programme (2026-11-25). Now this record, the pattern page and the code are the reference for values and names.
 
 ## Decision
 
@@ -76,6 +76,8 @@ The mockup is deleted at the end of the programme. After that, this record, the 
 13. **The pattern page.** It lives in `apps/web/src/dev/` and shows every primitive variant and every pattern at `/dev/patterns`. An Astro integration adds its route only when `EA_DEV_PAGES=1`. The page needs a session like every panel page; the public paths of the server do not change. Its demo texts are literals and sit outside the text rules of decision 11 (the lint rule on literal text and the unused-key test do not cover `apps/web/src/dev/`).
 14. **Accessibility bar.** Text has a contrast of at least 4.5:1 and a control edge at least 3:1, in both schemes. The e2e accessibility scan runs in the light scheme on both projects (`mobile`, `desktop`) and in the dark scheme on the `desktop` project (the CI `e2e` job has a 20-minute limit). The contact sheet (`bun run ui:sheet`) records every route in each size, scheme, language and organization state; it does not judge.
 15. **Invariants of the redesign.** No database migration, no API or schema change in `packages/core/src/web`, no URL, query or anchor change, no feature flag, no new dependency. The cleanup removed one unused dependency (`next-themes`, which no source file read).
+16. **No file without a user.** A source file of `components/`, `islands/`, `lib/` and `layouts/` that no other file of `apps/web` imports fails `apps/web/src/lib/unused-files.test.ts`. A test file is no importer; a page, a script, an e2e helper and a file of `dev/` are, so a file that only the pattern page imports counts as used. A file that must stay with no importer is named in this record with its reason; none is named today.
+17. **No token without a reader.** A token of `apps/web/src/styles/global.css` that no rule and no source file reads fails `apps/web/src/lib/unused-tokens.test.ts`. A token is read by `var(--name)`, or by the class that its theme name makes (`--color-primary` gives `bg-primary`, `--radius-lg` gives `rounded-lg`). A token that only an unused token reads is unused. Tailwind's base styles read `--font-sans` and `--font-mono` with no class, so they stay. A token that goes from `global.css` goes from the token table above in the same change.
 
 ### Rejected options
 

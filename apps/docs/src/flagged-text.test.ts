@@ -175,6 +175,14 @@ describe("the changelog page", () => {
     const page = changelogPage(readFileSync(join(ROOT, "CHANGELOG.md"), "utf8"));
     expect(flaggedTextProblems(page)).toEqual([]);
   });
+  test("T10 the For users text of [Unreleased] holds no string of a default-off flag", () => {
+    // `changelogPage` skips `Unreleased`, so the heading of a copy gets a version above every release: the page then holds the
+    // unreleased text. An empty `[Unreleased]` passes.
+    const source = readFileSync(join(ROOT, "CHANGELOG.md"), "utf8");
+    const renamed = source.replace("## [Unreleased]", "## [999.0.0] - 2000-01-01");
+    expect(renamed).not.toBe(source);
+    expect(flaggedTextProblems(changelogPage(renamed))).toEqual([]);
+  });
   test("T10 the built dist/changelog/index.html holds none (runs after docs:build)", () => {
     const file = join(ROOT, "apps/docs/dist/changelog/index.html");
     if (!existsSync(file)) return;
