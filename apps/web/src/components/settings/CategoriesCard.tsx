@@ -107,9 +107,11 @@ export function CategoriesCard({ settings, trust = null, isOwner, onChanged, onM
             <Row
               key={row.category}
               leading={<CategoryPill category={row.category} label={t(`cat_${row.category}`)} />}
-              title={t(`cat_effect_${row.category}`)}
+              leadingAbove
+              title={t(`cat_action_${row.category}`)}
               hint={
                 <div className="flex flex-col gap-1">
+                  <p>{t(`cat_effect_${row.category}`)}</p>
                   <p>{t("cat_threshold", { value: formatConfidence(row.threshold) })}</p>
                   {(trust === null || showRatingsLine(row.gate.kept, settings.minKept)) && (
                     <p className="text-foreground">{t(text.key, text.vars)}</p>

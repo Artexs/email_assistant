@@ -49,6 +49,11 @@ export const plSettings = {
   cat_info: "Info",
   cat_notification: "Powiadomienia",
   cat_spam: "Spam",
+  cat_action_urgent: "Flagowanie i powrót ze spamu",
+  cat_action_needs_reply: "Powrót z folderu spamu",
+  cat_action_info: "Przenoszenie z INBOX",
+  cat_action_notification: "Oznaczanie jako przeczytane i przenoszenie z INBOX",
+  cat_action_spam: "Przenoszenie z INBOX",
   cat_effect_urgent:
     "Automat nie przenosi pilnych wiadomości: tylko je flaguje (przełącznik flagowania). Przy włączonym automacie pilne wiadomości z folderu spamu wracają do INBOX.",
   cat_effect_needs_reply:

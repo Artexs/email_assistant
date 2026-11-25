@@ -36,4 +36,14 @@ describe("RowList", () => {
     expect(html).toContain("<p");
     expect(html).not.toContain("<label");
   });
+
+  test.each([
+    [true, 2],
+    [false, 0],
+  ])("leadingAbove %p puts the leading element on its own line below lg: %d wrap classes", (above, count) => {
+    const html = renderToStaticMarkup(
+      <Row title="Move out of INBOX" leading={<span>Spam</span>} leadingAbove={above} />
+    );
+    expect(html.match(/max-lg:(flex-wrap|basis-full)/g)?.length ?? 0).toBe(count);
+  });
 });
