@@ -25,7 +25,7 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
 }
 
 const card = (page: Page) => page.locator("[data-card=newsletters]");
-const row = (page: Page, address: string): Locator => card(page).locator(`li[data-sender="${address}"]`);
+const row = (page: Page, address: string): Locator => card(page).locator(`[data-sender="${address}"]`);
 const S = E2E_NEWSLETTER_SENDERS;
 
 async function openCard(page: Page): Promise<void> {
@@ -40,7 +40,7 @@ test("T1: the owner sees one row per sender with the method, the count and the o
 }) => {
   const errors = await startSession(context, page, org().owner);
   await openCard(page);
-  await expect(card(page).locator("li[data-sender]")).toHaveCount(5);
+  await expect(card(page).locator("[data-sender]")).toHaveCount(5);
 
   // One-click: no link; the owner gets the button, named by the address. The test never taps it: a tap makes the server resolve
   // the host of the seeded link (the tap is tested with a fake client in `web-newsletters-unsubscribe.test.ts`).
@@ -90,7 +90,7 @@ test("T2: the display name of a sender is plain text: markup in it makes no elem
   const markup = row(page, S.markup.address);
   await expect(markup).toContainText(S.markup.name);
   await expect(markup.locator("img")).toHaveCount(0);
-  await expect(markup.locator("span").first()).toHaveText(S.markup.address);
+  await expect(markup.locator("[data-slot=row] p").first()).toHaveText(S.markup.address);
   expect(errors).toEqual([]);
 });
 
@@ -106,7 +106,7 @@ test("T3: a member sees the list and no link and no button, and the page sends n
     }
   });
   await openCard(page);
-  await expect(card(page).locator("li[data-sender]")).toHaveCount(5);
+  await expect(card(page).locator("[data-sender]")).toHaveCount(5);
   await expect(card(page).getByRole("link")).toHaveCount(0);
   await expect(card(page).getByRole("button")).toHaveCount(0);
   await expect(row(page, S.none.address)).toContainText(en.nl_none);

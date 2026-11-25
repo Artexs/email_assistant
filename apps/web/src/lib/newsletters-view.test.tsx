@@ -176,6 +176,14 @@ describe("the unsubscribe button", () => {
     expect(render(rows, false)).not.toContain("<button");
   });
 
+  test("a one-click row has the button named by its sender inside the row; a member row of the same sender has none", () => {
+    const rows = [item({ senderLower: "one@c.example", method: "one_click" })];
+    const owner = render(rows, true);
+    expect(owner).toMatch(/data-sender="one@c.example"[^]*<button[^>]*aria-label="Unsubscribe from one@c.example"/);
+    expect(owner).toContain('data-method="one_click"');
+    expect(render(rows, false)).not.toContain("<button");
+  });
+
   test("the result code shows next to the state; a refused request says nothing was sent", () => {
     const html = render([
       item({ senderLower: "a@c.example", method: "one_click", request: { status: "failed", at, code: "timeout" } }),
