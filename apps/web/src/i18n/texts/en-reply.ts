@@ -79,6 +79,8 @@ export const enReply = {
   rep_auto_on: "Automatic moves: on",
   rep_recommended: "Recommended: turn on",
   rep_not_recommended: "Not recommended yet",
+  rep_turn_on_title: "Turn on the recommended ones?",
+  rep_next_title: "What you can do next",
   rep_turn_on: "Turn on recommended ({categories})",
   rep_turned_on: "Turned on: {categories}.",
   rep_mode_assist: "The mailbox is in assist mode now.",

@@ -150,30 +150,43 @@ export function ReportContent({
         </FactBox>
       )}
       {actionCard && (
-        <section className="flex flex-col items-start gap-3 rounded-lg bg-card p-5 text-card-foreground shadow-(--shadow-card) forced-colors:border">
-          {turnedOn !== null && (
-            <p role="status" data-report="turned-on">
-              {t("rep_turned_on", { categories: categoryNames(turnedOn.categories) })} {t(`rep_mode_${turnedOn.mode}`)}
-            </p>
-          )}
-          {turnOnShows && (
-            <Button className="h-auto min-h-12 max-w-full py-2 text-wrap" disabled={pending} onClick={onTurnOn}>
-              {t("rep_turn_on", { categories: categoryNames(due) })}
-            </Button>
-          )}
-          {ownerOnlyShows && <p className="text-sm text-muted-foreground">{t("rep_owner_only")}</p>}
-          {reviewShows && (
-            <p className="text-sm">
-              {t("rep_review_suggest")}{" "}
-              <a className="underline" href={reviewHref}>
-                {t("rep_review_link")}
-              </a>
-            </p>
-          )}
-          {checkAgainShows && (
-            <Button variant="soft" disabled={pending} onClick={onCheckAgain}>
-              {t("rep_check_again")}
-            </Button>
+        <section
+          aria-labelledby="report-next-title"
+          className="flex flex-col gap-4 rounded-lg bg-card p-5 text-card-foreground shadow-(--shadow-card) forced-colors:border lg:flex-row lg:items-center"
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <h2 id="report-next-title" className="text-lg font-bold">
+              {t(turnOnShows ? "rep_turn_on_title" : "rep_next_title")}
+            </h2>
+            {turnedOn !== null && (
+              <p role="status" data-report="turned-on">
+                {t("rep_turned_on", { categories: categoryNames(turnedOn.categories) })}{" "}
+                {t(`rep_mode_${turnedOn.mode}`)}
+              </p>
+            )}
+            {ownerOnlyShows && <p className="text-sm text-muted-foreground">{t("rep_owner_only")}</p>}
+            {reviewShows && (
+              <p className="text-sm text-muted-foreground">
+                {t("rep_review_suggest")}{" "}
+                <a className="text-primary underline" href={reviewHref}>
+                  {t("rep_review_link")}
+                </a>
+              </p>
+            )}
+          </div>
+          {(turnOnShows || checkAgainShows) && (
+            <div className="flex flex-wrap items-center gap-3">
+              {turnOnShows && (
+                <Button className="h-auto min-h-12 max-w-full py-2 text-wrap" disabled={pending} onClick={onTurnOn}>
+                  {t("rep_turn_on", { categories: categoryNames(due) })}
+                </Button>
+              )}
+              {checkAgainShows && (
+                <Button variant="soft" disabled={pending} onClick={onCheckAgain}>
+                  {t("rep_check_again")}
+                </Button>
+              )}
+            </div>
           )}
         </section>
       )}

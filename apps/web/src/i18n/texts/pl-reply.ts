@@ -85,6 +85,8 @@ export const plReply = {
   rep_auto_on: "Automatyczne przenoszenie: włączone",
   rep_recommended: "Zalecane: włącz",
   rep_not_recommended: "Jeszcze niezalecane",
+  rep_turn_on_title: "Włączyć zalecane?",
+  rep_next_title: "Co możesz zrobić dalej",
   rep_turn_on: "Włącz zalecane ({categories})",
   rep_turned_on: "Włączono: {categories}.",
   rep_mode_assist: "Skrzynka jest teraz w trybie asystenta.",
