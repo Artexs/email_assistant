@@ -43,7 +43,7 @@ export const plSettings = {
   assist_none_on: "brak",
   cat_title: "Kategorie",
   cat_help:
-    "Przy włączonym automacie asystent sam obsługuje wiadomości z tej kategorii. Kategoria musi najpierw przejść sprawdzenie: precyzja co najmniej {bar} %, ocenione wiadomości: co najmniej {minKept}. Oceniaj wiadomości przyciskami ✅ lub ✏️ w Telegramie albo przyciskami Dobrze i Zmień kategorię na stronie Aktywność.",
+    "Przy włączonym automacie asystent sam obsługuje wiadomości z tej kategorii. Kategoria musi najpierw przejść sprawdzenie: precyzja co najmniej {bar} %, ocenione wiadomości: co najmniej {minKept}. Oceniaj wiadomości przyciskiem z ptaszkiem lub ołówkiem w Telegramie albo przyciskami Dobrze i Zmień kategorię na stronie Aktywność.",
   cat_urgent: "Pilne",
   cat_needs_reply: "Wymaga odpowiedzi",
   cat_info: "Info",

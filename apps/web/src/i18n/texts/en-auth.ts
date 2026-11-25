@@ -28,7 +28,6 @@ export const enAuth = {
   trial_ends_on: "Trial ends on {date}.",
   paused_banner: "This account is paused. Contact {contact} to resume it.",
   paused_banner_no_contact: "This account is paused. Contact the operator to resume it.",
-  placeholder_text: "Not built yet. It comes with the next update.",
   no_organization_title: "No organization",
   no_organization_text: "Your account is not in any organization. Ask the owner for an invitation.",
   load_error_text: "Could not load your account.",
