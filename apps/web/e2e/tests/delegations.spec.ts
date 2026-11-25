@@ -20,13 +20,18 @@ const org = () => readSeed().delegationsOrgs[project()];
 // Every test signs in once, from its own client address: the login rate limit counts per address. Documentation range 203.0.113.0/24,
 // a block per project (200–224 and 225–249), away from the blocks of the other specs.
 let signIns = 0;
-async function startSession(context: BrowserContext, page: Page, user: { email: string; password: string }) {
+async function startSession(
+  context: BrowserContext,
+  page: Page,
+  user: { email: string; password: string },
+  texts: typeof en | typeof pl = en
+) {
   signIns += 1;
   await context.setExtraHTTPHeaders({
     "x-forwarded-for": `203.0.113.${(project() === "mobile" ? 200 : 225) + signIns}`,
   });
   const errors = await cspErrors(page);
-  await signInAs(page, user);
+  await signInAs(page, user, texts);
   await page.waitForURL((url) => !url.pathname.startsWith("/login"));
   return errors;
 }
@@ -53,6 +58,9 @@ const cardsOf = (page: Page, group: Group) => listOf(page, group).getByRole("lis
 // A delegation card, wherever it sits now: tests move rows from one column to another.
 const rowOf = (page: Page, key: Key) => page.getByRole("listitem").filter({ hasText: nameOf(key) });
 const inColumn = (page: Page, group: Group, key: Key) => cardsOf(page, group).filter({ hasText: nameOf(key) });
+// The same card by its list id, for the moments when a dialog hides the page from the accessibility tree.
+const cardBehindDialog = (page: Page, group: Group, key: Key) =>
+  page.locator(`ul[aria-labelledby="delegation-col-${group}"] > li`).filter({ hasText: nameOf(key) });
 const remindButton = (page: Page, key: Key) => page.getByRole("button", { name: fill(en.dgn_remind_for, nameOf(key)) });
 const doneButton = (page: Page, key: Key) => page.getByRole("button", { name: fill(en.dgn_done_for, nameOf(key)) });
 const cancelButton = (page: Page, key: Key) => page.getByRole("button", { name: fill(en.dgn_cancel_for, nameOf(key)) });
@@ -135,7 +143,7 @@ test("T4: each seeded delegation is in the column of its status; the drafted car
   await expect(sent).toContainText(remindersText(0));
   await expect(sent).toContainText(/Due \d{1,2} \w{3,4} \d{4}/);
   // The heading names the status, so a card in a column has no status badge.
-  await expect(sent).not.toContainText(en.act_dlg_sent);
+  await expect(sent.getByText(en.act_dlg_sent, { exact: true })).toHaveCount(0);
   const drafted = inColumn(page, "drafted", "drafted");
   await expect(drafted.getByRole("link", { name: en.dgn_open_draft })).toHaveAttribute(
     "href",
@@ -445,8 +453,8 @@ test("T17: the delegation changes status while the cancel question is open: the 
     setStatus("limit", "answered");
     await reloadNow(page);
     // The reload moved the card to the Answered column; the question stays, with its focus.
-    await expect(inColumn(page, "answered", "limit")).toBeVisible();
-    await expect(inColumn(page, "overdue", "limit")).toHaveCount(0);
+    await expect(cardBehindDialog(page, "answered", "limit")).toHaveCount(1);
+    await expect(cardBehindDialog(page, "overdue", "limit")).toHaveCount(0);
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("button", { name: en.dgn_keep })).toBeFocused();
     await dialog.getByRole("button", { name: en.dgn_cancel_confirm }).click();
@@ -470,7 +478,7 @@ test("T18: the user closes the cancel question after the card moved: the focus i
   try {
     setStatus("limit", "answered");
     await reloadNow(page);
-    await expect(inColumn(page, "answered", "limit")).toBeVisible();
+    await expect(cardBehindDialog(page, "answered", "limit")).toHaveCount(1);
     // An answered delegation has no Cancel button to return to.
     await dialog.getByRole("button", { name: en.dgn_keep }).click();
     await expect(dialog).toHaveCount(0);
@@ -614,7 +622,7 @@ test.describe("in Polish", () => {
   test.use({ locale: "pl-PL" });
 
   test("the four columns have Polish headings, stack on a phone and fit the screen", async ({ context, page }) => {
-    await startSession(context, page, org().owner);
+    await startSession(context, page, org().owner, pl);
     await page.goto("/delegations");
     const titles = [pl.dgn_col_overdue, pl.dgn_col_drafted, pl.dgn_col_sent, pl.dgn_col_answered];
     const headings = titles.map((name) => page.getByRole("heading", { level: 2, name, exact: true }));

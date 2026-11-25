@@ -132,10 +132,9 @@ export function DelegationRow(props: DelegationRowProps) {
       </div>
       <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
         <Users aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-        <span className="min-w-0 break-words">
-          <span className="font-bold text-foreground">{delegate.name}</span>
-          {" · "}
-          <span className="break-all">{delegate.email}</span>
+        <span className="min-w-0">
+          <span className="block font-bold break-words text-foreground">{delegate.name}</span>
+          <span className="block break-all">{delegate.email}</span>
         </span>
       </p>
       <p className="text-sm text-muted-foreground">
