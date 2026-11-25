@@ -36,6 +36,8 @@ export const enAuth = {
   loading: "Loading",
   // login
   login_title: "Sign in",
+  login_panel_title: "The assistant sorts your mail and prepares drafts.",
+  login_panel_text: "Nothing is sent until an owner approves it.",
   email_label: "E-mail",
   password_label: "Password",
   sign_in: "Sign in",

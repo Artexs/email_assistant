@@ -215,7 +215,7 @@ test("T6b: a row that leaves the list while its draft waits stops polling", asyn
 
   // The category filter removes the row: the component unmounts and its wait ends.
   await page.getByRole("combobox", { name: en.act_filter_category }).click();
-  await page.getByRole("option", { name: en.act_tag_spam, exact: true }).click();
+  await page.getByRole("option", { name: en.act_cat_spam, exact: true }).click();
   await expect(row).toHaveCount(0);
   const seen = posts.reads;
   await page.waitForTimeout(5_000);
