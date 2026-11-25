@@ -1,7 +1,13 @@
 export const enApprovals = {
   // approvals page
   appr_off: "This page is off for your organization.",
-  appr_empty: "Nothing waits for your approval.",
+  appr_none: "Nothing waits for you",
+  appr_empty_text: "A new draft shows up here when the assistant has one for you to check.",
+  appr_empty_action: "See Activity",
+  appr_lead_cap: "{n} or more drafts wait for you",
+  appr_up_next: "Up next",
+  appr_held_heading: "Approved, not sent yet",
+  appr_about: "About this draft",
   appr_list_label: "Drafts that wait for approval",
   appr_detail_label: "Draft details",
   appr_load_error: "The drafts did not load.",
