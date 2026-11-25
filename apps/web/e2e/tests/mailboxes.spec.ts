@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
 import { pl } from "../../src/i18n/pl";
@@ -117,6 +117,8 @@ test("the connect link opens the dialog", async ({ page }) => {
   expect(page.url()).not.toContain("connect=1");
 });
 
+type MeAnswer = { role: string; user: Record<string, unknown> } & Record<string, unknown>;
+
 const SYNCED = "2026-11-20T08:00:00.000Z";
 const SCOPES = {
   triage: { state: "on", reason: "all_mailboxes" },
@@ -161,6 +163,14 @@ const SIX_STATES = [
   ],
 ] as const;
 
+// The answer of `/api/me` with a change: the seed owner as another role, or in another panel language.
+async function changeMe(page: Page, change: (me: MeAnswer) => MeAnswer): Promise<void> {
+  await page.route("**/api/me", async (route) => {
+    const me = (await (await route.fetch()).json()) as MeAnswer;
+    await route.fulfill({ json: change(me) });
+  });
+}
+
 test("each of the six states has its own card; pictures go to the sheet folder", async ({ page }, testInfo) => {
   await page.route("**/api/mailboxes", async (route) => {
     if (route.request().method() !== "GET") {
@@ -169,12 +179,15 @@ test("each of the six states has its own card; pictures go to the sheet folder",
     }
     await route.fulfill({ json: SIX_STATES.map(([, mailbox]) => mailbox) });
   });
+  let panelLocale: "en" | "pl" = "en";
+  await changeMe(page, (me) => ({ ...me, user: { ...me.user, locale: panelLocale } }));
   const folder = join(sheetDir(), "f170-07");
   mkdirSync(folder, { recursive: true });
 
   await page.goto("/mailboxes");
   await expect(page.getByRole("heading", { level: 1, name: en.title_mailboxes })).toBeVisible();
-  await expect(page.getByText(en.mb_lead)).toBeVisible();
+  // On a phone the lead gives way to the action of the page head.
+  if (testInfo.project.name === "desktop") await expect(page.getByText(en.mb_lead)).toBeVisible();
   for (const [state] of SIX_STATES) await expect(page.locator(`${CARD}[data-state="${state}"]`)).toHaveCount(1);
   await expect(page.locator(CARD)).toHaveCount(SIX_STATES.length);
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
@@ -194,7 +207,7 @@ test("each of the six states has its own card; pictures go to the sheet folder",
     ["en", en],
     ["pl", pl],
   ] as const) {
-    await page.evaluate((value) => localStorage.setItem("ea.locale", value), locale);
+    panelLocale = locale;
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: texts.title_mailboxes })).toBeVisible();
     await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
@@ -208,16 +221,11 @@ test("each of the six states has its own card; pictures go to the sheet folder",
     }
   }
   await page.emulateMedia({ colorScheme: "light" });
-  await page.evaluate(() => localStorage.setItem("ea.locale", "en"));
 });
 
 test("a member sees the cards but no connect action and no button", async ({ page }) => {
-  // The seed owner's page with the role of the answer of `/api/me` set to member.
-  await page.route("**/api/me", async (route) => {
-    const response = await route.fetch();
-    const me = (await response.json()) as { role: string };
-    await route.fulfill({ response, json: { ...me, role: "member" } });
-  });
+  // The seed owner's page with the role of the answer of `/api/me` set to the other role.
+  await changeMe(page, (me) => ({ ...me, role: "assistant" }));
   await page.route("**/api/mailboxes", async (route) => {
     if (route.request().method() !== "GET") {
       await route.continue();
