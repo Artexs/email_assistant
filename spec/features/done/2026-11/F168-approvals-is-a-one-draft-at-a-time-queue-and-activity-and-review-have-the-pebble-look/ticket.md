@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-25
 ---
 
 # F168 · Approvals is a one-draft-at-a-time queue, and Activity and Review have the Pebble look
