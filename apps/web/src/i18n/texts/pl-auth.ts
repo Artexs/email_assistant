@@ -30,7 +30,6 @@ export const plAuth = {
   trial_ends_on: "Okres próbny kończy się {date}.",
   paused_banner: "To konto jest wstrzymane. Kontakt w sprawie wznowienia: {contact}.",
   paused_banner_no_contact: "To konto jest wstrzymane. Napisz do operatora, aby je wznowić.",
-  placeholder_text: "To jeszcze nie działa. Pojawi się w następnej aktualizacji.",
   no_organization_title: "Brak organizacji",
   no_organization_text: "Twoje konto nie należy do żadnej organizacji. Poproś właściciela o zaproszenie.",
   load_error_text: "Nie udało się wczytać Twojego konta.",
