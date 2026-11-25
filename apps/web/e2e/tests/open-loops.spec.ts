@@ -454,6 +454,8 @@ test("T11: every tab, the Closed filter and the confirm question have no axe vio
     await page.goto(url);
     await expect(loaded(kind, en.lp_empty_open)).toBeVisible();
     await expectNoA11yViolations(page);
+    // No sideways scroll on a phone (the desktop project is wide enough by definition).
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.goto(`${url}${url.includes("?") ? "&" : "?"}filter=closed`);
     await expect(loaded(kind, en.lp_empty_closed)).toBeVisible();
     await expectNoA11yViolations(page);
