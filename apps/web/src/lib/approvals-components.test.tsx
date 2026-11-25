@@ -4,9 +4,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ApprovalActions, reasonChoice } from "../components/approvals/ApprovalActions";
-import { ApprovalDetailPanel } from "../components/approvals/ApprovalDetailPanel";
-import { ApprovalList } from "../components/approvals/ApprovalList";
-import { ApprovalSummary } from "../components/approvals/ApprovalSummary";
+import { ApprovalCard } from "../components/approvals/ApprovalCard";
+import { ApprovalSummary, ApprovalTitle } from "../components/approvals/ApprovalSummary";
+import { WaitingList } from "../components/approvals/WaitingList";
 import { BottomTabs, Sidebar } from "../components/shell/Nav";
 import { setLocaleForTest } from "../i18n";
 
@@ -42,27 +42,14 @@ const item = (patch: Partial<Parameters<typeof ApprovalSummary>[0]["item"]> = {}
 // The markup without the `bdi` tags that isolate each address: the tests of the words read the text.
 const plain = (html: string) => html.replace(/<\/?bdi>/g, "");
 
+// The title and the facts of an item, as the card shows them.
 const summary = (patch: Parameters<typeof item>[0] = {}) =>
-  renderToStaticMarkup(<ApprovalSummary item={item(patch)} now={NOW} />);
-
-describe("ApprovalSummary sender line", () => {
-  const sender = { relation: "vip", received: 8, answered: 6, userMailsTo: 3, lastSeenDaysAgo: 2, days: 90 } as const;
-
-  test("shows the line below the From line; no line with null or no key", () => {
-    const html = summary({ sender });
-    expect(html).toContain(
-      "VIP · you answered 6 of 8 mails in 90 days · you wrote to them 3 times · last mail 2 days ago"
-    );
-    expect(html.indexOf("From:")).toBeLessThan(html.indexOf("you answered"));
-    expect(summary({ sender: null })).not.toContain("you answered");
-    expect(summary()).not.toContain("you answered");
-  });
-
-  test("the Polish page has its own words", () => {
-    setLocaleForTest("pl");
-    expect(summary({ sender })).toContain("odpowiedź na 6 z 8 wiadomości w 90 dni");
-  });
-});
+  renderToStaticMarkup(
+    <>
+      <ApprovalTitle view={item(patch).view} />
+      <ApprovalSummary item={item(patch)} now={NOW} />
+    </>
+  );
 
 describe("ApprovalSummary of a follow-up (F116 stage 11)", () => {
   const followUp = (patch: Partial<View> = {}) =>
@@ -177,19 +164,92 @@ const detail = (patch: Partial<ApprovalDetail> = {}): ApprovalDetail => ({
   ...patch,
 });
 
-describe("ApprovalDetailPanel", () => {
+const SENDER_LINE = {
+  relation: "vip",
+  received: 8,
+  answered: 6,
+  userMailsTo: 3,
+  lastSeenDaysAgo: 2,
+  days: 90,
+} as const;
+
+describe("ApprovalCard", () => {
   const render = (patch: Partial<ApprovalDetail> = {}) =>
     renderToStaticMarkup(
-      <ApprovalDetailPanel detail={detail(patch)} now={NOW}>
+      <ApprovalCard detail={detail(patch)} now={NOW}>
         <span>ACTIONS</span>
-      </ApprovalDetailPanel>
+      </ApprovalCard>
     );
+
+  test("a delegation card has one title with the recipient, the avatar letters and the region name", () => {
+    const html = render({
+      view: view({ recipient: { name: "Anna Nowak", address: "anna@example.com" } }),
+    });
+    expect(html.match(/<h2/g)).toHaveLength(1);
+    expect(html).toMatch(
+      /<h2[^>]*tabindex="-1"[^>]*>Delegation to <bdi>Anna Nowak &lt;anna@example.com&gt;<\/bdi><\/h2>/
+    );
+    expect(html).toContain('data-slot="initials-avatar"');
+    expect(html).toMatch(/data-slot="initials-avatar"[^>]*>AN<\/span>/);
+    expect(html).toContain('<section aria-label="Draft details"');
+  });
+
+  test("a reply shows its gaps before the body", () => {
+    const html = render({ kind: "reply", view: view({ kind: "reply", gaps: ["date"] }) });
+    expect(html).toContain("Fill these before you send");
+    expect(html.indexOf("Fill these before you send")).toBeLessThan(html.indexOf("Line one"));
+  });
+
+  test("the fact box holds the sender line and a reply's request; no box when both are absent", () => {
+    const withLine = render({ sender: SENDER_LINE });
+    expect(withLine).toContain('data-slot="fact-box"');
+    expect(withLine).toMatch(/<h3[^>]*>About this draft<\/h3>/);
+    expect(withLine).toContain(
+      "VIP · you answered 6 of 8 mails in 90 days · you wrote to them 3 times · last mail 2 days ago"
+    );
+    const reply = render({
+      kind: "reply",
+      view: view({ kind: "reply" }),
+      sender: null,
+      instruction: "shorter, please",
+    });
+    expect(reply).toContain("shorter, please");
+    expect(reply).toContain('data-slot="fact-box"');
+    // The request of a delegation is not a reply's request: nothing shows.
+    expect(render({ sender: null, instruction: "shorter, please" })).not.toContain('data-slot="fact-box"');
+    expect(render({ sender: null })).not.toContain('data-slot="fact-box"');
+  });
+
+  test("the fact box has its own words in Polish", () => {
+    setLocaleForTest("pl");
+    const html = render({ sender: SENDER_LINE });
+    expect(html).toContain("O tym szkicu");
+    expect(html).toContain("odpowiedź na 6 z 8 wiadomości w 90 dni");
+  });
+
+  test("an external sender shows the warning badge next to the From line", () => {
+    const html = render();
+    expect(html).toMatch(
+      /From: Boss &lt;boss@example.net&gt;<span[^>]*data-variant="destructive"[^>]*>.*External sender/
+    );
+    expect(render({ view: view({ sender: { label: "Boss <boss@example.net>", external: false } }) })).not.toContain(
+      "External sender"
+    );
+  });
+
+  test("the quote is a closed disclosure for every kind", () => {
+    const html = render();
+    expect(html).toMatch(/<details[^>]*><summary[^>]*>Quoted original<\/summary>/);
+    expect(html).not.toMatch(/<details[^>]* open/);
+    expect(html).not.toMatch(/<h3[^>]*>Quoted original/);
+  });
 
   test("shows the body and the full quote as plain text with the note and the actions", () => {
     const html = render();
     // Line breaks stay: each text sits in a paragraph that keeps white space.
     expect(html).toMatch(/whitespace-pre-wrap[^"]*">Line one\nLine two<\/p>/);
     expect(html).toMatch(/whitespace-pre-wrap[^"]*">From: Boss\n\nFull quote text<\/p>/);
+    expect(html).toMatch(/whitespace-pre-wrap[^"]*bg-muted[^"]*">Line one/);
     expect(html).not.toContain("&gt; quoted");
     expect(html).toContain("The system sends it after your approval. Do not send the draft from your mail client.");
     expect(html).toContain("Mailbox: box@x.test");
@@ -292,8 +352,8 @@ describe("ApprovalActions", () => {
   });
 });
 
-describe("ApprovalList", () => {
-  const listItem = (id: string): ApprovalItem => ({
+describe("WaitingList", () => {
+  const listItem = (id: string, patch: Partial<ApprovalItem> = {}): ApprovalItem => ({
     id,
     version: 1,
     state: "waiting",
@@ -306,18 +366,46 @@ describe("ApprovalList", () => {
     expiresAt: "2026-11-22T11:00:00.000Z",
     heldBy: null,
     view: view(),
+    ...patch,
+  });
+  const ids = [SEND, "0190f5a0-0000-7000-8000-0000000000a2", "0190f5a0-0000-7000-8000-0000000000a3"] as const;
+
+  test("every item is a link to its own id; the focused one is marked", () => {
+    const html = renderToStaticMarkup(
+      <WaitingList items={[listItem(ids[0]), listItem(ids[1])]} focusId={ids[1]} now={NOW} onPick={() => undefined} />
+    );
+    expect(html).toContain(`href="/approvals?id=${ids[0]}"`);
+    expect(html).toContain(`href="/approvals?id=${ids[1]}"`);
+    expect(html.match(/aria-current="true"/g)).toHaveLength(1);
+    expect(html).toMatch(new RegExp(`href="/approvals\\?id=${ids[1]}" aria-current="true"`));
+    expect(html).toContain('aria-label="Drafts that wait for approval"');
   });
 
-  test("every item is a link to its own id; the selected one is marked", () => {
-    const first = listItem(SEND);
-    const second = listItem("0190f5a0-0000-7000-8000-0000000000a2");
+  test("the held sends come after the waiting ones, under one heading", () => {
     const html = renderToStaticMarkup(
-      <ApprovalList items={[first, second]} selectedId={second.id} now={NOW} onSelect={() => undefined} />
+      <WaitingList
+        items={[listItem(ids[0], { state: "held" }), listItem(ids[1]), listItem(ids[2])]}
+        focusId={null}
+        now={NOW}
+        onPick={() => undefined}
+      />
     );
-    expect(html).toContain(`href="/approvals?id=${first.id}"`);
-    expect(html).toContain(`href="/approvals?id=${second.id}"`);
-    expect(html.match(/aria-current="true"/g)).toHaveLength(1);
-    expect(html).toContain('aria-label="Drafts that wait for approval"');
+    expect(html.match(/<a /g)).toHaveLength(3);
+    expect(html.match(/Approved, not sent yet/g)).toHaveLength(1);
+    expect(html.indexOf(`id=${ids[1]}`)).toBeLessThan(html.indexOf("Approved, not sent yet"));
+    expect(html.indexOf(`id=${ids[2]}`)).toBeLessThan(html.indexOf("Approved, not sent yet"));
+    expect(html.indexOf("Approved, not sent yet")).toBeLessThan(html.indexOf(`id=${ids[0]}`));
+  });
+
+  test("no held heading without a held send; a row shows the avatar, the title, the subject and the state line", () => {
+    const html = renderToStaticMarkup(
+      <WaitingList items={[listItem(ids[0])]} focusId={null} now={NOW} onPick={() => undefined} />
+    );
+    expect(html).not.toContain("Approved, not sent yet");
+    expect(html).toMatch(/data-slot="initials-avatar"[^>]*>AN<\/span>/);
+    expect(plain(html)).toContain("Delegation to Anna Nowak &lt;anna@example.com&gt;");
+    expect(html).toContain("Budget");
+    expect(html).toContain("Waits for approval · Expires in 47 h");
   });
 });
 
