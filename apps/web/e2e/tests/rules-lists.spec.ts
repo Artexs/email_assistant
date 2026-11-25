@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { E2E_BASE_URL } from "../env";
 import { en } from "../../src/i18n/en";
+import { pl } from "../../src/i18n/pl";
 import { t } from "../../src/i18n";
 import { expectNoA11yViolations } from "../a11y";
 import { cleanUpOrg, consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
@@ -14,12 +15,13 @@ let logged: string[] = [];
 
 // The blocks 10/110, 40/140 and 60/160 are taken. This spec shares 70 and 170 with
 // onboarding.spec.ts: no collision, because there is one worker and the counter in helpers.ts runs across all files.
-test.beforeEach(async ({ context, page }, testInfo) => {
+test.beforeEach(async ({ context, page, locale }, testInfo) => {
   const base = testInfo.project.name === "mobile" ? 70 : 170;
   await context.setExtraHTTPHeaders({ "x-forwarded-for": nextAddress(base) });
   errors = await cspErrors(page);
   logged = consoleErrors(page);
-  await signInAs(page, readSeed().owner);
+  // The sign-in page speaks the language of the browser.
+  await signInAs(page, readSeed().owner, locale?.startsWith("pl") ? pl : en);
   await expect(page).toHaveURL(/\/onboarding$/);
 });
 
