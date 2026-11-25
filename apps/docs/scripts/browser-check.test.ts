@@ -151,7 +151,7 @@ describe("the wiring of the browser check", () => {
       expect(custom.webServer.url).toBe("http://127.0.0.1:28562/email_assistant/");
       delete process.env.DOCS_TEST_PORT;
       const local = (await import(`../e2e/playwright.config?local=${Math.random()}`)).default;
-      expect(local.testMatch).toBe("site.spec.ts");
+      expect(local.testMatch).toBe("*.spec.ts");
       expect(local.projects).toHaveLength(1);
       expect(local.projects[0].use.viewport).toEqual({ width: 1280, height: 800 });
       expect(local.projects[0].use.browserName).toBeUndefined();

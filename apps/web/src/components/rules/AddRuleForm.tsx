@@ -6,20 +6,30 @@ import {
   type RuleView,
   type SenderRuleKind,
 } from "@ea/core/web";
-import { useState } from "react";
+import { cn } from "cn";
+import { Plus } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { t, type TextKey } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
-import { kindTitles } from "../../lib/rules-view";
+import { sentenceParts, type RuleSlot } from "../../lib/rule-sentence";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { SectionCard } from "../patterns/SectionCard";
 import { Input } from "../ui/input";
-import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const ALL = "all";
+
+const kindSentenceTexts: Record<SenderRuleKind, TextKey> = {
+  vip: "rules_sentence_kind_vip",
+  whitelist: "rules_sentence_kind_whitelist",
+  blocklist: "rules_sentence_kind_blocklist",
+};
+
+// A slot of the sentence: a soft tint and a primary edge, full width on a phone.
+const slotLook = "w-full border-primary bg-primary-soft font-bold text-primary placeholder:font-normal";
 
 export interface AddRuleFormProps {
   mailboxes: MailboxView[];
@@ -71,80 +81,94 @@ export function AddRuleForm({ mailboxes, onAdded, onMissingMailbox }: AddRuleFor
     }
   };
 
+  const slots: Record<RuleSlot, ReactNode> = {
+    pattern: (
+      <Input
+        id="rule-pattern"
+        aria-label={t("rules_pattern_label")}
+        placeholder={t("rules_pattern_help")}
+        autoComplete="off"
+        value={pattern}
+        aria-invalid={error !== null}
+        aria-describedby={error === null ? "rule-pattern-help" : "rule-pattern-help rule-pattern-error"}
+        className={cn(slotLook, "sm:w-72")}
+        onChange={(event) => {
+          setError(null);
+          setPattern(event.target.value);
+        }}
+      />
+    ),
+    kind: (
+      <Select value={kind} onValueChange={(value) => setKind(value as SenderRuleKind)}>
+        <SelectTrigger id="rule-kind" aria-label={t("rules_kind_label")} className={cn(slotLook, "sm:w-auto")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {senderRuleKinds.map((item) => (
+            <SelectItem key={item} value={item}>
+              {t(kindSentenceTexts[item])}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    ),
+    scope: (
+      <Select value={scopeValue} onValueChange={setScope}>
+        <SelectTrigger id="rule-scope" aria-label={t("rules_scope_label")} className={cn(slotLook, "sm:w-auto")}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>{t("rules_sentence_scope_all")}</SelectItem>
+          {mailboxes.map((mailbox) => (
+            <SelectItem key={mailbox.id} value={mailbox.id}>
+              {t("rules_sentence_scope_one", { address: mailbox.address })}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    ),
+  };
+
   return (
-    <Card data-card="add-rule">
-      <CardHeader>
-        <CardTitle>{t("rules_add_title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="flex flex-col gap-4"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submit();
-          }}
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rule-kind">{t("rules_kind_label")}</Label>
-            <Select value={kind} onValueChange={(value) => setKind(value as SenderRuleKind)}>
-              <SelectTrigger id="rule-kind" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {senderRuleKinds.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {t(kindTitles[item])}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rule-pattern">{t("rules_pattern_label")}</Label>
-            <Input
-              id="rule-pattern"
-              autoComplete="off"
-              value={pattern}
-              aria-invalid={error !== null}
-              aria-describedby={error === null ? "rule-pattern-help" : "rule-pattern-help rule-pattern-error"}
-              onChange={(event) => {
-                setError(null);
-                setPattern(event.target.value);
-              }}
-            />
-            <p id="rule-pattern-help" className="text-sm text-muted-foreground">
-              {t("rules_pattern_help")}
+    <SectionCard icon={Plus} title={t("rules_add_title")} data-card="add-rule">
+      <form
+        aria-label={t("rules_add_title")}
+        className="flex flex-col gap-4"
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          void submit();
+        }}
+      >
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-3 text-lg font-bold">
+          {sentenceParts(t("rules_sentence")).map((part) =>
+            part.kind === "text" ? (
+              <span key={`text-${part.text}`} className="whitespace-pre-wrap">
+                {part.text.trim()}
+              </span>
+            ) : (
+              <div key={part.slot} className="max-sm:basis-full sm:min-w-0">
+                {slots[part.slot]}
+              </div>
+            )
+          )}
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <p id="rule-pattern-help" className="text-sm text-muted-foreground">
+            {t("rules_pattern_help")}
+          </p>
+          {error !== null && (
+            <p id="rule-pattern-error" role="alert" className="text-sm text-destructive">
+              {t(error)}
             </p>
-            {error !== null && (
-              <p id="rule-pattern-error" role="alert" className="text-sm text-destructive">
-                {t(error)}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="rule-scope">{t("rules_scope_label")}</Label>
-            <Select value={scopeValue} onValueChange={setScope}>
-              <SelectTrigger id="rule-scope" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t("rules_all_mailboxes")}</SelectItem>
-                {mailboxes.map((mailbox) => (
-                  <SelectItem key={mailbox.id} value={mailbox.id}>
-                    {mailbox.address}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Button type="submit" disabled={pending}>
-              {t("rules_add")}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+          )}
+        </div>
+        <div>
+          <Button type="submit" disabled={pending} className="max-sm:w-full">
+            {t("rules_add")}
+          </Button>
+        </div>
+      </form>
+    </SectionCard>
   );
 }
