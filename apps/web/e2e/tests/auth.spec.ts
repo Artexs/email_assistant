@@ -192,6 +192,7 @@ test("the pages keep the CSP and show the 404 page", async ({ page }) => {
   const response = await page.goto("/nope");
   expect(response?.status()).toBe(404);
   await expect(page.getByRole("heading", { level: 1, name: pl.not_found_title })).toBeVisible();
+  await expect(page.getByRole("link", { name: pl.not_found_link })).toHaveAttribute("href", "/");
   await expectNoA11yViolations(page);
 });
 

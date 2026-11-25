@@ -1,0 +1,38 @@
+---
+import type { LucideIcon } from "lucide-react";
+
+// The card of a static page that says one thing in Polish and in English (404, offline): an icon tile, the Polish block with the
+// one `h1`, the English block, and one full-width link button in each. Pure markup with no island and no script: the offline page
+// must render from its HTML and CSS alone.
+interface Block {
+  title: string;
+  text: string;
+  link: string;
+}
+
+interface Props {
+  icon: LucideIcon;
+  pl: Block;
+  en: Block;
+}
+
+const { icon: Icon, pl, en } = Astro.props;
+const button =
+  "inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-6 text-sm font-bold text-primary-foreground";
+---
+
+<div class="flex flex-col gap-6 rounded-lg bg-card p-6 text-card-foreground shadow-card">
+  <span aria-hidden="true" class="grid size-12 place-items-center rounded-md bg-primary-soft text-primary">
+    <Icon className="size-6" />
+  </span>
+  <div lang="pl" class="flex flex-col gap-3">
+    <h1 class="text-xl font-bold">{pl.title}</h1>
+    <p>{pl.text}</p>
+    <a href="/" class={button}>{pl.link}</a>
+  </div>
+  <div class="flex flex-col gap-3">
+    <p class="text-lg font-bold">{en.title}</p>
+    <p>{en.text}</p>
+    <a href="/" class={button}>{en.link}</a>
+  </div>
+</div>
