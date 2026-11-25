@@ -1,8 +1,9 @@
 import { formatClock, type ActivityItem } from "@ea/core/web";
+import type { ReactNode } from "react";
 
 import { getLocale, t } from "../../i18n";
 import {
-  categoryTagText,
+  categoryName,
   confidenceText,
   delegationText,
   feedbackStateText,
@@ -12,6 +13,8 @@ import {
   subjectText,
 } from "../../lib/activity-text";
 import { useMediaQuery } from "../../lib/use-media";
+import { CategoryPill } from "../patterns/CategoryPill";
+import { FactBox } from "../patterns/FactBox";
 import { Badge } from "../ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { ActionButtons, type ActionButtonsProps } from "./ActionButtons";
@@ -24,6 +27,16 @@ export interface ActivityPanelProps {
   onClose(): void;
   onPatch: ActionButtonsProps["onPatch"];
   onGone(): void;
+}
+
+// One topic of the panel: a card with an `h3`.
+function PanelBlock({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2 rounded-md border bg-card p-4">
+      <h3 className="text-base font-bold">{title}</h3>
+      {children}
+    </section>
+  );
 }
 
 export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, onPatch, onGone }: ActivityPanelProps) {
@@ -45,23 +58,26 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
         </SheetHeader>
         {item !== null && (
           <div className="flex flex-col gap-4 px-4 pb-4">
-            <h3 className="font-medium break-words">{subjectText(item.subject)}</h3>
-            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-              <p className="break-words">{senderText(item.from)}</p>
-              {item.sender && <p className="break-words">{senderLineText(item.sender)}</p>}
-              <p>{t("act_received", { time: formatClock(new Date(item.receivedAt), timeZone, now, getLocale()) })}</p>
-              {mailboxAddress !== null && <p className="break-words">{mailboxAddress}</p>}
-              <p>
-                {categoryTagText(item.category)} {confidenceText(item.confidence)}
-              </p>
+            <div className="flex flex-col gap-2">
+              <p className="text-lg font-bold break-words">{subjectText(item.subject)}</p>
+              <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                <p className="break-words">{senderText(item.from)}</p>
+                {item.sender && <p className="break-words">{senderLineText(item.sender)}</p>}
+                <p>{t("act_received", { time: formatClock(new Date(item.receivedAt), timeZone, now, getLocale()) })}</p>
+                {mailboxAddress !== null && <p className="break-words">{mailboxAddress}</p>}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <CategoryPill category={item.category} label={categoryName(item.category)} />
+                <Badge variant="secondary">{confidenceText(item.confidence)}</Badge>
+              </div>
             </div>
-            <section className="flex flex-col gap-1">
-              <h4 className="text-sm font-medium">{t("act_section_why")}</h4>
-              <p className="text-sm break-words whitespace-pre-line">{item.aiText ?? t("act_no_reason")}</p>
-              {item.rule !== null && <p className="text-sm">{ruleLine(item.rule)}</p>}
-            </section>
-            <section className="flex flex-col gap-1">
-              <h4 className="text-sm font-medium">{t("act_section_did")}</h4>
+            <PanelBlock title={t("act_section_why")}>
+              <FactBox>
+                <p className="text-sm break-words whitespace-pre-line">{item.aiText ?? t("act_no_reason")}</p>
+                {item.rule !== null && <p className="mt-1 text-sm font-bold">{ruleLine(item.rule)}</p>}
+              </FactBox>
+            </PanelBlock>
+            <PanelBlock title={t("act_section_did")}>
               {item.actions.length === 0 ? (
                 <p className="text-sm">{item.phrase}</p>
               ) : (
@@ -83,10 +99,9 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
                   <Badge variant="outline">{t("act_undo_pending")}</Badge>
                 </div>
               )}
-            </section>
+            </PanelBlock>
             {item.delegation !== null && (
-              <section className="flex flex-col gap-1">
-                <h4 className="text-sm font-medium">{t("act_section_delegation")}</h4>
+              <PanelBlock title={t("act_section_delegation")}>
                 <p className="text-sm break-words">{delegationText(item.delegation)}</p>
                 {item.delegation.dueAt !== null && (
                   <p className="text-sm text-muted-foreground">
@@ -95,12 +110,11 @@ export function ActivityPanel({ item, timeZone, now, mailboxAddress, onClose, on
                     })}
                   </p>
                 )}
-              </section>
+              </PanelBlock>
             )}
-            <section className="flex flex-col gap-1">
-              <h4 className="text-sm font-medium">{t("act_section_feedback")}</h4>
+            <PanelBlock title={t("act_section_feedback")}>
               <p className="text-sm">{feedbackStateText(item.feedback)}</p>
-            </section>
+            </PanelBlock>
             <ActionButtons item={item} onPatch={onPatch} onGone={onGone} />
           </div>
         )}

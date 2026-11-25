@@ -392,8 +392,8 @@ describe("the Draft reply button of an activity row", () => {
 
   test("an owner sees the button on a mail with no draft and the link on a mail with one", () => {
     const button = render(baseMe, { sendId: null });
-    expect(button).toContain("✍️ Draft reply");
-    expect(button).toContain('aria-label="✍️ Draft reply: Spotkanie"');
+    expect(button).toContain("Draft reply");
+    expect(button).toContain('aria-label="Draft reply: Spotkanie"');
     const link = render(baseMe, { sendId: SEND });
     expect(link).toContain(`href="/approvals?id=${SEND}"`);
     expect(link).toContain("Open the draft");
@@ -410,7 +410,7 @@ describe("the Draft reply button of an activity row", () => {
 
   test("the Polish page has its own words", () => {
     setLocaleForTest("pl");
-    expect(render(baseMe, { sendId: null })).toContain("✍️ Szkic odpowiedzi");
+    expect(render(baseMe, { sendId: null })).toContain("Szkic odpowiedzi");
     expect(render(baseMe, { sendId: SEND })).toContain("Otwórz szkic");
   });
 });

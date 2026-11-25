@@ -39,7 +39,7 @@ export const enSettings = {
   assist_none_on: "none",
   cat_title: "Categories",
   cat_help:
-    "With auto on, the assistant acts on a category by itself. A category must first pass the check: {bar} % precision on at least {minKept} mails you rated. Rate mails with ✅ or ✏️ in Telegram or on the Activity page.",
+    "With auto on, the assistant acts on a category by itself. A category must first pass the check: {bar} % precision on at least {minKept} mails you rated. Rate mails with ✅ or ✏️ in Telegram, or with the Right and Change the category buttons on the Activity page.",
   cat_urgent: "Urgent",
   cat_needs_reply: "Needs reply",
   cat_info: "Info",

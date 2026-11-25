@@ -25,7 +25,6 @@ const BUILT_PREFIXES: { prefix: string; file: string }[] = [
   { prefix: "os_", file: "apps/web/src/components/settings/AccountCard.tsx" },
   { prefix: "act_range_", file: "apps/web/src/components/activity/ActivityFilterBar.tsx" },
   { prefix: "act_cat_", file: "apps/web/src/lib/activity-text.ts" },
-  { prefix: "act_tag_", file: "apps/web/src/lib/activity-text.ts" },
   { prefix: "act_rule_", file: "apps/web/src/lib/activity-text.ts" },
   { prefix: "undo_", file: "apps/web/src/lib/activity-text.ts" },
   { prefix: "sender_rel_", file: "apps/web/src/lib/activity-text.ts" },

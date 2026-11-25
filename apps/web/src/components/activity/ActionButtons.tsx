@@ -1,4 +1,5 @@
 import { isLabelCategory, type ActivityItem, type LabelCategory } from "@ea/core/web";
+import { Check, Pencil, Undo2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +13,7 @@ import { Button } from "../ui/button";
 import { CategoryPicker } from "./CategoryPicker";
 import { DelegateAction } from "./DelegateAction";
 import { DraftReplyAction } from "./DraftReplyAction";
+import { IconAction } from "./IconAction";
 
 export interface ActionButtonsProps {
   item: ActivityItem;
@@ -71,39 +73,20 @@ export function ActionButtons({ item, onPatch, onGone }: ActionButtonsProps) {
   const rightCategory = isLabelCategory(item.category) ? item.category : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
       {rightCategory !== null && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
+        <IconAction
+          icon={Check}
+          label={t("act_btn_right", { category: categoryName(rightCategory) })}
           disabled={busy}
-          aria-label={t("act_btn_right", { category: categoryName(rightCategory) })}
           onClick={() => void saveLabel("right", rightCategory)}
-        >
-          {t("act_icon_right")}
-        </Button>
+        />
       )}
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        disabled={busy}
-        aria-label={t("act_btn_edit")}
-        onClick={() => setPickerOpen(true)}
-      >
-        {t("act_icon_edit")}
-      </Button>
+      <IconAction icon={Pencil} label={t("act_btn_edit")} disabled={busy} onClick={() => setPickerOpen(true)} />
       {item.undoable && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={busy}
-          aria-label={t("act_btn_undo")}
-          onClick={() => void undo()}
-        >
-          {t("act_icon_undo")}
+        <Button type="button" size="sm" variant="soft" disabled={busy} onClick={() => void undo()}>
+          <Undo2 aria-hidden="true" />
+          {t("act_btn_undo")}
         </Button>
       )}
       <DelegateAction item={item} onGone={onGone} />
