@@ -223,6 +223,12 @@ test("T5: no accessibility violation with the card; the keyboard reaches add, re
   await addTopic.focus();
   await page.keyboard.press("Enter");
   await expect(form.getByLabel(topicName(2))).toBeFocused();
+  // With two topics and a deadline the page does not scroll sideways, also on the phone project.
+  const widths = await page.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    inner: window.innerWidth,
+  }));
+  expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
   await form.getByRole("button", { name: t("urg_topic_remove", { n: 2 }) }).focus();
   await page.keyboard.press("Enter");
   await expect(form.getByLabel(topicName(2))).toHaveCount(0);
