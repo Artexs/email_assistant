@@ -221,9 +221,11 @@ describe("design token contrast", () => {
     ["--primary", "--card"],
     ["--primary", "--background"],
     ["--primary", "--primary-soft"],
+    ["--primary", "--primary-soft-hover"],
     ["--accent-foreground", "--accent"],
     ["--destructive", "--card"],
     ["--destructive", "--destructive-soft"],
+    ["--destructive", "--destructive-soft-hover"],
     ["--destructive-foreground", "--destructive"],
     ...categories.flatMap((category): [string, string][] => [
       [categoryToken(category), `${categoryToken(category)}-soft`],
