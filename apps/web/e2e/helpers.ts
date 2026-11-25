@@ -28,6 +28,9 @@ interface SignInTexts {
 }
 
 export async function signIn(page: Page, email: string, password: string, texts: SignInTexts = en): Promise<void> {
+  // Leave the panel page first: after a test clears the cookies, the next answer 401 of that page sends it to
+  // `/login?next=…` by itself, and that navigation aborts the one below.
+  await page.goto("about:blank");
   // The form is in the server HTML, so a click before hydration would post it natively. The island's first effect asks for the session.
   const hydrated = page.waitForResponse((response) => response.url().includes("/api/auth/get-session"));
   await page.goto("/login");
