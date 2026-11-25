@@ -8,16 +8,14 @@ import type { PatternSection } from "../sections";
 function EmptyStates() {
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-lg bg-card shadow-card">
-        <EmptyState
-          icon={Inbox}
-          title="Nothing to approve"
-          text="New proposals show up here as soon as the assistant has one."
-        >
-          <Button>Connect a mailbox</Button>
-          <Button variant="outline">Read the guide</Button>
-        </EmptyState>
-      </div>
+      <EmptyState
+        icon={Inbox}
+        title="Nothing to approve"
+        text="New proposals show up here as soon as the assistant has one."
+      >
+        <Button>Connect a mailbox</Button>
+        <Button variant="outline">Read the guide</Button>
+      </EmptyState>
       <SectionCard icon={Users} title="Delegates">
         <EmptyState
           icon={Users}

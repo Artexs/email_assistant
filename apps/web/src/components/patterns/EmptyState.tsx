@@ -1,11 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { Card } from "../ui/card";
+
 interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   text?: string;
-  // `3` inside a `SectionCard`, whose title is already the `h2`.
+  // `2` (the default) for a page-level state, which sits in a card of its own. `3` inside a `SectionCard` or under a
+  // visible heading: no card of its own.
   headingLevel?: 2 | 3;
   // The next-step buttons.
   children?: ReactNode;
@@ -14,7 +17,7 @@ interface EmptyStateProps {
 // Nothing to show yet: a soft blob with an icon, a title, one sentence and the next step as buttons.
 export function EmptyState({ icon: Icon, title, text, headingLevel = 2, children }: EmptyStateProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  return (
+  const body = (
     <div data-slot="empty-state" className="mx-auto flex max-w-xl flex-col items-center gap-3 px-4 py-10 text-center">
       <div
         aria-hidden="true"
@@ -27,4 +30,5 @@ export function EmptyState({ icon: Icon, title, text, headingLevel = 2, children
       {children === undefined ? null : <div className="mt-2 flex flex-wrap justify-center gap-2.5">{children}</div>}
     </div>
   );
+  return headingLevel === 2 ? <Card className="py-0">{body}</Card> : body;
 }

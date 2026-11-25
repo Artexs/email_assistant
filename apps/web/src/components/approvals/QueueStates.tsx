@@ -46,15 +46,11 @@ export function MissingCard({ onGoWaiting }: { onGoWaiting(): void }) {
 // Only drafts that the user passed on are left.
 export function EndCard({ onShowAgain }: { onShowAgain(): void }) {
   return (
-    <Card>
-      <CardContent>
-        <EmptyState icon={PartyPopper} title={t("appr_end_title")} text={t("appr_end_text")}>
-          <Button type="button" size="lg" onClick={onShowAgain}>
-            {t("appr_show_again")}
-          </Button>
-        </EmptyState>
-      </CardContent>
-    </Card>
+    <EmptyState icon={PartyPopper} title={t("appr_end_title")} text={t("appr_end_text")}>
+      <Button type="button" size="lg" onClick={onShowAgain}>
+        {t("appr_show_again")}
+      </Button>
+    </EmptyState>
   );
 }
 
