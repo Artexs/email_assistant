@@ -1,14 +1,14 @@
 # F171 stage 03 — The docs text check and the page sweep
 
-Needs F166 stage 07: the run-time prefix list of the unused-key test next to `apps/web/src/i18n/i18n.test.ts`. Needs the final panel texts that the docs pages name: F167 stages 05, 06; F168 stages 06, 07, 08; F169 stages 03, 06, 07, 08; F170 stages 01–07, 09. May run next to 01, 02, 04, 05 (it owns the docs pages under `apps/docs/src/content/docs/`, the new check and the moved prefix list).
+Needs F166 stage 07: the run-time prefix list of the unused-key test (`apps/web/src/i18n/unused-keys.test.ts`). Needs the final panel texts that the docs pages name: F167 stages 04 (`PausedBanner`, quoted by the pause and FAQ pages), 05, 06; F168 stages 06, 07, 08; F169 stages 03, 06, 07, 08; F170 stages 01–07, 09. May run next to 01, 02, 04, 05.
 
 Part of [`../plan.md`](../plan.md). Decisions P6, D4, D5, D6, D7, D11. Opus review before the land.
 
 ## Step 1 — One prefix list
 
 - **Files:** new `apps/web/src/i18n/runtime-key-prefixes.ts`; the F166 unused-key test imports it.
-- **Interface:** `export const RUNTIME_KEY_PREFIXES: readonly { prefix: string; file: string }[]` — the entries of the F166 test, moved unchanged. The file is not under `i18n/texts/` and defines no text.
-- **Do:** move, do not copy. The F166 test keeps its own cases (its tests 7–9) green.
+- **Interface:** `export const RUNTIME_KEY_PREFIXES: readonly { prefix: string; file: string }[]`: the entries of the F166 test, moved unchanged, plus one new entry `{ prefix: "switch_", file: <the file that builds `` `switch_${name}` `` at HEAD> }` (D4; today `components/settings/ModeCard.tsx`). It defines no text.
+- **Do:** move, do not copy. The F166 test keeps its cases green.
 
 ## Step 2 — The docs text check
 
@@ -22,36 +22,44 @@ Part of [`../plan.md`](../plan.md). Decisions P6, D4, D5, D6, D7, D11. Opus revi
   ): { key: string; file: string }[]
   ```
   A docs key is each `k="<key>"` of a `UiText` tag. It is in the panel when its name stands as a whole word in a panel file, or it begins with a listed prefix. One result per key and docs file, sorted by file then key.
-- **Docs files:** every `.md` and `.mdx` under `apps/docs/src/content/`, every `.astro` under `apps/docs/src/components/`, and `inPlaceSourcePaths()`.
-- **Panel files** (D4): `.ts`, `.tsx`, `.astro` under `apps/web/src` (without `i18n/` and `*.test.*`), `packages/core/src`, `apps/server/src` (both without `*.test.*`).
-- **Message:** each result fails as `docs_key_not_in_panel <key> <docs file>`.
+- **Docs files:** `.md`, `.mdx` under `apps/docs/src/content/`, `.astro` under `apps/docs/src/components/`, and `inPlaceSourcePaths()`.
+- **Panel files:** `.ts`, `.tsx`, `.astro` of the D4 folders, without `*.test.*`.
+- **Message:** `docs_key_not_in_panel <key> <docs file>`.
+- The test also calls `uiText(key, "en")` and `uiText(key, "pl")` for each real docs key (D4); that import makes `check:job` run it when `en.ts` or `pl.ts` changes.
 
-## Step 3 — The sweep
+## Step 3 — `check:job` runs the check (D5)
+
+- **Files:** `scripts/check-job.sh`.
+- **Do:** with no full run due and a changed file under `apps/web/src/`, `packages/core/src/` or `apps/server/src/`, run `apps/docs/src/panel-keys.test.ts`, log line `check:job: panel changed: panel-keys.test.ts`. Update the header comment.
+
+## Step 4 — The sweep
 
 - **Files:** the docs pages in English and Polish (D6, D7).
-- For each page of the sidebar and its Polish page, read every sentence that names a panel button, heading, card, page or flow, and compare it with the panel at `HEAD` (the island code, or `bun run ui:sheet` pictures). Fix a sentence that is no longer true. Keep the page structure, headings and `<Shot />` lines.
+- For each page under `apps/docs/src/content/docs/` and its Polish page, compare every sentence that names a panel button, heading, card, page or flow with the panel at `HEAD` (island code or `bun run ui:sheet`). Fix a sentence that is no longer true; keep structure, headings and `<Shot />` lines. The in-place pages are not swept (D6).
 - Known at plan time: `start/index.mdx` names "the Account card" (Settings group "Account and security" after F170 stage 05).
-- A sentence for a flag-off feature stays out (`flagged-text.ts`; F168 D11 for approvals).
-- `README.md`: if it now shows a panel picture, say so in the final message (P6); add none.
+- No sentence for a flag-off feature (`flagged-text.ts`; F168 D11).
+- `README.md`: a panel picture there goes in the final message (P6).
 - Restamp each touched Polish page (D7).
 
 ## Test
 
 1. `docsOnlyKeys` over the real tree gives `[]`.
-2. Docs file `a.mdx` with `<UiText k="zz_docs_only" />`, panel file `b.tsx` with `t("other")`, no prefix → `[{ key: "zz_docs_only", file: "a.mdx" }]`.
+2. Docs `a.mdx` with `<UiText k="zz_docs_only" />`, panel `b.tsx` with `t("other")`, no prefix → `[{ key: "zz_docs_only", file: "a.mdx" }]`.
 3. Docs `<UiText k="switch_move" />`, panel file holds `` t(`switch_${name}`) `` only, prefix `switch_` → `[]`.
-4. Docs `<UiText k="nav_rules" />`, panel file holds `t("nav_rules_hint")` only, no prefix → one result (a whole word, not a part of a longer key).
-5. The same key in two docs files gives two results, sorted by file.
-6. Break check: rename `nav_settings` in the real `start/index.mdx` to a key that only `en.ts` and `pl.ts` hold (for example add `zz_probe` to both); test 1 fails with `docs_key_not_in_panel zz_probe`; restore.
+4. Docs `<UiText k="nav_rules" />`, panel holds `t("nav_rules_hint")` only → one result (whole word).
+5. One key in two docs files: two results, sorted by file.
+6. Break check: add `zz_probe` to `en.ts` and `pl.ts` and use it in place of `nav_settings` in `start/index.mdx`; test 1 fails with `docs_key_not_in_panel zz_probe`; restore.
 7. The F166 unused-key test passes with the moved list.
-8. `bun run docs:stale` lists no stale page among the pages this stage touched.
+8. `bun run docs:stale --strict` exits 0 and prints `stale: 0` (the whole site, D7).
+9. Every docs key passes `uiText` in both languages. Break check: add `{name}` to the `pl.ts` text of one docs key; test 9 fails with `ui_text_has_vars <key>`; restore.
+10. The `check:job` log of the Proof holds `check:job: panel changed: panel-keys.test.ts` (this stage changes `apps/web/src`).
 
 ## Out of scope
 
-New docs pages (ticket). The approvals page docs (F168 D11). Shots and alt texts (stage 04). The theme (stages 01, 02).
+New docs pages. Approvals docs (F168 D11). Shots and alt texts (stage 04). The theme (stages 01, 02).
 
 ## Done when
 
-- Tests 1–8 pass; test 6 failed when broken.
-- The final message lists each page changed with one line on why, and the pages read with no change.
+- Tests 1–10 pass; tests 6 and 9 failed when broken.
+- The final message lists each changed page with why, and the pages read with no change.
 - The Proof of `../plan.md` prints `PROOF_OK`.

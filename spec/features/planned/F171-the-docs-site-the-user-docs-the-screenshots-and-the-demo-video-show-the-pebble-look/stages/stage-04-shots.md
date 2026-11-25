@@ -29,7 +29,7 @@ Part of [`../plan.md`](../plan.md). Decisions P3, D9, D11. Opus review before th
 
 ## Look
 
-Give the paths of the 20 PNG files. For each page, one line: what changed in its alt text, or "no change" and why the text still holds.
+Copy the 20 PNG files to `/tmp/f171-04/shots/` (the reviewer opens them from another worktree) and give those paths. For each page, one line: what changed in its alt text, or "no change" and why the text still holds.
 
 ## Out of scope
 
@@ -38,4 +38,4 @@ New shot pages (approvals and delegations are flag-off). Dark shots (P3). The de
 ## Done when
 
 - Tests 1–5 pass; test 4 failed when broken.
-- `mkdir -p /tmp/f171-04 && bun run check:job > /tmp/f171-04/check.log 2>&1 && bun run docs:shots > /tmp/f171-04/shots.log 2>&1 && DOCS_SHOTS=on bun run docs:build > /tmp/f171-04/build.log 2>&1 && bun run docs:test > /tmp/f171-04/docs.log 2>&1 && echo PROOF_OK` prints `PROOF_OK`.
+- `mkdir -p /tmp/f171-04 && bun run check:job > /tmp/f171-04/check.log 2>&1 && bun run web:build > /tmp/f171-04/web.log 2>&1 && bun run docs:shots > /tmp/f171-04/shots.log 2>&1 && DOCS_SHOTS=on bun run docs:build > /tmp/f171-04/build.log 2>&1 && bun run docs:test > /tmp/f171-04/docs.log 2>&1 && echo PROOF_OK` prints `PROOF_OK`.

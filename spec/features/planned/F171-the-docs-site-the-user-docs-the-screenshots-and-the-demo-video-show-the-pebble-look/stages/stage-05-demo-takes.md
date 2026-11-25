@@ -1,6 +1,6 @@
 # F171 stage 05 — Demo takes on the new pages
 
-Needs the final look of the pages the eight steps show: F167 stages 02, 03, 04 (frame); F170 stage 07 (step 1, Mailboxes and the connect dialog), 01, 02 (step 2, Settings), 09 (steps 3 and 4, the report and "Turn on recommended"); F168 stages 06, 07 (steps 2 and 8, Activity) and 05 (the locators of steps 6 and 8 on the approvals queue); F169 stage 03 (the locators of step 7). May run next to 01–04 (it owns `apps/web/e2e/demo/`, `apps/web/e2e/lib/demo/steps.ts` and its test). Runs `demo:record` on the shared demo DB, under the shared lock.
+Needs the final look of the pages the eight steps show: F167 stages 02, 03, 04 (frame); F170 stage 07 (steps 1 and 2, Mailboxes and the connect dialog), 09 (steps 3 and 4, the report and "Turn on recommended"); F168 stage 05 (the locators of step 6, the approvals queue, and step 8, Activity) and 06, 07 (step 8, Activity); F169 stage 03 (the locators of step 7, Delegations). Step 5 shows the fake Telegram view and needs no page stage. May run next to 01–04 (it owns `apps/web/e2e/demo/`, `apps/web/e2e/lib/demo/steps.ts` and its test). Runs `demo:record` on the shared demo DB, under the shared lock.
 
 Part of [`../plan.md`](../plan.md). Decisions P4, P5, D10, D11. Opus review before the land (Polish caption).
 
@@ -34,4 +34,4 @@ The demo-week source and its take, the upload, the hash pins of `apps/docs/src/d
 ## Done when
 
 - Tests 1–5 pass; test 3 failed when broken.
-- `mkdir -p /tmp/f171-05 && bun run check:job > /tmp/f171-05/check.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock bun run demo:record > /tmp/f171-05/demo.log 2>&1 && echo PROOF_OK` prints `PROOF_OK`.
+- `mkdir -p /tmp/f171-05 && bun run check:job > /tmp/f171-05/check.log 2>&1 && bun run web:build > /tmp/f171-05/web.log 2>&1 && flock /tmp/email-assistant-shared-tests.lock bun run demo:record > /tmp/f171-05/demo.log 2>&1 && echo PROOF_OK` prints `PROOF_OK`.
