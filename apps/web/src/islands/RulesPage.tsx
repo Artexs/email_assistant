@@ -31,7 +31,8 @@ interface RulesBodyProps {
   timeZone: string;
   // Counts the Accepts of the suggestions card: a new value loads the rule list again, and the add form keeps what is typed.
   rulesVersion: number;
-  reloadMe(): void;
+  // A rule was removed or put back: a new rules version and a fresh count for the onboarding checklist.
+  onRulesChanged(): void;
   reloadMailboxes(): void;
   // The element in the bar above the form that holds the "updated at" line and Refresh. The mailbox filter
   // sits in the same bar and must keep its focus when the body loads again, so the body fills this slot.
@@ -59,7 +60,7 @@ function RulesBody({
   isOwnerRole,
   timeZone,
   rulesVersion,
-  reloadMe,
+  onRulesChanged,
   reloadMailboxes,
   statusSlot,
 }: RulesBodyProps) {
@@ -77,12 +78,6 @@ function RulesBody({
     seenVersion.current = rulesVersion;
     reload();
   }, [rulesVersion, reload]);
-
-  // The rules count of the onboarding checklist lives in `useMe()`.
-  const onChanged = () => {
-    reload();
-    reloadMe();
-  };
 
   let content;
   if (data === null) {
@@ -106,7 +101,7 @@ function RulesBody({
             rules={groups[kind]}
             mailboxes={mailboxes}
             isOwner={isOwner}
-            onDeleted={onChanged}
+            onChanged={onRulesChanged}
           />
         ))}
       </div>
@@ -128,7 +123,7 @@ function RulesBody({
           statusSlot
         )}
       {isOwner ? (
-        <AddRuleForm mailboxes={mailboxes} onAdded={onChanged} onMissingMailbox={reloadMailboxes} />
+        <AddRuleForm mailboxes={mailboxes} onAdded={onRulesChanged} onMissingMailbox={reloadMailboxes} />
       ) : (
         !isOwnerRole && <p className="text-sm text-muted-foreground">{t("set_owner_only")}</p>
       )}
@@ -149,6 +144,13 @@ function Rules() {
     loading,
     reload: reloadMailboxes,
   } = useResource(() => api("/api/mailboxes", mailboxListSchema));
+
+  // The rules count of the onboarding checklist lives in `useMe()`. The callback sits above the keyed body, so an Undo
+  // from a toast still reloads the list on screen after the mailbox filter changed.
+  const onRulesChanged = () => {
+    setRulesVersion((version) => version + 1);
+    reloadMe();
+  };
 
   if (me === null) return null;
   const isOwner = me.role === "owner" && canWrite(me);
@@ -204,7 +206,7 @@ function Rules() {
         isOwnerRole={isOwnerRole}
         timeZone={me.organization.timezone}
         rulesVersion={rulesVersion}
-        reloadMe={reloadMe}
+        onRulesChanged={onRulesChanged}
         reloadMailboxes={reloadMailboxes}
         statusSlot={statusSlot}
       />
@@ -220,10 +222,7 @@ function Rules() {
         mailboxes={mailboxes}
         isOwner={isOwner}
         isOwnerRole={isOwnerRole}
-        onRulesChanged={() => {
-          setRulesVersion((version) => version + 1);
-          reloadMe();
-        }}
+        onRulesChanged={onRulesChanged}
       />
       {me.features.includes("bulk_unsubscribe") && (
         <NewslettersCard mailboxes={mailboxes} timeZone={me.organization.timezone} isOwner={isOwner} />

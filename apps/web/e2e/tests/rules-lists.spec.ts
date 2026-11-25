@@ -45,13 +45,48 @@ test("a rule shows in its list, delete", async ({ page }) => {
   await page.goto("/rules");
   const vip = page.locator("[data-kind=vip]");
   await expect(vip.getByText("boss@e2e.test", { exact: true })).toBeVisible();
-  await expect(vip.getByText(en.rules_all_mailboxes)).toBeVisible();
+  // A rule for all mailboxes has no scope line.
+  await expect(vip.getByText(en.rules_all_mailboxes)).toHaveCount(0);
   expect(logged).toEqual([]);
   await expectNoA11yViolations(page);
 
   await vip.getByRole("button", { name: t("rules_delete", { pattern: "boss@e2e.test" }) }).click();
   await expect(page.getByText(en.rule_deleted_toast)).toBeVisible();
   await expect(vip.getByText(en.rules_empty)).toBeVisible();
+});
+
+test("a removed rule is put back with Undo and the focus stays on the card", async ({ page }) => {
+  const created = await page.request.post("/api/rules", {
+    headers: { origin: E2E_BASE_URL },
+    data: { kind: "blocklist", pattern: "spam@e2e.test" },
+  });
+  expect(created.status()).toBe(201);
+  await page.goto("/rules");
+  const blocklist = page.locator("[data-kind=blocklist]");
+  await expect(blocklist.getByText("spam@e2e.test", { exact: true })).toBeVisible();
+
+  await blocklist.getByRole("button", { name: t("rules_delete", { pattern: "spam@e2e.test" }) }).click();
+  await expect(blocklist.getByText("spam@e2e.test", { exact: true })).toHaveCount(0);
+  await expect(blocklist.getByText(en.rules_empty)).toBeVisible();
+  // The focus is on the card, never on the page body.
+  await expect(blocklist).toBeFocused();
+
+  await page.getByRole("button", { name: en.rule_undo }).click();
+  await expect(page.getByText(en.rule_restored_toast)).toBeVisible();
+  await expect(blocklist.getByText("spam@e2e.test", { exact: true })).toBeVisible();
+});
+
+test("a removed rule stays gone after the Undo toast ends", async ({ page }) => {
+  await createBossRule(page);
+  await page.goto("/rules");
+  const vip = page.locator("[data-kind=vip]");
+  await vip.getByRole("button", { name: t("rules_delete", { pattern: "boss@e2e.test" }) }).click();
+  await expect(page.getByText(en.rule_deleted_toast)).toBeVisible();
+  // The toast lasts 10 s: wait until it is gone.
+  await expect(page.getByRole("button", { name: en.rule_undo })).toHaveCount(0, { timeout: 15_000 });
+  await page.reload();
+  await expect(vip.getByText(en.rules_empty)).toBeVisible();
+  await expect(vip.getByText("boss@e2e.test", { exact: true })).toHaveCount(0);
 });
 
 for (const [language, locale] of [
