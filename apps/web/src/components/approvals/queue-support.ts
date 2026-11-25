@@ -45,17 +45,21 @@ export function failureKey(error: unknown): TextKey {
   return outcome.kind === "error" ? outcome.key : "appr_not_found";
 }
 
-// The decision buttons of a card stay off for `ARM_MS`, so a tap that was meant for the old card cannot hit this one.
+// The decision buttons of a card turn on `ARM_MS` after it showed. Every change of the open id first switches the buttons off, so a
+// draft that comes back after another card or after no card waits again. Returns the cleanup that stops the timer.
+export function scheduleArm(openId: string | null, setArmedId: (id: string | null) => void): () => void {
+  setArmedId(null);
+  if (openId === null) return () => undefined;
+  const shownAt = Date.now();
+  let timer: ReturnType<typeof setTimeout> = setTimeout(function check() {
+    if (armed(Date.now(), shownAt)) setArmedId(openId);
+    else timer = setTimeout(check, 20);
+  }, ARM_MS);
+  return () => clearTimeout(timer);
+}
+
 export function useArmed(openId: string | null): boolean {
   const [armedId, setArmedId] = useState<string | null>(null);
-  useEffect(() => {
-    if (openId === null) return;
-    const shownAt = Date.now();
-    let timer: ReturnType<typeof setTimeout> = setTimeout(function check() {
-      if (armed(Date.now(), shownAt)) setArmedId(openId);
-      else timer = setTimeout(check, 20);
-    }, ARM_MS);
-    return () => clearTimeout(timer);
-  }, [openId]);
+  useEffect(() => scheduleArm(openId, setArmedId), [openId]);
   return openId !== null && armedId === openId;
 }

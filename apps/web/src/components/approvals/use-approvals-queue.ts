@@ -226,19 +226,24 @@ export function useApprovalsQueue({ list, mistakeCapture, fallbackTo, now, reloa
     refresh();
     focusStatus();
     const message = noticeOf(outcome.text, live.current.toName);
+    // The user picked another draft while the request ran: the answer is recorded, but the page stays on the picked draft.
+    const onTarget = live.current.id === target;
     if (outcome.openId !== undefined) {
       own(target);
+      if (!onTarget) return;
       setPhase({ kind: "idle" });
       setNotice(message);
       select(outcome.openId, "replace");
       return;
     }
     if (outcome.then === "stay") {
+      if (!onTarget) return;
       setPhase({ kind: "idle" });
       setNotice({ ...message, tone: failure?.kind === "error" ? "error" : "info" });
       if (failure?.kind !== "error") detail.reload();
       return;
     }
+    if (!onTarget) return;
     setPhase({ kind: "outcome", id: target, notice: message, then: outcome.then, saved: false });
   };
 
@@ -254,7 +259,7 @@ export function useApprovalsQueue({ list, mistakeCapture, fallbackTo, now, reloa
           const answer = await postApprove(target);
           // The state and the cause come from the detail, never from the answer alone (a held send also answers `approved`).
           const after = await fetchApproval(target).catch(() => null);
-          if (after !== null) detail.mutate({ id: target, detail: after });
+          if (after !== null && live.current.id === target) detail.mutate({ id: target, detail: after });
           result = { kind: "approved", answer, detail: after };
         } else {
           await postReject(target);
