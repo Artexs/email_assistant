@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-25
 ---
 
 # F169 · Delegations show status columns, and Open loops, Delegates and Rules have the Pebble look
