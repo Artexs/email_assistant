@@ -4,15 +4,16 @@ import {
   type PanelReviewLabelResult,
   type ReviewLabelCategory,
 } from "@ea/core/web";
+import { Inbox, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { EmptyState } from "../components/patterns/EmptyState";
 import { MailboxSelector } from "../components/settings/MailboxSelector";
 import { ReviewContent } from "../components/review/ReviewContent";
 import { useMe } from "../components/shell/MeProvider";
 import { AppShell } from "../components/shell/AppShell";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale } from "../i18n";
 import { feedbackToast } from "../lib/activity-text";
@@ -102,13 +103,7 @@ function Review() {
 
   // The flag is off: the page asks for nothing (the review routes would answer 404).
   if (!me.features.includes(PANEL_REVIEW_FLAG)) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("rep_off")}</p>
-        </CardContent>
-      </Card>
-    );
+    return <EmptyState icon={EyeOff} title={t("rep_off")} />;
   }
 
   const list = mailboxes.data;
@@ -125,12 +120,11 @@ function Review() {
   const mailbox = pickReportMailbox(list, chosen ?? new URLSearchParams(location.search).get("mailbox"));
   if (mailbox === null) {
     return (
-      <div className="flex flex-col items-start gap-3">
-        <p className="text-muted-foreground">{t("rv_no_mailbox")}</p>
-        <Button asChild variant="outline">
+      <EmptyState icon={Inbox} title={t("rv_no_mailbox")}>
+        <Button asChild>
           <a href="/mailboxes">{t("set_open_mailboxes")}</a>
         </Button>
-      </div>
+      </EmptyState>
     );
   }
 
@@ -142,7 +136,7 @@ function Review() {
   };
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex flex-col gap-4">
       {list.length >= 2 && <MailboxSelector mailboxes={list} value={mailbox.id} onChange={choose} />}
       <MailboxReview
         key={mailbox.id}
@@ -157,7 +151,7 @@ function Review() {
 export default function ReviewPage() {
   useLocale();
   return (
-    <AppShell active="settings" title="title_review">
+    <AppShell active="settings" title="title_review" lead="rv_intro">
       <Review />
     </AppShell>
   );

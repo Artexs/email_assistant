@@ -116,17 +116,18 @@ export const plReply = {
     "Asystent sprawdza pocztę z ostatnich 30 dni, tylko do odczytu. Potem pokazuje, co by zrobił, a Ty możesz włączyć to, co zaleca.",
   ob_report_done: "Sprawdzanie zakończone.",
   ob_report_link: "Otwórz raport",
-  // The optional panel review "Check 10 decisions" (flag panel_review)
-  title_review: "Sprawdź 10 decyzji",
+  // The optional panel review page (flag panel_review)
+  title_review: "Czy to była trafna ocena?",
   rv_intro:
     "To decyzje asystenta dotyczące Twojej poczty z ostatnich 30 dni. Oceń, czy każda jest trafna. To nieobowiązkowe. Nic nie zmienia w Twojej skrzynce.",
   rv_no_mailbox: "Najpierw podłącz skrzynkę. Potem pojawią się decyzje do sprawdzenia.",
   rv_load_error: "Nie udało się wczytać decyzji.",
   rv_empty: "Nie ma niesprawdzonych decyzji z ostatnich 30 dni.",
-  rv_right: "✅ Trafna",
+  rv_right: "Trafna",
   rv_sure: "Pewność: {value} %",
-  rv_pick_label: "Nietrafna? Wybierz właściwą kategorię",
-  rv_pick_none: "Wybierz kategorię",
+  rv_pick_label: "To coś innego: wybierz właściwą kategorię",
+  rv_other: "To coś innego",
+  rv_thanks_title: "Dziękujemy",
   rv_progress: "Odpowiedzi: {answered} z {total}",
   rv_done: "Gotowe",
   rv_thanks: "Dziękujemy. Twoje odpowiedzi pomagają asystentowi sprawdzać samego siebie. Niczego nie włączają.",

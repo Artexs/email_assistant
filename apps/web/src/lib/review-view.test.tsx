@@ -1,5 +1,5 @@
 /// <reference types="bun" />
-import { reviewLabelCategories, type PanelReviewItem, type PanelReviewSample } from "@ea/core/web";
+import { type PanelReviewItem, type PanelReviewSample } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -51,10 +51,10 @@ describe("the review rules", () => {
     expect(canConfirm(item(1, { category: "unsure" }))).toBe(false);
   });
 
-  test("`delegation` is in the select only with an active delegate, or on a mail that already is one", () => {
+  test("`delegation` is in the menu only with an active delegate, or on a mail that already is one", () => {
     const without = pickCategories(sample([item(1)]), item(1));
     expect(without).not.toContain("delegation");
-    expect(without).toEqual(reviewLabelCategories.filter((category) => category !== "delegation"));
+    expect(without).toEqual(["urgent", "needs_reply", "info", "notification", "spam"]);
     expect(pickCategories(sample([item(1)], true), item(1))).toContain("delegation");
     expect(
       pickCategories(sample([item(2, { category: "delegation" })]), item(2, { category: "delegation" }))
@@ -81,33 +81,40 @@ describe("the review rules", () => {
 });
 
 describe("the review content", () => {
-  test("each open item shows its text, `Right`, a category select with a label and a save button; `Done` is there", () => {
+  test("each open item shows its text, its category pill, `Right` and a menu button named for a screen reader; `Done` is there", () => {
     const markup = html({ sample: sample([item(1), item(2)]) });
     expect(markup).toContain("Zofia Nowak 1");
     expect(markup).toContain("Umowa numer 2");
     expect(markup).toContain("Krótkie podsumowanie 1.");
     expect(markup).toContain(t("rv_sure", { value: 87 }));
-    expect(markup.split(en.rv_right).length - 1).toBe(2);
-    expect(markup.split("<select").length - 1).toBe(2);
-    // Each select has a visible label that points at it.
-    expect(markup).toContain(`for="rv-pick-${item(1).emailId}"`);
-    expect(markup).toContain(`id="rv-pick-${item(1).emailId}"`);
+    expect(markup.split(`data-category="info"`).length - 1).toBe(2);
+    expect(markup.split(`>${en.rv_right}<`).length - 1).toBe(2);
+    expect(markup.split(`aria-label="${en.rv_pick_label}"`).length - 1).toBe(2);
+    expect(markup).not.toContain("<select");
     expect(markup).toContain(en.rv_done);
-    expect(markup).toContain(t("rv_progress", { answered: 0, total: 2 }));
     expect(markup).not.toContain(en.rv_thanks);
   });
 
-  test("an unsure item has no `Right`; an answered item shows its answer and no buttons", () => {
+  test("the progress ring has the accessible name `2 of 10 answered`", () => {
+    const items = Array.from({ length: 10 }, (_, n) => item(n + 1));
+    const answers = { [item(1).emailId]: "ok", [item(2).emailId]: "ok" };
+    const markup = html({ sample: sample(items), answers });
+    expect(markup).toContain(`<svg role="img" aria-label="2 of 10 answered"`);
+    expect(markup).toContain("2 of 10 answered</p>");
+  });
+
+  test("an unsure item has no `Right`; an answered item shows its answer, the soft tint and no buttons", () => {
     const unsure = html({ sample: sample([item(1, { category: "unsure" })]) });
-    expect(unsure).not.toContain(en.rv_right);
-    expect(unsure).toContain("<select");
+    expect(unsure).not.toContain(`>${en.rv_right}<`);
+    expect(unsure).toContain(`aria-label="${en.rv_pick_label}"`);
     const answered = html({
       sample: sample([item(1), item(2)]),
       answers: { [item(1).emailId]: t("act_toast_same") },
     });
     expect(answered).toContain(t("act_toast_same"));
-    expect(answered.split(en.rv_right).length - 1).toBe(1);
-    expect(answered).toContain(t("rv_progress", { answered: 1, total: 2 }));
+    expect(answered.split(`>${en.rv_right}<`).length - 1).toBe(1);
+    expect(answered.split("bg-primary-soft").length - 1).toBe(1);
+    expect(answered).toContain("1 of 2 answered</p>");
   });
 
   test("after the last answer, the thank-you and the link back show and no control is left", () => {
@@ -117,19 +124,20 @@ describe("the review content", () => {
     expect(markup).toContain(en.rv_thanks);
     expect(markup).toContain(`href="/report?mailbox=${MAILBOX}"`);
     expect(markup).toContain(en.rv_back);
-    expect(markup).not.toContain("<select");
+    expect(markup).not.toContain(`aria-label="${en.rv_pick_label}"`);
     expect(markup).not.toContain(en.rv_done);
   });
 
   test("`Done` locks the open items and shows the thank-you", () => {
     const markup = html({ sample: sample([item(1), item(2)]), doneTapped: true });
     expect(markup).toContain(en.rv_thanks);
-    expect(markup).not.toContain("<select");
-    expect(markup).not.toContain(en.rv_right);
+    expect(markup).not.toContain(`aria-label="${en.rv_pick_label}"`);
+    expect(markup).not.toContain(`>${en.rv_right}<`);
   });
 
   test("an empty sample says so and links back; no thank-you", () => {
     const markup = html({ sample: sample([]) });
+    expect(markup).toContain(`data-review="empty"`);
     expect(markup).toContain(en.rv_empty);
     expect(markup).toContain(en.rv_back);
     expect(markup).not.toContain(en.rv_thanks);
@@ -138,9 +146,7 @@ describe("the review content", () => {
 
   test("a busy page (a write in flight, or a paused organization) turns the buttons off", () => {
     const markup = html({ sample: sample([item(1)]), busy: true });
-    expect(markup).toContain("disabled");
     expect(markup.match(/<button[^>]*disabled=""/g)?.length).toBe(2);
-    expect(markup).toMatch(/<select[^>]*disabled=""/);
   });
 
   test("mail text is printed as plain text: markup in a subject is escaped", () => {
@@ -155,10 +161,23 @@ describe("the review content", () => {
   test("Polish: the same page in Polish uses the Polish keys, with no English leftover", () => {
     setLocaleForTest("pl");
     const markup = html({ sample: sample([item(1)]) });
-    expect(markup).toContain(pl.rv_right);
+    expect(markup).toContain(`>${pl.rv_right}<`);
     expect(markup).toContain(pl.rv_pick_label);
-    expect(markup).toContain(pl.rv_intro);
+    expect(markup).toContain(pl.act_cat_info);
     expect(markup).not.toContain(en.rv_right);
-    expect(markup).not.toContain(en.rv_intro);
+    expect(markup).not.toContain(en.rv_other);
+  });
+});
+
+describe("the review texts", () => {
+  test.each([
+    ["en", en],
+    ["pl", pl],
+  ] as const)("no emoji in a review text of %s", (_name, texts) => {
+    const values = Object.entries(texts)
+      .filter(([key]) => key.startsWith("rv_") || key === "title_review")
+      .map(([, value]) => value);
+    expect(values.length).toBeGreaterThan(10);
+    expect(values.filter((value) => /\p{Extended_Pictographic}/u.test(value))).toEqual([]);
   });
 });
