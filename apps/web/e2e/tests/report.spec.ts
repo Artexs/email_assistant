@@ -1,3 +1,6 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 import { t } from "../../src/i18n";
@@ -5,6 +8,7 @@ import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { sheetDir } from "../ui-sheet/dir";
 
 // The report page. It runs on the trust organization of the project (see `e2e-seed.ts`): `flag trust_ladder` on, the server
 // reads the gate fixture folder (`info`, `notification` and `spam` all `go`). Besides the mailbox of the card spec the organization has three
@@ -32,7 +36,7 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
 }
 
 const reportPath = (mailboxId: string) => `/report?mailbox=${mailboxId}`;
-const category = (page: Page, name: "info" | "notification" | "spam") => page.locator(`[data-category=${name}]`);
+const category = (page: Page, name: "info" | "notification" | "spam") => page.locator(`article[data-category=${name}]`);
 const turnOn = (page: Page, categories: string) =>
   page.getByRole("button", { name: t("rep_turn_on", { categories }), exact: true });
 const proof = t("trust_proof_go", { percent: "99.1", cases: 200 });
@@ -111,6 +115,37 @@ test("R4: no mailbox in the address shows the newest mailbox; the selector switc
   await page.getByRole("option", { name: boxes().running.address }).click();
   await expect(page.getByText(t("rep_progress", { checked: 0, max: 500 }), { exact: true })).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`mailbox=${boxes().running.id}`));
+  expect(errors).toEqual([]);
+});
+
+test("pictures of a running check and of a no_result check are saved in the contact sheet folder", async ({
+  context,
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "one project saves the pictures: the sizes are set here");
+  const folder = join(sheetDir(), "f170-09");
+  mkdirSync(folder, { recursive: true });
+  const errors = await startSession(context, page, org().owner);
+  const viewports = { phone: { width: 412, height: 915 }, desktop: { width: 1280, height: 800 } } as const;
+  const states = [
+    { name: "running", id: boxes().running.id, ready: page.locator("[data-report-state=running]") },
+    { name: "no-result", id: boxes().noResult.id, ready: page.locator("[data-report-state=no_result]") },
+  ];
+  for (const state of states) {
+    await page.goto(reportPath(state.id));
+    await expect(state.ready).toBeVisible();
+    for (const [viewport, size] of Object.entries(viewports)) {
+      for (const scheme of ["light", "dark"] as const) {
+        await page.setViewportSize(size);
+        await page.emulateMedia({ colorScheme: scheme });
+        await page.screenshot({
+          path: join(folder, `report-${state.name}-${viewport}-${scheme}-en.png`),
+          fullPage: true,
+          animations: "disabled",
+        });
+      }
+    }
+  }
   expect(errors).toEqual([]);
 });
 
