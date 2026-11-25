@@ -1,11 +1,10 @@
 import type { DelegationFilter, DelegationItem, DelegationList } from "@ea/core/web";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { ApiError } from "./api";
 import { DELEGATION_GROUP_OF, GROUP_FEED, placeRows, type DelegationGroup } from "./delegation-columns";
 import { fetchDelegations } from "./delegations-api";
 import { mergePages } from "./delegations-view";
-import { loadPages } from "./use-delegation-list";
 import { useReloadOn } from "./use-reload-on";
 import { useResource } from "./use-resource";
 
@@ -15,6 +14,14 @@ export interface FeedState {
   next: string | null;
   pages: number;
   error: unknown | null;
+}
+
+// What "Show more" did: the rows that the group gained, whether its list has no more pages, and whether the call failed. No new row and
+// no end means that the page limit of one click came first.
+export interface ShowMoreResult {
+  added: DelegationItem[];
+  ended: boolean;
+  failed: boolean;
 }
 
 type Feeds = Partial<Record<DelegationFilter, FeedState>>;
@@ -47,6 +54,23 @@ export async function loadUntilGain(
   return state;
 }
 
+// The first `pages` pages of one list, one after the other (a cursor needs the page before it).
+export async function loadPages(
+  filter: DelegationFilter,
+  pages: number
+): Promise<{ filter: DelegationFilter; items: DelegationItem[]; next: string | null }> {
+  let items: DelegationItem[] = [];
+  let next: string | null = null;
+  for (let page = 0; page < pages; page += 1) {
+    const answer = await fetchDelegations(filter, next);
+    items = mergePages(items, answer.items);
+    next = answer.next;
+    if (next === null) break;
+  }
+  return { filter, items, next };
+}
+
+const NO_FEEDS: Feeds = {};
 const EMPTY_FEED: FeedState = { items: [], next: null, pages: 1, error: null };
 
 // A feed that failed keeps its rows; the error shows in its columns only.
@@ -84,13 +108,18 @@ export function useDelegationColumns(options: { closedOpen: boolean }) {
   const { reload, mutate } = resource;
   useReloadOn(closedOpen, reload);
 
-  const feeds: Feeds = resource.data ?? {};
-  const groups = placeRows({
-    open: feeds.open?.items,
-    overdue: feeds.overdue?.items,
-    answered: feeds.answered?.items,
-    closed: feeds.closed?.items,
-  });
+  const feeds: Feeds = resource.data ?? NO_FEEDS;
+  // Rebuilt only when a feed changes, so an effect that reads the groups runs once per change.
+  const groups = useMemo(
+    () =>
+      placeRows({
+        open: feeds.open?.items,
+        overdue: feeds.overdue?.items,
+        answered: feeds.answered?.items,
+        closed: feeds.closed?.items,
+      }),
+    [feeds]
+  );
   const flagOff = Object.values(feeds).some((feed) => isNotFound(feed.error));
 
   const store = useCallback(
@@ -110,12 +139,11 @@ export function useDelegationColumns(options: { closedOpen: boolean }) {
     [store]
   );
 
-  // Loads more rows for a group and returns the rows that the group gained. Drafted and sent load open pages until the clicked column
-  // gains a row; the other groups load one page.
-  const showMore = async (group: DelegationGroup): Promise<DelegationItem[]> => {
+  // Loads more rows for a group. Drafted and sent load open pages until the clicked column gains a row; the other groups load one page.
+  const showMore = async (group: DelegationGroup): Promise<ShowMoreResult> => {
     const filter = GROUP_FEED[group];
     const feed = feedsRef.current[filter];
-    if (feed === undefined || feed.next === null) return [];
+    if (feed === undefined || feed.next === null) return { added: [], ended: true, failed: false };
     const inGroup = (item: DelegationItem) => DELEGATION_GROUP_OF[item.status] === group;
     const seen = new Set(feed.items.filter(inGroup).map((item) => item.id));
     let grown: FeedState;
@@ -128,10 +156,14 @@ export function useDelegationColumns(options: { closedOpen: boolean }) {
       }
     } catch (error) {
       store(filter, { ...feed, error });
-      return [];
+      return { added: [], ended: false, failed: true };
     }
     store(filter, grown);
-    return grown.items.filter((item) => inGroup(item) && !seen.has(item.id));
+    return {
+      added: grown.items.filter((item) => inGroup(item) && !seen.has(item.id)),
+      ended: grown.next === null,
+      failed: false,
+    };
   };
 
   return {

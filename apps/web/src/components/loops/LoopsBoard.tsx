@@ -58,7 +58,7 @@ const OK_TEXTS: Record<"done" | "drop" | "untrack" | "reopen", TextKey> = {
 export interface LoopsBoardProps {
   kind: LoopKindName;
   filter: LoopFilterName;
-  // The state links of a Waiting or Promised tab. The Delegated tab has none: the filter of the delegations list above decides.
+  // The state links of the tab (Open, Due today, Closed).
   filterNav?: ReactNode;
   // A visible heading over the list (the Delegated tab, where it follows the delegations list).
   showHeading?: boolean;
