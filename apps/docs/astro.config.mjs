@@ -23,6 +23,8 @@ export default defineConfig({
   integrations: [
     starlight({
       title: PRODUCT_NAME,
+      // The brand mark of the panel (`apps/web/brand/mark.svg`) beside the name; `brand.test.ts` checks the copy.
+      logo: { src: "./src/assets/mark.svg", alt: "", replacesTitle: false },
       defaultLocale: "root",
       locales: {
         root: { label: "English", lang: "en" },
