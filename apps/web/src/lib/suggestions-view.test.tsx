@@ -134,6 +134,15 @@ describe("rows", () => {
     expect(html).toContain('aria-label="Dismiss the suggestion for anna@acme.pl"');
   });
 
+  test("an owner row has the kind badge, and Accept and Dismiss named by its pattern", () => {
+    const [, , blocklist] = render(true).split("data-pattern=");
+    expect(blocklist).toContain('data-slot="badge"');
+    expect(blocklist).toMatch(/data-slot="badge"[^>]*>Blocklist<\/span>/);
+    expect(blocklist).toContain('aria-label="Accept the suggestion for junk@spam.test"');
+    expect(blocklist).toContain('aria-label="Dismiss the suggestion for junk@spam.test"');
+    expect(blocklist).toContain('data-suggestion-kind="blocklist"');
+  });
+
   test("while a tap is pending every button is disabled, so a second tap cannot start (the double-click guard)", () => {
     const pending = renderToStaticMarkup(<SuggestionRows items={rows} canTap pendingId={rows[0]?.id ?? null} />);
     expect(pending.match(/<button[^>]*\sdisabled=""/g)).toHaveLength(4);
