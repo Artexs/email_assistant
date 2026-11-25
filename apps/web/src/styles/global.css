@@ -184,6 +184,10 @@
 }
 
 @layer base {
+  /* Browser controls (checkbox, date field, select list, scroll bar) follow the scheme of the tokens. */
+  :root {
+    color-scheme: light dark;
+  }
   * {
     @apply border-border outline-ring;
   }
