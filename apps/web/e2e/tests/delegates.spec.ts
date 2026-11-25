@@ -494,3 +494,15 @@ test("T10: the keyboard alone adds a delegate, edits it, turns it off after the 
   await expectNoA11yViolations(page);
   expect(errors).toEqual([]);
 });
+
+test("a delegate with a long address and a long name leaves no sideways scroll", async ({ context, page }) => {
+  await startSession(context, page, org().owner);
+  await page.goto("/delegates");
+  await expect(rowOf(page, E2E_DELEGATES_ANNA.name)).toBeVisible();
+  const longName = "Longname".repeat(8);
+  await fillAdd(page, { name: longName, email: `${"a".repeat(48)}@example.com`, tags: "finance" });
+  await expect(rowOf(page, longName)).toBeVisible();
+  const widths = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, inner: innerWidth }));
+  expect(widths.scroll).toBeLessThanOrEqual(widths.inner);
+  await expectNoA11yViolations(page);
+});

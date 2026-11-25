@@ -108,6 +108,7 @@ export const enApprovals = {
   dlg_tab_delegates: "Delegates",
   dlg_list_label: "Delegates",
   dlg_empty: "There are no delegates yet.",
+  dlg_empty_text: "Add a delegate with the form above.",
   dlg_list_full: "Showing the first {n} delegates. Others are not shown.",
   dlg_load_error: "The delegates did not load.",
   dlg_owner_only: "Only the owner can change delegates.",
@@ -298,6 +299,7 @@ export const enApprovals = {
   title_stats: "Stats",
   title_approvals: "Approvals",
   title_delegates: "Delegates",
+  dlg_lead: "The people you can hand work to.",
   title_delegations: "Delegations",
   dgn_lead: "Work you handed over, and what waits for an answer.",
   // The Delegate action on a mail row, the open-loop settings and the new Telegram terms
