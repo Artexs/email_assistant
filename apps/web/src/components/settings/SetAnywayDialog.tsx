@@ -1,9 +1,11 @@
 import type { BarCategory, GateView } from "@ea/core/web";
+import { ShieldAlert } from "lucide-react";
 
 import { t } from "../../i18n";
 import { anywayTextKey } from "../../lib/anyway-text";
 import { gateText } from "../../lib/gate-text";
 import { blockLines, type TrustBlock } from "../../lib/trust-card";
+import { FactBox } from "../patterns/FactBox";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 
@@ -43,17 +45,17 @@ export function SetAnywayDialog({
         </DialogHeader>
         {text !== null && <p className="text-sm">{t(text.key, text.vars)}</p>}
         {reasons.length > 0 && (
-          <div className="flex flex-col gap-1 text-sm">
-            <p>{t("trust_anyway_intro")}</p>
-            <ul className="list-disc pl-5">
+          <FactBox icon={ShieldAlert}>
+            <p className="font-bold">{t("trust_anyway_intro")}</p>
+            <ul className="mt-2 list-disc pl-5 text-sm">
               {reasons.map((key) => (
                 <li key={key}>{t(key)}</li>
               ))}
             </ul>
-          </div>
+          </FactBox>
         )}
         <DialogFooter>
-          <Button variant="outline" disabled={pending} onClick={onCancel}>
+          <Button variant="secondary" disabled={pending} onClick={onCancel}>
             {t("cancel")}
           </Button>
           <Button variant="destructive" disabled={pending} onClick={onConfirm}>

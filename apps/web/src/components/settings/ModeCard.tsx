@@ -1,4 +1,5 @@
 import { toolSwitchNames, type MailboxView, type SettingsWebChange, type SettingsWebView } from "@ea/core/web";
+import { Info, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -8,9 +9,11 @@ import { errorText } from "../../lib/errors";
 import { replySwitchBlocked } from "../../lib/reply-style";
 import { patchSettings } from "../../lib/settings-api";
 import { useModeChange } from "../../lib/use-mode-change";
+import { FactBox } from "../patterns/FactBox";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { AssistDialog } from "./AssistDialog";
 
@@ -67,75 +70,69 @@ export function ModeCard({ mailbox, settings, isOwner, onChanged, onMissing }: M
   const replyBlocked = replySwitchBlocked(mailbox);
 
   return (
-    <Card data-card="mode">
-      <CardHeader>
-        <CardTitle>{t("mode_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <SectionCard data-card="mode" icon={Sparkles} title={t("mode_title")}>
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
-          <p className="font-medium">{t(texts.name)}</p>
+          <p className="text-base font-bold">{t(texts.name)}</p>
           <p className="text-sm text-muted-foreground">{t(texts.text)}</p>
-          {!settings.movesSupported && <p className="text-sm text-muted-foreground">{t("moves_unsupported")}</p>}
         </div>
         {isOwner && (
           <div>
             {settings.mode === "shadow" ? (
               <Button onClick={() => setAssistOpen(true)}>{t("mode_to_assist")}</Button>
             ) : (
-              <Button variant="outline" disabled={modePending} onClick={() => void changeMode("shadow", false)}>
+              <Button variant="soft" disabled={modePending} onClick={() => void changeMode("shadow", false)}>
                 {t("mode_to_shadow")}
               </Button>
             )}
           </div>
         )}
-        <ul className="flex flex-col gap-3">
-          {toolSwitchNames.map((name) => (
-            <li key={name} className="flex items-center gap-2">
-              <Switch
-                id={`switch_${name}`}
-                checked={settings.toolSwitches[name]}
-                disabled={!isOwner || pendingSwitches.has(name)}
-                onCheckedChange={(value) => void changeSwitch(name, value)}
-              />
-              <Label htmlFor={`switch_${name}`}>{t(`switch_${name}`)}</Label>
-            </li>
-          ))}
-        </ul>
-        {replySwitch !== undefined && (
-          <div data-switch="reply_drafts" className="flex flex-col gap-1.5">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="switch_reply_drafts"
-                aria-describedby={
-                  replyBlocked ? "switch_reply_drafts_help switch_reply_drafts_oauth" : "switch_reply_drafts_help"
-                }
-                checked={replySwitch}
-                disabled={!isOwner || replyBlocked || pendingSwitches.has("reply_drafts")}
-                onCheckedChange={(value) => void changeSwitch("reply_drafts", value)}
-              />
-              <Label htmlFor="switch_reply_drafts">{t("switch_reply_drafts")}</Label>
-            </div>
-            <p id="switch_reply_drafts_help" className="text-sm text-muted-foreground">
-              {t("rs_switch_help")}
-            </p>
-            {replyBlocked && (
-              <p id="switch_reply_drafts_oauth" className="text-sm text-muted-foreground">
-                {t("rs_switch_oauth")}
-              </p>
-            )}
-          </div>
+      </div>
+      {!settings.movesSupported && <FactBox icon={Info}>{t("moves_unsupported")}</FactBox>}
+      <RowList>
+        {toolSwitchNames.map((name) => (
+          <Row key={name} title={t(`switch_${name}`)} htmlFor={`switch_${name}`}>
+            <Switch
+              id={`switch_${name}`}
+              checked={settings.toolSwitches[name]}
+              disabled={!isOwner || pendingSwitches.has(name)}
+              onCheckedChange={(value) => void changeSwitch(name, value)}
+            />
+          </Row>
+        ))}
+        {replySwitch === undefined ? null : (
+          <Row
+            title={t("switch_reply_drafts")}
+            htmlFor="switch_reply_drafts"
+            hint={
+              <>
+                <p id="switch_reply_drafts_help">{t("rs_switch_help")}</p>
+                {replyBlocked && <p id="switch_reply_drafts_oauth">{t("rs_switch_oauth")}</p>}
+              </>
+            }
+          >
+            <Switch
+              id="switch_reply_drafts"
+              aria-describedby={
+                replyBlocked ? "switch_reply_drafts_help switch_reply_drafts_oauth" : "switch_reply_drafts_help"
+              }
+              checked={replySwitch}
+              disabled={!isOwner || replyBlocked || pendingSwitches.has("reply_drafts")}
+              onCheckedChange={(value) => void changeSwitch("reply_drafts", value)}
+            />
+          </Row>
         )}
-        {isOwner && (
-          <AssistDialog
-            mailbox={mailbox}
-            switches={settings.toolSwitches}
-            open={assistOpen}
-            onOpenChange={setAssistOpen}
-            onChoose={(keepSwitches) => void changeMode("assist", keepSwitches)}
-            pending={modePending}
-          />
-        )}
-      </CardContent>
-    </Card>
+      </RowList>
+      {isOwner && (
+        <AssistDialog
+          mailbox={mailbox}
+          switches={settings.toolSwitches}
+          open={assistOpen}
+          onOpenChange={setAssistOpen}
+          onChoose={(keepSwitches) => void changeMode("assist", keepSwitches)}
+          pending={modePending}
+        />
+      )}
+    </SectionCard>
   );
 }

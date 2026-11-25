@@ -133,11 +133,10 @@ function render(trust: TrustView | null, over: { isOwner?: boolean; kept?: numbe
   );
 }
 
-// The `<li>` of one category row.
+// The markup of one category row: from its `data-slot="row"` div to the next one.
 const rowOf = (html: string, category: BarCategory): string => {
-  const label = t(`cat_${category}`);
-  const items = html.split("<li").slice(1);
-  const found = items.find((item) => item.includes(`>${label}</span>`));
+  const items = html.split('<div data-slot="row"').slice(1);
+  const found = items.find((item) => item.includes(`data-category="${category}"`));
   if (found === undefined) throw new Error(`no row for ${category}`);
   return found;
 };

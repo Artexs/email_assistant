@@ -1,4 +1,5 @@
 import type { SettingsWebChange, SettingsWebView } from "@ea/core/web";
+import { Info, Repeat } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,12 +8,14 @@ import { ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { LOOP_WAIT_OPTIONS, loopControls } from "../../lib/loop-settings";
 import { patchSettings } from "../../lib/settings-api";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Label } from "../ui/label";
+import { FactBox } from "../patterns/FactBox";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Switch } from "../ui/switch";
 
 const selectClass =
-  "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 dark:bg-input/30";
+  "h-12 rounded-md border-2 border-input bg-card px-4 text-base outline-none focus-visible:border-ring focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export interface LoopSettingsCardProps {
   settings: SettingsWebView;
@@ -44,14 +47,14 @@ export function LoopSettingsCard({ settings, isOwner, onChanged, onMissing }: Lo
   const off = controls.disabled || pending;
 
   return (
-    <Card data-card="loops">
-      <CardHeader>
-        <CardTitle>{t("lset_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {controls.needsSentTracking && <p className="text-sm text-muted-foreground">{t("lset_needs_sent")}</p>}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="loop-wait">{t("lset_wait_label")}</Label>
+    <SectionCard data-card="loops" icon={Repeat} title={t("lset_title")}>
+      {controls.needsSentTracking && <FactBox icon={Info}>{t("lset_needs_sent")}</FactBox>}
+      <RowList>
+        <Row
+          title={t("lset_wait_label")}
+          htmlFor="loop-wait"
+          hint={<span id="loop-wait-help">{t("lset_wait_help")}</span>}
+        >
           <select
             id="loop-wait"
             aria-describedby="loop-wait-help"
@@ -66,28 +69,23 @@ export function LoopSettingsCard({ settings, isOwner, onChanged, onMissing }: Lo
               </option>
             ))}
           </select>
-          <p id="loop-wait-help" className="text-sm text-muted-foreground">
-            {t("lset_wait_help")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
-            <Switch
-              id="loop-auto"
-              aria-describedby="loop-auto-help"
-              checked={settings.toolSwitches.auto_follow_up === true}
-              disabled={off}
-              onCheckedChange={(value) =>
-                void write("/switches/auto_follow_up", { value }, value ? "lset_auto_on_toast" : "lset_auto_off_toast")
-              }
-            />
-            <Label htmlFor="loop-auto">{t("lset_auto_label")}</Label>
-          </div>
-          <p id="loop-auto-help" className="text-sm text-muted-foreground">
-            {t("lset_auto_help")}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+        </Row>
+        <Row
+          title={t("lset_auto_label")}
+          htmlFor="loop-auto"
+          hint={<span id="loop-auto-help">{t("lset_auto_help")}</span>}
+        >
+          <Switch
+            id="loop-auto"
+            aria-describedby="loop-auto-help"
+            checked={settings.toolSwitches.auto_follow_up === true}
+            disabled={off}
+            onCheckedChange={(value) =>
+              void write("/switches/auto_follow_up", { value }, value ? "lset_auto_on_toast" : "lset_auto_off_toast")
+            }
+          />
+        </Row>
+      </RowList>
+    </SectionCard>
   );
 }
