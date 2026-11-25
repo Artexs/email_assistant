@@ -278,16 +278,16 @@ test("range and not-rated chips live in the URL and reload the list", async ({ p
 
 test("the rows sit in day groups under the page lead", async ({ page }) => {
   await expect(page.getByText(t("act_lead", { days: 7 }))).toBeVisible();
-  const headings = page.locator("section h2");
+  const days = page.locator('section[aria-labelledby^="act-day-"]');
+  const headings = days.locator("h2");
   await expect(headings.first()).toBeVisible();
-  const groups = await page.locator("section").count();
-  await expect(headings).toHaveCount(groups);
+  await expect(headings).toHaveCount(await days.count());
   // Each day has one heading, even when a later page of the list continues it.
   const texts = await headings.allTextContents();
   expect(new Set(texts).size).toBe(texts.length);
   await page.getByRole("button", { name: en.act_load_more }).click();
   await expect(page.locator("li[data-email-id]")).toHaveCount(56);
-  const after = await page.locator("section h2").allTextContents();
+  const after = await headings.allTextContents();
   expect(new Set(after).size).toBe(after.length);
 });
 
