@@ -8,7 +8,6 @@ import { t, type TextKey } from "../../i18n";
 import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { kindTitles, scopeLabel, undoBody, vipCardId } from "../../lib/rules-view";
-import { EmptyState } from "../patterns/EmptyState";
 import { SectionCard } from "../patterns/SectionCard";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -111,7 +110,7 @@ export function RuleList({ kind, rules, mailboxes, isOwner, onChanged }: RuleLis
         {rules.length}
       </Badge>
       {rules.length === 0 ? (
-        <EmptyState icon={Icon} title={t("rules_empty")} headingLevel={3} />
+        <p className="text-sm text-muted-foreground">{t("rules_empty")}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rules.map((rule) => {
