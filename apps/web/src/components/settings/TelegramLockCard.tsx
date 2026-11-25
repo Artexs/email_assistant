@@ -1,4 +1,5 @@
 import { telegramLockAnswerSchema } from "@ea/core/web";
+import { Lock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,8 +8,9 @@ import { api } from "../../lib/api";
 import { canWrite } from "../../lib/can-write";
 import { errorText } from "../../lib/errors";
 import { useMe } from "../shell/MeProvider";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Label } from "../ui/label";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Switch } from "../ui/switch";
 
 // The owner's lock of the Telegram detail level (the flag `telegram_minimal`: the server sends `telegramMinimalLocked` only then).
@@ -43,26 +45,24 @@ export function TelegramLockCard({
   };
 
   return (
-    <Card data-card="telegram-lock">
-      <CardHeader>
-        <CardTitle>{t("tgl_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {isOwnerRole ? (
-          <>
-            <p className="text-sm text-muted-foreground">{t("tgl_help")}</p>
-            <div className="flex items-center gap-2">
-              <Switch id="tg-lock" checked={locked} disabled={pending} onCheckedChange={(next) => void change(next)} />
-              <Label htmlFor="tg-lock">{t("tgl_label")}</Label>
-            </div>
-          </>
-        ) : (
-          // The help speaks to the owner; the General section already says that only the owner changes the settings.
-          <p data-lock={locked ? "on" : "off"} className="text-sm font-medium">
-            {t(locked ? "tgl_state_on" : "tgl_state_off")}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+    <SectionCard
+      data-card="telegram-lock"
+      icon={Lock}
+      title={t("tgl_title")}
+      lead={isOwnerRole ? t("tgl_help") : undefined}
+    >
+      {isOwnerRole ? (
+        <RowList>
+          <Row title={t("tgl_label")} htmlFor="tg-lock">
+            <Switch id="tg-lock" checked={locked} disabled={pending} onCheckedChange={(next) => void change(next)} />
+          </Row>
+        </RowList>
+      ) : (
+        // The help speaks to the owner; the General section already says that only the owner changes the settings.
+        <p data-lock={locked ? "on" : "off"} className="text-base font-bold">
+          {t(locked ? "tgl_state_on" : "tgl_state_off")}
+        </p>
+      )}
+    </SectionCard>
   );
 }

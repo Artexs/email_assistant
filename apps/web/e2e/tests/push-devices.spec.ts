@@ -8,6 +8,7 @@ import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { e2eEnv, E2E_BASE_URL, repoRoot } from "../env";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
+import { saveCardPictures } from "../lib/card-pictures";
 import { readSeed } from "../seed";
 
 // The push device card of Settings, with a fake `PushManager`: no browser push service and no network push. The server keeps its real
@@ -147,7 +148,7 @@ test("flag off: no card and no re-bind request, even with a subscription in the 
   expect((await page.request.get("/api/me/push")).status()).toBe(404);
 });
 
-test("flag on: turn on notices, test notice, re-bind on load, remove", async ({ page }) => {
+test("flag on: turn on notices, test notice, re-bind on load, remove", async ({ page }, testInfo) => {
   setFlag(true);
   const fake = await installFake(page, "default");
   await signInAs(page, readSeed().owner);
@@ -177,6 +178,10 @@ test("flag on: turn on notices, test notice, re-bind on load, remove", async ({ 
   await expect(row.getByText(en.push_never)).toBeVisible();
   await expect(card.getByRole("button", { name: en.push_enable })).toHaveCount(0);
   await expectNoA11yViolations(page, { include: "[data-card=push-devices]" });
+  await saveCardPictures(page, testInfo, "f170-04", {
+    "push-devices": card,
+    "notice-routes": page.locator("[data-card=notice-routes]"),
+  });
 
   // The test notice: the answer is a stub (the real route would call a push service).
   let tested = 0;

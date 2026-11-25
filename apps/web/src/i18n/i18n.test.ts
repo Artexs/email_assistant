@@ -54,13 +54,7 @@ const SAME_IN_BOTH: TextKey[] = [
   "cat_spam", // category "Spam"
   "act_cat_info",
   "act_cat_spam",
-  "act_tag_info",
-  "act_tag_spam",
   "act_confidence", // a number and a percent sign
-  "act_pick_ai", // a category name and "AI"
-  "act_icon_right", // emoji only
-  "act_icon_edit",
-  "act_icon_undo",
   "browser_edge", // product names
   "browser_opera",
   "browser_firefox",

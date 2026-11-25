@@ -1,4 +1,5 @@
 import type { ActivityItem, Delegate } from "@ea/core/web";
+import { Users } from "lucide-react";
 import { useState } from "react";
 
 import { t } from "../../i18n";
@@ -11,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { useDelegateHint } from "./DelegateHintProvider";
+import { IconAction } from "./IconAction";
 
 type Outcome =
   | { kind: "done"; sendId: string }
@@ -131,9 +133,7 @@ export function DelegateAction({ item, onGone }: DelegateActionProps) {
   if (hint === null || !showDelegateAction(item, hint)) return null;
   return (
     <>
-      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
-        {t("dla_button")}
-      </Button>
+      <IconAction icon={Users} label={t("dla_button")} onClick={() => setOpen(true)} />
       <DelegateDialog item={item} delegates={hint.delegates} open={open} onOpenChange={setOpen} onGone={onGone} />
     </>
   );
