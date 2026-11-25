@@ -103,6 +103,7 @@ function NewsletterRow({
     <div className="contents break-words" data-sender={item.senderLower} data-method={item.method}>
       <Row
         title={item.senderLower}
+        controlBelow
         hint={
           <>
             {item.fromName !== null && item.fromName !== "" && <span className="block truncate">{item.fromName}</span>}

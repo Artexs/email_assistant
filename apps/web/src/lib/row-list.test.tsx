@@ -46,4 +46,13 @@ describe("RowList", () => {
     );
     expect(html.match(/max-lg:(flex-wrap|basis-full)/g)?.length ?? 0).toBe(count);
   });
+
+  test("controlBelow puts the control under the text below lg: the text takes the whole line", () => {
+    const html = renderToStaticMarkup(
+      <Row title="news@example.com" controlBelow>
+        <button type="button">Open unsubscribe page</button>
+      </Row>
+    );
+    expect(html.match(/max-lg:(flex-wrap|basis-full)/g)).toEqual(["max-lg:flex-wrap", "max-lg:basis-full"]);
+  });
 });
