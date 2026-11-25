@@ -100,9 +100,9 @@ export default function SetupPage() {
 
   if (mode !== "form") {
     return (
-      <AuthCard title="setup_title">
+      <AuthCard title="setup_title" panel>
         <p role="alert">{t(mode === "invalid" ? "setup_link_invalid" : "setup_link_missing")}</p>
-        <a href="/login" className="underline">
+        <a href="/login" className="text-primary font-bold underline">
           {t("go_to_sign_in")}
         </a>
       </AuthCard>
@@ -124,7 +124,7 @@ export default function SetupPage() {
   };
 
   return (
-    <AuthCard title="setup_title">
+    <AuthCard title="setup_title" panel>
       <form method="post" onSubmit={(event) => void onSubmit(event)} noValidate className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">{t("email_label")}</Label>

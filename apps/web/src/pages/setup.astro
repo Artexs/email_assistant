@@ -1,6 +1,9 @@
 ---
 import Public from "../layouts/Public.astro";
 import SetupPage from "../islands/SetupPage.tsx";
+import BrandFallback from "../components/shell/BrandFallback.astro";
 ---
 
-<Public titleKey="title_setup"><SetupPage client:only="react" /></Public>
+<Public titleKey="title_setup" frame="split">
+  <SetupPage client:only="react"><BrandFallback slot="fallback" /></SetupPage>
+</Public>
