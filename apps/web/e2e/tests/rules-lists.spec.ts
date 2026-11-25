@@ -64,10 +64,12 @@ for (const [language, locale] of [
     test("the page fits the screen", async ({ page }, testInfo) => {
       test.skip(testInfo.project.name !== "mobile", "a phone check");
       await createBossRule(page);
-      await page.setViewportSize({ width: 320, height: 700 });
+      const width = 320;
+      await page.setViewportSize({ width, height: 700 });
       await page.goto("/rules");
       await expect(page.locator("[data-kind=vip]").getByText("boss@e2e.test", { exact: true })).toBeVisible();
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+      // A phone widens its layout viewport to the content, so `innerWidth` would follow an overflow: compare with the set width.
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
     });
   });
 }
