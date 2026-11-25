@@ -110,17 +110,18 @@ export const enReply = {
     "The assistant checks your last 30 days of mail, read-only. Then it shows what it would have done, and you can turn on what it recommends.",
   ob_report_done: "The check is ready.",
   ob_report_link: "Open the report",
-  // The optional panel review "Check 10 decisions" (flag panel_review)
-  title_review: "Check 10 decisions",
+  // The optional panel review page (flag panel_review)
+  title_review: "Was I right?",
   rv_intro:
     "These are decisions the assistant made on your mail from the last 30 days. Say if each one is right. This is optional. It changes nothing in your mailbox.",
   rv_no_mailbox: "Connect a mailbox first. Then there are decisions to check.",
   rv_load_error: "Could not load the decisions.",
   rv_empty: "There are no unchecked decisions from the last 30 days.",
-  rv_right: "✅ Right",
+  rv_right: "Right",
   rv_sure: "Sure: {value} %",
-  rv_pick_label: "Not right? Choose the true category",
-  rv_pick_none: "Choose a category",
+  rv_pick_label: "It is something else: choose the true category",
+  rv_other: "It is something else",
+  rv_thanks_title: "Thank you",
   rv_progress: "{answered} of {total} answered",
   rv_done: "Done",
   rv_thanks: "Thank you. Your answers help the assistant check itself. They do not turn anything on.",
