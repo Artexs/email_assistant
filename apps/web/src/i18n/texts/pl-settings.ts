@@ -43,7 +43,7 @@ export const plSettings = {
   assist_none_on: "brak",
   cat_title: "Kategorie",
   cat_help:
-    "Przy włączonym automacie asystent sam obsługuje wiadomości z tej kategorii. Kategoria musi najpierw przejść sprawdzenie: precyzja co najmniej {bar} %, ocenione wiadomości: co najmniej {minKept}. Oceniaj wiadomości przyciskami ✅ lub ✏️ w Telegramie albo na stronie Aktywność.",
+    "Przy włączonym automacie asystent sam obsługuje wiadomości z tej kategorii. Kategoria musi najpierw przejść sprawdzenie: precyzja co najmniej {bar} %, ocenione wiadomości: co najmniej {minKept}. Oceniaj wiadomości przyciskami ✅ lub ✏️ w Telegramie albo przyciskami Dobrze i Zmień kategorię na stronie Aktywność.",
   cat_urgent: "Pilne",
   cat_needs_reply: "Wymaga odpowiedzi",
   cat_info: "Info",
@@ -100,7 +100,8 @@ export const plSettings = {
     "Kiedy przychodzą Twoje podsumowania w Telegramie, w strefie czasowej organizacji ({timezone}). Maksymalna liczba godzin: {max}.",
   digest_none: "Brak godzin: nie dostajesz podsumowań.",
   digest_time_label: "Godzina podsumowania {n}",
-  digest_remove: "Usuń godzinę podsumowania {n}",
+  digest_remove: "Usuń godzinę podsumowania {time}",
+  digest_remove_new: "Usuń nową godzinę podsumowania",
   digest_add: "Dodaj godzinę",
   digest_new_time_note: "Nowa godzina, która minęła dziś mniej niż 6 godzin temu, wysyła podsumowanie od razu.",
   digest_saved_toast: "Godziny podsumowań zapisane.",

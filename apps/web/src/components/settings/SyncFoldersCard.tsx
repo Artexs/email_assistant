@@ -1,4 +1,5 @@
 import type { SettingsWebChange, SettingsWebView } from "@ea/core/web";
+import { FolderSync, Info } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -6,7 +7,10 @@ import { t, type TextKey } from "../../i18n";
 import { ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { patchSettings } from "../../lib/settings-api";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { FactBox } from "../patterns/FactBox";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Switch } from "../ui/switch";
 
 type FolderKey = SettingsWebView["syncFolders"][number]["key"];
@@ -42,34 +46,28 @@ export function SyncFoldersCard({ settings, isOwner, onChanged, onMissing }: Syn
   const onlyInbox = settings.syncFolders.every((folder) => folder.key === "inbox");
 
   return (
-    <Card data-card="folders">
-      <CardHeader>
-        <CardTitle>{t("folders_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <ul className="flex flex-col gap-3">
-          {settings.syncFolders.map((folder) => (
-            <li key={folder.key} className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 flex-col">
-                <span className="font-medium">{t(`folder_${folder.key}`)}</span>
-                <span className="truncate text-sm text-muted-foreground">{folder.path}</span>
-              </div>
-              {folder.key === "inbox" ? (
-                <span className="text-sm text-muted-foreground">{t("folders_always")}</span>
-              ) : (
-                <Switch
-                  aria-label={t(`folder_${folder.key}`)}
-                  checked={folder.enabled}
-                  disabled={!isOwner || pending.has(folder.key)}
-                  onCheckedChange={(enabled) => void changeFolder(folder.key, enabled)}
-                />
-              )}
-            </li>
-          ))}
-        </ul>
-        {onlyInbox && <p className="text-sm text-muted-foreground">{t("folders_only_inbox")}</p>}
-        <p className="text-sm text-muted-foreground">{t("folders_note")}</p>
-      </CardContent>
-    </Card>
+    <SectionCard data-card="folders" icon={FolderSync} title={t("folders_title")} lead={t("folders_note")}>
+      <RowList>
+        {settings.syncFolders.map((folder) => (
+          <Row
+            key={folder.key}
+            title={t(`folder_${folder.key}`)}
+            hint={<span className="block truncate">{folder.path}</span>}
+          >
+            {folder.key === "inbox" ? (
+              <span className="text-sm text-muted-foreground">{t("folders_always")}</span>
+            ) : (
+              <Switch
+                aria-label={t(`folder_${folder.key}`)}
+                checked={folder.enabled}
+                disabled={!isOwner || pending.has(folder.key)}
+                onCheckedChange={(enabled) => void changeFolder(folder.key, enabled)}
+              />
+            )}
+          </Row>
+        ))}
+      </RowList>
+      {onlyInbox && <FactBox icon={Info}>{t("folders_only_inbox")}</FactBox>}
+    </SectionCard>
   );
 }

@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
   categories,
-  categoryTag,
   labelCategories,
   pickAnswer,
   pickedText,
@@ -13,9 +12,10 @@ import {
 } from "@ea/core/web";
 
 import { setLocaleForTest } from "../i18n";
+import { en } from "../i18n/en";
+import { pl } from "../i18n/pl";
 import {
   categoryName,
-  categoryTagText,
   confidenceText,
   delegationText,
   feedbackStateText,
@@ -36,20 +36,24 @@ function feedback(patch: Partial<NonNullable<ActivityItem["feedback"]>>): NonNul
   return { verdict: "right", trueCategory: null, source: "web", at: "2026-11-11T10:00:00.000Z", ...patch };
 }
 
-describe("words tied to the Telegram source (U6)", () => {
+// The core texts keep their emoji for Telegram; the panel texts have none. The tie is for the words.
+function withoutLeadingEmoji(text: string): string {
+  return text.replace(/^\p{Extended_Pictographic}\uFE0F?\s+/u, "");
+}
+
+describe("words tied to the Telegram source", () => {
   for (const locale of userLocales) {
     const texts = textTables[locale];
 
     test(`${locale}: undo toasts equal the core undo texts`, () => {
       setLocaleForTest(locale);
-      for (const kind of kinds) expect(undoToast(kind)).toBe(texts.answers.undo[kind]);
+      for (const kind of kinds) expect(undoToast(kind)).toBe(withoutLeadingEmoji(texts.answers.undo[kind]));
     });
 
-    test(`${locale}: category names and tags equal the core texts`, () => {
+    test(`${locale}: category names equal the core texts`, () => {
       setLocaleForTest(locale);
       for (const c of categories) {
         expect(categoryName(c)).toBe(texts.categories[c]);
-        expect(categoryTagText(c)).toBe(categoryTag(c, texts));
       }
     });
 
@@ -57,7 +61,7 @@ describe("words tied to the Telegram source (U6)", () => {
       setLocaleForTest(locale);
       for (const c of labelCategories) {
         expect(feedbackToast("right", { saved: true, verdict: "right", aiCategory: c }, c)).toBe(
-          rightAnswer(true, c, texts)
+          withoutLeadingEmoji(rightAnswer(true, c, texts))
         );
         expect(feedbackToast("right", { saved: false, verdict: "right", aiCategory: c }, c)).toBe(
           rightAnswer(false, c, texts)
@@ -66,7 +70,7 @@ describe("words tied to the Telegram source (U6)", () => {
       for (const picked of labelCategories) {
         for (const ai of labelCategories) {
           expect(feedbackToast("pick", { saved: true, verdict: "wrong", aiCategory: ai }, picked)).toBe(
-            pickedText(picked, ai, true, texts)
+            withoutLeadingEmoji(pickedText(picked, ai, true, texts))
           );
         }
       }
@@ -175,4 +179,17 @@ describe("the sender line", () => {
     );
     expect(words).toEqual(["Delegat", "VIP", "Nadawca masowy", "Znany", "Nowy"]);
   });
+});
+
+describe("no emoji in the panel texts", () => {
+  const tables = { en, pl };
+  for (const locale of userLocales) {
+    test(`${locale}: Activity, undo and draft reply texts have no pictograph`, () => {
+      const withEmoji = Object.entries(tables[locale])
+        .filter(([key]) => key.startsWith("act_") || key === "undo_started" || key.startsWith("rp_draft_reply"))
+        .filter(([, value]) => /\p{Extended_Pictographic}/u.test(value))
+        .map(([key]) => key);
+      expect(withEmoji).toEqual([]);
+    });
+  }
 });

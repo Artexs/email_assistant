@@ -218,9 +218,9 @@ test("the demo recording follows the eight steps of the script", async ({ browse
   // 7 delegation (live): the owner asks for the reminder of an overdue task.
   await become("delegations");
   await step("delegation", async () => {
-    await page.goto("/delegations?filter=overdue");
+    await page.goto("/delegations");
     const row = page
-      .getByRole("list", { name: en.dgn_list_label })
+      .getByRole("list", { name: en.dgn_col_overdue, exact: true })
       .getByRole("listitem")
       .filter({ hasText: E2E_DELEGATIONS.overdue.delegateName });
     await expect(row).toBeVisible();

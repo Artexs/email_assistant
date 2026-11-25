@@ -1,35 +1,43 @@
-import type { DelegationFilter, DelegationItem } from "@ea/core/web";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { DelegationItem } from "@ea/core/web";
+import { useEffect, useRef, useState } from "react";
+import { Users } from "lucide-react";
 
 import { cancelButtonId, ROW_ID_PREFIX, rowId } from "./DelegationRow";
 import { DelegationCancelDialog } from "./DelegationCancelDialog";
-import { DelegationFilterTabs } from "./DelegationFilterTabs";
+import { DelegationColumn, type ColumnHint } from "./DelegationColumn";
 import { ROW_BY_KIND } from "./delegation-kinds";
+import { EmptyState } from "../patterns/EmptyState";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { t, type TextKey } from "../../i18n";
-import { ApiError } from "../../lib/api";
 import { canWrite } from "../../lib/can-write";
+import {
+  CLOSED_LOOK,
+  COLUMN_LOOK,
+  DELEGATION_COLUMNS,
+  focusAfterReload,
+  GROUP_FEED,
+  type DelegationGroup,
+} from "../../lib/delegation-columns";
 import { createFocusedRowTracker } from "../../lib/focused-row";
 import { postCancel, postDone, postRemind } from "../../lib/delegations-api";
 import {
   approvalLink,
   cancelOutcome,
+  closedOnLoad,
   DELEGATION_REMINDER_LIMIT,
   doneOutcome,
-  FILTER_EMPTY,
   remindOutcome,
   type ActionOutcome,
   type DelegationAction,
   type RemindBlock,
 } from "../../lib/delegations-view";
 import { singleFlight } from "../../lib/single-flight";
-import { useDelegationFilter } from "../../lib/use-delegation-filter";
-import { useDelegationList } from "../../lib/use-delegation-list";
+import { useDelegationColumns } from "../../lib/use-delegation-columns";
 
-// The line under the tabs: one live region that holds the text of a result (`info`) or of a failure (`error`), with a link when the
+// The line above the columns: one live region that holds the text of a result (`info`) or of a failure (`error`), with a link when the
 // result has a next step. The focus goes to this element after each action, so the text must sit inside it.
 interface Notice {
   tone: "info" | "error";
@@ -56,34 +64,47 @@ function Loading() {
 // line (an answer came).
 type FocusTarget = "row" | "status";
 
-export interface DelegationsProps {
-  // What the page shows under the list, given the filter that the list has now (the tracked loops of the Delegated tab).
-  below?: (filter: DelegationFilter) => ReactNode;
-}
+const CLOSED_LIST_ID = "delegation-closed-list";
+const headingIdOf = (group: DelegationGroup): string => `delegation-col-${group}`;
 
-export function Delegations({ below }: DelegationsProps = {}) {
+export function Delegations() {
   const { me, reload: reloadMe } = useMe();
-  const [filter, selectFilter] = useDelegationFilter();
-  const list = useDelegationList(filter);
+  // `?filter=closed` opens the closed list once, at load (the page writes no address).
+  const [closedOpen, setClosedOpen] = useState(() => closedOnLoad(location.search));
+  const columns = useDelegationColumns({ closedOpen });
+  const { feeds, groups } = columns;
   const [notice, setNotice] = useState<Notice | null>(null);
-  // The delegation of the open cancel question. It stays in state, not in the list: a reload that drops the row (the delegate answered, someone
+  // The delegation of the open cancel question. It stays in state, not in a column: a reload that drops the row (the delegate answered, someone
   // closed it) must not close the question. Confirm then gets 409 `not_open` and the status line says so.
   const [confirmCancel, setConfirmCancel] = useState<DelegationItem | null>(null);
-  // The reason that the server gave for Remind now, per delegation (`drafts_off` is not on the row). A new tab clears them.
+  // The reason that the server gave for Remind now, per delegation (`drafts_off` is not on the row).
   const [blocked, setBlocked] = useState<Record<string, RemindBlock>>({});
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [moreFailed, setMoreFailed] = useState(false);
+  const [loadingMore, setLoadingMore] = useState<DelegationGroup | null>(null);
+  // The group whose last "Show more" came back with no new row before the limit of pages for one click.
+  const [capped, setCapped] = useState<DelegationGroup | null>(null);
   const [flight] = useState(singleFlight);
   const statusRef = useRef<HTMLDivElement>(null);
+  const closedRef = useRef<HTMLDivElement>(null);
   const focusTarget = useRef<FocusTarget>("row");
   const [statusTick, setStatusTick] = useState(0);
   // The effect runs after the commit that removed the pressed button or the dialog, so nothing takes the focus back.
   useEffect(() => {
     if (statusTick > 0) statusRef.current?.focus();
   }, [statusTick]);
-  // A reload can remove the row whose button has the focus (the delegation moved to another tab): the browser then puts the focus on the
-  // page body. The line of the result gets it instead, with a text that says what happened. The tracker knows the row that holds the
-  // focus; it forgets the row when the user moves the focus to nothing, so a later reload takes no focus without a user action.
+  // The address asked for the closed list: it scrolls into view once, when its rows are there.
+  const scrollToClosed = useRef(closedOpen);
+  const closedLoaded = feeds.closed !== undefined;
+  useEffect(() => {
+    if (!scrollToClosed.current || !closedLoaded) return;
+    scrollToClosed.current = false;
+    closedRef.current?.scrollIntoView({ block: "start" });
+  }, [closedLoaded]);
+  // The groups that the page shows: the closed rows count only while their list is open.
+  const shown: Record<DelegationGroup, DelegationItem[]> = { ...groups, closed: closedOpen ? groups.closed : [] };
+  // A reload can move the row whose control has the focus to another column, or take it out of every group (the delegation closed, and its
+  // list is shut). A moved row keeps the focus on its new card. A row that is gone gives the focus to the line of the result, with a text
+  // that says what happened, never to the page body. The tracker knows the row that holds the focus; it forgets the row when the user moves
+  // the focus to nothing, so a later reload takes no focus without a user action.
   const [focusedRow] = useState(() => createFocusedRowTracker(ROW_ID_PREFIX));
   useEffect(() => {
     document.addEventListener("focusin", focusedRow.onFocusIn);
@@ -93,27 +114,26 @@ export function Delegations({ below }: DelegationsProps = {}) {
       document.removeEventListener("focusout", focusedRow.onFocusOut);
     };
   }, [focusedRow]);
-  const loaded = list.data;
+  const loaded = Object.keys(feeds).length > 0;
   useEffect(() => {
     const id = focusedRow.current;
-    if (id === null || loaded === null || loaded.items.some((item) => item.id === id)) return;
+    if (id === null || !loaded) return;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    const verdict = focusAfterReload(id, closedOpen ? groups : { ...groups, closed: [] });
+    if (verdict === "row") {
+      if (lost) document.getElementById(rowId(id))?.focus();
+      return;
+    }
     focusedRow.clear();
-    if (document.activeElement === null || document.activeElement === document.body) {
+    if (lost) {
       setNotice({ tone: "info", key: "dgn_moved" });
       statusRef.current?.focus();
     }
-  }, [loaded, focusedRow]);
+  }, [groups, closedOpen, loaded, focusedRow]);
   const focusStatus = () => setStatusTick((tick) => tick + 1);
 
-  const changeFilter = (next: typeof filter) => {
-    setNotice(null);
-    setBlocked({});
-    setMoreFailed(false);
-    selectFilter(next);
-  };
-
   // The flag is off: the API answers like for an unknown path.
-  if (!list.loading && list.error instanceof ApiError && list.error.status === 404) {
+  if (columns.flagOff) {
     return (
       <Card>
         <CardContent>
@@ -126,10 +146,9 @@ export function Delegations({ below }: DelegationsProps = {}) {
   const owner = me?.role === "owner";
   const writable = canWrite(me);
   const timeZone = me?.organization.timezone ?? "UTC";
-  const items = list.data?.items ?? [];
 
   const refresh = () => {
-    list.reload();
+    columns.reload();
     reloadMe();
   };
 
@@ -188,19 +207,23 @@ export function Delegations({ below }: DelegationsProps = {}) {
     });
   };
 
-  const showMore = () => {
+  // "Show more" of one group. A new row takes the focus (the button may leave with the last page). No new row at the end of the list: the
+  // line of the result says so and takes the focus. No new row before the end (the limit of pages for one click): a text says to press
+  // again, and the focus stays on the button.
+  const showMore = (group: DelegationGroup) => {
     void flight(async () => {
-      setLoadingMore(true);
-      setMoreFailed(false);
+      setLoadingMore(group);
+      setCapped(null);
       try {
-        const added = await list.showMore();
+        const { added, ended, failed } = await columns.showMore(group);
         const first = added[0];
-        // The button may leave with the last page: the focus goes to the first new row, which stays.
         if (first !== undefined) requestAnimationFrame(() => document.getElementById(rowId(first.id))?.focus());
-      } catch {
-        setMoreFailed(true);
+        else if (!failed && ended) {
+          setNotice({ tone: "info", key: "dgn_col_no_more" });
+          focusStatus();
+        } else if (!failed) setCapped(group);
       } finally {
-        setLoadingMore(false);
+        setLoadingMore(null);
       }
     });
   };
@@ -217,44 +240,75 @@ export function Delegations({ below }: DelegationsProps = {}) {
     focusTarget.current = "row";
   };
 
-  let listContent;
-  if (list.data === null) {
-    listContent =
-      list.error === null || list.loading ? (
-        <Loading />
-      ) : (
-        <div className="flex flex-col items-start gap-3">
-          <p>{t("dgn_load_error")}</p>
-          <Button onClick={list.reload}>{t("retry")}</Button>
-        </div>
-      );
-  } else if (items.length === 0) {
-    listContent = <p className="text-sm text-muted-foreground">{t(FILTER_EMPTY[filter])}</p>;
+  const cardOf = (item: DelegationItem, showStatus: boolean) => {
+    const Row = ROW_BY_KIND[item.kind];
+    return (
+      <Row
+        key={item.id}
+        item={item}
+        owner={owner}
+        canWrite={writable}
+        timeZone={timeZone}
+        blocked={blocked[item.id]}
+        showStatus={showStatus}
+        onAction={run}
+      />
+    );
+  };
+
+  const hintOf = (group: DelegationGroup): ColumnHint | null => {
+    if (capped === group) return { text: t("dgn_col_capped"), error: false };
+    const feed = feeds[GROUP_FEED[group]];
+    return feed !== undefined && feed.error !== null && feed.items.length > 0
+      ? { text: t("dgn_more_error"), error: true }
+      : null;
+  };
+
+  const columnOf = (group: DelegationGroup, look: typeof CLOSED_LOOK) => {
+    const feed = feeds[GROUP_FEED[group]];
+    return (
+      <DelegationColumn
+        key={group}
+        headingId={headingIdOf(group)}
+        title={t(look.title)}
+        icon={look.icon}
+        tone={look.tone}
+        empty={t(look.empty)}
+        items={shown[group]}
+        next={feed?.next ?? null}
+        failed={feed !== undefined && feed.error !== null && feed.items.length === 0}
+        loadingMore={loadingMore === group}
+        hint={hintOf(group)}
+        renderRow={(item) => cardOf(item, group === "closed")}
+        onMore={() => showMore(group)}
+        onRetry={() => columns.retry(GROUP_FEED[group])}
+      />
+    );
+  };
+
+  // Nothing to show in any column and every list reached its end: one empty state takes the place of the four empty columns.
+  const nothing =
+    DELEGATION_COLUMNS.every((column) => shown[column].length === 0) &&
+    (["open", "overdue", "answered"] as const).every((filter) => {
+      const feed = feeds[filter];
+      return feed !== undefined && feed.next === null && feed.error === null;
+    });
+
+  let columnsContent;
+  if (!loaded) columnsContent = <Loading />;
+  else if (nothing) {
+    columnsContent = <EmptyState icon={Users} title={t("dgn_none_title")} text={t("dgn_none_text")} />;
   } else {
-    listContent = (
-      <ul aria-label={t("dgn_list_label")} className="flex flex-col gap-3">
-        {items.map((item) => {
-          const Row = ROW_BY_KIND[item.kind];
-          return (
-            <Row
-              key={item.id}
-              item={item}
-              owner={owner}
-              canWrite={writable}
-              timeZone={timeZone}
-              blocked={blocked[item.id]}
-              onAction={run}
-            />
-          );
-        })}
-      </ul>
+    columnsContent = (
+      <div className="grid items-start gap-4 lg:grid-cols-[repeat(auto-fit,minmax(16rem,1fr))]">
+        {DELEGATION_COLUMNS.map((column) => columnOf(column, COLUMN_LOOK[column]))}
+      </div>
     );
   }
 
   const cancelling = confirmCancel;
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
-      <DelegationFilterTabs current={filter} onSelect={changeFilter} />
+    <div className="flex flex-col gap-4">
       <div
         role="status"
         tabIndex={-1}
@@ -276,16 +330,21 @@ export function Delegations({ below }: DelegationsProps = {}) {
         )}
       </div>
       {me !== null && !owner && <p className="text-sm text-muted-foreground">{t("dgn_owner_only")}</p>}
-      {listContent}
-      {list.data !== null && list.data.next !== null && (
-        <div className="flex flex-col items-start gap-2">
-          <Button type="button" variant="outline" disabled={loadingMore} onClick={showMore}>
-            {t("dgn_more")}
-          </Button>
-          {moreFailed && <p className="text-sm text-destructive">{t("dgn_more_error")}</p>}
+      {columnsContent}
+      <div className="flex flex-col items-start gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          aria-expanded={closedOpen}
+          aria-controls={CLOSED_LIST_ID}
+          onClick={() => setClosedOpen((open) => !open)}
+        >
+          {t(closedOpen ? "dgn_closed_hide" : "dgn_closed_show")}
+        </Button>
+        <div id={CLOSED_LIST_ID} ref={closedRef} className="w-full scroll-mt-4" hidden={!closedOpen}>
+          {closedOpen && (closedLoaded ? columnOf("closed", CLOSED_LOOK) : <Loading />)}
         </div>
-      )}
-      {below?.(filter)}
+      </div>
       {cancelling !== null && (
         <DelegationCancelDialog
           item={cancelling}

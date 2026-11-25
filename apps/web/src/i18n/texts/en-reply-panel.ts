@@ -83,8 +83,8 @@ export const enReplyPanel = {
   rp_end_draft_missing:
     "The draft is not in your Drafts folder (it was not created, or you deleted, moved or sent it in your mail client). The system sent nothing.",
   // The Draft reply button of an activity row
-  rp_draft_reply: "✍️ Draft reply",
+  rp_draft_reply: "Draft reply",
   rp_open_draft: "Open the draft",
-  rp_draft_reply_for: "✍️ Draft reply: {subject}",
+  rp_draft_reply_for: "Draft reply: {subject}",
   rp_open_draft_for: "Open the draft: {subject}",
 } as const;

@@ -1,10 +1,4 @@
-import {
-  DELEGATION_DEFAULT_FILTER,
-  DELEGATION_REMINDER_LIMIT,
-  delegationFilters,
-  type DelegationFilter,
-  type DelegationItem,
-} from "@ea/core/web";
+import { DELEGATION_REMINDER_LIMIT, type DelegationItem } from "@ea/core/web";
 
 import type { TextKey } from "../i18n";
 import { ApiError } from "./api";
@@ -14,21 +8,7 @@ export { DELEGATION_REMINDER_LIMIT };
 
 export type DelegationStatus = DelegationItem["status"];
 
-// A record: a new filter or status breaks the build until it has a text.
-export const FILTER_LABELS: Record<DelegationFilter, TextKey> = {
-  open: "dgn_filter_open",
-  overdue: "dgn_filter_overdue",
-  answered: "dgn_filter_answered",
-  closed: "dgn_filter_closed",
-};
-
-export const FILTER_EMPTY: Record<DelegationFilter, TextKey> = {
-  open: "dgn_empty_open",
-  overdue: "dgn_empty_overdue",
-  answered: "dgn_empty_answered",
-  closed: "dgn_empty_closed",
-};
-
+// A record: a new status breaks the build until it has a text.
 export const STATUS_LABELS: Record<DelegationStatus, TextKey> = {
   drafted: "act_dlg_drafted",
   sent: "act_dlg_sent",
@@ -38,13 +18,8 @@ export const STATUS_LABELS: Record<DelegationStatus, TextKey> = {
   cancelled: "act_dlg_cancelled",
 };
 
-// The `filter` query parameter; no value or an unknown one is the default tab.
-export function filterOf(search: string): DelegationFilter {
-  const value = new URLSearchParams(search).get("filter");
-  return delegationFilters.find((filter) => filter === value) ?? DELEGATION_DEFAULT_FILTER;
-}
-
-export const filterHref = (filter: DelegationFilter): string => `/delegations?filter=${filter}`;
+// The page reads `?filter=` once, at load: `closed` opens the closed list. Every other value changes nothing, and the page writes no address.
+export const closedOnLoad = (search: string): boolean => new URLSearchParams(search).get("filter") === "closed";
 
 export type DelegationAction = "remind" | "done" | "cancel";
 

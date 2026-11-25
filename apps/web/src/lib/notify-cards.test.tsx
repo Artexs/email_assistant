@@ -3,6 +3,8 @@ import type { Me, NotifyView } from "@ea/core/web";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { DigestTimesCard } from "../components/settings/DigestTimesCard";
+import { TelegramLockCard } from "../components/settings/TelegramLockCard";
 import { NotifyCards, NotifySection, QuietHoursCard, ReportChannelCard } from "../components/settings/NotifyCards";
 import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest, t } from "../i18n";
@@ -123,5 +125,36 @@ describe("NotifySection", () => {
     const node = NotifySection({ features, timeZone: "UTC" });
     expect(node?.type).toBe(NotifyCards);
     expect(node?.props).toEqual({ timeZone: "UTC", quiet, channel, routes });
+  });
+});
+
+describe("DigestTimesCard", () => {
+  setLocaleForTest("en");
+
+  test("each time has a remove button named with that time", () => {
+    const html = render(<DigestTimesCard times={["08:00", "18:00"]} timeZone="UTC" onSaved={() => undefined} />);
+    expect(html).toContain('data-card="digest"');
+    expect(html).toContain(`aria-label="${t("digest_remove", { time: "08:00" })}"`);
+    expect(html).toContain(`aria-label="${t("digest_remove", { time: "18:00" })}"`);
+    expect(html.match(/aria-label="Remove digest time/g)).toHaveLength(2);
+    expect(html).toContain(`aria-label="${t("digest_add")}"`);
+  });
+});
+
+describe("TelegramLockCard", () => {
+  setLocaleForTest("en");
+
+  test("a member sees the state as text and has no switch", () => {
+    const html = render(<TelegramLockCard locked isOwnerRole={false} onSaved={() => undefined} />);
+    expect(html).toContain('data-card="telegram-lock"');
+    expect(html).toContain(t("tgl_state_on"));
+    expect(html).not.toContain('role="switch"');
+    expect(html).not.toContain(t("tgl_help"));
+  });
+
+  test("the owner has the switch named by its row", () => {
+    const html = render(<TelegramLockCard locked={false} isOwnerRole onSaved={() => undefined} />);
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('for="tg-lock"');
   });
 });

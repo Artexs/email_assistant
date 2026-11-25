@@ -10,7 +10,6 @@ import {
   LOOP_CLOSED_TEXTS,
   LOOP_FILTER_EMPTY,
   LOOP_FILTER_LABELS,
-  LOOP_FILTER_OF_DELEGATION,
   LOOP_LIST_LABELS,
   LOOP_TAB_LABELS,
   LOOP_TABS,
@@ -162,10 +161,6 @@ describe("tabs, filters and addresses", () => {
     setLocaleForTest("pl");
     expect(t(LOOP_TAB_LABELS.promised)).toBe("Obiecane");
     expect(t(LOOP_FILTER_LABELS.due)).toBe("Na dziś");
-  });
-
-  test("the tracked list follows the F102 filter, and Answered has none", () => {
-    expect(LOOP_FILTER_OF_DELEGATION).toEqual({ open: "open", overdue: "due", answered: null, closed: "closed" });
   });
 });
 

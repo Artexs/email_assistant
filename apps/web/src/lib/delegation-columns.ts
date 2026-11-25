@@ -1,5 +1,5 @@
 import type { DelegationFilter, DelegationItem } from "@ea/core/web";
-import { AlertTriangle, CheckCircle2, Clock, Send, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Archive, CheckCircle2, Clock, Send, type LucideIcon } from "lucide-react";
 
 import type { TextKey } from "../i18n";
 import type { DelegationStatus } from "./delegations-view";
@@ -46,6 +46,14 @@ export const COLUMN_LOOK: Record<DelegationColumn, { title: TextKey; empty: Text
       tone: "text-cat-notification",
     },
   };
+
+// The closed list under the columns: done and cancelled delegations.
+export const CLOSED_LOOK: { title: TextKey; empty: TextKey; icon: LucideIcon; tone: string } = {
+  title: "dgn_col_closed",
+  empty: "dgn_empty_closed",
+  icon: Archive,
+  tone: "text-muted-foreground",
+};
 
 const FEED_ORDER: readonly DelegationFilter[] = ["overdue", "open", "answered", "closed"];
 

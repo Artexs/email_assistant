@@ -3,7 +3,6 @@ import type { DelegationItem } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { DelegationFilterTabs } from "../components/delegation/DelegationFilterTabs";
 import { DelegationRow, type DelegationRowProps } from "../components/delegation/DelegationRow";
 import { setLocaleForTest } from "../i18n";
 
@@ -42,13 +41,27 @@ const row = (it: DelegationItem, props: Partial<DelegationRowProps> = {}) =>
   );
 
 describe("DelegationRow", () => {
-  test("a sent row shows the delegate, the task, the subject, the due date, the state and the reminder count", () => {
+  test("a sent row shows the delegate, the task, the subject, the due date and the reminder count, and no status badge", () => {
     const html = row(item());
     for (const text of ["Anna Nowak", "anna@example.com", "Send the numbers", "Subject: Budget", "Due 20 Nov 2026"]) {
       expect(html).toContain(text);
     }
-    expect(html).toContain(">Sent<");
     expect(html).toContain("Reminders: 0 of 2");
+    expect(html).not.toContain(">Sent<");
+  });
+
+  test("a row in the closed list shows its status badge", () => {
+    expect(row(item({ status: "done" }), { showStatus: true })).toContain(">Done<");
+  });
+
+  test("the card gives Remind now the soft look at full width, Done the outline look and Cancel the ghost look", () => {
+    const buttons = row(item({ status: "overdue" })).match(/<button[^>]*>/g) ?? [];
+    const [remind, done, cancel] = buttons;
+    expect(buttons).toHaveLength(3);
+    expect(remind).toContain('data-variant="soft"');
+    expect(remind).toContain("w-full");
+    expect(done).toContain('data-variant="outline"');
+    expect(cancel).toContain('data-variant="ghost"');
   });
 
   test("an owner gets named Remind now and Cancel buttons on a sent row, and no Done", () => {
@@ -118,23 +131,12 @@ describe("DelegationRow", () => {
 
   test("Polish: wykonawca, plain words, the delegate name in the button label", () => {
     setLocaleForTest("pl");
-    const html = row(item({ status: "overdue", reminderWaiting: true, remindersSent: 1 }));
+    const html = row(item({ status: "overdue", reminderWaiting: true, remindersSent: 1 }), { showStatus: true });
     expect(html).toContain('aria-label="Przypomnij teraz: Anna Nowak"');
     expect(html).toContain('aria-label="Oznacz jako zrobione: Anna Nowak"');
     expect(html).toContain('aria-label="Anuluj zlecenie: Anna Nowak"');
     expect(html).toContain("Przypomnienia: 1 z 2");
     expect(html).toContain("Po terminie");
     expect(html).toContain("Przypomnienie już czeka na Twoje zatwierdzenie.");
-  });
-});
-
-describe("DelegationFilterTabs", () => {
-  test("four links with their own address; the current one is marked", () => {
-    const html = renderToStaticMarkup(<DelegationFilterTabs current="closed" onSelect={noop} />);
-    for (const filter of ["open", "overdue", "answered", "closed"])
-      expect(html).toContain(`href="/delegations?filter=${filter}"`);
-    expect(html.match(/aria-current="page"/g)).toHaveLength(1);
-    expect(html).toMatch(/aria-current="page"[^>]*>Closed</);
-    expect(html).toContain('aria-label="Filter delegations"');
   });
 });

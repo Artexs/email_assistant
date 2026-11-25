@@ -14,7 +14,7 @@ export interface FlaggedText {
 export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>> = {
   stats_page: ["stats_caption", "stats_m4", "stats_note"],
   approvals_page: ["appr_list_label", "appr_detail_label", "appr_none"],
-  delegation_pages: ["dgn_remind", "dgn_keep", "dgn_empty_open"],
+  delegation_pages: ["dgn_remind", "dgn_keep", "dgn_none_title"],
   sent_sync: ["sent_switch", "sent_line", "sent_off_note"],
   security_log: ["sec_title", "sec_empty"],
   org_delete: ["del_title", "del_submit", "del_confirm_label"],

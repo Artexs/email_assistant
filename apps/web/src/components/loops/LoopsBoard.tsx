@@ -1,4 +1,5 @@
 import type { LoopFilterName, LoopItem, LoopKindName } from "@ea/core/web";
+import { Inbox } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { dateLocale, t, type TextKey } from "../../i18n";
@@ -17,6 +18,7 @@ import {
 } from "../../lib/loops-view";
 import { singleFlight } from "../../lib/single-flight";
 import { useLoopList } from "../../lib/use-loop-list";
+import { EmptyState } from "../patterns/EmptyState";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -48,6 +50,11 @@ function Loading() {
   );
 }
 
+// An empty list: the sentence of its filter is the title. It is an `h3` when the list has a visible heading over it.
+export function LoopEmpty({ filter, headingLevel }: { filter: LoopFilterName; headingLevel: 2 | 3 }) {
+  return <EmptyState icon={Inbox} title={t(LOOP_FILTER_EMPTY[filter])} headingLevel={headingLevel} />;
+}
+
 const OK_TEXTS: Record<"done" | "drop" | "untrack" | "reopen", TextKey> = {
   done: "lp_ok_done",
   drop: "lp_ok_drop",
@@ -58,7 +65,7 @@ const OK_TEXTS: Record<"done" | "drop" | "untrack" | "reopen", TextKey> = {
 export interface LoopsBoardProps {
   kind: LoopKindName;
   filter: LoopFilterName;
-  // The state links of a Waiting or Promised tab. The Delegated tab has none: the filter of the delegations list above decides.
+  // The state links of the tab (Open, Due today, Closed).
   filterNav?: ReactNode;
   // A visible heading over the list (the Delegated tab, where it follows the delegations list).
   showHeading?: boolean;
@@ -225,7 +232,7 @@ export function LoopsBoard({ kind, filter, filterNav, showHeading = false }: Loo
         </div>
       );
   } else if (items.length === 0) {
-    listContent = <p className="text-sm text-muted-foreground">{t(LOOP_FILTER_EMPTY[filter])}</p>;
+    listContent = <LoopEmpty filter={filter} headingLevel={showHeading ? 3 : 2} />;
   } else {
     const Row = LOOP_ROW_BY_KIND[kind];
     listContent = (
@@ -248,7 +255,7 @@ export function LoopsBoard({ kind, filter, filterNav, showHeading = false }: Loo
   const question = confirm;
   return (
     <section aria-label={t(LOOP_LIST_LABELS[kind])} className="flex flex-col gap-4">
-      {showHeading && <h2 className="text-base font-semibold">{t(LOOP_LIST_LABELS[kind])}</h2>}
+      {showHeading && <h2 className="text-lg font-bold">{t(LOOP_LIST_LABELS[kind])}</h2>}
       {filterNav}
       <div
         role="status"

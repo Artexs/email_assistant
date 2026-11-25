@@ -86,7 +86,7 @@ test("rows, panel, filters and load more", async ({ page }) => {
   const reply = rowOf(page, ACTIVITY_SUBJECTS.reply);
   const unsure = rowOf(page, ACTIVITY_SUBJECTS.unsure);
   const delegated = rowOf(page, ACTIVITY_SUBJECTS.delegated);
-  await expect(moved).toContainText(en.act_tag_notification);
+  await expect(moved).toContainText(en.act_cat_notification);
   await expect(moved).toContainText(t("act_confidence", { value: 93 }));
   await expect(moved).toContainText("done: move to AI/Notifications, mark read");
   // ✅ shows on a label category only.
@@ -198,7 +198,7 @@ test("the panel shows the sender line only with the flag on and a profile", asyn
   }
 });
 
-test("✅ and ✏️ save feedback", async ({ page }) => {
+test("Right and Change the category save feedback", async ({ page }) => {
   const moved = rowOf(page, ACTIVITY_SUBJECTS.moved);
   const rightMoved = rightLabel(en.act_cat_notification);
   await moved.getByRole("button", { name: rightMoved }).click();
@@ -216,13 +216,13 @@ test("✅ and ✏️ save feedback", async ({ page }) => {
   const reply = rowOf(page, ACTIVITY_SUBJECTS.reply);
   await reply.getByRole("button", { name: en.act_btn_edit }).click();
   await expect(page.getByRole("dialog").getByText(en.act_pick_title)).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: en.act_tag_info }).click();
+  await page.getByRole("dialog").getByRole("button", { name: en.act_cat_info }).click();
   await expect(
     page.getByText(t("act_toast_picked", { category: en.act_cat_info, ai: en.act_cat_needs_reply }))
   ).toBeVisible();
 });
 
-test("↩️ starts the Undo", async ({ page }) => {
+test("Undo starts the Undo", async ({ page }) => {
   const moved = rowOf(page, ACTIVITY_SUBJECTS.moved);
   await moved.getByRole("button", { name: en.act_btn_undo, exact: true }).click();
   await expect(page.getByText(en.undo_started)).toBeVisible();
