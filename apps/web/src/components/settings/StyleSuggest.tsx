@@ -3,6 +3,7 @@ import { useId, useState } from "react";
 import { t, tp, type TextKey } from "../../i18n";
 import { errorText } from "../../lib/errors";
 import { suggestStyle, type SuggestAnswer, type SuggestButton } from "../../lib/style-suggest";
+import { FactBox } from "../patterns/FactBox";
 import { Button } from "../ui/button";
 
 // `running`: the call is open. `shown`: the answer, a suggestion or a note. `failed`: the call itself failed (a text key).
@@ -32,7 +33,7 @@ export function StyleSuggestView({ button, state, onAsk, onUse, onDiscard }: Vie
         <div className="flex flex-col items-start gap-1.5">
           <Button
             type="button"
-            variant="outline"
+            variant="soft"
             disabled={state.kind === "running"}
             aria-describedby={`${ids}-help`}
             onClick={onAsk}
@@ -57,20 +58,22 @@ export function StyleSuggestView({ button, state, onAsk, onUse, onDiscard }: Vie
           </p>
         )}
         {answer?.kind === "suggestion" && (
-          <div className="flex flex-col gap-1.5 rounded-md border p-3">
-            <p className="text-sm font-medium">{tp("rs_suggest_result", answer.count)}</p>
-            <p data-suggest-text="" className="whitespace-pre-wrap text-sm">
-              {answer.text}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={() => onUse(answer.text)}>
-                {t("rs_suggest_use")}
-              </Button>
-              <Button type="button" variant="outline" onClick={onDiscard}>
-                {t("rs_suggest_discard")}
-              </Button>
+          <FactBox>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm font-bold">{tp("rs_suggest_result", answer.count)}</p>
+              <p data-suggest-text="" className="text-base whitespace-pre-wrap">
+                {answer.text}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" onClick={() => onUse(answer.text)}>
+                  {t("rs_suggest_use")}
+                </Button>
+                <Button type="button" variant="soft" onClick={onDiscard}>
+                  {t("rs_suggest_discard")}
+                </Button>
+              </div>
             </div>
-          </div>
+          </FactBox>
         )}
       </div>
     </div>
