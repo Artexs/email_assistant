@@ -31,3 +31,8 @@ The owner decided (2026-11-26) that DeepSeek may serve production mail. An opera
 ## Notes
 
 - The VPS `.env` runs `openai` now (set 2026-11-26 after a crash loop). Needs plan: start a planner job; the two-owner steps are the DeepSeek terms check and the region answer, default "as listed by the provider".
+
+## Sequenced
+
+- Plan after: none (the provider registry and the `deepseek` row landed earlier, F141; the paper method of F162 and F163 landed).
+- Build after: none. Gate: no owner step before stage 01. The release that carries stages 01–02 follows the board's release rule (no release while the Pebble tickets F166–F172 are open). Switching the VPS is an owner or coordinator step after that release (`plan.md` § User steps).
