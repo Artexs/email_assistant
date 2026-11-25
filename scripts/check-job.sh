@@ -10,6 +10,8 @@
 #      A change to a migration, package.json, bun.lock, bunfig.toml, a tsconfig or the test preload runs the full suite.
 #      Bun follows imports only, so a change to a docs page, a legal file or a docs source runs every test that reads the docs
 #      (`docs_tests` below): such a test reads the file at run time and the import graph does not show it.
+#      A change under apps/web/src, packages/core/src or apps/server/src also runs the docs text check (apps/docs/src/panel-keys.test.ts):
+#      it reads the panel files at run time and the import graph does not show it.
 #   5. The bare-code scan (apps/server/src/bare-codes.test.ts), on every run: a code can come from the merge with master.
 #
 # The pre-commit hook (scripts/pre-commit.sh) checked each commit; GitHub CI runs every suite on master after the land.
@@ -57,6 +59,14 @@ else
     tools/fake-telegram/src tools/llm-replay/src tools/mail-oauth-spike apps/web/src/lib apps/web/src/i18n apps/web/integrations apps/docs/src apps/docs/integrations apps/docs/scripts
   echo "check:job: integration tests that import a changed file"
   EA_TEST_WORKER_DB=1 bash scripts/ci-bun.sh test --parallel=4 --timeout=30000 --changed="$master" apps/server/test tools/fake-telegram/test
+fi
+
+panel_changed=0
+printf '%s\n' "${changed[@]}" | grep -qE '^(apps/web/src/|packages/core/src/|apps/server/src/)' && panel_changed=1
+
+if [ "$panel_changed" = 1 ] && [ "$full" = 0 ]; then
+  echo "check:job: panel changed: panel-keys.test.ts"
+  bash scripts/ci-bun.sh test apps/docs/src/panel-keys.test.ts
 fi
 
 if [ "$docs_changed" = 1 ] && [ "$full" = 0 ]; then
