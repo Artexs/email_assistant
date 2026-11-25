@@ -69,6 +69,7 @@ export const enReply = {
   rep_off: "This page is off for your organization.",
   rep_no_mailbox: "Connect a mailbox first. The check starts after that.",
   rep_load_error: "Could not load the report.",
+  rep_lead: "What the assistant would have done with your recent mail. Nothing changed.",
   rep_intro: "What the assistant would have done with your mail from the last 30 days.",
   rep_read_only: "The check read the last 30 days of your INBOX, read-only. It changed nothing.",
   rep_starting: "Starting the check…",

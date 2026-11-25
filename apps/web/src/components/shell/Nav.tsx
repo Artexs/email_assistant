@@ -15,6 +15,7 @@ import {
   type NavItem,
   type NavKey,
 } from "./nav-items";
+import { BrandMark } from "./BrandMark";
 import { UserMenu } from "./UserMenu";
 import { HelpLink } from "./WhatsNew";
 
@@ -25,6 +26,8 @@ export interface NavMenuProps {
   features: readonly string[];
   // `me.approvalsWaiting`: the count on the badge of the approvals item.
   approvalsWaiting: number;
+  // `me.user.displayName` and `me.user.email`; both null until `me` came (a caller that has no name leaves it out).
+  name?: string | null;
   email: string | null;
   loading: boolean;
   onLogOut: () => void;
@@ -103,11 +106,11 @@ function SidebarLink({ item, active, approvalsWaiting }: { item: NavItem; active
       href={item.href}
       aria-current={item.key === active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted",
-        item.key === active ? "bg-muted font-medium" : "text-muted-foreground"
+        "flex min-h-12 items-center gap-3 rounded-md px-3.5 py-2 text-sm font-semibold",
+        item.key === active ? "bg-primary-soft text-primary" : "text-muted-foreground hover:bg-muted"
       )}
     >
-      <item.icon className="size-4" aria-hidden="true" />
+      <item.icon className="size-5 shrink-0" aria-hidden="true" />
       <span>{t(item.label)}</span>
       <Badge item={item} count={approvalsWaiting} className="ml-auto" />
       <BadgeText item={item} count={approvalsWaiting} />
@@ -121,6 +124,7 @@ export function Sidebar({
   operator,
   features,
   approvalsWaiting,
+  name,
   email,
   loading,
   onLogOut,
@@ -129,21 +133,24 @@ export function Sidebar({
   const tabs = onboardingOpen ? [ONBOARDING_ITEM, ...base] : base;
   const items = operator ? [...tabs, OPERATOR_ITEM] : tabs;
   return (
-    <aside className="hidden border-r lg:flex lg:flex-col">
-      <p className="px-6 py-4 text-lg font-semibold">{t("brand")}</p>
-      <nav aria-label={t("nav_main")} className="flex flex-1 flex-col gap-1 px-3">
+    <aside className="hidden min-h-0 flex-col rounded-xl bg-sidebar px-3.5 py-5 shadow-card forced-colors:border lg:sticky lg:top-5 lg:flex lg:h-[calc(100dvh-2.5rem)]">
+      <div className="flex items-center gap-2.5 px-2.5 pb-4">
+        <BrandMark />
+        <p className="text-lg font-extrabold">{t("brand")}</p>
+      </div>
+      <nav aria-label={t("nav_main")} className="-mx-1 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-1 py-1">
         {items.map((item) => (
           <SidebarLink key={item.key} item={item} active={active} approvalsWaiting={approvalsWaiting} />
         ))}
       </nav>
-      <div className="flex flex-col gap-1 border-t p-3">
+      <div className="flex flex-col gap-1 pt-3">
         {features.includes("docs_links") && (
-          <HelpLink className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted" />
+          <HelpLink className="flex min-h-12 items-center rounded-md px-3.5 text-sm font-semibold text-muted-foreground hover:bg-muted" />
         )}
         {email !== null ? (
-          <UserMenu email={email} onLogOut={onLogOut} />
+          <UserMenu name={name ?? ""} email={email} onLogOut={onLogOut} />
         ) : loading ? (
-          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-12 w-full" />
         ) : (
           <Button variant="ghost" className="w-full justify-start" onClick={onLogOut}>
             {t("log_out")}
