@@ -108,8 +108,11 @@ function Frame({ active, title, lead, leadVars, action, children }: AppShellProp
     <div className="min-h-screen lg:grid lg:grid-cols-[248px_1fr] lg:items-start lg:gap-5 lg:p-5">
       <Sidebar {...navProps} />
       <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b bg-background px-4 py-3 lg:hidden">
-          <p className="text-lg font-semibold">{t("brand")}</p>
+        <header className="sticky top-0 z-30 flex items-center justify-between bg-background px-4.5 pt-4 pb-1.5 lg:hidden">
+          <div className="flex items-center gap-2.5">
+            <BrandMark size="sm" />
+            <p className="text-lg font-extrabold">{t("brand")}</p>
+          </div>
           <MenuSheet {...navProps} />
         </header>
         <div className="flex flex-col gap-3 px-3.5 pt-3 empty:hidden lg:px-3">
