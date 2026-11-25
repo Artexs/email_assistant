@@ -75,3 +75,34 @@ export const E2E_APPROVALS = {
 export const E2E_APPROVALS_COUNT = 6;
 // How many of them wait for an approval (the nav badge): all but the held one.
 export const E2E_APPROVALS_WAITING = 5;
+
+// The queue spec's organization per project (one owner, no member): five waiting drafts to the first delegate, so an approve goes out
+// through the GreenMail of the dev stack, and one send that SEND_SCOPE=self holds. The spec decides, rejects and edits them in a
+// fixed order, away from the organization above, whose spec counts on its own rows.
+export const E2E_QUEUE_OWNER_EMAILS: Record<E2eProject, string> = {
+  mobile: "e2e-queue-owner-mobile@x.test",
+  desktop: "e2e-queue-owner-desktop@x.test",
+};
+export const e2eQueueOrgName = (project: E2eProject): string => `E2E Queue ${project}`;
+export const e2eQueueMailbox = (project: E2eProject): string => greenMailAddress(`e2e-queue-${project}@e2e.test`);
+const queueDraft = (subject: string) => ({
+  delegateName: "Anna Nowak",
+  delegateEmail: E2E_SEND_TEST_ADDRESS,
+  subject: `E2E queue ${subject}`,
+  from: "boss@example.net",
+  body: `E2E original request: please handle the ${subject} case.`,
+  task: `Handle the ${subject} case`,
+});
+// In list order: the newest first, so the first draft here is the last one in the list.
+export const E2E_QUEUE = {
+  drafts: ["alpha", "bravo", "charlie", "delta", "echo"].map(queueDraft),
+  held: {
+    delegateName: "Piotr Lis",
+    delegateEmail: "piotr@example.com",
+    subject: "E2E queue held",
+    from: "vendor@example.net",
+    body: "E2E original request: please check the held case.",
+    task: "Check the held case",
+  },
+} as const;
+export const E2E_QUEUE_WAITING = E2E_QUEUE.drafts.length;

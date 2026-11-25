@@ -7,4 +7,6 @@ export interface Notice {
   reason?: TextKey;
   // The version number of `appr_edit_saved`.
   n?: number;
+  // The recipient of an approved send, for `appr_done_sent` and `appr_done_sending`.
+  to?: string;
 }

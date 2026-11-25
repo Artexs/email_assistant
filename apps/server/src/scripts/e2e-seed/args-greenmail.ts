@@ -1,4 +1,4 @@
-import { e2eApprovalsMailbox } from "./args-approvals";
+import { e2eApprovalsMailbox, e2eQueueMailbox } from "./args-approvals";
 import type { E2eProject } from "./args-core";
 import { e2eDelegatesMailbox, e2eDelegationsMailbox } from "./args-delegations";
 import { e2eLoopsMailbox } from "./args-loops";
@@ -15,6 +15,7 @@ import { e2eUrgencyMailbox } from "./args-urgency";
 // this list and checks it against the calls in `e2e-seed.ts`.
 export const E2E_GREENMAIL_MAILBOXES: Record<string, (project: E2eProject) => string[]> = {
   e2eApprovalsMailbox: (project) => [e2eApprovalsMailbox(project)],
+  e2eQueueMailbox: (project) => [e2eQueueMailbox(project)],
   e2eDelegationsMailbox: (project) => [e2eDelegationsMailbox(project)],
   e2eDelegatesMailbox: (project) => [e2eDelegatesMailbox(project)],
   e2eOpenLoopsMailbox: (project) => [e2eOpenLoopsMailbox(project)],

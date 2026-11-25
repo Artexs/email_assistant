@@ -4,7 +4,7 @@ import { DAY_MS, type DraftPayload, MINUTE_MS, sendPayloadFor } from "@ea/core";
 import type { Transaction } from "kysely";
 
 import type { Db, DB, TenantContext } from "../../platform/db";
-import { E2E_APPROVALS } from "../e2e-seed-args";
+import { E2E_APPROVALS, E2E_QUEUE } from "../e2e-seed-args";
 
 import { insertAction, insertMails, inTransaction } from "./e2e-activity-rows";
 
@@ -19,7 +19,14 @@ export interface ApprovalsSeedResult {
 
 const FIRST_UID = 910_001;
 
-type Plan = (typeof E2E_APPROVALS)[keyof typeof E2E_APPROVALS];
+interface Plan {
+  delegateName: string;
+  delegateEmail: string;
+  subject: string;
+  from: string;
+  body: string;
+  task: string;
+}
 
 // One delegation mail with its delegate, `create_draft` (applied), `send` and the `drafted` delegation. The mail is test mail
 // (its Message-ID ends in `@ea-seed.test`, as `insertMails` makes it), so the committer of the e2e server (ACTIONS_SCOPE=synthetic) takes it.
@@ -140,5 +147,31 @@ export async function seedApprovalsRows(
       raceSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.race, 4, now, null, delegates),
       reminderSendId: await seedSend(trx, ctx, mailboxId, E2E_APPROVALS.reminder, 5, now, null, delegates, "reminder"),
     };
+  });
+}
+
+export interface QueueSeedResult {
+  // The waiting sends in list order: the newest first.
+  waitingSendIds: string[];
+  heldSendId: string;
+}
+
+// Five waiting sends to the delegate that SEND_SCOPE=self admits and one approved send that the scope holds. The first draft of the plan
+// is the oldest one, so the list shows the last draft of the plan first.
+export async function seedQueueRows(
+  db: Db | Transaction<DB>,
+  ctx: TenantContext,
+  mailboxId: string,
+  ownerId: string,
+  now: Date
+): Promise<QueueSeedResult> {
+  return inTransaction(db, async (trx) => {
+    const delegates = new Map<string, string>();
+    const sendIds: string[] = [];
+    for (const [index, plan] of E2E_QUEUE.drafts.entries()) {
+      sendIds.push(await seedSend(trx, ctx, mailboxId, plan, E2E_QUEUE.drafts.length - index, now, null, delegates));
+    }
+    const heldSendId = await seedSend(trx, ctx, mailboxId, E2E_QUEUE.held, 0, now, { userId: ownerId }, delegates);
+    return { waitingSendIds: sendIds.reverse(), heldSendId };
   });
 }

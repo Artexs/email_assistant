@@ -5,8 +5,10 @@ import { ApiError } from "./api";
 import {
   ARM_MS,
   armed,
+  closedSendKey,
   closedView,
   expiredNow,
+  isClosedSendKey,
   nextFocus,
   outcomeOf,
   progress,
@@ -285,5 +287,23 @@ describe("closedView", () => {
     },
   ])("$name", ({ detail: given, expected }) => {
     expect(closedView(given)).toEqual(expected);
+  });
+
+  test.each([
+    { state: "rejected", expected: "appr_closed_rejected" },
+    { state: "sent", expected: "appr_closed_sent" },
+    { state: "held", expected: "appr_closed_held" },
+    { state: "waiting", expected: null },
+    { state: "superseded", expected: null },
+  ] as const)("closedSendKey of $state", ({ state, expected }) => {
+    expect(closedSendKey(state)).toBe(expected);
+  });
+
+  test.each([
+    { key: "appr_closed_expired", expected: true },
+    { key: "appr_closed_draft_gone", expected: false },
+    { key: "appr_closed_other", expected: false },
+  ] as const)("isClosedSendKey of $key", ({ key, expected }) => {
+    expect(isClosedSendKey(key)).toBe(expected);
   });
 });

@@ -279,8 +279,10 @@ test("T8b: a page that moves to another draft while a redraft waits does not ope
   await redraftButton(page).click();
   await expect(detailOf(page).getByText(en.rp_drafting)).toBeVisible();
 
-  // Another item of the list (the phone shows the list after "Back to the list").
-  if (project() === "mobile") await page.getByRole("link", { name: en.appr_back }).click();
+  // Another item of the list (the phone opens the list of all waiting drafts first).
+  if (project() === "mobile") {
+    await page.getByRole("button", { name: en.appr_all_waiting.replace(" ({n})", "") }).click();
+  }
   await page.getByRole("list", { name: en.appr_list_label }).locator(`a[href$="${org().sendIds.viaReplyTo}"]`).click();
   await expect(detailOf(page)).toContainText(P.viaReplyTo.subject);
 

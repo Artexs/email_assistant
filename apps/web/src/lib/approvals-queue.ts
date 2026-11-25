@@ -7,7 +7,7 @@ import {
 
 import type { TextKey } from "../i18n";
 import { ApiError } from "./api";
-import { approveMessage, failureOutcome, stateLabelKey, type Message } from "./approvals-view";
+import { approveMessage, closedTextKey, failureOutcome, stateLabelKey, type Message } from "./approvals-view";
 import { endReasonKey } from "./replies-view";
 
 // Every rule of the one-draft-at-a-time queue, pure: no React, no texts, no clock (the caller passes the time).
@@ -118,4 +118,17 @@ export function closedView(detail: ApprovalDetail): ClosedView {
   if (reason !== null) view.reason = reason;
   if (detail.state === "superseded" && detail.currentId !== null) view.newest = detail.currentId;
   return view;
+}
+
+const SEND_CLOSED_STATES = ["held", "sending", "sent", "rejected", "expired", "failed"] as const;
+
+// The text of a send that left the queue: it was approved, sent, rejected, expired or failed. A draft that waits or was replaced has none.
+export function closedSendKey(state: ApprovalDetail["state"]): TextKey | null {
+  const closed = SEND_CLOSED_STATES.find((candidate) => candidate === state);
+  return closed === undefined ? null : closedTextKey(closed);
+}
+
+// The same question for a text that the edit dialog or a conflict gave.
+export function isClosedSendKey(key: TextKey): boolean {
+  return SEND_CLOSED_STATES.some((state) => closedTextKey(state) === key);
 }
