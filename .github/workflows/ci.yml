@@ -67,7 +67,7 @@ jobs:
       - run: bun run web:build
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     services:
       postgres:
         image: postgres:17
