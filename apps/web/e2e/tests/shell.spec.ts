@@ -83,16 +83,21 @@ test.describe("desktop frame", () => {
     await expect(sidebar(page)).toHaveCSS("border-top-width", "1px");
   });
 
-  test("on a short window the user menu stays visible and the page does not scroll", async ({ page }) => {
+  test("on a short window the sidebar stays inside the window and the user menu stays visible", async ({ page }) => {
     const user = readSeed().approvalsOrgs.desktop.owner;
     await page.setViewportSize({ width: 1280, height: 560 });
     await startAs(page, user);
     await page.goto("/approvals");
     // The onboarding item shows while the owner has not finished it: the item list is long.
     await expect(sidebar(page).getByRole("link", { name: en.nav_onboarding })).toBeVisible();
-    await expect(page.getByRole("button", { name: en.user_menu })).toBeInViewport({ ratio: 1 });
-    const scrolls = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight);
-    expect(scrolls).toBe(false);
+    // The page itself may be taller than the window: the sidebar sticks, so it is whole in the window at the top and at the end.
+    for (const scrollY of [0, 100_000]) {
+      await page.evaluate((y) => window.scrollTo(0, y), scrollY);
+      const box = await sidebar(page).boundingBox();
+      expect(box?.y).toBeGreaterThanOrEqual(0);
+      expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(560);
+      await expect(page.getByRole("button", { name: en.user_menu })).toBeInViewport({ ratio: 1 });
+    }
   });
 
   test("the paused banner starts at the left edge of the page title", async ({ page }) => {
