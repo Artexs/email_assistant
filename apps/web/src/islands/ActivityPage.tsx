@@ -1,3 +1,4 @@
+import { DAY_MS, UNDO_WINDOW_MS } from "@ea/core";
 import { formatClock, mailboxListSchema } from "@ea/core/web";
 import { useCallback, useState } from "react";
 
@@ -65,6 +66,7 @@ function Activity() {
           <ActivityList
             key={filtersToSearch(effective)}
             filters={effective}
+            onFiltersChange={onChange}
             timeZone={timeZone}
             showMailbox={list.length >= 2}
             mailboxAddress={addressOf}
@@ -82,7 +84,7 @@ export default function ActivityPage() {
   // A language change re-renders the whole island (the panel locale store).
   useLocale();
   return (
-    <AppShell active="activity" title="title_activity">
+    <AppShell active="activity" title="title_activity" lead="act_lead" leadVars={{ days: UNDO_WINDOW_MS / DAY_MS }}>
       <Activity />
     </AppShell>
   );
