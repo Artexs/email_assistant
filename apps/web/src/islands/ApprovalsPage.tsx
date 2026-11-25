@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { Inbox } from "lucide-react";
 import { cn } from "cn";
 
 import { ApprovalActions, RejectReason } from "../components/approvals/ApprovalActions";
-import { ApprovalDetailPanel } from "../components/approvals/ApprovalDetailPanel";
+import { ApprovalCard } from "../components/approvals/ApprovalCard";
 import { ApprovalEditDialog } from "../components/approvals/ApprovalEditDialog";
-import { ApprovalList } from "../components/approvals/ApprovalList";
 import { ReplyControls } from "../components/approvals/ReplyControls";
 import { useReplyActions } from "../components/approvals/use-reply-actions";
+import { WaitingList } from "../components/approvals/WaitingList";
+import { EmptyState } from "../components/patterns/EmptyState";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -18,6 +20,7 @@ import type { Notice } from "../lib/approvals-notice";
 import { ApiError } from "../lib/api";
 import { fetchApproval, fetchApprovals, postApprove, postReject, postRejectReason } from "../lib/approvals-api";
 import { canEdit, editStart } from "../lib/approvals-edit";
+import { approvalsLeadText } from "../lib/approvals-lead";
 import { approveMessage, decisions, failureOutcome } from "../lib/approvals-view";
 import { canWrite } from "../lib/can-write";
 import { errorText } from "../lib/errors";
@@ -78,12 +81,18 @@ function NoticeLine({
   );
 }
 
-function Approvals() {
+// The list reloads every 30 s while the tab is visible. The page holds it above the shell: the lead of the page head counts it.
+function useApprovalList() {
+  return useResource(fetchApprovals);
+}
+
+type ApprovalListResource = ReturnType<typeof useApprovalList>;
+
+function Approvals({ list }: { list: ApprovalListResource }) {
   const { me, reload: reloadMe } = useMe();
   const now = useNow();
   const [id, select] = useSelectedId();
-  // The list reloads every 30 s while the tab is visible. An item is loaded once per choice and after each action.
-  const list = useResource(fetchApprovals);
+  // An item is loaded once per choice and after each action.
   // A new version (after an edit) has no copy in the mailbox yet: the detail reloads every 5 s until the draft is ready, so Approve turns on.
   // The poll stops while the edit dialog is open: a reload must not replace the item under the typed text (a newer version then
   // answers 409 `changed` on save, and the dialog keeps the text).
@@ -139,13 +148,7 @@ function Approvals() {
 
   // The flag is off: the API answers like for an unknown path.
   if (!list.loading && list.error instanceof ApiError && list.error.status === 404) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("appr_off")}</p>
-        </CardContent>
-      </Card>
-    );
+    return <EmptyState icon={Inbox} title={t("appr_off")} />;
   }
 
   const refresh = () => {
@@ -273,10 +276,8 @@ function Approvals() {
           <Button onClick={list.reload}>{t("retry")}</Button>
         </div>
       );
-  } else if (items.length === 0) {
-    listContent = <p className="text-sm text-muted-foreground">{t("appr_empty")}</p>;
   } else {
-    listContent = <ApprovalList items={items} selectedId={id} now={now} onSelect={onSelect} />;
+    listContent = <WaitingList items={items} focusId={id} now={now} onPick={onSelect} />;
   }
 
   const back = (
@@ -320,7 +321,7 @@ function Approvals() {
     detailContent = (
       <div className="flex flex-col gap-4">
         {back}
-        <ApprovalDetailPanel detail={open} now={now}>
+        <ApprovalCard detail={open} now={now}>
           {open.kind === "reply" && open.state === "waiting" && owner && canWrite(me) && (
             <ReplyControls
               key={open.id}
@@ -367,17 +368,36 @@ function Approvals() {
             ) : (
               <RejectReason disabled={busy} onPick={onReason} />
             ))}
-        </ApprovalDetailPanel>
+        </ApprovalCard>
       </div>
     );
   }
 
+  // Nothing waits and no draft is open: one empty state in place of the two columns. An open draft stays after the last decision.
+  if (list.data !== null && items.length === 0 && id === null) {
+    return (
+      <EmptyState icon={Inbox} title={t("appr_none")} text={t("appr_empty_text")}>
+        <Button asChild>
+          <a href="/activity">{t("appr_empty_action")}</a>
+        </Button>
+      </EmptyState>
+    );
+  }
+
+  // The list comes first in the page, so the keyboard picks a draft and then reaches its buttons; from `lg` it sits at the right.
   return (
     <div className="flex flex-col gap-4">
       <NoticeLine notice={notice} statusRef={statusRef} />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <div className={cn(id !== null && "hidden lg:block")}>{listContent}</div>
-        <div className={cn(id === null && "hidden lg:block")}>{detailContent}</div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+        {(list.data === null || items.length > 0) && (
+          <Card className={cn("lg:col-start-2 lg:row-start-1 lg:self-start", id !== null && "hidden lg:flex")}>
+            <CardContent className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold">{t("appr_up_next")}</h2>
+              {listContent}
+            </CardContent>
+          </Card>
+        )}
+        <div className={cn("lg:col-start-1 lg:row-start-1", id === null && "hidden lg:block")}>{detailContent}</div>
       </div>
     </div>
   );
@@ -385,9 +405,13 @@ function Approvals() {
 
 export default function ApprovalsPage() {
   useLocale();
+  const list = useApprovalList();
+  const items = list.data?.items ?? [];
+  // No lead while the list loads or the flag is off (the API answers 404).
+  const lead = list.data === null ? undefined : { text: approvalsLeadText(items) };
   return (
-    <AppShell active="approvals" title="title_approvals">
-      <Approvals />
+    <AppShell active="approvals" title="title_approvals" lead={lead}>
+      <Approvals list={list} />
     </AppShell>
   );
 }

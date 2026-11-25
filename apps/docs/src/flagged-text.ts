@@ -13,7 +13,7 @@ export interface FlaggedText {
 // Panel keys: the English and the Polish text of each key are both flagged. A page reaches them as text or as `<UiText k />`.
 export const FLAGGED_PANEL_KEYS: Partial<Record<FeatureKey, readonly TextKey[]>> = {
   stats_page: ["stats_caption", "stats_m4", "stats_note"],
-  approvals_page: ["appr_list_label", "appr_detail_label", "appr_empty"],
+  approvals_page: ["appr_list_label", "appr_detail_label", "appr_none"],
   delegation_pages: ["dgn_remind", "dgn_keep", "dgn_empty_open"],
   sent_sync: ["sent_switch", "sent_line", "sent_off_note"],
   security_log: ["sec_title", "sec_empty"],
