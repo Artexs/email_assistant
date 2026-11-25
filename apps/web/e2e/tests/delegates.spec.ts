@@ -495,7 +495,7 @@ test("T10: the keyboard alone adds a delegate, edits it, turns it off after the 
   expect(errors).toEqual([]);
 });
 
-test("T14: a delegate with a long address and a long name leaves no sideways scroll", async ({ context, page }) => {
+test("a delegate with a long address and a long name leaves no sideways scroll", async ({ context, page }) => {
   await startSession(context, page, org().owner);
   await page.goto("/delegates");
   await expect(rowOf(page, E2E_DELEGATES_ANNA.name)).toBeVisible();
