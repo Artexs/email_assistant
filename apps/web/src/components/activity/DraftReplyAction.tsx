@@ -1,4 +1,5 @@
 import type { ActivityItem } from "@ea/core/web";
+import { PenLine } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { t, type TextKey } from "../../i18n";
@@ -86,6 +87,7 @@ export function DraftReplyAction({ item }: DraftReplyActionProps) {
         aria-label={t("rp_draft_reply_for", { subject })}
         onClick={() => void ask()}
       >
+        <PenLine aria-hidden="true" />
         {t("rp_draft_reply")}
       </Button>
       <span role="status" className="text-sm">

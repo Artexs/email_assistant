@@ -193,7 +193,7 @@ test("T6: a mail with an open draft links to it; a flagged mail says why there i
     name: en.rp_open_draft_for.replace("{subject}", P.gap.subject),
   });
   await expect(open).toHaveAttribute("href", `/approvals?id=${org().sendIds.gap}`);
-  await expect(activityRow(page, P.gap.subject).getByRole("button", { name: /^✍️ Draft reply/ })).toHaveCount(0);
+  await expect(activityRow(page, P.gap.subject).getByRole("button", { name: /^Draft reply/ })).toHaveCount(0);
 
   // The real route answers 409 `blocked` for a mail with a suspicious sign.
   const flagged = activityRow(page, P.flagged.subject);
@@ -229,7 +229,7 @@ test("T7: a member sees no Draft reply button on an activity row", async ({ cont
   const errors = await startSession(context, page, "member");
   await page.goto("/activity");
   await expect(activityRow(page, P.clean.subject)).toBeVisible();
-  await expect(page.getByRole("button", { name: /^✍️ Draft reply/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Draft reply/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /^Open the draft/ })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

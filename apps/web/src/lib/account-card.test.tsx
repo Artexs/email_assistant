@@ -57,43 +57,65 @@ function render(me: Me | null): string {
   );
 }
 
-describe("AccountCard delete block (F106 stage 04, B1)", () => {
+function cardsOf(html: string): string[] {
+  return Array.from(html.matchAll(/data-card="([a-z-]+)"/g), (match) => match[1] ?? "");
+}
+
+describe("AccountCard cards", () => {
   setLocaleForTest("en");
   const deleteTitle = t("del_title");
-  const withFlag = (over: Partial<Me> = {}): Me => ({ ...baseMe, features: ["org_delete"], ...over });
+  const owner: Me = { ...baseMe, features: ["org_delete", "security_log"] };
 
-  test("an owner with org_delete sees the delete button inside a bordered block", () => {
-    const html = render(withFlag());
-    expect(html).toContain(deleteTitle);
-    expect(html).toContain('data-action="delete-organization"');
+  test.each([
+    ["an owner with a password, org_delete and security_log", owner, ["account", "security", "delete-organization"]],
+    ["a member with a password", { ...baseMe, role: "assistant" } satisfies Me, ["account", "security"]],
+    [
+      "a member without a password and no security log",
+      { ...baseMe, role: "assistant", hasPassword: false, signInMethod: "sso" } satisfies Me,
+      ["account"],
+    ],
+    [
+      "an owner whose organization has org_delete off",
+      { ...baseMe, features: [] } satisfies Me,
+      ["account", "security"],
+    ],
+    [
+      "an owner without a password: the log stays, the two-factor section and the delete card go",
+      { ...owner, hasPassword: false, signInMethod: "sso" } satisfies Me,
+      ["account", "security"],
+    ],
+    ["me not loaded", null, ["account"]],
+  ])("%s", (_name, me, expected) => {
+    expect(cardsOf(render(me))).toEqual(expected);
   });
 
-  test("flag off, an assistant, or me not loaded: no delete button and no empty bordered block", () => {
-    const flagOff = render({ ...baseMe, features: [] });
-    const assistant = render(withFlag({ role: "assistant" }));
-    const loading = render(null);
-    for (const html of [flagOff, assistant, loading]) {
-      expect(html).not.toContain(deleteTitle);
-      expect(html).not.toContain("delete-organization");
-    }
-    // The UI does not change at all: the bordered blocks are the same as without the new block (the card ends with
-    // the sessions block, and the security-log block is not there for these three).
-    for (const html of [flagOff, assistant]) {
-      const blocks = html.match(/<div class="border-t pt-4">/g) ?? [];
-      expect(blocks.length).toBe(1);
-    }
-    // While `me` is not loaded no password control shows, so the two-factor block is not there either.
-    expect(loading.match(/<div class="border-t pt-4">/g) ?? []).toHaveLength(0);
+  test("the delete card has the danger tone and holds the delete button; no other card holds it", () => {
+    const html = render(owner);
+    const card = html.slice(html.indexOf('data-card="delete-organization"'));
+    expect(html).toMatch(/data-tone="danger"[^>]*data-card="delete-organization"/);
+    expect(card).toContain('data-action="delete-organization"');
+    expect(card).toContain(deleteTitle);
+    expect(html.slice(0, html.indexOf('data-card="delete-organization"'))).not.toContain(
+      'data-action="delete-organization"'
+    );
   });
 
-  test("with org_delete on, there is exactly one bordered block more than with it off", () => {
-    const on = render(withFlag()).match(/<div class="border-t pt-4">/g) ?? [];
-    const off = render({ ...baseMe, features: [] }).match(/<div class="border-t pt-4">/g) ?? [];
-    expect(on.length).toBe(off.length + 1);
+  test("the two-factor section is in the security card, after the account card", () => {
+    const html = render(owner);
+    const security = html.indexOf('data-card="security"');
+    expect(html.indexOf('data-section="two-factor"')).toBeGreaterThan(security);
+    expect(html.indexOf('data-section="sessions"')).toBeLessThan(security);
+    expect(html.indexOf('data-section="security-log"')).toBeGreaterThan(html.indexOf('data-section="two-factor"'));
+  });
+
+  test("a member without the delete flag sees no delete text", () => {
+    const html = render({ ...baseMe, features: [] });
+    expect(html).not.toContain(deleteTitle);
+    expect(html).not.toContain("delete-organization");
   });
 });
 
-describe("AccountCard for a member without a password (F119 stage 13, D14)", () => {
+describe("AccountCard for a member without a password", () => {
   const passwordOnlyMarks = [
     'id="acct-current"', // the change-password form
     'id="acct-new"',

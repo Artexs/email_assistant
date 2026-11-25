@@ -231,6 +231,34 @@ describe("the report content", () => {
     expect(markup).not.toContain(en.rep_review_suggest);
   });
 
+  test("each category is a card with its pill, its status badge and a ring named by the counts; no history gives no ring", () => {
+    const v = view();
+    v.categories.notification = row({
+      history: { outcome: "pass", acted: 20, moved: 0, upper: 0.02, total: 40, wouldMove: 12 },
+    });
+    v.categories.spam = row({
+      history: null,
+      evidence: { eligible: false, recommended: false, blocks: ["no_global"] },
+    });
+    const cards = html(v).split("<article").slice(1);
+    expect(cards).toHaveLength(3);
+    for (const card of cards) expect(card.split('data-slot="category-pill"')).toHaveLength(2);
+    const [info, notification, spam] = cards;
+    expect(notification).toContain(`aria-label="${t("rep_counts", { total: 40, wouldMove: 12 })}"`);
+    expect(notification).toContain('data-status="rep_recommended"');
+    expect(info).toContain('role="img"');
+    expect(spam).not.toContain('role="img"');
+    expect(spam).not.toContain("Mails checked");
+  });
+
+  test("no card has a button: the one turn-on button and Check again sit in the action card", () => {
+    const markup = html(view());
+    const cards = markup.slice(markup.indexOf("<article"), markup.lastIndexOf("</article>"));
+    expect(cards).not.toContain("<button");
+    expect(markup.split("<button")).toHaveLength(3);
+    expect(markup.split(`>${t("rep_turn_on", { categories: en.cat_notification })}<`)).toHaveLength(2);
+  });
+
   test("with the flag on the optional review link shows under the categories, never as a button or a required step", () => {
     const href = `/review?mailbox=${MAILBOX}`;
     const markup = html(view(), { reviewHref: href });

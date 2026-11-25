@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { LOOP_ROW_BY_KIND } from "../components/loops/loop-kinds";
 import type { LoopRowProps } from "../components/loops/LoopRow";
 import { LoopFilterTabs, LoopTabs } from "../components/loops/LoopTabs";
+import { LoopEmpty } from "../components/loops/LoopsBoard";
 import { setLocaleForTest } from "../i18n";
 
 afterEach(() => setLocaleForTest("en"));
@@ -76,8 +77,9 @@ describe("a loop row", () => {
     expect(pl).toContain("Zwykle odpowiada w 2 dni");
   });
 
-  test("an owner gets named buttons in the order of the rules; ids let the page return the focus", () => {
+  test("an owner gets a row with the initials of the counterpart and named buttons in the order of the rules; ids let the page return the focus", () => {
     const html = row(loop());
+    expect(html).toMatch(/data-slot="initials-avatar"[^>]*>C</);
     const labels = [
       "Draft follow-up: client@example.com, Send the offer",
       "Later: client@example.com, Send the offer",
@@ -186,6 +188,22 @@ describe("a loop row", () => {
       expect(html).toContain(text);
     }
     expect(html).not.toMatch(/łeś|łaś/);
+  });
+});
+
+describe("an empty loop list", () => {
+  test.each([
+    ["open", "Nothing is open here."],
+    ["due", "Nothing is due today."],
+    ["closed", "Nothing is closed here."],
+  ] as const)("the %s filter shows its sentence as the one heading", (filter, text) => {
+    const html = renderToStaticMarkup(<LoopEmpty filter={filter} headingLevel={2} />);
+    expect(html.match(/<h[1-6][ >]/g)).toHaveLength(1);
+    expect(html).toContain(`<h2 class="text-xl font-bold">${text}</h2>`);
+    expect(renderToStaticMarkup(<LoopEmpty filter={filter} headingLevel={3} />)).toContain(
+      `<h3 class="text-xl font-bold">${text}</h3>`
+    );
+    expect(html).not.toContain("<button");
   });
 });
 

@@ -22,15 +22,22 @@ export function securityActorText(actor: SecurityLogEntry["actor"]): string {
   }
 }
 
-// The line holds the date and time in the organization's time zone, so it matches the digest times.
-export function securityLineText(entry: SecurityLogEntry, timeZone: string): string {
+export interface SecurityEntryParts {
+  when: string;
+  what: string;
+  // The actor, with the unlock time after it when the entry is a lockout.
+  who: string;
+}
+
+// The parts of one entry. The time is in the organization's time zone, so it matches the digest times.
+export function securityEntryParts(entry: SecurityLogEntry, timeZone: string): SecurityEntryParts {
   const when = new Intl.DateTimeFormat(dateLocale(), { timeZone, dateStyle: "medium", timeStyle: "short" }).format(
     new Date(entry.at)
   );
-  const line = t("sec_line", { when, what: securityKindText(entry.kind), who: securityActorText(entry.actor) });
-  if (entry.lockedUntil === null) return line;
+  const actor = securityActorText(entry.actor);
+  if (entry.lockedUntil === null) return { when, what: securityKindText(entry.kind), who: actor };
   const time = new Intl.DateTimeFormat(dateLocale(), { timeZone, timeStyle: "short" }).format(
     new Date(entry.lockedUntil)
   );
-  return `${line} ${t("sec_locked_until", { time })}`;
+  return { when, what: securityKindText(entry.kind), who: `${actor} ${t("sec_locked_until", { time })}` };
 }

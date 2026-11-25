@@ -11,6 +11,7 @@ import {
   reasonText,
   type LoopAction,
 } from "../../lib/loops-view";
+import { InitialsAvatar } from "../patterns/InitialsAvatar";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 
@@ -57,6 +58,16 @@ const BUTTON_TEXTS: Record<LoopAction, { text: TextKey; label: TextKey }> = {
   reopen: { text: "lp_reopen", label: "lp_reopen_for" },
 };
 
+// Draft follow-up is the main step of a loop; Later, Done and Reopen are plain; Drop and Stop tracking are quiet.
+const BUTTON_VARIANTS: Record<LoopAction, "soft" | "outline" | "ghost"> = {
+  follow_up: "soft",
+  later: "outline",
+  done: "outline",
+  drop: "ghost",
+  untrack: "ghost",
+  reopen: "outline",
+};
+
 function Actions({ item, owner, canWrite, onAction }: LoopRowProps) {
   const actions = loopActions(item, { owner, canWrite });
   const waits = item.status === "open" && item.followUpWaiting && item.kind !== "promised";
@@ -85,12 +96,12 @@ function Actions({ item, owner, canWrite, onAction }: LoopRowProps) {
                 key={action}
                 id={loopButtonId(item.id, action)}
                 type="button"
-                variant="outline"
+                variant={BUTTON_VARIANTS[action]}
                 size="sm"
                 aria-label={t(BUTTON_TEXTS[action].label, { name })}
                 aria-disabled={isBlocked ? true : undefined}
                 aria-describedby={isBlocked ? reasonId(item.id) : undefined}
-                className="aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
+                className="scroll-mb-[calc(var(--tabbar-height)+1.5rem)] aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
                 onClick={() => {
                   if (!isBlocked) onAction(item, action);
                 }}
@@ -123,17 +134,26 @@ function LoopCard(props: LoopRowProps & { layout: RowLayout }) {
   const { item, timeZone, now, layout } = props;
   const due = dueText(item.dueAt, timeZone, dateLocale());
   return (
-    <li id={loopRowId(item.id)} tabIndex={-1} className="flex flex-col gap-3 rounded-lg border p-4 outline-none">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          {layout.heading === null ? (
-            <p aria-hidden="true" className="font-medium">
-              —
-            </p>
-          ) : (
-            <p className="font-medium break-words">{layout.heading}</p>
-          )}
-          {layout.subheading !== null && <p className="text-sm break-all text-muted-foreground">{layout.subheading}</p>}
+    <li
+      id={loopRowId(item.id)}
+      tabIndex={-1}
+      className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-card outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-3">
+          {layout.heading !== null && <InitialsAvatar name={layout.heading} size="sm" />}
+          <div className="flex min-w-0 flex-col gap-0.5">
+            {layout.heading === null ? (
+              <p aria-hidden="true" className="font-bold">
+                —
+              </p>
+            ) : (
+              <p className="font-bold break-words">{layout.heading}</p>
+            )}
+            {layout.subheading !== null && (
+              <p className="text-sm break-all text-muted-foreground">{layout.subheading}</p>
+            )}
+          </div>
         </div>
         <Badge variant="secondary">{t(item.status === "open" ? "lp_status_open" : "lp_status_closed")}</Badge>
       </div>
@@ -148,8 +168,20 @@ function LoopCard(props: LoopRowProps & { layout: RowLayout }) {
           {item.usualReplyDays === 1 ? t("lp_usual_reply_one") : t("lp_usual_reply", { n: item.usualReplyDays })}
         </p>
       )}
-      {item.matchedBySubject && <p className="text-sm text-muted-foreground">{t("lp_matched_subject")}</p>}
-      {item.autoReplyOnly && <p className="text-sm text-muted-foreground">{t("lp_auto_reply_only")}</p>}
+      {(item.matchedBySubject || item.autoReplyOnly) && (
+        <div className="flex flex-wrap gap-2">
+          {item.matchedBySubject && (
+            <Badge variant="secondary" className="h-auto whitespace-normal">
+              {t("lp_matched_subject")}
+            </Badge>
+          )}
+          {item.autoReplyOnly && (
+            <Badge variant="secondary" className="h-auto whitespace-normal">
+              {t("lp_auto_reply_only")}
+            </Badge>
+          )}
+        </div>
+      )}
       <Actions {...props} />
     </li>
   );

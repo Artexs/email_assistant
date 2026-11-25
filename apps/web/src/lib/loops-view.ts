@@ -1,6 +1,5 @@
 import {
   DAY_MS,
-  type DelegationFilter,
   LOOP_DEFAULT_FILTER,
   type LoopFilterName,
   loopFilters,
@@ -57,15 +56,6 @@ export const LOOP_CLOSED_TEXTS: Record<NonNullable<LoopItem["closeReason"]>, Tex
   later_reply: "lp_closed_later_reply",
   expired: "lp_closed_expired",
   sent_off: "lp_closed_sent_off",
-};
-
-// The tracked loops under the delegations list on the Delegated tab follow its filter. `answered` has no loop counterpart (a loop that got
-// its answer is closed), so that filter shows no second list.
-export const LOOP_FILTER_OF_DELEGATION: Record<DelegationFilter, LoopFilterName | null> = {
-  open: "open",
-  overdue: "due",
-  answered: null,
-  closed: "closed",
 };
 
 // No value or an unknown one is the default tab.

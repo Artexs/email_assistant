@@ -192,13 +192,17 @@ function OrganizationGroup({ isOwner, isOwnerRole }: { isOwner: boolean; isOwner
 }
 
 // After the first load the page scrolls to the group that the hash names, once. The page grows while it loads, so
-// the scroll waits for the mailbox group to settle. `?two_factor=required` has its own scroll and wins.
+// the scroll waits for the mailbox group to settle. `?two_factor=required` scrolls to the two-factor section instead
+// of a group (the section scrolls once when it mounts, but the cards above it are still loading then and push it away).
 function useScrollToGroup(ready: boolean) {
   const done = useRef(false);
   useEffect(() => {
     if (!ready || done.current) return;
     done.current = true;
-    if (new URLSearchParams(location.search).get("two_factor") === "required") return;
+    if (new URLSearchParams(location.search).get("two_factor") === "required") {
+      document.getElementById("two-factor")?.scrollIntoView();
+      return;
+    }
     const id = groupIdFromHash(location.hash);
     if (id !== null) document.getElementById(id)?.scrollIntoView();
   }, [ready]);

@@ -73,6 +73,7 @@ export const plReply = {
   rep_off: "Ta strona jest wyłączona dla Twojej organizacji.",
   rep_no_mailbox: "Najpierw połącz skrzynkę. Potem zacznie się sprawdzanie poczty.",
   rep_load_error: "Nie udało się wczytać raportu.",
+  rep_lead: "Co asystent zrobiłby z Twoją ostatnią pocztą. Nic się nie zmieniło.",
   rep_intro: "Co asystent zrobiłby z Twoją pocztą z ostatnich 30 dni.",
   rep_read_only:
     "Podczas sprawdzania asystent tylko odczytał wiadomości z ostatnich 30 dni w folderze INBOX. Niczego nie zmienił.",

@@ -193,24 +193,28 @@ test("rows: each kind shows its counterpart, text, reason, due date and counters
   expect(errors).toEqual([]);
 });
 
-test("T8: Delegated shows the F102 list and the tracked loops; the F102 filter drives both; Stop tracking asks first", async ({
+test("T8: Delegated shows the delegation columns and the tracked loops with their own filter links; Stop tracking asks first", async ({
   context,
   page,
 }) => {
   const errors = await startSession(context, page, org().owner);
   await page.goto("/delegations");
-  const f102 = page.getByRole("list", { name: en.dgn_list_label });
-  await expect(f102.getByRole("listitem").filter({ hasText: E2E_DELEGATIONS.sent.delegateName })).toBeVisible();
+  // The columns: each seeded delegation sits in the column of its status.
+  const columnList = (title: string) => page.getByRole("list", { name: title, exact: true }).getByRole("listitem");
+  await expect(columnList(en.dgn_col_sent).filter({ hasText: E2E_DELEGATIONS.sent.delegateName })).toBeVisible();
+  await expect(
+    columnList(en.dgn_col_answered).filter({ hasText: E2E_DELEGATIONS.answered.delegateName })
+  ).toBeVisible();
+  // The loops follow under their heading, with the filter links of the loops.
   const delegated = regionOf(page, "delegated");
   await expect(delegated.getByRole("heading", { name: en.lp_list_delegated })).toBeVisible();
   await expect(rowOf(delegated, "delUntrack")).toBeVisible();
-  // Answered has no tracked list; Closed shows the closed loops under the closed delegations.
-  const f102Filters = page.getByRole("navigation", { name: en.dgn_filters_label });
-  await f102Filters.getByRole("link", { name: en.dgn_filter_answered, exact: true }).click();
-  await expect(delegated).toHaveCount(0);
-  await expect(f102.getByRole("listitem").filter({ hasText: E2E_DELEGATIONS.answered.delegateName })).toBeVisible();
-  await f102Filters.getByRole("link", { name: en.dgn_filter_open, exact: true }).click();
-  await expect(rowOf(delegated, "delUntrack")).toBeVisible();
+  await expect(filterLink(page, en.dgn_filter_open)).toHaveAttribute("aria-current", "page");
+  await expect(filterLink(page, en.dgn_filter_closed)).toHaveAttribute(
+    "href",
+    "/delegations?tab=delegated&filter=closed"
+  );
+  await expect(page.getByRole("button", { name: en.dgn_closed_show })).toHaveAttribute("aria-expanded", "false");
 
   // Stop tracking: Keep returns the focus to the button, Escape does the same, Confirm closes the loop.
   const untrack = buttonOf(delegated, "delUntrack", en.lp_untrack_for);
@@ -235,12 +239,29 @@ test("T8: Delegated shows the F102 list and the tracked loops; the F102 filter d
   await expect(statusOf(delegated)).toBeFocused();
   await expect(rowOf(delegated, "delUntrack")).toHaveCount(0);
   await expect(rowOf(delegated, "delView")).toBeVisible();
-  await f102Filters.getByRole("link", { name: en.dgn_filter_closed, exact: true }).click();
+  // The loop filter link changes the loops; the closed delegations stay shut (the address is read once, at load).
+  await filterLink(page, en.dgn_filter_closed).click();
+  await expect(page).toHaveURL(/tab=delegated&filter=closed$/);
   await expect(rowOf(delegated, "delUntrack")).toContainText(en.lp_closed_untracked);
   await expect(
     rowOf(delegated, "delUntrack").getByRole("button", { name: fill(en.lp_reopen_for, nameOf("delUntrack")) })
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: en.dgn_closed_show })).toHaveAttribute("aria-expanded", "false");
   expect(errors).toEqual([]);
+});
+
+test("?tab=delegated&filter=closed shows the closed loops and opens the closed delegations", async ({
+  context,
+  page,
+}) => {
+  await startSession(context, page, org().owner);
+  await page.goto("/delegations?tab=delegated&filter=closed");
+  await expect(filterLink(page, en.dgn_filter_closed)).toHaveAttribute("aria-current", "page");
+  await expect(rowOf(regionOf(page, "delegated"), "delClosed")).toBeVisible();
+  await expect(page.getByRole("button", { name: en.dgn_closed_hide })).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("heading", { level: 2, name: en.dgn_col_closed, exact: true })).toBeVisible();
+  // The columns stay above it.
+  await expect(page.getByRole("heading", { level: 2, name: en.dgn_col_sent, exact: true })).toBeVisible();
 });
 
 test("T5: Waiting, Draft follow-up: Follow-up drafted with a link to the approval; the row then waits for the approval", async ({
@@ -433,6 +454,8 @@ test("T11: every tab, the Closed filter and the confirm question have no axe vio
     await page.goto(url);
     await expect(loaded(kind, en.lp_empty_open)).toBeVisible();
     await expectNoA11yViolations(page);
+    // No sideways scroll on a phone (the desktop project is wide enough by definition).
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.goto(`${url}${url.includes("?") ? "&" : "?"}filter=closed`);
     await expect(loaded(kind, en.lp_empty_closed)).toBeVisible();
     await expectNoA11yViolations(page);
@@ -459,7 +482,7 @@ test("T11: every tab, the Closed filter and the confirm question have no axe vio
   await expect(nav.getByRole("link", { name: en.nav_delegations, exact: true })).toHaveCount(0);
 });
 
-test("the flag open_loops alone: the item and the tabs show, the Delegates header and the F102 list do not", async ({
+test("the flag open_loops alone: the item and the tabs show, the Delegates header and the delegation columns do not", async ({
   context,
   page,
 }) => {
@@ -472,10 +495,10 @@ test("the flag open_loops alone: the item and the tabs show, the Delegates heade
     await expect(page.getByRole("heading", { level: 1, name: en.title_open_loops })).toBeVisible();
     const nav = page.getByRole("navigation", { name: en.nav_main });
     await expect(nav.getByRole("link", { name: en.nav_open_loops })).toHaveAttribute("aria-current", "page");
-    // No Delegates header and no delegations list; the Delegated tab holds the tracked loops with their own filters.
+    // No Delegates header and no delegation columns; the Delegated tab holds the tracked loops with their own filters.
     await expect(page.getByRole("navigation", { name: en.dlg_tabs_label })).toHaveCount(0);
-    await expect(page.getByRole("list", { name: en.dgn_list_label })).toHaveCount(0);
-    await expect(page.getByRole("navigation", { name: en.dgn_filters_label })).toHaveCount(0);
+    await expect(page.getByRole("heading", { level: 2, name: en.dgn_col_sent, exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: en.dgn_closed_show })).toHaveCount(0);
     await expect(tabLink(page, en.lp_tab_delegated)).toHaveAttribute("aria-current", "page");
     const delegated = regionOf(page, "delegated");
     await expect(rowOf(delegated, "delView")).toBeVisible();
@@ -492,18 +515,17 @@ test("the flag open_loops alone: the item and the tabs show, the Delegates heade
   }
 });
 
-// The delegations specs of the same project ran before and moved rows, so the Open tab can be empty: the list or the empty text is the page.
-const f102ListOrEmpty = (page: Page) =>
-  page.getByRole("list", { name: en.dgn_list_label }).or(page.getByText(en.dgn_empty_open));
+// The columns are on the page whatever the delegations specs of the same project moved.
+const columnsShown = (page: Page) => page.getByRole("heading", { level: 2, name: en.dgn_col_sent, exact: true });
 
-test("T12: with the flag off the F102 page is unchanged: no loop tabs, the Delegations label, no loops route", async ({
+test("T12: with the flag off the delegations page is unchanged: no loop tabs, the Delegations label, no loops route", async ({
   context,
   page,
 }) => {
   const errors = await startSession(context, page, readSeed().delegationsOrgs[project()].owner);
   await page.goto("/delegations");
   await expect(page.getByRole("heading", { level: 1, name: en.title_delegations })).toBeVisible();
-  await expect(f102ListOrEmpty(page)).toBeVisible();
+  await expect(columnsShown(page)).toBeVisible();
   await expect(tabsOf(page)).toHaveCount(0);
   await expect(page.getByRole("region", { name: en.lp_list_delegated })).toHaveCount(0);
   const nav = page.getByRole("navigation", { name: en.nav_main });
@@ -511,7 +533,7 @@ test("T12: with the flag off the F102 page is unchanged: no loop tabs, the Deleg
   await expect(nav.getByRole("link", { name: en.nav_open_loops })).toHaveCount(0);
   // `?tab=` means nothing here.
   await page.goto("/delegations?tab=waiting");
-  await expect(f102ListOrEmpty(page)).toBeVisible();
+  await expect(columnsShown(page)).toBeVisible();
   await expect(tabsOf(page)).toHaveCount(0);
   // The routes answer like for an unknown path.
   const answer = await page.request.get("/api/loops?kind=waiting");

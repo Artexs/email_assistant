@@ -45,12 +45,12 @@ On a wide screen the page also shows a teal panel on the left. On a phone you se
 After 10 wrong passwords in 15 minutes, the system locks your account for 15 minutes.
 
 Two-factor sign-in is optional. When you turn it on, the panel asks for a code from your authenticator app after the password.
-You turn it on in **<UiText k="nav_settings" />**, in the Account card. See [Turn on two-factor sign-in](../how-to/two-factor/).
+You turn it on in **<UiText k="nav_settings" />**, in **<UiText k="set_group_account" />**, card **<UiText k="acct_security_title" />**. See [Turn on two-factor sign-in](../how-to/two-factor/).
 
 ## 4. Do the Onboarding checklist
 <Shot page="onboarding" />
 
-After the first sign-in the panel opens the page **<UiText k="nav_onboarding" />**. It shows a checklist.
+After the first sign-in the panel opens the page **<UiText k="nav_onboarding" />**. It shows a checklist as numbered step cards, with a progress ring that counts the required steps. The first step that is not done has a teal outline.
 The checklist is done when you have a mailbox, a Telegram link and a chosen mode. The last item is optional. The Telegram link counts only when the server has a Telegram bot.
 When it is done, the panel shows this text and opens Activity at each next sign-in:
 
@@ -104,7 +104,7 @@ A new mailbox starts in shadow mode. For an owner, the checklist item says:
 
 > <UiText k="ob_mode_open" />
 
-Press **<UiText k="ob_keep_shadow" />** to stay in shadow mode. You can switch a mailbox to assist mode later, in Settings.
+The step shows two cards, one for shadow mode and one for assist mode. A card explains its mode; it changes nothing by itself. Press **<UiText k="ob_keep_shadow" />** on the shadow card to stay in shadow mode. On the assist card, press **<UiText k="ob_use_assist" />** to open the same dialog as in Settings, and choose how to switch. With more than one mailbox, the assist card links to Settings. You can also switch a mailbox to assist mode later, in Settings.
 
 ### Add sender rules
 <Shot page="rules" />
@@ -156,7 +156,7 @@ If no mail came, the digest says `No new mail since` and the time.
 - Watch Activity and the digests for a few days. Press `✅ n` or `✏️ n` when the category is wrong. See [Confirm or correct a category](../how-to/correct-a-category/).
 - Open **<UiText k="nav_settings" />** and switch a mailbox to assist mode when the reports look right. In assist mode the system moves, marks and flags mail by your switches. Nothing is sent without your approval. See [Switch from shadow mode to assist mode](../how-to/mode-and-switches/).
 - Add VIP, whitelist and blocklist senders on the page **<UiText k="nav_rules" />**. See [Set sender rules](../how-to/sender-rules/).
-- Turn on two-factor sign-in in the Account card. See [Turn on two-factor sign-in](../how-to/two-factor/).
+- Turn on two-factor sign-in in the Security card of Settings. See [Turn on two-factor sign-in](../how-to/two-factor/).
 - Read the FAQ for short answers to the questions of the first week.
 - Look up facts in the reference: [categories](../reference/categories/), [Telegram](../reference/telegram/), [settings](../reference/settings/) and [limits](../reference/limits/).
 - Read why the system works this way: [how a mail is sorted](../explanation/how-a-mail-is-sorted/), [the assistant never sends alone](../explanation/never-sends-alone/) and [shadow mode and assist mode](../explanation/shadow-and-assist/).

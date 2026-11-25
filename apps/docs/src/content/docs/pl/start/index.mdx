@@ -2,7 +2,7 @@
 title: Start
 description: Przejdź jedną ścieżką od linku z zaproszeniem do pierwszego podsumowania w Telegramie.
 source: start
-sourceHash: "a77f8757c7565760"
+sourceHash: "9571c1817a022bd3"
 capabilities:
   - web-panel
   - sync
@@ -47,12 +47,12 @@ Na szerokim ekranie strona pokazuje też turkusowy panel po lewej stronie. Na te
 Po 10 błędnych hasłach w 15 minut system blokuje Twoje konto na 15 minut.
 
 Logowanie dwuetapowe jest opcjonalne. Gdy je włączysz, panel po haśle pyta o kod z aplikacji uwierzytelniającej.
-Włączasz je w **<UiText k="nav_settings" />**, w karcie Konto. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
+Włączasz je w **<UiText k="nav_settings" />**, w **<UiText k="set_group_account" />**, w karcie **<UiText k="acct_security_title" />**. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
 
 ## 4. Przejdź listę startową
 <Shot page="onboarding" />
 
-Po pierwszym logowaniu panel otwiera stronę **<UiText k="nav_onboarding" />**. Pokazuje listę startową.
+Po pierwszym logowaniu panel otwiera stronę **<UiText k="nav_onboarding" />**. Pokazuje listę startową jako ponumerowane karty kroków oraz pierścień postępu, który liczy kroki wymagane. Pierwszy niewykonany krok ma turkusową obwódkę.
 Lista jest gotowa, gdy masz skrzynkę, połączony Telegram i wybrany tryb. Ostatnia pozycja jest opcjonalna. Połączenie z Telegramem liczy się tylko wtedy, gdy serwer ma bota Telegrama.
 Gdy lista jest gotowa, panel pokazuje ten tekst i przy każdym następnym logowaniu otwiera Aktywność:
 
@@ -106,7 +106,7 @@ Nowa skrzynka zaczyna w trybie podglądu. Dla właściciela pozycja listy mówi:
 
 > <UiText k="ob_mode_open" />
 
-Naciśnij **<UiText k="ob_keep_shadow" />**, aby zostać w trybie podglądu. Skrzynkę możesz później przełączyć na tryb asystenta w Ustawieniach.
+Krok pokazuje dwie karty: trybu podglądu i trybu asystenta. Karta wyjaśnia tryb; sama niczego nie zmienia. Naciśnij **<UiText k="ob_keep_shadow" />** na karcie podglądu, aby zostać w tym trybie. Na karcie asystenta naciśnij **<UiText k="ob_use_assist" />**, aby otworzyć to samo okno co w Ustawieniach, i wybierz sposób przełączenia. Przy kilku skrzynkach karta asystenta prowadzi do Ustawień. Skrzynkę możesz też przełączyć na tryb asystenta później, w Ustawieniach.
 
 ### Dodaj reguły nadawców
 <Shot page="rules" />
@@ -158,7 +158,7 @@ Jeśli nie przyszła żadna wiadomość, podsumowanie mówi `Brak nowych wiadomo
 - Obserwuj Aktywność i podsumowania przez kilka dni. Naciśnij `✅ n` albo `✏️ n`, gdy kategoria jest zła. Zobacz [Potwierdź lub popraw kategorię](../how-to/correct-a-category/).
 - Otwórz **<UiText k="nav_settings" />** i przełącz skrzynkę na tryb asystenta, gdy raporty wyglądają dobrze. W trybie asystenta system przenosi, oznacza i flaguje wiadomości według Twoich przełączników. Nic nie jest wysyłane bez Twojego zatwierdzenia. Zobacz [Przełącz z trybu podglądu na tryb asystenta](../how-to/mode-and-switches/).
 - Dodaj nadawców VIP, z listy dozwolonych i z listy blokowanych na stronie **<UiText k="nav_rules" />**. Zobacz [Ustaw reguły nadawców](../how-to/sender-rules/).
-- Włącz logowanie dwuetapowe w karcie Konto. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
+- Włącz logowanie dwuetapowe w karcie Bezpieczeństwo w Ustawieniach. Zobacz [Włącz logowanie dwuetapowe](../how-to/two-factor/).
 - Przeczytaj FAQ: krótkie odpowiedzi na pytania z pierwszego tygodnia.
 - Sprawdź fakty w opisie działania (po angielsku): [kategorie](../reference/categories/), [Telegram](../reference/telegram/), [ustawienia](../reference/settings/) i [limity](../reference/limits/).
 - Przeczytaj, dlaczego system działa tak, a nie inaczej: [jak system sortuje wiadomość](../explanation/how-a-mail-is-sorted/), [asystent nigdy nie wysyła sam](../explanation/never-sends-alone/) i [tryb podglądu i tryb asystenta](../explanation/shadow-and-assist/).

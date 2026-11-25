@@ -5,6 +5,7 @@ import {
   trustViewSchema,
 } from "@ea/core/web";
 import { useEffect, useState } from "react";
+import { Inbox } from "lucide-react";
 import { toast } from "sonner";
 
 import { MailboxSelector } from "../components/settings/MailboxSelector";
@@ -12,7 +13,8 @@ import { ReportContent, type TurnedOn } from "../components/report/ReportContent
 import { useMe } from "../components/shell/MeProvider";
 import { AppShell } from "../components/shell/AppShell";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
+import { EmptyState } from "../components/patterns/EmptyState";
+import { FactBox } from "../components/patterns/FactBox";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale } from "../i18n";
 import { api, ApiError } from "../lib/api";
@@ -120,11 +122,9 @@ function Report() {
   // The flag is off: the page asks for nothing (the trust routes would answer 404).
   if (!me.features.includes("trust_ladder")) {
     return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("rep_off")}</p>
-        </CardContent>
-      </Card>
+      <FactBox>
+        <p data-report="off">{t("rep_off")}</p>
+      </FactBox>
     );
   }
 
@@ -143,12 +143,11 @@ function Report() {
   const mailbox = pickReportMailbox(list, chosen ?? new URLSearchParams(location.search).get("mailbox"));
   if (mailbox === null) {
     return (
-      <div className="flex flex-col items-start gap-3">
-        <p className="text-muted-foreground">{t("rep_no_mailbox")}</p>
-        <Button asChild variant="outline">
+      <EmptyState icon={Inbox} title={t("rep_no_mailbox")}>
+        <Button asChild>
           <a href="/mailboxes">{t("set_open_mailboxes")}</a>
         </Button>
-      </div>
+      </EmptyState>
     );
   }
 
@@ -160,7 +159,7 @@ function Report() {
   };
 
   return (
-    <div className="flex max-w-3xl flex-col gap-4">
+    <div className="flex max-w-5xl flex-col gap-4">
       {list.length >= 2 && <MailboxSelector mailboxes={list} value={mailbox.id} onChange={choose} />}
       <MailboxReport key={mailbox.id} mailboxId={mailbox.id} isOwner={isOwner} features={me.features} />
     </div>
@@ -170,7 +169,7 @@ function Report() {
 export default function ReportPage() {
   useLocale();
   return (
-    <AppShell active="settings" title="title_report">
+    <AppShell active="settings" title="title_report" lead="rep_lead">
       <Report />
     </AppShell>
   );

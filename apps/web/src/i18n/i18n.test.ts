@@ -54,13 +54,7 @@ const SAME_IN_BOTH: TextKey[] = [
   "cat_spam", // category "Spam"
   "act_cat_info",
   "act_cat_spam",
-  "act_tag_info",
-  "act_tag_spam",
   "act_confidence", // a number and a percent sign
-  "act_pick_ai", // a category name and "AI"
-  "act_icon_right", // emoji only
-  "act_icon_edit",
-  "act_icon_undo",
   "browser_edge", // product names
   "browser_opera",
   "browser_firefox",
@@ -75,7 +69,6 @@ const SAME_IN_BOTH: TextKey[] = [
   "smtp_security_starttls",
   "act_action_at", // placeholders and a separator only
   "act_dlg_line",
-  "sec_line", // placeholders and a separator only
   "nav_operator", // "Operator" in both languages
   "op_col_plan", // "Plan" in both languages
   "op_plan_state",

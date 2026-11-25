@@ -1,10 +1,15 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
 import { expect, test } from "@playwright/test";
 
 import { en } from "../../src/i18n/en";
+import { pl } from "../../src/i18n/pl";
 import { expectNoA11yViolations } from "../a11y";
 import { E2E_BASE_URL } from "../env";
 import { consoleErrors, cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { sheetDir } from "../ui-sheet/dir";
 
 test.describe.configure({ mode: "serial" });
 
@@ -42,6 +47,76 @@ test("an assistant sees the settings read-only", async ({ page }) => {
   await expect(page.locator("[data-kind=vip]")).toBeVisible();
   await expect(page.getByRole("button", { name: en.rules_add })).toHaveCount(0);
   expect(logged).toEqual([]);
+});
+
+// The account and security cards of the owner of the seed organization, with the security log on and three entries. The
+// seed has no organization with the flag, so the spec adds it to the answer of `/api/me`; the cards are the real ones.
+test("the security card has the two-factor section and the log; pictures go to the sheet folder", async ({
+  page,
+  context,
+}, testInfo) => {
+  await context.clearCookies();
+  await signInAs(page, readSeed().owner);
+  await expect(page).toHaveURL(/\/onboarding$/);
+  let panelLocale: "en" | "pl" = "en";
+  await page.route("**/api/me", async (route) => {
+    const response = await route.fetch();
+    const me = (await response.json()) as { features: string[]; user: object };
+    await route.fulfill({
+      response,
+      json: { ...me, features: [...me.features, "security_log"], user: { ...me.user, locale: panelLocale } },
+    });
+  });
+  await page.route("**/api/security-log", (route) =>
+    route.fulfill({
+      json: {
+        entries: [
+          {
+            at: "2026-11-20T08:00:00Z",
+            kind: "locked",
+            actor: { kind: "member", name: "Ala" },
+            lockedUntil: "2026-11-20T08:15:00Z",
+          },
+          {
+            at: "2026-11-19T17:30:00Z",
+            kind: "password_changed",
+            actor: { kind: "member", name: "Ala" },
+            lockedUntil: null,
+          },
+          { at: "2026-11-18T06:05:00Z", kind: "sign_in", actor: { kind: "system" }, lockedUntil: null },
+        ],
+      },
+    })
+  );
+  const folder = join(sheetDir(), "f170-05");
+  mkdirSync(folder, { recursive: true });
+
+  for (const [locale, texts] of [
+    ["en", en],
+    ["pl", pl],
+  ] as const) {
+    panelLocale = locale;
+    await page.goto("/settings");
+    const security = page.locator("[data-card=security]");
+    await expect(security.getByRole("heading", { level: 2, name: texts.acct_security_title })).toBeVisible();
+    await expect(security.locator("[data-section=two-factor]")).toBeVisible();
+    await expect(security.locator("[data-section=two-factor] [data-badge=two-factor]")).toHaveText(texts.tf_status_off);
+    await expect(security.locator("[data-section=security-log] [data-slot=row]")).toHaveCount(3);
+    // A card per group: the account card holds neither the two-factor section nor the log.
+    await expect(page.locator("[data-card=account] [data-section=two-factor]")).toHaveCount(0);
+    await expect(page.locator("[data-card=account] [data-section=security-log]")).toHaveCount(0);
+    if (locale === "en") await expectNoA11yViolations(page);
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      for (const card of ["account", "security"]) {
+        await page.locator(`[data-card=${card}]`).screenshot({
+          path: join(folder, `${card}-card-${testInfo.project.name}-${scheme}-${locale}.png`),
+          animations: "disabled",
+        });
+      }
+    }
+    await page.emulateMedia({ colorScheme: "light" });
+  }
 });
 
 test("the account card lists the signed-in devices", async ({ page, browser }, testInfo) => {

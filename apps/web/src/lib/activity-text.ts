@@ -6,10 +6,6 @@ export function categoryName(category: Category): string {
   return t(`act_cat_${category}`);
 }
 
-export function categoryTagText(category: Category): string {
-  return t(`act_tag_${category}`);
-}
-
 export function confidenceText(confidence: number): string {
   return t("act_confidence", { value: Math.round(confidence * 100) });
 }

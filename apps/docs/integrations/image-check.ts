@@ -2,7 +2,8 @@
 // image is a screenshot of the shot run, never one added by hand). A source passes when it is a `data:` URI or a same-site path
 // in the shots folder, `favicon.svg` or `public/brand/`. Any other source fails the build with `image_outside <src> in <page>`.
 // The Astro asset folder `_astro/` is not allowed: an image that a person adds in a content page or in `src/assets` is optimised
-// into it, so it would pass as the site's own. Today the build emits no image there (only `favicon.svg`, from `public/`).
+// into it, so it would pass as the site's own. One file passes: the header logo `src/assets/mark.svg`, which Starlight emits as
+// `_astro/mark.<hash>.svg`; `src/brand.test.ts` holds that source equal to the panel mark.
 // Sources read: `<img src>`, every `srcset` entry, `<source src|srcset>`, `<video poster>`, an icon `<link href>`, `og:image` and
 // `twitter:image` `<meta content>`, an inline SVG `<image href|xlink:href>`, `<object data>`, `<embed src>`, `<input type=image src>`,
 // and every CSS `url()` (CSS files, `<style>` text and `style` attributes) except a data URI, a fragment reference and a font file.
@@ -26,6 +27,8 @@ const IMAGE_META = /^(og:image(:url|:secure_url)?|twitter:image(:src)?)$/i;
 // The site folders and files an image may come from (under the site base).
 const ALLOWED_FOLDERS = ["shots", "brand"] as const;
 const ALLOWED_FILES = ["favicon.svg"] as const;
+// The hashed copy of the header logo (the logo source file is `mark.svg`; the hash has letters, digits, `-` and `_`).
+const LOGO_FILE = /^\/_astro\/mark\.[\w-]+\.svg$/;
 
 // The image sources of an HTML page, in page order.
 export function imageSources(html: string): string[] {
@@ -98,6 +101,7 @@ export function imageAllowed(source: string, from: string, base: string = DOCS_B
   if (MEDIA_FILE.test(url.pathname)) return true;
   const path = url.pathname;
   if (ALLOWED_FILES.some((file) => path === `${base}/${file}`)) return true;
+  if (path.startsWith(`${base}/`) && LOGO_FILE.test(path.slice(base.length))) return true;
   return ALLOWED_FOLDERS.some((folder) => path.startsWith(`${base}/${folder}/`));
 }
 

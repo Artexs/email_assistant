@@ -1,4 +1,4 @@
-import { delegationFilters, delegationItemSchema, delegationStatuses, type DelegationItem } from "@ea/core/web";
+import { delegationItemSchema, delegationStatuses, type DelegationItem } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { ROW_BY_KIND } from "../components/delegation/delegation-kinds";
@@ -7,13 +7,10 @@ import { setLocaleForTest, t } from "../i18n";
 import { ApiError } from "./api";
 import {
   cancelOutcome,
+  closedOnLoad,
   dueText,
   delegationActions,
   doneOutcome,
-  FILTER_EMPTY,
-  FILTER_LABELS,
-  filterHref,
-  filterOf,
   mergePages,
   REMIND_BLOCK_TEXTS,
   REMIND_BLOCKS,
@@ -77,26 +74,24 @@ describe("the kind map", () => {
   });
 });
 
-describe("filters and labels", () => {
-  test("every filter and status has a text in both languages", () => {
-    for (const filter of delegationFilters) {
-      expect(t(FILTER_LABELS[filter]).length).toBeGreaterThan(0);
-      expect(t(FILTER_EMPTY[filter]).length).toBeGreaterThan(0);
-    }
+describe("status labels and the address", () => {
+  test("every status has a text in both languages", () => {
     for (const status of delegationStatuses) expect(t(STATUS_LABELS[status]).length).toBeGreaterThan(0);
     setLocaleForTest("pl");
     expect(t(STATUS_LABELS.overdue)).toBe("Po terminie");
-    expect(t(FILTER_LABELS.answered)).toBe("Z odpowiedzią");
   });
 
-  test("the query parameter names the tab; none or an unknown one is Open", () => {
-    expect(filterOf("")).toBe("open");
-    expect(filterOf("?filter=closed")).toBe("closed");
-    expect(filterOf("?filter=overdue&x=1")).toBe("overdue");
-    expect(filterOf("?filter=nope")).toBe("open");
-    expect(filterOf("?filter=")).toBe("open");
-    for (const filter of delegationFilters)
-      expect(filterOf(new URL(filterHref(filter), "http://x").search)).toBe(filter);
+  test.each([
+    ["", false],
+    ["?filter=closed", true],
+    ["?filter=closed&x=1", true],
+    ["?tab=delegated&filter=closed", true],
+    ["?filter=open", false],
+    ["?filter=overdue", false],
+    ["?filter=nope", false],
+    ["?filter=", false],
+  ])("the address %p opens the closed list: %p", (search, opens) => {
+    expect(closedOnLoad(search)).toBe(opens);
   });
 });
 

@@ -17,7 +17,7 @@ export const enAuth = {
   menu_open: "Open menu",
   menu_title: "Menu",
   user_menu: "Account menu",
-  user_menu_named: "Account menu: {email}",
+  user_menu_named: "Account menu: {name}, {email}",
   help_link: "Help and guides",
   whats_new_title: "What is new",
   whats_new_all: "All changes for users",
@@ -85,8 +85,10 @@ export const enAuth = {
   tf_error_state: "Two-factor sign-in has a problem. Use a backup code or ask the operator to reset it.",
   tf_qr_label: "QR code for your authenticator app",
   tf_title: "Two-factor sign-in",
-  tf_off_text: "Off. Turn it on to ask for a code from an authenticator app at each sign-in.",
-  tf_on_text: "On. Each sign-in asks for a code from your authenticator app.",
+  tf_status_on: "On",
+  tf_status_off: "Off",
+  tf_off_text: "Turn it on to ask for a code from an authenticator app at each sign-in.",
+  tf_on_text: "Each sign-in asks for a code from your authenticator app.",
   tf_required_operator: "Your role needs two-factor sign-in: the operator console opens only with it.",
   tf_required_break_glass: "You are the break-glass owner of your organization: two-factor sign-in must stay on.",
   tf_break_glass_note: "You are the break-glass owner, so you cannot turn it off.",
@@ -120,6 +122,7 @@ export const enAuth = {
   tf_copy_failed: "The codes could not be copied. Write them down.",
   // delete organization
   del_title: "Delete organization",
+  del_card_lead: "Deletes the organization with all its mail data, rules and members. This cannot be undone.",
   del_text:
     "This deletes the organization {name} and all its data here at once: mailboxes, mail, triage results, actions, delegations, rules, Telegram links, history and the accounts of its members. It cannot be undone. Backups keep a copy until they expire; the privacy policy gives the period.",
   del_imap_note:

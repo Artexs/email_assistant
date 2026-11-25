@@ -1,4 +1,5 @@
 import type { PushDeviceView } from "@ea/core/web";
+import { Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -11,9 +12,12 @@ import { browserPushDeps, loadPushState, removePushDevice, sendPushTest } from "
 import { enablePush, installHint, pushSupported, type PermissionState } from "../../lib/push-client";
 import { useResource } from "../../lib/use-resource";
 import { useMe } from "../shell/MeProvider";
+import { FactBox } from "../patterns/FactBox";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Skeleton } from "../ui/skeleton";
 
@@ -67,31 +71,33 @@ function dayText(iso: string): string {
 
 function DeviceRow({ device, writable, onRemove }: { device: PushDeviceView; writable: boolean; onRemove(): void }) {
   return (
-    <li
-      data-device={device.id}
-      className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm"
-    >
-      <div className="flex flex-col gap-1">
-        <span className="flex items-center gap-2 font-medium">
-          {device.label}
-          {device.thisSession ? <Badge data-badge="this-device">{t("acct_this_device")}</Badge> : null}
-        </span>
-        <span className="text-muted-foreground">{t("push_added", { date: dayText(device.createdAt) })}</span>
-        <span className="text-muted-foreground">
-          {device.lastSuccessAt === null ? t("push_never") : t("push_last", { date: dayText(device.lastSuccessAt) })}
-        </span>
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={!writable}
-        aria-label={t("push_remove", { label: device.label })}
-        onClick={onRemove}
+    <div data-device={device.id} className="contents">
+      <Row
+        title={device.label}
+        hint={
+          <>
+            <span className="block">{t("push_added", { date: dayText(device.createdAt) })}</span>
+            <span className="block">
+              {device.lastSuccessAt === null
+                ? t("push_never")
+                : t("push_last", { date: dayText(device.lastSuccessAt) })}
+            </span>
+          </>
+        }
       >
-        {t("push_remove_short")}
-      </Button>
-    </li>
+        {device.thisSession ? <Badge data-badge="this-device">{t("acct_this_device")}</Badge> : null}
+        <Button
+          type="button"
+          variant="destructive-soft"
+          size="sm"
+          disabled={!writable}
+          aria-label={t("push_remove", { label: device.label })}
+          onClick={onRemove}
+        >
+          {t("push_remove_short")}
+        </Button>
+      </Row>
+    </div>
   );
 }
 
@@ -152,6 +158,7 @@ export function PushDevicesCard() {
   };
 
   let body;
+  let lead: string | undefined;
   if (data === null) {
     body =
       error !== null && !loading ? (
@@ -164,7 +171,7 @@ export function PushDevicesCard() {
           </Button>
         </div>
       ) : (
-        <Skeleton className="h-16 w-full" />
+        <Skeleton aria-busy="true" className="h-16 w-full" />
       );
   } else {
     const parts = pushCardParts({
@@ -175,29 +182,29 @@ export function PushDevicesCard() {
       writable,
     });
     const publicKey = data.vapidPublicKey;
+    lead = parts.notSetUp ? undefined : t("push_help");
     body = parts.notSetUp ? (
-      <p data-note="not-set-up" className="text-sm text-muted-foreground">
-        {t("push_not_set_up")}
-      </p>
+      <div data-note="not-set-up">
+        <FactBox>{t("push_not_set_up")}</FactBox>
+      </div>
     ) : (
       <>
-        <p className="text-sm text-muted-foreground">{t("push_help")}</p>
-        <section data-section="push-devices" className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium">{t("push_devices_title")}</h3>
+        <section data-section="push-devices" className="flex flex-col gap-1">
+          <h3 className="text-sm font-bold text-muted-foreground">{t("push_devices_title")}</h3>
           {data.devices.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("push_no_devices")}</p>
+            <p className="py-2 text-sm text-muted-foreground">{t("push_no_devices")}</p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <RowList>
               {data.devices.map((device) => (
                 <DeviceRow key={device.id} device={device} writable={writable} onRemove={() => setToRemove(device)} />
               ))}
-            </ul>
+            </RowList>
           )}
         </section>
         {browser !== null && parts.unsupported && (
-          <p data-note="unsupported" className="text-sm text-muted-foreground">
-            {t("push_unsupported")}
-          </p>
+          <div data-note="unsupported">
+            <FactBox>{t("push_unsupported")}</FactBox>
+          </div>
         )}
         {parts.blocked && (
           <p data-note="blocked" role="alert" className="text-sm text-destructive">
@@ -205,9 +212,9 @@ export function PushDevicesCard() {
           </p>
         )}
         {browser?.hint === "ios" && (
-          <p data-note="install-ios" className="text-sm text-muted-foreground">
-            {t("push_install_ios")}
-          </p>
+          <div data-note="install-ios">
+            <FactBox>{t("push_install_ios")}</FactBox>
+          </div>
         )}
         <div className="flex flex-wrap gap-2">
           {parts.canEnable && publicKey !== null && (
@@ -231,29 +238,24 @@ export function PushDevicesCard() {
   }
 
   return (
-    <Card data-card="push-devices">
-      <CardHeader>
-        <CardTitle>{t("push_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {body}
-        <Dialog open={toRemove !== null} onOpenChange={(open) => !open && !pending && setToRemove(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t("push_remove_title")}</DialogTitle>
-              <DialogDescription>{t("push_remove_text")}</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button type="button" variant="outline" disabled={pending} onClick={() => setToRemove(null)}>
-                {t("cancel")}
-              </Button>
-              <Button type="button" variant="destructive" disabled={pending} onClick={() => void confirmRemove()}>
-                {t("push_remove_confirm")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+    <SectionCard data-card="push-devices" icon={Smartphone} title={t("push_title")} lead={lead}>
+      {body}
+      <Dialog open={toRemove !== null} onOpenChange={(open) => !open && !pending && setToRemove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("push_remove_title")}</DialogTitle>
+            <DialogDescription>{t("push_remove_text")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" variant="outline" disabled={pending} onClick={() => setToRemove(null)}>
+              {t("cancel")}
+            </Button>
+            <Button type="button" variant="destructive" disabled={pending} onClick={() => void confirmRemove()}>
+              {t("push_remove_confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </SectionCard>
   );
 }
