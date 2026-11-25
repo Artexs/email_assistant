@@ -9,11 +9,10 @@ import { api, ApiError } from "../../lib/api";
 import { errorText } from "../../lib/errors";
 import { filterTimeZones } from "../../lib/timezones";
 import { useDraft } from "../../lib/use-draft";
-import { Row } from "../patterns/Row";
-import { RowList } from "../patterns/RowList";
 import { SectionCard } from "../patterns/SectionCard";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 import { selectClass } from "./NoticeRoutesCard";
 
 export interface TimezoneCardProps {
@@ -60,38 +59,45 @@ export function TimezoneCard({ organization, isOwner, onSaved }: TimezoneCardPro
 
   return (
     <SectionCard data-card="timezone" icon={Globe} title={t("tz_title")} lead={t("tz_current", { timezone: current })}>
-      <RowList>
-        <Row title={t("tz_search_label")} htmlFor="timezone-search">
-          <Input
-            id="timezone-search"
-            type="search"
-            value={query}
-            disabled={!isOwner}
-            className="w-52 sm:w-64"
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </Row>
-        <Row title={t("tz_list_label")} htmlFor="timezone">
-          <select
-            id="timezone"
-            size={8}
-            value={selected}
-            disabled={!isOwner}
-            aria-invalid={invalid}
-            className={cn(selectClass, "h-auto w-52 py-1 sm:w-64")}
-            onChange={(event) => {
-              setInvalid(false);
-              setValue(event.target.value);
-            }}
-          >
-            {options.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </Row>
-      </RowList>
+      {/* The search field and the list sit full width under their labels: a list of eight lines needs the room. */}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="timezone-search" className="text-base font-bold">
+          {t("tz_search_label")}
+        </Label>
+        <Input
+          id="timezone-search"
+          type="search"
+          value={query}
+          disabled={!isOwner}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="timezone" className="text-base font-bold">
+          {t("tz_list_label")}
+        </Label>
+        <select
+          id="timezone"
+          size={8}
+          value={selected}
+          disabled={!isOwner}
+          aria-invalid={invalid}
+          className={cn(
+            selectClass,
+            "h-auto w-full p-1.5 [&_option]:rounded-sm [&_option]:px-3 [&_option]:py-1.5 [&_option:checked]:bg-primary-soft [&_option:checked]:font-bold [&_option:checked]:text-primary"
+          )}
+          onChange={(event) => {
+            setInvalid(false);
+            setValue(event.target.value);
+          }}
+        >
+          {options.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
       {options.length === 0 && <p className="text-sm text-muted-foreground">{t("tz_no_match")}</p>}
       {invalid && (
         <p role="alert" className="text-sm text-destructive">
