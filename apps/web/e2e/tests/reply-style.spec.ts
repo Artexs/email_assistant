@@ -261,7 +261,7 @@ test("T8: the card passes axe and the keyboard reaches every field and button in
   await nameField(page).fill("Anna Nowak");
   await card(page).getByRole("button", { name: en.rs_preview }).click();
   await expect(card(page).getByText(en.rs_preview_note)).toBeVisible();
-  await expectNoA11yViolations(page);
+  await expectNoA11yViolations(page, { schemes: ["light", "dark"] });
 
   // From the name field, Tab visits each control once, in the order of the page.
   await nameField(page).focus();
@@ -493,7 +493,7 @@ test("T14: the owner asks for a suggestion, uses the text and saves; nothing is 
   await expect(card(page).locator("[data-suggest-text] b")).toHaveCount(0);
   // The box is not the field: the old text stays until "Use this text".
   await expect(styleField(page)).toHaveValue("Stary styl.");
-  await expectNoA11yViolations(page);
+  await expectNoA11yViolations(page, { schemes: ["light", "dark"] });
 
   await card(page).getByRole("button", { name: en.rs_suggest_use, exact: true }).click();
   await expect(styleField(page)).toHaveValue("Pisz krótko i uprzejmie. <b>Bez</b> ozdobników.");
@@ -557,4 +557,24 @@ test("T15: a discarded suggestion closes the box and leaves the field; the refus
   await suggestButton(page).click();
   await expect(card(page).locator("[data-suggest=shown]")).toHaveText(en.rs_preview_llm_off);
   await expect(card(page).locator("[data-suggest-text]")).toHaveCount(0);
+});
+
+test("T16: at 320 px the card fits the screen with the guided form, the buttons and the Preview answer", async ({
+  context,
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 800 });
+  await startSession(context, page, "owner");
+  await page.route("**/api/mailboxes/*/profile/preview", (route) =>
+    route.fulfill({ json: { body: "Dzień dobry,\n<b>Hi</b>\nPozdrawiam,\nAnna" } })
+  );
+  await card(page).getByRole("button", { name: en.rs_preview }).click();
+  await expect(card(page).locator("[data-preview-body]")).toHaveText("Dzień dobry,\n<b>Hi</b>\nPozdrawiam,\nAnna");
+  await expect(card(page).locator("b")).toHaveCount(0);
+  await expect(card(page).getByLabel(en.rs_form_greeting, { exact: true })).toBeVisible();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  await expectNoA11yViolations(page, { schemes: ["light", "dark"] });
 });

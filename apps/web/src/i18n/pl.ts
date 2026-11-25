@@ -57,6 +57,12 @@ export const plPlurals: Record<PluralKey, { one: string; few: string; many: stri
   lp_working_days: { one: "1 dzień roboczy", few: "{count} dni robocze", many: "{count} dni roboczych" },
   // Loop settings
   lset_wait_days: { one: "1 dzień roboczy", few: "{count} dni robocze", many: "{count} dni roboczych" },
+  // The lead of the approvals page
+  appr_lead: {
+    one: "1 szkic czeka na Ciebie",
+    few: "{count} szkice czekają na Ciebie",
+    many: "{count} szkiców czeka na Ciebie",
+  },
   // Mails of a newsletter sender
   nl_count: {
     one: "1 e-mail w ciągu 30 dni",

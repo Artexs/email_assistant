@@ -13,7 +13,7 @@ const remote = Boolean(process.env.DOCS_TEST_URL?.trim());
 
 export default defineConfig({
   testDir: ".",
-  testMatch: "site.spec.ts",
+  testMatch: "*.spec.ts",
   timeout: 30_000,
   expect: { timeout: 5_000 },
   retries: 0,
