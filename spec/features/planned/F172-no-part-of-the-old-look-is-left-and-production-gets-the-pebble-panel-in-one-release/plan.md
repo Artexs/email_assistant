@@ -99,7 +99,7 @@ Stages 01–06 [written]. Scouts: 0 (the task forbids `limen wait` and polling; 
 
 ## Cold review
 
-Model: Opus (deploy, VPS, new Polish text). Job: § Log.
+Model: Opus (deploy, VPS, new Polish text). Job `2026-11-25-f172-plan-review-c90ba9ce` at `867ab63b1`, started detached; the planner does not wait (task). The coordinator files its message as `plan-review-1.md` and resumes this job to fix the findings.
 
 ## Log
 
