@@ -58,8 +58,8 @@ export const DEMO_STEPS: readonly DemoStep[] = [
     seconds: 18,
     caption: {
       e2e: {
-        en: "Day 3: what I would have done.\nEvery move is a plan, with its evidence.",
-        pl: "Dzień 3: co bym zrobił.\nKażdy ruch to plan, z dowodami.",
+        en: "Day 3: what it would have done.\nEvery move is a plan, with its evidence.",
+        pl: "Dzień 3: co zrobiłby asystent.\nKażdy ruch to plan, z dowodami.",
       },
       demo: {
         en: "The history check shows what it would have done.\nIt uses your recent mail.",

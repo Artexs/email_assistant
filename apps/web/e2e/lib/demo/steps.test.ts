@@ -92,6 +92,25 @@ describe("stepView", () => {
   });
 });
 
+describe("captions", () => {
+  test("the e2e caption of the report step is the two exact texts", () => {
+    expect(DEMO_STEPS.find((step) => step.id === "report")?.caption.e2e).toEqual({
+      en: "Day 3: what it would have done.\nEvery move is a plan, with its evidence.",
+      pl: "Dzień 3: co zrobiłby asystent.\nKażdy ruch to plan, z dowodami.",
+    });
+  });
+
+  const cases = DEMO_STEPS.flatMap((step) =>
+    SOURCES.flatMap((source) =>
+      (["en", "pl"] as const).map((lang) => ({ id: step.id, source, lang, text: step.caption[source][lang] }))
+    )
+  );
+
+  test.each(cases)("the $source $lang caption of $id has no first person", ({ text }) => {
+    expect(text).not.toMatch(/(^|[^\p{L}])(I would|bym|I)([^\p{L}]|$)/u);
+  });
+});
+
 describe.each(SOURCES)("DEMO_STEPS of the %s source", (source) => {
   const views = DEMO_STEPS.map((step) => stepView(step, source));
 
