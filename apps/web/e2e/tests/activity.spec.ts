@@ -133,14 +133,18 @@ test("rows, panel, filters and load more", async ({ page }) => {
   await moved.getByRole("button", { name: rightLabel(en.act_cat_notification) }).click();
   await expect(page.getByText(t("act_toast_right", { category: en.act_cat_notification }))).toBeVisible();
 
-  const notRated = page.getByRole("switch", { name: en.act_not_rated });
+  const notRated = page.getByRole("button", { name: en.act_not_rated });
+  await expect(notRated).toHaveAttribute("aria-pressed", "false");
   await notRated.click();
+  await expect(page).toHaveURL(/notRated=1/);
+  await expect(notRated).toHaveAttribute("aria-pressed", "true");
   await expect(moved).toHaveCount(0);
   await expect(reply).toBeVisible();
   await notRated.click();
+  await expect(page).not.toHaveURL(/notRated/);
   await expect(moved).toBeVisible();
 
-  await expect(page.getByRole("combobox", { name: en.act_filter_range })).toHaveText(en.act_range_7d);
+  await expect(page.getByRole("button", { name: en.act_range_7d })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: en.act_load_more }).click();
   await expect(rows).toHaveCount(56);
   await expect(page.getByRole("button", { name: en.act_load_more })).toHaveCount(0);
@@ -255,6 +259,46 @@ test("an assistant member rates mail", async ({ browser }, testInfo) => {
   } finally {
     await member.close();
   }
+});
+
+test("range and not-rated chips live in the URL and reload the list", async ({ page }) => {
+  const range30 = page.getByRole("button", { name: en.act_range_30d });
+  await range30.click();
+  await expect(page).toHaveURL(/range=30d/);
+  await expect(range30).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: en.act_range_7d })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("li[data-email-id]").first()).toBeVisible();
+
+  await page.getByRole("button", { name: en.act_not_rated }).click();
+  await expect(page).toHaveURL(/notRated=1/);
+  await page.reload();
+  await expect(page.getByRole("button", { name: en.act_not_rated })).toHaveAttribute("aria-pressed", "true");
+  await expect(range30).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the rows sit in day groups under the page lead", async ({ page }) => {
+  await expect(page.getByText(t("act_lead", { days: 7 }))).toBeVisible();
+  const days = page.locator('section[aria-labelledby^="act-day-"]');
+  const headings = days.locator("h2");
+  await expect(headings.first()).toBeVisible();
+  await expect(headings).toHaveCount(await days.count());
+  // Each day has one heading, even when a later page of the list continues it.
+  const texts = await headings.allTextContents();
+  expect(new Set(texts).size).toBe(texts.length);
+  await page.getByRole("button", { name: en.act_load_more }).click();
+  await expect(page.locator("li[data-email-id]")).toHaveCount(56);
+  const after = await headings.allTextContents();
+  expect(new Set(after).size).toBe(after.length);
+});
+
+test("a filter that matches nothing shows the empty state and Clear filters empties the URL", async ({ page }) => {
+  await pickCategory(page, en.act_cat_spam);
+  await expect(page).toHaveURL(/category=spam/);
+  await expect(page.getByRole("heading", { name: en.act_empty_filters_title })).toBeVisible();
+  await expectNoA11yViolations(page);
+  await page.getByRole("button", { name: en.act_clear_filters }).click();
+  await expect(page).not.toHaveURL(/\?/);
+  await expect(page.locator("li[data-email-id]").first()).toBeVisible();
 });
 
 test("the page has one visible h1 and it is the page title", async ({ page }) => {

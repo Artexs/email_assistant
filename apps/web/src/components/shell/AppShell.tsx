@@ -23,6 +23,7 @@ export interface AppShellProps {
   active: NavKey;
   title: TextKey;
   lead?: TextKey;
+  leadVars?: Record<string, string | number>; // the values of `{name}` slots in the lead text
   action?: ReactNode;
   children: ReactNode;
 }
@@ -40,7 +41,7 @@ function onLogOut() {
   void logOut();
 }
 
-function Frame({ active, title, lead, action, children }: AppShellProps) {
+function Frame({ active, title, lead, leadVars, action, children }: AppShellProps) {
   const { me, error, loading, reload } = useMe();
 
   // After a sign-in on any device the panel follows the stored choice, else the browser. The same locale changes nothing.
@@ -116,7 +117,7 @@ function Frame({ active, title, lead, action, children }: AppShellProps) {
           <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
         )}
         <main className="px-4 py-4 pb-24 lg:pb-8">
-          <PageHead title={t(heading)} lead={lead === undefined ? undefined : t(lead)} action={action} />
+          <PageHead title={t(heading)} lead={lead === undefined ? undefined : t(lead, leadVars)} action={action} />
           {content}
         </main>
       </div>
