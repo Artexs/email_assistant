@@ -47,6 +47,47 @@ test("the manifest, the worker and the offline page are public; a page still nee
   await expectNoA11yViolations(page);
 });
 
+test("the app icons are teal, the corners of the round icons are clear, and the touch icon is public", async ({
+  page,
+  request,
+}) => {
+  expect((await request.get("/icons/apple-touch-icon.png")).status()).toBe(200);
+  await page.goto("/login");
+  // Each probe reads one pixel of the icon drawn in a canvas on the page: [path, x, y, expected alpha].
+  const probes: [string, number, number, number][] = [
+    ["/icons/icon-192.png", 96, 12, 255],
+    ["/icons/icon-192.png", 1, 1, 0],
+    ["/icons/icon-512-maskable.png", 2, 2, 255],
+    ["/icons/apple-touch-icon.png", 2, 2, 255],
+    ["/favicon.png", 16, 2, 255],
+  ];
+  for (const [path, x, y, alpha] of probes) {
+    const pixel = await page.evaluate(
+      async ([src, px, py]) => {
+        const image = new Image();
+        image.src = src as string;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d");
+        context?.drawImage(image, 0, 0);
+        return Array.from(context?.getImageData(px as number, py as number, 1, 1).data ?? []);
+      },
+      [path, x, y]
+    );
+    expect(pixel[3], `${path} alpha at ${x},${y}`).toBe(alpha);
+    if (alpha === 255) {
+      const teal = [10, 117, 104];
+      for (const [channel, value] of teal.entries()) {
+        expect(Math.abs((pixel[channel] ?? 0) - value), `${path} channel ${channel} at ${x},${y}`).toBeLessThanOrEqual(
+          2
+        );
+      }
+    }
+  }
+});
+
 test("the manifest parses in Chromium and the page links it", async ({ page }) => {
   await page.goto("/login");
   const href = await page.locator('link[rel="manifest"]').getAttribute("href");
@@ -90,8 +131,10 @@ test("signed in: the worker registers, takes the pages from the network and cach
     }
     return result;
   });
-  expect(Object.keys(caches)).toEqual(["ea-shell-v1"]);
-  const stored = caches["ea-shell-v1"] ?? [];
+  const names = Object.keys(caches);
+  expect(names).toHaveLength(1);
+  expect(names[0]).toMatch(/^ea-shell-v2-[0-9a-f]{8}$/);
+  const stored = caches[names[0] ?? ""] ?? [];
   expect(stored).toContain("/offline.html");
   for (const path of stored) expect(path === "/offline.html" || path.startsWith("/_astro/")).toBe(true);
 
@@ -113,4 +156,36 @@ test("signed in: the worker registers, takes the pages from the network and cach
   );
   expect(apiOffline).toBe("failed");
   await context.setOffline(false);
+});
+
+// The files of the offline page come from the install, not from a run-time cache: the page loads `/login` before any worker exists, so
+// the worker has seen no `/_astro/` request of it. Offline, the page still has its style sheet and its font.
+test("the offline page keeps its look with no network: the worker precaches the style sheet and the font", async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    extraHTTPHeaders: { "x-forwarded-for": nextAddress(onMobile() ? 86 : 186) },
+  });
+  try {
+    const page = await context.newPage();
+    await page.goto("/login");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+      await navigator.serviceWorker.ready;
+    });
+
+    // The server marks `/_astro/` files as immutable, so the browser's HTTP cache would answer them offline and hide a missing precache.
+    const session = await context.newCDPSession(page);
+    await session.send("Network.clearBrowserCache");
+    await context.setOffline(true);
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { level: 1, name: pl.offline_title })).toBeVisible();
+    expect(await page.evaluate(() => getComputedStyle(document.body).fontFamily)).toMatch(/^"?Nunito Variable"?/);
+    expect(await page.evaluate(() => document.fonts.check('16px "Nunito Variable"'))).toBe(true);
+    await context.setOffline(false);
+  } finally {
+    await context.close();
+  }
 });

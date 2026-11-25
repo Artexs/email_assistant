@@ -245,6 +245,8 @@ export const enSettings = {
   urg_topic_name_label: "Topic {n}: name",
   urg_topic_keywords_label: "Topic {n}: keywords",
   urg_topic_remove: "Remove topic {n}",
+  urg_topic_row: "Topic {n}",
+  urg_deadline_row: "Deadline {n}",
   urg_topic_add: "Add a topic",
   urg_deadlines_title: "Deadlines",
   urg_deadlines_help: "An ended deadline stays in the list until you remove it.",

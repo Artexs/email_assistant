@@ -53,6 +53,17 @@ describe("UrgencyForm", () => {
     expect(html).toContain("line-through");
   });
 
+  test("the owner form has the two headings by id and one remove button per topic", () => {
+    const twoTopics = view({ ...profile, topics: [...profile.topics, { label: "Visa", keywords: [] }] });
+    const html = render(twoTopics, true);
+    expect(html).toMatch(new RegExp(`<h3 id="urg-topics-title"[^>]*>${t("urg_topics_title")}</h3>`));
+    expect(html).toMatch(new RegExp(`<h3 id="urg-deadlines-title"[^>]*>${t("urg_deadlines_title")}</h3>`));
+    expect(html.match(/aria-label="Remove topic \d"/g)).toEqual([
+      'aria-label="Remove topic 1"',
+      'aria-label="Remove topic 2"',
+    ]);
+  });
+
   test("a member sees the profile with no input, no save, no add and no clear button", () => {
     const html = render(view(profile), false);
     expect(html).toContain("Audit");
