@@ -6,7 +6,7 @@ opened: 2026-11-23
 
 ## Outcome
 
-Nothing of the old look is left in the repository, and production gets the Pebble panel in one release. Users see a "what is new" card that tells them about the new look.
+Nothing of the old look is left in the repository, and production gets the Pebble panel in one release. Where the docs links flag is on, members see a "what is new" card that tells them about the new look; the flag itself stays as it is.
 
 ## Scope
 
@@ -23,18 +23,19 @@ Nothing of the old look is left in the repository, and production gets the Pebbl
 
 - The guard tests of the design system pass, and their allow list holds only the entries that the design system ADR names.
 - `design/` is not in the repository; the design system ADR and the pattern page are the reference.
-- The owner said "go" on the full contact sheet, and the 20-draft check of the reply-draft pilot is recorded (programme decision PB-12).
-- Production runs the release; the panel shows the "what is new" card once per user.
+- The release ran either before the owner's 24-hour standing rule expired (2026-11-25 evening), with CI green on the release commit, or after the owner said "go" on the full contact sheet (programme decision PB-12).
+- The 20-draft check of the reply-draft pilot is recorded, or the owner accepted its record as enough.
+- Production runs the release, and the deploy note records per organization whether the docs links flag is on; where it is on, a member sees the "what is new" card once per browser.
 - `deploy/rollback.sh` is a valid way back: the release holds no migration.
 
 ## Slices
 
-Six stages: [`plan.md`](plan.md) § Stages and § How to run. The two sweep stages run next to each other; the visual review, the mockup removal and the release follow in order. The release and the local cleanup are the coordinator's own runs. No owner stop: the contact-sheet "go" is taken as given once CI is green (standing rule, `questions.md` 1).
+Seven stages: [`plan.md`](plan.md) § Stages and § How to run. The two sweep stages, the visual review, the visual fixes, the mockup removal and the release run in order. The release and the local cleanup are the coordinator's own runs. After the standing rule expires, the release waits for the owner's "go" (`questions.md` 1).
 
 ## Sequenced
 
 - Plan after: F171.
-- Build after: F166, F167, F168, F169, F170, F171. Gate: the owner's "go" (programme decision PB-12), taken as given once CI is green on the release commit while the standing rule of 2026-11-24 holds.
+- Build after: F166, F167, F168, F169, F170, F171. Gate: the owner's "go" (programme decision PB-12). Before the standing rule of 2026-11-24 expires (2026-11-25 evening), it is taken as given once CI is green on the release commit; after that, the release asks for it.
 
 ## Notes
 
