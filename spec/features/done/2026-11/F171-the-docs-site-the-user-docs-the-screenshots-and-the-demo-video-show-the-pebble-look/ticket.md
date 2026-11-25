@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-26
 ---
 
 # F171 · The docs site, the user docs, the screenshots and the demo video show the Pebble look
