@@ -261,9 +261,6 @@ export default tseslint.config(
       // Limen hook stubs (`limen init`): package code, kept as Limen writes it.
       ".pi/**",
       ".omp/**",
-      // The mockup of the panel redesign: static HTML with its scripts, not product code. It goes when the redesign is released
-      // (docs/product/pebble-ui/README.md, decision PB-13).
-      "design/**",
     ],
   },
   baseConfig,

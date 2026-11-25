@@ -50,6 +50,32 @@ describe("parseChangelog", () => {
     expect(second?.version).toBe("0.2.0");
   });
 
+  test("Unreleased with two For users items parses to two items with both languages", () => {
+    const text = [
+      "# Changelog",
+      "",
+      "## [Unreleased]",
+      "",
+      "### For users",
+      "",
+      "- en: First new item.",
+      "  pl: Pierwszy nowy punkt.",
+      "- en: Second new item.",
+      "  pl: Drugi nowy punkt.",
+      "",
+      "## [0.1.0] - 2026-11-20",
+      "",
+    ].join("\n");
+    expect(parseChangelog(text)[0]).toEqual({
+      version: "Unreleased",
+      date: null,
+      forUsers: [
+        { en: "First new item.", pl: "Pierwszy nowy punkt." },
+        { en: "Second new item.", pl: "Drugi nowy punkt." },
+      ],
+    });
+  });
+
   test("T3 an older release above a newer one is changelog_order at the second heading", () => {
     const text = "# C\n\n## [0.1.0] - 2026-11-20\n\n## [0.2.0] - 2026-12-01\n";
     expect(problem(text)).toEqual({ message: "changelog_order", line: 5 });
