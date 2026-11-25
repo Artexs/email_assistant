@@ -12,9 +12,13 @@ export function OpenLoops() {
   const { me } = useMe();
   const { tab, filter, selectTab, selectFilter } = useLoopView();
   const delegationsOn = me?.features.includes("delegation_pages") === true;
-  const filterNav = <LoopFilterTabs tab={tab} current={filter} onSelect={selectFilter} />;
+  const filterNav = (
+    <div className="flex">
+      <LoopFilterTabs tab={tab} current={filter} onSelect={selectFilter} />
+    </div>
+  );
 
-  // The loops keep a reading width; the delegation columns use the whole page.
+  // The loops keep a reading width (48 rem); the delegation columns use the whole page.
   const board = (
     <div className="max-w-3xl">
       <LoopsBoard
@@ -29,7 +33,7 @@ export function OpenLoops() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="max-w-3xl">
+      <div className="flex">
         <LoopTabs current={tab} onSelect={selectTab} />
       </div>
       {tab === "delegated" && delegationsOn && <Delegations />}
