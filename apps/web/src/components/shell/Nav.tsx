@@ -2,6 +2,7 @@ import { Menu } from "lucide-react";
 import { cn } from "cn";
 
 import { t } from "../../i18n";
+import { InitialsAvatar } from "../patterns/InitialsAvatar";
 import { Button } from "../ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "../ui/sheet";
 import { Skeleton } from "../ui/skeleton";
@@ -74,7 +75,7 @@ export function BottomTabs({
     <nav
       aria-label={t("nav_main")}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-40 grid border-t bg-background lg:hidden",
+        "fixed inset-x-0 bottom-0 z-40 grid h-[calc(var(--tabbar-height)+env(safe-area-inset-bottom))] border-t bg-card pb-[env(safe-area-inset-bottom)] lg:hidden",
         TAB_COLUMNS[items.length] ?? "grid-cols-4"
       )}
     >
@@ -84,13 +85,13 @@ export function BottomTabs({
           href={item.href}
           aria-current={item.key === active ? "page" : undefined}
           className={cn(
-            "flex flex-col items-center gap-1 py-2 text-xs",
-            item.key === active ? "font-semibold text-foreground" : "text-muted-foreground"
+            "flex min-w-0 flex-col items-center justify-center gap-0.5 px-0.5 text-center text-xs leading-tight font-bold wrap-anywhere hyphens-auto",
+            item.key === active ? "text-primary" : "text-muted-foreground"
           )}
         >
           <span className="relative">
             <item.icon className="size-5" aria-hidden="true" />
-            <Badge item={item} count={approvalsWaiting} className="absolute -top-1.5 left-3" />
+            <Badge item={item} count={approvalsWaiting} className="absolute -top-1 left-1.5" />
           </span>
           <span>{t(item.label)}</span>
           <BadgeText item={item} count={approvalsWaiting} />
@@ -168,10 +169,12 @@ export function MenuSheet({
   operator,
   features,
   approvalsWaiting,
+  name,
   email,
   loading,
   onLogOut,
 }: NavMenuProps) {
+  const shownName = name === undefined || name === null || name.trim() === "" ? email : name;
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -192,12 +195,22 @@ export function MenuSheet({
           {operator && <SidebarLink item={OPERATOR_ITEM} active={active} approvalsWaiting={0} />}
           <div className="mt-auto flex flex-col gap-3">
             {features.includes("docs_links") && <HelpLink className="text-sm underline" />}
-            {email !== null ? (
-              <p className="truncate text-sm" title={email}>
-                {email}
-              </p>
+            {email !== null && shownName !== null ? (
+              <div className="flex items-center gap-3 px-1">
+                <InitialsAvatar name={shownName} />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <p className="truncate text-sm font-bold" title={shownName}>
+                    {shownName}
+                  </p>
+                  {shownName !== email && (
+                    <p className="truncate text-xs text-muted-foreground" title={email}>
+                      {email}
+                    </p>
+                  )}
+                </div>
+              </div>
             ) : loading ? (
-              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-10 w-full" />
             ) : null}
             <Button variant="outline" onClick={onLogOut}>
               {t("log_out")}
