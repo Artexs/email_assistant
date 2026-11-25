@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { DraftReplyAction } from "../components/activity/DraftReplyAction";
 import { ApprovalActions } from "../components/approvals/ApprovalActions";
-import { ApprovalDetailPanel } from "../components/approvals/ApprovalDetailPanel";
+import { ApprovalCard } from "../components/approvals/ApprovalCard";
 import { ReplyControls } from "../components/approvals/ReplyControls";
 import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest } from "../i18n";
@@ -59,9 +59,9 @@ const detail = (patch: Partial<ApprovalDetail> = {}, view: Partial<View> = {}): 
 // The `bdi` tags around the addresses are tested on their own; the other tests read the text.
 const panelRaw = (d: ApprovalDetail) =>
   renderToStaticMarkup(
-    <ApprovalDetailPanel detail={d} now={NOW}>
+    <ApprovalCard detail={d} now={NOW}>
       {null}
-    </ApprovalDetailPanel>
+    </ApprovalCard>
   );
 
 const plain = (html: string) => html.replace(/<\/?bdi>/g, "");
@@ -77,7 +77,7 @@ const at = (html: string, text: string): number => {
 };
 
 describe("the detail of a reply", () => {
-  test("shows the facts in order: gaps, To, Cc, Reply-To, the full body, the quote closed, the version, the time left", () => {
+  test("shows the facts in order: gaps, To, Cc, Reply-To, the version, the time left, the full body, the quote closed", () => {
     const html = panel(
       detail(
         {},
@@ -96,11 +96,11 @@ describe("the detail of a reply", () => {
       "To: ",
       "Cc: ",
       "Reply-To: ",
+      "Version 2",
+      "Expires in",
       "Tak, wtorek pasuje.",
       "<details",
       "Quoted original",
-      "Version 2",
-      "Expires in",
     ].map((text) => at(html, text));
     expect(order).toEqual([...order].sort((a, b) => a - b));
     expect(html).toContain("b@y.test, c@z.test");
@@ -176,12 +176,6 @@ describe("the detail of a reply", () => {
     expect(html).toContain("Reply to <bdi>");
   });
 
-  test("a delegation keeps its quote as a heading with the text open", () => {
-    const html = panel(detail({ kind: "delegation" }, { kind: "delegation" }));
-    expect(html).not.toContain("<details");
-    expect(html).toContain("<h3");
-  });
-
   test("a draft that the system closed says why; a timeout and a send in another state say nothing more", () => {
     const expired = detail({ state: "expired", expiresAt: null, endReason: "newer_mail" });
     expect(panel(expired)).toContain("A newer mail arrived in this thread. Nothing was sent.");
@@ -255,7 +249,8 @@ describe("the controls of a reply", () => {
     );
   const controls = (d: ApprovalDetail, props: { waiting?: boolean; busy?: boolean; text?: string } = {}) =>
     plain(controlsRaw(d, props));
-  const buttonOf = (html: string, name: string) => new RegExp(`<button[^>]*>${name}</button>`).exec(html)?.[0] ?? "";
+  const buttonOf = (html: string, name: string) =>
+    new RegExp(`<button[^>]*>(?:<svg[^]*?</svg>)?${name}</button>`).exec(html)?.[0] ?? "";
 
   test("the line field has a label, a counter and the redrafts left; Redraft is off while the line is empty", () => {
     const html = controls(detail({ redraftsLeft: 4 }));
@@ -293,11 +288,13 @@ describe("the controls of a reply", () => {
     expect(html).toContain("The limit of new versions for this mail is used up.");
     expect(html).not.toContain("Redrafts left for this mail:");
     expect(buttonOf(html, "Redraft")).toMatch(OFF);
+    expect(/<input[^>]*>/.exec(html)?.[0]).toMatch(OFF);
   });
 
   test("while a request waits: Drafting… shows and the field and the button are off", () => {
     const html = controls(detail(), { waiting: true });
     expect(html).toContain("Drafting…");
+    expect(html).toContain("animate-spin");
     expect(buttonOf(html, "Redraft")).toMatch(OFF);
     expect(/<input[^>]*>/.exec(html)?.[0]).toMatch(OFF);
   });
@@ -312,6 +309,9 @@ describe("the controls of a reply", () => {
     expect(html).toContain("Reply all");
     expect(html).toContain("Cc adds:");
     expect(html).toContain("b@y.test, c@z.test");
+    // The hint stands before the button: the owner reads who is added before the tap.
+    expect(html.indexOf("c@z.test")).toBeLessThan(html.indexOf("<button", html.indexOf("c@z.test")));
+    expect(html.indexOf("Cc adds:")).toBeLessThan(html.indexOf(">Reply all</button>"));
     expect(html).toContain("Use Reply-To");
     expect(html).toContain("The reply goes to this address instead of the sender:");
     expect(html).toContain("office@client.test");

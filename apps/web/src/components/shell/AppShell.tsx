@@ -22,7 +22,8 @@ import { browserStorage, WhatsNewSlot } from "./WhatsNew";
 export interface AppShellProps {
   active: NavKey;
   title: TextKey;
-  lead?: TextKey;
+  // A text key, or a ready text for a lead with a plural in it (the island builds it with `tp`).
+  lead?: TextKey | { text: string };
   leadVars?: Record<string, string | number>; // the values of `{name}` slots in the lead text
   action?: ReactNode;
   children: ReactNode;
@@ -117,7 +118,11 @@ function Frame({ active, title, lead, leadVars, action, children }: AppShellProp
           <WhatsNewSlot features={features} releases={RELEASES} userId={me.user.id} getStorage={browserStorage} />
         )}
         <main className="px-4 py-4 pb-24 lg:pb-8">
-          <PageHead title={t(heading)} lead={lead === undefined ? undefined : t(lead, leadVars)} action={action} />
+          <PageHead
+            title={t(heading)}
+            lead={lead === undefined ? undefined : typeof lead === "string" ? t(lead, leadVars) : lead.text}
+            action={action}
+          />
           {content}
         </main>
       </div>
