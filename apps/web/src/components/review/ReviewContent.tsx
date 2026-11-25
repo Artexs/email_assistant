@@ -1,10 +1,15 @@
 import { formatClock, type PanelReviewItem, type PanelReviewSample, type ReviewLabelCategory } from "@ea/core/web";
-import { useState } from "react";
+import { Check, ChevronDown, ClipboardCheck, PartyPopper } from "lucide-react";
 
 import { getLocale, t } from "../../i18n";
-import { categoryName, categoryTagText, senderText, subjectText } from "../../lib/activity-text";
+import { categoryName, senderText, subjectText } from "../../lib/activity-text";
 import { canConfirm, pickCategories, reviewFinished } from "../../lib/review-view";
+import { CategoryPill } from "../patterns/CategoryPill";
+import { EmptyState } from "../patterns/EmptyState";
+import { ProgressRing } from "../patterns/ProgressRing";
 import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 export interface ReviewContentProps {
   sample: PanelReviewSample;
@@ -21,9 +26,6 @@ export interface ReviewContentProps {
   onDone(): void;
 }
 
-const selectClass =
-  "h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50";
-
 interface ItemProps {
   item: PanelReviewItem;
   sample: PanelReviewSample;
@@ -37,79 +39,68 @@ interface ItemProps {
 }
 
 // One decision. The sender name, the subject and the AI text are mail text: React prints them as plain text.
+// A pick in the menu saves at once; the card then shows its answer and locks.
 function ReviewItemCard({ item, sample, answer, locked, busy, timeZone, now, onRight, onPick }: ItemProps) {
-  const [picked, setPicked] = useState("");
   const subjectId = `rv-subject-${item.emailId}`;
-  const selectId = `rv-pick-${item.emailId}`;
   const categories = pickCategories(sample, item);
+  const answered = answer !== undefined;
   return (
-    <li
-      className="flex min-w-0 flex-col gap-2 rounded-lg border p-4"
-      data-review-item={item.emailId}
-      aria-labelledby={subjectId}
-    >
-      <p className="truncate text-sm text-muted-foreground">
-        {formatClock(new Date(item.receivedAt), timeZone, now, getLocale())} · {senderText(item.fromName)}
-      </p>
-      <p id={subjectId} className="font-medium break-words">
-        {subjectText(item.subject)}
-      </p>
-      <p className="text-sm" data-review="category">
-        {categoryTagText(item.category)} · {t("rv_sure", { value: Math.round(item.confidence * 100) })}
-      </p>
-      {item.aiText !== null && item.aiText !== "" && (
-        <p className="text-sm text-muted-foreground break-words">{item.aiText}</p>
-      )}
-      {answer !== undefined && (
-        <p role="status" className="text-sm font-medium" data-review="answer">
-          {answer}
-        </p>
-      )}
-      {answer === undefined && !locked && (
-        <div className="flex flex-wrap items-end gap-3">
-          {canConfirm(item) && (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy}
-              aria-describedby={subjectId}
-              onClick={() => onRight(item)}
-            >
-              {t("rv_right")}
-            </Button>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor={selectId} className="text-sm">
-              {t("rv_pick_label")}
-            </label>
-            <div className="flex items-center gap-2">
-              <select
-                id={selectId}
-                className={selectClass}
-                value={picked}
-                disabled={busy}
-                onChange={(event) => setPicked(event.target.value)}
-              >
-                <option value="">{t("rv_pick_none")}</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {categoryName(category)}
-                  </option>
-                ))}
-              </select>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || picked === ""}
-                aria-describedby={subjectId}
-                onClick={() => onPick(item, picked as ReviewLabelCategory)}
-              >
-                {t("save")}
-              </Button>
-            </div>
+    <li className="flex min-w-0" data-review-item={item.emailId} aria-labelledby={subjectId}>
+      <Card className={answered ? "w-full gap-3 bg-primary-soft py-5" : "w-full gap-3 py-5"}>
+        <CardContent className="flex min-w-0 flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-review="category">
+            <CategoryPill category={item.category} label={categoryName(item.category)} />
+            <span className="text-sm text-muted-foreground">
+              {t("rv_sure", { value: Math.round(item.confidence * 100) })}
+            </span>
           </div>
-        </div>
-      )}
+          <p className="truncate text-sm text-muted-foreground">
+            {formatClock(new Date(item.receivedAt), timeZone, now, getLocale())} · {senderText(item.fromName)}
+          </p>
+          <p id={subjectId} className="text-lg font-bold break-words">
+            {subjectText(item.subject)}
+          </p>
+          {item.aiText !== null && item.aiText !== "" && (
+            <p className="text-sm text-muted-foreground break-words">{item.aiText}</p>
+          )}
+          {answered && (
+            <p role="status" className="text-sm font-bold" data-review="answer">
+              {answer}
+            </p>
+          )}
+          {!answered && !locked && (
+            <div className="flex flex-wrap gap-2.5">
+              {canConfirm(item) && (
+                <Button type="button" disabled={busy} aria-describedby={subjectId} onClick={() => onRight(item)}>
+                  <Check aria-hidden="true" />
+                  {t("rv_right")}
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={busy}
+                    aria-label={t("rv_pick_label")}
+                    aria-describedby={subjectId}
+                  >
+                    {t("rv_other")}
+                    <ChevronDown aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {categories.map((category) => (
+                    <DropdownMenuItem key={category} onSelect={() => onPick(item, category)}>
+                      <CategoryPill category={category} label={categoryName(category)} />
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </li>
   );
 }
@@ -120,16 +111,31 @@ export function ReviewContent(props: ReviewContentProps) {
   const total = sample.items.length;
   const answered = sample.items.filter((item) => answers[item.emailId] !== undefined).length;
   const finished = reviewFinished(total, answered, doneTapped);
+  const back = (
+    <Button asChild>
+      <a href={backHref}>{t("rv_back")}</a>
+    </Button>
+  );
   return (
     <div className="flex flex-col gap-4" data-review-state={total === 0 ? "empty" : finished ? "finished" : "open"}>
-      <p>{t("rv_intro")}</p>
-      {total === 0 && <p data-review="empty">{t("rv_empty")}</p>}
+      {total === 0 && (
+        <div data-review="empty">
+          <EmptyState icon={ClipboardCheck} title={t("rv_empty")}>
+            {back}
+          </EmptyState>
+        </div>
+      )}
       {total > 0 && (
         <>
-          <p className="text-sm text-muted-foreground" data-review="progress">
-            {t("rv_progress", { answered, total })}
-          </p>
-          <ul className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <ProgressRing value={answered} max={total} label={t("rv_progress", { answered, total })}>
+              {answered}
+            </ProgressRing>
+            <p className="text-base font-bold" data-review="progress">
+              {t("rv_progress", { answered, total })}
+            </p>
+          </div>
+          <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {sample.items.map((item) => (
               <ReviewItemCard
                 key={item.emailId}
@@ -152,16 +158,11 @@ export function ReviewContent(props: ReviewContentProps) {
           {t("rv_done")}
         </Button>
       )}
-      {(finished || total === 0) && (
-        <div className="flex flex-col items-start gap-3">
-          {finished && (
-            <p role="status" data-review="thanks">
-              {t("rv_thanks")}
-            </p>
-          )}
-          <Button asChild variant="outline">
-            <a href={backHref}>{t("rv_back")}</a>
-          </Button>
+      {finished && (
+        <div role="status" data-review="thanks">
+          <EmptyState icon={PartyPopper} title={t("rv_thanks_title")} text={t("rv_thanks")}>
+            {back}
+          </EmptyState>
         </div>
       )}
     </div>
