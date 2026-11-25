@@ -13,9 +13,7 @@ import { Row } from "../patterns/Row";
 import { RowList } from "../patterns/RowList";
 import { SectionCard } from "../patterns/SectionCard";
 import { Switch } from "../ui/switch";
-
-const selectClass =
-  "h-12 rounded-md border-2 border-input bg-card px-4 text-base outline-none focus-visible:border-ring focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50";
+import { selectClass } from "./NoticeRoutesCard";
 
 export interface LoopSettingsCardProps {
   settings: SettingsWebView;
