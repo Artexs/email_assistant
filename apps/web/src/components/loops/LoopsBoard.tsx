@@ -18,10 +18,10 @@ import {
 } from "../../lib/loops-view";
 import { singleFlight } from "../../lib/single-flight";
 import { useLoopList } from "../../lib/use-loop-list";
+import { FactBox } from "../patterns/FactBox";
 import { EmptyState } from "../patterns/EmptyState";
 import { useMe } from "../shell/MeProvider";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 import { Skeleton } from "../ui/skeleton";
 import { LoopConfirmDialog } from "./LoopConfirmDialog";
 import { loopButtonId, LOOP_ROW_ID_PREFIX, loopRowId } from "./LoopRow";
@@ -119,13 +119,7 @@ export function LoopsBoard({ kind, filter, filterNav, showHeading = false }: Loo
 
   // The flag is off: the API answers like for an unknown path.
   if (!list.loading && list.error instanceof ApiError && list.error.status === 404) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("dlg_off")}</p>
-        </CardContent>
-      </Card>
-    );
+    return <FactBox>{t("dlg_off")}</FactBox>;
   }
 
   const owner = me?.role === "owner";

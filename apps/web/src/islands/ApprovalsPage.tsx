@@ -1,5 +1,3 @@
-import { Inbox } from "lucide-react";
-
 import { ApprovalActions, ApprovalOutcome } from "../components/approvals/ApprovalActions";
 import { ApprovalCard } from "../components/approvals/ApprovalCard";
 import { ApprovalEditDialog } from "../components/approvals/ApprovalEditDialog";
@@ -8,7 +6,7 @@ import { ClosedActions, EmptyQueue, EndCard, MissingCard } from "../components/a
 import { ReplyControls } from "../components/approvals/ReplyControls";
 import { useApprovalsQueue } from "../components/approvals/use-approvals-queue";
 import { WaitingList } from "../components/approvals/WaitingList";
-import { EmptyState } from "../components/patterns/EmptyState";
+import { FactBox } from "../components/patterns/FactBox";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -103,7 +101,7 @@ function Approvals({ list }: { list: ApprovalListResource }) {
 
   // The flag is off: the API answers like for an unknown path.
   if (!list.loading && list.error instanceof ApiError && list.error.status === 404) {
-    return <EmptyState icon={Inbox} title={t("appr_off")} />;
+    return <FactBox>{t("appr_off")}</FactBox>;
   }
   if (list.data === null) {
     return list.error === null || list.loading ? (

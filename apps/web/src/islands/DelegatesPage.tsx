@@ -8,8 +8,8 @@ import { DelegateOffDialog } from "../components/delegation/DelegateOffDialog";
 import { DelegationSwitch } from "../components/delegation/DelegationTabs";
 import { AppShell } from "../components/shell/AppShell";
 import { useMe } from "../components/shell/MeProvider";
+import { FactBox } from "../components/patterns/FactBox";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
 import { Skeleton } from "../components/ui/skeleton";
 import { t, useLocale, type TextKey } from "../i18n";
 import { ApiError } from "../lib/api";
@@ -62,13 +62,7 @@ function Delegates() {
 
   // The flag is off: the API answers like for an unknown path.
   if (!list.loading && list.error instanceof ApiError && list.error.status === 404) {
-    return (
-      <Card>
-        <CardContent>
-          <p className="text-muted-foreground">{t("dlg_off")}</p>
-        </CardContent>
-      </Card>
-    );
+    return <FactBox>{t("dlg_off")}</FactBox>;
   }
 
   const owner = me?.role === "owner";
