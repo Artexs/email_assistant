@@ -48,7 +48,7 @@ function Activity() {
 
   return (
     <DelegateHintProvider mailboxes={mailboxes.data}>
-      <div className="flex max-w-3xl flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <ActivityFilterBar filters={effective} mailboxes={list} onChange={onChange} />
           <div className="flex items-center gap-2">
