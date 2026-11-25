@@ -191,20 +191,37 @@ function OrganizationGroup({ isOwner, isOwnerRole }: { isOwner: boolean; isOwner
   return <SettingsGroup id="organization">{content}</SettingsGroup>;
 }
 
+// How long the target of the first scroll stays pinned while the groups below the mailbox group still load.
+const PIN_MS = 3_000;
+// A user who scrolls, taps or types takes the page over: the pin stops.
+const PIN_STOP_EVENTS = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+
 // After the first load the page scrolls to the group that the hash names, once. The page grows while it loads, so
 // the scroll waits for the mailbox group to settle. `?two_factor=required` scrolls to the two-factor section instead
 // of a group (the section scrolls once when it mounts, but the cards above it are still loading then and push it away).
+// The notices, organization and account groups load on their own and can still grow after that scroll; until they
+// stop, every growth of the page scrolls the target back into place.
 function useScrollToGroup(ready: boolean) {
   const done = useRef(false);
   useEffect(() => {
     if (!ready || done.current) return;
     done.current = true;
-    if (new URLSearchParams(location.search).get("two_factor") === "required") {
-      document.getElementById("two-factor")?.scrollIntoView();
-      return;
-    }
-    const id = groupIdFromHash(location.hash);
-    if (id !== null) document.getElementById(id)?.scrollIntoView();
+    const id =
+      new URLSearchParams(location.search).get("two_factor") === "required"
+        ? "two-factor"
+        : groupIdFromHash(location.hash);
+    const target = id === null ? null : document.getElementById(id);
+    if (target === null) return;
+    target.scrollIntoView();
+    const observer = new ResizeObserver(() => target.scrollIntoView());
+    observer.observe(document.body);
+    const stop = () => {
+      observer.disconnect();
+      window.clearTimeout(timer);
+      for (const name of PIN_STOP_EVENTS) window.removeEventListener(name, stop);
+    };
+    const timer = window.setTimeout(stop, PIN_MS);
+    for (const name of PIN_STOP_EVENTS) window.addEventListener(name, stop, { passive: true });
   }, [ready]);
 }
 
