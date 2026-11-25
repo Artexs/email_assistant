@@ -41,7 +41,7 @@ export function AuthCard({ title, children, panel = false }: { title: TextKey; c
         </div>
       </aside>
       <div className="flex items-center justify-center p-1 lg:p-6">
-        <div className="flex w-full max-w-[400px] flex-col gap-6">
+        <div className="flex w-full max-w-100 flex-col gap-6">
           <div className="flex flex-col gap-6">
             <p className="flex items-center gap-3 text-lg font-extrabold lg:hidden">
               <BrandMark />

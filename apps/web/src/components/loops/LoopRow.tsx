@@ -137,7 +137,7 @@ function LoopCard(props: LoopRowProps & { layout: RowLayout }) {
     <li
       id={loopRowId(item.id)}
       tabIndex={-1}
-      className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-card outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+      className="flex flex-col gap-3 rounded-lg bg-card p-4 shadow-card outline-none focus-visible:ring-3 focus-visible:ring-ring"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-3">

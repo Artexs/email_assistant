@@ -92,6 +92,8 @@ const expected: Record<Scheme, Tokens> = {
     "--ring": "var(--primary)",
     "--sidebar": "#ffffff",
     "--shadow-card": "0 1px 2px rgb(16 40 34 / 0.05), 0 12px 32px -8px rgb(16 40 34 / 0.12)",
+    "--shadow-button": "0 6px 16px -6px color-mix(in oklab, var(--primary) 70%, transparent)",
+    "--shadow-bar": "0 -8px 24px -10px color-mix(in srgb, var(--foreground) 20%, transparent)",
     "--avatar-1": "#0a7568",
     "--avatar-2": "#7741c8",
     "--avatar-3": "#235ebf",
@@ -132,6 +134,8 @@ const expected: Record<Scheme, Tokens> = {
     "--ring": "var(--primary)",
     "--sidebar": "#121c19",
     "--shadow-card": "0 1px 2px #0006, 0 12px 32px -8px #0008",
+    "--shadow-button": "0 6px 16px -6px color-mix(in oklab, var(--primary) 70%, transparent)",
+    "--shadow-bar": "0 -8px 24px -10px color-mix(in srgb, var(--foreground) 20%, transparent)",
     "--avatar-1": "#3fd1b9",
     "--avatar-2": "#c3a0ff",
     "--avatar-3": "#7fb0ff",
@@ -185,7 +189,8 @@ describe("design tokens", () => {
 
   test("a colour token has a class in the theme", () => {
     const names = [...Object.keys(expected.light)].filter(
-      (name) => !["--shadow-card", "--tabbar-height", "--radius", "--ring"].includes(name)
+      (name) =>
+        !["--shadow-card", "--shadow-button", "--shadow-bar", "--tabbar-height", "--radius", "--ring"].includes(name)
     );
     for (const name of [...names, "--ring"]) {
       expect(css, name).toContain(`--color-${name.slice(2)}: var(${name});`);

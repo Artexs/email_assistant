@@ -82,13 +82,13 @@ export function DigestTimesCard({ times, timeZone, onSaved }: DigestTimesCardPro
                 aria-label={t("digest_time_label", { n: index + 1 })}
                 disabled={pending}
                 aria-invalid={error !== null}
-                className="h-9 w-36 border-0 bg-transparent px-2 text-primary"
+                className="h-11 w-36 border-0 bg-transparent px-2 text-primary"
                 onChange={(event) => edit(rows.map((item, at) => (at === index ? event.target.value : item)))}
               />
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-xs"
+                size="icon-sm"
                 disabled={pending}
                 aria-label={row === "" ? t("digest_remove_new") : t("digest_remove", { time: row })}
                 onClick={() => edit(rows.filter((_, at) => at !== index))}

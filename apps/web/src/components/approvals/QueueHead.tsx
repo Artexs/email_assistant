@@ -37,11 +37,11 @@ export function QueueHead({ step, laterOff, items, focusId, now, waiting, onLate
       )}
       <div className="ml-auto flex items-center gap-1">
         {step !== null && (
-          <Button type="button" variant="ghost" size="xs" disabled={laterOff} onClick={onLater}>
+          <Button type="button" variant="ghost" size="sm" disabled={laterOff} onClick={onLater}>
             {t("appr_later")}
           </Button>
         )}
-        <Button type="button" variant="ghost" size="xs" className="lg:hidden" onClick={() => setSheet(true)}>
+        <Button type="button" variant="ghost" size="sm" className="lg:hidden" onClick={() => setSheet(true)}>
           {t("appr_all_waiting", { n: waiting })}
         </Button>
       </div>

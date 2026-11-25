@@ -88,7 +88,7 @@ export function DelegationColumn({
   return (
     <div data-slot="delegation-column" className="flex min-w-0 flex-col gap-3 rounded-xl bg-muted p-3.5">
       <div className="flex items-center gap-2 px-1.5">
-        <Icon aria-hidden="true" className={cn("size-[18px] shrink-0", tone)} />
+        <Icon aria-hidden="true" className={cn("size-4.5 shrink-0", tone)} />
         <h2 id={headingId} className={cn("text-base font-bold", tone)}>
           {title}
         </h2>

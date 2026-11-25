@@ -37,6 +37,9 @@ const RULES: Rule[] = [
     pattern:
       /\b(?:bg|text|border|ring|outline|fill|stroke|from|via|to|divide|shadow)-accent\b(?:-foreground)?(?:\/\d+)?/g,
   },
+  // A stock shadow is not a token. `box-shadow` and `shadow-card` do not match: a letter, a digit or `-` before the word ends the match.
+  { name: "a stock shadow", pattern: /(?<![\w-])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![\w-])/g },
+  { name: "an arbitrary shadow", pattern: /(?<![\w-])shadow-\[/g },
 ];
 
 // The warm box, the warning banner and the warm dot of the empty-state picture are the only files that read the accent tokens.
@@ -115,6 +118,9 @@ describe("colourProblems", () => {
     ['className="bg-black/50"', "a white or black class", "bg-black/50"],
     ['className="ring-ring/50"', "a focus colour with an opacity", "ring-ring/50"],
     ['className="hover:bg-accent"', "an accent class", "bg-accent"],
+    ['className="shadow-md"', "a stock shadow", "shadow-md"],
+    ['className="hover:shadow-lg"', "a stock shadow", "shadow-lg"],
+    ['className="shadow-[0_1px_2px_red]"', "an arbitrary shadow", "shadow-["],
     ["const c = `oklch(0.5 0 0)`;", "a colour function", "oklch("],
   ])("%s gives one problem", (text, rule, match) => {
     expect(colourProblems("a.tsx", text)).toEqual([`a.tsx:1: ${rule} "${match}"`]);
@@ -124,6 +130,15 @@ describe("colourProblems", () => {
     expect(
       colourProblems("components/shell/AuthErrorBanner.tsx", '<p className="bg-accent text-accent-foreground">')
     ).toEqual([]);
+  });
+
+  test.each([
+    'className="shadow-card shadow-none shadow-bar shadow-button"',
+    'className="transition-[color,box-shadow]"',
+    'className="shadow-(--shadow-card)"',
+    'const mode = { shadow: { name: "x" } }; if (mode === "shadow") {}',
+  ])("%s gives no problem", (text) => {
+    expect(colourProblems("a.tsx", text)).toEqual([]);
   });
 
   test("a link to an anchor is not a hex colour", () => {
@@ -144,6 +159,13 @@ describe("the source tree", () => {
         .map((hit) => `${file}:${hit.line}: ${hit.rule} "${hit.match}"`);
     });
     expect(problems).toEqual([]);
+  });
+
+  test("each file of the allow list and of the accent list is named in the design system record", () => {
+    const record = readFileSync(join(srcDir, "../../../docs/decisions/0037-panel-design-system.md"), "utf8");
+    const files = new Set([...ALLOWED.map((entry) => entry.file), ...ACCENT_FILES]);
+    const missing = [...files].filter((file) => !record.includes(`\`${file}\``));
+    expect(missing).toEqual([]);
   });
 
   test.each(ALLOWED)("the allowed $match in $file is still there", ({ file, match }) => {

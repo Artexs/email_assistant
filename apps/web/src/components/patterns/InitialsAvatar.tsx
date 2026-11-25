@@ -3,7 +3,7 @@ import { cn } from "cn";
 // The five fill classes, written out in full so the build keeps them.
 const FILLS = ["bg-avatar-1", "bg-avatar-2", "bg-avatar-3", "bg-avatar-4", "bg-avatar-5"] as const;
 
-const SIZES = { sm: "size-8 rounded-[10px] text-xs", default: "size-10 rounded-[14px] text-sm" } as const;
+const SIZES = { sm: "size-8 rounded-sm text-xs", default: "size-10 rounded-[14px] text-sm" } as const;
 
 // FNV-1a over the UTF-16 units of the name: the same name always gets the same fill.
 function hashName(name: string): number {

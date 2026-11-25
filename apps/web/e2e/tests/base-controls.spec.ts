@@ -78,10 +78,8 @@ test.describe("buttons", () => {
 
   test("the icon buttons have the heights of the text buttons", async ({ page }) => {
     for (const [size, expected] of [
-      ["icon-lg", 52],
       ["icon", 48],
       ["icon-sm", 44],
-      ["icon-xs", 36],
     ] as const) {
       expect(await box(page.getByRole("button", { name: `Add ${size}`, exact: true }))).toEqual({
         width: expected,

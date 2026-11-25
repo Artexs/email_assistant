@@ -27,7 +27,7 @@ export function StickyActions({ children }: { children: ReactNode }) {
       <div
         ref={bar}
         data-slot="sticky-actions"
-        className="fixed inset-x-0 bottom-[calc(var(--tabbar-height)+env(safe-area-inset-bottom))] z-30 flex flex-wrap items-center gap-3 bg-card px-4 py-3 shadow-[0_-8px_24px_-10px_color-mix(in_srgb,var(--foreground)_20%,transparent)] lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:shadow-none"
+        className="fixed inset-x-0 bottom-[calc(var(--tabbar-height)+env(safe-area-inset-bottom))] z-30 flex flex-wrap items-center gap-3 bg-card px-4 py-3 shadow-bar lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:shadow-none"
       >
         {children}
       </div>

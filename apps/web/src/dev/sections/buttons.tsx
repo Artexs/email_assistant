@@ -15,7 +15,7 @@ const VARIANTS = [
   "link",
 ] as const;
 const SIZES = ["lg", "default", "sm", "xs"] as const;
-const ICON_SIZES = ["icon-lg", "icon", "icon-sm", "icon-xs"] as const;
+const ICON_SIZES = ["icon", "icon-sm"] as const;
 
 // Every variant at every size, then the icon sizes. The label of a button is `<variant> <size>`: the size spec reads it by name.
 function Buttons() {

@@ -56,6 +56,14 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe("page title owner", () => {
+  test("each owner of an h1 is named in the design system record", () => {
+    const record = readFileSync(
+      join(import.meta.dir, "../../../../docs/decisions/0037-panel-design-system.md"),
+      "utf8"
+    );
+    expect(H1_ALLOWED.filter((file) => !record.includes(`\`${file}\``))).toEqual([]);
+  });
+
   test("no island or feature component renders an h1 except the allowed files", () => {
     const src = join(import.meta.dir, "..");
     const found = [...sourceFiles(join(src, "islands")), ...sourceFiles(join(src, "components"))]

@@ -28,23 +28,6 @@ function TabsDemo() {
         </Tabs>
       </div>
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">Line variant.</p>
-        <Tabs defaultValue="One">
-          <TabsList variant="line" aria-label="Line tabs">
-            {TWO_TABS.map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                {tab}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {TWO_TABS.map((tab) => (
-            <TabsContent key={tab} value={tab} className="text-sm text-muted-foreground">
-              {`Content of the ${tab} tab.`}
-            </TabsContent>
-          ))}
-        </Tabs>
-      </div>
-      <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">Vertical orientation.</p>
         <Tabs defaultValue="One" orientation="vertical" className="flex-row">
           <TabsList aria-label="Vertical tabs">

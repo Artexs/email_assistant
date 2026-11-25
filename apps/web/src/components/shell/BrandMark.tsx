@@ -4,7 +4,7 @@ import { cn } from "cn";
 
 const sizes = {
   sm: "size-8 rounded-[11px_11px_11px_4px] [&>svg]:size-4",
-  default: "size-9 rounded-[12px_12px_12px_4px] [&>svg]:size-[18px]",
+  default: "size-9 rounded-[12px_12px_12px_4px] [&>svg]:size-4.5",
   lg: "size-12 rounded-[16px_16px_16px_5px] [&>svg]:size-6",
 } as const;
 

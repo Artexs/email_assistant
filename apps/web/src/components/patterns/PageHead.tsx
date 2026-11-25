@@ -11,7 +11,7 @@ export interface PageHeadProps {
 export function PageHead({ title, lead, action }: PageHeadProps) {
   const hasAction = action !== undefined && action !== null && action !== false;
   return (
-    <div className="mb-3.5 flex flex-col items-start gap-2.5 lg:mb-[22px] lg:flex-row lg:items-end lg:justify-between lg:gap-4">
+    <div className="mb-3.5 flex flex-col items-start gap-2.5 lg:mb-5.5 lg:flex-row lg:items-end lg:justify-between lg:gap-4">
       <div className="min-w-0">
         <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{title}</h1>
         {lead !== undefined && (

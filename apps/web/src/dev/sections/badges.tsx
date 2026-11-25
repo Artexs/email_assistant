@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 
 import type { PatternSection } from "../sections";
 
-const VARIANTS = ["default", "secondary", "outline", "destructive", "ghost", "link"] as const;
+const VARIANTS = ["default", "secondary", "outline", "destructive"] as const;
 
 function Badges() {
   return (

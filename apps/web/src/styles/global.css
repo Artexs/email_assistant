@@ -48,6 +48,8 @@
   --ring: var(--primary);
   --sidebar: #ffffff;
   --shadow-card: 0 1px 2px rgb(16 40 34 / 0.05), 0 12px 32px -8px rgb(16 40 34 / 0.12);
+  --shadow-button: 0 6px 16px -6px color-mix(in oklab, var(--primary) 70%, transparent);
+  --shadow-bar: 0 -8px 24px -10px color-mix(in srgb, var(--foreground) 20%, transparent);
   --avatar-1: #0a7568;
   --avatar-2: #7741c8;
   --avatar-3: #235ebf;
@@ -170,9 +172,15 @@
   --color-cat-unsure-soft: var(--cat-unsure-soft);
 }
 
-/* The card shadow changes with the scheme, so it is a utility over the token, not a theme value. */
+/* The shadows change with the scheme, so each is a utility over its token, not a theme value. */
 @utility shadow-card {
   box-shadow: var(--shadow-card);
+}
+@utility shadow-button {
+  box-shadow: var(--shadow-button);
+}
+@utility shadow-bar {
+  box-shadow: var(--shadow-bar);
 }
 
 @layer base {
