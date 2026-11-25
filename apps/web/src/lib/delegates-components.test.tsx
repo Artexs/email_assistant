@@ -1,12 +1,13 @@
 /// <reference types="bun" />
-import { DELEGATE_LIST_MAX, type Delegate } from "@ea/core/web";
+import { DELEGATE_LIST_MAX, type Delegate, type Me } from "@ea/core/web";
 import { afterEach, describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { DelegateAddForm } from "../components/delegation/DelegateAddForm";
 import { DelegateList } from "../components/delegation/DelegateList";
-import { DelegationTabs } from "../components/delegation/DelegationTabs";
+import { DelegationSwitch, DelegationTabs } from "../components/delegation/DelegationTabs";
 import { TextField } from "../components/delegation/TextField";
+import { MeContext } from "../components/shell/MeProvider";
 import { setLocaleForTest } from "../i18n";
 
 afterEach(() => setLocaleForTest("en"));
@@ -113,6 +114,30 @@ describe("DelegationTabs", () => {
     const html = renderToStaticMarkup(<DelegationTabs current="delegates" />);
     expect(html).toContain(">Zlecenia<");
     expect(html).toContain(">Wykonawcy<");
+  });
+});
+
+describe("DelegationSwitch", () => {
+  const render = (features: string[]) => {
+    const me = { features } as unknown as Me;
+    const value = { me, error: null, loading: false, reload: () => undefined };
+    return renderToStaticMarkup(
+      <MeContext.Provider value={value}>
+        <DelegationSwitch current="delegations" />
+      </MeContext.Provider>
+    );
+  };
+
+  test("without the flag delegation_pages it renders nothing", () => {
+    expect(render([])).toBe("");
+  });
+
+  test("with the flag it renders the nav of two links", () => {
+    const html = render(["delegation_pages"]);
+    expect(html).toContain('aria-label="Delegation pages"');
+    expect(html.match(/<a /g)).toHaveLength(2);
+    expect(html).toMatch(/<a href="\/delegations" aria-current="page"[^>]*>Delegations<\/a>/);
+    expect(html).toMatch(/<a href="\/delegates"(?![^>]*aria-current)[^>]*>Delegates<\/a>/);
   });
 });
 

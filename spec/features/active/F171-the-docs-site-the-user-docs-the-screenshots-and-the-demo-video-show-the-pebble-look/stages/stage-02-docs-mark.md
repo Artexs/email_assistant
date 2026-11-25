@@ -24,7 +24,7 @@ Part of [`../plan.md`](../plan.md). Decisions P1, D3.
 
 ## Look
 
-Open the home page at desktop and phone width in both schemes; give the paths. The mark must show its teal tile in both schemes and not be cut.
+Open the home page at desktop and phone width in both schemes, as screenshots in `/tmp/f171-02/`; give the paths. The mark must show its teal tile in both schemes and not be cut.
 
 ## Out of scope
 
