@@ -32,8 +32,8 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
 const card = (page: Page) => page.locator("[data-card=categories]");
 const rowOf = (page: Page, category: "info" | "notification" | "spam") =>
   card(page)
-    .locator("li")
-    .filter({ has: page.getByText(en[`cat_${category}`], { exact: true }) });
+    .locator("[data-slot=row]")
+    .filter({ has: page.locator(`[data-slot=category-pill][data-category=${category}]`) });
 const autoSwitch = (page: Page, category: "info" | "notification" | "spam") =>
   page.getByRole("switch", { name: t("cat_auto_label", { category: en[`cat_${category}`] }), exact: true });
 
@@ -66,6 +66,10 @@ test("T1: the card shows the proof, the history and the pause per category, and 
   const errors = await startSession(context, page, org().owner);
   await openCard(page);
   await expectLines(page);
+  // One pill per category; the rows carry no emoji.
+  await expect(card(page).locator("[data-slot=category-pill]")).toHaveCount(5);
+  const rowTexts = await card(page).locator("[data-slot=row]").allTextContents();
+  expect(rowTexts.filter((text) => /\p{Extended_Pictographic}/u.test(text))).toEqual([]);
   // The pause line is the red one (the destructive text colour); the proof line is not.
   await expect(rowOf(page, "info").getByText(en.trust_paused_corrections)).toHaveClass(/text-destructive/);
   await expect(rowOf(page, "notification").getByText(proof)).not.toHaveClass(/text-destructive/);

@@ -1,4 +1,5 @@
 import { formatClock, type SettingsWebChange, type SettingsWebView } from "@ea/core/web";
+import { PauseCircle, Send } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,7 +8,10 @@ import { changeSentSync } from "../../lib/sent-switch";
 import { sentStatusLine } from "../../lib/sent-text";
 import { patchSettings } from "../../lib/settings-api";
 import { useNow } from "../../lib/use-now";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { FactBox } from "../patterns/FactBox";
+import { Row } from "../patterns/Row";
+import { RowList } from "../patterns/RowList";
+import { SectionCard } from "../patterns/SectionCard";
 import { Switch } from "../ui/switch";
 
 export interface SentMailCardProps {
@@ -41,32 +45,40 @@ export function SentMailCard({ settings, isOwner, timeZone, onChanged, onMissing
 
   const status = sentStatusLine(sent);
 
+  const statusText =
+    status === null
+      ? null
+      : status.key === "sent_last" && status.vars !== undefined
+        ? t("sent_last", { time: formatClock(new Date(status.vars.at ?? ""), timeZone, now, getLocale()) })
+        : t(status.key);
+
   return (
-    <Card data-card="sent">
-      <CardHeader>
-        <CardTitle>{t("sent_title")}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className="font-medium">{t("sent_switch")}</span>
+    <SectionCard data-card="sent" icon={Send} title={t("sent_title")}>
+      <RowList>
+        <Row
+          title={t("sent_switch")}
+          htmlFor="sent-switch"
+          hint={
+            <>
+              <p>{t("sent_line")}</p>
+              {sent.folder !== null && <p className="truncate">{sent.folder}</p>}
+            </>
+          }
+        >
           <Switch
-            aria-label={t("sent_switch")}
+            id="sent-switch"
             checked={sent.enabled}
             disabled={!isOwner || pending || (!sent.flagOn && !sent.enabled)}
             onCheckedChange={(enabled) => void change(enabled)}
           />
-        </div>
-        <p className="text-sm">{t("sent_line")}</p>
-        {sent.folder !== null && <p className="truncate text-sm text-muted-foreground">{sent.folder}</p>}
-        {status !== null && (
-          <p className="text-sm text-muted-foreground">
-            {status.key === "sent_last" && status.vars !== undefined
-              ? t("sent_last", { time: formatClock(new Date(status.vars.at ?? ""), timeZone, now, getLocale()) })
-              : t(status.key)}
-          </p>
-        )}
-        <p className="text-sm text-muted-foreground">{t("sent_off_note")}</p>
-      </CardContent>
-    </Card>
+        </Row>
+      </RowList>
+      {statusText === null ? null : status?.key === "sent_paused" ? (
+        <FactBox icon={PauseCircle}>{statusText}</FactBox>
+      ) : (
+        <p className="text-sm text-muted-foreground">{statusText}</p>
+      )}
+      <p className="text-sm text-muted-foreground">{t("sent_off_note")}</p>
+    </SectionCard>
   );
 }

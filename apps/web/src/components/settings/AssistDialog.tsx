@@ -27,20 +27,20 @@ export function AssistDialog({ mailbox, switches, open, onOpenChange, onChoose, 
           <DialogDescription>{t("assist_text", { address: mailbox.address })}</DialogDescription>
         </DialogHeader>
         <ScopeBadges scopes={mailbox.scopes} />
-        <div className="flex flex-col gap-1.5">
-          <Button disabled={pending} onClick={() => onChoose(false)}>
+        <div className="flex flex-col gap-2">
+          <Button className="w-full" disabled={pending} onClick={() => onChoose(false)}>
             {t("assist_usual")}
           </Button>
           <p className="text-sm text-muted-foreground">{t("assist_usual_hint")}</p>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <Button variant="outline" disabled={pending} onClick={() => onChoose(true)}>
+        <div className="flex flex-col gap-2">
+          <Button variant="soft" className="w-full" disabled={pending} onClick={() => onChoose(true)}>
             {t("assist_keep")}
           </Button>
           <p className="text-sm text-muted-foreground">{t("assist_keep_hint", { list })}</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>
+          <Button variant="secondary" disabled={pending} onClick={() => onOpenChange(false)}>
             {t("cancel")}
           </Button>
         </DialogFooter>

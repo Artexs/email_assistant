@@ -1,10 +1,14 @@
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
+
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 import { E2E_LOOPS_SUBJECTS } from "../../../server/src/scripts/e2e-seed-args";
 import { en } from "../../src/i18n/en";
 import { expectNoA11yViolations } from "../a11y";
 import { cspErrors, nextAddress, signInAs } from "../helpers";
 import { readSeed } from "../seed";
+import { sheetDir } from "../ui-sheet/dir";
 
 // The loops organization of the project (see `e2e-seed.ts`, `e2e-loops-rows.ts`): the flags `open_loops`,
 // `delegate_button`, `delegation_pages`, `sent_sync` and `approvals_page` are on; one active delegate (Anna Nowak); a mailbox in assist mode with drafts
@@ -23,6 +27,30 @@ async function startSession(context: BrowserContext, page: Page, user: { email: 
   await signInAs(page, user);
   await page.waitForURL((url) => !url.pathname.startsWith("/login"));
   return errors;
+}
+
+// Saves the loops card in both schemes and both languages under `<UI_SHEET_DIR>/settings-mailbox/`, for the look next to the mockup. The page
+// returns to English and the light scheme.
+async function saveCardPictures(page: Page, card: Locator, state: "tracking-on" | "tracking-off"): Promise<void> {
+  const dir = join(sheetDir(), "settings-mailbox");
+  mkdirSync(dir, { recursive: true });
+  for (const locale of ["en", "pl"] as const) {
+    await page.evaluate((value) => localStorage.setItem("ea.locale", value), locale);
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
+    await expect(card).toBeVisible();
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      await card.screenshot({
+        path: join(dir, `loops-${state}-${project() === "mobile" ? "phone" : "desktop"}-${scheme}-${locale}.png`),
+        animations: "disabled",
+      });
+    }
+  }
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.evaluate(() => localStorage.setItem("ea.locale", "en"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 }
 
 const rowOf = (page: Page, subject: string) => page.locator("li[data-email-id]").filter({ hasText: subject });
@@ -102,6 +130,7 @@ test("T7: the wait select set to 5 is saved after a reload; the switch is saved 
   await page.reload();
   await expect(card.getByLabel(en.lset_wait_label)).toHaveValue("5");
   await expect(card.getByRole("switch", { name: en.lset_auto_label })).toBeChecked();
+  await saveCardPictures(page, card, "tracking-on");
   expect(errors).toEqual([]);
 });
 
@@ -117,5 +146,31 @@ test("T8: the Confirm button of the new Telegram terms is gone after the tap", a
   await page.reload();
   await expect(page.getByText(/^Linked since /)).toBeVisible();
   await expect(page.getByRole("region", { name: en.tgc_title })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("T9: with Track my sent mail off, the loops card says so and both controls are disabled", async ({
+  context,
+  page,
+}) => {
+  const errors = await startSession(context, page, org().owner);
+  await page.goto("/settings");
+  const card = page.locator("[data-card=loops]");
+  const wait = card.getByLabel(en.lset_wait_label);
+  const auto = card.getByRole("switch", { name: en.lset_auto_label });
+  await expect(wait).toBeEnabled();
+  await expect(auto).toBeEnabled();
+
+  await page.locator("[data-card=sent]").getByRole("switch", { name: en.sent_switch, exact: true }).click();
+  await expect(page.getByText(en.sent_off_toast)).toBeVisible();
+  await expect(card.getByText(en.lset_needs_sent)).toBeVisible();
+  await expect(wait).toBeDisabled();
+  await expect(auto).toBeDisabled();
+  // The help lines stay attached to the controls.
+  await expect(wait).toHaveAccessibleDescription(en.lset_wait_help);
+  await expect(auto).toHaveAccessibleDescription(en.lset_auto_help);
+  await expectNoA11yViolations(page);
+
+  await saveCardPictures(page, card, "tracking-off");
   expect(errors).toEqual([]);
 });
