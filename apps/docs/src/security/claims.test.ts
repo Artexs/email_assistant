@@ -119,10 +119,10 @@ describe("parseLedger", () => {
     expect(rows.get("C005")).toEqual({ id: "C005", source: "a/b.ts", condition: "LLM_PROVIDER" });
   });
 
-  test("the real ledger has 276 rows, each with a source", () => {
+  test("the real ledger has 282 rows, each with a source", () => {
     const text = readFileSync(join(import.meta.dir, "../../../../docs/legal/claims.md"), "utf8");
     const rows = parseLedger(text);
-    expect(rows.size).toBe(276);
+    expect(rows.size).toBe(282);
     for (const row of rows.values()) expect(row.source).not.toBe("");
   });
 });
@@ -184,6 +184,19 @@ describe("the public claims of the security page", () => {
         expect(text).not.toMatch(/gemini/i);
         expect(text).not.toMatch(/\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/);
       }
+    }
+  });
+
+  test("the three AI-provider claims describe the default setup: their ledger row holds no Gemini, and OpenAI stands only in that phrase", () => {
+    const ids = ["ai-provider-receives", "ai-provider-reply-drafts", "ai-provider-style-suggestion"];
+    const defaultRow = ledgerText.split("\n").find((line) => line.startsWith("| C277 |"));
+    expect(defaultRow).toContain("The default setup uses OpenAI as the AI model.");
+    expect(defaultRow).not.toMatch(/gemini/i);
+    for (const id of ids) {
+      const claim = publicClaims.find((entry) => entry.id === id);
+      expect(claim?.ledger[0]).toBe("C277");
+      expect(claim?.text.en.replaceAll("The default setup uses OpenAI", "")).not.toContain("OpenAI");
+      expect(claim?.text.en).not.toMatch(/deepseek/i);
     }
   });
 

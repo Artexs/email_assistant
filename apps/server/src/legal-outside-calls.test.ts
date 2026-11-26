@@ -146,7 +146,7 @@ describe("the outside calls of the privacy papers", () => {
     expect(line).toContain(ONE_CLICK_USER_AGENT);
   });
 
-  test.each(["openai", "gemini"])("the %s sub-processor row names the body cap in both languages", (id) => {
+  test.each(["openai", "deepseek", "gemini"])("the %s sub-processor row names the body cap in both languages", (id) => {
     const service = subprocessors.find((entry) => entry.id === id);
     expect(service?.dataReceived.en).toContain(bodyCap.en);
     expect(service?.dataReceived.pl).toContain(bodyCap.pl);
@@ -179,18 +179,18 @@ const styleCaps = {
 };
 const styleWindowDays = STYLE_SUGGEST_WINDOW_MS / DAY_MS;
 const styleWindow = { en: `${styleWindowDays} days`, pl: `${styleWindowDays} dni` };
-const geminiSentence = {
-  en: "An install can use Google Gemini instead",
-  pl: "Instalacja może zamiast tego używać Google Gemini",
+const deepseekSentence = {
+  en: "When the install uses DeepSeek",
+  pl: "Gdy instalacja używa DeepSeek",
 };
 
-/** The text of the style call on a privacy page: from the button label of the page language to the Gemini sentence. */
+/** The text of the style call on a privacy page: from the button label of the page language to the DeepSeek sentence. */
 function styleSlice(lang: "en" | "pl"): string {
   const label = new RegExp(`rs_suggest_button: "([^"]+)"`).exec(read(`apps/web/src/i18n/texts/${lang}-reply.ts`))?.[1];
   if (label === undefined) throw new Error(`no rs_suggest_button text in ${lang}`);
   const page = privacy[lang];
   const from = page.indexOf(label);
-  const to = page.indexOf(geminiSentence[lang]);
+  const to = page.indexOf(deepseekSentence[lang]);
   if (from === -1 || to <= from) throw new Error(`the style call text is not on the ${lang} privacy page`);
   return page.slice(from, to);
 }
@@ -277,21 +277,24 @@ describe("style suggestion", () => {
   test("the public claim of the style call names the call limit and cites the style rows of the ledger", () => {
     const claim = publicClaimSource("ai-provider-style-suggestion");
     expect(claim).toContain("at most two calls");
-    expect(claim).toContain('ledger: ["C030", "C271", "C272"]');
+    expect(claim).toContain('ledger: ["C277", "C271", "C272"]');
   });
 
   test("the claim of the DPIA text of the style call names the total cap", () => {
     expect(claimLine("C273")).toContain(styleCaps.total.en);
   });
 
-  test.each(["openai", "gemini"])("the %s sub-processor row names the style caps in both languages", (id) => {
-    const service = subprocessors.find((entry) => entry.id === id);
-    for (const lang of ["en", "pl"] as const) {
-      expect(service?.dataReceived[lang]).toContain(styleCaps.sample[lang]);
-      expect(service?.dataReceived[lang]).toContain(styleCaps.total[lang]);
+  test.each(["openai", "deepseek", "gemini"])(
+    "the %s sub-processor row names the style caps in both languages",
+    (id) => {
+      const service = subprocessors.find((entry) => entry.id === id);
+      for (const lang of ["en", "pl"] as const) {
+        expect(service?.dataReceived[lang]).toContain(styleCaps.sample[lang]);
+        expect(service?.dataReceived[lang]).toContain(styleCaps.total[lang]);
+      }
+      if (id === "gemini") expect(service?.dataReceived.en).toContain("writing style");
     }
-    if (id === "gemini") expect(service?.dataReceived.en).toContain("writing style");
-  });
+  );
 });
 
 // The draft call: the mail that a reply draft answers, with the profile texts of the mailbox, goes to the AI provider.
@@ -328,7 +331,7 @@ describe("reply draft call", () => {
     for (const part of ["display name", "signature", "writing style", "one line of instruction", "time zone"]) {
       expect(text).toContain(part);
     }
-    expect(claim).toContain('ledger: ["C030", "C274", "C275"]');
+    expect(claim).toContain('ledger: ["C277", "C274", "C275"]');
   });
 
   test("the claims of the draft call name the body cap, the prompt version and the call limit", () => {
@@ -363,4 +366,20 @@ describe("dpia", () => {
     expect(rows.length).toBe(3);
     expect(/\|\s*medium\s*\|\s*low\s*\|$/.test(rows[0] ?? "")).toBe(true);
   });
+});
+
+describe("deepseek", () => {
+  const unconfirmed = "to confirm: DeepSeek API data use and retention";
+
+  test.each([
+    { lang: "en" as const, country: "People's Republic of China" },
+    { lang: "pl" as const, country: "Chińskiej Republice Ludowej" },
+  ])(
+    "the $lang privacy page names DeepSeek, its country and the open question of API data use",
+    ({ lang, country }) => {
+      expect(privacy[lang]).toContain("DeepSeek");
+      expect(privacy[lang]).toContain(country);
+      expect(privacy[lang]).toContain(unconfirmed);
+    }
+  );
 });

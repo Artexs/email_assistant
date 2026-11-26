@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { describe, expect, test } from "bun:test";
 
 import { ConfigError, llmRoleTable, loadConfig } from "./config";
+import { checkRealMail } from "./config-llm";
 
 const baseEnv = {
   DATABASE_URL: "postgres://app:pw@127.0.0.1:5433/email_assistant",
@@ -55,18 +56,15 @@ describe("LLM_PROVIDER=deepseek", () => {
     expect(table.providers.deepseek.apiKey).toBe(KEY);
   });
 
-  test("2: the scope all is refused outside the sim stack; the error names LLM_PROVIDER and no value", () => {
-    const error = failure({ ...deepseekEnv, TRIAGE_LLM_SCOPE: "all" });
-    expect(error.keys).toEqual(["LLM_PROVIDER"]);
-    for (const value of [KEY, baseEnv.DATABASE_URL, baseEnv.CREDENTIALS_KEY])
-      expect(error.message).not.toContain(value);
+  test("2: the scope all loads outside the sim stack; the classifier runs on deepseek", () => {
+    const table = llmRoleTable(loadConfig({ ...deepseekEnv, TRIAGE_LLM_SCOPE: "all" }));
+    expect(table.roles.classifier.provider).toBe("deepseek");
   });
 
-  test("2b: LAB_STACK=ea-sim lets the scope all load; another stack name fails", () => {
+  test("2b: the scope all loads with the sim stack name, another stack name and an empty one", () => {
     const all = { ...deepseekEnv, TRIAGE_LLM_SCOPE: "all" };
-    expect(llmRoleTable(loadConfig({ ...all, LAB_STACK: "ea-sim" })).roles.classifier.provider).toBe("deepseek");
-    expect(failure({ ...all, LAB_STACK: "ea-prod" }).keys).toEqual(["LLM_PROVIDER"]);
-    expect(failure({ ...all, LAB_STACK: "" }).keys).toEqual(["LLM_PROVIDER"]);
+    for (const stack of ["ea-sim", "ea-prod", ""])
+      expect(llmRoleTable(loadConfig({ ...all, LAB_STACK: stack })).roles.classifier.provider).toBe("deepseek");
   });
 
   test("2c: a role key does not pick a provider any more; the removed key is refused and named", () => {
@@ -101,8 +99,40 @@ describe("LLM_PROVIDER=deepseek", () => {
     ).toBeUndefined();
   });
 
-  test("OPENAI_BASE_URL set to the DeepSeek host without the own kind is still refused", () => {
-    const error = failure({ ...baseEnv, OPENAI_API_KEY: "o", OPENAI_BASE_URL: "https://api.deepseek.com" });
-    expect(error.keys).toEqual(["OPENAI_BASE_URL"]);
+  test.each(["https://api.deepseek.com", "https://x.api.deepseek.com"])(
+    "OPENAI_BASE_URL set to the DeepSeek host %s is refused with the scope all",
+    (url) => {
+      const error = failure({
+        ...baseEnv,
+        LLM_PROVIDER: "openai",
+        OPENAI_API_KEY: "o",
+        OPENAI_BASE_URL: url,
+        TRIAGE_LLM_SCOPE: "all",
+      });
+      expect(error.keys).toEqual(["OPENAI_BASE_URL"]);
+    }
+  );
+});
+
+describe("checkRealMail", () => {
+  const config = (extra: Record<string, unknown>) => ({ LLM_PROVIDER: "deepseek", ...extra }) as never;
+  const issues = (extra: Record<string, unknown>, realMail: boolean) => {
+    const found: { path: unknown; message: string }[] = [];
+    const ctx = { addIssue: (issue: { path: unknown; message: string }) => found.push(issue) } as never;
+    checkRealMail(config(extra), ctx, () => realMail);
+    return found;
+  };
+
+  test("3: a provider without a row is refused with the scope all outside the sim stack, with no key value", () => {
+    const found = issues({ TRIAGE_LLM_SCOPE: "all", DEEPSEEK_API_KEY: KEY }, false);
+    expect(found).toHaveLength(1);
+    expect(found[0]?.path).toEqual(["LLM_PROVIDER"]);
+    expect(found[0]?.message).toContain("has no sub-processor row");
+    expect(found[0]?.message).not.toContain(KEY);
+  });
+
+  test("3b: the sim stack and the synthetic scope pass for a provider without a row", () => {
+    expect(issues({ TRIAGE_LLM_SCOPE: "all", LAB_STACK: "ea-sim" }, false)).toEqual([]);
+    expect(issues({ TRIAGE_LLM_SCOPE: "synthetic" }, false)).toEqual([]);
   });
 });

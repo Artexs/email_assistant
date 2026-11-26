@@ -32,6 +32,16 @@ describe("sub-processor registry and config", () => {
       });
   });
 
+  test("1b. the row deepseek has the purpose and data of the row openai, a location in China and follows the provider", () => {
+    const row = (id: string) => subprocessors.find((entry) => entry.id === id);
+    expect(row("deepseek")?.purpose).toEqual(row("openai")?.purpose);
+    expect(row("deepseek")?.dataReceived).toEqual(row("openai")?.dataReceived);
+    expect(row("deepseek")?.location.en).toContain("People's Republic of China");
+    expect(row("deepseek")?.activeWhen).toEqual({ kind: "llmProvider", provider: "deepseek" });
+    expect(row("deepseek")?.personalData).toBe(true);
+    expect(OUTSIDE_SERVICE_KEYS.DEEPSEEK_API_KEY).toBe("deepseek");
+  });
+
   test("2. every env key of a row is a key of the config schema", () => {
     const keyOf = (when: ActiveWhen): string | undefined => (when.kind === "env" ? when.key : undefined);
     for (const row of subprocessors) {
