@@ -5,7 +5,8 @@ import { join } from "node:path";
 
 import { DAY_MS } from "@ea/core";
 
-import { isSyntheticMessageId } from "../../../../server/src/modules/mail";
+import { LabMailError } from "../../../../server/src/modules/lab/mail-client";
+import { isSyntheticMessageId } from "../../../../server/src/modules/mail/seed";
 
 import type { DemoMail, DemoRunPlan } from "./run-plan";
 import {
@@ -14,6 +15,7 @@ import {
   demoMessage,
   parseFlagList,
   pausedNoticeMarkers,
+  purgeMailboxB,
   readDemoPlan,
   type SetupState,
   setupProblems,
@@ -115,9 +117,9 @@ describe("readDemoPlan", () => {
 });
 
 describe("parseFlagList", () => {
-  test("reads the flag lines of org:flag --list and skips the rest", () => {
+  test("reads the flag lines of org:flag --org-id and skips the rest", () => {
     const text = [
-      "org 5f1f1f1f-1f1f-4f1f-8f1f-1f1f1f1f1f1f: trust_ladder on (org)",
+      "[org-flag] org 5f1f1f1f-1f1f-4f1f-8f1f-1f1f1f1f1f1f: trust_ladder on (row)",
       "org 5f1f1f1f-1f1f-4f1f-8f1f-1f1f1f1f1f1f: open_loops off (default)",
       "warning: something else",
     ].join("\n");
@@ -183,5 +185,20 @@ describe("setupProblems", () => {
         "setup_autonomy_paused_notice",
       ]);
     }
+  });
+});
+
+describe("purgeMailboxB", () => {
+  test("empties the mailbox that it is given", async () => {
+    const emptied: string[] = [];
+    await purgeMailboxB({ emptyMailbox: async (mailbox) => (emptied.push(mailbox), 3) }, "office@kordelan.test");
+    expect(emptied).toEqual(["office@kordelan.test"]);
+  });
+
+  test("a mail error is demo_mailbox_purge_failed, any other error passes through", async () => {
+    const mailError = { emptyMailbox: async () => Promise.reject(new LabMailError("imap_fetch")) };
+    await expect(purgeMailboxB(mailError, "office@kordelan.test")).rejects.toThrow("demo_mailbox_purge_failed");
+    const other = { emptyMailbox: async () => Promise.reject(new Error("boom")) };
+    await expect(purgeMailboxB(other, "office@kordelan.test")).rejects.toThrow("boom");
   });
 });

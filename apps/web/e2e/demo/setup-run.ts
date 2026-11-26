@@ -1,10 +1,10 @@
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { type Me, type MailboxView, type SettingsWebView } from "@ea/core/web";
 
-import { createLabMailClient, LabMailError } from "../../../server/src/modules/lab";
+import { createLabMailClient } from "../../../server/src/modules/lab/mail-client";
 import { createFakeTelegramClient } from "../../../../tools/fake-telegram/src/driver";
 import { E2E_BASE_URL, E2E_TELEGRAM_URL, e2eEnv, GREENMAIL, repoRoot } from "../env";
 import { DEMO_OWNER_FILE } from "../docs-shots/shots-dir";
@@ -15,6 +15,7 @@ import {
   DEMO_FLAGS_ON,
   demoMessage,
   parseFlagList,
+  purgeMailboxB,
   type SetupState,
   shiftedDates,
 } from "../lib/demo/setup";
@@ -94,18 +95,21 @@ export async function deliverToB(
   for (const message of messages) await client.appendInbox(mailboxB, message.raw, message.internalDate);
 }
 
+// Runs a product CLI with the plain e2e env (model scope off). Returns stdout and stderr, which the caller never prints: the link
+// command writes a one-time token. A failed command is `demo_cli_failed <script>`.
 function runCli(script: string, args: string[]): string {
-  return execFileSync("bun", [`apps/server/src/scripts/${script}`, ...args], {
+  const done = spawnSync("bun", [`apps/server/src/scripts/${script}`, ...args], {
     cwd: repoRoot,
     env: e2eEnv(),
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "inherit"],
   });
+  if (done.status !== 0) throw new Error(`demo_cli_failed ${script}`);
+  return `${done.stdout}\n${done.stderr}`;
 }
 
-/** The state of the flags of the organization, from `org:flag --list`. */
+/** The state of the flags of the organization, from `org:flag --org-id <uuid>`. */
 export function readFlags(orgId: string): Record<string, boolean> {
-  return parseFlagList(runCli("org-flag.ts", ["--org-id", orgId, "--list"]));
+  return parseFlagList(runCli("org-flag.ts", ["--org-id", orgId]));
 }
 
 async function linkOwnerToTelegram(api: OwnerApi, orgId: string): Promise<void> {
@@ -145,13 +149,7 @@ export async function runDemoSetup(plan: DemoRunPlan, owner: DemoOwner, now: Dat
   await linkOwnerToTelegram(api, owner.orgId);
   await api.patch("/me/notify", { quietStart: "00:00", quietEnd: "00:00" });
 
-  const client = mailClientOf(plan.mailboxB);
-  try {
-    await client.emptyMailbox(plan.mailboxB);
-  } catch (error) {
-    if (error instanceof LabMailError) throw new Error("demo_mailbox_purge_failed");
-    throw error;
-  }
+  await purgeMailboxB(mailClientOf(plan.mailboxB), plan.mailboxB);
   const dates = shiftedDates(
     plan.history.map((mail) => mail.at),
     now

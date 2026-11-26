@@ -476,6 +476,38 @@ describe("lab injector (stage 07)", () => {
     ).not.toThrow();
   });
 
+  test("appendInbox stores a mail in the INBOX with the given internal date; countInbox counts it; another mailbox is refused", async () => {
+    const address = `inbox-${randomUUID().slice(0, 8)}@localhost`;
+    const client = createLabMailClient({
+      host,
+      imapPort,
+      smtpPort,
+      password: LAB_MAIL_PASSWORD,
+      allowedAddresses: new Set([address]),
+    });
+    const raw = `Message-ID: <inbox-1@ea-seed.test>\r\nFrom: a@lab.test\r\nTo: ${address}\r\nSubject: old\r\n\r\nbody\r\n`;
+    const internalDate = new Date("2026-11-20T10:00:00.000Z");
+    expect(await client.countInbox(address)).toBe(0);
+    await client.appendInbox(address, raw, internalDate);
+    expect(await client.countInbox(address)).toBe(1);
+    const stored = await withImap(address, async (imap) => {
+      const lock = await imap.getMailboxLock("INBOX", { readOnly: true });
+      try {
+        const dates: Date[] = [];
+        for await (const message of imap.fetch("1:*", { internalDate: true })) {
+          dates.push(new Date(message.internalDate as Date));
+        }
+        return dates;
+      } finally {
+        lock.release();
+      }
+    });
+    expect(stored).toEqual([internalDate]);
+    const other = `other-${randomUUID().slice(0, 8)}@localhost`;
+    await expect(client.appendInbox(other, raw, internalDate)).rejects.toMatchObject({ code: "address_refused" });
+    await expect(client.countInbox(other)).rejects.toMatchObject({ code: "address_refused" });
+  });
+
   test("a mail client error holds a code, never the text of the mail", async () => {
     const dead = createLabMailClient({
       host,

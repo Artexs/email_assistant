@@ -51,6 +51,12 @@ describe("demo:record refusals", () => {
     expect(result.stderr).toContain("ffmpeg_missing");
     expect(result.stdout).not.toContain("rebuilding the demo database");
   });
+  test("--setup-only without --seed: exit 1 with setup_only_needs_seed, no database or server touched", async () => {
+    const result = await record(["--setup-only"], withFfmpeg);
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("setup_only_needs_seed");
+    expect(result.stdout).not.toContain("rebuilding the demo database");
+  });
   test("an unknown argument: exit 1 with bad_args", async () => {
     const result = await record(["--nope", "x"], withFfmpeg);
     expect(result.code).toBe(1);

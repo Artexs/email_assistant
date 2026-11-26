@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 
 import { DAY_MS, renderNotice } from "@ea/core";
 
-import { renderSeedMessage } from "../../../../server/src/modules/mail";
+import { LabMailError, type LabMailAdmin } from "../../../../server/src/modules/lab/mail-client";
+import { renderSeedMessage } from "../../../../server/src/modules/mail/seed";
 
 import type { DemoMail, DemoRunPlan } from "./run-plan";
 
@@ -49,6 +50,16 @@ export function shiftedDates(seedDates: readonly Date[], now: Date): Date[] {
   return times.map((time) => new Date(time + shift));
 }
 
+/** Empties every folder of mailbox B on GreenMail. A mail error is `demo_mailbox_purge_failed`: old mail in B would reach the replay as a miss. */
+export async function purgeMailboxB(client: Pick<LabMailAdmin, "emptyMailbox">, mailboxB: string): Promise<void> {
+  try {
+    await client.emptyMailbox(mailboxB);
+  } catch (error) {
+    if (error instanceof LabMailError) throw new Error("demo_mailbox_purge_failed");
+    throw error;
+  }
+}
+
 const reviveMail = <T extends DemoMail>(mail: T): T => ({ ...mail, at: new Date(mail.at) });
 
 /** Reads `demo-plan.json` of `prepareDemoRun`: the dates of the mails are ISO strings in the file. */
@@ -64,11 +75,11 @@ export function readDemoPlan(file: string): DemoRunPlan {
   };
 }
 
-/** The flag lines of `bun run org:flag --list` (`org <id>: <flag> on|off (<source>)`) as flag → on. Other lines are skipped. */
+/** The flag lines of `bun run org:flag --org-id <uuid>` (`[org-flag] org <id>: <flag> on|off (<source>)`) as flag → on. Other lines are skipped. */
 export function parseFlagList(text: string): Record<string, boolean> {
   const flags: Record<string, boolean> = {};
   for (const line of text.split("\n")) {
-    const found = /^org \S+: (\S+) (on|off)\b/.exec(line.trim());
+    const found = /^(?:\[[\w-]+\] )?org \S+: (\S+) (on|off)\b/.exec(line.trim());
     if (found?.[1] !== undefined) flags[found[1]] = found[2] === "on";
   }
   return flags;
