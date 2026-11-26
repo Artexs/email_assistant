@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-13
+landed: 2026-11-26
 ---
 
 # F115 · Mail that needs a reply gets a checked draft that waits for one tap
