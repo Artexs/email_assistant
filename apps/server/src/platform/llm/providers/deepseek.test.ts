@@ -1,3 +1,4 @@
+import { extractorOutputSchema } from "@ea/core";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { z } from "zod";
 
@@ -5,7 +6,7 @@ import { createLlmClient } from "../client";
 import { LlmConfigError, LlmHardError, LlmSoftError } from "../errors";
 import { uniformRoleTable } from "../settings";
 
-import { DEEPSEEK_BASE_URL, createDeepseekGenerate, deepseekProvider } from "./deepseek";
+import { DEEPSEEK_BASE_URL, createDeepseekGenerate, deepseekProvider, toDeepseekJsonSchema } from "./deepseek";
 import type { OpenAiLike, OpenAiResponseLike } from "./openai";
 
 const DEEPSEEK_KEY = "sk-DEEPSEEK-KEY-MARKER";
@@ -99,6 +100,37 @@ describe("the deepseek adapter", () => {
       text: { format: { type: "json_schema", strict: true } },
       store: false,
     });
+  });
+
+  test("the extractor schema goes out with one flat anyOf per nullable union and no date format", async () => {
+    const rec = recorder();
+    const generate = createDeepseekGenerate({ apiKey: "k", reasoningEffort: "none", newClient: rec.newClient });
+    await generate({
+      model: "deepseek-flash",
+      system: "S",
+      prompt: "P",
+      jsonSchema: z.toJSONSchema(extractorOutputSchema),
+      signal: new AbortController().signal,
+    });
+    const sent = rec.requests[0] as { text: { format: { schema: { properties: Record<string, unknown> } } } };
+    const due = sent.text.format.schema.properties.due as { anyOf: Record<string, unknown>[] };
+    // DeepSeek answers 400 to an `anyOf` branch that is only an `anyOf`, and to `format: date`.
+    expect(due.anyOf.map((branch) => Object.keys(branch).sort().join(","))).toEqual([
+      "additionalProperties,properties,required,type",
+      "additionalProperties,properties,required,type",
+      "type",
+    ]);
+    const date = (due.anyOf[0]?.properties as { date: Record<string, unknown> }).date;
+    expect(Object.keys(date).sort()).toEqual(["pattern", "type"]);
+  });
+
+  test("an anyOf branch with its own keys stays, a known format stays, and a property may be named format", () => {
+    const input = {
+      type: "object",
+      properties: { format: { type: "string", format: "email" } },
+      anyOf: [{ anyOf: [{ type: "string" }], description: "d" }, { type: "null" }],
+    };
+    expect(toDeepseekJsonSchema(input)).toEqual(input);
   });
 
   test("the role effort goes out as it is, and a client without effort sends no reasoning field", async () => {

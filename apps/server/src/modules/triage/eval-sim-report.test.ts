@@ -270,17 +270,13 @@ describe("gateFileName", () => {
 describe("gateFileSchema endpoint and host", () => {
   const committed = resolve(import.meta.dir, "../../../../../evals/results/gate");
 
-  // Only the classifier-v2 file is older than the endpoint key; later files (v3) hold it and parse as they are.
+  // Only the first classifier-v2 file (OpenAI) is older than the endpoint key; later files hold it and parse as they are.
   test("3. the committed gate file (no endpoint key) reads as standard with host null", () => {
-    const names = readdirSync(committed).filter(
-      (name) => name.startsWith("classifier-classifier-v2-") && name.endsWith("-v1.json")
+    const raw: unknown = JSON.parse(
+      readFileSync(join(committed, "classifier-classifier-v2-gpt-6-luna-none-lab-01-v1.json"), "utf8")
     );
-    expect(names.length).toBeGreaterThan(0);
-    for (const name of names) {
-      const raw: unknown = JSON.parse(readFileSync(join(committed, name), "utf8"));
-      expect(raw).not.toHaveProperty("endpoint");
-      expect(gateFileSchema.parse(raw)).toMatchObject({ endpoint: "standard", host: null });
-    }
+    expect(raw).not.toHaveProperty("endpoint");
+    expect(gateFileSchema.parse(raw)).toMatchObject({ endpoint: "standard", host: null });
   });
 
   test("a bad endpoint value is refused", () => {
