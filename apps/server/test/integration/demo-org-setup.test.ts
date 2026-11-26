@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { TERMS_VERSION, type LiveRunPlan } from "@ea/core";
+import { DAY_MS, TERMS_VERSION, type LiveRunPlan } from "@ea/core";
 import { afterAll, afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { sql } from "kysely";
 
@@ -30,6 +30,11 @@ import { testDb } from "./helpers";
 const db = testDb();
 const MARK = "f121s07";
 const NOW = new Date("2026-11-30T12:00:00.000Z");
+// The mailbox of the made-up organization gets the real clock time as its creation time. The export keeps only rows created before the
+// cut of its day, so the run starts today: a fixed start date would put the cut in the past one day.
+const START_DATE = new Date().toISOString().slice(0, 10);
+const atStartPlus = (days: number, time: string): Date =>
+  new Date(new Date(`${START_DATE}T${time}`).getTime() + days * DAY_MS);
 const PASSWORD = "demo-test-passphrase-42";
 const WEB: DemoWebSettings = {
   databaseUrl: process.env.DATABASE_URL ?? "",
@@ -40,7 +45,7 @@ const WEB: DemoWebSettings = {
 const PLAN: LiveRunPlan = {
   runId: "week-20261123-aaaa",
   mode: "week",
-  startDate: "2026-11-23",
+  startDate: START_DATE,
   offsetDays: 0,
   scenarioDays: [1, 2, 3, 4, 5, 6, 7],
   items: [],
@@ -100,7 +105,7 @@ async function writeSeed(edit: (seed: DemoSeed) => void = () => undefined): Prom
     for (const [index, category] of (["info", "needs_reply", "urgent"] as const).entries()) {
       await insertTriaged(trx, ctx, mailboxId, {
         category,
-        createdAt: new Date(`2026-11-${23 + index}T10:00:00.000Z`),
+        createdAt: atStartPlus(index, "10:00:00.000Z"),
         subject: `Subject ${index + 1}`,
         from: `p${index}@x.test`,
       });
@@ -109,7 +114,7 @@ async function writeSeed(edit: (seed: DemoSeed) => void = () => undefined): Prom
       actor: "system",
       event: "llm.call",
       data: { mailbox_id: mailboxId, role: "triage" },
-      at: new Date("2026-11-23T10:00:00.000Z"),
+      at: atStartPlus(0, "10:00:00.000Z"),
     });
     return id;
   });

@@ -22,6 +22,7 @@ export const TERMS_HISTORY: readonly TermsHistoryEntry[] = [
   { version: "2026-11-20", sha256: "6ed7e71ad979a4cc646faf90a6ecd170eadf1c6d20e0966c2dcf8132940aae67" }, // AI provider: thread context, history check
   { version: "2026-11-20.2", sha256: "9af128497b8c53e7411951d80f5d1865356c645dc1fd9dee3fbd7e882c84bd28" }, // papers: open-loops extractor, one-click unsubscribe request, report mail, shadow-mode exception
   { version: "2026-11-20.3", sha256: "9e38d9537b1e150c1777245a1b5f39f747ec39a91cdca6a6a7cc959b1f004bfd" }, // papers: reply-style suggestion from own sent mail
+  { version: "2026-11-25", sha256: "07b304c4289dbcb6a01a69127d090ba630e17861a1ada27e1bc15b52d66a6c26" }, // papers: DeepSeek as an AI provider
 ];
 
 function lastVersion(history: readonly TermsHistoryEntry[]): string {

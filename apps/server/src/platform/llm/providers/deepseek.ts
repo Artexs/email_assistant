@@ -66,8 +66,8 @@ export function createDeepseekGenerate(opts: {
 export const deepseekProvider = {
   envPrefix: "DEEPSEEK" as const,
   defaults: { timeoutMs: 30000, rpm: 60 },
-  // No sub-processor row (owner, 2026-11-19): real mail must not reach DeepSeek.
-  realMail: false,
+  // The sub-processor row `deepseek` lists this provider, so real mail may reach it.
+  realMail: true,
   removedEnvKeys: [] as const,
   envShape: {},
   ownModelKey: null,

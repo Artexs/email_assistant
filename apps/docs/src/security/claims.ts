@@ -45,10 +45,10 @@ export const publicClaims: readonly PublicClaim[] = [
   {
     id: "ai-provider-receives",
     text: {
-      en: "This install uses OpenAI as the AI model. For each mail that it classifies, the assistant sends the text, subject, sender, To and Cc addresses and date, whether the sender is on the whitelist or the VIP list or looks automatic, the delegates, and up to three earlier mails of the same thread as context. Each context mail carries its sender, subject, date and up to 500 characters of its body, and it can be older than 7 days. The assistant does not classify a mail that is older than 7 days, unless the operator loads old mail once or the optional history check runs. That check, off by default, classifies up to 500 mails of the last 30 days when it is turned on, when a mailbox is connected, on request and after a change of the AI model. The operator of the install can also start that check by hand, and it then runs when the feature is off. An optional feature, off by default, that tracks answers to the user's own sent mail also sends, for each such mail of the last 14 days, its subject, the local time of the send, the number of recipients and up to 8,000 characters of its text, but no address from the headers; the text can hold quoted mail of other people.",
-      pl: "Ta instalacja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat, nadawcę, adresy Do i DW oraz datę, informację, czy nadawca jest na białej liście lub liście VIP albo wygląda na automatyczny, wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Każda wiadomość kontekstowa zawiera nadawcę, temat, datę i do 500 znaków treści, a może być starsza niż 7 dni. Asystent nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii. Ta kontrola, domyślnie wyłączona, klasyfikuje do 500 wiadomości z ostatnich 30 dni po jej włączeniu, po podłączeniu skrzynki, na żądanie i po zmianie modelu AI. Operator instalacji może też uruchomić tę kontrolę ręcznie, a wtedy działa ona także przy wyłączonej funkcji. Opcjonalna funkcja, domyślnie wyłączona, która śledzi odpowiedzi na własne wysłane wiadomości użytkownika, wysyła też dla każdej takiej wiadomości z ostatnich 14 dni jej temat, lokalny czas wysłania, liczbę adresatów i do 8000 znaków jej treści, ale żadnego adresu z nagłówków; treść może zawierać cytowaną pocztę innych osób.",
+      en: "The default setup uses OpenAI as the AI model. For each mail that it classifies, the assistant sends the text, subject, sender, To and Cc addresses and date, whether the sender is on the whitelist or the VIP list or looks automatic, the delegates, and up to three earlier mails of the same thread as context. Each context mail carries its sender, subject, date and up to 500 characters of its body, and it can be older than 7 days. The assistant does not classify a mail that is older than 7 days, unless the operator loads old mail once or the optional history check runs. That check, off by default, classifies up to 500 mails of the last 30 days when it is turned on, when a mailbox is connected, on request and after a change of the AI model. The operator of the install can also start that check by hand, and it then runs when the feature is off. An optional feature, off by default, that tracks answers to the user's own sent mail also sends, for each such mail of the last 14 days, its subject, the local time of the send, the number of recipients and up to 8,000 characters of its text, but no address from the headers; the text can hold quoted mail of other people.",
+      pl: "Domyślna konfiguracja używa OpenAI jako modelu AI. Dla każdej klasyfikowanej wiadomości asystent wysyła treść, temat, nadawcę, adresy Do i DW oraz datę, informację, czy nadawca jest na białej liście lub liście VIP albo wygląda na automatyczny, wykonawców oraz do trzech wcześniejszych wiadomości z tego samego wątku jako kontekst. Każda wiadomość kontekstowa zawiera nadawcę, temat, datę i do 500 znaków treści, a może być starsza niż 7 dni. Asystent nie klasyfikuje wiadomości starszej niż 7 dni, chyba że operator jednorazowo załaduje starszą pocztę albo działa opcjonalna kontrola historii. Ta kontrola, domyślnie wyłączona, klasyfikuje do 500 wiadomości z ostatnich 30 dni po jej włączeniu, po podłączeniu skrzynki, na żądanie i po zmianie modelu AI. Operator instalacji może też uruchomić tę kontrolę ręcznie, a wtedy działa ona także przy wyłączonej funkcji. Opcjonalna funkcja, domyślnie wyłączona, która śledzi odpowiedzi na własne wysłane wiadomości użytkownika, wysyła też dla każdej takiej wiadomości z ostatnich 14 dni jej temat, lokalny czas wysłania, liczbę adresatów i do 8000 znaków jej treści, ale żadnego adresu z nagłówków; treść może zawierać cytowaną pocztę innych osób.",
     },
-    ledger: ["C030", "C031", "C032", "C261", "C262", "C263", "C264"],
+    ledger: ["C277", "C031", "C032", "C261", "C262", "C263", "C264"],
     proofs: [
       "docs/capabilities/triage.md",
       "docs/capabilities/sync.md",
@@ -60,8 +60,8 @@ export const publicClaims: readonly PublicClaim[] = [
       "apps/server/src/modules/triage/prompts/extractor-v1.ts",
     ],
     condition: {
-      en: "The install uses the OpenAI provider.",
-      pl: "Instalacja używa dostawcy OpenAI.",
+      en: "The install keeps the default AI provider.",
+      pl: "Instalacja zachowuje domyślnego dostawcę AI.",
     },
   },
   {
@@ -70,7 +70,7 @@ export const publicClaims: readonly PublicClaim[] = [
       en: "An optional feature, off by default, writes a draft of a reply to a mail with the same AI model. For each draft, the assistant sends the subject, the sender name and address, the date and the text of the mail that it answers with its quoted older mail, up to 8,000 characters of the text. It also sends the display name, the signature and the writing style of the mailbox, the one line of instruction that the member typed, if any, and the time zone of the organization. No other mail, file, calendar or contact goes. The text goes as written, so it can hold names, addresses and quoted mail of other people. A request for a draft makes at most two calls with the same texts, and when the AI service times out, the request is tried again later. The system stores the answer as a draft that waits for an owner's approval.",
       pl: "Opcjonalna funkcja, domyślnie wyłączona, pisze dla wiadomości szkic odpowiedzi tym samym modelem AI. Dla każdego szkicu asystent wysyła temat, nazwę i adres nadawcy, datę oraz treść wiadomości, na którą odpowiada, razem z cytowaną starszą pocztą, do 8000 znaków treści. Wysyła też wyświetlaną nazwę, podpis i styl pisania skrzynki, jedną linię polecenia, którą wpisał członek zespołu, jeśli jest, oraz strefę czasową organizacji. Żadna inna wiadomość, plik, kalendarz ani kontakt nie jest wysyłany. Treść idzie tak, jak została napisana, więc może zawierać imiona, adresy i cytowaną pocztę innych osób. Prośba o szkic powoduje co najwyżej dwa wywołania z tymi samymi tekstami, a gdy usługa AI przekroczy czas, prośba jest ponawiana później. System zapisuje odpowiedź jako szkic, który czeka na zatwierdzenie przez właściciela.",
     },
-    ledger: ["C030", "C274", "C275"],
+    ledger: ["C277", "C274", "C275"],
     proofs: [
       "packages/core/src/replies/input.ts",
       "apps/server/src/modules/triage/prompts/drafter-v4.ts",
@@ -78,8 +78,8 @@ export const publicClaims: readonly PublicClaim[] = [
       "docs/capabilities/reply-drafts.md",
     ],
     condition: {
-      en: "The install uses the OpenAI provider, and the reply-draft feature is on for the mailbox.",
-      pl: "Instalacja używa dostawcy OpenAI, a funkcja szkiców odpowiedzi jest włączona dla skrzynki.",
+      en: "The install keeps the default AI provider, and the reply-draft feature is on for the mailbox.",
+      pl: "Instalacja zachowuje domyślnego dostawcę AI, a funkcja szkiców odpowiedzi jest włączona dla skrzynki.",
     },
   },
   {
@@ -88,7 +88,7 @@ export const publicClaims: readonly PublicClaim[] = [
       en: "A second optional feature, off by default, suggests a writing style from the user's own sent mail, only when an owner taps a button. Then the assistant sends the text of up to 100 own sent mails of one mailbox from the last 14 days, at most 1,500 characters of each and 60,000 characters in all, with no subject and no address from the headers. It tries to cut off quoted older mail, the forwarded part and the signature, and only where the code finds them, so the text can still hold names, addresses and quoted mail of other people. A tap makes at most two calls with the same texts and no new try after an AI service error. The answer has at most 1,000 characters, and the server does not store it.",
       pl: "Druga opcjonalna funkcja, domyślnie wyłączona, podpowiada styl pisania na podstawie własnych wysłanych wiadomości użytkownika, tylko gdy właściciel kliknie przycisk. Wtedy asystent wysyła treść do 100 własnych wysłanych wiadomości jednej skrzynki z ostatnich 14 dni, po najwyżej 1500 znaków z każdej i 60000 znaków łącznie, bez tematu i bez adresu z nagłówków. Próbuje odciąć cytowaną starszą pocztę, przesyłaną część i podpis, i tylko tam, gdzie kod je znajdzie, więc treść nadal może zawierać imiona, adresy i cytowaną pocztę innych osób. Jedno kliknięcie powoduje co najwyżej dwa wywołania z tymi samymi tekstami i brak nowej próby po błędzie usługi AI. Odpowiedź ma co najwyżej 1000 znaków, a serwer jej nie przechowuje.",
     },
-    ledger: ["C030", "C271", "C272"],
+    ledger: ["C277", "C271", "C272"],
     proofs: [
       "packages/core/src/replies/style-samples.ts",
       "apps/server/src/modules/triage/prompts/stylist-v1.ts",
@@ -96,8 +96,8 @@ export const publicClaims: readonly PublicClaim[] = [
       "docs/capabilities/reply-drafts.md",
     ],
     condition: {
-      en: "The install uses the OpenAI provider, and the style suggestion is on.",
-      pl: "Instalacja używa dostawcy OpenAI, a podpowiedź stylu jest włączona.",
+      en: "The install keeps the default AI provider, and the style suggestion is on.",
+      pl: "Instalacja zachowuje domyślnego dostawcę AI, a podpowiedź stylu jest włączona.",
     },
   },
   {

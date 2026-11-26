@@ -142,13 +142,18 @@ function checkRemovedKeys(config: LlmConfig, ctx: z.RefinementCtx): void {
 
 // Real mail goes only to a provider with a sub-processor row. A provider without one (`realMail: false`) may get
 // `TRIAGE_LLM_SCOPE=all` only on the live lab stack, which holds generated mail. The message names the key, never a value.
-function checkRealMail(config: LlmConfig, ctx: z.RefinementCtx): void {
+// `realMail` is a parameter so a test can answer for a provider that has no row; the default is the registry.
+export function checkRealMail(
+  config: LlmConfig,
+  ctx: z.RefinementCtx,
+  realMail: (provider: LlmProviderId) => boolean = (provider) => llmProviders[provider].realMail
+): void {
   if (config.TRIAGE_LLM_SCOPE !== "all" || config.LAB_STACK === SIM_STACK_NAME) return;
-  if (llmProviders[config.LLM_PROVIDER].realMail) return;
+  if (realMail(config.LLM_PROVIDER)) return;
   ctx.addIssue({
     code: "custom",
     path: ["LLM_PROVIDER"],
-    message: `${config.LLM_PROVIDER} is for dev, tests and evals: no sub-processor row, so TRIAGE_LLM_SCOPE=all is refused outside the sim stack`,
+    message: `${config.LLM_PROVIDER} has no sub-processor row, so TRIAGE_LLM_SCOPE=all is refused outside the sim stack`,
   });
 }
 
