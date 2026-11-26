@@ -112,6 +112,7 @@ export {
   type LabMailClient,
   type LabMailClientOptions,
   type LabMailErrorCode,
+  type LabMailInbox,
 } from "./mail-client";
 export {
   errorCodeOf,

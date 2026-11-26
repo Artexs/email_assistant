@@ -11,7 +11,7 @@ import { DEMO_STEPS, stepView, toVtt, type DemoCue } from "../lib/demo/steps";
 import { modelCheck, uploadVerdict, type VerdictInput } from "../lib/demo/verdict";
 import { resetDemoDb } from "./db-reset";
 
-// `bun run demo:record [--seed <file>] [--out <dir>]`: records the demo video on the e2e servers and the demo database, then encodes it.
+// `bun run demo:record [--seed <file>] [--out <dir>] [--setup-only]`: records the demo video on the e2e servers and the demo database, then encodes it.
 //
 // 1. Checks, before any server starts or any database changes: ffmpeg, a named seed file, the demo database keys and name. On the
 //    demo source also the seed (`planDemoRun`), the gate copy and the replay server of the demo week's classifier answers.
@@ -22,6 +22,8 @@ import { resetDemoDb } from "./db-reset";
 // On the demo source the run then prints `demo_replay hits=<n> misses=<n>` and `demo_gate final|provisional`, and exits 1 on a replay
 // miss or when the replay answered nothing. It also checks the model lines of the servers (`modelCheck`): `demo_llm_checked hits=<n>`,
 // or exit 1 with `demo_llm_unchecked`.
+// `--setup-only` (needs `--seed`) stops after the setup: it rebuilds the database, runs the setup of the demo organization and the
+// `@setup` state check, keeps the replay `misses` check, makes no video (no encode, no `hits` check, no verdict) and prints `demo_setup_ok`.
 // Exit 1 on a refusal, a failed run, an MP4 over 15 MB, or a length outside 100 to 130 seconds. On every exit path the last line is
 // the verdict (`uploadVerdict`): `demo_source demo: upload candidate`, or `not for upload: <first reason>`. It never changes the exit code.
 // Run it under
@@ -48,6 +50,8 @@ const facts: Omit<VerdictInput, "exitCode"> = {
   notLive: ["unreached"],
   llmChecked: false,
 };
+// A `--setup-only` run makes no video and prints no verdict.
+let setupOnlyRun = false;
 
 // Copies a child stream to the console as it comes, and keeps the text.
 async function forward(stream: ReadableStream<Uint8Array>, sink: NodeJS.WriteStream, kept: string[]): Promise<void> {
@@ -88,6 +92,7 @@ async function main(): Promise<number> {
   loadRepoDotEnv(repoRoot);
   const args = parseRecordArgs(process.argv.slice(2));
   if (typeof args === "string") return fail(args);
+  setupOnlyRun = args.setupOnly;
   const problem = preflightProblem(args, { env: process.env });
   if (problem !== null) return fail(problem);
   // The servers serve the static panel: a missing build makes every page answer 503 (`bun run web:build`, as the CI e2e job does).
@@ -109,6 +114,7 @@ async function main(): Promise<number> {
     ...process.env,
     DEMO_WORK_DIR: work,
     ...(source.kind === "demo" ? { DEMO_SEED_FILE: source.file } : {}),
+    ...(args.setupOnly ? { DEMO_SETUP_ONLY: "1" } : {}),
   };
 
   let demo: DemoPrepared | null = null;
@@ -131,9 +137,13 @@ async function main(): Promise<number> {
     await demo.replay.stop();
     throw error;
   }
-  const replay = await closeReplay(demo, code === 0);
+  const replay = await closeReplay(demo, code === 0 && !args.setupOnly);
   if (code !== 0) return code;
   if (replay.code !== 0) return replay.code;
+  if (args.setupOnly) {
+    print("demo_setup_ok");
+    return 0;
+  }
   return checkModels(demo, replay.hits, output);
 }
 
@@ -180,6 +190,7 @@ async function recordSteps({ args, source, work, env, migratorUrl, output }: Rec
   const recorded = await runLogged(["bunx", "playwright", "test", "-c", "apps/web/e2e/demo/demo.config.ts"], env);
   output.push(...recorded.lines);
   if (recorded.code !== 0) return fail("demo_record_failed");
+  if (args.setupOnly) return 0;
 
   const cues = JSON.parse(readFileSync(join(work, "cues.json"), "utf8")) as DemoCue[];
   if (cues.map((cue) => cue.stepId).join(",") !== DEMO_STEPS.map((step) => step.id).join(",")) {
@@ -237,6 +248,6 @@ async function recordSteps({ args, source, work, env, migratorUrl, output }: Rec
 main()
   .catch((error) => fail(`demo_record_error ${error instanceof Error ? error.message : String(error)}`))
   .then((code) => {
-    print(uploadVerdict({ ...facts, exitCode: code }));
+    if (!setupOnlyRun) print(uploadVerdict({ ...facts, exitCode: code }));
     process.exit(code);
   });

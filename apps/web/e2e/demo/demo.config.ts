@@ -1,11 +1,9 @@
-import { readFileSync } from "node:fs";
-
 import { defineConfig } from "@playwright/test";
 
 import { E2E_BASE_URL, e2eEnv, loadDotEnv } from "../env";
 import { demoDbProblem } from "../lib/demo/db-guard";
 import { DEMO_VIEWPORT } from "../lib/demo/record-args";
-import type { DemoRunPlan } from "../lib/demo/run-plan";
+import { readDemoPlan } from "../lib/demo/setup";
 import { assertLoopbackLlm, demoServerEnv, demoTestTimeoutMs } from "../lib/demo/server-env";
 import { shotSource } from "../lib/shot-source";
 import { e2eLaunchOptions, e2eWebServers } from "../servers";
@@ -41,7 +39,7 @@ function demoEnv(): Record<string, string> {
   if (planFile === "" || gateDir === "" || !Number.isInteger(replayPort) || replayPort <= 0) {
     throw new Error("demo_replay_missing: run bun run demo:record");
   }
-  const plan = JSON.parse(readFileSync(planFile, "utf8")) as DemoRunPlan;
+  const plan = readDemoPlan(planFile);
   const withReplay = demoServerEnv(e2eEnv(), {
     replayPort,
     model: plan.model,
@@ -57,6 +55,8 @@ const env = demoSource ? demoEnv() : e2eEnv();
 export default defineConfig({
   testDir: ".",
   testMatch: "*.spec.ts",
+  // `demo:record --setup-only` runs the state check of the setup and nothing else.
+  grep: process.env.DEMO_SETUP_ONLY === "1" ? /@setup/ : undefined,
   globalSetup: "./global-setup.ts",
   timeout: demoSource ? demoTestTimeoutMs() : 10 * MINUTE_MS,
   expect: { timeout: 20_000 },

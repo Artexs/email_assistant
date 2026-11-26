@@ -16,6 +16,8 @@ import { botBody, urgentNotice } from "../lib/demo/notice";
 import { DEMO_VIDEO_SIZE, DEMO_VIEWPORT } from "../lib/demo/record-args";
 import { shotSource } from "../lib/shot-source";
 import { readSeed } from "../seed";
+import { readDemoPlan, setupProblems } from "../lib/demo/setup";
+import { collectSetupState, readDemoOwner } from "./setup-run";
 import { MINUTE_MS } from "@ea/core";
 
 // The recording of the demo video (the public pages and demo ticket). One page records the whole video: the steps of `DEMO_STEPS` run in
@@ -42,7 +44,17 @@ async function pageText(page: Page): Promise<string> {
   });
 }
 
-test("the demo recording follows the eight steps of the script", async ({ browser }) => {
+// The state check of the setup (`@setup`): as the owner, the demo organization is ready for the recording. `demo:record --setup-only` runs only
+// this test. The e2e source has no demo setup, so the test skips there.
+test("the demo setup left the organization ready for the recording @setup", async () => {
+  test.skip(shotSource().kind !== "demo", "the e2e source has no demo setup");
+  const planFile = process.env.DEMO_PLAN_FILE ?? "";
+  if (planFile === "") throw new Error("demo_replay_missing: run bun run demo:record");
+  const state = await collectSetupState(readDemoPlan(planFile), readDemoOwner());
+  expect(setupProblems(state)).toEqual([]);
+});
+
+test("the demo recording follows the eight steps of the script @record", async ({ browser }) => {
   if (WORK_DIR === "") throw new Error("demo_work_dir_missing");
   const source = shotSource().kind;
   if (source !== "e2e") throw new Error("demo_source_recording_not_built");

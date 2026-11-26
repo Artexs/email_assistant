@@ -15,23 +15,34 @@ export interface RecordArgs {
   seed: string | undefined;
   /** The output folder, as an absolute path. */
   out: string;
+  /** `--setup-only`: set the demo organization up and check its state, with no recording. Needs `--seed`. */
+  setupOnly: boolean;
 }
 
-// `--seed <file>` and `--out <dir>`, each at most once. Anything else is `bad_args <argument>`.
+// `--seed <file>`, `--out <dir>` and `--setup-only`, each at most once. Anything else is `bad_args <argument>`.
+// `--setup-only` without `--seed` is `setup_only_needs_seed`: the setup works on a demo seed only.
 export function parseRecordArgs(argv: readonly string[], cwd: string = process.cwd()): RecordArgs | string {
   const values: Record<string, string> = {};
-  for (let at = 0; at < argv.length; at += 2) {
-    const key = argv[at];
+  let setupOnly = false;
+  for (let at = 0; at < argv.length; at += 1) {
+    const key = argv[at] ?? "";
+    if (key === "--setup-only" && !setupOnly) {
+      setupOnly = true;
+      continue;
+    }
     const value = argv[at + 1];
     if ((key !== "--seed" && key !== "--out") || value === undefined || value === "" || key in values) {
-      return `bad_args ${key ?? ""}`.trim();
+      return `bad_args ${key}`.trim();
     }
     values[key] = value;
+    at += 1;
   }
   const seed = values["--seed"];
+  if (setupOnly && seed === undefined) return "setup_only_needs_seed";
   return {
     seed: seed === undefined ? undefined : resolve(cwd, seed),
     out: resolve(cwd, values["--out"] ?? DEFAULT_OUT_DIR),
+    setupOnly,
   };
 }
 

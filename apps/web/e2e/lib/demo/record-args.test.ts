@@ -20,17 +20,39 @@ const BASE_ENV = {
   E2E_DATABASE_URL: "postgres://app:x@127.0.0.1:5433/ea_main_e2e",
 };
 const everything = () => true;
-const args = (seed?: string): RecordArgs => ({ seed, out: "/tmp/out" });
+const args = (seed?: string): RecordArgs => ({ seed, out: "/tmp/out", setupOnly: false });
 
 describe("parseRecordArgs", () => {
   test("no argument: no seed and the default folder under the working directory", () => {
-    expect(parseRecordArgs([], "/repo")).toEqual({ seed: undefined, out: `/repo/${DEFAULT_OUT_DIR}` });
+    expect(parseRecordArgs([], "/repo")).toEqual({
+      seed: undefined,
+      out: `/repo/${DEFAULT_OUT_DIR}`,
+      setupOnly: false,
+    });
   });
   test("--seed and --out are made absolute", () => {
     expect(parseRecordArgs(["--seed", "s.json", "--out", "o"], "/repo")).toEqual({
       seed: "/repo/s.json",
       out: "/repo/o",
+      setupOnly: false,
     });
+  });
+  test("--setup-only with a seed sets setupOnly, in any position", () => {
+    expect(parseRecordArgs(["--setup-only", "--seed", "x.json"], "/repo")).toEqual({
+      seed: "/repo/x.json",
+      out: `/repo/${DEFAULT_OUT_DIR}`,
+      setupOnly: true,
+    });
+    expect(parseRecordArgs(["--seed", "x.json", "--setup-only", "--out", "o"], "/repo")).toEqual({
+      seed: "/repo/x.json",
+      out: "/repo/o",
+      setupOnly: true,
+    });
+  });
+  test("--setup-only without a seed is setup_only_needs_seed; repeated it is bad_args", () => {
+    expect(parseRecordArgs(["--setup-only"])).toBe("setup_only_needs_seed");
+    expect(parseRecordArgs(["--setup-only", "--out", "o"])).toBe("setup_only_needs_seed");
+    expect(parseRecordArgs(["--setup-only", "--seed", "x.json", "--setup-only"])).toBe("bad_args --setup-only");
   });
   test("an unknown flag, a missing value or a repeated flag is bad_args", () => {
     expect(parseRecordArgs(["--other", "x"])).toBe("bad_args --other");

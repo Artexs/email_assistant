@@ -52,6 +52,14 @@ export interface LabMailAdmin {
   emptyMailbox(mailbox: string): Promise<number>;
 }
 
+/** The INBOX writes and reads of the demo setup. Only a mailbox in `allowedAddresses` (else `address_refused`). */
+export interface LabMailInbox {
+  /** APPEND into the INBOX of the mailbox with the given internal date (the date the server stored the mail). No flags: the mail is unread. */
+  appendInbox(mailbox: string, raw: string, internalDate: Date): Promise<void>;
+  /** The number of mails in the INBOX of the mailbox; 0 when it does not exist yet. */
+  countInbox(mailbox: string): Promise<number>;
+}
+
 export interface LabMailClientOptions {
   host: string;
   imapPort: number;
@@ -120,7 +128,7 @@ const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "::1"]);
 
 // The client talks to the sim GreenMail only. In the sim stack GreenMail shares the network namespace of the lab, so its
 // host is loopback (`LAB_MAIL_HOST`); any other host is refused before a connection opens, so no lab mail can leave the stack.
-export function createLabMailClient(options: LabMailClientOptions): LabMailClient & LabMailAdmin {
+export function createLabMailClient(options: LabMailClientOptions): LabMailClient & LabMailAdmin & LabMailInbox {
   if (!LOOPBACK_HOSTS.has(options.host.toLowerCase())) throw new LabMailError("host_refused");
   const allowed = new Set([...options.allowedAddresses].map((address) => address.toLowerCase()));
   const requireAllowed = (mailbox: string): void => {
@@ -200,6 +208,21 @@ export function createLabMailClient(options: LabMailClientOptions): LabMailClien
       return withImap(options, mailbox, "imap_fetch", (client) =>
         eachFolder(client, true, async () => (client.mailbox === false ? 0 : client.mailbox.exists))
       );
+    },
+
+    async appendInbox(mailbox, raw, internalDate) {
+      requireAllowed(mailbox);
+      await withImap(options, mailbox, "imap_append", async (client) => {
+        await client.append("INBOX", raw, [], internalDate);
+      });
+    },
+
+    async countInbox(mailbox) {
+      requireAllowed(mailbox);
+      return withImap(options, mailbox, "imap_fetch", async (client) => {
+        const status = await client.status("INBOX", { messages: true });
+        return status.messages ?? 0;
+      });
     },
 
     async emptyMailbox(mailbox) {
