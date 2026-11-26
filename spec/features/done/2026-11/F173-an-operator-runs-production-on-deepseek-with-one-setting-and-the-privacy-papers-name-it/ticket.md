@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-26
+landed: 2026-11-26
 ---
 
 # F173 · An operator runs production on DeepSeek with one setting, and the privacy papers name it
