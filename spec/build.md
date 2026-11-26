@@ -16,7 +16,6 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/active/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
-- `F173-an-operator-runs-production-on-deepseek-with-one-setting-and-the-privacy-papers-name-it` (🟠 ACTIVE): An operator runs production on DeepSeek with one setting, and the privacy papers name it
 - `F172-no-part-of-the-old-look-is-left-and-production-gets-the-pebble-panel-in-one-release` (🟠 ACTIVE): No part of the old look is left, and production gets the Pebble panel in one release
 - `F151-the-demo-video-and-the-docs-screenshots-come-from-the-synthetic-demo-week-export` (🟠 ACTIVE): The demo video and the docs screenshots come from the synthetic demo-week export
 
@@ -54,6 +53,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 
 <!-- Generated from spec/features/done/ by limen land, limen ticket done and limen board --write. Edit the tickets, not these lines. -->
 
+- `F173-an-operator-runs-production-on-deepseek-with-one-setting-and-the-privacy-papers-name-it` (🟢 PROVEN): An operator runs production on DeepSeek with one setting, and the privacy papers name it; landed 2026-11-26
 - `F171-the-docs-site-the-user-docs-the-screenshots-and-the-demo-video-show-the-pebble-look` (🟢 PROVEN): The docs site, the user docs, the screenshots and the demo video show the Pebble look; landed 2026-11-26
 - `F115-e6a-reply-drafts` (🟢 PROVEN): Mail that needs a reply gets a checked draft that waits for one tap; landed 2026-11-26
 - `F170-onboarding-mailboxes-settings-stats-the-report-and-the-operator-console-have-the-pebble-look` (🟢 PROVEN): Onboarding, Mailboxes, Settings, Stats, the report and the operator console have the Pebble look; landed 2026-11-25
@@ -63,8 +63,7 @@ Status marks are prose only: 🟠 ACTIVE · 🔴 PLANNED · 🟢 PROVEN · ⚪ D
 - `F166-the-panel-has-one-pebble-design-system-colours-font-sizes-base-components-patterns-and-checks-that-keep-it` (🟢 PROVEN): The panel has one Pebble design system (colours, font, sizes, base components, patterns) and checks that keep it; landed 2026-11-25
 - `F165-the-public-security-claim-and-the-dpia-flow-name-both-reply-draft-calls` (🟢 PROVEN): The public security claim and the DPIA flow name both reply-draft calls; landed 2026-11-21
 - `F163-the-privacy-papers-name-the-reply-style-call-that-sends-cut-sent-mail-to-the-ai` (🟢 PROVEN): The privacy papers name the reply-style call that sends cut Sent mail to the AI; landed 2026-11-21
-- `F162-the-privacy-papers-name-what-the-open-loops-extractor-and-the-one-click-unsubscribe-send` (🟢 PROVEN): The privacy papers name what the open-loops extractor and the one-click unsubscribe send; landed 2026-11-20
-- 2026-11: 144 landed. spec/features/done/2026-11/
+- 2026-11: 145 landed. spec/features/done/2026-11/
 
 ## Owner rule 2026-11-20: run the replan in parallel; production checks never block
 
