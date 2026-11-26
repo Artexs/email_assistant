@@ -11,7 +11,7 @@ capabilities:
   - account-data
   - actions-and-undo
   - digest-and-notices
-sourceHash: "459d4b1d177f453d"
+sourceHash: "b6025a857b27fa65"
 ---
 
 import ClaimsTable from "../../../components/ClaimsTable.astro";
@@ -60,3 +60,6 @@ GitHub hostuje wyłącznie tę publiczną stronę. Nie dostaje od asystenta żad
 - Fakty, które pochodzą tylko od dostawcy AI:
   - Dostawca podaje, że nie używa danych ze swojego płatnego API do trenowania modeli ([jego strona o kontroli danych](https://platform.openai.com/docs/guides/your-data), stan na 2026-11-17). Ten projekt nie sprawdził umowy.
   - Dostawca podaje, że oferuje region UE jako ustawienie projektu ([jego strona o lokalizacji danych](https://platform.openai.com/docs/guides/data-residency), stan na 2026-11-17). Ten projekt nie sprawdził ustawienia regionu w projekcie, którego używa instalacja.
+- Fakty, które pochodzą tylko od opcjonalnego dostawcy AI, a nie z konfiguracji domyślnej:
+  - Gdy instalacja używa DeepSeek, dostawca podaje, że zbiera, przetwarza i przechowuje dane osobowe w Chińskiej Republice Ludowej ([jego polityka prywatności](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html), stan na 2026-11-26).
+  - Ten projekt nie sprawdził, czy DeepSeek używa danych z API lub je przechowuje.

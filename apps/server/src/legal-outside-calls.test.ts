@@ -382,4 +382,24 @@ describe("deepseek", () => {
       expect(privacy[lang]).toContain(unconfirmed);
     }
   );
+
+  test("the DPIA names DeepSeek as a provider and holds risk R11 for the transfer to China, with measures and residual level", () => {
+    expect(dpia).toContain("`openai`, `deepseek` or `gemini`");
+    const rows = dpia.split("\n").filter((line) => line.startsWith("| R11 "));
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toMatch(/China.*\|\s*medium\s*\|\s*high\s*\|$/);
+    expect(rows[1]).toContain("`LLM_PROVIDER`");
+    expect(rows[2]).toContain("no adequacy decision for China");
+  });
+
+  test.each([
+    ["apps/docs/src/content/docs/security.mdx", "People's Republic of China", "has not checked whether DeepSeek"],
+    ["apps/docs/src/content/docs/pl/security.mdx", "Chińskiej Republice Ludowej", "nie sprawdził, czy DeepSeek"],
+  ])(
+    "the public security page %s says where DeepSeek processes data and that its API data use is unchecked",
+    (file, country, unchecked) => {
+      expect(read(file)).toContain(country);
+      expect(read(file)).toContain(unchecked);
+    }
+  );
 });

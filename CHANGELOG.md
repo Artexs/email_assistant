@@ -17,6 +17,15 @@ A heading is "## [x.y.z] - YYYY-MM-DD" (plain SemVer, newest first). "bun run re
 
 ## [Unreleased]
 
+### For users
+
+- en: The privacy page lists DeepSeek as a possible AI provider, located in China. You accept the terms again at your next sign-in. Your install uses DeepSeek only when its operator sets it.
+  pl: Strona prywatności wymienia DeepSeek jako możliwego dostawcę AI, z siedzibą w Chinach. Przy następnym logowaniu ponownie akceptujesz warunki. Instalacja używa DeepSeek tylko wtedy, gdy ustawi to jej operator.
+
+### Changed
+
+- `LLM_PROVIDER=deepseek` starts in production with `TRIAGE_LLM_SCOPE=all`: the sub-processor registry, the privacy page, the DPA, the records of processing, the DPIA (risk R11) and the claims list name DeepSeek. `OPENAI_BASE_URL` still refuses the DeepSeek host. Gate results per role: `evals/results/deepseek-gate-lab-01.md` (see `deploy/README.md` § DeepSeek as an AI provider).
+
 ## [0.5.0] - 2026-11-25
 
 ### For users
