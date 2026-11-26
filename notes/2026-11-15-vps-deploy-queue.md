@@ -257,3 +257,13 @@ Started 2026-11-20 16:36 UTC on the VPS sim stack (`ea-sim`) by `demo-reset --ye
 - Preview before the reset: `would delete org none and 0 mails` of the demo mailbox (no demo org existed). The lab org, its run (`day-20261120-215c`), the `ea-sim` containers (created 2026-11-19) and the production stack were not touched.
 - Export after 2026-11-27T23:00Z (not before): `bun run lab demo-export --day 5 --out ~/.local/share/email-assistant/demo/demo-seed-day5.json` (the D6 path of F121, mode 0600). On the VPS it runs in the `lab` container: `$L demo-export --day 5 --out /var/lib/ea-lab/demo-seed-day5.json`, then `$S cp lab:/var/lib/ea-lab/demo-seed-day5.json /tmp/` and copy the file to the D6 path on the owner's PC. First a trial export after day 1 (`deploy/README.md` § Sim stack, step 12).
 - VPS checkout note: an untracked `..env.swp` (a vim swap file of `.env`) is in `~/email_assistant`; it was there before this job and was not touched.
+
+### F172 stage 07, 2026-11-26 (local leftovers, after release v0.5.0 on the VPS)
+
+Release v0.5.0 was live first: `~/ea-logs/v0.5.0/release2.log` on the VPS ends `release ok v0.5.0 previous v0.4.5`, `RELEASE_RC=0`, and `email-assistant-server-1` is healthy. Three rollback logs (`rollback.log`, `rollback2.log`, `rollback3.log`, 23:29–23:30) came before that last release run at 23:31.
+
+- Design study folder: the main checkout had no `design/` folder and `git status --short` printed nothing; the files were already under `~/.local/share/email-assistant/design-study-2026-11/design/` (moved, not deleted).
+- Gallery server: `python3 -m http.server 8700` (pid 2808422, folder `design-study-2026-11/design/ui-proposals`) stopped. `pgrep -af 'http.server 8700'` prints nothing.
+- Scratch worktree: `/tmp/ea-ui-shots` was not on disk and not in `git worktree list`; `git worktree prune` removed nothing.
+- Scratch databases `2026-11-22-a1b2c3d4` and `2026-11-22-a1b2c3d4-e2e`: no database named `2026-11-22%` exists on the dev Postgres (checked with `select … from pg_database`); nothing to drop.
+- Contact sheets: 27 job folders under `~/.local/share/email-assistant/ui-sheet/` deleted (542 MB to 199 MB). Kept: `2026-11-25-f172-visual-review-against-the-m-ba56d72c` (the owner's full sheet named in `visual-review.md`), until 2026-12-10; the next coordinator clean-up deletes it then.
