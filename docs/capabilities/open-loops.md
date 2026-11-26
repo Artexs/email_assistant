@@ -78,7 +78,8 @@ Nothing the user waits for should slip. The assistant reads the user's own Sent 
 - Texts of closed loops outlive a switch off by up to 90 days (rule 11). A delivered Telegram message cannot be recalled.
 - With several linked owners only the first digest that commits shows a ⌛ line (the mark is one column).
 - `sentFromAddressesOf` reads the Sent rows of the mailbox on every `matchReplies` run and every `isOpen`; no index covers `(mailbox_id, from_address)`. Fine at pilot size.
-- The extractor schema is checked on OpenAI only. On Gemini a schema rejection is a hard `http_400` (rule 2): check it before `open_loops` is turned on there.
+- The extractor schema is checked on OpenAI and DeepSeek only. On Gemini a schema rejection is a hard `http_400` (rule 2): check it before `open_loops` is turned on there.
+- DeepSeek gate (`extractor-v1`, `deepseek-flash`, sent-holdout 2026-11-26): PASS, so `open_loops` may be on for a DeepSeek install. The summary is `evals/results/deepseek-gate-lab-01.md`.
 - A privacy erase blanks only loops whose text is still stored: a loop that retention already cleared can leave its subject in a digest that is still stored. The window is about one day.
 - The stale span of a chaser counts 24 hours times the days, so a daylight-saving change moves the boundary by one hour.
 - The pilot proof (one real follow-up sent after a tap, flags on for the pilot organization) is stage 25 of F116.

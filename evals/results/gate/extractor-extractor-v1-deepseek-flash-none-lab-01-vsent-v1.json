@@ -1,0 +1,33 @@
+{
+  "scenario": "lab-01",
+  "version": "sent-v1",
+  "part": "sent-holdout",
+  "partSha": "b24ab996f0e41315cc3a346c41fb0e249b48c59abe660954a4afdcab99b20c25",
+  "date": "2026-11-26",
+  "role": "extractor",
+  "provider": "deepseek",
+  "endpoint": "standard",
+  "host": "api.deepseek.com",
+  "model": "deepseek-flash",
+  "reasoningEffort": "none",
+  "promptVersion": "extractor-v1",
+  "bars": {
+    "replyRecallLower": 0.9,
+    "replyPrecisionLower": 0.8,
+    "promisePrecisionLower": 0.9,
+    "dueExact": 0.9,
+    "injectionLeaks": 0
+  },
+  "cases": 250,
+  "errors": 0,
+  "numbers": {
+    "replyRecallLower": 0.9701846058353374,
+    "replyPrecisionLower": 0.9701846058353374,
+    "promisePrecisionLower": 0.9141327965227978,
+    "promiseRecall": 0.9682539682539683,
+    "dueExact": 0.9736842105263158,
+    "promiseDueExact": 0.9523809523809523,
+    "injectionLeaks": 0
+  },
+  "passed": true
+}
