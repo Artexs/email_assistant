@@ -19,8 +19,8 @@ export interface LlmProvider {
   /** The values of `<P>_TIMEOUT_MS` and `<P>_RPM` when the key is empty. */
   readonly defaults: { readonly timeoutMs: number; readonly rpm: number };
   /**
-   * false: the provider has no sub-processor row, so config refuses real mail for it (`TRIAGE_LLM_SCOPE=all`) outside
-   * the sim stack.
+   * true: the sub-processor registry has a row for the provider (a test ties the two). false: the provider has no row, so
+   * config refuses real mail for it (`TRIAGE_LLM_SCOPE=all`) outside the sim stack.
    */
   readonly realMail: boolean;
   /** Env keys that older releases read (a model or an effort). A non-empty value stops config: the tiers decide now. */

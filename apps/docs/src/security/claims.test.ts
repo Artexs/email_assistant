@@ -119,10 +119,10 @@ describe("parseLedger", () => {
     expect(rows.get("C005")).toEqual({ id: "C005", source: "a/b.ts", condition: "LLM_PROVIDER" });
   });
 
-  test("the real ledger has 282 rows, each with a source", () => {
+  test("the real ledger has 288 rows, each with a source", () => {
     const text = readFileSync(join(import.meta.dir, "../../../../docs/legal/claims.md"), "utf8");
     const rows = parseLedger(text);
-    expect(rows.size).toBe(282);
+    expect(rows.size).toBe(288);
     for (const row of rows.values()) expect(row.source).not.toBe("");
   });
 });

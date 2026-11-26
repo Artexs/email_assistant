@@ -53,8 +53,8 @@ export function parseLlmBaseUrl(raw: string, ownKind = false): LlmEndpoint | { e
   const isHttps = parsed.protocol === "https:";
   const local = isLoopbackHost(host) || isOneLabelHost(host);
 
-  // The DeepSeek row has its own fixed host and key. No endpoint kind may reach that host through this key: real mail would go to a provider
-  // that has no sub-processor row. The text names the key and holds no value.
+  // The DeepSeek row owns its host, its key and its price rows. No endpoint kind may reach that host through this key: the OpenAI
+  // identity headers and the OpenAI price rows must not meet the DeepSeek host. The text names the key and holds no value.
   if (host === DEEPSEEK_HOST || host.endsWith(`.${DEEPSEEK_HOST}`)) {
     return {
       error: "OPENAI_BASE_URL must not point at the DeepSeek host; use LLM_PROVIDER=deepseek with DEEPSEEK_API_KEY",

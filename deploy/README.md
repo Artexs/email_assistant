@@ -29,7 +29,7 @@ The server listens on `127.0.0.1:8080` on the host only (for Tailscale Serve, se
    - `CREDENTIALS_KEY_VERSION=1`
    - A new `CREDENTIALS_KEY` also drops every stored push device (phone notices): the stored secret of a device does not open, so the push sender removes the device on the next send (log `push_secret_unreadable`) and its open rows end `no_device`. Members turn notices on again in Settings. A changed `CREDENTIALS_KEY_VERSION` with the old key stored does not remove a device: the sender logs `push_key_version_mismatch` and waits (`docs/known-alerts.md`).
    - `HEARTBEAT_URL` (see Heartbeat), `TEST_MAILBOX_ADDRESS` (only for the `testmail` and probe tools), `LOG_LEVEL=info`. Leave `LOG_FORMAT` unset: Compose pins `json`.
-   - `LLM_PROVIDER` (`openai` by default, or `gemini`, `deepseek`) and the key of that provider (`OPENAI_API_KEY`, `GEMINI_API_KEY` or `DEEPSEEK_API_KEY`). No other key picks a model: every role uses the tiers of the provider (§ LLM provider tiers). With `TRIAGE_LLM_SCOPE` not `off` the start needs the key; with `off` the server starts and every LLM tool stops at once with `<KEY> is missing`. `deepseek` is for dev, tests and evals: config refuses it with `TRIAGE_LLM_SCOPE=all` outside the sim stack.
+   - `LLM_PROVIDER` (`openai` by default, or `gemini`, `deepseek`) and the key of that provider (`OPENAI_API_KEY`, `GEMINI_API_KEY` or `DEEPSEEK_API_KEY`). No other key picks a model: every role uses the tiers of the provider (§ LLM provider tiers). With `TRIAGE_LLM_SCOPE` not `off` the start needs the key; with `off` the server starts and every LLM tool stops at once with `<KEY> is missing`. `deepseek` may serve production mail (owner decision 2026-11-26, § DeepSeek as an AI provider).
    - `OPENAI_BASE_URL` (optional): the endpoint of the `openai` provider. Empty = `https://api.openai.com/v1`. EU: `https://eu.api.openai.com/v1` with a key of the EU project. Own server: `OPENAI_ENDPOINT_KIND=own` is needed only for a remote https host; the server never gets `OPENAI_API_KEY` (set `OPENAI_OWN_API_KEY` if it needs a key). A bad value stops the start; the log names the key, not the value. See `docs/capabilities/triage.md` rule 16 and the guide `docs/own-model.md`.
    - `SEND_SCOPE=off` (default) and `SEND_TEST_ADDRESSES` (comma-separated, needed with `SEND_SCOPE=self`). See the section "Approvals and sends".
    - `TRIAGE_LLM_SCOPE`, `ACTIONS_SCOPE` and `SEND_SCOPE` stay `off` until you decide. `all` acts on every active mailbox of the server: read "Customers (S6a)" first.
@@ -689,6 +689,26 @@ The start log then holds `config_key_bad config_key=<KEY> reason=key_removed` (t
 
 Run `deploy/rollback.sh` for the code (§ Roll back a release). The older release reads the model keys again: put back the old lines from your copy of `.env` (they were removed above) before you roll back, or the older release starts on its default models.
 
+## DeepSeek as an AI provider
+
+Capability pages: `docs/capabilities/triage.md` rule 6, ADR 0015 (amendment of 2026-11-26). The owner decided that DeepSeek may serve production mail. `LLM_PROVIDER=deepseek` with `DEEPSEEK_API_KEY` starts in production, also with `TRIAGE_LLM_SCOPE=all`. The host is fixed (`api.deepseek.com`).
+
+### Release note
+
+The privacy page lists DeepSeek as a possible AI provider, located in the People's Republic of China. Every member accepts the terms again at the next sign-in. The install switches only when the operator sets `LLM_PROVIDER=deepseek`. Gate results per role: `evals/results/deepseek-gate-lab-01.md`.
+
+The papers do not say whether DeepSeek uses or keeps API data. They hold the placeholder `<to confirm: DeepSeek API data use and retention>` until the owner reads the DeepSeek terms. The public security page still describes the default setup (OpenAI).
+
+### Switch an install (operator)
+
+1. Read `evals/results/deepseek-gate-lab-01.md`. Switch only when the classifier gate file on DeepSeek has no errors and its `go` set holds the `go` set of the gate file of the running provider (the trust ladder reads the gate file of the running key). Else stay on `openai`.
+2. Put `LLM_PROVIDER=deepseek` and `DEEPSEEK_API_KEY` in `.env` (never print them). Keep a role's owner switch off when its gate on DeepSeek failed: `reply_drafts` (holdout gate file, the injection set and at most 2 leaning drafts), `open_loops` (extractor), and `style_from_sent` (no gate run).
+3. Run `bash deploy/check-server-env.sh`, restart, and read the start log. The start line `llm_settings` must hold `provider=deepseek` and `host=api.deepseek.com`.
+
+### Roll back
+
+Set `LLM_PROVIDER=openai` and restart. The new terms version stays: a member who accepted it does not accept it again.
+
 ## Customers (S6a)
 
 Each customer is one organization with a plan. The operator manages the plan with the commands below. The output holds ids, codes, dates and counts only, never a name or an address.
@@ -1188,7 +1208,7 @@ L="$S exec -T lab bun run lab"
    sed -i -E '/^(OPENAI_|GEMINI_|DEEPSEEK_|LLM_PROVIDER=)/d' deploy/sim.env
    grep -E '^(OPENAI_|GEMINI_|DEEPSEEK_|LLM_PROVIDER=)' .env >> deploy/sim.env
    ```
-   Replace `<tailnet>` with the name of your tailnet. The last two lines copy the LLM provider and key lines of `.env` (the sim uses the same provider and tiers as production, ADR 0021 point 5; `DEEPSEEK_API_KEY` is there for a lab run on DeepSeek, which only the sim stack allows with `TRIAGE_LLM_SCOPE=all`). Do not print `.env` or `deploy/sim.env`. Keep a copy of `CREDENTIALS_KEY` in the password manager only if you keep the sim data. Do not change `LAB_STACK`, `TELEGRAM_*`, `SEND_*`, `*_SCOPE`, `HEARTBEAT_URL`, `OPERATOR_*` or `AUTH_SMTP_*`: the guard checks them.
+   Replace `<tailnet>` with the name of your tailnet. The last two lines copy the LLM provider and key lines of `.env` (the sim uses the same provider and tiers as production, ADR 0021 point 5; `DEEPSEEK_API_KEY` is there for a lab run on DeepSeek). Do not print `.env` or `deploy/sim.env`. Keep a copy of `CREDENTIALS_KEY` in the password manager only if you keep the sim data. Do not change `LAB_STACK`, `TELEGRAM_*`, `SEND_*`, `*_SCOPE`, `HEARTBEAT_URL`, `OPERATOR_*` or `AUTH_SMTP_*`: the guard checks them.
 6. **Start and migrate.**
    ```sh
    $S build

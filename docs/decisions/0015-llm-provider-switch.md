@@ -47,6 +47,17 @@ providers, to switch between them, and to allow more providers later.
 Ticket folder: [`spec/features/active/F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry/`](../../spec/features/active/F141-an-operator-switches-every-llm-call-to-deepseek-with-one-provider-name-and-one-api-key-and-all-provider-code-lives-in-one-registry/ticket.md). This amendment replaces the per-role amendment above.
 
 - One `LLM_PROVIDER` runs every role. A role names a tier (`light` or `strong`) and an effort level in the core catalog; each provider row maps the tier to a model. The `LLM_<ROLE>_PROVIDER`, `LLM_<ROLE>_MODEL`, `LLM_<ROLE>_REASONING`, `OPENAI_MODEL_CLASSIFIER`, `GEMINI_MODEL_CLASSIFIER` and `OPENAI_REASONING_EFFORT` keys are removed (12 keys, `removedEnvKeys`). A non-empty value stops config. Eval and `llm:check` tools pin one run with `--provider`, `--model` and `--reasoning-effort`.
-- A third row, `deepseek`, is for dev, tests and evals (`DEEPSEEK_API_KEY`, fixed host). It has no sub-processor row, so config refuses `LLM_PROVIDER=deepseek` with `TRIAGE_LLM_SCOPE=all` outside the sim stack. `OPENAI_BASE_URL` still refuses the DeepSeek host.
+- A third row, `deepseek` (`DEEPSEEK_API_KEY`, fixed host). Production use is allowed since the amendment of 2026-11-26 below. `OPENAI_BASE_URL` still refuses the DeepSeek host.
 - `OPENAI_OWN_MODEL` names the one model of an own endpoint (`OPENAI_ENDPOINT_KIND=own`); every role on openai uses it.
 - A provider is one core catalog row plus one server row. The server row owns its extra env keys (`envShape`), its always-run checks (`check`) and its settings (`settings`). `config-llm.ts` names no provider; `platform/llm/provider-scan.test.ts` enforces it.
+
+## Amendment (2026-11-26, DeepSeek for production)
+
+The owner decided on 2026-11-26 that DeepSeek may serve production mail. This amendment replaces the sentence of the 2026-11-20 amendment that keeps `deepseek` out of production.
+
+- `LLM_PROVIDER=deepseek` with `DEEPSEEK_API_KEY` starts in production, also with `TRIAGE_LLM_SCOPE=all` and no `LAB_STACK`. The sub-processor registry has a `deepseek` row (purpose and data as the row `openai`, location People's Republic of China as DeepSeek lists it), and `deepseekProvider.realMail` is `true`. `checkRealMail` stays for a future provider that has no row.
+- `OPENAI_BASE_URL` still refuses the DeepSeek host: the `deepseek` row owns the host, the key and the price rows, and the OpenAI identity headers must not reach it.
+- The in-app privacy page names the possible providers (OpenAI, DeepSeek, Gemini). The DPA, the records of processing and the DPIA (risk R11) name DeepSeek. The papers do not say whether DeepSeek uses or keeps API data; they hold a visible placeholder until the owner reads its terms. One new terms version makes every member accept again at the next sign-in.
+- The public security page describes the default setup (the owner rule of 2026-11-20): it lists no `deepseek` row and says in "What this product does not promise" what DeepSeek states and what this project did not check.
+- The gate result per role on DeepSeek is a record (`evals/results/deepseek-gate-lab-01.md`), not code. A role that fails its bar keeps its owner switch off. An install moves to DeepSeek only when its classifier gate file has no errors and its `go` set holds the `go` set of the file of the running provider.
+- No other change: one `LLM_PROVIDER` still runs every role, and OpenAI and Gemini stay.
