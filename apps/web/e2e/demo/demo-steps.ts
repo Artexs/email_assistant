@@ -22,7 +22,7 @@ import {
 import { deliverToB, MAILBOX_B_PASSWORD, type OwnerApi } from "./setup-run";
 import type { StepKit } from "./steps-kit";
 
-// The eight steps of the demo source (plan P1, P2, D1, D7, D8). Every step is live, on mailbox B of the demo organization: the mail that the
+// The eight steps of the demo source (the F151 plan: one organization, two mailboxes, polled waits). Every step is live, on mailbox B of the demo organization: the mail that the
 // steps need arrives during the recording through IMAP, and the replay model of the demo week classifies it. The waits run off camera,
 // between two steps (the encode cuts every gap); the API reads of the waits use their own session (`api`), never the recorded page.
 export async function runDemoSteps({ page, become, step }: StepKit, plan: DemoRunPlan, api: OwnerApi): Promise<void> {
@@ -132,7 +132,7 @@ export async function runDemoSteps({ page, become, step }: StepKit, plan: DemoRu
     return remindTarget(list.items, delegationId) !== undefined;
   });
 
-  // 7 delegation: "Remind now" on the delegation of step 6 (D8: never the `overdueDelegation` of the plan). The row is found by its id: the
+  // 7 delegation: "Remind now" on the delegation of step 6 (never the `overdueDelegation` of the plan: no seed of this run fills it). The row is found by its id: the
   // imported mailbox may hold other rows of the same delegate.
   const target = remindTarget(
     (await api.get<DelegationList>("/delegations?filter=open&limit=100")).items,
