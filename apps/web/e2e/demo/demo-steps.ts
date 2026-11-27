@@ -22,7 +22,7 @@ import {
 import { deliverToB, MAILBOX_B_PASSWORD, type OwnerApi } from "./setup-run";
 import type { StepKit } from "./steps-kit";
 
-// The eight steps of the demo source (the F151 plan: one organization, two mailboxes, polled waits). Every step is live, on mailbox B of the demo organization: the mail that the
+// The eight steps of the demo source (one organization, two mailboxes, polled waits). Every step is live, on mailbox B of the demo organization: the mail that the
 // steps need arrives during the recording through IMAP, and the replay model of the demo week classifies it. The waits run off camera,
 // between two steps (the encode cuts every gap); the API reads of the waits use their own session (`api`), never the recorded page.
 export async function runDemoSteps({ page, become, step }: StepKit, plan: DemoRunPlan, api: OwnerApi): Promise<void> {
