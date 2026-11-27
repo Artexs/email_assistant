@@ -13,6 +13,8 @@ import {
   DEMO_FLAGS_OFF,
   DEMO_FLAGS_ON,
   demoMessage,
+  hasPausedNotice,
+  liveMessages,
   parseFlagList,
   pausedNoticeMarkers,
   purgeMailboxB,
@@ -200,5 +202,30 @@ describe("purgeMailboxB", () => {
     await expect(purgeMailboxB(mailError, "office@kordelan.test")).rejects.toThrow("demo_mailbox_purge_failed");
     const other = { emptyMailbox: async () => Promise.reject(new Error("boom")) };
     await expect(purgeMailboxB(other, "office@kordelan.test")).rejects.toThrow("boom");
+  });
+});
+
+describe("liveMessages", () => {
+  test("numbers the mails from firstSeq and dates each one with the delivery time", () => {
+    const now = new Date("2026-12-09T12:00:00Z");
+    const out = liveMessages([MAIL, { ...MAIL, subject: "Second" }], {
+      to: "office@kordelan.test",
+      firstSeq: 31,
+      runTag: "cd34",
+      now,
+    });
+    expect(out.map((message) => message.internalDate)).toEqual([now, now]);
+    expect(out[0]?.raw).toContain("Message-ID: <demo-31.cd34@ea-seed.test>");
+    expect(out[1]?.raw).toContain("Message-ID: <demo-32.cd34@ea-seed.test>");
+    expect(out[1]?.raw).toContain("Subject: Second");
+    expect(out[0]?.raw).toContain("Date: Wed, 09 Dec 2026 12:00:00 GMT");
+  });
+});
+
+describe("hasPausedNotice", () => {
+  test("is true for the notice in any language and false for other bot texts", () => {
+    for (const marker of pausedNoticeMarkers()) expect(hasPausedNotice(["Welcome", `x\n${marker}`])).toBe(true);
+    expect(hasPausedNotice(["Welcome", "Signature needed today"])).toBe(false);
+    expect(hasPausedNotice([])).toBe(false);
   });
 });

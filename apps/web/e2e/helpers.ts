@@ -117,13 +117,21 @@ export async function cleanUpOrg(page: Page): Promise<void> {
   }
 }
 
-// Fills the open connect dialog for the GreenMail of the dev stack (provider "Other") and submits it.
-export async function connectGreenMail(page: Page, project: string): Promise<void> {
+// Fills the open connect dialog for the GreenMail of the dev stack (provider "Other") and submits it. `account` replaces the address and
+// the password of the e2e project (the demo recording connects its own mailbox).
+export async function connectGreenMail(
+  page: Page,
+  project: string,
+  account: { address: string; password: string } = {
+    address: mailboxAddress(project),
+    password: "e2e-mailbox-password",
+  }
+): Promise<void> {
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("combobox", { name: en.provider_label }).click();
   await page.getByRole("option", { name: en.preset_other }).click();
-  await dialog.getByLabel(en.address_label).fill(mailboxAddress(project));
-  await dialog.getByLabel(en.mb_password_label, { exact: true }).fill("e2e-mailbox-password");
+  await dialog.getByLabel(en.address_label).fill(account.address);
+  await dialog.getByLabel(en.mb_password_label, { exact: true }).fill(account.password);
   await dialog.getByLabel(en.imap_host_label).fill(GREENMAIL.host);
   await dialog.getByLabel(en.imap_port_label).fill(`${GREENMAIL.imapPort}`);
   await dialog.getByLabel(en.smtp_host_label).fill(GREENMAIL.host);

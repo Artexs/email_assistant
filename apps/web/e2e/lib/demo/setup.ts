@@ -38,6 +38,20 @@ export function demoMessage(mail: DemoMail, opts: { to: string; seq: number; run
 }
 
 /**
+ * The raw mails of a live delivery during the recording (`seq` from `firstSeq`, in the order given): each mail has the delivery time as
+ * its Date header and internal date, and a Message-ID of the run tag, so it counts as test mail and clashes with no history mail.
+ */
+export function liveMessages(
+  mails: readonly DemoMail[],
+  opts: { to: string; firstSeq: number; runTag: string; now: Date }
+): { raw: string; internalDate: Date }[] {
+  return mails.map((mail, at) => ({
+    raw: demoMessage(mail, { to: opts.to, seq: opts.firstSeq + at, runTag: opts.runTag, date: opts.now }),
+    internalDate: opts.now,
+  }));
+}
+
+/**
  * The dates of the history set on the day of the setup: the offsets between the seed dates stay, the newest mail is 2 days old.
  * Throws `demo_history_span` when the set spans more than 25 days. The result has the order of the input.
  */
@@ -107,6 +121,12 @@ export function pausedNoticeMarkers(): string[] {
   return markers.filter((marker) => marker !== "");
 }
 
+/** Some bot message of the chat is the notice `autonomy_paused` (in any language or detail level). */
+export function hasPausedNotice(botTexts: readonly string[]): boolean {
+  const markers = pausedNoticeMarkers();
+  return botTexts.some((text) => markers.some((marker) => text.includes(marker)));
+}
+
 /** What the state check reads, as the owner sees it. */
 export interface SetupState {
   /** Mailbox A as `GET /api/mailboxes` lists it; null when it is missing. */
@@ -133,10 +153,7 @@ export function setupProblems(state: SetupState): string[] {
   if (state.mailboxA === null) problems.push("setup_a_missing");
   else if (state.mailboxA.status !== "paused") problems.push(`setup_a_status ${state.mailboxA.status}`);
   if (state.autoCategories.length > 0) problems.push(`setup_auto_on ${state.autoCategories.join(",")}`);
-  const markers = pausedNoticeMarkers();
-  if (state.botTexts.some((text) => markers.some((marker) => text.includes(marker)))) {
-    problems.push("setup_autonomy_paused_notice");
-  }
+  if (hasPausedNotice(state.botTexts)) problems.push("setup_autonomy_paused_notice");
   for (const flag of DEMO_FLAGS_ON) if (state.flags[flag] !== true) problems.push(`setup_flag_off ${flag}`);
   for (const flag of DEMO_FLAGS_OFF) if (state.flags[flag] !== false) problems.push(`setup_flag_on ${flag}`);
   if (!state.telegramLinked) problems.push("setup_telegram_not_linked");

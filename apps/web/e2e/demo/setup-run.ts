@@ -29,7 +29,7 @@ import {
 export const SETUP_ADDRESS = "192.0.2.220";
 export const CHECK_ADDRESS = "192.0.2.221";
 // GreenMail of the dev stack runs with authentication off: any password logs in.
-const MAILBOX_B_PASSWORD = "demo-mailbox-password";
+export const MAILBOX_B_PASSWORD = "demo-mailbox-password";
 const LINK_WAIT_MS = 15_000;
 const POLL_MS = 250;
 
