@@ -1,5 +1,6 @@
 ---
 opened: 2026-11-23
+landed: 2026-11-27
 ---
 
 # F172 · No part of the old look is left, and production gets the Pebble panel in one release
